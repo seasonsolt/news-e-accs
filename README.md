@@ -1,3 +1,9 @@
+> **news.e-accs.com** — e/acc 加速日报，基于 [AIHOT](https://github.com/KKKKhazix/AIHOT) 开源框架（`upstream` 远程），换成了蒸汽朋克外观：
+> 首页顶部是 newsletter 式的动态封面（`apps/web/app/features/hero/SteamHero.tsx`），背景动图由
+> `tools/make-media.sh` 从插画渲染成循环视频（`apps/web/public/media/`）；配色在 `apps/web/app/app.css` 的主题变量里，
+> 站名等在 `industry/site.ts`。同步上游：`git fetch upstream && git merge upstream/main`。
+> 以下是 AIHOT 原文档。
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.png">

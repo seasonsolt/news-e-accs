@@ -28,6 +28,7 @@ const TYPES: Record<string, string> = {
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".webp": "image/webp",
+  ".mp4": "video/mp4",
   ".woff2": "font/woff2",
   ".json": "application/json",
   ".txt": "text/plain; charset=utf-8",
@@ -40,8 +41,11 @@ const ssr = createRequestListener({ build, mode: "production" });
 
 class BadRequest extends Error {}
 
-/** Hashed build assets are immutable; anything else from the client build gets a short cache. */
-async function serveStatic(pathname: string, res: import("node:http").ServerResponse): Promise<boolean> {
+/**
+ * Hashed build assets are immutable; anything else from the client build gets a short cache.
+ * A single byte range is honoured: Safari will not play a video whose server ignores Range.
+ */
+async function serveStatic(pathname: string, res: import("node:http").ServerResponse, range?: string): Promise<boolean> {
   if (pathname.includes("..") || pathname.endsWith("/")) return false;
   let decoded: string;
   try {
@@ -54,12 +58,27 @@ async function serveStatic(pathname: string, res: import("node:http").ServerResp
   const info = await stat(file).catch(() => null);
   if (!info?.isFile()) return false;
   const immutable = pathname.startsWith("/assets/");
-  res.writeHead(200, {
+  const headers = {
     "Content-Type": TYPES[path.extname(file)] ?? "application/octet-stream",
-    "Content-Length": info.size,
     "Cache-Control": immutable ? "public, max-age=31536000, immutable" : "public, max-age=3600",
+    "Accept-Ranges": "bytes",
     "X-Content-Type-Options": "nosniff",
-  });
+  };
+  const m = range?.match(/^bytes=(\d*)-(\d*)$/);
+  if (m && (m[1] || m[2])) {
+    // "bytes=a-b", "bytes=a-" or the suffix form "bytes=-n" (the last n bytes).
+    const start = m[1] ? Number(m[1]) : Math.max(0, info.size - Number(m[2]));
+    const end = m[1] && m[2] ? Math.min(Number(m[2]), info.size - 1) : info.size - 1;
+    if (start > end || start >= info.size) {
+      res.writeHead(416, { ...headers, "Content-Range": `bytes */${info.size}` });
+      res.end();
+      return true;
+    }
+    res.writeHead(206, { ...headers, "Content-Length": end - start + 1, "Content-Range": `bytes ${start}-${end}/${info.size}` });
+    createReadStream(file, { start, end }).pipe(res);
+    return true;
+  }
+  res.writeHead(200, { ...headers, "Content-Length": info.size });
   createReadStream(file).pipe(res);
   return true;
 }
@@ -148,7 +167,7 @@ async function handle(req: import("node:http").IncomingMessage, res: import("nod
     return req.pipe(upstream);
   }
 
-  if ((req.method === "GET" || req.method === "HEAD") && pathname.includes(".") && (await serveStatic(pathname, res))) return;
+  if ((req.method === "GET" || req.method === "HEAD") && pathname.includes(".") && (await serveStatic(pathname, res, req.headers.range))) return;
   pageCache(req, res);
   return ssr(req, res);
 }
