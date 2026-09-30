@@ -1,0 +1,26 @@
+[Unit]
+Description=e/acc news worker (collection, model calls, reports)
+After=eacc-api.service
+Requires=postgresql.service
+
+[Service]
+User=eacc
+Group=eacc
+WorkingDirectory=/srv/eacc/app
+EnvironmentFile=/srv/eacc/app/.env
+Environment=NODE_ENV=production
+Environment=PATH=/opt/node24/bin:/usr/bin:/bin
+Environment=AIHOT_DATA_DIR=/srv/eacc/data
+Environment=API_BASE_URL=http://127.0.0.1:3001
+Environment=LOCAL_ROUTER_URL=http://127.0.0.1:3000
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
+ExecStart=/opt/node24/bin/node apps/worker/src/main.ts
+# Let a paid call in flight finish on stop (STOP_TIMEOUT_MS is 195 s), or it is paid for again.
+TimeoutStopSec=210
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,25 @@
+[Unit]
+Description=e/acc news web (SSR, static files, proxies api-owned paths)
+After=eacc-api.service
+
+[Service]
+User=eacc
+Group=eacc
+WorkingDirectory=/srv/eacc/app
+EnvironmentFile=/srv/eacc/app/.env
+Environment=NODE_ENV=production
+Environment=PATH=/opt/node24/bin:/usr/bin:/bin
+Environment=AIHOT_DATA_DIR=/srv/eacc/data
+Environment=API_BASE_URL=http://127.0.0.1:3001
+Environment=LOCAL_ROUTER_URL=http://127.0.0.1:3000
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
+Environment=WEB_HOST=127.0.0.1
+Environment=WEB_PORT=3000
+ExecStart=/opt/node24/bin/node apps/web/server.ts
+
+[Install]
+WantedBy=multi-user.target

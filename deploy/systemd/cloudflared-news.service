@@ -1,0 +1,19 @@
+# Cloudflare Tunnel for news.e-accs.com: outbound-only, so no port is opened on the server.
+# Ingress (news.e-accs.com -> http://127.0.0.1:3000) is managed remotely on the tunnel itself.
+# The token lives in a root-only file so it never shows up in the process list.
+[Unit]
+Description=Cloudflare Tunnel for news.e-accs.com
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/cloudflared tunnel --no-autoupdate run --token-file /etc/cloudflared/news-e-accs.token
+Restart=always
+RestartSec=5
+DynamicUser=false
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

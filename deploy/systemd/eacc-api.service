@@ -1,0 +1,31 @@
+# news.e-accs.com without Docker (see deploy/README.md). Migrations and seed run before the api
+# starts, as the compose "setup" service does.
+[Unit]
+Description=e/acc news api
+After=network-online.target postgresql.service
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+User=eacc
+Group=eacc
+WorkingDirectory=/srv/eacc/app
+EnvironmentFile=/srv/eacc/app/.env
+Environment=NODE_ENV=production
+Environment=PATH=/opt/node24/bin:/usr/bin:/bin
+Environment=AIHOT_DATA_DIR=/srv/eacc/data
+Environment=API_BASE_URL=http://127.0.0.1:3001
+Environment=LOCAL_ROUTER_URL=http://127.0.0.1:3000
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
+Environment=API_HOST=127.0.0.1
+Environment=API_PORT=3001
+ExecStartPre=/opt/node24/bin/node scripts/migrate.ts
+ExecStartPre=/opt/node24/bin/node scripts/seed.ts
+ExecStart=/opt/node24/bin/node apps/api/src/main.ts
+
+[Install]
+WantedBy=multi-user.target
