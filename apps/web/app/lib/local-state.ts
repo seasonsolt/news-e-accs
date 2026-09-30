@@ -8,6 +8,7 @@ export const KEYS = {
   theme: "aihot-theme",
   changelogSeen: "aihot-changelog-seen-version",
   feedbackDraft: "aihot-feedback-draft-v1",
+  onboarded: "eacc-onboarded",
 } as const;
 
 export const STARRED_LIMIT = 500;
@@ -217,6 +218,20 @@ export function resolvedTheme(pref: ThemePreference = getThemePreference()): "li
 
 /** Inline script run before paint so the first frame already has the reader's theme. */
 export const THEME_BOOT_SCRIPT = `(function(){try{var t=localStorage.getItem('${KEYS.theme}');if(t==='"light"'||t==='"dark"')t=JSON.parse(t);if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.setAttribute('data-theme',t)}catch(e){document.documentElement.setAttribute('data-theme','light')}})();`;
+
+// --- newsletter onboarding ---
+/** Subscribed or skipped: the front page opens straight on the news from then on. */
+export function markOnboarded() {
+  writeRaw(KEYS.onboarded, new Date().toISOString());
+  document.documentElement.removeAttribute("data-onboarding");
+}
+
+/**
+ * Inline script run before paint: a first visit to the front page opens on the newsletter onboarding
+ * (html[data-onboarding] shows it, see app.css). Crawlers and readers who already chose see the news;
+ * so does anyone whose storage is unavailable, as the choice could not be remembered.
+ */
+export const ONBOARDING_BOOT_SCRIPT = `(function(){try{if(location.pathname!=='/'||/bot|crawl|spider|slurp|preview|lighthouse|headless/i.test(navigator.userAgent))return;if(localStorage.getItem('${KEYS.onboarded}'))return;document.documentElement.setAttribute('data-onboarding','')}catch(e){}})();`;
 
 // --- changelog red dot ---
 export function getChangelogSeen(): string | null {

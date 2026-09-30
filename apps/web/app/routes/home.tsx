@@ -6,7 +6,7 @@ import { isCategoryKey, isChannelKey } from "@aihot/contracts/taxonomy";
 import { loadOr404, queryString, releaseBoundCache } from "../lib/api.server";
 import { listPath, organizationLd, pageMeta } from "../lib/seo";
 import { Wordmark } from "../components/Logo";
-import { SteamHero } from "../features/hero/SteamHero";
+import { Onboarding } from "../features/onboarding/Onboarding";
 import { Timeline } from "../features/feed/Timeline";
 import { HotTopics } from "../features/feed/HotTopics";
 import { CategoryTabs, SearchField, SearchIconLink } from "../features/feed/Filters";
@@ -50,24 +50,19 @@ function TodayLabel() {
 export default function Home() {
   const { data, filters } = useLoaderData<typeof loader>();
   const title = filters.tag ? `#${filters.tag}` : "精选";
-  // The unfiltered front page opens on the masthead, which carries the page's h1 and the brand.
+  // A first visit to the unfiltered front page opens on the newsletter onboarding (shown before paint
+  // by the boot script); everyone else, crawlers included, reads the news below.
   const front = filters.channel === "all" && !filters.category && !filters.tag;
-  const Heading = front ? "h2" : "h1";
   return (
     <div className="pb-6">
-      {front && (
-        <div className="pt-3 lg:pt-0">
-          <SteamHero />
-          <div id="feed" className="scroll-mt-4 lg:scroll-mt-6" />
-        </div>
-      )}
-      {/* Phones: brand bar (or the masthead), today's hot topics, then the feed under "最新精选". */}
-      <div className={`h-14 items-center justify-between lg:hidden ${front ? "hidden" : "flex"}`}>
+      {front && <Onboarding mode="overlay" />}
+      {/* Phones: brand bar, today's hot topics, then the feed under "最新精选". */}
+      <div className="flex h-14 items-center justify-between lg:hidden">
         <Wordmark size={20} className="text-ink" />
         <TodayLabel />
       </div>
       <div className="hidden lg:block">
-        <Heading className="text-[24px] font-semibold leading-[1.3] text-ink">{title}</Heading>
+        <h1 className="text-[24px] font-semibold leading-[1.3] text-ink">{title}</h1>
         <div className="mb-5 mt-4 flex items-center justify-between gap-4">
           <CategoryTabs base="/" category={filters.category} channel={filters.channel} layoutId="home-cat-desk" className="min-w-0" />
           <SearchField variant="track" keep={{ category: filters.category }} />

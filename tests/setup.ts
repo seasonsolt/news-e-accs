@@ -14,6 +14,7 @@ process.env.SESSION_SECRET ??= "test-session-secret-0123456789";
 process.env.IMG_PROXY_SIGN_SECRET ??= "test-img-secret-0123456789";
 process.env.FEISHU_CONTENT_PUSH_ENABLED = "false";
 process.env.INDEXNOW_SUBMIT_ENABLED = "false";
+process.env.NEWSLETTER_ENABLED = "false";
 process.env.LOG_LEVEL ??= "error";
 // The tests were written against the named model presets AIHOT assigns to each step (each provider is
 // pointed at a local stub by the test that needs it). The open-source default is one model for every
@@ -29,14 +30,14 @@ for (const [name, model] of Object.entries(AIHOT_MODELS)) process.env[name] ??= 
  * A local HTTP stub standing in for a paid provider; `answer` builds every response from the request
  * (it may wait, to hold a request open while a test changes something).
  */
-export async function stub(answer: (hit: number, req: { url: string; body: string }) => unknown) {
+export async function stub(answer: (hit: number, req: { url: string; body: string; method: string; headers: http.IncomingHttpHeaders }) => unknown) {
   let hits = 0;
   const server = http.createServer((req, res) => {
     const chunks: Buffer[] = [];
     req.on("data", (c: Buffer) => chunks.push(c));
     req.on("end", async () => {
       hits += 1;
-      const out = await answer(hits, { url: req.url ?? "/", body: Buffer.concat(chunks).toString("utf8") });
+      const out = await answer(hits, { url: req.url ?? "/", body: Buffer.concat(chunks).toString("utf8"), method: req.method ?? "GET", headers: req.headers });
       const reply = out instanceof Reply ? out : { status: 200, json: out };
       res.writeHead(reply.status, { "content-type": "application/json" });
       res.end(JSON.stringify(reply.json));

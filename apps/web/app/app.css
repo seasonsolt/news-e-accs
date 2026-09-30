@@ -544,17 +544,22 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Homepage masthead (features/hero/SteamHero.tsx)
+   Newsletter onboarding (features/onboarding/Onboarding.tsx)
    --------------------------------------------------------------------------- */
-/* A screen tall inside the shell: the main column's top padding and a matching gap below on
-   desktop; above the tab bar on phones. */
-.steam-hero {
+/* The first-visit overlay is always in the front page's markup and shown only when the boot script
+   marked <html> (ONBOARDING_BOOT_SCRIPT): no flash of the news, and crawlers never see it. */
+.onboarding-overlay { display: none; }
+html[data-onboarding] .onboarding-overlay { display: block; }
+html[data-onboarding] body { overflow: hidden; }
+/* On /subscribe it sits in the shell as a card a screen tall: the main column's top padding and a
+   matching gap below on desktop; above the tab bar on phones. */
+.steam-hero-page {
   height: max(560px, calc(100svh - 72px - env(safe-area-inset-bottom) - 16px));
 }
 @media (min-width: 961px) {
-  .steam-hero { height: max(600px, calc(100dvh - 48px)); }
+  .steam-hero-page { height: max(600px, calc(100dvh - 48px)); }
 }
-/* Keep the film legible under light type: a soot vignette plus a floor for the scroll cue. */
+/* Keep the film legible under light type: a soot vignette, darker at the top and the floor. */
 .steam-hero-shade {
   background:
     radial-gradient(ellipse 70% 60% at 50% 48%, rgba(21, 17, 13, 0.18), rgba(21, 17, 13, 0.62) 100%),
@@ -600,7 +605,6 @@
   animation: steam-shine 3.6s ease-in-out infinite;
   pointer-events: none;
 }
-.steam-bob { animation: steam-bob 2.2s ease-in-out infinite; }
 .steam-manifesto[open] { animation: aihot-zoom-in 180ms var(--ease-out-quart) both, aihot-fade-in 180ms ease-out both; }
 
 @keyframes steam-spin { to { transform: rotate(360deg); } }
@@ -613,4 +617,3 @@
   0%, 40% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
-@keyframes steam-bob { 50% { transform: translateY(4px); } }
