@@ -2,8 +2,9 @@
 // tools/make-media.sh) behind the site name, the sign-up, the manifesto and a way to skip straight to
 // the news. On a first visit to the front page it covers the screen (html[data-onboarding], set before
 // paint by ONBOARDING_BOOT_SCRIPT); /subscribe shows it as a page, and there it also confirms the
-// link from the confirmation letter. Everything moving here is decoration and stops under
-// prefers-reduced-motion.
+// link from the confirmation letter: the page confirms by script as it opens (mail scanners that fetch
+// the link do not run it), with the button kept for a retry. Everything moving here is decoration and
+// stops under prefers-reduced-motion.
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { SITE } from "@aihot/industry/site";
 import { Link } from "react-router";
@@ -32,7 +33,7 @@ async function post(path: string, body: Record<string, string>): Promise<string 
 
 /**
  * `overlay`: the front page's first-visit screen, closed by subscribing or skipping. `page`: /subscribe,
- * where `token` (from the confirmation letter) turns the form into a confirm button.
+ * where `token` (from the confirmation letter) is confirmed on arrival, with a button to try again.
  */
 export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; token?: string | null }) {
   const video = useRef<HTMLVideoElement>(null);
@@ -96,6 +97,11 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
     setPhase({ kind: "confirmed" });
     markOnboarded();
   }
+
+  // Opening the letter's link is the reader's confirmation; confirming twice is harmless.
+  useEffect(() => {
+    if (mode === "page" && token) void confirmToken();
+  }, [mode, token]);
 
   // Leaving for the news: the overlay just closes; the page links home.
   const toNews = (label: string, primary = false) => {

@@ -1,6 +1,7 @@
 // Newsletter sign-up with double opt-in. Subscribing answers the same whether or not the address was
 // known (so the form cannot be used to test addresses) and mails a confirmation link; the link opens a
-// page whose button confirms, so mail scanners that fetch links cannot confirm on a reader's behalf.
+// page that confirms by script (a POST), so mail scanners that only fetch links cannot confirm on a
+// reader's behalf.
 // Abuse control: the feedback form's source hash and bans, a per-source limit, one letter per address
 // per cooldown, and a daily ceiling below the provider's free allowance.
 import { randomBytes } from "node:crypto";
