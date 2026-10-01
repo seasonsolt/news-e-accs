@@ -104,6 +104,14 @@ test("signing up stores the address pending and mails one confirmation per coold
   assert.equal(hits.slice(before).filter((h) => h.path === "/emails").length, 1);
 });
 
+test("with no confirmed reader yet, the day is not claimed", async () => {
+  const before = since();
+  assert.deepEqual(await sendDailyIssue(TODAY), { status: "no_subscribers" });
+  const rows = await sql`SELECT 1 FROM newsletter_sends WHERE report_key = ${TODAY}`;
+  assert.equal(rows.length, 0, "a reader confirming later the same morning still gets the issue");
+  assert.equal(since(), before, "the provider was not called");
+});
+
 test("confirming subscribes the contact in the segment, and confirming again re-subscribes", async () => {
   await assert.rejects(confirm("x".repeat(43)), (e: unknown) => e instanceof NewsletterRejected && e.status === 404);
   const token = await tokenOf();

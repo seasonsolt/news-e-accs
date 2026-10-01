@@ -10,7 +10,7 @@ import { ResendError, resendConfigured, sendBroadcast } from "../providers/resen
 import { dailyIssueMail, issueSections } from "./mail.ts";
 
 export type IssueOutcome =
-  | { status: "disabled" | "not_configured" | "no_report" | "already" }
+  | { status: "disabled" | "not_configured" | "no_report" | "no_subscribers" | "already" }
   | { status: "skipped"; reason: string }
   | { status: "sent"; broadcastId: string }
   | { status: "failed" | "unknown"; error: string };
@@ -22,6 +22,9 @@ export async function sendDailyIssue(date = beijingDate(Date.now())): Promise<Is
   if (date !== beijingDate(Date.now())) return { status: "skipped", reason: "not today" };
   const report = await loadReport("daily", date);
   if (!report) return { status: "no_report" };
+  // Nobody to mail yet: leave the day unclaimed, so a reader who confirms later this morning still gets it.
+  const [{ n }] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM newsletter_subscribers WHERE status = 'confirmed'`;
+  if (n === 0) return { status: "no_subscribers" };
 
   const [claimed] = await sql`INSERT INTO newsletter_sends (report_key, status) VALUES (${date}, 'sending') ON CONFLICT (report_key) DO NOTHING RETURNING report_key`;
   if (!claimed) return { status: "already" };
