@@ -617,3 +617,119 @@ html[data-onboarding] body { overflow: hidden; }
   0%, 40% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
+
+/* ---------------------------------------------------------------------------
+   Reading art (features/art/, images from tools/make-art.sh)
+   --------------------------------------------------------------------------- */
+/* Behind the feed: seen in the margins, faded out under the reading column. The outer layer is the
+   fixed frame; the image layer moves against the scroll (--ambient-shift) and drifts on its own. */
+.ambient-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ambient-backdrop-image {
+  position: absolute;
+  inset: -8% -3%;
+  background: url("/media/art/ambient-engine-room.webp") 50% 0% / cover no-repeat;
+  opacity: 0.2;
+  transform: translate3d(0, var(--ambient-shift, 0px), 0);
+  animation: ambient-drift 90s ease-in-out infinite alternate;
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.6) 20%, rgba(0, 0, 0, 0.08) 38%, rgba(0, 0, 0, 0.08) 62%, rgba(0, 0, 0, 0.6) 80%, #000 100%);
+  mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.6) 20%, rgba(0, 0, 0, 0.08) 38%, rgba(0, 0, 0, 0.08) 62%, rgba(0, 0, 0, 0.6) 80%, #000 100%);
+}
+/* Phones have no margins: the hall shows above the feed and fades out down the page. */
+@media (max-width: 960px) {
+  .ambient-backdrop-image {
+    opacity: 0.16;
+    -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.35) 30%, transparent 55%);
+    mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.35) 30%, transparent 55%);
+  }
+}
+/* By night the engravings stay warm and sink into the soot, like a print under gaslight. */
+[data-theme="dark"] .ambient-backdrop-image,
+[data-theme="dark"] .category-banner-image,
+[data-theme="dark"] .report-masthead-art img {
+  filter: brightness(0.55) contrast(1.1) saturate(0.95);
+}
+[data-theme="dark"] .ambient-backdrop-image { opacity: 0.22; }
+@keyframes ambient-drift {
+  from { background-position: 50% 0%; }
+  to { background-position: 50% 14%; }
+}
+
+/* A category's illustration above the feed: fades in when the filter changes, then drifts. */
+.category-banner {
+  position: relative;
+  height: 150px;
+  overflow: hidden;
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line);
+  background: var(--bg-sunk);
+  animation: banner-in 700ms var(--ease-out-quart) both;
+}
+@media (min-width: 961px) {
+  .category-banner { height: 190px; }
+}
+.category-banner-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 60% 42%;
+  animation: banner-drift 40s ease-in-out infinite alternate;
+}
+/* The words sit on the page colour; the picture opens to the right. */
+.category-banner-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 82%, transparent) 30%, transparent 70%);
+}
+/* Narrow screens: the words run further across, so the page colour does too. */
+@media (max-width: 640px) {
+  .category-banner-shade {
+    background: linear-gradient(90deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 90%, transparent) 50%, transparent 92%);
+  }
+}
+@keyframes banner-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes banner-drift {
+  from { transform: scale(1.04) translateX(0); }
+  to { transform: scale(1.1) translateX(-2%); }
+}
+
+/* The report masthead's press: the paper rolls in as the issue opens, then the press idles. */
+.report-masthead-art {
+  position: relative;
+  height: 120px;
+  margin-top: 14px;
+  overflow: hidden;
+  border-radius: var(--radius-panel);
+  -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent);
+  mask-image: linear-gradient(180deg, #000 70%, transparent);
+}
+.report-masthead-art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 62%;
+  animation: press-in 1100ms var(--ease-out-quart) both, press-idle 30s ease-in-out 1100ms infinite alternate;
+}
+@container (min-width: 880px) {
+  .report-masthead-art { height: 200px; margin-top: 18px; }
+}
+@keyframes press-in {
+  from { opacity: 0; transform: translateX(-4%) scale(1.08); }
+  to { opacity: 1; transform: translateX(0) scale(1.04); }
+}
+@keyframes press-idle {
+  from { transform: translateX(0) scale(1.04); }
+  to { transform: translateX(-1.5%) scale(1.07); }
+}

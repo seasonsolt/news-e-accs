@@ -6,6 +6,8 @@ import { isCategoryKey, isChannelKey } from "@aihot/contracts/taxonomy";
 import { loadOr404, queryString } from "../lib/api.server";
 import { listPath, pageMeta } from "../lib/seo";
 import { CategoryTabs, SearchField } from "../features/feed/Filters";
+import { AmbientBackdrop } from "../features/art/AmbientBackdrop";
+import { CategoryBanner } from "../features/art/CategoryBanner";
 import { PillTabs } from "../components/ui/Tabs";
 import { DayList, Pagination } from "../features/feed/DayList";
 import { EmptyState } from "../components/ui/Page";
@@ -75,6 +77,7 @@ export default function AllPage() {
 
   return (
     <div className="pb-6">
+      <AmbientBackdrop />
       {/* Desktop, as on 精选: the title, then one filter row with the search field aligned on the right. */}
       <div className="hidden lg:block">
         <h1 className="text-[24px] font-semibold leading-[1.3] text-ink">{title ?? `全部${withSubject("动态")}`}</h1>
@@ -115,6 +118,7 @@ export default function AllPage() {
         </div>
       )}
 
+      {!f.q && <CategoryBanner category={f.category} channel={f.channel} />}
       <div className={`transition-opacity duration-200 ${busy ? "opacity-50" : ""}`}>
         {data.items.length === 0 ? (
           <div className="mt-2 lg:card">

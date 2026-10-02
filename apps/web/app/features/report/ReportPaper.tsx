@@ -35,6 +35,17 @@ function Masthead({ report, index }: { report: ReportDetail; index: ReportNaviga
         <span>{EDITION[report.kind]}</span>
       </div>
 
+      {/* The press the issue comes off (public/media/art); decoration, it plays once as the issue opens. */}
+      <div className="report-masthead-art" aria-hidden="true">
+        <img
+          src="/media/art/masthead-press-1600.webp"
+          srcSet="/media/art/masthead-press-800.webp 800w, /media/art/masthead-press-1600.webp 1600w"
+          sizes="(min-width: 961px) 1000px, 100vw"
+          alt=""
+          decoding="async"
+        />
+      </div>
+
       <div className="flex items-stretch justify-between gap-5 py-6 @[880px]:gap-10 @[880px]:py-8">
         <div className="flex min-w-0 flex-col justify-center">
           <h1 id="report-start">

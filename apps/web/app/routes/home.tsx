@@ -7,6 +7,8 @@ import { loadOr404, queryString, releaseBoundCache } from "../lib/api.server";
 import { listPath, organizationLd, pageMeta } from "../lib/seo";
 import { Wordmark } from "../components/Logo";
 import { Onboarding } from "../features/onboarding/Onboarding";
+import { AmbientBackdrop } from "../features/art/AmbientBackdrop";
+import { CategoryBanner } from "../features/art/CategoryBanner";
 import { Timeline } from "../features/feed/Timeline";
 import { HotTopics } from "../features/feed/HotTopics";
 import { CategoryTabs, SearchField, SearchIconLink } from "../features/feed/Filters";
@@ -56,6 +58,7 @@ export default function Home() {
   return (
     <div className="pb-6">
       {front && <Onboarding mode="overlay" />}
+      <AmbientBackdrop />
       {/* Phones: brand bar, today's hot topics, then the feed under "最新精选". */}
       <div className="flex h-14 items-center justify-between lg:hidden">
         <Wordmark size={20} className="text-ink" />
@@ -77,6 +80,7 @@ export default function Home() {
         <SearchIconLink />
       </div>
 
+      <CategoryBanner category={filters.category} channel={filters.channel} />
       <Timeline initial={data} filters={data.filters} />
     </div>
   );
