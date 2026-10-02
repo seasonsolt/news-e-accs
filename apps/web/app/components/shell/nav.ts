@@ -3,7 +3,7 @@ import { withSubject } from "@aihot/industry/site";
 import { FEATURES } from "@aihot/industry/features";
 import type { ReactNode } from "react";
 import {
-  IconApps, IconBolt, IconBookmark, IconChart, IconDoc, IconFlame, IconGrid, IconHeart, IconHistory, IconList, IconMail, IconMessage, IconPlug,
+  IconApps, IconBolt, IconBookmark, IconChart, IconClock, IconDoc, IconFlame, IconGrid, IconHeart, IconHistory, IconInfo, IconList, IconMail, IconMessage, IconPlug,
 } from "../icons";
 
 export interface NavItem {
@@ -14,7 +14,18 @@ export interface NavItem {
   end?: boolean;
   /** Shows the unread dot while the changelog has news. */
   changelog?: boolean;
+  /** One of e-acc.ai's own pages (served beside this site, not by it): a full page load. */
+  document?: boolean;
 }
+
+/** e-acc.ai's tool pages, which the edge serves from the static site next to this one. */
+export const TOOLS: NavItem[] = [
+  { to: "/coding-plan", label: "Coding Plan 选择器", icon: IconPlug, document: true },
+  { to: "/pricing", label: "模型价格", icon: IconChart, document: true },
+  { to: "/calculator", label: "成本计算器", icon: IconGrid, document: true },
+  { to: "/timeline", label: "加速时间线", icon: IconClock, document: true },
+  { to: "/what-is-eacc", label: "什么是 e/acc", icon: IconInfo, document: true },
+];
 
 export const SIDEBAR: Array<{ title: string; items: NavItem[] }> = [
   {
@@ -41,6 +52,7 @@ export const SIDEBAR: Array<{ title: string; items: NavItem[] }> = [
         },
       ]
     : []),
+  { title: "工具", items: TOOLS },
   {
     title: "更多",
     items: [

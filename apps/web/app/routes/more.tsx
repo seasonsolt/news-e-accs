@@ -6,6 +6,7 @@ import type { loader as rootLoader } from "../root";
 import { useChangelogDot } from "../components/shell/Sidebar";
 import { pageMeta } from "../lib/seo";
 import { ThemeSwitch } from "../components/shell/ThemeSwitch";
+import { TOOLS } from "../components/shell/nav";
 import { IconBookmark, IconChart, IconChevronRight, IconFlame, IconGrid, IconHeart, IconHistory, IconMessage, IconMoon, IconPlug } from "../components/icons";
 
 /** Shared caches may keep this page for five minutes. */
@@ -17,7 +18,7 @@ export function meta() {
   return pageMeta({ title: "更多", path: "/more", noindex: true });
 }
 
-type Row = { to: string; label: string; icon: ReactNode };
+type Row = { to: string; label: string; icon: ReactNode; document?: boolean };
 
 const GROUPS: Array<{ title: string; rows: Row[] }> = [
   {
@@ -36,6 +37,7 @@ const GROUPS: Array<{ title: string; rows: Row[] }> = [
       { to: "/starred", label: "收藏", icon: <IconBookmark size={18} /> },
     ],
   },
+  { title: "e-acc.ai 工具", rows: TOOLS.map((t) => ({ to: t.to, label: t.label, icon: <t.icon size={18} />, document: true })) },
   {
     title: "关于",
     rows: [
@@ -66,7 +68,7 @@ export default function MorePage() {
           <Group key={g.title} title={g.title}>
             {g.rows.map((r) => (
               <li key={r.to}>
-                <Link to={r.to} className="flex h-[50px] items-center gap-3 px-4 text-[15px] font-medium text-ink transition-colors active:bg-bg-sunk lg:hover:bg-bg-sunk">
+                <Link to={r.to} reloadDocument={r.document} className="flex h-[50px] items-center gap-3 px-4 text-[15px] font-medium text-ink transition-colors active:bg-bg-sunk lg:hover:bg-bg-sunk">
                   <span className="text-ink-3">{r.icon}</span>
                   <span className="flex flex-1 items-center gap-2">{r.label}{r.to === "/changelog" && changelogDot && <span className="size-1.5 rounded-full bg-hot" aria-label="有新的更新" />}</span>
                   <IconChevronRight size={16} className="text-ink-4" />
@@ -88,7 +90,7 @@ export default function MorePage() {
       <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[12px] text-ink-4">
         <Link to="/terms" className="hover:text-ink-2">使用规则</Link>
         <Link to="/privacy" className="hover:text-ink-2">隐私说明</Link>
-        <a href="/feed.xml" className="hover:text-ink-2">RSS</a>
+        <a href="/feed/picks.xml" className="hover:text-ink-2">RSS</a>
         {SITE.icp && <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-ink-2">{SITE.icp}</a>}
       </div>
     </div>

@@ -19,7 +19,7 @@ export const SITE = {
   /** 界面语言（HTML lang、og:locale）。 */
   locale: "zh-CN",
   /** 默认域名，只在没设置 SITE_URL 时使用。 */
-  defaultUrl: "https://news.e-accs.com",
+  defaultUrl: "https://e-acc.ai",
   /**
    * MCP 工具名的前缀（小写字母、数字、下划线），工具会叫 eacc_get_latest、eacc_search……
    * 已经有人接入后就不要再改。

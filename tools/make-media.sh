@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Renders the steampunk hero loop ("动图") for news.e-accs.com from still illustrations.
+# Renders the steampunk hero loop ("动图") for e-acc.ai from still illustrations.
 #
 #   tools/make-media.sh [SRC_DIR]     (default: ~/Desktop/danqing-bg-images)
 #

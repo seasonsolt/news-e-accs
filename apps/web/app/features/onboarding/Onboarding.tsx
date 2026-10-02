@@ -143,7 +143,7 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
       </div>
 
       <div className="relative flex h-full flex-col items-center justify-center gap-5 overflow-y-auto px-5 pb-16 pt-12 text-center lg:gap-7">
-        <p className="mono text-[11px] uppercase tracking-[0.32em] text-[#e8c98a]">news.e-accs.com · 加速日报</p>
+        <p className="mono text-[11px] uppercase tracking-[0.32em] text-[#e8c98a]">e-acc.ai · 加速日报</p>
         <Title id={`onboarding-title-${mode}`} className="font-display text-[clamp(84px,17vw,200px)] italic leading-[0.9] tracking-[-0.02em] [text-shadow:0_2px_30px_rgba(0,0,0,0.55)]">
           {SITE.name}
         </Title>

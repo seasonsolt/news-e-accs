@@ -1,6 +1,7 @@
 // Production web server: built client assets, the shared redirect table and SSR. Api-owned paths are
 // proxied to the api process, so one port serves the whole site; a reverse proxy in front may also send
 // them to the api directly.
+import { timingSafeEqual } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer, request as httpRequest } from "node:http";
@@ -18,6 +19,23 @@ const API = new URL(process.env.API_BASE_URL || "http://127.0.0.1:3001");
  */
 const TRUST_PROXY = process.env.TRUST_PROXY === "true";
 const CLIENT_DIR = path.resolve(import.meta.dirname, "build/client");
+/**
+ * Served behind an edge router (e-acc.ai's Worker): requests it forwards carry this secret in
+ * x-eacc-edge and the visitor's address in x-eacc-client-ip. Requests that reach a legacy host
+ * (LEGACY_HOSTS, e.g. news.e-accs.com) without it are sent to the same path on SITE_URL.
+ */
+const EDGE_SECRET = process.env.EDGE_SECRET ? Buffer.from(process.env.EDGE_SECRET) : null;
+const LEGACY_HOSTS = new Set((process.env.LEGACY_HOSTS || "").split(",").map((h) => h.trim().toLowerCase()).filter(Boolean));
+const PUBLIC_ORIGIN = (process.env.SITE_URL || "").replace(/\/+$/, "");
+/** Old addresses whose content moved when the site did. /feed.xml is the edge's own feed now. */
+const LEGACY_PATHS: Record<string, string> = { "/feed.xml": "/feed/picks.xml" };
+
+function fromEdge(req: import("node:http").IncomingMessage): boolean {
+  const given = req.headers["x-eacc-edge"];
+  if (!EDGE_SECRET || typeof given !== "string") return false;
+  const buf = Buffer.from(given);
+  return buf.length === EDGE_SECRET.length && timingSafeEqual(buf, EDGE_SECRET);
+}
 /** Browsers keep a page at most this long, so a withdrawal reaches them within minutes. */
 const BROWSER_MAX_SECONDS = 300;
 
@@ -141,6 +159,14 @@ async function handle(req: import("node:http").IncomingMessage, res: import("nod
   const qi = raw.indexOf("?");
   const pathname = qi >= 0 ? raw.slice(0, qi) : raw;
   const search = qi >= 0 ? raw.slice(qi) : "";
+  const edge = fromEdge(req);
+  const host = String(req.headers.host ?? "").split(":")[0]!.toLowerCase();
+  if (!edge && PUBLIC_ORIGIN && LEGACY_HOSTS.has(host)) {
+    res.writeHead(301, { Location: `${PUBLIC_ORIGIN}${LEGACY_PATHS[pathname] ?? pathname}${search}`, "Cache-Control": "public, max-age=86400" });
+    return res.end();
+  }
+  // The edge's secret goes no further than this process.
+  delete req.headers["x-eacc-edge"];
 
   const decision = resolveRedirect(pathname, search);
   if (decision) {
@@ -153,9 +179,12 @@ async function handle(req: import("node:http").IncomingMessage, res: import("nod
   if (isApiOwned(pathname)) {
     // The visitor's address, decided here: the one the trusted proxy saw (the last X-Forwarded-For
     // entry), or this connection's own. Both headers carry only that.
+    // Behind the edge router, the visitor is the address it reports (the proxy hop is the router itself).
     const forwarded = String(req.headers["x-forwarded-for"] ?? "").split(",").map((v) => v.trim()).filter(Boolean);
-    const client = TRUST_PROXY && forwarded.length ? forwarded[forwarded.length - 1]! : (req.socket.remoteAddress ?? "");
-    const headers = { ...req.headers, "x-forwarded-for": client, "x-real-ip": client };
+    const edgeClient = edge ? String(req.headers["x-eacc-client-ip"] ?? "").trim().slice(0, 64) : "";
+    const client = edgeClient || (TRUST_PROXY && forwarded.length ? forwarded[forwarded.length - 1]! : (req.socket.remoteAddress ?? ""));
+    const headers: import("node:http").OutgoingHttpHeaders = { ...req.headers, "x-forwarded-for": client, "x-real-ip": client };
+    delete headers["x-eacc-client-ip"];
     const upstream = httpRequest({ hostname: API.hostname, port: API.port, path: raw, method: req.method, headers }, (up) => {
       res.writeHead(up.statusCode ?? 502, up.headers);
       up.pipe(res);

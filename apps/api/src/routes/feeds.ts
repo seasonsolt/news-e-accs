@@ -15,7 +15,7 @@ function feedError(reply: FastifyReply) {
 
 export function registerFeeds(app: FastifyInstance) {
   // A preflight gets 204 and the allowed methods; feeds send no CORS headers.
-  for (const url of ["/feed.xml", "/feed/full.xml", "/feed/all.xml", "/feed/daily.xml", "/feed/category/:file", "/feed/full/category/:file"]) {
+  for (const url of ["/feed.xml", "/feed/picks.xml", "/feed/full.xml", "/feed/all.xml", "/feed/daily.xml", "/feed/category/:file", "/feed/full/category/:file"]) {
     app.options(url, async (_req, reply) => reply.code(204).header("Allow", "GET, HEAD, OPTIONS").send());
   }
   const item = (kind: ItemFeedKind) => async (req: FastifyRequest, reply: FastifyReply) => {
@@ -26,6 +26,8 @@ export function registerFeeds(app: FastifyInstance) {
       return feedError(reply);
     }
   };
+  // /feed.xml is e-acc.ai's acceleration-log feed once this site is served there; picks live at /feed/picks.xml.
+  app.get("/feed/picks.xml", item("selected"));
   app.get("/feed.xml", item("selected"));
   app.get("/feed/full.xml", item("selected-full"));
   app.get("/feed/all.xml", item("all"));

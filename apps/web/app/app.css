@@ -6,13 +6,13 @@
    Components use the semantic names below; values change per theme only.
    --------------------------------------------------------------------------- */
 
-/* Display face for the wordmark and the hero title (Latin subset, SIL OFL: /fonts/InstrumentSerif-OFL.txt). */
+/* Display face for the wordmark and the hero title (Latin subset, SIL OFL: /media/fonts/InstrumentSerif-OFL.txt). */
 @font-face {
   font-family: "Instrument Serif";
   font-style: italic;
   font-weight: 400;
   font-display: swap;
-  src: url("/fonts/InstrumentSerif-Italic.woff2") format("woff2");
+  src: url("/media/fonts/InstrumentSerif-Italic.woff2") format("woff2");
 }
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));

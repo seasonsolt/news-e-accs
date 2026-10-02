@@ -21,7 +21,7 @@ function base(): string {
 
 /** Sender shown to readers; its domain must be verified in Resend. */
 export function newsletterFrom(): string {
-  return credential("integrations", "NEWSLETTER_FROM") ?? "e/acc 日报 <daily@news.e-accs.com>";
+  return credential("integrations", "NEWSLETTER_FROM") ?? "e/acc 日报 <daily@e-acc.ai>";
 }
 
 /** Whether the credentials the newsletter needs are present (the NEWSLETTER_ENABLED valve is separate). */
