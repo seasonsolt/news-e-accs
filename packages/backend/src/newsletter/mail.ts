@@ -39,6 +39,12 @@ function button(href: string, label: string): string {
   return `<a href="${esc(href)}" style="display:inline-block;padding:12px 26px;border-radius:999px;background:${C.accent};color:#ffffff;font-family:${SANS};font-size:15px;font-weight:600;text-decoration:none;">${esc(label)}</a>`;
 }
 
+/**
+ * Gmail files newsletters under Promotions; a reader who drags one to Primary (and keeps the choice)
+ * gets every later issue there. Other mailboxes have no such tab, so the hint names Gmail.
+ */
+export const GMAIL_HINT = "用 Gmail 的话：日报如果出现在「推广」或「垃圾邮件」里，把它拖到「主要」，再选「以后都这样处理」，每天早上就会出现在收件箱最前面。";
+
 export function confirmationMail(confirmUrl: string): Mail {
   const host = new URL(siteUrl("/")).host;
   const inner = `<tr><td style="padding:12px 28px 4px;font-family:${SANS};font-size:16px;line-height:1.75;color:${C.ink};">
@@ -47,7 +53,8 @@ export function confirmationMail(confirmUrl: string): Mail {
 <p style="margin:0 0 22px;">点下面的按钮确认订阅。不是你本人操作的话，忽略这封邮件就好，我们不会再给你发信。</p>
 </td></tr>
 <tr><td style="padding:0 28px 26px;">${button(confirmUrl, "确认订阅")}</td></tr>
-<tr><td style="padding:0 28px 26px;font-family:${SANS};font-size:13px;line-height:1.7;color:${C.ink4};">按钮点不开的话，把这个链接复制到浏览器打开：<br><a href="${esc(confirmUrl)}" style="color:${C.accent};word-break:break-all;">${esc(confirmUrl)}</a></td></tr>`;
+<tr><td style="padding:0 28px 26px;font-family:${SANS};font-size:13px;line-height:1.7;color:${C.ink4};">按钮点不开的话，把这个链接复制到浏览器打开：<br><a href="${esc(confirmUrl)}" style="color:${C.accent};word-break:break-all;">${esc(confirmUrl)}</a></td></tr>
+<tr><td style="padding:0 28px 26px;"><div style="padding:12px 14px;border-radius:10px;background:${C.page};border:1px solid ${C.line};font-family:${SANS};font-size:13px;line-height:1.7;color:${C.ink3};">${esc(GMAIL_HINT)}</div></td></tr>`;
   const footer = `这封邮件来自 ${esc(host)}。邮箱地址由美国的邮件服务商 Resend 保存和投递，只用于发送日报。`;
   return {
     subject: `确认订阅 ${SITE.name} 日报`,
@@ -59,6 +66,8 @@ export function confirmationMail(confirmUrl: string): Mail {
       "打开下面的链接确认订阅。不是你本人操作的话，忽略这封邮件就好，我们不会再给你发信。",
       "",
       confirmUrl,
+      "",
+      GMAIL_HINT,
       "",
       `—— ${host}。邮箱地址由美国的邮件服务商 Resend 保存和投递，只用于发送日报。`,
     ].join("\n"),
@@ -100,13 +109,14 @@ ${i.summary ? `<div style="margin-top:6px;font-size:14px;line-height:1.75;color:
     })
     .join("");
   const inner = `${leadHtml}${sectionHtml}<tr><td style="padding:24px 28px 30px;">${button(web, "在网页上阅读全文")}</td></tr>`;
-  const footer = `你收到这封邮件，是因为在 ${esc(new URL(siteUrl("/")).host)} 订阅了 ${esc(SITE.name)} 日报。<br><a href="${UNSUBSCRIBE}" style="color:${C.ink4};">退订</a>`;
+  const footer = `用 Gmail？日报在「推广」里的话，拖到「主要」就能每天第一眼看到。<br>你收到这封邮件，是因为在 ${esc(new URL(siteUrl("/")).host)} 订阅了 ${esc(SITE.name)} 日报。<br><a href="${UNSUBSCRIBE}" style="color:${C.ink4};">退订</a>`;
   const text = [
     `${SITE.name} 日报 · ${m} 月 ${d} 日`,
     "",
     ...(report.lead ? [report.lead.title, report.lead.leadParagraph, ""] : []),
     ...sections.flatMap((s) => [`【${s.label}】`, ...s.items.flatMap((i) => [`· ${i.title}`, ...(i.summary ? [`  ${i.summary}`] : []), `  ${i.sourceName} ${citationUrl(i)}`]), ""]),
     `网页版：${web}`,
+    "用 Gmail？日报在「推广」里的话，拖到「主要」就能每天第一眼看到。",
     `退订：${UNSUBSCRIBE}`,
   ].join("\n");
   return { subject: `${SITE.name} 日报 · ${m}月${d}日：${headline}`, html: frame(inner, footer), text };

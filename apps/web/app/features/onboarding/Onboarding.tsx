@@ -149,11 +149,11 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
         </Title>
 
         {phase.kind === "sent" ? (
-          <Notice title="去邮箱点一下确认" body={`确认邮件已经发到 ${phase.email}。点信里的「确认订阅」，明早 8 点就能收到第一期日报。没收到的话，看看垃圾邮件箱。`}>
+          <Notice title="去邮箱点一下确认" body={`确认邮件已经发到 ${phase.email}。点信里的「确认订阅」，明早 8 点就能收到第一期日报。没收到的话，看看「推广」和「垃圾邮件」。`}>
             {toNews("先去看看今天的新闻", true)}
           </Notice>
         ) : phase.kind === "confirmed" ? (
-          <Notice title="订阅成功" body="每天早上 8 点，日报会准时出现在你的邮箱。每一封信的末尾都可以一键退订。">
+          <Notice title="订阅成功" body="每天早上 8 点，日报会准时出现在你的邮箱，每一封信的末尾都可以一键退订。用 Gmail 的话，第一封日报如果在「推广」里，把它拖到「主要」，以后就都在收件箱最前面了。">
             {toNews("去看今天的新闻", true)}
           </Notice>
         ) : confirming ? (

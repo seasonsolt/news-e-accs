@@ -98,6 +98,8 @@ test("signing up stores the address pending and mails one confirmation per coold
   assert.deepEqual(mails[0]!.body.to, [EMAIL.toLowerCase()]);
   assert.match(mails[0]!.body.html, new RegExp(`/subscribe\\?token=${await tokenOf()}`), "the letter links the confirm page with the token");
   assert.ok(mails[0]!.idempotencyKey?.startsWith("newsletter-confirm:"));
+  assert.match(mails[0]!.body.html, /拖到「主要」/, "the letter tells Gmail readers how to move it out of Promotions");
+  assert.match(mails[0]!.body.text, /拖到「主要」/);
 
   // Asking again at once answers the same and mails nothing more.
   assert.deepEqual(await subscribe({ email: EMAIL.toUpperCase(), ...visitor }), { ok: true });
@@ -145,6 +147,7 @@ test("today's report goes out as one broadcast, once", async () => {
   assert.match(broadcast.body.html, /导语 &lt;b&gt;不&lt;\/b&gt;是 HTML。/, "report text is escaped");
   assert.match(broadcast.body.html, new RegExp(`/items/nl-${T}-1`));
   assert.match(broadcast.body.text, /【产品】/);
+  assert.match(broadcast.body.html, /拖到「主要」/, "every issue repeats the Primary-tab hint");
   for (const attr of broadcast.body.html.match(/style="[^"]*"/g) ?? []) assert.match(attr, /;"$|[a-z0-9)%]"$/, `style attribute cut short: ${attr.slice(0, 80)}`);
   assert.ok(!/style="[^"]*"[A-Za-z]/.test(broadcast.body.html), "no quote inside a style attribute ends it early");
 
