@@ -72,10 +72,11 @@ export function MoreLink({ to, children }: { to: string; children: ReactNode }) 
   );
 }
 
-/** Quiet empty / unavailable state inside a card or list. */
+/** Quiet empty / unavailable state inside a card or list, over the idle automaton (public/media/art). */
 export function EmptyState({ title, children, action }: { title: ReactNode; children?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center px-6 py-14 text-center">
+    <div className="flex flex-col items-center px-6 py-12 text-center">
+      <img src="/media/art/empty-800.webp" alt="" loading="lazy" decoding="async" className="empty-art mb-5 w-[min(300px,80%)]" />
       <div className="text-[15px] font-semibold text-ink-2">{title}</div>
       {children && <p className="mt-1.5 max-w-sm text-[13px] leading-relaxed text-ink-4">{children}</p>}
       {action && <div className="mt-4">{action}</div>}

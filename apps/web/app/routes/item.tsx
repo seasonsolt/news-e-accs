@@ -18,6 +18,7 @@ import { StoryFollowups } from "../features/item/StoryFollowups";
 import { MediaGallery } from "../features/item/MediaGallery";
 import { QuotedPost } from "../features/item/QuotedPost";
 import { IconArrowLeft, IconCopy, IconDownload, IconExternal, IconImage, IconMenu, IconShare } from "../components/icons";
+import { ReadingGear } from "../features/art/ReadingGear";
 
 const PosterSheet = lazy(() => import("../features/item/PosterSheet"));
 
@@ -46,31 +47,6 @@ export function meta({ loaderData }: Route.MetaArgs) {
 
 export function headers() {
   return { "Cache-Control": "public, max-age=0, s-maxage=600, stale-while-revalidate=120" };
-}
-
-/** A 2px accent line across the top that follows long bodies. */
-function ReadingProgress() {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    let frame = 0;
-    const update = () => {
-      frame = 0;
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      if (ref.current) ref.current.style.transform = `scaleX(${max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0})`;
-    };
-    const schedule = () => {
-      if (!frame) frame = requestAnimationFrame(update);
-    };
-    update();
-    window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule);
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
-    };
-  }, []);
-  return <div ref={ref} aria-hidden="true" className="fixed inset-x-0 top-0 z-50 h-[2px] origin-left scale-x-0 bg-accent transition-transform duration-150 ease-out" />;
 }
 
 function hostOf(url: string): string {
@@ -247,7 +223,7 @@ export default function ItemPage() {
 
   return (
     <div className="mx-auto max-w-[var(--page-max-reading)] pb-8">
-      {item.body && <ReadingProgress />}
+      {item.body && <ReadingGear />}
 
       {/* Phones: a sticky bar with back, 收藏, the original, share and more. Desktop puts these in the rails. */}
       <div className="sticky top-0 z-30 -mx-4 flex h-12 items-center gap-1.5 border-b border-line-soft bg-bg/95 px-4 backdrop-blur lg:hidden">

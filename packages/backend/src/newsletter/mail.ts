@@ -26,8 +26,9 @@ function frame(inner: string, footer: string): string {
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:${C.page};">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.page};"><tr><td align="center" style="padding:28px 12px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:${C.card};border:1px solid ${C.line};border-radius:14px;">
-<tr><td style="padding:28px 28px 8px;font-family:${SERIF};font-style:italic;font-size:34px;line-height:1;color:${C.ink};">${esc(SITE.name)}</td></tr>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:${C.card};border:1px solid ${C.line};border-radius:14px;overflow:hidden;">
+<tr><td style="padding:0;line-height:0;"><img src="${esc(siteUrl("/media/art/subscribe-email.jpg"))}" width="600" alt="" style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:14px 14px 0 0;"></td></tr>
+<tr><td style="padding:22px 28px 8px;font-family:${SERIF};font-style:italic;font-size:34px;line-height:1;color:${C.ink};">${esc(SITE.name)}</td></tr>
 ${inner}
 </table>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;"><tr><td style="padding:18px 28px;font-family:${SANS};font-size:12px;line-height:1.7;color:${C.ink4};text-align:center;">${footer}</td></tr></table>

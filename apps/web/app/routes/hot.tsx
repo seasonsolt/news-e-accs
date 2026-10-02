@@ -6,6 +6,8 @@ import { pageMeta } from "../lib/seo";
 import { monthDayTime, shortSourceName } from "../lib/format";
 import { Badge } from "../components/ui/Badge";
 import { EmptyState } from "../components/ui/Page";
+import { ArtBanner } from "../features/art/CategoryBanner";
+import { HeatGauge } from "../features/art/HeatGauge";
 import { IconChevronDown, IconInfo } from "../components/icons";
 import { Sparkline } from "../features/hot/Sparkline";
 import { Faces } from "../features/hot/Faces";
@@ -228,24 +230,28 @@ export default function HotPage() {
   const others = rest.slice(2);
   return (
     <div className="pb-10">
-      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 pb-5 pt-5 lg:pt-1">
-        <div>
-          <div className="flex items-center gap-2 text-[12px] font-semibold tracking-[0.08em] text-hot">
-            <span className="relative flex size-2" aria-hidden="true">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-hot opacity-30" />
-              <span className="relative inline-flex size-2 rounded-full bg-hot" />
-            </span>
-            实时热度
-          </div>
-          <h1 className="mt-1.5 text-[24px] font-bold leading-[1.3] tracking-[-0.01em] text-ink lg:text-[26px]">{withSubject("热点榜")}</h1>
-          <p className="mt-1.5 text-[13.5px] text-ink-3">过去 {hot.windowHours} 小时，AI 圈讨论最多的 {hot.entries.length || 10} 件事</p>
-        </div>
-        {hot.computedAt && (
-          <p className="text-[12px] text-ink-4">
-            <span className="num">{monthDayTime(hot.computedAt)}</span> 更新 · 按讨论热度排序
-          </p>
-        )}
-      </header>
+      {/* The boiler room (public/media/art), its gauge reading how hot the top story runs. */}
+      <div className="pb-1 pt-4 lg:pt-1">
+        <ArtBanner
+          art="hot"
+          titleAs="h1"
+          title={withSubject("热点榜")}
+          label="热点榜"
+          note={
+            <>
+              过去 {hot.windowHours} 小时，AI 圈讨论最多的 {hot.entries.length || 10} 件事
+              {hot.computedAt && (
+                <>
+                  <br />
+                  <span className="num">{monthDayTime(hot.computedAt)}</span> 更新 · 按讨论热度排序
+                </>
+              )}
+            </>
+          }
+        >
+          {lead && <HeatGauge heat={lead.heat} className="absolute bottom-3 right-3 size-[84px] lg:bottom-4 lg:right-5 lg:size-[112px]" />}
+        </ArtBanner>
+      </div>
 
       {!lead ? (
         <div className="card rounded-sheet">

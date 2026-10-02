@@ -651,7 +651,8 @@ html[data-onboarding] body { overflow: hidden; }
 /* By night the engravings stay warm and sink into the soot, like a print under gaslight. */
 [data-theme="dark"] .ambient-backdrop-image,
 [data-theme="dark"] .category-banner-image,
-[data-theme="dark"] .report-masthead-art img {
+[data-theme="dark"] .report-masthead-art img,
+[data-theme="dark"] .empty-art {
   filter: brightness(0.55) contrast(1.1) saturate(0.95);
 }
 [data-theme="dark"] .ambient-backdrop-image { opacity: 0.22; }
@@ -732,4 +733,60 @@ html[data-onboarding] body { overflow: hidden; }
 @keyframes press-idle {
   from { transform: translateX(0) scale(1.04); }
   to { transform: translateX(-1.5%) scale(1.07); }
+}
+
+/* The idle automaton over empty states and the error page: a small framed print. */
+.empty-art {
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border-radius: var(--radius-panel);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-soft);
+}
+
+/* The hot list's pressure gauge: the needle rises from empty as the page opens, then trembles. */
+.heat-gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  filter: drop-shadow(0 3px 8px rgba(42, 31, 22, 0.35));
+}
+.heat-gauge-needle {
+  transform-origin: 50px 50px;
+  transform: rotate(var(--needle));
+  animation: needle-rise 1600ms cubic-bezier(0.34, 1.4, 0.64, 1) both, needle-tremble 2.8s ease-in-out 1600ms infinite;
+}
+.heat-gauge-label {
+  margin-top: -2px;
+  padding: 0 8px;
+  border-radius: 9999px;
+  background: #f4ecdc;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+@keyframes needle-rise {
+  from { transform: rotate(-120deg); }
+  to { transform: rotate(var(--needle)); }
+}
+@keyframes needle-tremble {
+  0%, 100% { transform: rotate(var(--needle)); }
+  50% { transform: rotate(calc(var(--needle) + 2deg)); }
+}
+
+/* Reading progress (features/art/ReadingGear.tsx): a brass line, and a gear rolling along it. */
+.reading-gear { position: fixed; inset: 0 0 auto 0; z-index: 50; pointer-events: none; }
+.reading-gear-bar {
+  height: 3px;
+  width: calc(var(--read, 0) * 100%);
+  background: linear-gradient(90deg, #9a5b1f, #d9a441 60%, #f0c56a);
+  box-shadow: 0 0 6px rgba(217, 164, 65, 0.45);
+}
+.reading-gear-wheel {
+  position: absolute;
+  top: 1px;
+  left: 0;
+  color: var(--accent);
+  transform: translateX(var(--gear-x, 0px)) rotate(var(--gear-turn, 0deg));
+  opacity: calc(min(1, var(--read, 0) * 40));
 }

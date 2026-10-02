@@ -16,6 +16,7 @@ import { Kicker } from "../../components/ui/Kicker";
 import { SourceAvatar } from "../../components/ui/SourceAvatar";
 import { Halftone } from "./Halftone";
 import { Nameplate } from "./Nameplate";
+import { ReadingGear } from "../art/ReadingGear";
 import { IssueDots } from "./IssueDots";
 import { EDITION, KIND_LABEL, MOTTO, dateLine, dateMark, headline, issueNumber, metricItems, neighbourLabel, reportPath, shortDay } from "./format";
 
@@ -375,6 +376,7 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
   const count = pages.reduce((sum, p) => sum + p.items.length, 0) + (leadStory ? 1 : 0);
   return (
     <article className="@container">
+      <ReadingGear />
       <Masthead report={report} index={index} />
       {count === 0 && report.flashes.length === 0 ? (
         <p className="py-16 text-center text-[14px] text-ink-4">本期没有入选内容。</p>

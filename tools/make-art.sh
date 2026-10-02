@@ -4,7 +4,8 @@
 #   tools/make-art.sh [SRC_DIR]     (default: ~/Desktop/eacc-art)
 #
 # Each source is listed by its file name as saved from ChatGPT; outputs go to apps/web/public/media/art/
-# at two widths (1600 and 800) except the ambient backdrop, which only needs one. Needs cwebp.
+# at two widths (1600 and 800) except the ambient backdrop, which only needs one; the newsletter's
+# header is also a JPEG, as some mail clients cannot show WebP. Needs cwebp and ffmpeg.
 set -euo pipefail
 
 SRC=${1:-"$HOME/Desktop/eacc-art"}
@@ -22,6 +23,9 @@ ART=(
   "cat-opinion|Steampunk Automaton Debate in the Grand Hall.png"
   "first-party|Steampunk Mechanical Seal Press Chamber.png"
   "hot|Steampunk Boiler Room Engraving.png"
+  "cat-tips|Sepia Steampunk Engineer’s Workshop.png"
+  "topics|Steampunk Card Catalog Library.png"
+  "empty|Sleepy Automaton in the Steampunk Workshop.png"
 )
 
 for a in "${ART[@]}"; do
@@ -33,4 +37,6 @@ for a in "${ART[@]}"; do
     cwebp -quiet -q 68 -resize 800 0 "$SRC/$file" -o "$OUT/$name-800.webp"
   fi
 done
-du -ch "$OUT"/*.webp | tail -1
+# The newsletter's header (newsletter/mail.ts): one JPEG, sized for a 600px-wide letter on retina screens.
+ffmpeg -loglevel error -y -i "$SRC/Victorian Pneumatic Mailroom Engraving.png" -vf "scale=900:-1" -q:v 7 "$OUT/subscribe-email.jpg"
+du -ch "$OUT"/* | tail -1
