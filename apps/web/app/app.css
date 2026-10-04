@@ -806,3 +806,54 @@ html[data-onboarding] body { overflow: hidden; }
   transform: translateX(var(--gear-x, 0px)) rotate(var(--gear-turn, 0deg));
   opacity: calc(min(1, var(--read, 0) * 40));
 }
+
+/* ---------------------------------------------------------------------------
+   P3 keepsakes: one-use subscription paper, a finite telegraph feed, a 404 flap.
+   These are static material rules only. Interaction clocks live in the shared
+   viewport helpers; no CSS entrance, hover animation or idle loop is added.
+   Paper/engraving use semantic tokens so brass stays legible in both themes.
+   --------------------------------------------------------------------------- */
+.subscription-ticket,
+.ticket-stub {
+  background: linear-gradient(135deg, var(--surface), var(--bg-sunk));
+  box-shadow: inset 0 0 0 3px var(--amber-soft), var(--shadow-soft);
+}
+.subscription-ticket { text-shadow: 0 1px 0 var(--surface); }
+.ticket-stub {
+  background: linear-gradient(135deg, var(--amber-soft), transparent), var(--surface);
+  border: 1px solid var(--amber);
+}
+.telegraph-paper {
+  background:
+    radial-gradient(circle, var(--bg-sunk) 2px, transparent 2.5px) 0 3px / 12px 6px repeat-x,
+    radial-gradient(circle, var(--bg-sunk) 2px, transparent 2.5px) 0 calc(100% - 3px) / 12px 6px repeat-x,
+    linear-gradient(var(--surface), var(--surface-2));
+  box-shadow: inset 0 1px var(--line-strong), inset 0 -1px var(--line-strong);
+}
+.telegraph-rollers::before,
+.telegraph-rollers::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  top: 2px;
+  bottom: 2px;
+  width: 8px;
+  border-radius: var(--radius-mark);
+  background: linear-gradient(90deg, var(--accent-ink), var(--amber), var(--accent-ink));
+  pointer-events: none;
+}
+.telegraph-rollers::before { left: 2px; }
+.telegraph-rollers::after { right: 2px; }
+.not-found-board {
+  background: repeating-linear-gradient(90deg, var(--surface) 0 1ch, var(--line-strong) 1ch calc(1ch + 2px));
+  box-shadow: inset 0 0 0 3px var(--bg-sunk), var(--shadow-card);
+  font-variant-numeric: tabular-nums;
+}
+.not-found-board::after {
+  content: "";
+  position: absolute;
+  inset: 50% 3px auto;
+  height: 1px;
+  background: var(--line-strong);
+  pointer-events: none;
+}

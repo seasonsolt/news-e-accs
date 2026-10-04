@@ -13,6 +13,7 @@ import { Sparkline } from "../features/hot/Sparkline";
 import { Faces } from "../features/hot/Faces";
 import { Delta } from "../features/hot/Delta";
 import { HotHeat, HotMotion, HotRank } from "../features/hot/HotMotion";
+import { TelegraphTape } from "../features/motion/react-bits/TelegraphTape";
 
 export async function loader({ request }: { request: Request }) {
   return { hot: await loadOr404<HotResponse>("/api/site/hot", { signal: request.signal }) };
@@ -249,6 +250,8 @@ export default function HotPage() {
           {lead && <HeatGauge heat={lead.heat} className="absolute bottom-3 right-3 size-[84px] lg:bottom-4 lg:right-5 lg:size-[112px]" />}
         </ArtBanner>
       </div>
+
+      <TelegraphTape entries={hot.entries} />
 
       {!lead ? (
         <div className="card rounded-sheet">

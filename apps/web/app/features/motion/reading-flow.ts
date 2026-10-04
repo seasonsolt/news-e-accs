@@ -6,11 +6,12 @@ import { useEffect, useRef, type RefObject } from "react";
 import { useMotionAllowed } from "./preferences.ts";
 import { runFrames, useInViewOnce } from "./viewport.ts";
 
-export function animateReadingChange(element: HTMLElement, frames: Keyframe[], duration: number, delay = 0) {
+// A clipped feed may supply its stationary frame: its own printing mask is not a viewport exit.
+export function animateReadingChange(element: HTMLElement, frames: Keyframe[], duration: number, delay = 0, visibilityElement: Element = element) {
   if (!element.animate) return () => {};
   const animation = element.animate(frames, { duration, fill: "both", easing: "cubic-bezier(0.25, 1, 0.5, 1)" });
   animation.pause();
-  return runFrames(element, duration, (progress) => {
+  return runFrames(visibilityElement, duration, (progress) => {
     animation.currentTime = progress * duration;
     if (progress === 1) animation.cancel();
   }, delay);

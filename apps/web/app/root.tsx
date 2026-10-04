@@ -15,6 +15,7 @@ import { MOTION_BOOT_SCRIPT, ONBOARDING_BOOT_SCRIPT, THEME_BOOT_SCRIPT } from ".
 import { apiGet } from "./lib/api.server";
 import { useHydratedFlag } from "./lib/hydration";
 import { EmptyArt } from "./features/art/EmptyArt";
+import { NotFoundBoard } from "./features/motion/NotFoundBoard";
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/favicon.ico", sizes: "any" },
@@ -112,11 +113,12 @@ export function ErrorBoundary() {
     <div className="flex min-h-[70vh] items-center justify-center px-2 py-16">
       <div className="max-w-sm text-center">
         <EmptyArt lazy={false} className="mx-auto mb-6 w-[min(320px,85%)]" />
-        <div className="mono text-[12px] text-ink-4">{status}</div>
+        {notFound ? <NotFoundBoard /> : <div className="mono text-[12px] text-ink-4">{status}</div>}
         <h1 className="mt-1.5 text-[20px] font-bold text-ink">{notFound ? "这里没有内容" : "暂时无法加载"}</h1>
         <p className="mt-2 text-[13.5px] leading-relaxed text-ink-3">
           {notFound ? "你访问的页面不存在，或内容已不再公开。" : "服务暂时繁忙，请稍后再试。已经加载过的内容不受影响。"}
         </p>
+        {notFound && <p data-telegraph-caption="" className="mono mt-3 text-[11px] tracking-wide text-ink-4">电报未送达 · 线路上没有这一页</p>}
         <div className="mt-6 flex justify-center gap-2.5">
           <Link to="/" className={buttonClass("primary")}>
             回到精选

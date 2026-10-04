@@ -2,19 +2,23 @@
 // Just one numeric flap, no random alphabet, cycling or idle timer. The stationary final rank is
 // always underneath two clipped half-tiles; only client-side board switches activate the overlay.
 // Both halves hinge at the middle in 460ms, with a slight row stagger. Final text stays accessible.
+// An optional interaction counter flips a static error board without ever activating it at load.
 import { useEffect, useRef } from "react";
 import { useMotionAllowed } from "../preferences";
 import { runFrames, useInViewOnce } from "../viewport";
 
-export function SplitFlapText({ text, viewSwitch = false, delay = 0 }: { text: string; viewSwitch?: boolean; delay?: number }) {
+export function SplitFlapText({ text, viewSwitch = false, delay = 0, trigger }: { text: string; viewSwitch?: boolean; delay?: number; trigger?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
   const top = useRef<HTMLSpanElement>(null);
   const bottom = useRef<HTMLSpanElement>(null);
   const played = useRef(false);
+  const lastTrigger = useRef(trigger);
   const allowed = useMotionAllowed();
   const seen = useInViewOnce(ref, { enabled: allowed && viewSwitch });
   useEffect(() => {
-    if (!allowed || !seen || !ref.current || played.current) return;
+    const interacted = trigger !== lastTrigger.current;
+    lastTrigger.current = trigger;
+    if (!allowed || !ref.current || (!interacted && (!seen || played.current))) return;
     played.current = true;
     return runFrames(ref.current, 460, (progress) => {
       if (top.current) top.current.style.transform = `rotateX(${-90 * Math.min(1, progress * 2)}deg)`;
@@ -27,7 +31,7 @@ export function SplitFlapText({ text, viewSwitch = false, delay = 0 }: { text: s
         if (bottom.current) bottom.current.style.opacity = "1";
       }
     }, delay);
-  }, [allowed, seen, delay]);
+  }, [allowed, seen, delay, trigger]);
   return (
     <span ref={ref} className="relative inline-block [perspective:240px]">
       {text}

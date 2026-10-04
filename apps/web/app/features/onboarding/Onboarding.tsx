@@ -14,6 +14,7 @@ import { BrassSheen } from "../motion/BrassSheen";
 import { DecryptedText } from "../motion/react-bits/DecryptedText";
 import { Magnet } from "../motion/react-bits/Magnet";
 import { ClickSpark } from "../motion/react-bits/ClickSpark";
+import { TearTicket } from "../motion/react-bits/TearTicket";
 
 const MANIFESTO: Array<[string, string]> = [
   ["加速是默认值", "算力、能源、模型能力都在复利增长。我们记录它，而不是害怕它。"],
@@ -160,9 +161,12 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
             {toNews("先去看看今天的新闻", true)}
           </Notice>
         ) : phase.kind === "confirmed" ? (
-          <Notice title="订阅成功" body="每天早上 8 点，日报会准时出现在你的邮箱，每一封信的末尾都可以一键退订。用 Gmail 的话，第一封日报如果在「推广」里，把它拖到「主要」，以后就都在收件箱最前面了。">
-            {toNews("去看今天的新闻", true)}
-          </Notice>
+          <>
+            <Notice title="订阅成功" body="每天早上 8 点，日报会准时出现在你的邮箱，每一封信的末尾都可以一键退订。用 Gmail 的话，第一封日报如果在「推广」里，把它拖到「主要」，以后就都在收件箱最前面了。">
+              {toNews("去看今天的新闻", true)}
+            </Notice>
+            <TearTicket date={new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())} />
+          </>
         ) : confirming ? (
           <div className="flex w-full max-w-md flex-col items-center gap-4">
             <p className="text-[17px] font-medium text-[#f6ead2]/92 [text-shadow:0_1px_12px_rgba(0,0,0,0.6)]">最后一步：确认订阅 {SITE.name} 日报。</p>

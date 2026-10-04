@@ -3,6 +3,9 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { runInNewContext } from "node:vm";
+import { createElement, type ComponentType } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { createServer } from "vite";
 import { parseHTML } from "linkedom";
 import { SITE } from "@aihot/industry/site";
 import { startMotionFixture } from "./motion-fixture.ts";
@@ -58,6 +61,64 @@ test("SSR motion text occurs exactly once in score cells, ranks, titles and kick
   }
 });
 
+test("subscription ticket SSR has one final stamp, issue time and operable stub", async () => {
+  // The confirmed branch is client-only by design. Render the real component directly through
+  // Vite's TSX loader, rather than adding a production route or a fake confirmation to SSR.
+  const server = await createServer({ configFile: false, root: new URL("../", import.meta.url).pathname, server: { middlewareMode: true }, appType: "custom" });
+  try {
+    const { TearTicket } = await server.ssrLoadModule("/app/features/motion/react-bits/TearTicket.tsx") as { TearTicket: ComponentType<{ date: string }> };
+    const { document } = parseHTML(renderToStaticMarkup(createElement(TearTicket, { date: "2026-10-04" })));
+    const ticket = document.querySelector("[data-subscription-ticket]")!;
+    for (const text of ["e/acc 日报 · 订阅凭证", "每天 08:00", "2026-10-04", "撕下票根"]) assert.equal(ticket.textContent?.split(text).length, 2);
+    assert.equal(ticket.querySelector("time")?.getAttribute("dateTime"), "2026-10-04");
+    assert.equal(ticket.querySelector("button")?.getAttribute("aria-label"), "撕下票根");
+    assert.equal(ticket.querySelector("button")?.hasAttribute("disabled"), false);
+    assert.equal(ticket.querySelector("[aria-hidden=true]")?.textContent, "");
+    assert.equal(ticket.querySelector("[tabindex]"), null);
+    assert.equal(ticket.querySelector("[style]"), null);
+    assert.equal(ticket.hasAttribute("data-torn"), false);
+  } finally { await server.close(); }
+});
+
+test("telegraph tape SSR has exactly the first five final headlines, linked once each", async () => {
+  const { document } = parseHTML(await html("/hot"));
+  const tape = document.querySelector("[data-telegraph-tape]")!;
+  const links = tape.querySelectorAll("a");
+  assert.equal(links.length, 5);
+  links.forEach((link, i) => {
+    assert.equal(link.textContent, `热点事件 ${i}`);
+    assert.equal(tape.textContent?.split(`热点事件 ${i}`).length, 2);
+    assert.equal(link.getAttribute("href"), `/story/motion-story-${i}`);
+  });
+  assert.equal(tape.querySelector("button")?.getAttribute("aria-label"), "重播热点电报");
+  assert.equal(tape.textContent?.split("重播").length, 2);
+  assert.equal(tape.querySelector("[tabindex], [style]"), null);
+  assert.ok(tape.querySelector(".overflow-x-auto"));
+});
+
+test("404 flap and caption are final and singular; other errors have neither egg", async () => {
+  for (const [path, status] of [["/items/missing", 404], ["/items/broken", 503]] as const) {
+    const response = await fetch(fixture.origin + path);
+    assert.equal(response.status, status);
+    const { document } = parseHTML(await response.text());
+    const board = document.querySelector(".not-found-board");
+    const caption = document.querySelector("[data-telegraph-caption]");
+    if (status === 404) {
+      assert.equal(board?.tagName, "BUTTON");
+      assert.equal(board?.textContent, "404");
+      assert.equal(board?.getAttribute("aria-label"), "翻动 404 状态牌");
+      assert.equal(board?.querySelectorAll("[aria-hidden=true]").length, 2);
+      assert.equal(board?.querySelector("[style]"), null);
+      assert.equal(caption?.textContent, "电报未送达 · 线路上没有这一页");
+      assert.equal(caption?.parentElement?.textContent?.split(caption.textContent).length, 2);
+    } else {
+      assert.equal(board, null);
+      assert.equal(caption, null);
+      assert.ok(document.querySelector("#main")?.textContent?.includes("暂时无法加载"));
+    }
+  }
+});
+
 test("motion preference is applied in the head before styles and survives storage denial", async () => {
   const body = await html("/more");
   const boot = [...body.matchAll(/<script>(.*?)<\/script>/gs)].map((match) => match[1]!).find((script) => script.includes("eacc-reduce-motion"));
@@ -78,12 +139,13 @@ test("finite tweens settle and release frames on finish, viewport exit and hidde
   const visibility = new Set<() => void>();
   let id = 0;
   let disconnected = 0;
+  const observed: Element[] = [];
   let hidden = false;
   let visible = true;
   let intersect: ((entries: Array<{ isIntersecting: boolean }>) => void) | undefined;
   class Observer {
     constructor(callback: typeof intersect) { intersect = callback; }
-    observe() {}
+    observe(element: Element) { observed.push(element); }
     disconnect() { disconnected++; }
   }
   const globals: Record<string, unknown> = {
@@ -134,7 +196,9 @@ test("finite tweens settle and release frames on finish, viewport exit and hidde
   let cancelled = false;
   const animation = { currentTime: 0, pause() { paused = true; }, cancel() { cancelled = true; } };
   const target = Object.assign(element, { style: { maskImage: "", maskSize: "" }, animate: () => animation }) as unknown as HTMLElement;
-  animateReadingChange(target, [{ transform: "translateY(7px)" }, { transform: "none" }], 420);
+  const stationaryFrame = { getBoundingClientRect: element.getBoundingClientRect } as Element;
+  animateReadingChange(target, [{ transform: "translateY(7px)" }, { transform: "none" }], 420, 0, stationaryFrame);
+  assert.equal(observed.at(-1), stationaryFrame);
   assert.equal(paused, true);
   step(800); step(1010);
   assert.equal(animation.currentTime, 210);

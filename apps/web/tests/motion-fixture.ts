@@ -55,6 +55,18 @@ export async function startMotionFixture() {
     const path = url.pathname;
     res.setHeader("Content-Type", "application/json");
     if (path === "/api/site/meta") return res.end(JSON.stringify({ changelogVersion: null }));
+    // Confirmation QA stays on this synthetic API; no subscriber or mailer exists here.
+    if (path === "/api/site/newsletter/confirm" && req.method === "POST") {
+      let body = "";
+      req.on("data", (chunk) => { body += String(chunk); });
+      req.on("end", () => {
+        const accepted = body === JSON.stringify({ token: "motion-fixture-confirm" });
+        res.statusCode = accepted ? 200 : 400;
+        res.end(JSON.stringify(accepted ? { ok: true } : { detail: "仅接受本地测试凭证。" }));
+      });
+      return;
+    }
+    if (path === "/api/site/items/broken") { res.statusCode = 500; return res.end("{}"); }
     if (path === "/api/site/motion-test") { phase++; return res.end(JSON.stringify({ phase })); }
     if (path === "/api/site/hot") return res.end(JSON.stringify(hot(phase)));
     if (path === "/api/site/timeline") {
