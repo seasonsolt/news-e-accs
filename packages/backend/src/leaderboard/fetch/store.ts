@@ -86,7 +86,7 @@ function firstPerConfiguration(rows: ParsedRow[]): ParsedRow[] {
   });
 }
 
-export async function resolveRows(result: FetchResult, dryRun = false): Promise<{ rows: ResolvedRow[]; newModels: Array<{ id: string; slug: string; name: string }> }> {
+export async function resolveRows(result: FetchResult, dryRun = false): Promise<{ rows: ResolvedRow[]; newModels: Array<{ id: string; slug: string; name: string }>; renamedModels: Array<{ id: string; slug: string; from: string; to: string }> }> {
   const resolver = await new IdentityResolver(result.sourceKey, dryRun).load();
   const withIds: Array<ParsedRow & { modelId: string }> = [];
   for (const r of withSourceRanks(firstPerConfiguration(result.rows))) {
@@ -96,7 +96,7 @@ export async function resolveRows(result: FetchResult, dryRun = false): Promise<
   const ids = [...new Set(withIds.map((r) => r.modelId))];
   const slugs = new Map((await sql<{ id: string; slug: string }[]>`SELECT id, slug FROM lb_models WHERE id IN ${sql(ids.length ? ids : [""])}`).map((m) => [m.id, m.slug]));
   for (const m of resolver.newModels) slugs.set(m.id, m.slug);
-  return { rows: selectRepresentatives(withIds, slugs), newModels: resolver.newModels };
+  return { rows: selectRepresentatives(withIds, slugs), newModels: resolver.newModels, renamedModels: resolver.renamedModels };
 }
 
 function contentHash(rows: ResolvedRow[]): string {
@@ -106,15 +106,15 @@ function contentHash(rows: ResolvedRow[]): string {
   return sha256(stableJson(canon));
 }
 
-export async function storeSnapshot(result: FetchResult): Promise<{ snapshotId: string; changed: boolean; rows: number; selected: number; newModels: number }> {
-  const { rows, newModels } = await resolveRows(result);
+export async function storeSnapshot(result: FetchResult): Promise<{ snapshotId: string; changed: boolean; rows: number; selected: number; newModels: number; renamedModels: number }> {
+  const { rows, newModels, renamedModels } = await resolveRows(result);
   const hash = contentHash(rows);
   const now = new Date();
   const [latest] = await sql<{ id: string; content_hash: string; metadata: Record<string, unknown> }[]>`
     SELECT id, content_hash, metadata FROM lb_snapshots WHERE source_key = ${result.sourceKey} ORDER BY fetched_at DESC LIMIT 1`;
   if (latest && latest.content_hash === hash) {
     await sql`UPDATE lb_snapshots SET metadata = metadata || ${sql.json({ lastSeenAt: now.toISOString() })} WHERE id = ${latest.id}`;
-    return { snapshotId: latest.id, changed: false, rows: rows.length, selected: rows.filter((r) => r.selected).length, newModels: newModels.length };
+    return { snapshotId: latest.id, changed: false, rows: rows.length, selected: rows.filter((r) => r.selected).length, newModels: newModels.length, renamedModels: renamedModels.length };
   }
   const id = createId();
   const selected = rows.filter((r) => r.selected);
@@ -127,6 +127,7 @@ export async function storeSnapshot(result: FetchResult): Promise<{ snapshotId: 
     configurationRecordCount: rows.length,
     metricModelCounts: [...new Set(selected.map((r) => r.metricKey))].map((m) => `${m}:${selected.filter((r) => r.metricKey === m).length}`).join(","),
     newModelCount: newModels.length,
+    renamedModelCount: renamedModels.length,
   };
   await sql.begin(async (tx) => {
     await tx`
@@ -160,5 +161,5 @@ export async function storeSnapshot(result: FetchResult): Promise<{ snapshotId: 
       await tx`INSERT INTO lb_scores ${tx(chunk as never)}`;
     }
   });
-  return { snapshotId: id, changed: true, rows: rows.length, selected: selected.length, newModels: newModels.length };
+  return { snapshotId: id, changed: true, rows: rows.length, selected: selected.length, newModels: newModels.length, renamedModels: renamedModels.length };
 }

@@ -17,6 +17,7 @@ export interface SourceState {
   changed?: boolean;
   rows?: number;
   newModels?: number;
+  renamedModels?: number;
   error?: string;
 }
 
@@ -58,7 +59,7 @@ export async function fetchSources(opts: { keys?: string[]; force?: boolean } = 
           if (problem) throw new Error(problem);
           const s = await storeSnapshot(r);
           const at = new Date().toISOString();
-          states[r.sourceKey] = { ok: true, at, lastOkAt: at, changed: s.changed, rows: s.rows, newModels: s.newModels };
+          states[r.sourceKey] = { ok: true, at, lastOkAt: at, changed: s.changed, rows: s.rows, newModels: s.newModels, renamedModels: s.renamedModels };
         } catch (e) {
           fail(r.sourceKey, (e as Error).message);
         }
