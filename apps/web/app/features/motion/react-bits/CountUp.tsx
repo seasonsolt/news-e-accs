@@ -6,12 +6,12 @@ import { useEffect, useRef } from "react";
 import { useMotionAllowed } from "../preferences";
 import { runFrames, useInViewOnce } from "../viewport";
 
-export function CountUp({ value, viewSwitch = false, delay = 0 }: { value: number; viewSwitch?: boolean; delay?: number }) {
+export function CountUp({ value, from = 0, decimals = 1, viewSwitch = false, animateOnReveal = true, delay = 0 }: { value: number; from?: number; decimals?: number; viewSwitch?: boolean; animateOnReveal?: boolean; delay?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
   const played = useRef(false);
   const allowed = useMotionAllowed();
-  const seen = useInViewOnce(ref, { enabled: allowed, skipInitial: !viewSwitch });
-  const final = value.toFixed(1);
+  const seen = useInViewOnce(ref, { enabled: allowed && (viewSwitch || animateOnReveal), skipInitial: !viewSwitch });
+  const final = value.toFixed(decimals);
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
@@ -19,8 +19,8 @@ export function CountUp({ value, viewSwitch = false, delay = 0 }: { value: numbe
     if (!allowed || !seen || !ref.current || played.current) return;
     played.current = true;
     return runFrames(ref.current, 600, (progress) => {
-      element.textContent = (value * (1 - (1 - progress) ** 3)).toFixed(1);
+      element.textContent = (from + (value - from) * (1 - (1 - progress) ** 3)).toFixed(decimals);
     }, delay);
-  }, [allowed, seen, value, final, delay]);
+  }, [allowed, seen, value, from, decimals, final, delay]);
   return <span ref={ref} className="inline-block text-right tabular-nums" style={{ minWidth: `${final.length}ch` }}>{final}</span>;
 }

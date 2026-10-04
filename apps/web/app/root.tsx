@@ -14,6 +14,7 @@ import { buttonClass } from "./components/ui/Controls";
 import { MOTION_BOOT_SCRIPT, ONBOARDING_BOOT_SCRIPT, THEME_BOOT_SCRIPT } from "./lib/local-state";
 import { apiGet } from "./lib/api.server";
 import { useHydratedFlag } from "./lib/hydration";
+import { EmptyArt } from "./features/art/EmptyArt";
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/favicon.ico", sizes: "any" },
@@ -110,7 +111,7 @@ export function ErrorBoundary() {
   const body = (
     <div className="flex min-h-[70vh] items-center justify-center px-2 py-16">
       <div className="max-w-sm text-center">
-        <img src="/media/art/empty-800.webp" alt="" decoding="async" className="empty-art mx-auto mb-6 w-[min(320px,85%)]" />
+        <EmptyArt lazy={false} className="mx-auto mb-6 w-[min(320px,85%)]" />
         <div className="mono text-[12px] text-ink-4">{status}</div>
         <h1 className="mt-1.5 text-[20px] font-bold text-ink">{notFound ? "这里没有内容" : "暂时无法加载"}</h1>
         <p className="mt-2 text-[13.5px] leading-relaxed text-ink-3">

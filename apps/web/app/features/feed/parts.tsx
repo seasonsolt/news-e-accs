@@ -5,6 +5,7 @@ import { IconBookmark } from "../../components/icons";
 import { SourceAvatar } from "../../components/ui/SourceAvatar";
 import { Lightbox } from "../../components/ui/Lightbox";
 import { toggleStar, useIsStarred } from "../../lib/local-state";
+import { ClickSpark } from "../motion/react-bits/ClickSpark";
 
 /** "IT之家（RSS）" or, for X, avatar + display name + @handle. */
 export function SourceLine({ item, avatarSize = 16, className = "" }: { item: Pick<FeedItemSummary, "source" | "x" | "channel">; avatarSize?: number; className?: string }) {
@@ -74,9 +75,11 @@ export function StarButton({ item, size = 26, className = "" }: { item: Pick<Fee
       style={{ width: size, height: size }}
       className={`relative z-10 inline-flex shrink-0 items-center justify-center rounded-control transition-colors duration-150 ${on ? "text-accent" : "text-ink-4 hover:bg-bg-sunk hover:text-ink-2"} ${className}`}
     >
-      <span key={pulse} className={`flex ${pulse ? "anim-bump" : ""}`}>
-        <IconBookmark size={Math.round(size * 0.6)} filled={on} />
-      </span>
+      <ClickSpark trigger={pulse} className="size-full">
+        <span key={pulse} className={`flex ${pulse ? "anim-bump" : ""}`}>
+          <IconBookmark size={Math.round(size * 0.6)} filled={on} />
+        </span>
+      </ClickSpark>
     </button>
   );
 }

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { IconChevronRight } from "../icons";
+import { EmptyArt } from "../../features/art/EmptyArt";
 
 /**
  * The reading template, one of the site's two page widths (the other is the full-width feeds and
@@ -76,7 +77,7 @@ export function MoreLink({ to, children }: { to: string; children: ReactNode }) 
 export function EmptyState({ title, children, action }: { title: ReactNode; children?: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center px-6 py-12 text-center">
-      <img src="/media/art/empty-800.webp" alt="" loading="lazy" decoding="async" className="empty-art mb-5 w-[min(300px,80%)]" />
+      <EmptyArt className="mb-5 w-[min(300px,80%)]" />
       <div className="text-[15px] font-semibold text-ink-2">{title}</div>
       {children && <p className="mt-1.5 max-w-sm text-[13px] leading-relaxed text-ink-4">{children}</p>}
       {action && <div className="mt-4">{action}</div>}

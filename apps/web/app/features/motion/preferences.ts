@@ -3,7 +3,7 @@
 // The pre-paint script owns the first frame; storage events keep other tabs in step, and observing
 // the root attribute also catches changes made while localStorage is unavailable.
 import { useSyncExternalStore } from "react";
-import { KEYS } from "../../lib/local-state";
+import { KEYS } from "../../lib/local-state.ts";
 
 const listeners = new Set<() => void>();
 let media: MediaQueryList | null = null;

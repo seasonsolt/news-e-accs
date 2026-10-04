@@ -12,6 +12,7 @@ import { EmptyState } from "../../components/ui/Page";
 import { beijingDate, beijingTime, beijingWeekday } from "../../lib/format";
 import { markRead, useReadSet } from "../../lib/local-state";
 import { isHydrated, isReload, markHydrated, readSnapshot, restoreAnchor, saveSnapshot } from "./restore";
+import { addedCardKeys, useCardArrival } from "../motion/reading-flow";
 
 const AUTO_BATCHES = 3;
 
@@ -89,9 +90,12 @@ export function DayHeader({ day, today, count, collapsed, onToggle }: { day: str
  * One dated slot: the time, the rail (desktop) and the item. As on the original timeline, the rail is a
  * 1px line from this node's centre to the next one's, so the day reads as one continuous thread.
  */
-export function TimelineSlot({ at, children, fresh = false, delay = 0, dataKey }: { at: string; children: React.ReactNode; fresh?: boolean; delay?: number; dataKey?: string }) {
+export function TimelineSlot({ at, children, fresh = false, arrived = false, delay = 0, dataKey }: { at: string; children: React.ReactNode; fresh?: boolean; arrived?: boolean; delay?: number; dataKey?: string }) {
+  const ref = useRef<HTMLLIElement>(null);
+  useCardArrival(ref, arrived && !fresh, delay);
   return (
     <li
+      ref={ref}
       data-card-key={dataKey}
       className={`group/slot grid grid-cols-[48px_minmax(0,1fr)] border-b border-line-soft py-3.5 last:border-b-0 lg:grid-cols-[64px_22px_minmax(0,1fr)] lg:border-b-0 lg:py-0 lg:pb-3 lg:last:pb-0 ${fresh ? "animate-fade-up" : ""}`}
       style={fresh ? { animationDelay: `${delay}ms` } : undefined}
@@ -127,6 +131,7 @@ export function Timeline({ initial, filters }: { initial: TimelineResponse; filt
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [freshKeys, setFreshKeys] = useState<Set<string>>(() => new Set());
+  const [arrivalKind, setArrivalKind] = useState<"refresh" | "page">("refresh");
   const stateRef = useRef(state);
   stateRef.current = state;
 
@@ -135,11 +140,17 @@ export function Timeline({ initial, filters }: { initial: TimelineResponse; filt
   // filter already visited restores what that history entry had loaded and folded; a new one starts over.
   const filterKey = filterQuery(filters);
   const lastFilterKey = useRef(filterKey);
+  const lastInitial = useRef(initial);
+  const lastHistoryKey = useRef(historyKey);
   const pageRequest = useRef<AbortController | null>(null);
   useEffect(() => () => pageRequest.current?.abort(), []);
   useLayoutEffect(() => {
-    if (lastFilterKey.current !== filterKey) {
+    const responseChanged = lastInitial.current !== initial;
+    lastInitial.current = initial;
+    if (lastFilterKey.current !== filterKey || lastHistoryKey.current !== historyKey) {
       lastFilterKey.current = filterKey;
+      lastHistoryKey.current = historyKey;
+      setFreshKeys(new Set());
       pageRequest.current?.abort();
       pageRequest.current = null;
       setLoadingMore(false);
@@ -150,6 +161,14 @@ export function Timeline({ initial, filters }: { initial: TimelineResponse; filt
       } else {
         setState(fromResponse(initial));
       }
+    } else if (responseChanged) {
+      // Same history entry, new loader head: retain paged cards and animate only genuinely new keys.
+      // refreshAt is a cache deadline, not a polling timer. Nothing runs without a new response.
+      const prev = stateRef.current;
+      setArrivalKind("refresh");
+      setFreshKeys(addedCardKeys(prev.cards, initial.cards));
+      const headKeys = new Set(initial.cards.map((card) => card.key));
+      setState({ ...prev, cards: [...initial.cards, ...prev.cards.filter((card) => !headKeys.has(card.key))], dayCounts: { ...prev.dayCounts, ...initial.dayCounts } });
     }
   }, [filterKey, initial, historyKey]);
 
@@ -212,16 +231,24 @@ export function Timeline({ initial, filters }: { initial: TimelineResponse; filt
       if (res.status === 400) {
         // Cursor no longer fits: start over from the head.
         const head = await fetch(`/api/site/timeline?${key}`, { signal: controller.signal });
-        if (head.ok && current()) setState(fromResponse((await head.json()) as TimelineResponse));
+        if (head.ok && current()) {
+          const response = (await head.json()) as TimelineResponse;
+          if (!current()) return;
+          setArrivalKind("refresh");
+          setFreshKeys(addedCardKeys(stateRef.current.cards, response.cards));
+          setState(fromResponse(response));
+        }
         return;
       }
       if (!res.ok) throw new Error(String(res.status));
       const page = (await res.json()) as TimelineResponse;
       if (!current()) return;
+      // Pagination already owns a CSS rise. Keep it exactly; the new tween is for refresh arrivals.
+      setArrivalKind("page");
       setState((prev) => {
         const seen = new Set(prev.cards.map((c) => c.key));
         const added = page.cards.filter((c) => !seen.has(c.key));
-        setFreshKeys(new Set(added.map((c) => c.key)));
+        setFreshKeys(addedCardKeys(prev.cards, added));
         return {
           ...prev,
           cards: [...prev.cards, ...added],
@@ -264,8 +291,11 @@ export function Timeline({ initial, filters }: { initial: TimelineResponse; filt
     return out;
   }, [state.cards]);
 
-  const toggleDay = (day: string) =>
+  const toggleDay = (day: string) => {
+    // A collapsed slot may remount; arrival eligibility must not survive a reader's fold toggle.
+    setFreshKeys(new Set());
     setState((s) => ({ ...s, collapsed: s.collapsed.includes(day) ? s.collapsed.filter((d) => d !== day) : [...s.collapsed, day] }));
+  };
 
   let order = 0;
   return (
@@ -286,9 +316,10 @@ export function Timeline({ initial, filters }: { initial: TimelineResponse; filt
                 <ol className="lg:pt-1">
                   {cards.map((c) => {
                     const fresh = freshKeys.has(c.key);
-                    const delay = fresh ? Math.min(order++, 10) * 40 : 0;
+                    const arrived = fresh && arrivalKind === "refresh";
+                    const delay = fresh ? Math.min(order++, arrived ? 7 : 10) * (arrived ? 25 : 40) : 0;
                     return (
-                      <TimelineSlot key={c.key} dataKey={c.key} at={c.anchorAt} fresh={fresh} delay={delay}>
+                      <TimelineSlot key={c.key} dataKey={c.key} at={c.anchorAt} fresh={fresh && !arrived} arrived={arrived} delay={delay}>
                         <FeedItem item={c.item} group={c.group} filters={filters} read={readSet.has(c.item.id)} onOpen={markRead} />
                       </TimelineSlot>
                     );

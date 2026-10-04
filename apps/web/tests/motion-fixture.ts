@@ -6,6 +6,7 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { fileURLToPath } from "node:url";
 import type { LbBoardResponse, LbSourcesResponse } from "@aihot/contracts/leaderboard";
+import type { HotResponse, TimelineCard, TimelineResponse } from "@aihot/contracts/site";
 import { LEADERBOARD_BOARD_LABELS, type LeaderboardBoardKey } from "@aihot/contracts/taxonomy";
 
 const run = { id: "motion-test", methodologyVersion: "test", generatedAt: "2026-09-28T00:00:00Z", fx: null };
@@ -28,12 +29,42 @@ const sources: LbSourcesResponse = {
   ] }],
 };
 
+function card(i: number): TimelineCard {
+  const at = new Date(Date.parse(run.generatedAt) - i * 60_000).toISOString();
+  return { key: `motion-card-${i}`, anchorAt: at, group: null, item: {
+    id: `motion-item-${i}`, title: `测试报道 ${i}`, summary: `独立摘要 ${i}`, reason: null,
+    source: { name: "测试信源" }, publishedAt: at, timelineAt: at, category: "ai-models",
+    tags: [], score: 80, selected: true, channel: "news", x: null,
+  } };
+}
+
+function hot(phase: number): HotResponse {
+  const order = phase % 2 ? [0, 1, 2, 4, 3, 5, 6, 7, 8, 9] : Array.from({ length: 10 }, (_, i) => i);
+  return { computedAt: run.generatedAt, ruleVersion: "test", windowHours: 48, entries: order.map((id, i) => ({
+    rank: i + 1, story: { publicId: `motion-story-${id}`, title: `热点事件 ${id}` }, heat: 987 - id * 37 + (id === 4 ? phase * 19 : 0),
+    trend: "flat", trendPct: null, badges: [], participantCount: 5, sourceCount: 3, signalCount: 2, reportCount: 4,
+    sourceNames: ["测试信源"], latestAt: run.generatedAt, firstReportAt: run.generatedAt, representative: null,
+    participants: [], spark: [], summary: `热点摘要 ${id}`, latest: null, cover: null,
+  })) };
+}
+
 export async function startMotionFixture() {
+  let phase = 0;
   const api = createServer((req, res) => {
-    const path = new URL(req.url!, "http://test.local").pathname;
+    const url = new URL(req.url!, "http://test.local");
+    const path = url.pathname;
     res.setHeader("Content-Type", "application/json");
     if (path === "/api/site/meta") return res.end(JSON.stringify({ changelogVersion: null }));
-    if (path === "/api/site/timeline") return res.end(JSON.stringify({ filters: { channel: "all", category: null, tag: null, topic: null }, cards: [], nextCursor: null, dayCounts: [], hot: null, refreshAt: new Date(Date.now() + 60_000).toISOString(), generatedAt: run.generatedAt }));
+    if (path === "/api/site/motion-test") { phase++; return res.end(JSON.stringify({ phase })); }
+    if (path === "/api/site/hot") return res.end(JSON.stringify(hot(phase)));
+    if (path === "/api/site/timeline") {
+      const category = url.searchParams.get("category") === "ai-models" ? "ai-models" : null;
+      const page = Number(url.searchParams.get("cursor") ?? "0");
+      const cards = category ? Array.from({ length: page ? 6 : 12 }, (_, i) => card(page ? 12 + (page - 1) * 6 + i : i)) : [];
+      if (category && !page && phase) cards.unshift(card(99 + phase));
+      const response: TimelineResponse = { filters: { channel: "all", category, tag: null, topic: null }, cards, nextCursor: category && page < 3 ? String(page + 1) : null, dayCounts: {}, hot: null, refreshAt: new Date(Date.now() + 60_000).toISOString(), generatedAt: run.generatedAt };
+      return res.end(JSON.stringify(response));
+    }
     if (path.includes("/leaderboard/boards/")) return res.end(JSON.stringify(board(path.split("/").at(-1) as LeaderboardBoardKey)));
     if (path === "/api/site/leaderboard/sources") return res.end(JSON.stringify(sources));
     res.statusCode = 404;
@@ -56,7 +87,7 @@ export async function startMotionFixture() {
       if (match) { clearTimeout(timeout); resolve(`http://127.0.0.1:${match[1]}`); }
     });
   });
-  return { origin, async close() {
+  return { origin, update() { phase++; }, async close() {
     web.kill("SIGTERM");
     await once(web, "exit");
     api.closeAllConnections();

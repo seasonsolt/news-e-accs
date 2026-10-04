@@ -7,6 +7,7 @@ import { parseHTML } from "linkedom";
 import { SITE } from "@aihot/industry/site";
 import { startMotionFixture } from "./motion-fixture.ts";
 import { runFrames } from "../app/features/motion/viewport.ts";
+import { addedCardKeys, animateReadingChange, printHalftone } from "../app/features/motion/reading-flow.ts";
 
 let fixture: Awaited<ReturnType<typeof startMotionFixture>>;
 before(async () => { fixture = await startMotionFixture(); });
@@ -126,6 +127,86 @@ test("finite tweens settle and release frames on finish, viewport exit and hidde
   assert.equal(frames.size, 0);
   assert.equal(progress, 1);
   assert.equal(disconnected, 3);
+
+  // The new WAAPI clock and halftone mask share exactly the same bounded lifetime.
+  visible = true;
+  let paused = false;
+  let cancelled = false;
+  const animation = { currentTime: 0, pause() { paused = true; }, cancel() { cancelled = true; } };
+  const target = Object.assign(element, { style: { maskImage: "", maskSize: "" }, animate: () => animation }) as unknown as HTMLElement;
+  animateReadingChange(target, [{ transform: "translateY(7px)" }, { transform: "none" }], 420);
+  assert.equal(paused, true);
+  step(800); step(1010);
+  assert.equal(animation.currentTime, 210);
+  intersect?.([{ isIntersecting: false }]);
+  assert.equal(cancelled, true);
+  assert.equal(animation.currentTime, 420);
+  assert.equal(frames.size, 0);
+  printHalftone(target);
+  step(1100); step(1450);
+  assert.match(target.style.maskImage, /radial-gradient/);
+  assert.equal(target.style.maskSize, "8px 8px");
+  hidden = true;
+  for (const listener of visibility) listener();
+  assert.equal(target.style.maskImage, "");
+  assert.equal(target.style.maskSize, "");
+  assert.equal(frames.size, 0);
+  assert.equal(visibility.size, 0);
+});
+
+test("reading-flow SSR keeps each hot rank, heat, headline and feed string exactly once", async () => {
+  const { document: hot } = parseHTML(await html("/hot"));
+  const rows = hot.querySelectorAll("[data-hot-id]");
+  assert.equal(rows.length, 10);
+  rows.forEach((row, i) => {
+    const rank = row.querySelector("[data-text]")?.parentElement;
+    assert.equal(rank?.textContent, `${i < 3 ? "NO." : ""}${String(i + 1).padStart(2, "0")}`);
+    assert.equal(rank?.querySelectorAll("[aria-hidden=true]").length, 2);
+    const heat = String(987 - i * 37);
+    assert.equal(row.querySelectorAll(".inline-block.tabular-nums").length, 1);
+    assert.equal(row.querySelector(".inline-block.tabular-nums")?.textContent, heat);
+    assert.equal(row.textContent?.split(heat).length, 2);
+    assert.equal(row.querySelector("a")?.textContent, `热点事件 ${i}`);
+    assert.equal(row.textContent?.split(`热点事件 ${i}`).length, 2);
+  });
+  const { document: feed } = parseHTML(await html("/?category=ai-models"));
+  const cards = feed.querySelectorAll("[data-card-key]");
+  assert.equal(cards.length, 12);
+  cards.forEach((card, i) => {
+    assert.equal(card.querySelector("h3")?.textContent, `测试报道 ${i}`);
+    assert.equal(card.querySelector("h3")?.querySelectorAll("[aria-hidden], .sr-only").length, 0);
+    assert.equal(card.textContent?.split(`独立摘要 ${i}`).length, 2);
+    assert.doesNotMatch(card.className, /animate-fade-up/);
+    assert.equal(card.getAttribute("style"), null);
+    const star = card.querySelector("button[aria-label='收藏']");
+    assert.ok(star);
+    assert.equal(star.textContent, "");
+    const decoration = star.querySelector("span[aria-hidden=true]");
+    assert.equal(decoration?.children.length, 8);
+    assert.equal(decoration?.querySelector("[tabindex]"), null);
+  });
+});
+
+test("empty and error art have one final image, one copy of the accompanying text, no SSR mask", async () => {
+  for (const [path, status, title] of [["/", 200, "这个筛选下还没有精选内容"], ["/items/missing", 404, "这里没有内容"]] as const) {
+    const response = await fetch(fixture.origin + path);
+    assert.equal(response.status, status);
+    const { document } = parseHTML(await response.text());
+    const art = document.querySelectorAll(".empty-art");
+    assert.equal(art.length, 1);
+    assert.equal(art[0]?.getAttribute("src"), "/media/art/empty-800.webp");
+    assert.equal(art[0]?.getAttribute("aria-hidden"), "true");
+    assert.equal(art[0]?.getAttribute("style"), null);
+    assert.equal(art[0]?.parentElement?.textContent?.split(title).length, 2);
+  }
+});
+
+test("arrival eligibility excludes every existing key, including overlapping pages and refresh heads", () => {
+  const before = [{ key: "a" }, { key: "b" }];
+  assert.deepEqual([...addedCardKeys(before, [{ key: "b" }, { key: "c" }])], ["c"]);
+  assert.deepEqual([...addedCardKeys(before, [{ key: "new" }, ...before])], ["new"]);
+  assert.deepEqual([...addedCardKeys(before, [...before].reverse())], []);
+  assert.deepEqual([...addedCardKeys(before, before)], []);
 });
 
 test("source lineage keeps all final names, periods and notes in HTML", async () => {

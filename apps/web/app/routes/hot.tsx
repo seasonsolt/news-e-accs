@@ -12,6 +12,7 @@ import { IconChevronDown, IconInfo } from "../components/icons";
 import { Sparkline } from "../features/hot/Sparkline";
 import { Faces } from "../features/hot/Faces";
 import { Delta } from "../features/hot/Delta";
+import { HotHeat, HotMotion, HotRank } from "../features/hot/HotMotion";
 
 export async function loader({ request }: { request: Request }) {
   return { hot: await loadOr404<HotResponse>("/api/site/hot", { signal: request.signal }) };
@@ -107,7 +108,7 @@ function Lead({ e }: { e: HotEntryView }) {
   return (
     <article className="card card-hover group relative flex flex-col overflow-hidden p-5 sm:p-6">
       <div className="flex items-center gap-2.5">
-        <span className={`mono text-[12px] font-bold tracking-[0.16em] ${rankColor(e.rank)}`}>NO.{pad(e.rank)}</span>
+        <span className={`mono text-[12px] font-bold tracking-[0.16em] ${rankColor(e.rank)}`}><HotRank entry={e} prefix="NO." /></span>
         <Badges e={e} />
         <Delta trend={e.trend} pct={e.trendPct} className="ml-auto" />
       </div>
@@ -144,7 +145,7 @@ function Lead({ e }: { e: HotEntryView }) {
         <div className="flex w-full shrink-0 items-end justify-between gap-5 sm:ml-auto sm:w-auto sm:justify-end">
           {!panel && <Sparkline values={e.spark} area className="h-10 w-[140px] text-accent" />}
           <div className="text-right">
-            <div className="mono text-[34px] font-semibold leading-none tracking-[-0.03em] text-ink">{Math.round(e.heat)}</div>
+            <div className="mono text-[34px] font-semibold leading-none tracking-[-0.03em] text-ink"><HotHeat entry={e} /></div>
             <div className="mt-1 text-[11.5px] text-ink-4">热度指数</div>
           </div>
         </div>
@@ -158,7 +159,7 @@ function Runner({ e }: { e: HotEntryView }) {
   return (
     <article className="card card-hover group relative flex flex-col px-5 py-4">
       <div className="flex items-center gap-2.5">
-        <span className={`mono text-[12px] font-bold tracking-[0.16em] ${rankColor(e.rank)}`}>NO.{pad(e.rank)}</span>
+        <span className={`mono text-[12px] font-bold tracking-[0.16em] ${rankColor(e.rank)}`}><HotRank entry={e} prefix="NO." /></span>
         <Badges e={e} />
         <Delta trend={e.trend} pct={e.trendPct} className="ml-auto" />
       </div>
@@ -176,7 +177,7 @@ function Runner({ e }: { e: HotEntryView }) {
         </div>
         <div className="flex items-end gap-3">
           <Sparkline values={e.spark} className="h-7 w-[92px] text-accent" />
-          <span className="mono text-[24px] font-semibold leading-none tracking-[-0.02em] text-ink">{Math.round(e.heat)}</span>
+          <span className="mono text-[24px] font-semibold leading-none tracking-[-0.02em] text-ink"><HotHeat entry={e} /></span>
         </div>
       </div>
     </article>
@@ -186,9 +187,9 @@ function Runner({ e }: { e: HotEntryView }) {
 /** No. 4–10: a row each, with a line of the digest, faces, the day of heat and the index. */
 function Row({ e }: { e: HotEntryView }) {
   return (
-    <li className="group relative grid grid-cols-[30px_minmax(0,1fr)] items-start gap-x-3 px-4 py-3 transition-colors hover:bg-bg-sunk/70 sm:px-5 lg:grid-cols-[44px_minmax(0,1fr)_auto_104px_76px] lg:items-center lg:gap-x-6 lg:px-6 lg:py-3.5 dark:hover:bg-bg-muted/40">
+    <li data-hot-id={e.story.publicId} className="group relative grid grid-cols-[30px_minmax(0,1fr)] items-start gap-x-3 px-4 py-3 transition-colors hover:bg-bg-sunk/70 sm:px-5 lg:grid-cols-[44px_minmax(0,1fr)_auto_104px_76px] lg:items-center lg:gap-x-6 lg:px-6 lg:py-3.5 dark:hover:bg-bg-muted/40">
       <span className={`mono text-[16px] font-semibold leading-[24px] lg:text-[17px] ${rankColor(e.rank)}`} aria-label={`热度排名第 ${e.rank} 位`}>
-        {pad(e.rank)}
+        <HotRank entry={e} />
       </span>
       <div className="min-w-0">
         <h3 className="text-[15px] font-[650] leading-[1.55] text-ink">
@@ -200,14 +201,10 @@ function Row({ e }: { e: HotEntryView }) {
           )}
         </h3>
         {e.summary && <p className="mt-0.5 line-clamp-2 text-[13px] leading-[1.65] text-ink-4 lg:line-clamp-1">{e.summary}</p>}
-        <div className="mt-2 flex items-center gap-2.5 lg:hidden">
+        <div className="mt-2 flex items-center gap-2.5 pr-24 lg:hidden">
           <Faces participants={e.participants} total={e.participantCount} size={20} />
           <span className="text-[12px] text-ink-4">
             <span className="num">{e.sourceCount}</span> 个来源
-          </span>
-          <span className="ml-auto flex items-center gap-2">
-            <span className="mono text-[17px] font-semibold leading-none text-ink">{Math.round(e.heat)}</span>
-            <Delta trend={e.trend} pct={e.trendPct} />
           </span>
         </div>
       </div>
@@ -215,8 +212,8 @@ function Row({ e }: { e: HotEntryView }) {
         <Faces participants={e.participants} total={e.participantCount} size={20} />
       </div>
       <Sparkline values={e.spark} className="hidden h-7 w-[104px] text-accent lg:block" />
-      <div className="hidden flex-col items-end gap-1 lg:flex">
-        <span className="mono text-[20px] font-semibold leading-none tracking-[-0.02em] text-ink">{Math.round(e.heat)}</span>
+      <div className="absolute bottom-3 right-4 flex items-center gap-2 sm:right-5 lg:static lg:flex-col lg:items-end lg:gap-1">
+        <span className="mono text-[17px] font-semibold leading-none tracking-[-0.02em] text-ink lg:text-[20px]"><HotHeat entry={e} /></span>
         <Delta trend={e.trend} pct={e.trendPct} />
       </div>
     </li>
@@ -229,7 +226,7 @@ export default function HotPage() {
   const runners = rest.slice(0, 2);
   const others = rest.slice(2);
   return (
-    <div className="pb-10">
+    <HotMotion entries={hot.entries}><div className="pb-10">
       {/* The boiler room (public/media/art), its gauge reading how hot the top story runs. */}
       <div className="pb-1 pt-4 lg:pt-1">
         <ArtBanner
@@ -260,11 +257,11 @@ export default function HotPage() {
       ) : (
         <>
           <section aria-label="热度前三" className="grid gap-3 lg:grid-cols-12 lg:gap-4">
-            <div className="grid lg:col-span-7 lg:row-span-2 xl:col-span-8">
+            <div data-hot-id={lead.story.publicId} className="grid lg:col-span-7 lg:row-span-2 xl:col-span-8">
               <Lead e={lead} />
             </div>
             {runners.map((e) => (
-              <div key={e.story.publicId} className="grid lg:col-span-5 xl:col-span-4">
+              <div key={e.story.publicId} data-hot-id={e.story.publicId} className="grid lg:col-span-5 xl:col-span-4">
                 <Runner e={e} />
               </div>
             ))}
@@ -316,6 +313,6 @@ export default function HotPage() {
           </dl>
         </div>
       </details>
-    </div>
+    </div></HotMotion>
   );
 }
