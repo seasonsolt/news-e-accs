@@ -39,6 +39,71 @@ test("onboarding keeps real text and mobile exposes an operable motion toggle", 
   assert.match(await html("/more"), /aria-pressed="false"[^>]*>[\s\S]*?减少动效/);
 });
 
+test("onboarding SSR has a poster layer but no film request trigger, even on /subscribe", async () => {
+  for (const path of ["/", "/subscribe"]) {
+    const { document } = parseHTML(await html(path));
+    const video = document.querySelector("video")!;
+    assert.ok(video);
+    assert.equal(video.hasAttribute("src"), false);
+    assert.equal(video.hasAttribute("poster"), false);
+    assert.equal(video.hasAttribute("autoplay"), false);
+    assert.equal(video.getAttribute("preload"), "none");
+    assert.equal(video.querySelector("source[src]"), null);
+    assert.ok(video.previousElementSibling?.classList.contains("onboarding-poster"));
+    assert.equal(document.querySelector('link[href$=".mp4"]'), null);
+    for (const attr of ["loop", "muted", "playsInline"]) assert.ok(video.hasAttribute(attr));
+  }
+});
+
+test("onboarding boot preloads only the first-visit poster, before styles and hydration", async () => {
+  const body = await html("/");
+  const boot = [...body.matchAll(/<script>(.*?)<\/script>/gs)].map((match) => match[1]!).find((script) => script.includes("eacc-onboarded"));
+  assert.ok(boot);
+  assert.ok(body.indexOf(boot) < body.indexOf('rel="stylesheet"'));
+  const reader = "Mozilla/5.0 Mobile Safari/537.36";
+  for (const [pathname, userAgent, preference, expected] of [
+    ["/", reader, null, true],
+    ["/", reader, "2026-10-01T00:00:00Z", false],
+    ["/", reader, "denied", false],
+    ...["Googlebot", "crawler", "spider", "slurp", "preview", "Lighthouse", "HeadlessChrome"].map((ua) => ["/", ua, null, false]),
+    ...["/subscribe", "/more", "/hot", "/items/test"].map((path) => [path, reader, null, false]),
+  ] as Array<[string, string, string | null, boolean]>) {
+    const attributes = new Map<string, string>();
+    const links: Array<Record<string, string>> = [];
+    runInNewContext(boot, {
+      location: { pathname }, navigator: { userAgent },
+      localStorage: { getItem(key: string) {
+        assert.equal(key, "eacc-onboarded");
+        if (preference === "denied") throw new Error("denied");
+        return preference;
+      } },
+      document: {
+        documentElement: { setAttribute(key: string, value: string) { attributes.set(key, value); } },
+        createElement(tag: string) {
+          assert.equal(tag, "link");
+          const link: Record<string, unknown> = {};
+          link.setAttribute = (key: string, value: string) => { link[key] = value; };
+          return link;
+        },
+        head: { appendChild(link: Record<string, string>) {
+          // Discovery must be coupled to showing the overlay, never an unconditional head preload.
+          assert.ok(attributes.has("data-onboarding"));
+          links.push(link);
+        } },
+      },
+    });
+    assert.equal(attributes.has("data-onboarding"), expected, `${pathname}: ${userAgent}: ${preference}`);
+    assert.equal(links.length, expected ? 2 : 0);
+    if (expected) links.forEach((link, i) => {
+      assert.equal(link.rel, "preload");
+      assert.equal(link.as, "image");
+      assert.equal(link.fetchpriority, "high");
+      assert.equal(link.media, `(orientation: ${i ? "landscape" : "portrait"})`);
+      assert.equal(link.href, `/media/hero-${i ? "16x9" : "9x16"}-poster.jpg`);
+    });
+  }
+});
+
 test("SSR motion text occurs exactly once in score cells, ranks, titles and kickers", async () => {
   const { document: board } = parseHTML(await html("/leaderboard"));
   const rows = board.querySelectorAll("tbody tr[data-slug]");

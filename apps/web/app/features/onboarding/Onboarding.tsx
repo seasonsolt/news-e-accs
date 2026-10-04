@@ -47,27 +47,65 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
   const manifesto = useRef<HTMLDialogElement>(null);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [email, setEmail] = useState("");
-  // Whether this is on screen; until then the film has no poster either, so nothing is downloaded.
+  // Visibility still gates the wordmark sheen; CSS owns the poster's pre-hydration first frame.
   const [shown, setShown] = useState(mode === "page");
 
-  // The film and its poster load only while this is on screen (preload="none"): a reader who already
-  // chose never downloads them. React renders `muted` as a property, not the attribute autoplay policies look at, so
-  // the loop is started by hand, and again when a tab opened in the background comes forward.
+  // No film URL in SSR: even preload="none" can fetch metadata, and play() competes with the LCP
+  // poster. Wait for window load, decode the matching poster and give it a paint, then start at idle.
+  // Returning readers and reduced motion never attach a source. React renders muted as a property,
+  // so start the loop by hand, and resume only while the card and the tab are both visible.
   useEffect(() => {
     const v = video.current;
     if (!v) return;
     const visible = () => mode === "page" || document.documentElement.hasAttribute("data-onboarding");
+    const canPlay = () => visible() && motionAllowed && document.visibilityState === "visible";
+    let loaded = document.readyState === "complete";
+    let pending = false;
+    let cancelled = false;
+    let frame = 0;
+    let idle = 0;
+    let timer = 0;
     v.muted = true;
+    const start = () => {
+      pending = false;
+      if (cancelled || !canPlay()) return;
+      if (!v.hasAttribute("src")) v.src = window.matchMedia("(orientation: portrait)").matches ? "/media/hero-9x16.mp4" : "/media/hero-16x9.mp4";
+      void v.play().catch(() => {});
+    };
+    const schedule = () => {
+      if (!loaded || pending) return;
+      pending = true;
+      const poster = new Image();
+      poster.src = window.matchMedia("(orientation: portrait)").matches ? "/media/hero-9x16-poster.jpg" : "/media/hero-16x9-poster.jpg";
+      void poster.decode().catch(() => {}).then(() => {
+        if (cancelled) return;
+        // Two frames put an actual paint between image decoding and even an immediately idle page.
+        frame = requestAnimationFrame(() => {
+          frame = requestAnimationFrame(() => {
+            if (window.requestIdleCallback) idle = window.requestIdleCallback(start, { timeout: 1500 });
+            else timer = window.setTimeout(start, 200);
+          });
+        });
+      });
+    };
     const sync = () => {
       setShown(visible());
-      if (!visible() || !motionAllowed || document.visibilityState !== "visible") v.pause();
-      else void v.play().catch(() => {});
+      if (!canPlay()) v.pause();
+      else if (v.hasAttribute("src")) void v.play().catch(() => {});
+      else schedule();
     };
+    const onLoad = () => { loaded = true; sync(); };
+    window.addEventListener("load", onLoad, { once: true });
     sync();
     const observer = new MutationObserver(sync);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-onboarding"] });
     document.addEventListener("visibilitychange", sync);
     return () => {
+      cancelled = true;
+      window.removeEventListener("load", onLoad);
+      cancelAnimationFrame(frame);
+      if (idle) window.cancelIdleCallback(idle);
+      window.clearTimeout(timer);
       observer.disconnect();
       document.removeEventListener("visibilitychange", sync);
       v.pause();
@@ -136,10 +174,8 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
       className={`relative isolate overflow-hidden rounded-[32px] bg-[#15110d] text-[#f6ead2] [clip-path:inset(0_round_32px)] lg:rounded-[48px] lg:[clip-path:inset(0_round_48px)] ${mode === "overlay" ? "h-full" : "steam-hero-page mb-8"}`}
     >
       {/* clip-path, not just overflow + radius: the latter lets the spinning gears' layers poke through the corners. */}
-      <video ref={video} className="absolute inset-0 -z-20 size-full object-cover" poster={shown ? "/media/hero-16x9-poster.jpg" : undefined} loop muted playsInline preload="none" aria-hidden="true">
-        <source media="(orientation: portrait)" src="/media/hero-9x16.mp4" type="video/mp4" />
-        <source src="/media/hero-16x9.mp4" type="video/mp4" />
-      </video>
+      <div className="onboarding-poster absolute inset-0 -z-30" aria-hidden="true" />
+      <video ref={video} className="absolute inset-0 -z-20 size-full object-cover" loop muted playsInline preload="none" aria-hidden="true" />
       <div className="steam-hero-shade absolute inset-0 -z-10" aria-hidden="true" />
       <Gear className="steam-gear steam-gear-a" teeth={14} />
       <Gear className="steam-gear steam-gear-b" teeth={10} />

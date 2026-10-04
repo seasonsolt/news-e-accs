@@ -567,6 +567,18 @@
 .onboarding-overlay { display: none; }
 html[data-onboarding] .onboarding-overlay { display: block; }
 html[data-onboarding] body { overflow: hidden; }
+/* A pre-paint poster under the source-less film, using the same cover crop as its first frame. Only
+   the active overlay or /subscribe can fetch it; hidden overlays never acquire a background URL. */
+html[data-onboarding] .onboarding-poster,
+.steam-hero-page .onboarding-poster {
+  background: url("/media/hero-16x9-poster.jpg") center / cover no-repeat;
+}
+@media (orientation: portrait) {
+  html[data-onboarding] .onboarding-poster,
+  .steam-hero-page .onboarding-poster {
+    background-image: url("/media/hero-9x16-poster.jpg");
+  }
+}
 /* On /subscribe it sits in the shell as a card a screen tall: the main column's top padding and a
    matching gap below on desktop; above the tab bar on phones. */
 .steam-hero-page {
@@ -656,6 +668,9 @@ html[data-onboarding] body { overflow: hidden; }
   -webkit-mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.6) 20%, rgba(0, 0, 0, 0.08) 38%, rgba(0, 0, 0, 0.08) 62%, rgba(0, 0, 0, 0.6) 80%, #000 100%);
   mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.6) 20%, rgba(0, 0, 0, 0.08) 38%, rgba(0, 0, 0, 0.08) 62%, rgba(0, 0, 0, 0.6) 80%, #000 100%);
 }
+/* The first-visit film covers this layer. Removing the URL, rather than hiding the layer, prevents
+   a competing image request; dismissing the overlay restores it without changing drift or parallax. */
+html[data-onboarding] .ambient-backdrop-image { background-image: none; }
 /* Phones have no margins: the hall shows above the feed and fades out down the page. */
 @media (max-width: 960px) {
   .ambient-backdrop-image {
