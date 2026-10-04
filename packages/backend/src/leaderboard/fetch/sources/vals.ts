@@ -1,5 +1,7 @@
-// Vals AI Finance Agent (v2): the benchmark page embeds its data as Astro island props (each value
-// serialised as [type, value]); the overall task gives each model's accuracy with its standard error.
+// Vals AI Finance Agent (v2): the benchmark page's BenchmarkView island either carries the data in its
+// Astro props (each value serialised as [type, value]) or, since October 2026, names a same-site JSON
+// file holding it (benchmarkViewUrl, content-hashed). The overall task gives each model's accuracy
+// with its standard error.
 // The run setting is the reported reasoning (or compute) effort; bare numbers are run settings here.
 import { guardedFetch } from "../../../lib/http-fetch.ts";
 import { configurationOf } from "../configuration.ts";
@@ -41,16 +43,30 @@ function revive(v: unknown): unknown {
   return value;
 }
 
-export function benchmarkView(html: string): View {
+/** Where the page keeps its benchmark data: inline in the island's props, or in a JSON file it names. */
+export function benchmarkView(html: string): { view: View } | { url: string } {
   for (const m of html.matchAll(/<astro-island\b([^>]*)>/g)) {
     const attrs = m[1]!;
     if (!/component-url="[^"]*BenchmarkView[^"]*"/.test(attrs)) continue;
     const props = /\sprops="([^"]*)"/.exec(attrs);
     if (!props) break;
-    const parsed = JSON.parse(unescapeAttribute(props[1]!)) as Record<string, unknown>;
-    return (revive(parsed.benchmarkView) as { metadata: unknown; tasks: unknown }) as View;
+    const parsed = revive([0, JSON.parse(unescapeAttribute(props[1]!))]) as Record<string, unknown>;
+    if (parsed.benchmarkView) return { view: parsed.benchmarkView as View };
+    if (typeof parsed.benchmarkViewUrl === "string") {
+      const url = new URL(parsed.benchmarkViewUrl, PAGE);
+      // Only the benchmark site itself is trusted to hold its data.
+      if (url.origin !== new URL(PAGE).origin) throw new Error(`vals: benchmark data on another site (${url.origin})`);
+      return { url: url.href };
+    }
+    break;
   }
   throw new Error("vals: benchmark data not found on the page");
+}
+
+function assertView(v: unknown): View {
+  const view = v as Partial<View> | null;
+  if (!view?.metadata || !view.tasks?.overall || typeof view.tasks.overall !== "object") throw new Error("vals: benchmark data lacks metadata or tasks.overall");
+  return view as View;
 }
 
 export const vals: Fetcher = {
@@ -58,7 +74,14 @@ export const vals: Fetcher = {
   async fetch() {
     const res = await guardedFetch(PAGE, { timeoutMs: 60_000, maxBytes: 32 * 1024 * 1024 });
     if (res.status !== 200) throw new Error(`vals HTTP ${res.status}`);
-    const view = benchmarkView(res.text());
+    const found = benchmarkView(res.text());
+    let view: View;
+    if ("view" in found) view = assertView(found.view);
+    else {
+      const data = await guardedFetch(found.url, { timeoutMs: 60_000, maxBytes: 32 * 1024 * 1024 });
+      if (data.status !== 200) throw new Error(`vals data HTTP ${data.status}`);
+      view = assertView(JSON.parse(data.text()));
+    }
     const overall = view.tasks.overall;
     const published = view.metadata.updated;
     const publishedAt = published ? `${published}T00:00:00.000Z` : null;
