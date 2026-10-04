@@ -8,6 +8,7 @@
 // says is also written in the page.
 import { SITE, withSubject } from "@aihot/industry/site";
 import { useEffect, useRef, type ReactNode } from "react";
+import { useMotionAllowed } from "../motion/preferences";
 import { shortSourceName } from "../../lib/format";
 
 export interface RiverSource {
@@ -290,6 +291,7 @@ export function SignalRiver({
   className?: string;
   children?: ReactNode;
 }) {
+  const motionAllowed = useMotionAllowed();
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const labelRef = useRef<HTMLDivElement>(null);
@@ -312,7 +314,7 @@ export function SignalRiver({
     const probe = document.createElement("canvas").getContext("2d", { willReadFrequently: true })!;
     const layer = document.createElement("canvas");
     const lctx = layer.getContext("2d")!;
-    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const still = !motionAllowed;
 
     let L: Layout | null = null;
     let col = readColors(probe);
@@ -564,7 +566,7 @@ export function SignalRiver({
       wrap.removeEventListener("pointermove", onMove);
       wrap.removeEventListener("pointerleave", onLeave);
     };
-  }, [sources]);
+  }, [sources, motionAllowed]);
 
   return (
     <div ref={wrapRef} className={`relative ${className}`}>

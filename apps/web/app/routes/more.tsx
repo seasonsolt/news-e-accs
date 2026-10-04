@@ -6,8 +6,9 @@ import type { loader as rootLoader } from "../root";
 import { useChangelogDot } from "../components/shell/Sidebar";
 import { pageMeta } from "../lib/seo";
 import { ThemeSwitch } from "../components/shell/ThemeSwitch";
+import { MotionSwitch } from "../features/motion/MotionSwitch";
 import { TOOLS } from "../components/shell/nav";
-import { IconBookmark, IconChart, IconChevronRight, IconFlame, IconGrid, IconHeart, IconHistory, IconMessage, IconMoon, IconPlug } from "../components/icons";
+import { IconBolt, IconBookmark, IconChart, IconChevronRight, IconFlame, IconGrid, IconHeart, IconHistory, IconMessage, IconMoon, IconPlug } from "../components/icons";
 
 /** Shared caches may keep this page for five minutes. */
 export function headers() {
@@ -76,13 +77,22 @@ export default function MorePage() {
               </li>
             ))}
             {g.title === "偏好" && (
-              <li className="flex h-[58px] items-center gap-3 px-4 text-[15px] font-medium text-ink">
-                <span className="text-ink-3">
-                  <IconMoon size={18} />
-                </span>
-                <span className="flex-1">外观</span>
-                <ThemeSwitch className="w-[124px]" />
-              </li>
+              <>
+                <li className="flex h-[58px] items-center gap-3 px-4 text-[15px] font-medium text-ink">
+                  <span className="text-ink-3">
+                    <IconMoon size={18} />
+                  </span>
+                  <span className="flex-1">外观</span>
+                  <ThemeSwitch className="w-[124px]" />
+                </li>
+                <li className="flex h-[58px] items-center gap-3 px-4 text-[15px] font-medium text-ink">
+                  <span className="text-ink-3">
+                    <IconBolt size={18} />
+                  </span>
+                  <span className="flex-1">动效</span>
+                  <MotionSwitch className="w-[124px]" />
+                </li>
+              </>
             )}
           </Group>
         ))}

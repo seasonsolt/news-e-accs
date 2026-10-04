@@ -4,6 +4,7 @@ import type { LbSourcesResponse } from "@aihot/contracts/leaderboard";
 import { loadOr404 } from "../lib/api.server";
 import { breadcrumbLd, pageMeta } from "../lib/seo";
 import { BrandMark } from "../features/leaderboard/BrandMark";
+import { Lineage } from "../features/leaderboard/Lineage";
 import { SaturatedChip, StatusChip } from "../features/leaderboard/StatusChip";
 import { pct } from "../features/leaderboard/format";
 import { IconArrowLeft, IconArrowUpRight } from "../components/icons";
@@ -76,20 +77,7 @@ export default function LeaderboardSourcesPage() {
             <p className="text-[12.5px] text-ink-4">{g.blurb}</p>
           </div>
           {g.lineage.length > 0 && (
-            <ol className="mt-4 grid gap-2 sm:grid-cols-3" aria-label={`${g.name}评测的权威更替`}>
-              {g.lineage.map((step, i) => (
-                <li key={step.name} className={`relative rounded-xl border px-4 py-3 ${step.current ? "border-accent/50 bg-surface" : "border-line"}`}>
-                  <span className="flex items-baseline justify-between gap-2">
-                    <span className={`text-[13.5px] font-semibold ${step.current ? "text-accent" : "text-ink-3"}`}>
-                      {i > 0 && <span className="mr-1.5 text-ink-4" aria-hidden="true">→</span>}
-                      {step.name}
-                    </span>
-                    <span className="mono shrink-0 text-[11px] text-ink-4">{step.current ? `${step.period} · 主力` : step.period}</span>
-                  </span>
-                  <span className="mt-1 block text-[12px] leading-[1.65] text-ink-4">{step.note}</span>
-                </li>
-              ))}
-            </ol>
+            <Lineage group={g} />
           )}
           <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {g.sources.map((s) => (

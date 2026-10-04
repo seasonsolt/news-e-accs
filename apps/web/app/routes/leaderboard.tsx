@@ -9,6 +9,7 @@ import { Podium } from "../features/leaderboard/Podium";
 import { IconInfo } from "../components/icons";
 import { modelHref, shortStamp } from "../features/leaderboard/format";
 import { useEntrance } from "../lib/hydration";
+import { useState } from "react";
 
 const CATEGORY_KEYS = new Set(["coding", "reasoning", "knowledge", "professional"]);
 
@@ -53,6 +54,11 @@ export function headers() {
 export default function LeaderboardPage() {
   const { board, entries, run } = useLoaderData<typeof loader>();
   const entrance = useEntrance();
+  // Router reuses this route component across board URLs; the keyed subtree alone cannot detect
+  // that switch. Carry the switch flag through the render so returning to the initial board works.
+  const [view, setView] = useState({ board: board.key, switched: entrance });
+  const viewSwitch = view.switched || view.board !== board.key;
+  if (view.board !== board.key) setView({ board: board.key, switched: true });
   return (
     <div key={board.key} className={entrance ? "animate-fade-up" : undefined}>
       <div className="mt-3 flex flex-col gap-1 lg:flex-row lg:items-center lg:justify-between">
@@ -74,7 +80,7 @@ export default function LeaderboardPage() {
           </h2>
           <span className="text-right text-[12px] text-ink-4">按多项公开评测的共同证据排名</span>
         </div>
-        <BoardTable entries={entries} board={board.key} />
+        <BoardTable entries={entries} board={board.key} viewSwitch={viewSwitch} />
         <div className="border-t border-line px-4 py-3 text-[12px] leading-relaxed text-ink-4 lg:px-[22px]">
           <p>每个榜单最多展示 30 个模型</p>
           <p>共识指数不是正确率；同分仍按共同证据确定的名次展示。</p>

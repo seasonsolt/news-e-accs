@@ -6,6 +6,7 @@ export const KEYS = {
   starred: "aihot-starred-items",
   read: "aihot-read-items",
   theme: "aihot-theme",
+  motion: "eacc-reduce-motion",
   changelogSeen: "aihot-changelog-seen-version",
   feedbackDraft: "aihot-feedback-draft-v1",
   onboarded: "eacc-onboarded",
@@ -218,6 +219,16 @@ export function resolvedTheme(pref: ThemePreference = getThemePreference()): "li
 
 /** Inline script run before paint so the first frame already has the reader's theme. */
 export const THEME_BOOT_SCRIPT = `(function(){try{var t=localStorage.getItem('${KEYS.theme}');if(t==='"light"'||t==='"dark"')t=JSON.parse(t);if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.setAttribute('data-theme',t)}catch(e){document.documentElement.setAttribute('data-theme','light')}})();`;
+
+// --- motion (same storage and pre-paint mechanism as theme) ---
+export function setReduceMotion(reduced: boolean) {
+  writeRaw(KEYS.motion, reduced ? "reduced" : null);
+  if (reduced) document.documentElement.setAttribute("data-motion", "reduced");
+  else document.documentElement.removeAttribute("data-motion");
+  invalidate(KEYS.motion);
+}
+
+export const MOTION_BOOT_SCRIPT = `(function(){try{if(localStorage.getItem('${KEYS.motion}')==='reduced')document.documentElement.setAttribute('data-motion','reduced')}catch(e){}})();`;
 
 // --- newsletter onboarding ---
 /** Subscribed or skipped: the front page opens straight on the news from then on. */

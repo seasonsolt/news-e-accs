@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { Link } from "react-router";
 import { IntentLink } from "./IntentLink";
 import { useEntrance } from "../../lib/hydration";
+import { useMotionAllowed } from "../../features/motion/preferences";
 
 /** Where each switch's thumb sat when it last left, relative to its track. */
 const thumbs = new Map<string, { left: number; width: number; at: number }>();
@@ -19,22 +20,24 @@ function placeOf(el: HTMLElement) {
 function Thumb({ id }: { id: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const entrance = useEntrance();
+  const motionAllowed = useMotionAllowed();
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
     const now = placeOf(el);
     const prev = thumbs.get(id);
-    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (entrance && !reduce && prev && now.at - prev.at < 1000 && (prev.left !== now.left || prev.width !== now.width) && el.animate) {
-      el.animate(
+    let animation: Animation | undefined;
+    if (entrance && motionAllowed && prev && now.at - prev.at < 1000 && (prev.left !== now.left || prev.width !== now.width) && el.animate) {
+      animation = el.animate(
         [{ transform: `translateX(${prev.left - now.left}px)`, width: `${prev.width}px` }, { transform: "translateX(0)", width: `${now.width}px` }],
         { duration: 300, easing: "cubic-bezier(0.25, 1, 0.5, 1)" },
       );
     }
     return () => {
+      animation?.cancel();
       thumbs.set(id, placeOf(el));
     };
-  }, [id, entrance]);
+  }, [id, entrance, motionAllowed]);
   return <span ref={ref} className="absolute inset-0 rounded-full bg-surface shadow-[var(--shadow-thumb)] ring-1 ring-line dark:bg-raised" />;
 }
 

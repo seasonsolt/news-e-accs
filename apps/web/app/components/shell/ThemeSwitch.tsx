@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { IconMonitor, IconMoon, IconSun } from "../icons";
 import { resolvedTheme, setThemePreference, useThemePreference, type ThemePreference } from "../../lib/local-state";
 
+import { useMotionAllowed } from "../../features/motion/preferences";
+
 type Choice = "dark" | "system" | "light";
 
 const OPTIONS: Array<{ key: Choice; label: string; icon: ReactNode }> = [
@@ -13,6 +15,7 @@ const OPTIONS: Array<{ key: Choice; label: string; icon: ReactNode }> = [
 /** Three-way appearance switch (dark / follow the system / light) with a sliding thumb. */
 export function ThemeSwitch({ className = "" }: { className?: string }) {
   const pref = useThemePreference();
+  const motionAllowed = useMotionAllowed();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const current: Choice = !mounted ? "system" : (pref ?? "system");
@@ -25,7 +28,7 @@ export function ThemeSwitch({ className = "" }: { className?: string }) {
       document.documentElement.setAttribute("data-theme", resolvedTheme(nextPref));
     };
     const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
-    if (doc.startViewTransition && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) doc.startViewTransition(apply);
+    if (doc.startViewTransition && motionAllowed) doc.startViewTransition(apply);
     else apply();
   };
 

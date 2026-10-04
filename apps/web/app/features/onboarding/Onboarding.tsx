@@ -9,6 +9,11 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { SITE } from "@aihot/industry/site";
 import { Link } from "react-router";
 import { markOnboarded } from "../../lib/local-state";
+import { useMotionAllowed } from "../motion/preferences";
+import { BrassSheen } from "../motion/BrassSheen";
+import { DecryptedText } from "../motion/react-bits/DecryptedText";
+import { Magnet } from "../motion/react-bits/Magnet";
+import { ClickSpark } from "../motion/react-bits/ClickSpark";
 
 const MANIFESTO: Array<[string, string]> = [
   ["加速是默认值", "算力、能源、模型能力都在复利增长。我们记录它，而不是害怕它。"],
@@ -36,6 +41,7 @@ async function post(path: string, body: Record<string, string>): Promise<string 
  * where `token` (from the confirmation letter) is confirmed on arrival, with a button to try again.
  */
 export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; token?: string | null }) {
+  const motionAllowed = useMotionAllowed();
   const video = useRef<HTMLVideoElement>(null);
   const manifesto = useRef<HTMLDialogElement>(null);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
@@ -50,21 +56,22 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
     const v = video.current;
     if (!v) return;
     const visible = () => mode === "page" || document.documentElement.hasAttribute("data-onboarding");
-    setShown(visible());
     v.muted = true;
-    const still = window.matchMedia("(prefers-reduced-motion: reduce)");
     const sync = () => {
-      if (!visible() || still.matches) v.pause();
-      else if (document.visibilityState === "visible") void v.play().catch(() => {});
+      setShown(visible());
+      if (!visible() || !motionAllowed || document.visibilityState !== "visible") v.pause();
+      else void v.play().catch(() => {});
     };
     sync();
-    still.addEventListener("change", sync);
+    const observer = new MutationObserver(sync);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-onboarding"] });
     document.addEventListener("visibilitychange", sync);
     return () => {
-      still.removeEventListener("change", sync);
+      observer.disconnect();
       document.removeEventListener("visibilitychange", sync);
+      v.pause();
     };
-  }, [mode]);
+  }, [mode, motionAllowed]);
 
   // Escape skips the overlay, as a dialog's close would.
   useEffect(() => {
@@ -143,9 +150,9 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
       </div>
 
       <div className="relative flex h-full flex-col items-center justify-center gap-5 overflow-y-auto px-5 pb-16 pt-12 text-center lg:gap-7">
-        <p className="mono text-[11px] uppercase tracking-[0.32em] text-[#e8c98a]">e-acc.ai · 加速日报</p>
-        <Title id={`onboarding-title-${mode}`} className="font-display text-[clamp(84px,17vw,200px)] italic leading-[0.9] tracking-[-0.02em] [text-shadow:0_2px_30px_rgba(0,0,0,0.55)]">
-          {SITE.name}
+        <p className="mono text-[11px] uppercase tracking-[0.32em] text-[#e8c98a]"><DecryptedText text="e-acc.ai · 加速日报" /></p>
+        <Title id={`onboarding-title-${mode}`} aria-label={SITE.name} className="font-display text-[clamp(84px,17vw,200px)] italic leading-[0.9] tracking-[-0.02em] [text-shadow:0_2px_30px_rgba(0,0,0,0.55)]">
+          <BrassSheen text={SITE.name} visible={shown} />
         </Title>
 
         {phase.kind === "sent" ? (
@@ -187,20 +194,24 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
                 placeholder="输入邮箱，每天早上收到日报"
                 className="h-12 w-full rounded-full border-2 border-[#f6ead2]/45 bg-[#1a120a]/35 pl-5 pr-14 text-[15px] text-[#f6ead2] shadow-sm backdrop-blur-md transition-[border-color,background-color] duration-200 placeholder:text-[#f6ead2]/75 focus:border-[#e8b85a] focus:bg-[#1a120a]/55 focus:outline-none"
               />
-              <button
-                type="submit"
-                aria-label="订阅"
-                disabled={phase.kind === "sending"}
-                className="absolute right-1 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-gradient-to-br from-[#f0c56a] via-[#d9a441] to-[#9a5b1f] text-[#1a1208] shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition-transform duration-200 hover:scale-105 focus-visible:outline-[#f6ead2] disabled:opacity-60"
-              >
-                {phase.kind === "sending" ? (
-                  <span className="size-4 animate-spin rounded-full border-2 border-[#1a1208]/30 border-t-[#1a1208]" aria-hidden="true" />
-                ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M5 12h14M13 6l6 6-6 6" />
-                  </svg>
-                )}
-              </button>
+              <ClickSpark className="absolute right-1 top-1/2 size-10 -translate-y-1/2">
+                <button
+                  type="submit"
+                  aria-label="订阅"
+                  disabled={phase.kind === "sending"}
+                  className="relative flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-[#f0c56a] via-[#d9a441] to-[#9a5b1f] text-[#1a1208] shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition-transform duration-200 hover:scale-105 focus-visible:outline-[#f6ead2] disabled:opacity-60"
+                >
+                  <Magnet>
+                    {phase.kind === "sending" ? (
+                      <span className="size-4 animate-spin rounded-full border-2 border-[#1a1208]/30 border-t-[#1a1208]" aria-hidden="true" />
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M5 12h14M13 6l6 6-6 6" />
+                      </svg>
+                    )}
+                  </Magnet>
+                </button>
+              </ClickSpark>
             </form>
             {phase.kind === "error" && <p role="alert" className="-mt-2 text-[14px] text-[#ffb89a] [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">{phase.message}</p>}
 

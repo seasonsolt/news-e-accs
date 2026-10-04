@@ -5,6 +5,9 @@ import { LB_CONFIDENCE_LABELS } from "@aihot/contracts/leaderboard";
 import { BrandMark } from "./BrandMark";
 import { EvidenceBadge } from "./Evidence";
 import { modelHref, yuan } from "./format";
+import { useMotionAllowed } from "../motion/preferences";
+import { CountUp } from "../motion/react-bits/CountUp";
+import { SplitFlapText } from "../motion/react-bits/SplitFlapText";
 
 type SortKey = "rank" | "released" | "coverage" | "cached" | "input" | "output";
 
@@ -37,8 +40,8 @@ function sorted(entries: LbBoardEntry[], key: SortKey, dir: 1 | -1) {
 }
 
 /** The top three sit on a small tinted plate; the rest are plain numbers. */
-function Rank({ rank }: { rank: number }) {
-  const n = String(rank).padStart(2, "0");
+function Rank({ rank, viewSwitch, delay }: { rank: number; viewSwitch: boolean; delay: number }) {
+  const n = <SplitFlapText text={String(rank).padStart(2, "0")} viewSwitch={viewSwitch} delay={delay} />;
   if (rank <= 3) {
     return <span className="mono inline-flex h-7 w-[26px] items-center justify-center rounded-full bg-accent/[0.06] text-[13px] font-bold text-accent">{n}</span>;
   }
@@ -61,7 +64,9 @@ function SortHeader({ k, children, sort, dir, onSort, align = "left", className 
 
 const unit = <span className="block text-[10.5px] font-normal text-ink-4">人民币 / 百万 Token</span>;
 
-export function BoardTable({ entries, board }: { entries: LbBoardEntry[]; board: string }) {
+// Scores stay final at paint; switched boards and initially below-fold rows get one bounded reveal.
+export function BoardTable({ entries, board, viewSwitch = false }: { entries: LbBoardEntry[]; board: string; viewSwitch?: boolean }) {
+  const motionAllowed = useMotionAllowed();
   const [sort, setSort] = useState<SortKey>("rank");
   const [dir, setDir] = useState<1 | -1>(1);
   const rows = useMemo(() => sorted(entries, sort, dir), [entries, sort, dir]);
@@ -71,18 +76,19 @@ export function BoardTable({ entries, board }: { entries: LbBoardEntry[]; board:
   const order = rows.map((e) => e.model.slug).join(",");
   useLayoutEffect(() => {
     if (!body.current) return;
-    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const animations: Animation[] = [];
     const next = new Map<string, number>();
     for (const row of Array.from(body.current.rows)) {
       const key = row.dataset.slug ?? "";
       const prev = tops.current.get(key);
       next.set(key, row.offsetTop);
-      if (prev !== undefined && prev !== row.offsetTop && !reduce && row.animate) {
-        row.animate([{ transform: `translateY(${prev - row.offsetTop}px)` }, { transform: "none" }], { duration: 420, easing: "cubic-bezier(0.25, 1, 0.5, 1)" });
+      if (prev !== undefined && prev !== row.offsetTop && motionAllowed && row.animate) {
+        animations.push(row.animate([{ transform: `translateY(${prev - row.offsetTop}px)` }, { transform: "none" }], { duration: 420, easing: "cubic-bezier(0.25, 1, 0.5, 1)" }));
       }
     }
     tops.current = next;
-  }, [order]);
+    return () => { for (const animation of animations) animation.cancel(); };
+  }, [order, motionAllowed]);
   const onSort = (k: SortKey) => {
     if (k === sort) setDir((d) => (d === 1 ? -1 : 1));
     else {
@@ -123,10 +129,10 @@ export function BoardTable({ entries, board }: { entries: LbBoardEntry[]; board:
         </tr>
       </thead>
       <tbody ref={body}>
-        {rows.map((e) => (
+        {rows.map((e, i) => (
           <tr key={e.model.slug} data-slug={e.model.slug} className="group relative border-b border-line last:border-b-0 transition-colors hover:bg-accent-softer">
             <td className="py-3 pl-4 pr-1 align-middle lg:pl-[22px] lg:pr-3">
-              <Rank rank={e.rank} />
+              <Rank rank={e.rank} viewSwitch={viewSwitch && i < 30} delay={Math.min(i, 10) * 18} />
             </td>
             <td className="px-2 py-3 lg:px-3">
               <Link to={modelHref(e.model.slug, board)} prefetch="intent" className="block after:absolute after:inset-0 after:content-['']">
@@ -163,7 +169,7 @@ export function BoardTable({ entries, board }: { entries: LbBoardEntry[]; board:
             <td className="mono hidden px-3 py-3 text-[14.5px] font-medium text-ink lg:table-cell">{price(e, e.price?.outputCny)}</td>
             <td className="py-3 pl-2 pr-4 text-right align-middle lg:pl-3 lg:pr-[22px]">
               <strong className={`mono inline-block text-[20px] font-semibold leading-7 tracking-[-0.02em] ${e.rank <= 3 ? "text-accent" : "text-ink"}`} aria-label={`${e.model.name} 共识指数 ${e.score.toFixed(1)}`}>
-                {e.score.toFixed(1)}
+                <CountUp value={e.score} viewSwitch={viewSwitch && i < 30} delay={Math.min(i, 10) * 18} />
               </strong>
             </td>
           </tr>
