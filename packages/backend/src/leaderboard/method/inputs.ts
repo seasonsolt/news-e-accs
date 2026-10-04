@@ -1,4 +1,4 @@
-// Builds the v15 board inputs from stored source snapshots: one representative configuration
+// Builds the v16 board inputs from stored source snapshots: one representative configuration
 // per model and unit, board weights from the fixed budgets, eligibility, and the removal
 // scenarios used for rank stability.
 import { sql } from "../../db.ts";
@@ -9,12 +9,14 @@ import {
   OVERALL_POLICY,
   RELEASE_WINDOW_MONTHS,
   SCORING_SOURCES,
+  SATURATION_FACTOR,
+  saturationOf,
   type BoardInput,
   type Policy,
   type RegistryEntry,
   type ScoringSource,
   type SignalRow,
-} from "./v15.ts";
+} from "./v16.ts";
 
 /** Rows missing from the newest snapshot may come from one last verified this recently (same protocol). */
 export const CARRY_FORWARD_DAYS = 7;
@@ -58,7 +60,20 @@ export interface RunInputs {
   snapshotIds: string[];
   boards: BoardInput[];
   evidence: Record<string, EvidenceMeta>;
-  sources: Array<{ key: string; weight: number; familyKey: string; categoryKey: string | null; usedInOverall: boolean; usedInCategory: boolean; evidenceBudgetKey: string }>;
+  sources: Array<{
+    key: string;
+    /** The method's weight; effectiveWeight is what it counted at this run (lower when saturated). */
+    weight: number;
+    effectiveWeight: number;
+    familyKey: string;
+    categoryKey: string | null;
+    usedInOverall: boolean;
+    usedInCategory: boolean;
+    evidenceBudgetKey: string;
+    saturated: boolean;
+    /** Points of 100 between its best and SATURATION_TOP-th score; null for ratings or too few models. */
+    spreadPp: number | null;
+  }>;
   categories: Array<{ key: string; status: "READY" | "INSUFFICIENT"; modelCount: number; metricCount: number; sourceCount: number; sourceSnapshotIds: string[] }>;
 }
 
@@ -164,6 +179,9 @@ export async function buildRunInputs(opts: { at?: Date; snapshotIds?: string[] }
   const cutoff = new Date(at);
   cutoff.setUTCMonth(cutoff.getUTCMonth() - RELEASE_WINDOW_MONTHS);
   const withData = (s: ScoringSource) => s.scoring && unitRows.has(s.unit) && unitRows.get(s.unit)!.size > 0;
+  // Saturation is a property of the evaluation, judged on every model it scores, not only those a board keeps.
+  const saturation = new Map(SCORING_SOURCES.map((s) => [s.unit, saturationOf([...(unitRows.get(s.unit)?.values() ?? [])].map((r) => r.score), s.scale, s.direction)]));
+  const counted = (s: ScoringSource) => s.weight * (saturation.get(s.unit)!.saturated ? SATURATION_FACTOR : 1);
 
   const boards: BoardInput[] = [];
   const categories: RunInputs["categories"] = [];
@@ -178,7 +196,7 @@ export async function buildRunInputs(opts: { at?: Date; snapshotIds?: string[] }
       const snap = bySource.get(s.key);
       registry[s.unit] = {
         family: s.family,
-        weight: board === "overall" ? s.weight : s.weight / budget,
+        weight: board === "overall" ? counted(s) : counted(s) / budget,
         operator: s.operator,
         protocol: protocolOf(s.key, snap?.metadata ?? {}),
         direction: s.direction,
@@ -234,11 +252,14 @@ export async function buildRunInputs(opts: { at?: Date; snapshotIds?: string[] }
     sources: SCORING_SOURCES.map((s) => ({
       key: s.key,
       weight: s.weight,
+      effectiveWeight: counted(s),
       familyKey: s.family,
       categoryKey: s.category,
       usedInOverall: withData(s),
       usedInCategory: !!s.category && withData(s),
       evidenceBudgetKey: s.budget,
+      saturated: saturation.get(s.unit)!.saturated,
+      spreadPp: saturation.get(s.unit)!.spreadPp,
     })),
     categories,
   };

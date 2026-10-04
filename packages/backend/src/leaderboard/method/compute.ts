@@ -1,5 +1,5 @@
 import { Worker } from "node:worker_threads";
-import type { BoardInput, BoardOutput } from "./v15.ts";
+import type { BoardInput, BoardOutput } from "./v16.ts";
 
 export interface ComputedBoards {
   outputs: BoardOutput[];
@@ -7,7 +7,7 @@ export interface ComputedBoards {
 }
 
 /** Keep the synchronous HiGHS solver off the queue/heartbeat event loop. Boards still run in their
- * original order, with the exact v15 inputs, solver limits and tie policy, in one bounded worker. */
+ * original order, with the exact v16 inputs, solver limits and tie policy, in one bounded worker. */
 export function computeBoardsInWorker(boards: BoardInput[]): Promise<ComputedBoards> {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL("./compute-worker.ts", import.meta.url), { workerData: boards });

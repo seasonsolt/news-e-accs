@@ -247,7 +247,39 @@
       "key": "coding",
       "name": "编程",
       "blurb": "从写代码到改仓库，看模型能不能把软件做出来。",
+      "lineage": [
+        {
+          "name": "SWE-bench Verified",
+          "period": "2024–2025",
+          "note": "从 GitHub issue 修 bug、跑单测；头部模型分数挤到一起，题目也已大量进入训练数据。"
+        },
+        {
+          "name": "DeepSWE",
+          "period": "2025–2026",
+          "note": "固定受控系统，任务更难、更长；v16 起保留为交叉证据。"
+        },
+        {
+          "name": "FrontierCode",
+          "period": "2026 起",
+          "note": "开源维护者亲自出题，判断“维护者会不会合并这个 PR”；v16 起为编程主力。",
+          "current": true
+        }
+      ],
       "sources": [
+        {
+          "key": "frontiercode",
+          "status": "ranked",
+          "name": "FrontierCode",
+          "operator": "Cognition",
+          "area": "编程",
+          "description": "真实仓库任务的质量、测试与修改范围",
+          "logo": null,
+          "officialUrl": "https://cognition.com/frontiercode",
+          "what": "开源仓库维护者亲自出题，问“维护者会不会合并这个 PR”：测试、评分细则和验证器共同判分，查阅了含答案来源的运行记零分。固定 v1.1 主集 100 题。",
+          "usage": "编程与设计预算中的 4.8%，v16 起是编程主力。每个模型在自家 Agent（Codex、Claude Code、Devin 等）里运行，取最高推理档代表该模型。",
+          "limits": "比较的是“模型 + 自家 Agent”的系统，不是裸模型；不同 Agent 的工具和提示不同。题量 100，名次相近时差距可能落在噪声里。",
+          "license": "引用 Cognition 公开发布的结构化成绩，注明出处并链接原页；权利方要求时撤下。"
+        },
         {
           "key": "deepswe-v1-1",
           "status": "ranked",
@@ -258,7 +290,7 @@
           "logo": "deepswe.svg",
           "officialUrl": "https://deepswe.datacurve.ai/",
           "what": "只取 pass@1；统一 harness 内按预先固定的推理档位优先级选代表配置。",
-          "usage": "编程与设计预算中的 3.6%；固定受控系统与版本。",
+          "usage": "编程与设计预算中的 1.2%；v16 起由 FrontierCode 接任编程主力，DeepSWE 保留为交叉证据。固定受控系统与版本。",
           "limits": "仍是模型＋mini-swe-agent 的系统表现；大版本变化必须隔离快照。",
           "license": "官方公开结构化结果；仅管理员私有观察，公开前复核许可"
         },
@@ -273,7 +305,7 @@
           "logo": "taptap-maker.svg",
           "officialUrl": "https://maker.taptap.cn/leaderboard/",
           "what": "只取官方 main_board 的 L2 通过率；成本、速度、Held-out 和分类分不再次投票。同一基础模型按固定推理档位优先级选代表行，选择不看分数。",
-          "usage": "编程与设计预算中的 3.6%；固定引擎和 L2 指标。",
+          "usage": "编程与设计预算中的 2.4%；固定引擎和 L2 指标。",
           "limits": "单引擎、单语言，不能推广到其他技术栈；不同模型可能使用不同 agent 驱动；闭源 harness 不能逐题复算。",
           "license": "官方公开结果；公开再展示保留官方署名，完整再分发授权仍以易玩／TapTap 条款为准"
         },
@@ -392,20 +424,6 @@
           "what": "专项页 Overall，与 Vals Index 综合聚合分分开。多模型回退成绩不归入单个型号。",
           "usage": "观察中：专项数据的公开使用条款尚待落实；未因沿用同一网站解析器自动计分。",
           "limits": "观察中：专项数据的公开使用条款尚待落实；未因沿用同一网站解析器自动计分。",
-          "license": "待确认榜单数据使用边界"
-        },
-        {
-          "key": "frontiercode",
-          "status": "observing",
-          "name": "FrontierCode",
-          "operator": "Cognition",
-          "area": "编程",
-          "description": "真实仓库任务的质量、测试与修改范围",
-          "logo": null,
-          "officialUrl": "https://cognition.com/frontiercode",
-          "what": "固定 v1.1 和官方运行条件；质量评分和测试成功共同构成一项任务证据。",
-          "usage": "观察中：尚无确认稳定的成绩导出与数据使用边界。",
-          "limits": "观察中：尚无确认稳定的成绩导出与数据使用边界。",
           "license": "待确认榜单数据使用边界"
         },
         {

@@ -4,7 +4,7 @@ import type { LbSourcesResponse } from "@aihot/contracts/leaderboard";
 import { loadOr404 } from "../lib/api.server";
 import { breadcrumbLd, pageMeta } from "../lib/seo";
 import { BrandMark } from "../features/leaderboard/BrandMark";
-import { StatusChip } from "../features/leaderboard/StatusChip";
+import { SaturatedChip, StatusChip } from "../features/leaderboard/StatusChip";
 import { pct } from "../features/leaderboard/format";
 import { IconArrowLeft, IconArrowUpRight } from "../components/icons";
 
@@ -75,13 +75,32 @@ export default function LeaderboardSourcesPage() {
             <span className="mono text-[12px] text-ink-4">{g.sources.length}</span>
             <p className="text-[12.5px] text-ink-4">{g.blurb}</p>
           </div>
+          {g.lineage.length > 0 && (
+            <ol className="mt-4 grid gap-2 sm:grid-cols-3" aria-label={`${g.name}评测的权威更替`}>
+              {g.lineage.map((step, i) => (
+                <li key={step.name} className={`relative rounded-xl border px-4 py-3 ${step.current ? "border-accent/50 bg-surface" : "border-line"}`}>
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className={`text-[13.5px] font-semibold ${step.current ? "text-accent" : "text-ink-3"}`}>
+                      {i > 0 && <span className="mr-1.5 text-ink-4" aria-hidden="true">→</span>}
+                      {step.name}
+                    </span>
+                    <span className="mono shrink-0 text-[11px] text-ink-4">{step.current ? `${step.period} · 主力` : step.period}</span>
+                  </span>
+                  <span className="mt-1 block text-[12px] leading-[1.65] text-ink-4">{step.note}</span>
+                </li>
+              ))}
+            </ol>
+          )}
           <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {g.sources.map((s) => (
               <li key={s.key}>
                 <Link to={`/leaderboard/sources/${s.key}`} className="card card-hover group flex h-full flex-col p-5">
                   <span className="flex items-start justify-between gap-3">
                     <BrandMark brand={s.brand} size={30} />
-                    <StatusChip status={s.status} />
+                    <span className="flex shrink-0 items-center gap-1.5">
+                      {s.saturated && <SaturatedChip spreadPp={s.spreadPp} />}
+                      <StatusChip status={s.status} />
+                    </span>
                   </span>
                   <span className="mt-3.5 text-[15px] font-bold leading-snug text-ink transition-colors group-hover:text-accent">{s.name}</span>
                   <span className="mt-1.5 line-clamp-3 flex-1 text-[12.5px] leading-[1.7] text-ink-3">{s.description}</span>
@@ -100,7 +119,7 @@ export default function LeaderboardSourcesPage() {
       ))}
 
       <p className="mt-10 border-t border-line pt-5 text-[12px] leading-relaxed text-ink-4">
-        “观察中”表示仍在核对数据、运行条件或使用边界，不参与综合榜和分类榜。同一评测的重复抓取和展示切片不会增加票权；不同评测之间的题库重叠仍需持续核对。
+        “观察中”表示仍在核对数据、运行条件或使用边界，不参与综合榜和分类榜。“接近饱和”表示该评测前 10 名相差不到 3 个百分点、已难区分强模型，本轮按一半权重计分。同一评测的重复抓取和展示切片不会增加票权；不同评测之间的题库重叠仍需持续核对。
       </p>
     </div>
   );

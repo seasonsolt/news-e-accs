@@ -109,6 +109,8 @@ interface RunView {
   pageSlugs: Set<string>;
   evidence: Record<string, EvidenceMeta>;
   sourceWeights: Map<string, number>;
+  /** Runs before v16 recorded no saturation: absent means not saturated. */
+  sourceSaturation: Map<string, { saturated: boolean; spreadPp: number | null; effectiveWeight: number }>;
   budgets: Array<{ key: string; name: string; weight: number }>;
   anchors: string[];
 }
@@ -218,7 +220,11 @@ async function buildRunView(runId: string): Promise<RunView> {
   );
 
   const sourceWeights = new Map<string, number>();
-  for (const s of summary.sources ?? []) sourceWeights.set(s.key, Number(s.weight));
+  const sourceSaturation = new Map<string, { saturated: boolean; spreadPp: number | null; effectiveWeight: number }>();
+  for (const s of summary.sources ?? []) {
+    sourceWeights.set(s.key, Number(s.weight));
+    sourceSaturation.set(s.key, { saturated: s.saturated === true, spreadPp: typeof s.spreadPp === "number" ? s.spreadPp : null, effectiveWeight: Number(s.effectiveWeight ?? s.weight) });
+  }
 
   return {
     info,
@@ -230,6 +236,7 @@ async function buildRunView(runId: string): Promise<RunView> {
     pageSlugs,
     evidence: consensus.evidence ?? {},
     sourceWeights,
+    sourceSaturation,
     budgets: summary.budgets ?? [],
     anchors: inputs.get("overall")?.anchors ?? [],
   };
@@ -450,6 +457,7 @@ function sourceSummary(view: RunView, key: string): LbSourceSummary | null {
   const reg = registrySource(key);
   if (!reg) return null;
   const s = reg.source;
+  const counts = s.status === "ranked" || s.status === "awaiting";
   return {
     key: s.key,
     name: s.name,
@@ -457,7 +465,10 @@ function sourceSummary(view: RunView, key: string): LbSourceSummary | null {
     description: s.description,
     status: s.status,
     brand: sourceBrand(s),
-    budget: s.status === "ranked" || s.status === "awaiting" ? view.sourceWeights.get(s.key) ?? null : null,
+    budget: counts ? view.sourceWeights.get(s.key) ?? null : null,
+    effectiveBudget: counts ? view.sourceSaturation.get(s.key)?.effectiveWeight ?? null : null,
+    saturated: view.sourceSaturation.get(s.key)?.saturated ?? false,
+    spreadPp: view.sourceSaturation.get(s.key)?.spreadPp ?? null,
   };
 }
 
@@ -467,6 +478,7 @@ export async function loadSources(): Promise<LbSourcesResponse> {
     key: g.key,
     name: g.name,
     blurb: g.blurb,
+    lineage: g.lineage ?? [],
     sources: g.sources.map((s) => sourceSummary(view, s.key)!),
   }));
   const all = groups.flatMap((g) => g.sources);

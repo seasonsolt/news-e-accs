@@ -6,7 +6,7 @@
 
 把多家公开评测（Artificial Analysis、LMArena、LiveBench、Epoch、EQ-Bench、Vals 等）的成绩放在一起，算出一个尽量不和已知成绩冲突的完整排名，另有编程、推理、知识等分类榜。方法对读者公开：
 
-- `/leaderboard/rules`：排名怎么算（共识方法 v15，加权不完整 Kemeny 排序）。
+- `/leaderboard/rules`：排名怎么算（共识方法 v16，加权不完整 Kemeny 排序）。
 - `/leaderboard/sources`：每个评测来源测什么、状态如何、是否参与排名。
 
 **更新**：每天 02:05、08:05、14:05、20:05 检查一遍所有上游。某个来源抓取失败时沿用它上一份快照；只有证据真的变了，才发布新的一轮。新装好的站在 worker 第一次启动时会立刻算一轮。
@@ -30,7 +30,7 @@ node --env-file=.env scripts/import-leaderboard-prices.ts
 |---|---|
 | `packages/backend/src/leaderboard/source-registry.json` | 评测来源登记：分组、状态、份额、说明 |
 | `packages/backend/src/leaderboard/fetch/sources/` | 每个上游一个读取器 |
-| `packages/backend/src/leaderboard/method/` | v15 的计算（`v15.ts`、`kemeny.ts`） |
+| `packages/backend/src/leaderboard/method/` | v16 的计算（`v16.ts`、`kemeny.ts`） |
 | `apps/web/app/features/leaderboard/`、`apps/web/app/routes/leaderboard*.tsx` | 页面 |
 
 **工具**：
@@ -40,7 +40,9 @@ node --env-file=.env scripts/lb-round.ts --fetch      # 立刻抓一遍并算一
 node --env-file=.env scripts/lb-fetch-check.ts        # 只抓不写，和已存的快照逐行对比，检查读取器
 ```
 
-**改方法**：`v15.ts` 里的每个常数都是方法的一部分，改了会改变读者看到的排名。改方法时，把 `/leaderboard/rules` 页面上的文字一起改掉，并升方法版本：页面上写的必须和实际算法一致。
+**改方法**：`v16.ts` 里的每个常数都是方法的一部分，改了会改变读者看到的排名。改方法时，把 `/leaderboard/rules` 页面上的文字一起改掉，并升方法版本：页面上写的必须和实际算法一致。
+
+**评测换代与饱和**（v16）：评测会老化。主力换代（编程：SWE-bench Verified → DeepSWE → FrontierCode）是方法变更，改 `SCORING_SOURCES` 的权重、升版本，并在 `source-registry.json` 的分组 `lineage` 里记一笔，来源页会画出这条时间线。另有自动检查：`scale` 不为 null 的评测（0–1 或百分制），前 10 名相差不到 3 个百分点时，本轮按一半权重计分（`saturationOf`、`SATURATION_*`），结果记在每轮的 `summary.sources[].saturated / spreadPp / effectiveWeight`，评测页标“接近饱和”。Elo 等没有上限的分数 `scale: null`，不做检查。
 
 ## Codex 重置监控（`/codex-reset`）
 

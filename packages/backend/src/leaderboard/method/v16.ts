@@ -1,10 +1,12 @@
-// Public consensus method v15 (docs/leaderboard.md), exactly as the rules page states it.
+// Public consensus method v16 (docs/leaderboard.md), exactly as the rules page states it. v16 over v15:
+// FrontierCode leads the coding evidence (DeepSWE kept with a smaller share), and a proportion-scored
+// evaluation whose top ten models sit within SATURATION_SPREAD_PP points counts at SATURATION_FACTOR.
 // Everything here is part of the method: changing any constant changes reader-visible rankings
 // and needs a new method version, published with the changed rules page.
 import { ndtr } from "./ndtr.ts";
 import { reversalCost, solveKemeny } from "./kemeny.ts";
 
-export const METHOD_VERSION = "2026.09-public-consensus-v15";
+export const METHOD_VERSION = "2026.10-public-consensus-v16";
 export const SCORE_DEFINITION = "Cumulative Kemeny ordering support relative to fixed anchors; not capability distance or calibrated win probability";
 export const DISPLAY_METHOD = "kemeny-order-support-1.0";
 
@@ -39,31 +41,56 @@ export interface ScoringSource {
   /** Published bounds are ±intervalSd standard errors; null when a source has no error model. */
   intervalSd: number | null;
   direction: "HIGHER" | "LOWER";
+  /**
+   * Full scale of a proportion score (1 for 0–1, 100 for 0–100); null for ratings, indices and judged
+   * scores, which have no ceiling to saturate against.
+   */
+  scale: 1 | 100 | null;
+}
+
+/** A proportion-scored evaluation saturates when its top ten models are within this many points (of 100). */
+export const SATURATION_SPREAD_PP = 3;
+/** How many models the saturation test looks at. */
+export const SATURATION_TOP = 10;
+/** A saturated evaluation counts at this fraction of its weight; the rest of its share stays unassigned. */
+export const SATURATION_FACTOR = 0.5;
+
+/**
+ * Whether an evaluation can still tell the leading models apart: the spread, in points of 100, between
+ * its best and its SATURATION_TOP-th score. Ratings and indices (scale null), and evaluations with fewer
+ * scored models than that, are never saturated.
+ */
+export function saturationOf(scores: number[], scale: 1 | 100 | null, direction: "HIGHER" | "LOWER" = "HIGHER"): { saturated: boolean; spreadPp: number | null } {
+  if (scale === null || scores.length < SATURATION_TOP) return { saturated: false, spreadPp: null };
+  const sorted = [...scores].sort((a, b) => (direction === "HIGHER" ? b - a : a - b));
+  const spreadPp = Math.round((Math.abs(sorted[0]! - sorted[SATURATION_TOP - 1]!) * (100 / scale)) * 1000) / 1000;
+  return { saturated: spreadPp < SATURATION_SPREAD_PP, spreadPp };
 }
 
 export const SCORING_SOURCES: ScoringSource[] = [
-  { key: "artificial-analysis", unit: "artificial-analysis:intelligence", weight: 0.3, family: "broad-composite", operator: "artificial-analysis", budget: "broad", category: null, scoring: true, intervalSd: null, direction: "HIGHER" },
-  { key: "artificial-analysis-multilingual", unit: "artificial-analysis-multilingual", weight: 0.06, family: "multilingual", operator: "artificial-analysis", budget: "multilingual", category: null, scoring: false, intervalSd: null, direction: "HIGHER" },
-  { key: "arena-text", unit: "arena-text", weight: 0.05, family: "arena-preference", operator: "arena", budget: "preference", category: null, scoring: true, intervalSd: 1.96, direction: "HIGHER" },
-  { key: "arena-webdev", unit: "arena-webdev", weight: 0.024, family: "arena-preference", operator: "arena", budget: "coding", category: "aesthetics", scoring: true, intervalSd: 1.96, direction: "HIGHER" },
-  { key: "mercor-apex-agents", unit: "mercor-apex-agents:loop-pass-1", weight: 0.04, family: "professional-work", operator: "mercor", budget: "tools", category: "professional", scoring: true, intervalSd: null, direction: "HIGHER" },
-  { key: "vals-finance-agent", unit: "vals-finance-agent", weight: 0.03, family: "professional-work", operator: "vals-ai", budget: "professional", category: "professional", scoring: true, intervalSd: 1, direction: "HIGHER" },
-  { key: "deepswe-v1-1", unit: "deepswe-v1-1", weight: 0.036, family: "software-engineering", operator: "datacurve", budget: "coding", category: "coding", scoring: true, intervalSd: 1.96, direction: "HIGHER" },
-  { key: "taptap-maker", unit: "taptap-maker", weight: 0.036, family: "game-development", operator: "taptap-maker", budget: "coding", category: "coding", scoring: true, intervalSd: 1.96, direction: "HIGHER" },
-  { key: "livebench-coding", unit: "livebench-coding", weight: 0.024, family: "rolling-objective", operator: "livebench", budget: "coding", category: "coding", scoring: true, intervalSd: null, direction: "HIGHER" },
-  { key: "livebench-reasoning", unit: "livebench-reasoning", weight: 0.042, family: "rolling-objective", operator: "livebench", budget: "reasoning", category: "reasoning", scoring: true, intervalSd: null, direction: "HIGHER" },
-  { key: "livebench-writing", unit: "livebench-writing", weight: 0.03, family: "rolling-objective", operator: "livebench", budget: "writing", category: null, scoring: true, intervalSd: null, direction: "HIGHER" },
-  { key: "arena-creative-writing", unit: "arena-creative-writing", weight: 0.05, family: "arena-preference", operator: "arena", budget: "preference", category: "writing", scoring: true, intervalSd: 1.96, direction: "HIGHER" },
-  { key: "arena-vision", unit: "arena-vision", weight: 0.06, family: "arena-preference", operator: "arena", budget: "vision", category: null, scoring: true, intervalSd: 1.96, direction: "HIGHER" },
-  { key: "tau-banking", unit: "tau-banking", weight: 0.02, family: "customer-service-banking", operator: "sierra", budget: "tools", category: "professional", scoring: false, intervalSd: null, direction: "HIGHER" },
-  { key: "epoch-simpleqa", unit: "epoch-simpleqa", weight: 0.04, family: "epoch-simpleqa", operator: "epoch-ai", budget: "knowledge", category: "knowledge", scoring: true, intervalSd: 1, direction: "HIGHER" },
-  { key: "epoch-gpqa", unit: "epoch-gpqa", weight: 0.02, family: "epoch-gpqa", operator: "epoch-ai", budget: "knowledge", category: "knowledge", scoring: true, intervalSd: 1, direction: "HIGHER" },
-  { key: "epoch-frontiermath", unit: "epoch-frontiermath", weight: 0.036, family: "research-mathematics", operator: "epoch-ai", budget: "reasoning", category: "reasoning", scoring: true, intervalSd: 1, direction: "HIGHER" },
-  { key: "epoch-frontiermath-tier4", unit: "epoch-frontiermath-tier4", weight: 0.012, family: "research-mathematics", operator: "epoch-ai", budget: "reasoning", category: "reasoning", scoring: true, intervalSd: 1, direction: "HIGHER" },
-  { key: "epoch-chess", unit: "epoch-chess", weight: 0.018, family: "novel-game-reasoning", operator: "epoch-ai", budget: "reasoning", category: "reasoning", scoring: true, intervalSd: 1, direction: "HIGHER" },
-  { key: "epoch-mystery", unit: "epoch-mystery", weight: 0.012, family: "novel-game-reasoning", operator: "epoch-ai", budget: "reasoning", category: "reasoning", scoring: true, intervalSd: 1, direction: "HIGHER" },
-  { key: "eq-creative", unit: "eq-creative", weight: 0.036, family: "judged-creative-writing", operator: "eq-bench", budget: "writing", category: "writing", scoring: true, intervalSd: null, direction: "HIGHER" },
-  { key: "eq-longform", unit: "eq-longform", weight: 0.024, family: "judged-creative-writing", operator: "eq-bench", budget: "writing", category: "writing", scoring: true, intervalSd: null, direction: "HIGHER" },
+  { key: "artificial-analysis", unit: "artificial-analysis:intelligence", weight: 0.3, family: "broad-composite", operator: "artificial-analysis", budget: "broad", category: null, scoring: true, intervalSd: null, direction: "HIGHER", scale: null },
+  { key: "artificial-analysis-multilingual", unit: "artificial-analysis-multilingual", weight: 0.06, family: "multilingual", operator: "artificial-analysis", budget: "multilingual", category: null, scoring: false, intervalSd: null, direction: "HIGHER", scale: null },
+  { key: "arena-text", unit: "arena-text", weight: 0.05, family: "arena-preference", operator: "arena", budget: "preference", category: null, scoring: true, intervalSd: 1.96, direction: "HIGHER", scale: null },
+  { key: "arena-webdev", unit: "arena-webdev", weight: 0.024, family: "arena-preference", operator: "arena", budget: "coding", category: "aesthetics", scoring: true, intervalSd: 1.96, direction: "HIGHER", scale: null },
+  { key: "mercor-apex-agents", unit: "mercor-apex-agents:loop-pass-1", weight: 0.04, family: "professional-work", operator: "mercor", budget: "tools", category: "professional", scoring: true, intervalSd: null, direction: "HIGHER", scale: 100 },
+  { key: "vals-finance-agent", unit: "vals-finance-agent", weight: 0.03, family: "professional-work", operator: "vals-ai", budget: "professional", category: "professional", scoring: true, intervalSd: 1, direction: "HIGHER", scale: 100 },
+  { key: "deepswe-v1-1", unit: "deepswe-v1-1", weight: 0.012, family: "software-engineering", operator: "datacurve", budget: "coding", category: "coding", scoring: true, intervalSd: 1.96, direction: "HIGHER", scale: 1 },
+  { key: "frontiercode", unit: "frontiercode", weight: 0.048, family: "software-engineering", operator: "cognition", budget: "coding", category: "coding", scoring: true, intervalSd: null, direction: "HIGHER", scale: 1 },
+  { key: "taptap-maker", unit: "taptap-maker", weight: 0.024, family: "game-development", operator: "taptap-maker", budget: "coding", category: "coding", scoring: true, intervalSd: 1.96, direction: "HIGHER", scale: 1 },
+  { key: "livebench-coding", unit: "livebench-coding", weight: 0.012, family: "rolling-objective", operator: "livebench", budget: "coding", category: "coding", scoring: true, intervalSd: null, direction: "HIGHER", scale: 100 },
+  { key: "livebench-reasoning", unit: "livebench-reasoning", weight: 0.042, family: "rolling-objective", operator: "livebench", budget: "reasoning", category: "reasoning", scoring: true, intervalSd: null, direction: "HIGHER", scale: 100 },
+  { key: "livebench-writing", unit: "livebench-writing", weight: 0.03, family: "rolling-objective", operator: "livebench", budget: "writing", category: null, scoring: true, intervalSd: null, direction: "HIGHER", scale: 100 },
+  { key: "arena-creative-writing", unit: "arena-creative-writing", weight: 0.05, family: "arena-preference", operator: "arena", budget: "preference", category: "writing", scoring: true, intervalSd: 1.96, direction: "HIGHER", scale: null },
+  { key: "arena-vision", unit: "arena-vision", weight: 0.06, family: "arena-preference", operator: "arena", budget: "vision", category: null, scoring: true, intervalSd: 1.96, direction: "HIGHER", scale: null },
+  { key: "tau-banking", unit: "tau-banking", weight: 0.02, family: "customer-service-banking", operator: "sierra", budget: "tools", category: "professional", scoring: false, intervalSd: null, direction: "HIGHER", scale: null },
+  { key: "epoch-simpleqa", unit: "epoch-simpleqa", weight: 0.04, family: "epoch-simpleqa", operator: "epoch-ai", budget: "knowledge", category: "knowledge", scoring: true, intervalSd: 1, direction: "HIGHER", scale: 1 },
+  { key: "epoch-gpqa", unit: "epoch-gpqa", weight: 0.02, family: "epoch-gpqa", operator: "epoch-ai", budget: "knowledge", category: "knowledge", scoring: true, intervalSd: 1, direction: "HIGHER", scale: 1 },
+  { key: "epoch-frontiermath", unit: "epoch-frontiermath", weight: 0.036, family: "research-mathematics", operator: "epoch-ai", budget: "reasoning", category: "reasoning", scoring: true, intervalSd: 1, direction: "HIGHER", scale: 1 },
+  { key: "epoch-frontiermath-tier4", unit: "epoch-frontiermath-tier4", weight: 0.012, family: "research-mathematics", operator: "epoch-ai", budget: "reasoning", category: "reasoning", scoring: true, intervalSd: 1, direction: "HIGHER", scale: 1 },
+  { key: "epoch-chess", unit: "epoch-chess", weight: 0.018, family: "novel-game-reasoning", operator: "epoch-ai", budget: "reasoning", category: "reasoning", scoring: true, intervalSd: 1, direction: "HIGHER", scale: 1 },
+  { key: "epoch-mystery", unit: "epoch-mystery", weight: 0.012, family: "novel-game-reasoning", operator: "epoch-ai", budget: "reasoning", category: "reasoning", scoring: true, intervalSd: 1, direction: "HIGHER", scale: 1 },
+  { key: "eq-creative", unit: "eq-creative", weight: 0.036, family: "judged-creative-writing", operator: "eq-bench", budget: "writing", category: "writing", scoring: true, intervalSd: null, direction: "HIGHER", scale: null },
+  { key: "eq-longform", unit: "eq-longform", weight: 0.024, family: "judged-creative-writing", operator: "eq-bench", budget: "writing", category: "writing", scoring: true, intervalSd: null, direction: "HIGHER", scale: null },
 ];
 
 /** Fixed reference models for the index scale; they never decide who ranks where. */

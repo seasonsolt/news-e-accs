@@ -5,7 +5,7 @@ import type { LbSourceDetail } from "@aihot/contracts/leaderboard";
 import { loadOr404 } from "../lib/api.server";
 import { breadcrumbLd, pageMeta, siteUrl, titled } from "../lib/seo";
 import { BrandMark } from "../features/leaderboard/BrandMark";
-import { StatusChip } from "../features/leaderboard/StatusChip";
+import { SaturatedChip, StatusChip } from "../features/leaderboard/StatusChip";
 import { pct, shortStamp } from "../features/leaderboard/format";
 import { IconArrowLeft, IconArrowUpRight, IconChevronDown } from "../components/icons";
 
@@ -90,10 +90,24 @@ export default function LeaderboardSourcePage() {
         <div className="min-w-0">
           <span className="text-[11px] text-ink-4">在 {SITE.name} 中</span>
           <span className="mt-1.5 block">
-            <StatusChip status={source.status} large />
+            <span className="flex flex-wrap items-center gap-1.5">
+              <StatusChip status={source.status} large />
+              {source.saturated && <SaturatedChip spreadPp={source.spreadPp} large />}
+            </span>
           </span>
         </div>
-        <Stat label="证据预算">{source.budget !== null ? pct(source.budget) : <span className="font-sans text-[14px] font-normal text-ink-3">不计分</span>}</Stat>
+        <Stat label="证据预算">
+          {source.budget === null ? (
+            <span className="font-sans text-[14px] font-normal text-ink-3">不计分</span>
+          ) : source.saturated ? (
+            <>
+              {pct(source.effectiveBudget ?? source.budget)}
+              <span className="ml-1.5 font-sans text-[12px] font-normal text-ink-4">（接近饱和，原 {pct(source.budget)}）</span>
+            </>
+          ) : (
+            pct(source.budget)
+          )}
+        </Stat>
         <Stat label="上游数据时间">{d.collected ? shortStamp(d.upstreamAt) : <span className="font-sans text-[14px] font-normal text-ink-3">待核实</span>}</Stat>
         <Stat label="最近成功同步">
           {d.collected ? shortStamp(d.syncedAt) : <span className="font-sans text-[14px] font-normal text-ink-3">{source.status === "awaiting" ? "等待可比成绩" : "尚未开始采集"}</span>}

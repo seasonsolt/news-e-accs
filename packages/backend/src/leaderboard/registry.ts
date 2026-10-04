@@ -1,7 +1,7 @@
 // Reader-facing leaderboard vocabulary: evaluation sources, board copy, score formats and brand marks.
 // Scoring weights and eligibility never come from here; they come from the computation run.
 import type { LeaderboardBoardKey } from "@aihot/contracts/taxonomy";
-import type { LbBrand, LbScoreFormat, LbSourceStatus } from "@aihot/contracts/leaderboard";
+import type { LbBrand, LbLineageStep, LbScoreFormat, LbSourceStatus } from "@aihot/contracts/leaderboard";
 import registryData from "./source-registry.json" with { type: "json" };
 import { SITE } from "@aihot/industry/site";
 
@@ -29,6 +29,8 @@ export interface RegistryGroup {
   key: string;
   name: string;
   blurb: string;
+  /** Which benchmark led this area over time, oldest first; `current` marks today's lead. */
+  lineage?: LbLineageStep[];
   sources: RegistrySource[];
 }
 

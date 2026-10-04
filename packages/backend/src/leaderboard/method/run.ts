@@ -1,10 +1,10 @@
 // One leaderboard computation round: build inputs from the latest snapshots, compute every board
-// with method v15, and publish only when the evidence changed and every published board solved
+// with method v16, and publish only when the evidence changed and every published board solved
 // to optimality. A failed round keeps the previous published run on the site.
 import { newArticleId, sha256, stableJson } from "../../lib/ids.ts";
 import { sql } from "../../db.ts";
 import { buildRunInputs, type RunInputs } from "./inputs.ts";
-import { BUDGETS, METHOD_VERSION } from "./v15.ts";
+import { BUDGETS, METHOD_VERSION } from "./v16.ts";
 import { computeBoardsInWorker } from "./compute.ts";
 
 export const TIE_POLICY = "published-order-then-slug/highs-js";

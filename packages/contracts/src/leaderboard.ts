@@ -186,12 +186,26 @@ export interface LbSourceSummary {
   status: LbSourceStatus;
   brand: LbBrand | null;
   budget: number | null;
+  /** What the budget counted at this run: lower than `budget` when saturated. */
+  effectiveBudget: number | null;
+  /** Top scores packed too close to separate models: the source counted at a reduced weight this run. */
+  saturated: boolean;
+  /** Points of 100 between its best and 10th-best score; null for ratings without a ceiling. */
+  spreadPp: number | null;
+}
+
+export interface LbLineageStep {
+  name: string;
+  period: string;
+  note: string;
+  current?: boolean;
 }
 
 export interface LbSourceGroup {
   key: string;
   name: string;
   blurb: string;
+  lineage: LbLineageStep[];
   sources: LbSourceSummary[];
 }
 

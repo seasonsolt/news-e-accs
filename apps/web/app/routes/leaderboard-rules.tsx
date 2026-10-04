@@ -1,4 +1,4 @@
-// Public method statement for the leaderboard (method v15, docs/leaderboard.md).
+// Public method statement for the leaderboard (method v16, docs/leaderboard.md).
 // The copy states how rankings are actually computed; it changes only together with the method.
 import { SITE, withSubject } from "@aihot/industry/site";
 import { Link, useLoaderData } from "react-router";
@@ -90,6 +90,10 @@ const FAQ = [
     a: "我们根据公开的题库与方法说明检查重叠，并限制相关来源的总份额；无法确认的相关性仍是局限。当前 AA 指数占 30%；Arena 整体文本与创作专项共享原有 10% 真人偏好份额，各占 5%。两项有重叠投票，因此仍算同一个证据家族，不假装是两家独立评测。",
   },
   {
+    q: "为什么某个评测被标为“接近饱和”？",
+    a: "它的前 10 名相差不到 3 个百分点，已经很难区分强模型。这一轮它按一半权重计分；以后分数重新拉开，会自动恢复。标记只看分数分布，不代表评测质量差。",
+  },
+  {
     q: "价格或速度会影响排名吗？",
     a: "都不会。价格只供你了解 API 的使用成本，统一按每百万 Token 展示，并保留厂商官方来源。它不代表订阅费用。",
   },
@@ -98,6 +102,7 @@ const FAQ = [
 const SECTIONS = [
   ["#rules-steps", "四步得出排名"],
   ["#rules-budgets", "证据怎么分配"],
+  ["#rules-succession", "评测也会老化"],
   ["#rules-faq", "常见问题"],
   ["#rules-details", "计算细节"],
 ] as const;
@@ -213,6 +218,22 @@ export default function LeaderboardRulesPage() {
         <p className="mt-4 max-w-[64em] text-[12.5px] leading-[1.8] text-ink-3">
           编程、推理、知识、专业办公分别寻找真实评测，分类分独立计算。视觉理解与多语言证据继续保留在综合榜；调整分类名称不会增加同一份成绩的投票权。综合分不等于分类分的算术平均。分类通常至少有两项有效评测、五个可比较型号才展示。知识目前由 Epoch 的两套评测支持，并明确说明同机构的局限。创作偏好、网页开发等证据继续用于综合榜，首版不单设审美和写作榜。
         </p>
+      </section>
+
+      <section id="rules-succession" className="mt-12 scroll-mt-6">
+        <Eyebrow>BENCHMARKS AGE</Eyebrow>
+        <h2 className="mt-2 text-[20px] font-bold text-ink">评测也会老化，主力会换。</h2>
+        <div className="mt-1.5 max-w-[64em] space-y-3 text-[13px] leading-[1.8] text-ink-3">
+          <p>
+            一份评测刚出来时能拉开强弱，几年后头部模型挤在一起、题目也进了训练数据，它就分不出谁更强了。编程就是这样：从 SWE-bench Verified，到 DeepSWE，再到现在由开源维护者亲自出题的 FrontierCode。我们会在新评测数据稳定、运行条件公开后，把份额交给它，旧评测降为交叉证据，而不是让它继续投满票。
+          </p>
+          <p>
+            方法 v16 起，编程预算 12% 的分配是：FrontierCode 4.8%，TapTap Maker 2.4%，Arena WebDev 2.4%，DeepSWE 1.2%，LiveBench 编程 1.2%。换主力属于方法变更，会升方法版本并在这里写明。
+          </p>
+          <p>
+            除了人工换代，每一轮还会自动检查饱和：对有满分上限的评测（通过率、百分制），如果前 10 名相差不到 3 个百分点，本轮按一半权重计分，并在评测页标出“接近饱和”。Elo 这类没有上限的分数不做这项检查。减掉的份额不转给其他评测。
+          </p>
+        </div>
       </section>
 
       <section id="rules-faq" className="mt-12 scroll-mt-6">
