@@ -58,11 +58,15 @@ flowchart LR
 | 地址 | 内容 |
 |---|---|
 | `/` `/all` `/hot` `/topics` `/daily` `/weekly` `/monthly` | 精选、全部动态、热门事件、主题、日报周报月报 |
+| `/chronicle`、`/api/site/chronicle`、`/api/site/chronicle/bounds` | 文明时间轴数据和本站历史范围（`FEATURES.timeMachine`） |
+| `/api/site/reports/:kind/at/:date` | 不晚于指定北京日的最新报告 key |
 | `/feed.xml` `/feed/all.xml` `/feed/full.xml` `/feed/daily.xml` | RSS：精选、全部、全文、日报 |
 | `/api/v1/` | 公开 API，文档在 `/openapi-v1.json`，说明页在 `/agent` |
 | `/api/mcp` | MCP 服务，工具名前缀是 `industry/site.ts` 的 `mcpPrefix` |
 | `/llms.txt` `/sitemap.xml` `/robots.txt` | 给大模型和搜索引擎的说明 |
 | `/admin` | 后台 |
+
+精选、热点榜、模型榜与报告支持 `?at=YYYY-MM-DD`：截至该北京日 23:59:59.999，只通过公开读取层读取已发布记录；今天等同实时，未来和非法日期由接口返回 400。历史精选不走实时缓存，游标绑定日期，热点与模型榜的历史缓存不覆盖实时缓存。30 天以前的热点榜只保留每个北京日最后一份已发布记录；已删历史不恢复，模型价格仍为当前价。公开页面不读写 cookie，不触发模型；历史页 noindex，canonical 不带 `at`。MCP 和 API v1 暂不提供历史切片。
 
 ## 测试
 

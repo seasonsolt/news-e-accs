@@ -81,12 +81,14 @@
 
 这一步决定了你的站“选得准不准”。
 
-## 6. 只对 AI 有意义的两个模块：`industry/features.ts`
+## 6. 可选模块：`industry/features.ts`
 
 - `leaderboard`：模型榜（`/leaderboard`）。
 - `codexResetMonitor`：Codex 重置监控（`/codex-reset`）。
 
 别的行业把两项都设为 `false`：导航入口、定时任务、接口和站点地图都会跟着关掉。想彻底删掉代码，删这些目录并处理掉编译错误即可：`packages/backend/src/leaderboard/`、`packages/backend/src/monitor/`、`apps/web/app/features/leaderboard/`、`apps/web/app/features/monitor/`、`apps/web/app/routes/leaderboard*.tsx`、`apps/web/app/routes/codex-reset.tsx`、`apps/api/src/routes/leaderboard.ts`。
+
+- `timeMachine`：全站 `?at=YYYY-MM-DD` 北京日历史切片和 `/chronicle` 四维视角。换行业时，替换 `industry/chronicle/{eras,milestones,metrics}.json`，保持格式、时间排序和来源链接；版画放在 `apps/web/public/media/art/epochs/`，用 `tools/make-art.sh` 转换。没有相应数据时设为 `false`，关闭入口、接口和站点地图。历史切片只读已有记录，不调用模型。
 
 ## 7. 品牌：`industry/brand/`
 
