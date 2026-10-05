@@ -2,7 +2,9 @@ import { SITE, withSubject } from "@aihot/industry/site";
 import { Link, data, useLoaderData } from "react-router";
 import type { Route } from "./+types/leaderboard";
 import type { LbBoardResponse } from "@aihot/contracts/leaderboard";
-import { loadOr404 } from "../lib/api.server";
+import { ApiError, apiGet, apiErrorResponse, loadOr404, queryString } from "../lib/api.server";
+import { EmptyState } from "../components/ui/Page";
+import { atLabel, requestAt, useAt } from "../features/chrono/at";
 import { breadcrumbLd, pageMeta, siteUrl, titled } from "../lib/seo";
 import { BoardTable } from "../features/leaderboard/BoardTable";
 import { Podium } from "../features/leaderboard/Podium";
@@ -16,14 +18,23 @@ const CATEGORY_KEYS = new Set(["coding", "reasoning", "knowledge", "professional
 export async function loader({ params, request }: Route.LoaderArgs) {
   const key = params.key ?? "overall";
   if (params.key !== undefined && !CATEGORY_KEYS.has(params.key)) throw data({ message: "not_found" }, { status: 404 });
-  return loadOr404<LbBoardResponse>(`/api/site/leaderboard/boards/${key}`, { signal: request.signal });
+  const at = requestAt(request);
+  if (!at) return { at, board: await loadOr404<LbBoardResponse>(`/api/site/leaderboard/boards/${key}`, { signal: request.signal }) };
+  try {
+    return { at, board: await apiGet<LbBoardResponse>(`/api/site/leaderboard/boards/${key}${queryString({ at })}`, { signal: request.signal }) };
+  } catch (error) {
+    // The time machine went back before the first ranking run.
+    if (!request.signal.aborted && error instanceof ApiError && error.status === 404) return { at, board: null };
+    throw apiErrorResponse(error, { signal: request.signal });
+  }
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {
-  if (!loaderData) return [{ title: titled("页面不存在") }];
-  const { board, entries } = loaderData;
+  if (!loaderData?.board) return pageMeta({ title: loaderData ? "模型榜" : "页面不存在", path: "/leaderboard", noindex: true });
+  const { board, entries } = loaderData.board;
   const path = board.key === "overall" ? "/leaderboard" : `/leaderboard/category/${board.key}`;
   return pageMeta({
+    noindex: !!loaderData.at,
     title: board.title,
     rawTitle: true,
     description: board.key === "overall" ? "汇总多家公开模型评测榜单，给出${SITE.name} 共识分、评测完整度、上线日期与 API 参考价格。" : board.description,
@@ -52,7 +63,19 @@ export function headers() {
 }
 
 export default function LeaderboardPage() {
-  const { board, entries, run } = useLoaderData<typeof loader>();
+  const { board: loaded, at } = useLoaderData<typeof loader>();
+  if (!loaded) {
+    return (
+      <div className="card mt-3">
+        <EmptyState title="这一天还没有模型榜">{at ? `${atLabel(at)}之前，本站还没有算出第一份共识排名。` : null}往后拨几天再看。</EmptyState>
+      </div>
+    );
+  }
+  return <Board data={loaded} />;
+}
+
+function Board({ data: { board, entries, run } }: { data: LbBoardResponse }) {
+  const at = useAt();
   const entrance = useEntrance();
   // Router reuses this route component across board URLs; the keyed subtree alone cannot detect
   // that switch. Carry the switch flag through the render so returning to the initial board works.
@@ -101,7 +124,7 @@ export default function LeaderboardPage() {
         <section className="card p-5">
           <h2 className="text-[14px] font-semibold text-ink">关于价格</h2>
           <p className="mt-2 text-[13px] leading-relaxed text-ink-3">
-            API 价格来自厂商官网，按每百万 Token 展示。{run.fx ? `美元报价按 ${run.fx.asOf} 汇率折算成人民币。` : ""}缓存价格指命中后的输入价格，缓存写入、存储及订阅费用另计。
+            API 价格来自厂商官网，按每百万 Token 展示。{at && "价格为当前价，不是历史快照。"}{run.fx ? `美元报价按 ${run.fx.asOf} 汇率折算成人民币。` : ""}缓存价格指命中后的输入价格，缓存写入、存储及订阅费用另计。
           </p>
         </section>
       </div>

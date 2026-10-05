@@ -2,6 +2,7 @@ import { SITE, withSubject } from "@aihot/industry/site";
 import { data, useLoaderData } from "react-router";
 import type { Route } from "./+types/report-detail";
 import type { ReportDetail, ReportNavigationEntry, ReportKind } from "@aihot/contracts/site";
+import { requestAt } from "../features/chrono/at";
 import { apiGet, loadOr404 } from "../lib/api.server";
 import { pageMeta, titled } from "../lib/seo";
 import { beijingDate } from "../lib/format";
@@ -23,7 +24,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     loadOr404<ReportDetail>(`/api/site/reports/${kind}/${key}`, { signal: request.signal }),
     apiGet<{ items: ReportNavigationEntry[] }>(`/api/site/reports/${kind}/navigation/${key}`, { signal: request.signal }),
   ]);
-  return { report, index, today: beijingDate(Date.now()) };
+  const at = requestAt(request);
+  return { report, index, today: at ?? beijingDate(Date.now()), at };
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {
@@ -35,6 +37,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
     path: `/${r.kind}/${r.key}`,
     image: `/og/reports/${r.kind}/${r.key}.png`,
     type: "article",
+    noindex: !!loaderData.at,
   });
 }
 

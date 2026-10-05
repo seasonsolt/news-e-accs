@@ -13,6 +13,7 @@ import { Timeline } from "../features/feed/Timeline";
 import { HotTopics } from "../features/feed/HotTopics";
 import { CategoryTabs, SearchField, SearchIconLink } from "../features/feed/Filters";
 import { beijingDate, beijingWeekday } from "../lib/format";
+import { requestAt } from "../features/chrono/at";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
@@ -24,15 +25,17 @@ export async function loader({ request }: Route.LoaderArgs) {
   const channel = isChannelKey(channelParam) ? channelParam : "all";
   const category = categoryParam && isCategoryKey(categoryParam) ? categoryParam : null;
   const tag = url.searchParams.get("tag")?.trim() || null;
+  const at = requestAt(request);
   const upstream = new Headers();
-  const data = await loadOr404<TimelineResponse>(`/api/site/timeline${queryString({ channel: channel === "all" ? null : channel, category, tag })}`, { responseHeaders: upstream, signal: request.signal });
-  return withHeaders({ data, filters: { channel, category, tag, topic: null } }, { headers: releaseBoundCache(data.refreshAt, 60, Date.now(), upstream) });
+  const data = await loadOr404<TimelineResponse>(`/api/site/timeline${queryString({ channel: channel === "all" ? null : channel, category, tag, at })}`, { responseHeaders: upstream, signal: request.signal });
+  return withHeaders({ data, filters: { channel, category, tag, topic: null, at } }, { headers: releaseBoundCache(data.refreshAt, 60, Date.now(), upstream) });
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {
   const f = loaderData?.filters;
+  // A time-machine slice stands for the live page, which is the one to index.
   const path = listPath("/", { channel: f && f.channel !== "all" ? f.channel : null, category: f?.category, tag: f?.tag });
-  return pageMeta({ path, jsonLd: path === "/" ? organizationLd() : undefined });
+  return pageMeta({ path, jsonLd: path === "/" && !f?.at ? organizationLd() : undefined, noindex: !!f?.at });
 }
 
 export function headers({ loaderHeaders }: Route.HeadersArgs) {
@@ -54,7 +57,7 @@ export default function Home() {
   const title = filters.tag ? `#${filters.tag}` : "精选";
   // A first visit to the unfiltered front page opens on the newsletter onboarding (shown before paint
   // by the boot script); everyone else, crawlers included, reads the news below.
-  const front = filters.channel === "all" && !filters.category && !filters.tag;
+  const front = filters.channel === "all" && !filters.category && !filters.tag && !filters.at;
   return (
     <div className="pb-6">
       {front && <Onboarding mode="overlay" />}

@@ -1,0 +1,126 @@
+// The time machine's two controls: the brass dial at the foot of the desktop sidebar (always there),
+// and the bar over every page while the site is on a past day (phones reach the dial from 更多).
+import type { TimeMachineBounds } from "@aihot/contracts/chronicle";
+import { dateToYear } from "@aihot/contracts/chronicle";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router";
+import { IconChevronRight, IconHourglass } from "../../components/icons";
+import { SplitFlapText } from "../motion/react-bits/SplitFlapText";
+import { atLabel, followsTime, stepAt, useAt, withAt } from "./at";
+import { addDays, beijingDate } from "@aihot/contracts/time";
+
+/** Deep time on the four-dimensional view, centred on this day. */
+export function chronicleHref(at: string | null): string {
+  return at ? `/chronicle?t=${dateToYear(at).toFixed(4)}` : "/chronicle";
+}
+
+function travelPath(pathname: string): string {
+  // A dated issue is where /daily redirected: a new day must choose its own latest issue.
+  const report = /^\/(daily|weekly|monthly)\/\d/.exec(pathname);
+  return report ? `/${report[1]}` : pathname;
+}
+
+/** Where a new day goes: the same page when it follows time, else the front page on that day. */
+function useTravel() {
+  const { pathname, search, hash } = useLocation();
+  const navigate = useNavigate();
+  return (at: string | null) => {
+    const here = followsTime(pathname) ? `${travelPath(pathname)}${search}${hash}` : "/";
+    navigate(withAt(here, at));
+  };
+}
+
+/** Counts changes of `value`, so a split-flap tile flips each time the day moves. */
+function useFlips(value: string) {
+  const [flips, setFlips] = useState(0);
+  const last = useRef(value);
+  useEffect(() => {
+    if (last.current === value) return;
+    last.current = value;
+    setFlips((n) => n + 1);
+  }, [value]);
+  return flips;
+}
+
+/** Where `at` sits on the site's own record, 0 (its first day) to 1 (today); null without a record. */
+function recordPosition(at: string | null, earliest: string | null, today: string): number | null {
+  if (!earliest || earliest >= today) return null;
+  const day = (d: string) => Date.parse(`${d}T00:00:00Z`) / 86400000;
+  const span = day(today) - day(earliest);
+  return at ? Math.min(1, Math.max(0, (day(at) - day(earliest)) / span)) : 1;
+}
+
+/** The sidebar dial: step a day at a time, pick a day, or open the four-dimensional view. */
+export function TimeDial({ bounds, className = "" }: { bounds: TimeMachineBounds | null; className?: string }) {
+  const at = useAt();
+  const travel = useTravel();
+  const today = bounds?.today ?? beijingDate(Date.now());
+  const shown = at ? at.replaceAll("-", "·") : "现在";
+  const flips = useFlips(shown);
+  const earliest = bounds?.earliest ?? null;
+  const position = recordPosition(at, earliest, today);
+  return (
+    <div className={`time-dial ${at ? "is-away" : ""} ${className}`}>
+      <div className="time-dial-head">
+        <span className="flex items-center gap-1"><IconHourglass size={12} /> 时光机</span>
+        <Link to={chronicleHref(at)} className="time-dial-link">四维视角<IconChevronRight size={12} /></Link>
+      </div>
+      <div className="mt-1.5 flex items-center gap-1.5">
+        <button type="button" className="time-knob" aria-label="前一天" disabled={!!earliest && !!at && at <= earliest} onClick={() => travel(stepAt(at, -1, today))}>
+          ‹
+        </button>
+        <label className="time-dial-face relative flex h-8 min-w-0 flex-1 cursor-pointer items-center justify-center">
+          <SplitFlapText text={shown} trigger={flips} />
+          <input
+            type="date"
+            aria-label="选择日期"
+            className="absolute inset-0 cursor-pointer opacity-0"
+            min={earliest ?? undefined}
+            max={addDays(today, -1)}
+            value={at ?? ""}
+            onChange={(e) => e.target.value && travel(e.target.value)}
+          />
+        </label>
+        <button type="button" className="time-knob" aria-label="后一天" disabled={!at} onClick={() => travel(stepAt(at, 1, today))}>
+          ›
+        </button>
+      </div>
+      {position !== null && (
+        // The site's own record, from its first day to today, and where the dial stands on it.
+        <div className="time-dial-ruler" aria-hidden="true" title={`本站记录始于 ${earliest}`}>
+          <span className="time-dial-needle" style={{ left: `${position * 100}%` }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Over every page while the site shows a past day: which day, a step either way, and the way back. */
+export function TimeBar({ bounds }: { bounds: TimeMachineBounds | null }) {
+  const at = useAt();
+  const { pathname, search, hash } = useLocation();
+  if (!at) return null;
+  const today = bounds?.today ?? beijingDate(Date.now());
+  const here = `${travelPath(pathname)}${search}${hash}`;
+  const prev = stepAt(at, -1, today);
+  const next = stepAt(at, 1, today);
+  const beforeRecord = !!bounds?.earliest && at < bounds.earliest;
+  const note = beforeRecord ? "本站那时还没有记录" : !followsTime(pathname) ? "本页内容不随时间变化" : null;
+  return (
+    <div role="region" aria-label="时光机" className="time-bar sticky top-0 z-30 -mx-4 mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 lg:top-3 lg:mx-0 lg:px-3">
+      <span className="flex min-w-0 items-center gap-2.5">
+        <span className="time-bar-badge" aria-hidden="true"><IconHourglass size={14} /></span>
+        <span className="flex min-w-0 flex-col leading-tight">
+          <span className="time-bar-label">时光机停在{note && <span className="time-bar-note"> · {note}</span>}</span>
+          <strong className="time-bar-date">{atLabel(at)}</strong>
+        </span>
+      </span>
+      <span className="ml-auto flex flex-wrap items-center gap-1.5">
+        <Link to={withAt(here, prev)} className="time-bar-button" aria-label="前一天">‹ 前一天</Link>
+        <Link to={withAt(here, next)} className="time-bar-button" aria-label="后一天">后一天 ›</Link>
+        <Link to={chronicleHref(at)} className="time-bar-button">四维视角</Link>
+        <Link to={withAt(here, null)} className="time-bar-button is-primary">回到现在</Link>
+      </span>
+    </div>
+  );
+}

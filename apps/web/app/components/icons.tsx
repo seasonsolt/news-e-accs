@@ -24,6 +24,7 @@ export const IconChart = (p: P) => (<Svg {...p}><path d="M4 20V10M10 20V4M16 20v
 export const IconClock = (p: P) => (<Svg {...p}><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></Svg>);
 export const IconPlug = (p: P) => (<Svg {...p}><path d="M9 3v5M15 3v5M7 8h10v3a5 5 0 01-10 0zM12 16v5" /></Svg>);
 export const IconInfo = (p: P) => (<Svg {...p}><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5M12 8h.01" /></Svg>);
+export const IconHourglass = (p: P) => (<Svg {...p}><path d="M6.5 3.5h11M6.5 20.5h11M7.5 3.5c0 4.5 4.5 5.5 4.5 8.5s-4.5 4-4.5 8.5M16.5 3.5c0 4.5-4.5 5.5-4.5 8.5s4.5 4 4.5 8.5" /></Svg>);
 export const IconHistory = (p: P) => (<Svg {...p}><path d="M3.5 12a8.5 8.5 0 102.5-6" /><path d="M3.5 4v4h4" /><path d="M12 8v4l2.5 2" /></Svg>);
 export const IconMail = (p: P) => (<Svg {...p}><rect x="3.5" y="5.5" width="17" height="13" rx="2" /><path d="M4 7l8 6 8-6" /></Svg>);
 export const IconMessage = (p: P) => (<Svg {...p}><path d="M4 5h16v11H9l-5 4z" /></Svg>);

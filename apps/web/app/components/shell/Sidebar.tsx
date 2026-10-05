@@ -6,6 +6,10 @@ import { useChangelogSeen } from "../../lib/local-state";
 import { SIDEBAR, tabIsActive, type NavItem } from "./nav";
 import { ThemeSwitch } from "./ThemeSwitch";
 import { MotionSwitch } from "../../features/motion/MotionSwitch";
+import { FEATURES } from "@aihot/industry/features";
+import type { TimeMachineBounds } from "@aihot/contracts/chronicle";
+import { TimeDial } from "../../features/chrono/TimeMachine";
+import { useAt, withAt } from "../../features/chrono/at";
 
 /** True while the changelog has an entry newer than the one this reader last opened. */
 export function useChangelogDot(latestVersion: string | null): boolean {
@@ -18,12 +22,14 @@ export function useChangelogDot(latestVersion: string | null): boolean {
 
 function SideLink({ item, dot }: { item: NavItem; dot: boolean }) {
   const { pathname } = useLocation();
+  // The time machine stays set while moving between this site's pages.
+  const at = useAt();
   // Weekly and monthly reports belong to the daily report entry, as the phone tab bar has it.
   const isActive = tabIsActive(item, pathname);
   const Icon = item.icon;
   return (
     <Link
-      to={item.to}
+      to={item.document ? item.to : withAt(item.to, at)}
       prefetch={item.document ? "none" : "intent"}
       reloadDocument={item.document}
       aria-current={isActive ? "page" : undefined}
@@ -40,7 +46,7 @@ function SideLink({ item, dot }: { item: NavItem; dot: boolean }) {
   );
 }
 
-export function Sidebar({ changelogVersion }: { changelogVersion: string | null }) {
+export function Sidebar({ changelogVersion, timeBounds }: { changelogVersion: string | null; timeBounds: TimeMachineBounds | null }) {
   const dot = useChangelogDot(changelogVersion);
   return (
     <aside className="sticky top-0 hidden h-dvh w-[180px] shrink-0 flex-col border-r border-line bg-sidebar px-3 pb-3.5 pt-6 lg:flex">
@@ -60,6 +66,7 @@ export function Sidebar({ changelogVersion }: { changelogVersion: string | null 
         ))}
       </nav>
       <div className="mt-2 space-y-2.5 px-1 pt-1">
+        {FEATURES.timeMachine && <TimeDial bounds={timeBounds} className="mx-1" />}
         <ThemeSwitch className="mx-1" />
         <MotionSwitch className="mx-1 w-[calc(100%-8px)]" />
         {SITE.icp && (

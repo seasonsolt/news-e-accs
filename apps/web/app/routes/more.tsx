@@ -8,7 +8,9 @@ import { pageMeta } from "../lib/seo";
 import { ThemeSwitch } from "../components/shell/ThemeSwitch";
 import { MotionSwitch } from "../features/motion/MotionSwitch";
 import { TOOLS } from "../components/shell/nav";
-import { IconBolt, IconBookmark, IconChart, IconChevronRight, IconFlame, IconGrid, IconHeart, IconHistory, IconMessage, IconMoon, IconPlug } from "../components/icons";
+import { IconBolt, IconBookmark, IconChart, IconChevronRight, IconFlame, IconGrid, IconHeart, IconHistory, IconHourglass, IconMessage, IconMoon, IconPlug } from "../components/icons";
+import { TimeDial } from "../features/chrono/TimeMachine";
+import { useAt, withAt } from "../features/chrono/at";
 
 /** Shared caches may keep this page for five minutes. */
 export function headers() {
@@ -25,6 +27,7 @@ const GROUPS: Array<{ title: string; rows: Row[] }> = [
   {
     title: "内容",
     rows: [
+      ...(FEATURES.timeMachine ? [{ to: "/chronicle", label: "四维视角", icon: <IconHourglass size={18} /> }] : []),
       { to: "/topics", label: "主题索引", icon: <IconGrid size={18} /> },
       ...(FEATURES.leaderboard ? [{ to: "/leaderboard", label: "模型榜", icon: <IconChart size={18} /> }] : []),
       ...(FEATURES.codexResetMonitor ? [{ to: "/codex-reset", label: "Tibo重置监控", icon: <IconHistory size={18} /> }] : []),
@@ -59,6 +62,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 }
 
 export default function MorePage() {
+  const at = useAt();
   const root = useRouteLoaderData<typeof rootLoader>("root");
   const changelogDot = useChangelogDot(root?.changelogVersion ?? null);
   return (
@@ -69,7 +73,7 @@ export default function MorePage() {
           <Group key={g.title} title={g.title}>
             {g.rows.map((r) => (
               <li key={r.to}>
-                <Link to={r.to} reloadDocument={r.document} className="flex h-[50px] items-center gap-3 px-4 text-[15px] font-medium text-ink transition-colors active:bg-bg-sunk lg:hover:bg-bg-sunk">
+                <Link to={r.document ? r.to : withAt(r.to, at)} reloadDocument={r.document} className="flex h-[50px] items-center gap-3 px-4 text-[15px] font-medium text-ink transition-colors active:bg-bg-sunk lg:hover:bg-bg-sunk">
                   <span className="text-ink-3">{r.icon}</span>
                   <span className="flex flex-1 items-center gap-2">{r.label}{r.to === "/changelog" && changelogDot && <span className="size-1.5 rounded-full bg-hot" aria-label="有新的更新" />}</span>
                   <IconChevronRight size={16} className="text-ink-4" />
@@ -92,6 +96,11 @@ export default function MorePage() {
                   <span className="flex-1">动效</span>
                   <MotionSwitch className="w-[124px]" />
                 </li>
+                {FEATURES.timeMachine && (
+                  <li className="px-3 py-3">
+                    <TimeDial bounds={root?.timeBounds ?? null} />
+                  </li>
+                )}
               </>
             )}
           </Group>

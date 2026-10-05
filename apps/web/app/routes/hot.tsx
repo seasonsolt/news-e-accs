@@ -1,7 +1,8 @@
 import { SITE, withSubject } from "@aihot/industry/site";
 import { Link, useLoaderData } from "react-router";
 import type { HotEntryView, HotResponse } from "@aihot/contracts/site";
-import { loadOr404 } from "../lib/api.server";
+import { loadOr404, queryString } from "../lib/api.server";
+import { atLabel, requestAt } from "../features/chrono/at";
 import { pageMeta } from "../lib/seo";
 import { monthDayTime, shortSourceName } from "../lib/format";
 import { Badge } from "../components/ui/Badge";
@@ -16,15 +17,17 @@ import { HotHeat, HotMotion, HotRank } from "../features/hot/HotMotion";
 import { TelegraphTape } from "../features/motion/react-bits/TelegraphTape";
 
 export async function loader({ request }: { request: Request }) {
-  return { hot: await loadOr404<HotResponse>("/api/site/hot", { signal: request.signal }) };
+  const at = requestAt(request);
+  return { hot: await loadOr404<HotResponse>(`/api/site/hot${queryString({ at })}`, { signal: request.signal }), at };
 }
 
-export function meta() {
+export function meta({ loaderData }: { loaderData?: { at: string | null } }) {
   return pageMeta({
     title: withSubject("热点榜"),
     description: "过去 48 小时 AI 圈讨论最多的 10 个事件：热度指数、趋势与组成热度的公开来源。",
     path: "/hot",
     image: "/og/pages/hot.png",
+    noindex: !!loaderData?.at,
   });
 }
 
@@ -222,7 +225,7 @@ function Row({ e }: { e: HotEntryView }) {
 }
 
 export default function HotPage() {
-  const { hot } = useLoaderData<typeof loader>();
+  const { hot, at } = useLoaderData<typeof loader>();
   const [lead, ...rest] = hot.entries;
   const runners = rest.slice(0, 2);
   const others = rest.slice(2);
@@ -237,7 +240,7 @@ export default function HotPage() {
           label="热点榜"
           note={
             <>
-              过去 {hot.windowHours} 小时，AI 圈讨论最多的 {hot.entries.length || 10} 件事
+              {at && `截至 ${atLabel(at)}，`}过去 {hot.windowHours} 小时，AI 圈讨论最多的 {hot.entries.length || 10} 件事
               {hot.computedAt && (
                 <>
                   <br />
@@ -251,11 +254,15 @@ export default function HotPage() {
         </ArtBanner>
       </div>
 
-      <TelegraphTape entries={hot.entries} />
+      {!at && <TelegraphTape entries={hot.entries} />}
 
       {!lead ? (
         <div className="card rounded-sheet">
-          <EmptyState title="暂时没有热点">还没有足够多来源共同讨论的事件。</EmptyState>
+          {at ? (
+            <EmptyState title="这一天的热点榜没有存档">热点榜从开站起保留最近 30 天的每一次计算，更早的每天留一份；这一天不在其中。</EmptyState>
+          ) : (
+            <EmptyState title="暂时没有热点">还没有足够多来源共同讨论的事件。</EmptyState>
+          )}
         </div>
       ) : (
         <>

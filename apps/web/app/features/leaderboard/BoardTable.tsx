@@ -5,6 +5,7 @@ import { LB_CONFIDENCE_LABELS } from "@aihot/contracts/leaderboard";
 import { BrandMark } from "./BrandMark";
 import { EvidenceBadge } from "./Evidence";
 import { modelHref, yuan } from "./format";
+import { useAt, withAt } from "../chrono/at";
 import { useMotionAllowed } from "../motion/preferences";
 import { CountUp } from "../motion/react-bits/CountUp";
 import { SplitFlapText } from "../motion/react-bits/SplitFlapText";
@@ -66,6 +67,7 @@ const unit = <span className="block text-[10.5px] font-normal text-ink-4">人民
 
 // Scores stay final at paint; switched boards and initially below-fold rows get one bounded reveal.
 export function BoardTable({ entries, board, viewSwitch = false }: { entries: LbBoardEntry[]; board: string; viewSwitch?: boolean }) {
+  const at = useAt();
   const motionAllowed = useMotionAllowed();
   const [sort, setSort] = useState<SortKey>("rank");
   const [dir, setDir] = useState<1 | -1>(1);
@@ -135,7 +137,7 @@ export function BoardTable({ entries, board, viewSwitch = false }: { entries: Lb
               <Rank rank={e.rank} viewSwitch={viewSwitch && i < 30} delay={Math.min(i, 10) * 18} />
             </td>
             <td className="px-2 py-3 lg:px-3">
-              <Link to={modelHref(e.model.slug, board)} prefetch="intent" className="block after:absolute after:inset-0 after:content-['']">
+              <Link to={withAt(modelHref(e.model.slug, board), at)} prefetch="intent" className="block after:absolute after:inset-0 after:content-['']">
                 <span className="flex items-center gap-3">
                   <BrandMark brand={e.model.brand} size={32} />
                   <span className="min-w-0">

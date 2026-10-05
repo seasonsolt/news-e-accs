@@ -1,5 +1,7 @@
 import { titled } from "./lib/seo";
 import { SITE } from "@aihot/industry/site";
+import { FEATURES } from "@aihot/industry/features";
+import type { TimeMachineBounds } from "@aihot/contracts/chronicle";
 import {
   isRouteErrorResponse, Link, Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData, useLocation, useNavigation, useRouteError, useRouteLoaderData,
   type ShouldRevalidateFunction,
@@ -16,6 +18,8 @@ import { apiGet } from "./lib/api.server";
 import { useHydratedFlag } from "./lib/hydration";
 import { EmptyArt } from "./features/art/EmptyArt";
 import { NotFoundBoard } from "./features/motion/NotFoundBoard";
+import { TimeBar } from "./features/chrono/TimeMachine";
+import { useAt } from "./features/chrono/at";
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/favicon.ico", sizes: "any" },
@@ -27,19 +31,22 @@ export const links: Route.LinksFunction = () => [
 
 interface SiteMeta {
   changelogVersion: string | null;
+  /** Where the site's own record begins, for the time machine (null when it is off or unreadable). */
+  timeBounds: TimeMachineBounds | null;
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-  try {
-    return await apiGet<SiteMeta>("/api/site/meta", { signal: request.signal });
-  } catch {
-    return { changelogVersion: null } satisfies SiteMeta;
-  }
+  const [meta, timeBounds] = await Promise.all([
+    apiGet<{ changelogVersion: string | null }>("/api/site/meta", { signal: request.signal }).catch(() => ({ changelogVersion: null })),
+    FEATURES.timeMachine ? apiGet<TimeMachineBounds>("/api/site/chronicle/bounds", { signal: request.signal }).catch(() => null) : null,
+  ]);
+  return { changelogVersion: meta.changelogVersion, timeBounds } satisfies SiteMeta;
 }
 
 export const shouldRevalidate: ShouldRevalidateFunction = () => false;
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const at = useAt();
   return (
     <html lang={SITE.locale} suppressHydrationWarning>
       <head>
@@ -49,7 +56,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#15110d" />
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: MOTION_BOOT_SCRIPT }} />
-        <script dangerouslySetInnerHTML={{ __html: ONBOARDING_BOOT_SCRIPT }} />
+        {!at && <script dangerouslySetInnerHTML={{ __html: ONBOARDING_BOOT_SCRIPT }} />}
         <Meta />
         <Links />
       </head>
@@ -70,7 +77,7 @@ export function meta({ error }: Route.MetaArgs) {
 }
 
 /** Sidebar, main column and phone tab bar around a page (or an error). */
-function SiteShell({ changelogVersion, children }: { changelogVersion: string | null; children: ReactNode }) {
+function SiteShell({ changelogVersion, timeBounds, children }: { changelogVersion: string | null; timeBounds: TimeMachineBounds | null; children: ReactNode }) {
   const navigation = useNavigation();
   return (
     <div className="flex min-h-dvh">
@@ -78,11 +85,14 @@ function SiteShell({ changelogVersion, children }: { changelogVersion: string | 
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[70] focus:rounded-control focus:bg-surface focus:px-3 focus:py-2">
         跳到正文
       </a>
-      <Sidebar changelogVersion={changelogVersion} />
+      <Sidebar changelogVersion={changelogVersion} timeBounds={timeBounds} />
       {/* Mobile shell (≤ 960px): one centred column, the tab bar below. Desktop: the page fills the main area
           up to the list width (--page-max-wide), centred beyond it. */}
       <main id="main" className="min-w-0 flex-1 pb-[calc(72px+env(safe-area-inset-bottom))] lg:px-7 lg:pb-[72px] lg:pt-6">
-        <div className="mx-auto w-full max-w-[640px] px-4 lg:max-w-[var(--page-max-wide)] lg:px-0">{children}</div>
+        <div className="mx-auto w-full max-w-[640px] px-4 lg:max-w-[var(--page-max-wide)] lg:px-0">
+          <TimeBar bounds={timeBounds} />
+          {children}
+        </div>
       </main>
       <MobileTabBar changelogVersion={changelogVersion} />
       <BackToTop />
@@ -97,7 +107,7 @@ export default function App() {
   // The admin has its own chrome.
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return <Outlet />;
   return (
-    <SiteShell changelogVersion={meta.changelogVersion}>
+    <SiteShell changelogVersion={meta.changelogVersion} timeBounds={meta.timeBounds}>
       <Outlet />
     </SiteShell>
   );
@@ -132,5 +142,5 @@ export function ErrorBoundary() {
   );
   // Admin errors stay inside the admin's own chrome.
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return body;
-  return <SiteShell changelogVersion={site?.changelogVersion ?? null}>{body}</SiteShell>;
+  return <SiteShell changelogVersion={site?.changelogVersion ?? null} timeBounds={site?.timeBounds ?? null}>{body}</SiteShell>;
 }

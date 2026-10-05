@@ -35,18 +35,23 @@ export async function apiGet<T>(path: string, init?: { signal?: AbortSignal; hea
   return (await res.json()) as T;
 }
 
+/** Maps API failures without repeating the request. */
+export function apiErrorResponse(error: unknown, opts: { busyRedirect?: string; signal?: AbortSignal } = {}) {
+  if (opts.signal?.aborted) throw error;
+  if (error instanceof ApiError) {
+    if (error.status === 404) return data({ message: "not_found" }, { status: 404 });
+    if (error.status === 503 && opts.busyRedirect) return redirect(opts.busyRedirect);
+    if (error.status === 400) return data({ message: "bad_request" }, { status: 400 });
+  }
+  return data({ message: "unavailable" }, { status: 503 });
+}
+
 /** Maps API failures to route responses: real 404s, search-busy page, otherwise 503. */
 export async function loadOr404<T>(path: string, opts: { busyRedirect?: string; responseHeaders?: Headers; signal?: AbortSignal } = {}): Promise<T> {
   try {
     return await apiGet<T>(path, { responseHeaders: opts.responseHeaders, signal: opts.signal });
   } catch (error) {
-    if (opts.signal?.aborted) throw error;
-    if (error instanceof ApiError) {
-      if (error.status === 404) throw data({ message: "not_found" }, { status: 404 });
-      if (error.status === 503 && opts.busyRedirect) throw redirect(opts.busyRedirect);
-      if (error.status === 400) throw data({ message: "bad_request" }, { status: 400 });
-    }
-    throw data({ message: "unavailable" }, { status: 503 });
+    throw apiErrorResponse(error, opts);
   }
 }
 

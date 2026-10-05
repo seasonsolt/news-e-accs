@@ -872,3 +872,245 @@ html[data-onboarding] .ambient-backdrop-image { background-image: none; }
   background: var(--line-strong);
   pointer-events: none;
 }
+
+/* Four-dimensional observation window and the site-wide time machine. */
+/* The brass instrument: the time machine's dial, its bar and the observation deck share one dark, brass-
+   trimmed look in either theme, as one instrument seen from different places. */
+:root { --deck: #120e0a; --deck-2: #1a1510; --deck-ink: #f4ecdc; --deck-dim: rgb(244 236 220 / .58); --deck-faint: rgb(244 236 220 / .38); --brass: #d9a441; --brass-hi: #f0d28a; --brass-lo: #a8731f; }
+.time-dial {
+  position: relative;
+  padding: 8px 8px 9px;
+  border-radius: var(--radius-tile);
+  background: linear-gradient(var(--deck-2), var(--deck));
+  border: 1px solid #2c2318;
+  box-shadow: inset 0 1px 0 rgb(217 164 65 / .35), 0 6px 14px -10px rgb(0 0 0 / .6);
+  color: var(--deck-ink);
+}
+.time-dial-head { display: flex; align-items: center; justify-content: space-between; padding-inline: 2px; font-size: 11px; color: var(--deck-dim); }
+.time-dial-head svg { color: var(--brass); }
+.time-dial-link { display: flex; align-items: center; color: var(--brass-hi); }
+.time-dial-link:hover { text-decoration: underline; text-underline-offset: 2px; }
+.time-dial-face {
+  border-radius: 6px;
+  background: #0b0806;
+  border: 1px solid rgb(217 164 65 / .35);
+  box-shadow: inset 0 2px 5px rgb(0 0 0 / .65);
+  font: 600 13px var(--font-mono);
+  letter-spacing: .06em;
+  color: var(--brass-hi);
+  text-shadow: 0 0 8px rgb(240 210 138 / .45);
+}
+.time-dial.is-away .time-dial-face { color: #ffe6a8; border-color: var(--brass); }
+/* The split-flap halves take the window's colour, not the page's. */
+.time-dial-face [data-text] { background: #0b0806; color: inherit; }
+.time-knob {
+  display: flex; flex: none; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--brass-hi), var(--brass) 55%, var(--brass-lo));
+  box-shadow: 0 0 0 1px rgb(0 0 0 / .55), 0 2px 4px rgb(0 0 0 / .45), inset 0 1px 0 rgb(255 255 255 / .35);
+  font-size: 15px; font-weight: 700; line-height: 1; color: #2a1f16;
+  transition: transform .12s, filter .12s;
+}
+.time-knob:hover { filter: brightness(1.08); }
+.time-knob:active { transform: translateY(1px); }
+.time-knob:disabled { opacity: .3; pointer-events: none; }
+.time-dial-ruler {
+  position: relative; height: 8px; margin: 8px 3px 0;
+  background:
+    repeating-linear-gradient(90deg, rgb(244 236 220 / .28) 0 1px, transparent 1px 10%) bottom / 100% 4px no-repeat,
+    linear-gradient(rgb(217 164 65 / .35), rgb(217 164 65 / .35)) bottom / 100% 1px no-repeat;
+}
+.time-dial-needle { position: absolute; bottom: 0; width: 2px; height: 8px; transform: translateX(-50%); background: var(--brass-hi); box-shadow: 0 0 6px rgb(240 210 138 / .8); }
+
+.time-bar {
+  background: linear-gradient(var(--deck-2), var(--deck));
+  color: var(--deck-ink);
+  border-bottom: 1px solid rgb(217 164 65 / .45);
+  box-shadow: 0 10px 22px -16px rgb(0 0 0 / .7);
+}
+@media (min-width: 961px) { .time-bar { border: 1px solid #2c2318; border-radius: var(--radius-tile); box-shadow: inset 0 1px 0 rgb(217 164 65 / .35), 0 10px 22px -16px rgb(0 0 0 / .7); } }
+.time-bar-badge {
+  display: flex; flex: none; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--brass-hi), var(--brass) 55%, var(--brass-lo));
+  box-shadow: 0 0 0 1px rgb(0 0 0 / .55), inset 0 1px 0 rgb(255 255 255 / .35);
+  color: #2a1f16;
+}
+.time-bar-label { font-size: 11.5px; color: var(--deck-dim); }
+.time-bar-note { color: var(--deck-faint); }
+.time-bar-date { font: 600 15px var(--font-mono); letter-spacing: .03em; color: var(--brass-hi); text-shadow: 0 0 10px rgb(240 210 138 / .35); }
+.time-bar-button { display: inline-flex; height: 28px; align-items: center; padding: 0 11px; border: 1px solid rgb(244 236 220 / .18); border-radius: 999px; font-size: 12px; color: var(--deck-dim); transition: border-color .15s, color .15s; }
+.time-bar-button:hover { border-color: var(--brass); color: var(--deck-ink); }
+.time-bar-button.is-primary { border-color: transparent; background: linear-gradient(var(--brass-hi), var(--brass)); font-weight: 600; color: #2a1f16; }
+.time-bar-button.is-primary:hover { filter: brightness(1.06); color: #2a1f16; }
+
+/* The observation deck (/chronicle): a dark stage in either theme, the era's plate filling it and the
+   moment read out large over the plate; the chronometer docks under it and stays at hand. */
+.observatory {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: clamp(460px, 64vh, 640px);
+  margin-inline: -16px;
+  background: radial-gradient(ellipse at 70% 30%, #2a2016, var(--deck) 70%);
+  color: var(--deck-ink);
+}
+@media (min-width: 961px) { .observatory { margin-inline: 0; border-radius: var(--radius-panel) var(--radius-panel) 0 0; } }
+.observatory-plate { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; }
+.observatory-plate.is-empty { background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--brass) 18%, transparent), transparent 60%); }
+.observatory.is-forecast .observatory-plate { filter: saturate(.72) brightness(.92); }
+.observatory.is-forecast::after { content: ""; position: absolute; inset: 12px; z-index: 1; border: 1px dashed rgb(217 164 65 / .55); border-radius: 10px; pointer-events: none; }
+.observatory-shade {
+  position: absolute; inset: 0; z-index: -1;
+  background:
+    linear-gradient(to top, rgb(12 9 6 / .94) 0%, rgb(12 9 6 / .62) 34%, rgb(12 9 6 / 0) 68%),
+    linear-gradient(to right, rgb(12 9 6 / .55), rgb(12 9 6 / 0) 58%);
+}
+.observatory-readout { position: absolute; inset-inline: 0; bottom: 0; z-index: 2; max-width: 44rem; padding: 0 20px 26px; }
+@media (min-width: 961px) { .observatory-readout { padding: 0 36px 34px; } }
+.observatory-kicker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font: 500 11.5px/1 var(--font-mono); letter-spacing: .12em; color: var(--brass); }
+.observatory-forecast { padding: 3px 6px; border: 1px dashed var(--brass); border-radius: 4px; letter-spacing: .04em; }
+.observatory-chip { padding: 3px 7px; border-radius: 4px; background: rgb(217 164 65 / .18); letter-spacing: .04em; color: var(--brass-hi); }
+.observatory-time { margin-top: 10px; font-family: var(--font-display); font-weight: 400; line-height: .9; color: var(--deck-ink); text-shadow: 0 2px 30px rgb(0 0 0 / .45); }
+.observatory-time-figure { font-size: clamp(68px, 12vw, 136px); letter-spacing: -.02em; }
+.observatory-time-unit { margin-inline: .06em; font-size: clamp(26px, 4vw, 44px); color: rgb(244 236 220 / .82); }
+.observatory-era { margin-top: 14px; font-size: 21px; font-weight: 600; color: var(--deck-ink); }
+.observatory-summary { margin-top: 6px; max-width: 36rem; font-size: 14.5px; line-height: 1.75; color: rgb(244 236 220 / .8); text-wrap: pretty; }
+.observatory-style { display: inline-block; margin-top: 12px; padding-top: 8px; border-top: 1px solid rgb(217 164 65 / .35); font: 11.5px var(--font-mono); letter-spacing: .04em; color: var(--brass-hi); }
+
+/* The chronometer: the log axis as a brass instrument, sticky under the deck. */
+.chronometer {
+  position: sticky; top: 0; z-index: 25;
+  margin-inline: -16px;
+  padding: 24px 12px 10px;
+  background: linear-gradient(var(--deck-2), var(--deck));
+  border-top: 1px solid rgb(217 164 65 / .4);
+  box-shadow: 0 14px 28px -20px rgb(0 0 0 / .7);
+  color: var(--deck-ink);
+}
+@media (min-width: 961px) { .chronometer { margin-inline: 0; padding: 26px 20px 12px; border-radius: 0 0 var(--radius-panel) var(--radius-panel); } }
+.chronicle-track { position: relative; height: 66px; cursor: ew-resize; touch-action: pan-y; border-radius: 6px; overflow: visible; }
+.chronicle-track:focus-visible { outline: 2px solid var(--brass); outline-offset: 4px; }
+.chronicle-band { position: absolute; top: 0; bottom: 0; background: rgb(244 236 220 / .03); border-right: 1px solid rgb(244 236 220 / .05); }
+.chronicle-band.is-odd { background: rgb(244 236 220 / .06); }
+.chronicle-band.is-forecast { background: repeating-linear-gradient(45deg, rgb(217 164 65 / .1) 0 3px, transparent 3px 7px); }
+.chronicle-band.is-current { background: rgb(217 164 65 / .16); box-shadow: inset 0 2px 0 var(--brass); }
+.chronicle-band-label { position: absolute; top: 5px; left: 6px; max-width: calc(100% - 10px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10.5px; color: var(--deck-faint); pointer-events: none; }
+.chronicle-band.is-current .chronicle-band-label { color: var(--brass-hi); }
+.chronicle-tick { position: absolute; top: 24px; height: 32px; width: 1.5px; transform: translateX(-50%); background: currentColor; opacity: .8; box-shadow: 0 0 4px currentColor; }
+.chronicle-tick.cat-cosmos { color: #9fb0d6; }
+.chronicle-tick.cat-life { color: #86c79a; }
+.chronicle-tick.cat-human { color: #e2b468; }
+.chronicle-tick.cat-energy { color: #ef8458; }
+.chronicle-tick.cat-compute { color: #d9a441; }
+.chronicle-tick.cat-ai { color: #f6dc96; }
+.chronicle-tick.cat-culture { color: #cbb99c; }
+.chronicle-tick.is-forecast { background: transparent; box-shadow: none; border-left: 1.5px dashed currentColor; }
+.chronicle-now { position: absolute; inset-block: -4px 0; border-left: 1px solid var(--brass-hi); }
+.chronicle-now span { position: absolute; top: -16px; transform: translateX(-50%); font: 600 10.5px var(--font-mono); color: var(--brass-hi); white-space: nowrap; }
+.chronicle-needle { position: absolute; top: -6px; bottom: -2px; width: 2px; transform: translateX(-50%); background: var(--deck-ink); box-shadow: 0 0 10px rgb(240 210 138 / .85); pointer-events: none; }
+.chronicle-needle::before { content: ""; position: absolute; top: -7px; left: -7px; width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--brass-hi), #a8731f); border: 2px solid var(--deck); box-shadow: 0 0 0 1px var(--brass), 0 2px 6px rgb(0 0 0 / .5); }
+.chronicle-scale { position: relative; height: 16px; margin-top: 6px; }
+.chronicle-scale span { position: absolute; transform: translateX(-50%); font: 11px var(--font-mono); color: var(--deck-faint); white-space: nowrap; }
+/* 100亿年前 sits almost on the Big Bang edge and would collide with 10亿年前. */
+.chronicle-scale span:first-child { display: none; }
+.chronicle-scale span:last-child { transform: translateX(-100%); }
+.chronometer-controls { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+.chronometer-controls button { flex: none; height: 30px; padding: 0 12px; border: 1px solid rgb(244 236 220 / .18); border-radius: 999px; font-size: 12.5px; color: var(--deck-dim); transition: border-color .15s, color .15s; }
+.chronometer-controls button:hover { border-color: var(--brass); color: var(--deck-ink); }
+.chronometer-controls button:disabled { opacity: .3; pointer-events: none; }
+.chronometer-controls button:last-child { margin-left: auto; }
+.chronometer-hint { flex: 1; text-align: center; font-size: 11.5px; color: var(--deck-faint); }
+@media (max-width: 640px) { .chronometer-hint { display: none; } .chronometer-controls button { padding: 0 10px; font-size: 12px; } }
+
+/* Section heads below the deck: the display serif of the site's banners. */
+.chronicle-section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; margin-bottom: 14px; }
+.chronicle-section-head h2 { font-family: var(--font-display); font-size: 28px; line-height: 1.1; color: var(--ink); }
+.chronicle-section-head p { font-size: 12.5px; color: var(--ink-4); }
+.chronicle-section-head p strong { font-size: 18px; font-weight: 600; color: var(--ink); }
+
+/* Readouts. */
+.chronicle-gauge { display: flex; min-width: 0; flex-direction: column; padding: 14px 16px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); }
+.chronicle-gauge.is-forecast { border-style: dashed; border-color: var(--amber); }
+.chronicle-gauge-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-3); }
+.chronicle-gauge-badge { flex: none; padding: 1px 5px; border: 1px dashed var(--amber); border-radius: 4px; font-size: 10.5px; color: var(--amber-ink); }
+.chronicle-gauge-source { margin-left: auto; flex: none; color: var(--ink-4); }
+.chronicle-gauge-source:hover { color: var(--accent); }
+.chronicle-gauge-value { margin-top: 6px; font-size: 22px; font-weight: 600; line-height: 1.2; color: var(--ink); overflow-wrap: anywhere; }
+@media (min-width: 641px) { .chronicle-gauge-value { font-size: 26px; } }
+.chronicle-gauge-unit { margin-left: 5px; font-size: 12px; font-weight: 400; color: var(--ink-4); }
+.chronicle-gauge-note { min-height: 1.5em; margin-top: 2px; font-size: 11.5px; color: var(--ink-4); }
+.chronicle-trace { width: 100%; height: 40px; margin-top: auto; padding-top: 8px; overflow: visible; }
+.chronicle-trace-line { fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linejoin: round; }
+.chronicle-trace-forecast { fill: var(--amber-soft); opacity: .3; }
+.chronicle-trace-cursor { stroke: var(--ink-4); stroke-width: 1; stroke-dasharray: 2 2; }
+.chronicle-trace-dot { fill: var(--hot); stroke: var(--surface); stroke-width: .8; }
+.chronicle-gauge.is-dial { background: linear-gradient(var(--deck-2, #1a1510), var(--deck, #120e0a)); border-color: #2c2318; color: #f4ecdc; }
+.chronicle-gauge.is-dial .chronicle-gauge-label { color: rgb(244 236 220 / .6); }
+.chronicle-gauge.is-dial .chronicle-gauge-value { color: #f0d28a; }
+.chronicle-gauge.is-dial .chronicle-gauge-note { color: rgb(244 236 220 / .45); }
+.chronicle-dial { display: block; width: 100%; max-width: 200px; margin: 6px auto 0; overflow: visible; }
+.chronicle-dial-track, .chronicle-dial-fill { fill: none; stroke-width: 6; stroke-linecap: round; }
+.chronicle-dial-track { stroke: rgb(244 236 220 / .14); }
+.chronicle-dial-fill { stroke: #d9a441; }
+.chronicle-dial-tick { stroke: rgb(244 236 220 / .45); stroke-width: 1; }
+.chronicle-dial-needle { stroke: #f4ecdc; stroke-width: 1.6; stroke-linecap: round; }
+.chronicle-dial-hub { fill: #f0d28a; }
+
+/* Nearby milestones: one rail. */
+.chronicle-rail { position: relative; padding-left: 24px; }
+.chronicle-rail::before { content: ""; position: absolute; left: 7px; top: 8px; bottom: 8px; width: 1px; background: var(--line-strong); }
+.chronicle-rail-item { position: relative; padding-bottom: 18px; color: var(--ink-4); }
+.chronicle-rail-item.cat-life { color: var(--ok); }
+.chronicle-rail-item.cat-human { color: var(--amber); }
+.chronicle-rail-item.cat-energy { color: var(--hot); }
+.chronicle-rail-item.cat-compute { color: var(--accent); }
+.chronicle-rail-item.cat-ai { color: var(--accent-ink); }
+.chronicle-rail-item.cat-culture { color: var(--ink-3); }
+.chronicle-rail-dot { position: absolute; left: -21px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--bg); border: 2px solid currentColor; }
+.chronicle-rail-item.is-forecast .chronicle-rail-dot { border-style: dashed; }
+.chronicle-rail-item.is-closest .chronicle-rail-dot { background: currentColor; box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 20%, transparent); }
+.chronicle-rail-thumb { float: right; width: 96px; height: 64px; margin: 2px 0 6px 12px; object-fit: cover; border-radius: var(--radius-control); border: 1px solid var(--line); background: var(--bg-sunk); }
+.chronicle-rail-item::after { content: ""; display: block; clear: both; }
+.chronicle-rail-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 11.5px; color: var(--ink-4); }
+.chronicle-rail-title { margin-top: 2px; text-align: left; font-size: 15.5px; font-weight: 600; line-height: 1.45; color: var(--ink); }
+.chronicle-rail-title:hover, .chronicle-rail-item.is-closest .chronicle-rail-title { color: var(--accent); }
+.chronicle-rail-detail { margin-top: 2px; font-size: 13px; line-height: 1.65; color: var(--ink-3); }
+.chronicle-rail-detail a { color: var(--accent); text-underline-offset: 2px; }
+.chronicle-rail-detail a:hover { text-decoration: underline; }
+
+/* Capabilities: one notch per capability on record. */
+.chronicle-notches { display: flex; gap: 2px; height: 22px; }
+.chronicle-notches span { flex: 1; min-width: 2px; border-radius: 2px; background: var(--bg-muted); }
+.chronicle-notches span.is-held { background: linear-gradient(var(--amber), var(--accent)); }
+.chronicle-cap-head { margin-bottom: 4px; font-size: 12.5px; font-weight: 600; color: var(--ink-3); }
+.chronicle-cap-row { display: flex; width: 100%; align-items: baseline; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--line-soft); text-align: left; font-size: 14px; color: var(--ink-2); }
+.chronicle-cap-row .num { flex: none; font-size: 12px; color: var(--ink-4); }
+.chronicle-cap-row:hover, .chronicle-cap-row:hover .num { color: var(--accent); }
+.chronicle-cap-row.is-ahead > span:first-child { color: var(--ink-4); }
+.chronicle-cap-empty { font-size: 13px; color: var(--ink-4); }
+
+/* This day on the site. */
+.chronicle-slice { padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: var(--radius-card); }
+.chronicle-slice h2 { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 600; color: var(--ink); }
+.chronicle-slice h2 svg { color: var(--accent); }
+.chronicle-slice p { margin-top: 4px; font-size: 13px; color: var(--ink-3); }
+.chronicle-slice-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chronicle-slice-links a { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--bg-sunk); font-size: 13px; color: var(--ink-2); transition: background-color .15s, color .15s; }
+.chronicle-slice-links a:hover { background: var(--accent-soft); color: var(--accent); }
+
+/* The film strip of eras. */
+.chronicle-strip { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x proximity; margin-inline: -16px; padding: 4px 16px 10px; scrollbar-width: thin; }
+@media (min-width: 961px) { .chronicle-strip { margin-inline: 0; padding-inline: 2px; } }
+.chronicle-frame { display: flex; flex: none; width: 152px; flex-direction: column; gap: 6px; scroll-snap-align: center; font-size: 12px; color: var(--ink-3); }
+.chronicle-frame img { width: 152px; height: 101px; object-fit: cover; border-radius: var(--radius-control); border: 1px solid var(--line); background: var(--bg-sunk); filter: saturate(.8); transition: filter .2s, transform .2s; }
+.chronicle-frame:hover img { filter: none; transform: translateY(-2px); }
+.chronicle-frame[aria-current] img { filter: none; outline: 2px solid var(--amber); outline-offset: 2px; }
+.chronicle-frame[aria-current] span { font-weight: 600; color: var(--ink); }
+.chronicle-frame.is-forecast img { border-style: dashed; border-color: var(--amber); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .chronicle-track.motion-allowed:not([data-dragging]) .chronicle-needle { transition: left 140ms var(--ease-out-quart); }
+  .observatory-plate.motion-allowed { animation: plate-in 700ms var(--ease-out-quart) both, plate-drift 48s ease-in-out 700ms infinite alternate; }
+}
+@keyframes plate-in { from { opacity: 0; transform: scale(1.03); } to { opacity: 1; transform: scale(1); } }
+@keyframes plate-drift { from { transform: scale(1); } to { transform: scale(1.06) translateX(-1.5%); } }

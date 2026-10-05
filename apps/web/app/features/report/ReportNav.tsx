@@ -2,17 +2,20 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import type { ReportNavigationEntry, ReportKind } from "@aihot/contracts/site";
+import { useAt, withAt } from "../chrono/at";
 import { PillTabs } from "../../components/ui/Tabs";
 import { IconChevronRight } from "../../components/icons";
 import { KINDS, KIND_LABEL, KIND_PATH, archiveGroups, archiveMark, chipLabel, reportPath } from "./format";
 
 /** 日报 / 周报 / 月报 as the site's pill switch, spread across the column. */
 function KindSwitch({ kind }: { kind: ReportKind }) {
-  return <PillTabs fill layoutId="report-kind" label="切换日报、周报、月报" active={kind} items={KINDS.map((k) => ({ key: k, label: KIND_LABEL[k], to: KIND_PATH[k] }))} />;
+  const at = useAt();
+  return <PillTabs fill layoutId="report-kind" label="切换日报、周报、月报" active={kind} items={KINDS.map((k) => ({ key: k, label: KIND_LABEL[k], to: withAt(KIND_PATH[k], at) }))} />;
 }
 
 /** Desktop archive column: every issue of this kind, grouped, the current one highlighted. */
 export function ReportArchive({ kind, index, current }: { kind: ReportKind; index: ReportNavigationEntry[]; current: string | null }) {
+  const at = useAt();
   const groups = archiveGroups(kind, index);
   const openId = groups.find((g) => g.entries.some((e) => e.key === current))?.id ?? groups[0]?.id;
   return (
@@ -27,7 +30,7 @@ export function ReportArchive({ kind, index, current }: { kind: ReportKind; inde
         ))}
       </nav>
       {kind === "daily" && (
-        <Link to="/daily/archive" className="flex h-12 shrink-0 items-center justify-between border-t border-line pl-1 pr-1.5 text-[12.5px] font-medium text-ink-2 transition-colors hover:text-accent">
+        <Link to={withAt("/daily/archive", at)} className="flex h-12 shrink-0 items-center justify-between border-t border-line pl-1 pr-1.5 text-[12.5px] font-medium text-ink-2 transition-colors hover:text-accent">
           日报合订本 <IconChevronRight size={14} />
         </Link>
       )}
@@ -39,6 +42,7 @@ export function ReportArchive({ kind, index, current }: { kind: ReportKind; inde
 function ArchiveGroup({ g, kind, current, initiallyOpen }: {
   g: ReturnType<typeof archiveGroups>[number]; kind: ReportKind; current: string | null; initiallyOpen: boolean;
 }) {
+  const at = useAt();
   const [open, setOpen] = useState(initiallyOpen);
   useEffect(() => setOpen(initiallyOpen), [initiallyOpen]);
   const [loaded, setLoaded] = useState<ReportNavigationEntry[] | null>(null);
@@ -66,7 +70,7 @@ function ArchiveGroup({ g, kind, current, initiallyOpen }: {
           return (
             <li key={e.key}>
               <Link
-                to={reportPath(kind, e.key)}
+                to={withAt(reportPath(kind, e.key), at)}
                 aria-current={on ? "page" : undefined}
                 title={e.title ?? undefined}
                 prefetch="intent"
@@ -89,24 +93,25 @@ function ArchiveGroup({ g, kind, current, initiallyOpen }: {
 
 /** Phone header: kind tabs, then the three latest issues and a way further back. */
 export function ReportPhoneNav({ kind, index, current, today }: { kind: ReportKind; index: ReportNavigationEntry[]; current: string | null; today: string }) {
+  const at = useAt();
   const recent = index.slice(0, 3);
   const earlier = kind === "daily" ? "/daily/archive" : "#report-history";
   const chip = "inline-flex h-9 shrink-0 items-center rounded-full border px-4 text-[13px] transition-colors";
   return (
     <div className="pt-3 lg:hidden">
-      <PillTabs fill layoutId="report-kind-phone" label="切换日报、周报、月报" active={kind} items={KINDS.map((k) => ({ key: k, label: KIND_LABEL[k], to: KIND_PATH[k] }))} />
+      <PillTabs fill layoutId="report-kind-phone" label="切换日报、周报、月报" active={kind} items={KINDS.map((k) => ({ key: k, label: KIND_LABEL[k], to: withAt(KIND_PATH[k], at) }))} />
       {recent.length > 0 && (
         <div className="scrollbar-none -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
           {recent.map((e) => {
             const on = e.key === current;
             return (
-              <Link key={e.key} to={reportPath(kind, e.key)} aria-current={on ? "page" : undefined} className={`${chip} ${on ? "border-ink bg-ink font-semibold text-bg" : "border-line-strong bg-surface text-ink-2 active:bg-bg-sunk"}`}>
+              <Link key={e.key} to={withAt(reportPath(kind, e.key), at)} aria-current={on ? "page" : undefined} className={`${chip} ${on ? "border-ink bg-ink font-semibold text-bg" : "border-line-strong bg-surface text-ink-2 active:bg-bg-sunk"}`}>
                 {chipLabel(kind, e.key, index, today)}
               </Link>
             );
           })}
           {index.length > 3 && (
-            <Link to={earlier} className={`${chip} border-line-strong bg-surface text-ink-2 active:bg-bg-sunk`}>
+            <Link to={earlier.startsWith("#") ? earlier : withAt(earlier, at)} className={`${chip} border-line-strong bg-surface text-ink-2 active:bg-bg-sunk`}>
               更早
             </Link>
           )}

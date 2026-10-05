@@ -3,7 +3,7 @@ import { withSubject } from "@aihot/industry/site";
 import { FEATURES } from "@aihot/industry/features";
 import type { ReactNode } from "react";
 import {
-  IconApps, IconBolt, IconBookmark, IconChart, IconClock, IconDoc, IconFlame, IconGrid, IconHeart, IconHistory, IconInfo, IconList, IconMail, IconMessage, IconPlug,
+  IconApps, IconBolt, IconBookmark, IconChart, IconDoc, IconFlame, IconGrid, IconHeart, IconHistory, IconHourglass, IconInfo, IconList, IconMail, IconMessage, IconPlug,
 } from "../icons";
 
 export interface NavItem {
@@ -23,7 +23,8 @@ export const TOOLS: NavItem[] = [
   { to: "/coding-plan", label: "Coding Plan 选择器", icon: IconPlug, document: true },
   { to: "/pricing", label: "模型价格", icon: IconChart, document: true },
   { to: "/calculator", label: "成本计算器", icon: IconGrid, document: true },
-  { to: "/timeline", label: "加速时间线", icon: IconClock, document: true },
+  // The acceleration timeline moved into this site's four-dimensional view (/chronicle) when the time machine is on.
+  ...(FEATURES.timeMachine ? [] : [{ to: "/timeline", label: "加速时间线", icon: IconHourglass, document: true }]),
   { to: "/what-is-eacc", label: "什么是 e/acc", icon: IconInfo, document: true },
 ];
 
@@ -35,6 +36,7 @@ export const SIDEBAR: Array<{ title: string; items: NavItem[] }> = [
       { to: "/all", label: `全部${withSubject("动态")}`, icon: IconList },
       { to: "/hot", label: "热点榜", icon: IconFlame },
       { to: "/daily", label: withSubject("日报"), icon: IconDoc },
+      ...(FEATURES.timeMachine ? [{ to: "/chronicle", label: "四维视角", icon: IconHourglass }] : []),
       { to: "/subscribe", label: "订阅日报", icon: IconMail },
       { to: "/topics", label: "主题", icon: IconGrid },
       { to: "/starred", label: "收藏", icon: IconBookmark },
@@ -72,7 +74,7 @@ export const TABBAR: NavItem[] = [
 ];
 
 /** Pages reached from the mobile "更多" tab keep that tab highlighted. */
-export const MORE_PATHS = ["/more", "/hot", "/topics", "/starred", "/leaderboard", "/codex-reset", "/agent", "/about", "/changelog", "/feedback", "/terms", "/privacy"];
+export const MORE_PATHS = ["/more", "/chronicle", "/hot", "/topics", "/starred", "/leaderboard", "/codex-reset", "/agent", "/about", "/changelog", "/feedback", "/terms", "/privacy"];
 
 export function tabIsActive(item: NavItem, pathname: string): boolean {
   if (item.end) return pathname === item.to;

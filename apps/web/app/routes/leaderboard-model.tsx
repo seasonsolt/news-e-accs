@@ -5,7 +5,8 @@ import { Collapse } from "../components/ui/Presence";
 import type { Route } from "./+types/leaderboard-model";
 import type { LbComparison, LbEvidenceItem, LbModelDetail } from "@aihot/contracts/leaderboard";
 import { LEADERBOARD_BOARD_LABELS, LEADERBOARD_PUBLIC_BOARDS } from "@aihot/contracts/taxonomy";
-import { loadOr404 } from "../lib/api.server";
+import { loadOr404, queryString } from "../lib/api.server";
+import { requestAt, withAt } from "../features/chrono/at";
 import { breadcrumbLd, pageMeta, siteUrl, titled } from "../lib/seo";
 import { BrandMark } from "../features/leaderboard/BrandMark";
 import { EvidenceBadge } from "../features/leaderboard/Evidence";
@@ -13,7 +14,9 @@ import { boardHref, listPrice, pctFixed, shortStamp, tokensWan, yuan } from "../
 import { IconArrowLeft, IconArrowRight, IconArrowUpRight, IconChevronDown, IconExternal } from "../components/icons";
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  return loadOr404<LbModelDetail>(`/api/site/leaderboard/models/${encodeURIComponent(params.slug)}`, { signal: request.signal });
+  const at = requestAt(request);
+  const detail = await loadOr404<LbModelDetail>(`/api/site/leaderboard/models/${encodeURIComponent(params.slug)}${queryString({ at })}`, { signal: request.signal });
+  return { ...detail, at };
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {
@@ -21,6 +24,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
   const { model } = loaderData;
   const path = `/leaderboard/${model.slug}`;
   return pageMeta({
+    noindex: !!loaderData.at,
     title: `${model.name} 排名与各榜成绩`,
     description: `查看 ${model.name} 的 ${SITE.name} 共识分、当前排名，以及它在各家公开评测榜单中的名次和原始分数。`,
     path,
@@ -290,7 +294,7 @@ export default function LeaderboardModelPage() {
   const withScores = d.categories.filter((c) => c.score !== null).length;
   return (
     <div className="pb-12">
-      <Link to={boardHref(from)} className="mt-4 inline-flex items-center gap-1.5 py-2 text-[13px] text-ink-3 transition-colors hover:text-accent lg:mt-0">
+      <Link to={withAt(boardHref(from), d.at)} className="mt-4 inline-flex items-center gap-1.5 py-2 text-[13px] text-ink-3 transition-colors hover:text-accent lg:mt-0">
         <IconArrowLeft size={14} /> 返回{LEADERBOARD_BOARD_LABELS[from as keyof typeof LEADERBOARD_BOARD_LABELS]}榜
       </Link>
 
@@ -327,7 +331,7 @@ export default function LeaderboardModelPage() {
           <small className="ml-1 font-sans text-[11px] font-normal text-ink-4">Token</small>
         </Stat>
         <Stat
-          label="API 输入 / 输出 · 每百万 Token"
+          label={d.at ? "API 输入 / 输出 · 当前价 · 每百万 Token" : "API 输入 / 输出 · 每百万 Token"}
           foot={
             price ? (
               <span className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
