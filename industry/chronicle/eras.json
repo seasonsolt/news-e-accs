@@ -1,0 +1,264 @@
+{
+  "_readme": "纪元表：按 from 升序。from 为纪元起点（天文纪年小数年，负数为公元前/距今）；title 名称；summary 概述该时代的特征与人类能力边界；art 插图键；artStyle 插图采用的时代画风；forecast 为 true 表示推测中的未来纪元。",
+  "eras": [
+    {
+      "id": "big-bang",
+      "from": -13787000000.0,
+      "title": "大爆炸",
+      "summary": "宇宙从极热极密的状态中膨胀，最初的原子在冷却中形成。没有恒星，也没有任何观察者。",
+      "art": "big-bang",
+      "artStyle": "深空天文摄影"
+    },
+    {
+      "id": "first-stars-galaxies",
+      "from": -13687000000.0,
+      "title": "第一代恒星与星系",
+      "summary": "第一批恒星点亮并锻造出重元素，星系逐渐聚集，银河系开始成形。",
+      "art": "first-stars-galaxies",
+      "artStyle": "哈勃深场天文摄影"
+    },
+    {
+      "id": "solar-system",
+      "from": -4568000000.0,
+      "title": "太阳系形成",
+      "summary": "太阳和行星从分子云中诞生，地球与月球相继形成，原始地表炽热而荒凉。",
+      "art": "solar-system",
+      "artStyle": "十八世纪天文铜版星图"
+    },
+    {
+      "id": "origin-of-life",
+      "from": -3500000000.0,
+      "title": "地球生命起源",
+      "summary": "单细胞生命延续了约30亿年；光合作用让大气有了氧气，真核细胞出现。",
+      "art": "origin-of-life",
+      "artStyle": "显微镜手绘科学插图"
+    },
+    {
+      "id": "cambrian-explosion",
+      "from": -538800000.0,
+      "title": "寒武纪大爆发",
+      "summary": "复杂动物大量涌现，植物和动物先后登上陆地，生命开始改造整个星球。",
+      "art": "cambrian-explosion",
+      "artStyle": "十九世纪博物学石版画"
+    },
+    {
+      "id": "dinosaurs-mammals",
+      "from": -233000000.0,
+      "title": "恐龙与哺乳动物",
+      "summary": "恐龙统治陆地一亿多年；小行星撞击后哺乳动物兴起，灵长类出现。",
+      "art": "dinosaurs-mammals",
+      "artStyle": "古生物复原油画"
+    },
+    {
+      "id": "homo-stone-tools",
+      "from": -3300000.0,
+      "title": "人属与石器",
+      "summary": "人族直立行走并打制石器，直立人走出非洲。工具开始延伸身体，但还没有稳定的能源。",
+      "art": "homo-stone-tools",
+      "artStyle": "考古线描图"
+    },
+    {
+      "id": "taming-fire",
+      "from": -1000000.0,
+      "title": "火的驯服",
+      "summary": "用火让人能烹饪、取暖、驱兽、照亮夜晚，这是人类在身体之外掌握的第一种能源。",
+      "art": "taming-fire",
+      "artStyle": "史前岩画剪影"
+    },
+    {
+      "id": "sapiens-language",
+      "from": -313050,
+      "title": "智人与语言",
+      "summary": "智人在非洲出现，语言与社会协作逐步发展，但仍以小群体狩猎采集为生。",
+      "art": "sapiens-language",
+      "artStyle": "非洲岩刻纹样"
+    },
+    {
+      "id": "cognitive-revolution",
+      "from": -58050,
+      "title": "认知革命与洞穴艺术",
+      "summary": "现代人走出非洲遍布各大洲，留下壁画和象征物，想象与故事开始代代相传。",
+      "art": "cognitive-revolution",
+      "artStyle": "旧石器洞穴壁画"
+    },
+    {
+      "id": "agricultural-revolution",
+      "from": -9999,
+      "title": "农业革命",
+      "summary": "驯化作物和牲畜后人类定居成村，人口增长；粮食盈余为分工和城市创造条件。",
+      "art": "agricultural-revolution",
+      "artStyle": "新石器彩陶"
+    },
+    {
+      "id": "cities-writing",
+      "from": -3499,
+      "title": "城市与文字",
+      "summary": "美索不达米亚出现城市、车轮、青铜和文字，账目、法律与历史可以被记录。",
+      "art": "cities-writing",
+      "artStyle": "苏美尔泥板浮雕"
+    },
+    {
+      "id": "iron-age",
+      "from": -1199,
+      "title": "铁器、字母与铸币",
+      "summary": "冶铁扩散，铁制农具与武器普及，字母和铸币相继出现，大型国家扩张。",
+      "art": "iron-age",
+      "artStyle": "商周青铜器纹样"
+    },
+    {
+      "id": "axial-age",
+      "from": -799,
+      "title": "轴心时代",
+      "summary": "希腊、中国、印度等地哲学与科学兴起，几何和法律成形，但动力仍靠人力、畜力和水力。",
+      "art": "axial-age",
+      "artStyle": "古希腊红绘陶"
+    },
+    {
+      "id": "medieval-silk-road",
+      "from": 500,
+      "title": "中世纪与丝路",
+      "summary": "丝绸之路连接欧亚，造纸、火药、指南针和活字等技术在各文明之间传播。",
+      "art": "medieval-silk-road",
+      "artStyle": "泥金装饰手抄本"
+    },
+    {
+      "id": "printing",
+      "from": 1440,
+      "title": "印刷术",
+      "summary": "印刷机让书籍廉价量产，知识传播速度跃升；大航海把各大洲连成一体。",
+      "art": "printing",
+      "artStyle": "文艺复兴木刻"
+    },
+    {
+      "id": "scientific-revolution",
+      "from": 1543,
+      "title": "科学革命",
+      "summary": "日心说、望远镜和牛顿力学确立了实验加数学的方法，自然变得可预测。",
+      "art": "scientific-revolution",
+      "artStyle": "铜版雕刻"
+    },
+    {
+      "id": "steam-age",
+      "from": 1769,
+      "title": "蒸汽时代",
+      "summary": "煤和蒸汽机让人类第一次大规模使用化石能源，工厂和铁路改变了生产与距离。",
+      "art": "steam-age",
+      "artStyle": "维多利亚工程版画"
+    },
+    {
+      "id": "electric-age",
+      "from": 1879,
+      "title": "电气时代",
+      "summary": "发电机、电网、电灯和电话普及，能量和信息可以沿导线即时传送。",
+      "art": "electric-age",
+      "artStyle": "新艺术运动海报"
+    },
+    {
+      "id": "combustion-flight",
+      "from": 1903.9589,
+      "title": "内燃机与航空",
+      "summary": "汽车、飞机和合成氨改变了出行与粮食供给，石油成为主要能源。",
+      "art": "combustion-flight",
+      "artStyle": "装饰艺术"
+    },
+    {
+      "id": "atomic-age",
+      "from": 1942.9178,
+      "title": "原子时代",
+      "summary": "核裂变释放原子能，核武器与核电同时出现，人类第一次掌握足以毁灭文明的力量。",
+      "art": "atomic-age",
+      "artStyle": "1950年代原子时代插画"
+    },
+    {
+      "id": "transistor-computer",
+      "from": 1946.1233,
+      "title": "晶体管与计算机",
+      "summary": "电子计算机和晶体管出现，信息论与人工智能被提出，计算开始自动化。",
+      "art": "transistor-computer",
+      "artStyle": "瑞士现代主义印刷"
+    },
+    {
+      "id": "space-age",
+      "from": 1957.7562,
+      "title": "太空时代",
+      "summary": "卫星、载人航天和登月让人类离开地面；集成电路与计算机网络在幕后成长。",
+      "art": "space-age",
+      "artStyle": "1970年代NASA概念画"
+    },
+    {
+      "id": "personal-computer",
+      "from": 1977.4384,
+      "title": "个人电脑",
+      "summary": "微处理器让电脑进入家庭和办公室，普通人也能编程、写作和处理数据。",
+      "art": "personal-computer",
+      "artStyle": "1980年代喷枪画"
+    },
+    {
+      "id": "internet",
+      "from": 1991.5945,
+      "title": "互联网",
+      "summary": "万维网和搜索引擎把全球信息连在一起，获取知识的成本骤降。",
+      "art": "internet",
+      "artStyle": "1990年代像素风"
+    },
+    {
+      "id": "mobile-internet",
+      "from": 2007.0219,
+      "title": "移动互联网",
+      "summary": "智能手机和云计算让数十亿人随时在线，数据量爆炸式增长。",
+      "art": "mobile-internet",
+      "artStyle": "2010年代扁平设计"
+    },
+    {
+      "id": "deep-learning",
+      "from": 2012.7459,
+      "title": "深度学习",
+      "summary": "用GPU训练的深度神经网络在视觉、围棋和蛋白质结构上超越旧方法。",
+      "art": "deep-learning",
+      "artStyle": "DeepDream 迷幻"
+    },
+    {
+      "id": "large-models",
+      "from": 2022.9123,
+      "title": "大模型",
+      "summary": "大语言模型能对话、写作和编程，数亿人日常使用AI，算力投资急剧扩张。",
+      "art": "large-models",
+      "artStyle": "扩散模型三维渲染"
+    },
+    {
+      "id": "agents",
+      "from": 2025.0,
+      "title": "智能体",
+      "summary": "AI开始自主操作电脑、长时间编程、求解数学难题，前沿模型以周为单位迭代。",
+      "art": "agents",
+      "artStyle": "实时生成式影像"
+    },
+    {
+      "id": "agi-speculative",
+      "from": 2030.0,
+      "title": "通用人工智能（推测）",
+      "summary": "推测：多方预测AI可能在2030年前后达到人类水平的通用能力，时间和影响都高度不确定。",
+      "art": "agi-speculative",
+      "artStyle": "全息线框（推测）",
+      "forecast": true
+    },
+    {
+      "id": "abundance-speculative",
+      "from": 2045.0,
+      "title": "能源与算力丰裕（推测）",
+      "summary": "推测：若聚变、太阳能和AI持续进步，能源与算力可能变得极其廉价；目前没有定论。",
+      "art": "abundance-speculative",
+      "artStyle": "太阳朋克插画（推测）",
+      "forecast": true
+    },
+    {
+      "id": "kardashev-i-speculative",
+      "from": 2080.0,
+      "title": "迈向卡尔达肖夫 I 型（推测）",
+      "summary": "推测：I型文明约需10¹⁶瓦，约为今天的500倍；按历史增速仍需数百年，此处只标示方向。",
+      "art": "kardashev-i-speculative",
+      "artStyle": "戴森结构概念图（推测）",
+      "forecast": true
+    }
+  ]
+}

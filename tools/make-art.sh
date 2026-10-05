@@ -30,6 +30,7 @@ ART=(
 
 for a in "${ART[@]}"; do
   IFS='|' read -r name file <<<"$a"
+  [ -f "$SRC/$file" ] || continue
   if [ "$name" = "ambient-engine-room" ]; then
     cwebp -quiet -q 42 -resize 1920 0 "$SRC/$file" -o "$OUT/$name.webp"
   else
@@ -38,5 +39,15 @@ for a in "${ART[@]}"; do
   fi
 done
 # The newsletter's header (newsletter/mail.ts): one JPEG, sized for a 600px-wide letter on retina screens.
-ffmpeg -loglevel error -y -i "$SRC/Victorian Pneumatic Mailroom Engraving.png" -vf "scale=900:-1" -q:v 7 "$OUT/subscribe-email.jpg"
-du -ch "$OUT"/* | tail -1
+if [ -f "$SRC/Victorian Pneumatic Mailroom Engraving.png" ]; then
+  ffmpeg -loglevel error -y -i "$SRC/Victorian Pneumatic Mailroom Engraving.png" -vf "scale=900:-1" -q:v 7 "$OUT/subscribe-email.jpg"
+fi
+# Epoch plates use their era id, not a fixed list; missing plates are left to the web fallback.
+shopt -s nullglob
+for file in "$SRC/epochs/"*.png; do
+  name=$(basename "$file" .png)
+  mkdir -p "$OUT/epochs"
+  cwebp -quiet -q 68 -resize 1600 0 "$file" -o "$OUT/epochs/$name-1600.webp"
+  cwebp -quiet -q 68 -resize 800 0 "$file" -o "$OUT/epochs/$name-800.webp"
+done
+du -sh "$OUT"
