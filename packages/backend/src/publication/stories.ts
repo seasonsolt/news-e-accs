@@ -3,7 +3,8 @@
 import type { HeatPoint, HotResponse, StoryDetail, StoryReportView } from "@aihot/contracts/site";
 import { sql } from "../db.ts";
 import { proxiedImage, proxiedImageSet } from "../media/imgproxy.ts";
-import { latestHotRanking, rankingExtras } from "../events/hot-read.ts";
+import { hotRankingAt, latestHotRanking, rankingExtras } from "../events/hot-read.ts";
+export { loadHotStrip } from "../events/hot-read.ts";
 import { behindSources, sourceClocks } from "../events/hot.ts";
 import { storyStatusFor } from "../events/digest.ts";
 import { itemUrl, storyApiUrl, storyUrl } from "./links.ts";
@@ -192,8 +193,9 @@ let coversCache: { rankingId: number; covers: HotCoverMap } | null = null;
 const coversPending = new Map<number, Promise<HotCoverMap>>();
 
 /** A picture per story from its public full-text reports, the representative first, wide enough for a card. */
-async function hotCovers(rankingId: number, entries: Array<{ storyId: number; representativeItemId: string | null }>, at: Date) {
+async function hotCovers(rankingId: number, entries: Array<{ storyId: number; representativeItemId: string | null }>, at: Date, keep: boolean) {
   if (coversCache?.rankingId === rankingId) return coversCache.covers;
+  if (!keep) return queryHotCovers(entries, at);
   const pending = coversPending.get(rankingId);
   if (pending) return pending;
   const load = queryHotCovers(entries, at);
@@ -222,8 +224,9 @@ async function queryHotCovers(entries: Array<{ storyId: number; representativeIt
   return covers;
 }
 
-export async function loadHot(): Promise<HotResponse> {
-  const ranking = await latestHotRanking();
+/** The hot list; `asOf` (the time machine) reads the last ranking computed by then instead of the latest. */
+export async function loadHot(asOf: Date | null = null): Promise<HotResponse> {
+  const ranking = asOf ? await hotRankingAt(asOf) : await latestHotRanking();
   if (!ranking) return { computedAt: null, ruleVersion: null, windowHours: 48, entries: [] };
   const at = new Date(ranking.computedAt);
   const [sparks, covers, extras] = await Promise.all([
@@ -231,8 +234,8 @@ export async function loadHot(): Promise<HotResponse> {
       ranking.entries.map((e) => e.storyId),
       at,
     ),
-    hotCovers(ranking.id, ranking.entries, at),
-    rankingExtras(ranking),
+    hotCovers(ranking.id, ranking.entries, at, !asOf),
+    rankingExtras(ranking, !asOf),
   ]);
   return {
     computedAt: ranking.computedAt,

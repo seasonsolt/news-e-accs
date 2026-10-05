@@ -3,6 +3,7 @@
 //   node scripts/smoke.ts [--base http://localhost:3000]
 import { SITE } from "@aihot/industry/site";
 import { FEATURES } from "@aihot/industry/features";
+import { addDays, beijingDate } from "@aihot/contracts/time";
 
 const at = process.argv.indexOf("--base");
 const base = (at > 0 ? process.argv[at + 1] : process.env.SITE_URL) ?? "http://localhost:3000";
@@ -29,6 +30,10 @@ const MACHINE: Array<[path: string, type: RegExp]> = [
 const LEADERBOARD = FEATURES.leaderboard ? ["/leaderboard", "/leaderboard/rules", "/leaderboard/sources"] : [];
 PAGES.push(...LEADERBOARD);
 if (FEATURES.codexResetMonitor) PAGES.push("/codex-reset");
+if (FEATURES.timeMachine) {
+  PAGES.push("/chronicle", `/hot?at=${addDays(beijingDate(Date.now()), -1)}`);
+  MACHINE.push(["/api/site/chronicle", /json/]);
+}
 
 let failed = 0;
 async function check(path: string, expect: (res: Response, body: string) => string | null) {

@@ -19,6 +19,11 @@ export function beijingMidnight(date: string): Date {
   return new Date(Date.parse(`${date}T00:00:00+08:00`));
 }
 
+/** Last instant (23:59:59.999 Beijing) of the given calendar day: the moment a time-machine slice shows. */
+export function beijingDayEnd(date: string): Date {
+  return new Date(beijingMidnight(addDays(date, 1)).getTime() - 1);
+}
+
 export function addDays(date: string, days: number): string {
   const t = Date.parse(`${date}T00:00:00Z`) + days * 86400000;
   return new Date(t).toISOString().slice(0, 10);

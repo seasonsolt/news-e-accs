@@ -1,9 +1,10 @@
 // First-party leaderboard endpoints (/api/site/leaderboard*). Read-only views of the latest published run.
 import type { FastifyInstance } from "fastify";
 import { LEADERBOARD_PUBLIC_BOARDS, type LeaderboardBoardKey } from "@aihot/contracts/taxonomy";
-import { loadBoard, loadModel, loadRulesData, loadSource, loadSources, NoLeaderboardRun } from "@aihot/backend/leaderboard/read";
-import { sendJsonWithEtag, sendProblem } from "../http/respond.ts";
-import { siteHandler } from "./site.ts";
+import { loadBoard, loadModel, loadRulesData, loadSource, loadSources, NoLeaderboardRun } from "@aihot/backend/publication/leaderboard";
+import { beijingDayEnd } from "@aihot/contracts/time";
+import { looseQuery, sendJsonWithEtag, sendProblem } from "../http/respond.ts";
+import { PAST_SLICE_CACHE, parseAt, siteHandler } from "./site.ts";
 
 const CACHE = "public, max-age=120, s-maxage=300, stale-while-revalidate=600";
 
@@ -13,6 +14,10 @@ export function registerLeaderboard(app: FastifyInstance) {
       try {
         return await fn(req, reply);
       } catch (error) {
+        // The time machine went back before the first run: there is no board for that day.
+        if (error instanceof NoLeaderboardRun && parseAt(looseQuery(req).at)) {
+          return sendProblem(req, reply, { status: 404, code: "not_found", detail: "no leaderboard run by that day", cacheControl: PAST_SLICE_CACHE });
+        }
         if (error instanceof NoLeaderboardRun) {
           return sendProblem(req, reply, { status: 503, code: "temporarily_unavailable", detail: "leaderboard not computed yet", retryAfter: 300 });
         }
@@ -26,15 +31,17 @@ export function registerLeaderboard(app: FastifyInstance) {
   app.get("/api/site/leaderboard/boards/:key", guarded(async (req, reply) => {
     const key = (req.params as { key: string }).key;
     if (!(LEADERBOARD_PUBLIC_BOARDS as readonly string[]).includes(key)) return notFound(req, reply);
-    const body = await loadBoard(key as LeaderboardBoardKey);
+    const at = parseAt(looseQuery(req).at);
+    const body = await loadBoard(key as LeaderboardBoardKey, at ? beijingDayEnd(at) : null);
     if (!body) return notFound(req, reply);
-    return sendJsonWithEtag(req, reply, body, { etagPrefix: `lb-${key}`, cacheControl: CACHE });
+    return sendJsonWithEtag(req, reply, body, { etagPrefix: `lb-${key}`, cacheControl: at ? PAST_SLICE_CACHE : CACHE });
   }));
 
   app.get("/api/site/leaderboard/models/:slug", guarded(async (req, reply) => {
-    const body = await loadModel((req.params as { slug: string }).slug);
+    const at = parseAt(looseQuery(req).at);
+    const body = await loadModel((req.params as { slug: string }).slug, at ? beijingDayEnd(at) : null);
     if (!body) return notFound(req, reply);
-    return sendJsonWithEtag(req, reply, body, { etagPrefix: "lb-model", cacheControl: CACHE });
+    return sendJsonWithEtag(req, reply, body, { etagPrefix: "lb-model", cacheControl: at ? PAST_SLICE_CACHE : CACHE });
   }));
 
   app.get("/api/site/leaderboard/sources", guarded(async (req, reply) => {

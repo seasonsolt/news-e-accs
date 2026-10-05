@@ -156,9 +156,22 @@ export async function computeHotRanking(at = new Date()): Promise<{ id: number; 
     VALUES (${at}, ${HOT_RULE_VERSION}, ${sql.json(entries as never)},
             ${sql.json({ windowHours: WINDOW_HOURS, halfLifeHours: HALF_LIFE_HOURS, minParticipants: MIN_PARTICIPANTS, candidates: rows.length } as never)}, true)
     RETURNING id`;
-  // Keep a bounded history of rankings.
-  await sql`DELETE FROM hot_rankings WHERE computed_at < now() - interval '30 days'`;
+  await pruneHotRankings();
   return { id: row!.id, entries: entries.length };
+}
+
+/**
+ * Keeps a bounded history: every ranking of the last 30 days, and before that only the last published
+ * ranking of each Beijing day, which the time machine shows for that day.
+ */
+export async function pruneHotRankings(now = new Date()): Promise<number> {
+  const rows = await sql`
+    DELETE FROM hot_rankings h WHERE h.computed_at < ${now}::timestamptz - interval '30 days'
+      AND (NOT h.published OR EXISTS (
+        SELECT 1 FROM hot_rankings later
+        WHERE later.published AND (later.computed_at, later.id) > (h.computed_at, h.id)
+          AND (later.computed_at AT TIME ZONE 'Asia/Shanghai')::date = (h.computed_at AT TIME ZONE 'Asia/Shanghai')::date))`;
+  return rows.count;
 }
 
 /**

@@ -3,7 +3,7 @@
 // development's first appearance, so a new development brings it back up while a representative swap
 // never moves it; the representative is the first-party pick of the story's initiating fact.
 import type { GroupInfo, TimelineCard, TimelineFilters, TimelineResponse } from "@aihot/contracts/site";
-import { beijingDate } from "@aihot/contracts/time";
+import { beijingDate, beijingDayEnd } from "@aihot/contracts/time";
 import { sql } from "../db.ts";
 import { decodeCursor, encodeCursor, InvalidCursorError, queryBinding } from "../lib/cursor.ts";
 import {
@@ -28,7 +28,7 @@ function filterSql(q: TimelineQuery) {
 }
 
 function binding(q: TimelineQuery): string {
-  return queryBinding({ c: q.channel, k: q.category, t: q.tag, p: q.topic ?? null });
+  return queryBinding({ c: q.channel, k: q.category, t: q.tag, p: q.topic ?? null, ...(q.at ? { d: q.at } : {}) });
 }
 
 /** Representative preference: first-party, full text, higher score, earliest. */
@@ -66,12 +66,13 @@ const groupedCache = new Map<string, { at: number; rows: Array<{ gk: string; anc
 const groupedPending = new Map<string, Promise<Array<{ gk: string; anchor: number }>>>();
 async function groupedAnchors(q: TimelineQuery, now: Date): Promise<Array<{ gk: string; anchor: number }>> {
   const key = binding(q);
-  const cached = q.now ? undefined : groupedCache.get(key);
+  const live = !q.now && !q.at;
+  const cached = live ? groupedCache.get(key) : undefined;
   if (cached && Date.now() - cached.at < 5000) return cached.rows;
-  const pending = q.now ? undefined : groupedPending.get(key);
+  const pending = live ? groupedPending.get(key) : undefined;
   if (pending) return pending;
   const load = queryGroupedAnchors(q, now);
-  if (q.now) return load;
+  if (!live) return load;
   groupedPending.set(key, load);
   try {
     const rows = await load;
@@ -95,7 +96,7 @@ async function queryGroupedAnchors(q: TimelineQuery, now: Date) {
 }
 
 export async function loadTimeline(q: TimelineQuery): Promise<Omit<TimelineResponse, "hot" | "generatedAt">> {
-  const now = q.now ?? new Date();
+  const now = q.at ? beijingDayEnd(q.at) : (q.now ?? new Date());
   const limit = Math.min(Math.max(q.limit ?? 20, 1), 40);
   const bind = binding(q);
   let after: { a: number; g: string } | null = null;
@@ -106,7 +107,8 @@ export async function loadTimeline(q: TimelineQuery): Promise<Omit<TimelineRespo
   }
 
   // Independent of the page: read alongside it.
-  const refreshAtRead = nextRelease(q, now);
+  // A past day's slice is settled: nothing pending in it becomes visible later.
+  const refreshAtRead = q.at ? Promise.resolve(null) : nextRelease(q, now);
   refreshAtRead.catch(() => {});
   const grouped = await groupedAnchors(q, now);
   const start = after ? grouped.findIndex((g) => g.anchor < after!.a || (g.anchor === after!.a && g.gk < after!.g)) : 0;
@@ -197,7 +199,7 @@ export async function loadTimeline(q: TimelineQuery): Promise<Omit<TimelineRespo
   const refreshAt = await refreshAtRead;
   const last = page[page.length - 1];
   const nextCursor = hasMore && last ? encodeCursor("tl1", { a: last.anchor_at.getTime(), g: last.gk, b: bind }) : null;
-  return { filters: { channel: q.channel, category: q.category, tag: q.tag, topic: q.topic ?? null }, cards, nextCursor, refreshAt, dayCounts };
+  return { filters: { channel: q.channel, category: q.category, tag: q.tag, topic: q.topic ?? null, ...(q.at ? { at: q.at } : {}) }, cards, nextCursor, refreshAt, dayCounts };
 }
 
 /** Earliest pending release in this scope; caches of this scope must expire by then. */

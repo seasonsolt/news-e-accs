@@ -10,7 +10,8 @@ import { loadTimeline } from "@aihot/backend/publication/timeline";
 import { loadStoryFollowups } from "@aihot/backend/publication/followups";
 import { loadDevelopments, loadGroupReports } from "@aihot/backend/publication/groups";
 import { loadTopicTags } from "@aihot/backend/publication/topics";
-import { loadHotStrip } from "@aihot/backend/events/hot-read";
+import { loadChronicle, timeMachineBounds } from "@aihot/backend/publication/chronicle";
+import { beijingDate, beijingDayEnd, isValidDate } from "@aihot/contracts/time";
 import { loadChangelog, siteMeta } from "@aihot/backend/site/meta";
 import { loadContact, loadMakerAvatar } from "@aihot/backend/site/contact";
 import { loadSiteStats } from "@aihot/backend/site/stats";
@@ -19,8 +20,8 @@ import { listTopicSummaries, loadTopicPage } from "@aihot/backend/publication/to
 import { registerFeedback } from "./feedback.ts";
 import { registerNewsletter } from "./newsletter.ts";
 
-import { loadHot, loadStoryDetail, resolveStory } from "@aihot/backend/publication/stories";
-import { listReports, loadReport, reportNavigation, loadReportNavigation, loadReportMonth, type ReportKind } from "@aihot/backend/publication/reports";
+import { loadHot, loadHotStrip, loadStoryDetail, resolveStory } from "@aihot/backend/publication/stories";
+import { listReports, loadReport, reportKeyAt, reportNavigation, loadReportNavigation, loadReportMonth, type ReportKind } from "@aihot/backend/publication/reports";
 import { loadSiteCodexResetPage, loadSiteCodexResetDay } from "@aihot/backend/publication/monitor";
 import { codexResetVersion } from "@aihot/backend/monitor/read";
 import { cached } from "@aihot/backend/lib/cache";
@@ -57,6 +58,21 @@ export function siteHandler(fn: Handler): Handler {
   };
 }
 
+/** A settled past day's slice: it changes only when an editor reworks that day. */
+export const PAST_SLICE_CACHE = "public, max-age=3600, s-maxage=86400";
+
+/**
+ * The time machine's `at` (a Beijing YYYY-MM-DD): null for the live view (absent, today, or the feature
+ * off); a later day is a bad request.
+ */
+export function parseAt(raw: string | undefined): string | null {
+  if (!FEATURES.timeMachine || !raw) return null;
+  if (!isValidDate(raw)) throw new BadRequest("invalid at");
+  const today = beijingDate(Date.now());
+  if (raw > today) throw new BadRequest("at is in the future");
+  return raw === today ? null : raw;
+}
+
 export interface FilterParams {
   channel: ChannelKey;
   category: CategoryKey | null;
@@ -91,13 +107,14 @@ export function registerSite(app: FastifyInstance) {
     const q = looseQuery(req);
     const filters = await parseFilters(q);
     const limit = Math.min(Math.max(Number(q.limit) || 20, 1), 40);
+    const at = parseAt(q.at);
     const unfiltered = filters.channel === "all" && !filters.category && !filters.tag && !filters.topic && !q.cursor;
     const [data, hot] = await Promise.all([
-      loadTimeline({ ...filters, cursor: q.cursor || null, limit }),
-      unfiltered ? loadHotStrip() : null,
+      loadTimeline({ ...filters, cursor: q.cursor || null, limit, at }),
+      unfiltered ? loadHotStrip(at ? beijingDayEnd(at) : null) : null,
     ]);
     const body = { ...data, hot, generatedAt: new Date().toISOString() };
-    const cc = cacheUntil(reply, 60, data.refreshAt);
+    const cc = at ? PAST_SLICE_CACHE : cacheUntil(reply, 60, data.refreshAt);
     return sendJsonWithEtag(req, reply, body, { etagPrefix: "tl", cacheControl: cc, etagOf: { ...data, hot } });
   }));
 
@@ -192,9 +209,19 @@ export function registerSite(app: FastifyInstance) {
 
 
   app.get("/api/site/hot", siteHandler(async (req, reply) => {
-    const data = await loadHot();
-    return sendJsonWithEtag(req, reply, data, { etagPrefix: "hot", cacheControl: "public, max-age=30, s-maxage=30" });
+    const at = parseAt(looseQuery(req).at);
+    const data = await loadHot(at ? beijingDayEnd(at) : null);
+    return sendJsonWithEtag(req, reply, data, { etagPrefix: "hot", cacheControl: at ? PAST_SLICE_CACHE : "public, max-age=30, s-maxage=30" });
   }));
+
+  if (FEATURES.timeMachine) {
+    app.get("/api/site/chronicle", siteHandler(async (req, reply) => {
+      return sendJsonWithEtag(req, reply, loadChronicle(), { etagPrefix: "chronicle", cacheControl: "public, max-age=600, s-maxage=3600" });
+    }));
+    app.get("/api/site/chronicle/bounds", siteHandler(async (req, reply) => {
+      return sendJsonWithEtag(req, reply, await timeMachineBounds(), { etagPrefix: "chronicle-bounds", cacheControl: "public, max-age=300, s-maxage=600" });
+    }));
+  }
 
   app.get("/api/site/stories/:publicId", siteHandler(async (req, reply) => {
     const publicId = (req.params as { publicId: string }).publicId;
@@ -228,6 +255,15 @@ export function registerSite(app: FastifyInstance) {
     const { kind, key } = req.params as { kind: string; key: string };
     if (!["daily", "weekly", "monthly"].includes(kind) || !/^\d{4}-(\d{2}(-\d{2})?|W\d{2})$/.test(key)) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "report not found" });
     return sendJsonWithEtag(req, reply, { items: await loadReportNavigation(kind as ReportKind, key) }, { etagPrefix: "report-navigation", cacheControl: "public, max-age=60, s-maxage=60" });
+  }));
+
+  // Time machine: which issue of this kind a reader at that day would have had last.
+  app.get("/api/site/reports/:kind/at/:date", siteHandler(async (req, reply) => {
+    const { kind, date } = req.params as { kind: string; date: string };
+    if (!["daily", "weekly", "monthly"].includes(kind)) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "unknown report kind" });
+    const at = parseAt(date) ?? beijingDate(Date.now());
+    const key = await reportKeyAt(kind as ReportKind, at);
+    return sendJsonWithEtag(req, reply, { key }, { etagPrefix: "report-at", cacheControl: "public, max-age=60, s-maxage=60" });
   }));
 
   app.get("/api/site/reports/daily/months/:month", siteHandler(async (req, reply) => {

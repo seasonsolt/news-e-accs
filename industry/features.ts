@@ -9,4 +9,9 @@ export const FEATURES = {
    * 关闭（2026-10-01）：它每分钟搜一次 X，约每月 $34，而这个站不再需要它。
    */
   codexResetMonitor: false,
+  /**
+   * 时光机（四维视角）：/chronicle 的文明时间轴（数据在 industry/chronicle/，换行业时换成你的或关掉），
+   * 以及全站 ?at=日期：精选、热点榜、模型榜、日报回到那一天。不调用模型，不产生费用。
+   */
+  timeMachine: true,
 } as const;

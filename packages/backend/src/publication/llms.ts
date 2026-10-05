@@ -54,6 +54,7 @@ export function llmsTxt(opts: { hasDailies: boolean; hasWeekly: boolean; hasMont
   lines.push(`- [隐私说明](${u("/privacy")})`, "");
   lines.push("## 网站主要页面", "");
   lines.push(`- [首页 · 精选](${u("/")}): 每日精选动态`);
+  if (FEATURES.timeMachine) lines.push(`- [四维视角](${u("/chronicle")}): 从大爆炸到未来预测的文明时间轴；精选、热点榜、模型榜和日报支持 ?at=YYYY-MM-DD，显示该北京日结束时的记录（MCP 和 API v1 暂不支持）`);
   lines.push(`- [热点榜](${u("/hot")}): 过去 48 小时内被多个独立信源共同讨论的事件`);
   lines.push(`- [全部动态](${u("/all")}): 全部公开资讯，可按分类筛选`);
   if (opts.hasDailies) {

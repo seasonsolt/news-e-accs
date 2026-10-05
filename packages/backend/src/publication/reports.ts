@@ -1,6 +1,7 @@
 // Reports through the public read layer: website DTOs and the v1 shapes. Only real reports are
 // listed; a missing date is a 404, never another day. Withdrawn citations are marked, not shown.
 import type { ReportCitation, ReportDetail, ReportIndexEntry, ReportNavigationEntry, ReportKind } from "@aihot/contracts/site";
+import { isoWeekLabel } from "@aihot/contracts/time";
 import { sql } from "../db.ts";
 import { cached, type Cached } from "../lib/cache.ts";
 import { proxiedImage, proxiedImageSet } from "../media/imgproxy.ts";
@@ -193,6 +194,13 @@ async function neighbors(kind: ReportKind, key: string): Promise<{ prev: string 
     SELECT (SELECT key FROM reports WHERE kind = ${kind} AND key < ${key} ORDER BY key DESC LIMIT 1) AS prev,
       (SELECT key FROM reports WHERE kind = ${kind} AND key > ${key} ORDER BY key ASC LIMIT 1) AS next`;
   return { prev: row?.prev ?? null, next: row?.next ?? null };
+}
+
+/** Time machine: the newest report of this kind published for `date` (YYYY-MM-DD) or earlier. */
+export async function reportKeyAt(kind: ReportKind, date: string): Promise<string | null> {
+  const bound = kind === "daily" ? date : kind === "weekly" ? isoWeekLabel(date) : date.slice(0, 7);
+  const [row] = await sql<{ key: string }[]>`SELECT key FROM reports WHERE kind = ${kind} AND key <= ${bound} ORDER BY key DESC LIMIT 1`;
+  return row?.key ?? null;
 }
 
 export async function loadReport(kind: ReportKind, key: string): Promise<ReportDetail | null> {

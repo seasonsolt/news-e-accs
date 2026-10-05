@@ -107,6 +107,8 @@ export interface TimelineFilters {
   category: CategoryKey | null;
   tag: string | null;
   topic?: string | null;
+  /** Time machine: the selected set as it stood at the end of this Beijing day (YYYY-MM-DD). */
+  at?: string | null;
 }
 
 export interface TimelineResponse {

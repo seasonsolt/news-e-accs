@@ -120,14 +120,32 @@ export class NoLeaderboardRun extends Error {}
 let cached: { view: RunView; checkedAt: number } | null = null;
 let loading: Promise<RunView> | null = null;
 
-async function latestRunId(): Promise<string | null> {
+/** The latest published run, or (the time machine) the one in effect at `asOf`. */
+async function latestRunId(asOf: Date | null = null): Promise<string | null> {
   const [row] = await sql<{ id: string }[]>`
-    SELECT id FROM lb_runs WHERE status = 'published' ORDER BY generated_at DESC, created_at DESC LIMIT 1`;
+    SELECT id FROM lb_runs WHERE status = 'published' ${asOf ? sql`AND generated_at <= ${asOf}` : sql``}
+    ORDER BY generated_at DESC, created_at DESC LIMIT 1`;
   return row?.id ?? null;
 }
 
-/** The latest published run, re-checked at most once a minute. */
-export async function runView(): Promise<RunView> {
+// Past runs never change: a few are kept by id, apart from the live one.
+const pastViews = new Map<string, Promise<RunView>>();
+
+/** The latest published run, re-checked at most once a minute; `asOf` reads the run in effect then. */
+export async function runView(asOf: Date | null = null): Promise<RunView> {
+  if (asOf) {
+    const id = await latestRunId(asOf);
+    if (!id) throw new NoLeaderboardRun(`no published leaderboard run by ${asOf.toISOString()}`);
+    if (cached?.view.info.id === id) return cached.view;
+    let view = pastViews.get(id);
+    if (!view) {
+      if (pastViews.size >= 8) pastViews.delete(pastViews.keys().next().value!);
+      view = buildRunView(id);
+      view.catch(() => pastViews.delete(id));
+      pastViews.set(id, view);
+    }
+    return view;
+  }
   if (cached && Date.now() - cached.checkedAt < 60_000) return cached.view;
   loading ??= refreshRunView().finally(() => { loading = null; });
   return loading;
@@ -245,6 +263,7 @@ async function buildRunView(runId: string): Promise<RunView> {
 /** Clears the in-memory run so the next read reloads (after a new run is published). */
 export function invalidateLeaderboard() {
   cached = null;
+  pastViews.clear();
 }
 
 function confidenceOf(entry: RankingRow): LbConfidence {
@@ -271,8 +290,8 @@ function boardTabs() {
   }));
 }
 
-export async function loadBoard(key: LeaderboardBoardKey): Promise<LbBoardResponse | null> {
-  const view = await runView();
+export async function loadBoard(key: LeaderboardBoardKey, asOf: Date | null = null): Promise<LbBoardResponse | null> {
+  const view = await runView(asOf);
   const board = view.boards.get(key);
   if (!board) return null;
   const entries: LbBoardEntry[] = board.entries
@@ -320,8 +339,8 @@ function usageLabel(status: string | undefined) {
   return "仅供参考";
 }
 
-export async function loadModel(slug: string): Promise<LbModelDetail | null> {
-  const view = await runView();
+export async function loadModel(slug: string, asOf: Date | null = null): Promise<LbModelDetail | null> {
+  const view = await runView(asOf);
   if (!view.pageSlugs.has(slug)) return null;
   const m = view.models.get(slug);
   if (!m) return null;

@@ -51,8 +51,17 @@ export function latestHotRanking(): Promise<HotRanking | null> {
 }
 
 async function queryLatestHotRanking(): Promise<HotRanking | null> {
+  return hotRankingAt(null);
+}
+
+/**
+ * The ranking readers saw at `at` (the time machine), or the latest when `at` is null. Rankings
+ * older than 30 days survive only as the last of each Beijing day (events/hot.ts).
+ */
+export async function hotRankingAt(at: Date | null): Promise<HotRanking | null> {
   const [row] = await sql<{ id: number; computed_at: Date; rule_version: string; entries: HotEntry[]; evidence: Record<string, unknown> | null }[]>`
-    SELECT id, computed_at, rule_version, entries, evidence FROM hot_rankings WHERE published ORDER BY computed_at DESC LIMIT 1`;
+    SELECT id, computed_at, rule_version, entries, evidence FROM hot_rankings
+    WHERE published ${at ? sql`AND computed_at <= ${at}` : sql``} ORDER BY computed_at DESC LIMIT 1`;
   if (!row) return null;
   return { id: row.id, computedAt: row.computed_at.toISOString(), ruleVersion: row.rule_version, entries: row.entries, coverage: row.evidence };
 }
@@ -65,14 +74,19 @@ interface Extras {
 let extrasCache: { rankingId: number; extras: Extras } | null = null;
 const extrasPending = new Map<number, Promise<Extras>>();
 
-async function readExtras(ranking: HotRanking): Promise<Extras> {
+async function readExtras(ranking: HotRanking, keep: boolean): Promise<Extras> {
   if (extrasCache?.rankingId === ranking.id) return extrasCache.extras;
+  // A past ranking (the time machine) is read without displacing the live one's cache.
+  if (!keep) return queryExtras(ranking);
   const pending = extrasPending.get(ranking.id);
   if (pending) return pending;
   const load = queryExtras(ranking);
   extrasPending.set(ranking.id, load);
-  try { return await load; }
-  finally { extrasPending.delete(ranking.id); }
+  try {
+    const extras = await load;
+    extrasCache = { rankingId: ranking.id, extras };
+    return extras;
+  } finally { extrasPending.delete(ranking.id); }
 }
 
 async function queryExtras(ranking: HotRanking): Promise<Extras> {
@@ -88,20 +102,18 @@ async function queryExtras(ranking: HotRanking): Promise<Extras> {
     sql<{ id: number; digest: string | null; summary: string | null; latest: string | null }[]>`
       SELECT id, digest, summary, latest FROM stories WHERE id = ANY(${ids}::bigint[])`,
   ]);
-  const extras: Extras = {
+  return {
     faces: new Map(faces.map((f) => [f.name, f.icon_url ?? f.avatar])),
     texts: new Map(texts.map((t) => [Number(t.id), { summary: t.digest ?? t.summary, latest: t.latest }])),
   };
-  extrasCache = { rankingId: ranking.id, extras };
-  return extras;
 }
 
 /**
  * What the web adds to a ranking entry: participants with proxied faces in the order Faces shows them
  * (精选组 by tier, a real face before an initial within a tier, then 氛围组), the digest and the latest turn.
  */
-export async function rankingExtras(ranking: HotRanking) {
-  const { faces, texts } = await readExtras(ranking);
+export async function rankingExtras(ranking: HotRanking, keep = true) {
+  const { faces, texts } = await readExtras(ranking, keep);
   return {
     participants: (e: HotEntry): HotParticipant[] => {
       const people = e.participants
@@ -119,11 +131,11 @@ export async function rankingExtras(ranking: HotRanking) {
   };
 }
 
-/** Home "current hot" strip: 3–5 entries from the same ranking, hidden when there are fewer than 3. */
-export async function loadHotStrip(): Promise<HotStripEntry[] | null> {
-  const ranking = await latestHotRanking();
+/** Home "current hot" strip: 3–5 entries from the same ranking, hidden when there are fewer than 3; `at` reads a past day's. */
+export async function loadHotStrip(at: Date | null = null): Promise<HotStripEntry[] | null> {
+  const ranking = at ? await hotRankingAt(at) : await latestHotRanking();
   if (!ranking || ranking.entries.length < 3) return null;
-  const extras = await rankingExtras(ranking);
+  const extras = await rankingExtras(ranking, !at);
   return ranking.entries.slice(0, 5).map((e) => ({
     rank: e.rank,
     title: e.title,

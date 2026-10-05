@@ -10,7 +10,7 @@ import { sql } from "../db.ts";
 import { cached } from "../lib/cache.ts";
 import { escapeXml } from "../lib/text.ts";
 import { siteUrl } from "./links.ts";
-import { leaderboardUrls } from "../leaderboard/read.ts";
+import { leaderboardUrls } from "./leaderboard.ts";
 import { topicPageCounts } from "./topics.ts";
 
 async function leaderboardDetailUrls(): Promise<string[]> {
@@ -51,6 +51,7 @@ async function build(): Promise<string> {
     { loc: "/privacy", changefreq: "monthly", priority: 0.4 },
     { loc: "/changelog", lastmod: now, changefreq: "weekly", priority: 0.5 },
   );
+  if (FEATURES.timeMachine) entries.push({ loc: "/chronicle", changefreq: "weekly", priority: 0.5 });
   if (FEATURES.leaderboard) {
     entries.push(
       { loc: "/leaderboard", changefreq: "daily", priority: 0.8 },
