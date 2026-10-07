@@ -1,5 +1,9 @@
-import { SITE, withSubject } from "@aihot/industry/site";
-import { Link, Outlet } from "react-router";
+import { SITE } from "@aihot/industry/site";
+import { FEATURES } from "@aihot/industry/features";
+import { Link, Outlet, useRouteLoaderData } from "react-router";
+import type { loader as rootLoader } from "../root";
+import { Deck } from "../components/shell/Deck";
+import { TimeDial } from "../features/chrono/TimeMachine";
 import { BoardTabs } from "../features/leaderboard/BoardTabs";
 import { IconArrowUpRight } from "../components/icons";
 
@@ -8,26 +12,25 @@ export function headers() {
   return { "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=600" };
 }
 
-/** Shared frame for the overall and category boards; only the board below it changes. */
+/** Shared frame for the overall and category boards: the deck, then the board tabs; only the board below changes. */
 export default function LeaderboardFrame() {
-  const chip = "inline-flex h-8 items-center gap-1 rounded-full border border-line-strong bg-surface px-3.5 text-[12.5px] text-ink-2 transition-colors hover:border-ink-4 hover:text-ink";
+  const root = useRouteLoaderData<typeof rootLoader>("root");
   return (
     <div className="pb-10">
-      <header className="flex flex-col gap-3 pb-4 pt-5 sm:flex-row sm:items-end sm:justify-between lg:pt-1">
-        <div>
-          <div className="mono text-[11px] font-semibold tracking-[0.16em] text-accent">{SITE.name.toUpperCase()} LEADERBOARD</div>
-          <h1 className="mt-1.5 text-[24px] font-semibold leading-[1.3] text-ink">AI 模型排行榜</h1>
+      <Deck
+        art="cat-models"
+        label="模型前沿"
+        kicker={`${SITE.name} 模型前沿 · 汇总公开评测的共识排名`}
+        title="算力的前沿，此刻在哪"
+        description="汇集多种能力的真实评测，按多项公开评测的共同证据排名。共识分不是正确率，缺测不记零分，价格不参与排名。"
+        aside={FEATURES.timeMachine && <TimeDial bounds={root?.timeBounds ?? null} className="w-[300px] max-w-full" />}
+      >
+        <div className="flex flex-wrap gap-2.5">
+          <Link to="/leaderboard/sources" className="deck-button">评测来源 <IconArrowUpRight size={14} className="ml-1" /></Link>
+          <Link to="/leaderboard/rules" className="deck-button">排名怎么算 <IconArrowUpRight size={14} className="ml-1" /></Link>
         </div>
-        <div className="flex gap-2">
-          <Link to="/leaderboard/sources" className={chip}>
-            评测来源 <IconArrowUpRight size={13} />
-          </Link>
-          <Link to="/leaderboard/rules" className={chip}>
-            排名怎么算 <IconArrowUpRight size={13} />
-          </Link>
-        </div>
-      </header>
-      <div className="-mx-4 px-4 lg:mx-0 lg:px-0">
+      </Deck>
+      <div className="-mx-4 mt-6 px-4 lg:mx-0 lg:px-0">
         <BoardTabs />
       </div>
       <Outlet />

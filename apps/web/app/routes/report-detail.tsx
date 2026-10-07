@@ -1,5 +1,5 @@
 import { SITE, withSubject } from "@aihot/industry/site";
-import { data, useLoaderData } from "react-router";
+import { data, useLoaderData, useRouteLoaderData } from "react-router";
 import type { Route } from "./+types/report-detail";
 import type { ReportDetail, ReportNavigationEntry, ReportKind } from "@aihot/contracts/site";
 import { requestAt } from "../features/chrono/at";
@@ -7,7 +7,12 @@ import { apiGet, loadOr404 } from "../lib/api.server";
 import { pageMeta, titled } from "../lib/seo";
 import { beijingDate } from "../lib/format";
 import { ReportLayout } from "../features/report/ReportLayout";
-import { ReportPaper } from "../features/report/ReportPaper";
+import { ReportDeck, ReportPaper } from "../features/report/ReportPaper";
+import { FEATURES } from "@aihot/industry/features";
+import type { loader as rootLoader } from "../root";
+import { Deck } from "../components/shell/Deck";
+import { TimeDial } from "../features/chrono/TimeMachine";
+
 import { KIND_LABEL, kindFromPath } from "../features/report/format";
 
 const PATTERN: Record<ReportKind, RegExp> = {
@@ -47,8 +52,10 @@ export function headers() {
 
 export default function ReportDetailPage() {
   const { report, index, today } = useLoaderData<typeof loader>();
+  const root = useRouteLoaderData<typeof rootLoader>("root");
+  const dial = FEATURES.timeMachine && <TimeDial bounds={root?.timeBounds ?? null} className="w-[300px] max-w-full" />;
   return (
-    <ReportLayout kind={report.kind} index={index} current={report.key} today={today}>
+    <ReportLayout kind={report.kind} index={index} current={report.key} today={today} deck={<ReportDeck report={report} index={index} aside={dial} />}>
       <ReportPaper report={report} index={index} />
     </ReportLayout>
   );

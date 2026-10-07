@@ -1,5 +1,5 @@
-// One report with a newspaper's structure in the site's own look: a nameplate with its 报眼 (the box
-// beside it for the issue and date), a band of the issue's figures, the front page (the lead, today's
+// One report with a newspaper's structure in the site's own look: its deck (ReportDeck: the issue, its
+// headline and figures, rendered by the route above the layout), the front page (the lead, today's
 // highlights and the page index), then one page per section in two columns, the neighbouring issues
 // and a colophon. Colours, type and components are the site's; only the structure is a paper's.
 // Rules are hairlines in two weights: line-strong closes the masthead and underlines a page's heading
@@ -14,74 +14,44 @@ import { Badge } from "../../components/ui/Badge";
 import { IconArrowLeft, IconArrowRight, IconArrowUpRight } from "../../components/icons";
 import { Kicker } from "../../components/ui/Kicker";
 import { SourceAvatar } from "../../components/ui/SourceAvatar";
-import { Halftone } from "./Halftone";
-import { Nameplate } from "./Nameplate";
 import { ReadingGear } from "../art/ReadingGear";
-import { IssueDots } from "./IssueDots";
-import { EDITION, KIND_LABEL, MOTTO, dateLine, dateMark, headline, issueNumber, metricItems, neighbourLabel, reportPath, shortDay } from "./format";
+import { Deck } from "../../components/shell/Deck";
+import { KIND_LABEL, MOTTO, dateLine, headline, issueNumber, metricItems, neighbourLabel, reportPath, shortDay } from "./format";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const keyOf = (c: ReportCitation) => c.itemId ?? c.title;
 const anchorOf = (c: ReportCitation) => (c.itemId ? `r-${c.itemId}` : null);
 const LINK = "inline-flex min-h-7 items-center gap-0.5 font-medium transition-colors hover:text-accent";
 
-function Masthead({ report, index }: { report: ReportDetail; index: ReportNavigationEntry[] }) {
+/** The issue's deck: the press it comes off, its date and number, the headline and its figures. */
+export function ReportDeck({ report, index, aside }: { report: ReportDetail; index: ReportNavigationEntry[]; aside?: ReactNode }) {
   const issue = issueNumber(index, report.key);
-  const mark = dateMark(report.kind, report.key);
+  const leadStory = leadStoryOf(report);
+  const count = pagesOf(report, leadStory).reduce((sum, p) => sum + p.items.length, 0) + (leadStory ? 1 : 0);
   return (
-    <header className="pt-5 lg:pt-0">
-      <div className="flex items-center justify-between gap-4 text-[12px] text-ink-4">
-        <span className="num">{dateLine(report.kind, report.key)}</span>
-        <span className="hidden tracking-[0.3em] @[640px]:inline">{MOTTO[report.kind]}</span>
-        <span>{EDITION[report.kind]}</span>
-      </div>
-
-      {/* The press the issue comes off (public/media/art); decoration, it plays once as the issue opens. */}
-      <div className="report-masthead-art" aria-hidden="true">
-        <img
-          src="/media/art/masthead-press-1600.webp"
-          srcSet="/media/art/masthead-press-800.webp 800w, /media/art/masthead-press-1600.webp 1600w"
-          sizes="(min-width: 961px) 1000px, 100vw"
-          alt=""
-          decoding="async"
-        />
-      </div>
-
-      <div className="flex items-stretch justify-between gap-5 py-6 @[880px]:gap-10 @[880px]:py-8">
-        <div className="flex min-w-0 flex-col justify-center">
-          <h1 id="report-start">
-            <span className="sr-only">
-              AI {KIND_LABEL[report.kind]} · {dateLine(report.kind, report.key)}
-            </span>
-            <Nameplate which={report.kind} className="block h-[54px] w-auto @[520px]:h-[74px] @[880px]:h-[98px] @[1040px]:h-[112px]" />
-          </h1>
-          <p className="mt-3 text-[11.5px] tracking-[0.36em] text-ink-4 @[880px]:mt-4 @[880px]:text-[12.5px]">{SITE.name.toUpperCase()}</p>
-        </div>
-        {/* 报眼: the box beside the nameplate, as a Chinese daily sets it: the issue and the date in the
-            nameplate's dots, and on wider paper the issue calendar beside them. */}
-        <div className="flex shrink-0 items-stretch well rounded-panel">
-          <div className="flex w-[112px] flex-col items-center justify-center px-2 py-3 text-center @[880px]:w-[150px] @[880px]:py-4">
-            {issue && <span className="text-[11px] tracking-[0.2em] text-ink-4">第 {issue} 期</span>}
-            <Halftone seed={`${report.kind}-${report.key}-date`} className="num mt-2 whitespace-nowrap text-[44px] font-black leading-[0.95] tracking-[-0.04em] text-ink @[880px]:text-[64px]">
-              {mark.figure}
-            </Halftone>
-            <span className="mt-2 text-[11.5px] text-ink-2">{mark.top}</span>
-            <span className="text-[11.5px] text-ink-4">{mark.bottom}</span>
-          </div>
-          <IssueDots kind={report.kind} reportKey={report.key} index={index} className="hidden w-[176px] border-l border-line px-4 py-4 @[760px]:block @[880px]:w-[196px]" />
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-baseline gap-x-8 gap-y-1.5 border-y border-line-strong py-3">
+    <Deck
+      art="masthead-press"
+      label={`AI ${KIND_LABEL[report.kind]}`}
+      kicker={
+        <>
+          AI {KIND_LABEL[report.kind]} · <span className="num">{dateLine(report.kind, report.key)}</span>
+          {issue && <> · 第 {issue} 期</>} · 约 {report.readingMinutes} 分钟读完
+        </>
+      }
+      title={headline(report.kind, report.key, count)}
+      titleId="report-start"
+      description={MOTTO[report.kind]}
+      aside={aside}
+    >
+      <div className="flex flex-wrap gap-x-10 gap-y-3 border-t border-[rgb(217_164_65/.45)] pt-5">
         {metricItems(report.metrics).map((m) => (
-          <span key={m.unit} className="inline-flex items-baseline gap-1.5 whitespace-nowrap">
-            <span className="num text-[22px] font-bold leading-none tracking-[-0.02em] text-ink @[880px]:text-[24px]">{m.value}</span>
-            <span className="text-[12px] text-ink-4">{m.unit}</span>
+          <span key={m.unit} className="flex flex-col">
+            <span className="deck-figure text-[44px]">{m.value}</span>
+            <span className="mt-1.5 text-[13px] text-[var(--deck-dim)]">{m.unit}</span>
           </span>
         ))}
-        <span className="ml-auto whitespace-nowrap text-[12px] text-ink-4">约 {report.readingMinutes} 分钟读完</span>
       </div>
-    </header>
+    </Deck>
   );
 }
 
@@ -377,7 +347,6 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
   return (
     <article className="@container">
       <ReadingGear />
-      <Masthead report={report} index={index} />
       {count === 0 && report.flashes.length === 0 ? (
         <p className="py-16 text-center text-[14px] text-ink-4">本期没有入选内容。</p>
       ) : (

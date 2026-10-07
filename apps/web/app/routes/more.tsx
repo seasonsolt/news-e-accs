@@ -3,7 +3,7 @@ import { FEATURES } from "@aihot/industry/features";
 import type { ReactNode } from "react";
 import { Link, useRouteLoaderData } from "react-router";
 import type { loader as rootLoader } from "../root";
-import { useChangelogDot } from "../components/shell/Sidebar";
+import { useChangelogDot } from "../components/shell/changelog";
 import { pageMeta } from "../lib/seo";
 import { ThemeSwitch } from "../components/shell/ThemeSwitch";
 import { MotionSwitch } from "../features/motion/MotionSwitch";
@@ -11,6 +11,7 @@ import { TOOLS } from "../components/shell/nav";
 import { IconBolt, IconBookmark, IconChart, IconChevronRight, IconFlame, IconGrid, IconHeart, IconHistory, IconHourglass, IconMessage, IconMoon, IconPlug } from "../components/icons";
 import { TimeDial } from "../features/chrono/TimeMachine";
 import { useAt, withAt } from "../features/chrono/at";
+import { Deck } from "../components/shell/Deck";
 
 /** Shared caches may keep this page for five minutes. */
 export function headers() {
@@ -67,8 +68,8 @@ export default function MorePage() {
   const changelogDot = useChangelogDot(root?.changelogVersion ?? null);
   return (
     <div className="mx-auto max-w-[var(--page-max-reading)] pb-8">
-      <h1 className="pb-4 pt-5 text-[22px] font-bold text-ink lg:pt-1">更多</h1>
-      <div className="space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0 2xl:grid-cols-3">
+      <Deck compact label="更多" title="更多" description="订阅、主题、收藏、工具与偏好设置。" />
+      <div className="mt-5 space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0 2xl:grid-cols-3">
         {GROUPS.map((g) => (
           <Group key={g.title} title={g.title}>
             {g.rows.map((r) => (

@@ -6,6 +6,7 @@ import { loadOr404 } from "../lib/api.server";
 import { breadcrumbLd, pageMeta, titled } from "../lib/seo";
 import { DayList, Pagination } from "../features/feed/DayList";
 import { EmptyState, MoreLink } from "../components/ui/Page";
+import { Deck } from "../components/shell/Deck";
 
 /** Selected items of a topic: shared caches keep the page as long as its api answer (one minute). */
 export function headers() {
@@ -50,14 +51,8 @@ export default function TopicPage() {
   const last = first + items.length - 1;
   return (
     <div className="pb-6">
-      <header className="pb-4 pt-5 lg:pt-1">
-        <div className="flex items-start justify-between gap-4">
-          <h1 className="text-[22px] font-bold leading-[1.35] text-ink">{topic.name}</h1>
-          <span className="hidden pt-2 lg:block">
-            <MoreLink to="/topics">全部主题</MoreLink>
-          </span>
-        </div>
-        <p className="mt-1 max-w-[640px] text-[13px] leading-relaxed text-ink-3">{topic.definition}</p>
+      <Deck compact art="topics" label={topic.name} kicker={<Link to="/topics" className="hover:text-[var(--heat-hi)]">← 全部主题</Link>} title={topic.name} description={topic.definition} />
+      <header className="pb-4 pt-5">
         <div className="mt-3 flex flex-wrap items-baseline gap-x-5 gap-y-1">
           <span className="text-[12.5px] text-ink-4">
             <span className="num mr-1 text-[20px] font-bold text-ink">{topic.total.toLocaleString("zh-CN")}</span>条精选

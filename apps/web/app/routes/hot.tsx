@@ -1,5 +1,9 @@
-import { SITE, withSubject } from "@aihot/industry/site";
-import { Link, useLoaderData } from "react-router";
+import { withSubject } from "@aihot/industry/site";
+import { Link, useLoaderData, useRouteLoaderData } from "react-router";
+import { FEATURES } from "@aihot/industry/features";
+import type { loader as rootLoader } from "../root";
+import { Deck } from "../components/shell/Deck";
+import { TimeDial } from "../features/chrono/TimeMachine";
 import type { HotEntryView, HotResponse } from "@aihot/contracts/site";
 import { loadOr404, queryString } from "../lib/api.server";
 import { atLabel, requestAt } from "../features/chrono/at";
@@ -7,8 +11,6 @@ import { pageMeta } from "../lib/seo";
 import { monthDayTime, shortSourceName } from "../lib/format";
 import { Badge } from "../components/ui/Badge";
 import { EmptyState } from "../components/ui/Page";
-import { ArtBanner } from "../features/art/CategoryBanner";
-import { HeatGauge } from "../features/art/HeatGauge";
 import { IconChevronDown, IconInfo } from "../components/icons";
 import { Sparkline } from "../features/hot/Sparkline";
 import { Faces } from "../features/hot/Faces";
@@ -50,8 +52,8 @@ function Voices({ e }: { e: HotEntryView }) {
   const names = e.sourceNames.slice(0, 2).map(shortSourceName);
   return (
     <span className="min-w-0 text-[12.5px] leading-snug text-ink-4">
-      {/* Lines break between the phrases, never inside one. */}
-      <span className="whitespace-nowrap">
+      {/* Lines break between the phrases, never inside one; a phrase wider than the card is cut short. */}
+      <span className="inline-block max-w-full truncate whitespace-nowrap align-bottom">
         {names.length > 0 && <span className="text-ink-3">{names.join("、")}</span>}
         {e.sourceCount > names.length ? ` 等 ${e.sourceCount} 个来源` : names.length ? " 报道" : `${e.sourceCount} 个来源`}
       </span>
@@ -226,33 +228,27 @@ function Row({ e }: { e: HotEntryView }) {
 
 export default function HotPage() {
   const { hot, at } = useLoaderData<typeof loader>();
+  const root = useRouteLoaderData<typeof rootLoader>("root");
   const [lead, ...rest] = hot.entries;
   const runners = rest.slice(0, 2);
   const others = rest.slice(2);
   return (
     <HotMotion entries={hot.entries}><div className="pb-10">
-      {/* The boiler room (public/media/art), its gauge reading how hot the top story runs. */}
-      <div className="pb-1 pt-4 lg:pt-1">
-        <ArtBanner
-          art="hot"
-          titleAs="h1"
-          title={withSubject("热点榜")}
-          label="热点榜"
-          note={
-            <>
-              {at && `截至 ${atLabel(at)}，`}过去 {hot.windowHours} 小时，AI 圈讨论最多的 {hot.entries.length || 10} 件事
-              {hot.computedAt && (
-                <>
-                  <br />
-                  <span className="num">{monthDayTime(hot.computedAt)}</span> 更新 · 按讨论热度排序
-                </>
-              )}
-            </>
-          }
-        >
-          {lead && <HeatGauge heat={lead.heat} className="absolute bottom-3 right-3 size-[84px] lg:bottom-4 lg:right-5 lg:size-[112px]" />}
-        </ArtBanner>
-      </div>
+      {/* The boiler room (public/media/art) as the deck; the time machine's dial on the right. */}
+      <Deck
+        art="hot"
+        label="热点榜"
+        kicker={
+          <>
+            热点榜 · {at ? `截至 ${atLabel(at)}` : `过去 ${hot.windowHours} 小时`}
+            {hot.computedAt && <> · <span className="num">{monthDayTime(hot.computedAt)}</span> 更新</>}
+          </>
+        }
+        title="此刻温度最高"
+        description={`${hot.windowHours} 小时内每个独立来源只算一次，热度每 24 小时减半。排在前面的，是真正有很多人在说的 ${hot.entries.length || 10} 件事。`}
+        aside={FEATURES.timeMachine && <TimeDial bounds={root?.timeBounds ?? null} className="w-[300px] max-w-full" />}
+      />
+      <div className="h-6" />
 
       {!at && <TelegraphTape entries={hot.entries} />}
 

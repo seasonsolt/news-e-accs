@@ -28,35 +28,30 @@ export const TOOLS: NavItem[] = [
   { to: "/what-is-eacc", label: "什么是 e/acc", icon: IconInfo, document: true },
 ];
 
-export const SIDEBAR: Array<{ title: string; items: NavItem[] }> = [
+/** The deck's top navigation: the reading sections, in the order a reader moves through them. */
+export const TOPNAV: NavItem[] = [
+  { to: "/", label: "精选", icon: IconBolt, end: true },
+  { to: "/all", label: "全部", icon: IconList },
+  { to: "/hot", label: "热点", icon: IconFlame },
+  { to: "/daily", label: withSubject("日报"), icon: IconDoc },
+  ...(FEATURES.leaderboard ? [{ to: "/leaderboard", label: "模型前沿", icon: IconChart }] : []),
+  ...(FEATURES.timeMachine ? [{ to: "/chronicle", label: "四维视角", icon: IconHourglass }] : []),
+];
+
+/** Everything else, under 更多 in the deck (and on the phone's 更多 page). */
+export const MORE_MENU: Array<{ title: string; items: NavItem[] }> = [
   {
-    title: "内容",
+    title: "阅读",
     items: [
-      { to: "/", label: "精选", icon: IconBolt, end: true },
-      { to: "/all", label: `全部${withSubject("动态")}`, icon: IconList },
-      { to: "/hot", label: "热点榜", icon: IconFlame },
-      { to: "/daily", label: withSubject("日报"), icon: IconDoc },
-      ...(FEATURES.timeMachine ? [{ to: "/chronicle", label: "四维视角", icon: IconHourglass }] : []),
       { to: "/subscribe", label: "订阅日报", icon: IconMail },
       { to: "/topics", label: "主题", icon: IconGrid },
       { to: "/starred", label: "收藏", icon: IconBookmark },
+      ...(FEATURES.codexResetMonitor ? [{ to: "/codex-reset", label: "Tibo重置监控", icon: IconHistory }] : []),
     ],
   },
-  // The optional AI-only modules (industry/features.ts).
-  ...(FEATURES.leaderboard || FEATURES.codexResetMonitor
-    ? [
-        {
-          title: "模型",
-          items: [
-            ...(FEATURES.leaderboard ? [{ to: "/leaderboard", label: "模型榜", icon: IconChart }] : []),
-            ...(FEATURES.codexResetMonitor ? [{ to: "/codex-reset", label: "Tibo重置监控", icon: IconHistory }] : []),
-          ],
-        },
-      ]
-    : []),
   { title: "工具", items: TOOLS },
   {
-    title: "更多",
+    title: "关于",
     items: [
       { to: "/agent", label: "Agent 接入", icon: IconPlug },
       { to: "/about", label: "关于", icon: IconHeart },

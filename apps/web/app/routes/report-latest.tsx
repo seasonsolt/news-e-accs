@@ -1,5 +1,5 @@
 import { SITE, withSubject } from "@aihot/industry/site";
-import { redirect, useLoaderData } from "react-router";
+import { redirect, useLoaderData, useRouteLoaderData } from "react-router";
 import type { Route } from "./+types/report-latest";
 import type { ReportDetail, ReportNavigationEntry } from "@aihot/contracts/site";
 import { loadOr404 } from "../lib/api.server";
@@ -8,7 +8,12 @@ import { pageMeta } from "../lib/seo";
 import { beijingDate } from "../lib/format";
 import { EmptyState } from "../components/ui/Page";
 import { ReportLayout } from "../features/report/ReportLayout";
-import { ReportPaper } from "../features/report/ReportPaper";
+import { ReportDeck, ReportPaper } from "../features/report/ReportPaper";
+import { FEATURES } from "@aihot/industry/features";
+import type { loader as rootLoader } from "../root";
+import { Deck } from "../components/shell/Deck";
+import { TimeDial } from "../features/chrono/TimeMachine";
+
 import { KIND_LABEL, kindFromPath } from "../features/report/format";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -42,8 +47,11 @@ export function headers() {
 
 export default function ReportLatestPage() {
   const { kind, report, index, today } = useLoaderData<typeof loader>();
+  const root = useRouteLoaderData<typeof rootLoader>("root");
+  const dial = FEATURES.timeMachine && <TimeDial bounds={root?.timeBounds ?? null} className="w-[300px] max-w-full" />;
+  const deck = report ? <ReportDeck report={report} index={index} aside={dial} /> : <Deck art="masthead-press" label={`AI ${KIND_LABEL[kind]}`} title={`AI ${KIND_LABEL[kind]}`} aside={dial} />;
   return (
-    <ReportLayout kind={kind} index={index} current={report?.key ?? null} today={today}>
+    <ReportLayout kind={kind} index={index} current={report?.key ?? null} today={today} deck={deck}>
       {report ? <ReportPaper report={report} index={index} /> : <EmptyState title={`还没有发布 AI ${KIND_LABEL[kind]}`}>第一期发布后会出现在这里。</EmptyState>}
     </ReportLayout>
   );

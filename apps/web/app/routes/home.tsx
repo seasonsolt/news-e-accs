@@ -1,13 +1,14 @@
 import { SITE, withSubject } from "@aihot/industry/site";
-import { data as withHeaders, redirect, useLoaderData } from "react-router";
+import { data as withHeaders, Link, redirect, useLoaderData, useRouteLoaderData } from "react-router";
 import type { Route } from "./+types/home";
 import type { TimelineResponse } from "@aihot/contracts/site";
 import { isCategoryKey, isChannelKey } from "@aihot/contracts/taxonomy";
 import { loadOr404, queryString, releaseBoundCache } from "../lib/api.server";
 import { listPath, organizationLd, pageMeta } from "../lib/seo";
-import { Wordmark } from "../components/Logo";
+import { Deck } from "../components/shell/Deck";
+import { KardashevMeter } from "../features/chrono/KardashevMeter";
+import type { loader as rootLoader } from "../root";
 import { Onboarding } from "../features/onboarding/Onboarding";
-import { AmbientBackdrop } from "../features/art/AmbientBackdrop";
 import { CategoryBanner } from "../features/art/CategoryBanner";
 import { Timeline } from "../features/feed/Timeline";
 import { HotTopics } from "../features/feed/HotTopics";
@@ -42,42 +43,54 @@ export function headers({ loaderHeaders }: Route.HeadersArgs) {
   return loaderHeaders;
 }
 
-function TodayLabel() {
-  const today = beijingDate(Date.now());
-  const [, m, d] = today.split("-").map(Number) as [number, number, number];
+/** The day the page shows (the time machine's, else today), in the deck's kicker. */
+function TodayLabel({ at }: { at?: string | null }) {
+  const day = at ?? beijingDate(Date.now());
+  const [y, m, d] = day.split("-").map(Number) as [number, number, number];
   return (
-    <span className="text-[12.5px] text-ink-4" suppressHydrationWarning>
-      {m}月{d}日 · {beijingWeekday(today).replace("星期", "周")}
+    <span suppressHydrationWarning>
+      {y}.{String(m).padStart(2, "0")}.{String(d).padStart(2, "0")} · {beijingWeekday(day).replace("星期", "周")}
     </span>
   );
 }
 
 export default function Home() {
   const { data, filters } = useLoaderData<typeof loader>();
-  const title = filters.tag ? `#${filters.tag}` : "精选";
+  const root = useRouteLoaderData<typeof rootLoader>("root");
+  const k = root?.timeBounds?.kardashev ?? null;
   // A first visit to the unfiltered front page opens on the newsletter onboarding (shown before paint
   // by the boot script); everyone else, crawlers included, reads the news below.
   const front = filters.channel === "all" && !filters.category && !filters.tag && !filters.at;
+  const filtered = !!(filters.tag || filters.category || filters.channel !== "all");
   return (
     <div className="pb-6">
       {front && <Onboarding mode="overlay" />}
-      <AmbientBackdrop />
-      {/* Phones: brand bar, today's hot topics, then the feed under "最新精选". */}
-      <div className="flex h-14 items-center justify-between lg:hidden">
-        <Wordmark size={20} className="text-ink" />
-        <TodayLabel />
-      </div>
-      <div className="hidden lg:block">
-        <h1 className="text-[24px] font-semibold leading-[1.3] text-ink">{title}</h1>
-        <div className="mb-5 mt-4 flex items-center justify-between gap-4">
-          <CategoryTabs base="/" category={filters.category} channel={filters.channel} layoutId="home-cat-desk" className="min-w-0" />
-          <SearchField variant="track" keep={{ category: filters.category }} />
-        </div>
+      {filtered ? (
+        <Deck compact art="epochs/agents" label="精选" kicker={<TodayLabel at={filters.at} />} title={filters.tag ? `#${filters.tag}` : "精选"} />
+      ) : (
+        <Deck
+          art="epochs/agents"
+          label="精选"
+          kicker={<><TodayLabel at={filters.at} /> · 智能体时代</>}
+          title={<>宇宙在降温，<br />文明在升温。</>}
+          description="站在时间之外看这一天：它在一百三十八亿年里的位置，以及刚刚推着文明往前走的那几件事。"
+          aside={k !== null && <KardashevMeter k={k} />}
+        >
+          <div className="flex flex-wrap gap-3">
+            <Link to="/subscribe" className="deck-button is-primary">订阅每日 08:00 日报</Link>
+            <Link to="/chronicle" className="deck-button">打开四维视角</Link>
+          </div>
+        </Deck>
+      )}
+
+      <div className="mt-6 hidden items-center justify-between gap-4 lg:mt-8 lg:flex">
+        <CategoryTabs base="/" category={filters.category} channel={filters.channel} layoutId="home-cat-desk" className="min-w-0" />
+        <SearchField variant="track" keep={{ category: filters.category }} />
       </div>
 
-      {data.hot && <HotTopics entries={data.hot} />}
+      <div className="mt-6">{data.hot && <HotTopics entries={data.hot} />}</div>
 
-      <h2 className="mt-6 text-[20px] font-bold text-ink lg:hidden">{filters.tag ? title : "最新精选"}</h2>
+      <h2 className="mt-6 font-display text-[28px] italic text-ink lg:hidden">{filters.tag ? `#${filters.tag}` : "最新精选"}</h2>
       <div className="-mx-4 mt-3 flex items-center gap-2 pl-4 pr-2 lg:hidden">
         <CategoryTabs base="/" category={filters.category} channel={filters.channel} layoutId="home-cat-mobile" size="sm" className="min-w-0 flex-1" />
         <SearchIconLink />

@@ -7,6 +7,7 @@ import { KEYS } from "../lib/local-state";
 import { IconCheck, IconClose, IconImage } from "../components/icons";
 import { RingMark } from "../components/Logo";
 import { AsideCard, ReadingLayout } from "../components/ui/Page";
+import { Deck } from "../components/shell/Deck";
 
 /** Shared caches may keep this page for five minutes. */
 export function headers() {
@@ -153,11 +154,10 @@ export default function FeedbackPage() {
   const label = "mb-2 block text-[13px] font-semibold text-ink";
   const canSend = draft.content.trim().length >= 2 && state.kind !== "sending";
   return (
+    <>
+    <Deck compact label="反馈" title="说说你的想法" description="发现 bug、想要的功能、看不顺眼的地方，都可以告诉我，我都会看到。" />
+    <div className="h-6" />
     <ReadingLayout aside={<FeedbackAside />}>
-      <header>
-        <h1 className="text-[24px] font-semibold leading-[1.3] text-ink">说说你的想法</h1>
-        <p className="mt-2 text-[14.5px] leading-relaxed text-ink-3">发现 bug、想要的功能、看不顺眼的地方，都可以告诉我，我都会看到。</p>
-      </header>
 
       <form
         onSubmit={submit}
@@ -263,5 +263,6 @@ export default function FeedbackPage() {
         </div>
       </form>
     </ReadingLayout>
+    </>
   );
 }

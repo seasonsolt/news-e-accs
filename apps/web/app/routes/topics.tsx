@@ -1,7 +1,7 @@
 import { Link, useLoaderData } from "react-router";
 import { apiGet } from "../lib/api.server";
 import { pageMeta } from "../lib/seo";
-import { ArtBanner } from "../features/art/CategoryBanner";
+import { Deck } from "../components/shell/Deck";
 
 interface TopicSummary {
   slug: string;
@@ -36,15 +36,13 @@ export default function TopicsPage() {
   const { topics } = useLoaderData<typeof loader>();
   return (
     <div className="pb-10">
-      <div className="pt-4 lg:pt-1">
-        <ArtBanner
-          art="topics"
-          titleAs="h1"
-          title="按主题看 AI"
-          label="主题索引"
-          note={<>按公司与模型、技术方向、内容形态浏览 <span className="num">{topics.length}</span> 个主题，持续汇集近期焦点与精选。</>}
-        />
-      </div>
+      <Deck
+        art="topics"
+        label="主题索引"
+        kicker={<>主题索引 · <span className="num">{topics.length}</span> 个主题</>}
+        title="按主题看 AI"
+        description="按公司与模型、技术方向、内容形态浏览，持续汇集近期焦点与精选。"
+      />
       {GROUPS.map((g) => (
         <section key={g.key} aria-labelledby={`topics-${g.key}`} className="pt-8">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">

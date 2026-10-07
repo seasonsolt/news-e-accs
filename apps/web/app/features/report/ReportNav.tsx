@@ -1,4 +1,4 @@
-// Moving between reports: the archive column on desktop, a tab row and recent-issue chips on phones.
+// Moving between reports: the archive card beside the issue on desktop, a tab row and recent-issue chips on phones.
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import type { ReportNavigationEntry, ReportKind } from "@aihot/contracts/site";
@@ -19,8 +19,8 @@ export function ReportArchive({ kind, index, current }: { kind: ReportKind; inde
   const groups = archiveGroups(kind, index);
   const openId = groups.find((g) => g.entries.some((e) => e.key === current))?.id ?? groups[0]?.id;
   return (
-    <aside className="sticky top-0 hidden h-dvh w-[280px] shrink-0 flex-col border-r border-line bg-[color-mix(in_srgb,var(--sidebar)_50%,var(--surface))] pl-5 pr-3 lg:flex dark:bg-[color-mix(in_srgb,var(--sidebar)_50%,var(--bg))]">
-      <div className="pb-4 pt-8">
+    <aside className="sticky top-6 hidden max-h-[calc(100dvh-48px)] w-[260px] shrink-0 flex-col rounded-panel border border-line bg-surface pl-4 pr-2 lg:flex">
+      <div className="pb-4 pt-5">
         <KindSwitch kind={kind} />
       </div>
       <div className="border-b border-line-strong pb-2 pl-1 text-[11.5px] font-semibold tracking-[0.3em] text-ink">往期</div>

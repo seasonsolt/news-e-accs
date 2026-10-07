@@ -9,7 +9,8 @@ import {
 import type { ReactNode } from "react";
 import type { Route } from "./+types/root";
 import "./app.css";
-import { Sidebar } from "./components/shell/Sidebar";
+import { SiteNav } from "./components/shell/SiteNav";
+import { SiteFooter } from "./components/shell/SiteFooter";
 import { MobileTabBar } from "./components/shell/MobileTabBar";
 import { BackToTop, NavigationProgress } from "./components/shell/Chrome";
 import { buttonClass } from "./components/ui/Controls";
@@ -76,24 +77,25 @@ export function meta({ error }: Route.MetaArgs) {
   return [{ title: titled(notFound ? "页面不存在" : "暂时无法加载") }, { name: "robots", content: "noindex" }];
 }
 
-/** Sidebar, main column and phone tab bar around a page (or an error). */
+/** The deck's top bar, the page (or an error), the footer and the phone tab bar. */
 function SiteShell({ changelogVersion, timeBounds, children }: { changelogVersion: string | null; timeBounds: TimeMachineBounds | null; children: ReactNode }) {
   const navigation = useNavigation();
   return (
-    <div className="flex min-h-dvh">
+    <div className="flex min-h-dvh flex-col">
       <NavigationProgress active={navigation.state === "loading"} />
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[70] focus:rounded-control focus:bg-surface focus:px-3 focus:py-2">
         跳到正文
       </a>
-      <Sidebar changelogVersion={changelogVersion} timeBounds={timeBounds} />
-      {/* Mobile shell (≤ 960px): one centred column, the tab bar below. Desktop: the page fills the main area
-          up to the list width (--page-max-wide), centred beyond it. */}
-      <main id="main" className="min-w-0 flex-1 pb-[calc(72px+env(safe-area-inset-bottom))] lg:px-7 lg:pb-[72px] lg:pt-6">
-        <div className="mx-auto w-full max-w-[640px] px-4 lg:max-w-[var(--page-max-wide)] lg:px-0">
+      <SiteNav changelogVersion={changelogVersion} kardashev={timeBounds?.kardashev ?? null} />
+      {/* One centred column (640px on phones, the list width on desktop), 16px below the top bar; a
+          page's Deck spans the window from inside it and takes up those 16px to sit flush. */}
+      <main id="main" className="min-w-0 flex-1 overflow-x-clip pb-[calc(72px+env(safe-area-inset-bottom))] lg:pb-12">
+        <div className="mx-auto w-full max-w-[640px] px-4 pt-4 lg:max-w-[var(--page-max-wide)] lg:px-8">
           <TimeBar bounds={timeBounds} />
           {children}
         </div>
       </main>
+      <SiteFooter />
       <MobileTabBar changelogVersion={changelogVersion} />
       <BackToTop />
     </div>

@@ -8,6 +8,7 @@ import { Lineage } from "../features/leaderboard/Lineage";
 import { SaturatedChip, StatusChip } from "../features/leaderboard/StatusChip";
 import { pct } from "../features/leaderboard/format";
 import { IconArrowLeft, IconArrowUpRight } from "../components/icons";
+import { Deck } from "../components/shell/Deck";
 
 export async function loader({ request }: { request: Request }) {
   return loadOr404<LbSourcesResponse>("/api/site/leaderboard/sources", { signal: request.signal });
@@ -34,12 +35,15 @@ export default function LeaderboardSourcesPage() {
   const { groups, rankedCount, totalCount } = useLoaderData<typeof loader>();
   return (
     <div className="pb-12">
-      <Link to="/leaderboard" className="mt-4 inline-flex items-center gap-1.5 py-2 text-[13px] text-ink-3 transition-colors hover:text-accent lg:mt-0">
-        <IconArrowLeft size={14} /> 返回模型榜
-      </Link>
+      <Deck
+        compact
+        art="cat-models"
+        label="评测来源"
+        kicker={<Link to="/leaderboard" className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /> 返回模型前沿</Link>}
+        title="评测来源"
+        description="每个来源测什么、怎样更新、是否进入排名，都可以在这里找到。"
+      />
       <header className="pb-2 pt-3">
-        <h1 className="text-[24px] font-semibold leading-[1.3] text-ink">评测来源</h1>
-        <p className="mt-1.5 text-[13px] text-ink-3">每个来源测什么、怎样更新、是否进入排名，都可以在这里找到。</p>
         <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
           <div className="flex items-baseline gap-6">
             <span className="flex items-baseline gap-1.5">

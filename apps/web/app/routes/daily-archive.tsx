@@ -7,7 +7,7 @@ import { beijingDate, beijingWeekday } from "../lib/format";
 import { ReportLayout } from "../features/report/ReportLayout";
 import { archiveGroups } from "../features/report/format";
 import { Rows, SectionPage } from "../features/report/ReportPaper";
-import { Nameplate } from "../features/report/Nameplate";
+import { Deck } from "../components/shell/Deck";
 
 export async function loader({ request }: { request: Request }) {
   const { items: index } = await apiGet<{ items: ReportIndexEntry[] }>("/api/site/reports/daily", { signal: request.signal });
@@ -26,23 +26,23 @@ export default function DailyArchive() {
   const { index, today } = useLoaderData<typeof loader>();
   const months = archiveGroups("daily", index);
   return (
-    <ReportLayout kind="daily" index={index} current={null} today={today}>
+    <ReportLayout
+      kind="daily"
+      index={index}
+      current={null}
+      today={today}
+      deck={
+        <Deck
+          art="masthead-press"
+          label="日报合订本"
+          kicker={<>{SITE.name} · {withSubject("日报")} · 共 <span className="num">{index.length}</span> 期</>}
+          title="日报合订本"
+          titleId="report-start"
+          description="每天 08:00 一期，按月装订。"
+        />
+      }
+    >
       <div className="@container">
-        <header className="pt-5 lg:pt-0">
-          <div className="flex items-center justify-between gap-4 text-[12px] text-ink-4">
-            <span>{SITE.name} · {withSubject("日报")}</span>
-            <span>
-              共 <span className="num">{index.length}</span> 期
-            </span>
-          </div>
-          <div className="py-6 @[880px]:py-8">
-            <h1 id="report-start">
-              <span className="sr-only">日报合订本</span>
-              <Nameplate which="archive" className="block h-[50px] w-auto @[520px]:h-[70px] @[880px]:h-[98px]" />
-            </h1>
-          </div>
-          <div aria-hidden="true" className="border-t border-line-strong" />
-        </header>
         {months.map((m) => (
           <SectionPage key={m.id} id={`m-${m.id}`} label={m.label}>
             <Rows items={m.entries}>

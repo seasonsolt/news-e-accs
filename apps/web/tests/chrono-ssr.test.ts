@@ -21,7 +21,7 @@ test("a historical hot page SSR has one final title/bar and carries at through b
   assert.equal(main.textContent?.split("历史热点 2026-09-01").length, 2);
   assert.equal(main.textContent?.split("时光机停在").length, 2);
   assert.match(main.textContent!, /2026年9月1日/);
-  for (const scope of [document.querySelector("aside")!, document.querySelector('nav[aria-label="底部导航"]')!]) {
+  for (const scope of [document.querySelector('nav[aria-label="主导航"]')!, document.querySelector('nav[aria-label="底部导航"]')!]) {
     assert.ok(scope.querySelector('a[href="/?at=2026-09-01"]'));
     assert.ok(scope.querySelector('a[href="/daily?at=2026-09-01"]'));
   }

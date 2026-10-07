@@ -12,6 +12,7 @@ import { PillTabs } from "../components/ui/Tabs";
 import { DayList, Pagination } from "../features/feed/DayList";
 import { EmptyState } from "../components/ui/Page";
 import { RingMark } from "../components/Logo";
+import { Deck } from "../components/shell/Deck";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
@@ -77,11 +78,17 @@ export default function AllPage() {
 
   return (
     <div className="pb-6">
-      <AmbientBackdrop />
-      {/* Desktop, as on 精选: the title, then one filter row with the search field aligned on the right. */}
+      <Deck
+        compact
+        art="ambient-engine-room"
+        label="全部动态"
+        kicker={f.q ? "搜索" : <>全部动态 · 今日 <span className="num">{data.todayCount}</span> 条</>}
+        title={title ?? `全部${withSubject("动态")}`}
+        description={f.q ? undefined : "信源抓到、进了内容池的全部内容，按时间排列；精选只是其中一部分。"}
+      />
+      {/* Desktop, as on 精选: one filter row with the search field aligned on the right. */}
       <div className="hidden lg:block">
-        <h1 className="text-[24px] font-semibold leading-[1.3] text-ink">{title ?? `全部${withSubject("动态")}`}</h1>
-        <div className="mb-5 mt-4 flex items-center justify-between gap-4">
+        <div className="mb-5 mt-6 flex items-center justify-between gap-4">
           <CategoryTabs base="/all" category={f.category} channel={f.channel} layoutId="all-cat-desk" className="min-w-0" />
           <SearchField variant="track" defaultValue={f.q ?? ""} keep={keep} />
         </div>
@@ -89,14 +96,7 @@ export default function AllPage() {
 
       {/* Phones: title with today's count, the search bar, then the same filter row as 精选. */}
       <div className="lg:hidden">
-        <div className="flex items-baseline justify-between pb-3 pt-5">
-          <h1 className="text-[22px] font-bold text-ink">{title ?? "全部动态"}</h1>
-          {!f.q && (
-            <span className="text-[12.5px] text-ink-4">
-              今日 <span className="num">{data.todayCount}</span> 条
-            </span>
-          )}
-        </div>
+        <div className="h-4" />
         <SearchField variant="bar" defaultValue={f.q ?? ""} keep={keep} autoFocus={params.get("search") === "1"} />
         <div className="-mx-4 mt-3 border-b border-line-soft px-4 pb-3">
           <CategoryTabs base="/all" category={f.category} channel={f.channel} layoutId="all-cat-mobile" size="sm" className="min-w-0" />

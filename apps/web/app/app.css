@@ -14,6 +14,15 @@
   font-display: swap;
   src: url("/media/fonts/InstrumentSerif-Italic.woff2") format("woff2");
 }
+/* The deck's figures (K, heat, scores): a numerals-only subset of Big Shoulders Display (OFL). */
+@font-face {
+  font-family: "Big Shoulders Display";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/media/fonts/BigShouldersDisplay-800-numerals.woff2") format("woff2");
+  unicode-range: U+20, U+25, U+2B, U+2D-39, U+4B, U+4E, U+6F, U+B0, U+B2-B3, U+B9, U+D7, U+2070, U+2074-2079;
+}
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
@@ -96,9 +105,9 @@
   /* Page widths follow the screen's shape. Lists fill the screen up to 21:9
      and centre beyond it (32:9); reading pages fill a 16:9 screen and centre on wider ones. A browser
      window is shorter than its screen (tabs, address bar), so a 16:9 screen gives a window of about 2:1
-     and a 21:9 screen one of about 2.7:1. 236px is the sidebar and the main area's padding. */
-  --page-max-wide: max(1200px, calc(270dvh - 236px));
-  --page-max-reading: max(1100px, calc(200dvh - 236px));
+     and a 21:9 screen one of about 2.7:1. 64px is the main area's padding. */
+  --page-max-wide: max(1200px, calc(270dvh - 64px));
+  --page-max-reading: max(1100px, calc(200dvh - 64px));
   color-scheme: light;
   --bg: #f4ecdc;
   --bg-sunk: #ece2cd;
@@ -876,7 +885,79 @@ html[data-onboarding] .ambient-backdrop-image { background-image: none; }
 /* Four-dimensional observation window and the site-wide time machine. */
 /* The brass instrument: the time machine's dial, its bar and the observation deck share one dark, brass-
    trimmed look in either theme, as one instrument seen from different places. */
-:root { --deck: #120e0a; --deck-2: #1a1510; --deck-ink: #f4ecdc; --deck-dim: rgb(244 236 220 / .58); --deck-faint: rgb(244 236 220 / .38); --brass: #d9a441; --brass-hi: #f0d28a; --brass-lo: #a8731f; }
+:root { --deck: #120e0a; --deck-2: #1a1510; --deck-ink: #f4ecdc; --deck-dim: rgb(244 236 220 / .58); --deck-faint: rgb(244 236 220 / .38); --brass: #d9a441; --brass-hi: #f0d28a; --brass-lo: #a8731f; --heat: #ff6a1a; --heat-hi: #ffd9a0; --font-numeral: "Big Shoulders Display", var(--font-sans); }
+
+/* The site's top bar: the deck's first line on every page. */
+.site-nav { position: relative; z-index: 45; background: var(--deck); color: var(--deck-ink); }
+.site-nav-inner { display: flex; align-items: center; gap: 16px; max-width: var(--page-max-wide); min-height: 60px; margin: 0 auto; padding: 0 16px; }
+@media (min-width: 961px) { .site-nav-inner { min-height: 72px; padding: 0 32px; } }
+.site-nav-brand { display: flex; align-items: center; color: var(--deck-ink); }
+.site-nav-brand .text-accent { color: var(--brass); }
+.site-nav-links { display: none; flex: 1; align-items: center; justify-content: center; gap: 2px; }
+@media (min-width: 961px) { .site-nav-links { display: flex; } }
+.site-nav-link { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 999px; font-size: 14px; color: var(--deck-dim); cursor: pointer; transition: color .15s, background-color .15s; list-style: none; }
+.site-nav-link::-webkit-details-marker { display: none; }
+.site-nav-link:hover { color: var(--deck-ink); }
+.site-nav-link[aria-current="page"] { background: rgb(217 164 65 / .2); color: var(--brass-hi); }
+.site-nav-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--heat); }
+.site-nav-k { display: inline-flex; flex: none; align-items: center; gap: 9px; min-height: 36px; margin-left: auto; padding: 0 14px; border: 1px solid rgb(217 164 65 / .45); border-radius: 999px; font: 500 13px var(--font-mono); color: var(--deck-ink); }
+@media (min-width: 961px) { .site-nav-k { margin-left: 0; } }
+.site-nav-k:hover { border-color: var(--brass); }
+.site-nav-k-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--heat); box-shadow: 0 0 10px var(--heat); }
+.site-more { position: relative; }
+.site-more[open] > summary { color: var(--deck-ink); background: rgb(244 236 220 / .08); }
+.site-more-panel { position: absolute; top: calc(100% + 8px); right: 0; z-index: 50; display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 18px; padding: 18px; border-radius: var(--radius-panel); background: linear-gradient(var(--deck-2), var(--deck)); border: 1px solid #2c2318; box-shadow: inset 0 1px 0 rgb(217 164 65 / .35), 0 18px 40px -12px rgb(0 0 0 / .6); }
+.site-more-title { margin-bottom: 6px; font: 500 11px var(--font-mono); letter-spacing: .12em; color: var(--brass); }
+.site-more-link { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 8px; border-radius: 8px; font-size: 13.5px; color: var(--deck-dim); white-space: nowrap; }
+.site-more-link:hover { background: rgb(244 236 220 / .07); color: var(--deck-ink); }
+
+/* A page's deck: spans the window from inside the centred column. */
+.deck { position: relative; isolation: isolate; overflow: hidden; margin-inline: calc(50% - 50vw); margin-top: -16px; padding: 56px 0 40px; background: var(--deck); color: var(--deck-ink); }
+.deck.is-compact { padding: 28px 0 30px; }
+@media (min-width: 961px) { .deck { padding: 88px 0 48px; } .deck.is-compact { padding: 40px 0 36px; } }
+.deck-plate { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: 50% 42%; }
+.deck-plate.is-empty { background: none; }
+.deck-shade {
+  position: absolute; inset: 0; z-index: -1;
+  background:
+    radial-gradient(900px 480px at 82% 28%, rgb(255 106 26 / .26), rgb(255 106 26 / 0) 70%),
+    linear-gradient(to bottom, var(--deck) 0, rgb(18 14 10 / 0) 90px),
+    linear-gradient(to top, rgb(10 8 6 / .97) 0%, rgb(10 8 6 / .74) 55%, rgb(10 8 6 / .5) 100%);
+}
+.deck-inner { max-width: var(--page-max-wide); margin: 0 auto; padding: 0 16px; }
+@media (min-width: 961px) { .deck-inner { padding: 0 32px; } }
+.deck-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 28px 40px; }
+.deck-copy { min-width: 0; max-width: 46rem; flex: 1 1 420px; }
+.deck-kicker { font: 500 12.5px/1.6 var(--font-mono); letter-spacing: .12em; color: var(--heat); }
+.deck-title { margin-top: 12px; font-size: clamp(32px, 5.2vw, 64px); font-weight: 900; line-height: 1.1; letter-spacing: -.01em; color: var(--deck-ink); text-wrap: balance; }
+.deck.is-compact .deck-title { font-size: clamp(26px, 3.6vw, 42px); }
+.deck-desc { margin-top: 14px; max-width: 40rem; font-size: 15.5px; line-height: 1.8; color: rgb(244 236 220 / .8); text-wrap: pretty; }
+.deck-aside { flex: none; }
+.deck-foot { margin-top: 28px; }
+.deck-figure { font-family: var(--font-numeral); font-weight: 800; line-height: .9; color: var(--heat-hi); text-shadow: 0 0 36px rgb(255 106 26 / .5); }
+.deck-button { display: inline-flex; align-items: center; min-height: 46px; padding: 0 20px; border-radius: 999px; border: 1px solid rgb(217 164 65 / .55); font-size: 15px; color: var(--deck-ink); transition: filter .15s, border-color .15s; }
+.deck-button:hover { border-color: var(--brass-hi); }
+.deck-button.is-primary { border-color: transparent; background: var(--heat); font-weight: 700; color: #140a03; }
+.deck-button.is-primary:hover { filter: brightness(1.08); }
+
+/* Dark brass cards on parchment: the home page's pressure gauge and the deck's instruments. */
+.hot-gauge { border-radius: var(--radius-panel); background: linear-gradient(var(--deck-2), var(--deck)); border: 1px solid #2c2318; box-shadow: inset 0 1px 0 rgb(217 164 65 / .35), 0 10px 24px -18px rgb(0 0 0 / .6); color: var(--deck-ink); }
+.kardashev-meter { display: block; width: min(420px, 100%); padding: 24px 26px; border-radius: 16px; background: linear-gradient(rgb(26 21 16 / .92), rgb(18 14 10 / .92)); border: 1px solid rgb(217 164 65 / .4); box-shadow: inset 0 1px 0 rgb(240 210 138 / .35); color: var(--deck-ink); }
+.kardashev-meter:hover { border-color: var(--brass); }
+.kardashev-meter-head { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--deck-dim); }
+.kardashev-meter-reading { display: flex; align-items: baseline; gap: 12px; margin-top: 8px; }
+.kardashev-meter-figure { font-size: clamp(72px, 9vw, 108px); }
+.kardashev-meter-of { font-size: 13px; color: var(--deck-faint); }
+.kardashev-meter-bar { display: block; height: 12px; margin-top: 18px; border-radius: 999px; background: rgb(244 236 220 / .1); overflow: hidden; }
+.kardashev-meter-bar > span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #6b4410, var(--brass) 45%, var(--heat) 80%, var(--heat-hi)); }
+.kardashev-meter-scale { display: flex; justify-content: space-between; margin-top: 9px; font: 11.5px var(--font-mono); color: var(--deck-faint); }
+.kardashev-meter-note { display: block; margin-top: 14px; font-size: 13.5px; line-height: 1.7; color: rgb(244 236 220 / .78); }
+
+/* The site's foot: preferences, rules and feeds. */
+.site-footer { border-top: 1px solid var(--line); padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+@media (min-width: 961px) { .site-footer { padding-bottom: 0; } }
+.site-footer-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px; max-width: var(--page-max-wide); margin: 0 auto; padding: 20px 16px 24px; }
+@media (min-width: 961px) { .site-footer-inner { padding: 22px 32px 30px; } }
 .time-dial {
   position: relative;
   padding: 8px 8px 9px;

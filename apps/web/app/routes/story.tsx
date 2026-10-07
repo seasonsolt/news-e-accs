@@ -11,6 +11,7 @@ import { Badge, SelectedBadge } from "../components/ui/Badge";
 import { PillTabs } from "../components/ui/Tabs";
 import { Select } from "../components/ui/Controls";
 import { IconArrowLeft, IconChevronRight, IconClock, IconDoc, IconUsers } from "../components/icons";
+import { Deck } from "../components/shell/Deck";
 
 export async function loader({ params, request }: Route.LoaderArgs) {
   const res = await fetch(`${process.env.API_BASE_URL || "http://127.0.0.1:3001"}/api/site/stories/${encodeURIComponent(params.publicId)}`, { redirect: "manual", signal: AbortSignal.any([request.signal, AbortSignal.timeout(15000)]) });
@@ -193,37 +194,41 @@ export default function StoryPage() {
 
   return (
     <div className="mx-auto max-w-[var(--page-max-reading)] pb-10">
-      <nav aria-label="位置" className="flex items-center gap-2.5 pb-4 pt-5 text-[12px] text-ink-4 lg:pb-5 lg:pt-4">
-        <Link to="/hot" className="inline-flex items-center gap-1.5 transition-colors hover:text-ink">
-          <IconArrowLeft size={15} /> 热点榜
-        </Link>
-        <span className="h-3 w-px bg-line-strong" aria-hidden="true" />
-        <span>事件详情</span>
-      </nav>
-
-      <header className="max-w-[960px]">
-        <div className="flex items-center gap-2 text-[12px] text-ink-4">
-          热点事件
-          <Badge tone={status.tone}>{status.label}</Badge>
-        </div>
-        <h1 className="mt-2.5 text-[27px] font-bold leading-[1.5] tracking-[-0.01em] text-ink lg:mt-3 lg:text-[36px] lg:font-[730]">{story.title}</h1>
-        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-[12.5px] text-ink-3">
-          <span className="inline-flex items-center gap-1.5">
-            <IconDoc size={15} className="text-ink-4" />
-            <b className="num font-semibold text-ink">{story.reportCount}</b> 篇报道
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <IconUsers size={15} className="text-ink-4" />
-            <b className="num font-semibold text-ink">{story.sourceCount}</b> 个报道来源
-          </span>
-          {story.latestAt && (
-            <span className="inline-flex items-center gap-1.5" suppressHydrationWarning>
-              <IconClock size={15} className="text-ink-4" />
-              {relativeTime(story.latestAt)}更新
+      <Deck
+        compact
+        label="事件详情"
+        kicker={
+          <nav aria-label="位置" className="flex flex-wrap items-center gap-2">
+            <Link to="/hot" className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]">
+              <IconArrowLeft size={14} /> 热点榜
+            </Link>
+            <span aria-hidden="true">·</span>
+            <span>热点事件 · {status.label}</span>
+          </nav>
+        }
+        title={story.title}
+        description={
+          <span className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px]">
+            <span className="inline-flex items-center gap-1.5">
+              <IconDoc size={15} /> <b className="num font-semibold text-[var(--deck-ink)]">{story.reportCount}</b> 篇报道
             </span>
-          )}
-        </div>
-      </header>
+            <span className="inline-flex items-center gap-1.5">
+              <IconUsers size={15} /> <b className="num font-semibold text-[var(--deck-ink)]">{story.sourceCount}</b> 个报道来源
+            </span>
+            {story.latestAt && (
+              <span className="inline-flex items-center gap-1.5" suppressHydrationWarning>
+                <IconClock size={15} /> {relativeTime(story.latestAt)}更新
+              </span>
+            )}
+          </span>
+        }
+        aside={story.whyHot.heat !== null && (
+          <span className="flex flex-col items-end">
+            <span className="font-mono text-[12px] text-[var(--deck-dim)]">热度指数{story.whyHot.rank !== null && ` · 第 ${story.whyHot.rank} 名`}</span>
+            <span className="deck-figure text-[96px] lg:text-[120px]">{story.whyHot.heat.toFixed(1)}</span>
+          </span>
+        )}
+      />
 
       <div className="sticky top-0 z-20 -mx-4 mt-5 bg-bg/90 px-4 py-2 backdrop-blur-md lg:mx-0 lg:px-0">
         <PillTabs

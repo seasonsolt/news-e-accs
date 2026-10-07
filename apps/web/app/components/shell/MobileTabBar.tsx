@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router";
 import { TABBAR, tabIsActive } from "./nav";
-import { useChangelogDot } from "./Sidebar";
+import { useChangelogDot } from "./changelog";
 import { useAt, withAt } from "../../features/chrono/at";
 
 /** Bottom tab bar of the mobile shell (up to 960px), as on the original site. */

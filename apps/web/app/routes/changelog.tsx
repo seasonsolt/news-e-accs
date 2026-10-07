@@ -7,6 +7,7 @@ import { setChangelogSeen } from "../lib/local-state";
 import { AsideCard, ReadingLayout } from "../components/ui/Page";
 import { IconChevronRight } from "../components/icons";
 import { Inline, dateHeading } from "../features/changelog/text";
+import { Deck } from "../components/shell/Deck";
 
 /** Shared caches may keep this page for five minutes. */
 export function headers() {
@@ -122,11 +123,10 @@ export default function ChangelogPage() {
   );
 
   return (
+    <>
+    <Deck compact label="更新日志" title="更新日志" description="新功能、调整、下线，都写在这里。" />
+    <div className="h-6" />
     <ReadingLayout aside={aside}>
-      <header className="pb-6">
-        <h1 className="text-[24px] font-semibold leading-[1.3] text-ink">更新日志</h1>
-        <p className="mt-1.5 text-[13px] text-ink-3">新功能、调整、下线，都写在这里。</p>
-      </header>
       <div className="space-y-4">
         {[...groups.entries()].map(([date, releases]) => {
           const h = dateHeading(date);
@@ -165,5 +165,6 @@ export default function ChangelogPage() {
         })}
       </div>
     </ReadingLayout>
+    </>
   );
 }

@@ -9,6 +9,7 @@ import { pct } from "../features/leaderboard/format";
 import { fullDateTime } from "../lib/format";
 import { IconArrowLeft, IconChevronRight } from "../components/icons";
 import { AsideCard, ReadingLayout } from "../components/ui/Page";
+import { Deck } from "../components/shell/Deck";
 
 interface RulesData {
   run: LbRunInfo;
@@ -168,14 +169,14 @@ export default function LeaderboardRulesPage() {
   );
   return (
     <ReadingLayout aside={aside}>
-      <Link to="/leaderboard" className="inline-flex items-center gap-1.5 py-2 text-[13px] text-ink-3 transition-colors hover:text-accent">
-        <IconArrowLeft size={14} /> 返回模型榜
-      </Link>
-
-      <header className="pt-3">
-        <h1 className="text-[24px] font-semibold leading-[1.3] text-ink">排名怎么算</h1>
-        <p className="mt-1.5 text-[13px] text-ink-3">综合多家公开评测，了解排名背后的证据与方法。</p>
-      </header>
+      <Deck
+        compact
+        art="cat-models"
+        label="排名怎么算"
+        kicker={<Link to="/leaderboard" className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /> 返回模型前沿</Link>}
+        title="排名怎么算"
+        description="综合多家公开评测，了解排名背后的证据与方法。"
+      />
 
       <section className="mt-6 grid items-center gap-5 rounded-panel border border-line-soft bg-bg-sunk px-6 py-7 dark:bg-bg-muted/40 md:grid-cols-[minmax(0,260px)_minmax(0,1fr)] md:px-10 md:py-9 lg:grid-cols-1 xl:grid-cols-[minmax(0,260px)_minmax(0,1fr)]">
         <p className="mono text-[44px] font-medium leading-none tracking-[-0.04em] text-accent md:text-center md:text-[52px]">0—100</p>

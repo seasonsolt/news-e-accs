@@ -1,9 +1,8 @@
 // The observation deck: the era's plate fills a dark stage and the moment is read out large over it; the
 // chronometer docks along its foot. Standing on a milestone that has its own plate (drawn in the look of
 // that very year), the deck shows that plate and that event instead. Dark in either theme: an instrument.
-import { useEffect, useRef, useState } from "react";
 import type { ChronicleEra, ChronicleMilestone } from "@aihot/contracts/chronicle";
-import { useMotionAllowed } from "../motion/preferences";
+import { Plate } from "../../components/shell/Deck";
 
 /** "138亿年前" → ["", "138", "亿年前"]; "公元前3201年" → ["公元前", "3201", "年"]; a date keeps its tail. */
 function splitLabel(label: string): [string, string, string] {
@@ -19,7 +18,7 @@ export function Observatory({ era, focus, label, distance }: { era: ChronicleEra
     : { key: `e-${era.id}`, src: `/media/art/epochs/${era.art}`, alt: `${era.title}（${era.artStyle}）` };
   return (
     <section className={`observatory ${era.forecast ? "is-forecast" : ""}`} aria-label="观测舱">
-      <Plate key={plate.key} src={plate.src} alt={plate.alt} />
+      <Plate key={plate.key} src={plate.src} alt={plate.alt} className="observatory-plate" />
       <div className="observatory-shade" aria-hidden="true" />
       <header className="observatory-readout">
         <p className="observatory-kicker">
@@ -39,27 +38,5 @@ export function Observatory({ era, focus, label, distance }: { era: ChronicleEra
         <p className="observatory-style">画风 · {moment ? (moment.artStyle ?? era.artStyle) : era.artStyle}</p>
       </header>
     </section>
-  );
-}
-
-/** The plate, fading in when it changes; a missing plate leaves the dark stage and the readout. */
-function Plate({ src, alt }: { src: string; alt: string }) {
-  const image = useRef<HTMLImageElement>(null);
-  const [broken, setBroken] = useState(false);
-  const allowed = useMotionAllowed();
-  useEffect(() => {
-    if (image.current?.complete && image.current.naturalWidth === 0) setBroken(true);
-  }, []);
-  if (broken) return <div className="observatory-plate is-empty" aria-hidden="true" />;
-  return (
-    <img
-      ref={image}
-      src={`${src}-1600.webp`}
-      srcSet={`${src}-800.webp 800w, ${src}-1600.webp 1600w`}
-      sizes="(min-width: 961px) 1100px, 100vw"
-      alt={alt}
-      onError={() => setBroken(true)}
-      className={`observatory-plate ${allowed ? "motion-allowed" : ""}`}
-    />
   );
 }

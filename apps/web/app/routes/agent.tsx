@@ -10,6 +10,7 @@ import { CodeBlock, CopyButton } from "../components/CodeBlock";
 import { IconArrowUpRight, IconChevronRight } from "../components/icons";
 import { AsideCard, ReadingLayout } from "../components/ui/Page";
 import { PillTabs } from "../components/ui/Tabs";
+import { Deck } from "../components/shell/Deck";
 
 /** Shared caches may keep this page for five minutes. */
 export function headers() {
@@ -242,11 +243,12 @@ export default function AgentPage() {
     </>
   );
   return (
+    <>
+    <Deck compact label="Agent 接入" title={`让 Agent 直接使用 ${SITE.name}`} description="三条接入路径都是匿名只读、无需 API Key：MCP、RSS、REST API v1。" />
+    <div className="h-6" />
     <ReadingLayout aside={aside}>
       <header>
-        <h1 className="text-[24px] font-semibold leading-[1.3] text-ink">让 Agent 直接使用 {SITE.name}</h1>
-        <p className="mt-1.5 text-[13px] text-ink-3">三条接入路径都是匿名只读、无需 API Key：MCP、RSS、REST API v1。</p>
-        <div className="mt-3.5 flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <span className={pill}>匿名只读</span>
           <span className={`${pill} mono`}>API v1</span>
           <span className={`${pill} mono`}>MCP {MCP_VERSION}</span>
@@ -275,5 +277,6 @@ export default function AgentPage() {
         {tab === "api" && <ApiTab base={base} />}
       </div>
     </ReadingLayout>
+    </>
   );
 }

@@ -6,6 +6,7 @@ import { pageMeta } from "../lib/seo";
 import { exportBundle, importBundle, removeStar, useStarred, type ImportReport } from "../lib/local-state";
 import { fullDateTime, shortSourceName } from "../lib/format";
 import { IconBookmark, IconDownload, IconClose } from "../components/icons";
+import { Deck } from "../components/shell/Deck";
 
 /** Shared caches may keep this page for five minutes. */
 export function headers() {
@@ -66,12 +67,9 @@ export default function StarredPage() {
   const action = "text-[12.5px] text-ink-3 transition-colors hover:text-accent";
   return (
     <div className="pb-12">
-      <header className="flex flex-col gap-2 pb-4 pt-5 sm:flex-row sm:items-start sm:justify-between lg:pt-1">
-        <div>
-          <h1 className="text-[24px] font-semibold leading-[1.3] text-ink">收藏</h1>
-          <p className="mt-1.5 text-[13px] text-ink-3">本机收藏的 {SITE.name} 内容，适合稍后阅读和回看。</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 sm:pt-1.5">
+      <Deck compact label="收藏" title="收藏" description={`本机收藏的 ${SITE.name} 内容，适合稍后阅读和回看。`} />
+      <header className="flex flex-col gap-2 pb-4 pt-5 sm:flex-row sm:items-start sm:justify-end">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           <button type="button" onClick={() => fileRef.current?.click()} className={action}>
             导入文件
           </button>
