@@ -65,6 +65,8 @@ export interface TimeMachineBounds {
   hot: string | null;
   leaderboard: string | null;
   daily: string | null;
+  /** Kardashev rating of today's primary power (the masthead's K pill); null without energy data. */
+  kardashev: number | null;
 }
 
 // ---------------------------------------------------------------------------

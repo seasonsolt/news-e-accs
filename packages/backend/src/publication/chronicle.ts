@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { FEATURES } from "@aihot/industry/features";
-import type { ChronicleEra, ChronicleMetric, ChronicleMilestone, ChronicleResponse, TimeMachineBounds } from "@aihot/contracts/chronicle";
+import { decimalYear, interpolateMetric, kardashev, type ChronicleEra, type ChronicleMetric, type ChronicleMilestone, type ChronicleResponse, type TimeMachineBounds } from "@aihot/contracts/chronicle";
 import { beijingDate } from "@aihot/contracts/time";
 import { REPO_ROOT } from "../config.ts";
 import { sql } from "../db.ts";
@@ -29,10 +29,18 @@ const bounds = cached(queryBounds, { freshMs: 10 * 60_000, maxStaleMs: 24 * 3600
 
 /** First day each part of the site has history for; a slice before it shows that part empty. */
 export async function timeMachineBounds(): Promise<TimeMachineBounds> {
-  return { ...(await bounds.get()), today: beijingDate(Date.now()) };
+  return { ...(await bounds.get()), today: beijingDate(Date.now()), kardashev: kardashevNow() };
 }
 
-async function queryBounds(): Promise<Omit<TimeMachineBounds, "today">> {
+/** Today's Kardashev rating from the energy series, to three decimals. */
+function kardashevNow(): number | null {
+  const energy = loadChronicle().metrics.find((m) => m.key === "energy");
+  const now = decimalYear(Date.now());
+  const watts = energy ? interpolateMetric(energy.points, now, now, energy.forecastFrom) : null;
+  return watts === null ? null : Math.round(kardashev(watts) * 1000) / 1000;
+}
+
+async function queryBounds(): Promise<Omit<TimeMachineBounds, "today" | "kardashev">> {
   const [row] = await sql<{ feed: Date | null; hot: Date | null; leaderboard: Date | null; daily: string | null }[]>`
     SELECT
       (SELECT min(visible_after) FROM publications WHERE visibility = 'public' AND selected) AS feed,

@@ -136,7 +136,8 @@ test("chronicle data and bounds expose complete anonymous fields", async () => {
   const res = await get("/api/site/chronicle/bounds");
   assert.equal(res.statusCode, 200);
   const body = res.json();
-  assert.deepEqual(Object.keys(body).sort(), ["daily", "earliest", "feed", "hot", "leaderboard", "today"]);
+  assert.deepEqual(Object.keys(body).sort(), ["daily", "earliest", "feed", "hot", "kardashev", "leaderboard", "today"]);
+  assert.ok(typeof body.kardashev === "number" && body.kardashev > 0.6 && body.kardashev < 0.8, String(body.kardashev));
   assert.equal(body.today, today);
   for (const key of ["earliest", "feed", "hot", "leaderboard", "daily"]) assert.ok(body[key] === null || /^\d{4}-\d{2}-\d{2}$/.test(body[key]));
   const chronicle = await get("/api/site/chronicle");
