@@ -1813,7 +1813,9 @@
       "title": "DeepSeek-R1 开源",
       "detail": "前沿水平的推理模型以MIT许可开放权重。",
       "category": "ai",
-      "source": "https://github.com/deepseek-ai/DeepSeek-R1"
+      "source": "https://github.com/deepseek-ai/DeepSeek-R1",
+      "art": "deepseek-r1",
+      "artStyle": "水墨长卷与数字光"
     },
     {
       "id": "stargate",
@@ -1823,7 +1825,9 @@
       "title": "“星际之门”5000亿美元",
       "detail": "软银、OpenAI、甲骨文和MGX承诺四年投入5000亿美元建设美国AI数据中心。",
       "category": "ai",
-      "source": "https://openai.com/index/announcing-the-stargate-project/"
+      "source": "https://openai.com/index/announcing-the-stargate-project/",
+      "art": "stargate",
+      "artStyle": "2020年代纪实摄影"
     },
     {
       "id": "claude-4",
@@ -1833,7 +1837,9 @@
       "title": "Claude 4",
       "detail": "Opus 4与Sonnet 4发布，长时间自主编程进入生产使用。",
       "category": "ai",
-      "source": "https://www.anthropic.com/news/claude-4"
+      "source": "https://www.anthropic.com/news/claude-4",
+      "art": "claude-4",
+      "artStyle": "长曝光室内夜景摄影"
     },
     {
       "id": "imo-gold",
@@ -1843,7 +1849,9 @@
       "title": "AI 达到IMO金牌水平",
       "detail": "Gemini Deep Think在国际数学奥林匹克解出6题中的5题，得35分。",
       "category": "ai",
-      "source": "https://deepmind.google/discover/blog/advanced-version-of-gemini-with-deep-think-officially-achieves-gold-medal-standard-at-the-international-mathematical-olympiad/"
+      "source": "https://deepmind.google/discover/blog/advanced-version-of-gemini-with-deep-think-officially-achieves-gold-medal-standard-at-the-international-mathematical-olympiad/",
+      "art": "imo-gold",
+      "artStyle": "粉笔黑板与舞台光"
     },
     {
       "id": "gpt-5",
@@ -1853,7 +1861,9 @@
       "title": "GPT-5",
       "detail": "OpenAI用一个路由把推理模型和快速模型合为一体。",
       "category": "ai",
-      "source": "https://openai.com/index/introducing-gpt-5/"
+      "source": "https://openai.com/index/introducing-gpt-5/",
+      "art": "gpt-5",
+      "artStyle": "极简编辑插画"
     },
     {
       "id": "gpt-5-1",
@@ -1893,7 +1903,9 @@
       "title": "阿尔忒弥斯2号创纪录",
       "detail": "四名宇航员绕月飞行，打破阿波罗13号保持的人类最远飞行纪录。",
       "category": "human",
-      "source": "https://www.nasa.gov/news-release/nasas-artemis-ii-crew-eclipses-record-for-farthest-human-spaceflight/"
+      "source": "https://www.nasa.gov/news-release/nasas-artemis-ii-crew-eclipses-record-for-farthest-human-spaceflight/",
+      "art": "artemis-ii-record",
+      "artStyle": "舷窗实拍感航天摄影"
     },
     {
       "id": "gpt-5-5",
@@ -1983,7 +1995,9 @@
       "title": "Astra 解出十道难题",
       "detail": "OpenAI新模型解出十个悬置十年以上的数学与理论计算机问题。",
       "category": "ai",
-      "source": "https://the-decoder.com/openai-announces-its-next-major-model-astra-by-dropping-ten-previously-unsolved-math-solutions/"
+      "source": "https://the-decoder.com/openai-announces-its-next-major-model-astra-by-dropping-ten-previously-unsolved-math-solutions/",
+      "art": "openai-astra-math",
+      "artStyle": "星图式数学幻想"
     },
     {
       "id": "qwen-3-8-max",
@@ -2023,7 +2037,9 @@
       "title": "英伟达为OpenAI担保融资",
       "detail": "最高1050亿美元支持俄亥俄园区首期4.25吉瓦算力，2028年起上线。",
       "category": "ai",
-      "source": "https://www.cnbc.com/2026/08/17/nvidia-financing-open-ai-data-center-ohio.html"
+      "source": "https://www.cnbc.com/2026/08/17/nvidia-financing-open-ai-data-center-ohio.html",
+      "art": "nvidia-openai-ohio",
+      "artStyle": "美国中西部冬日纪实摄影"
     },
     {
       "id": "claude-fable-5-1",
@@ -2063,7 +2079,9 @@
       "title": "GPT-6 Sol 与 Luna",
       "detail": "OpenAI推出GPT-6主力与轻量模型，API价格比5.6系列减半。",
       "category": "ai",
-      "source": "https://thenextweb.com/news/openai-gpt-6-sol-luna-api-price-cut"
+      "source": "https://thenextweb.com/news/openai-gpt-6-sol-luna-api-price-cut",
+      "art": "gpt-6-sol-luna",
+      "artStyle": "超现实电路光景"
     },
     {
       "id": "gemini-4-argon",
