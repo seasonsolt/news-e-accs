@@ -230,48 +230,48 @@
       "from": 2016.2022,
       "title": "深度强化学习与 AlphaGo",
       "summary": "深度网络与强化学习结合，AlphaGo在围棋比赛中战胜李世石，让机器学习策略的能力进入公众视野。",
-      "art": "deep-learning-lab",
-      "artStyle": "2010年代实验室写实插画"
+      "art": "alphago-match",
+      "artStyle": "当代技术主题写实插画"
     },
     {
       "id": "transformer",
       "from": 2017.4438,
       "title": "Transformer",
       "summary": "注意力架构让模型更高效地处理序列，成为后来语言大模型的技术基础；这时还不是大众使用的聊天助手。",
-      "art": "large-models",
-      "artStyle": "扩散模型三维渲染"
+      "art": "transformer-attention",
+      "artStyle": "当代技术主题写实插画"
     },
     {
       "id": "pretraining",
       "from": 2018.4411,
       "title": "语言预训练",
       "summary": "GPT和BERT先从大量无标注文本中学习，再适配具体任务，语言模型从专用工具走向可复用的基础。",
-      "art": "large-models",
-      "artStyle": "扩散模型三维渲染"
+      "art": "language-pretraining",
+      "artStyle": "当代技术主题写实插画"
     },
     {
       "id": "foundation-models",
       "from": 2020.4044,
       "title": "规模化与少样本学习",
       "summary": "GPT-3用提示和少量例子完成多种语言任务，AlphaFold 2展示深度学习在科学研究中的突破。",
-      "art": "large-models",
-      "artStyle": "扩散模型三维渲染"
+      "art": "few-shot-learning",
+      "artStyle": "当代技术主题写实插画"
     },
     {
       "id": "ai-copilots",
       "from": 2021.4904,
       "title": "AI 编程助手",
       "summary": "Copilot把代码生成放进编辑器，AI从实验演示进入工作流程，程序员用自然语言和上下文获得建议。",
-      "art": "agents",
-      "artStyle": "当代大画幅夜景摄影"
+      "art": "coding-copilot",
+      "artStyle": "当代技术主题写实插画"
     },
     {
       "id": "generative-ai",
       "from": 2022.2603,
       "title": "生成式图像",
       "summary": "DALL·E 2、Midjourney和Stable Diffusion让文字变成图像，绘画与设计开始有了大众可用的生成工具。",
-      "art": "large-models",
-      "artStyle": "扩散模型三维渲染"
+      "art": "text-to-image",
+      "artStyle": "当代技术主题写实插画"
     },
     {
       "id": "large-models",
@@ -286,40 +286,40 @@
       "from": 2023.1973,
       "title": "多模态大模型",
       "summary": "GPT-4展示图像理解能力，语言模型开始连接文字与视觉，随后Gemini等模型继续推进多模态能力。",
-      "art": "large-models",
-      "artStyle": "扩散模型三维渲染"
+      "art": "multimodal-understanding",
+      "artStyle": "当代技术主题写实插画"
     },
     {
       "id": "tool-use",
       "from": 2023.4466,
       "title": "工具调用",
       "summary": "函数调用进入大模型API，模型可以请求外部程序查询信息、运行代码和执行操作，为智能体工作流程铺路。",
-      "art": "agents",
-      "artStyle": "当代大画幅夜景摄影"
+      "art": "model-tool-use",
+      "artStyle": "当代技术主题写实插画"
     },
     {
       "id": "generative-video",
       "from": 2024.123,
       "title": "生成式视频",
       "summary": "Sora展示从文字生成视频的进展，生成内容从静态画面走向连续镜头；演示能力与实际可用性仍有距离。",
-      "art": "large-models",
-      "artStyle": "扩散模型三维渲染"
+      "art": "text-to-video",
+      "artStyle": "当代技术主题写实插画"
     },
     {
       "id": "realtime-multimodal",
       "from": 2024.3634,
       "title": "实时语音与视觉交互",
       "summary": "GPT-4o展示低延迟语音和视觉交互，AI助手开始从输入文字、等待回答，走向更自然的实时交流。",
-      "art": "agents",
-      "artStyle": "当代大画幅夜景摄影"
+      "art": "realtime-voice-vision",
+      "artStyle": "当代技术主题写实插画"
     },
     {
       "id": "reasoning",
       "from": 2024.6967,
       "title": "推理模型",
       "summary": "o1把回答前的推理计算作为新的扩展方向，数学与编程能力提高；推理表现仍需逐项检验。",
-      "art": "agents",
-      "artStyle": "当代大画幅夜景摄影"
+      "art": "reasoning-model",
+      "artStyle": "当代技术主题写实插画"
     },
     {
       "id": "agents",
