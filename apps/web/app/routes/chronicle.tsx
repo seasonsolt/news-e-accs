@@ -106,7 +106,7 @@ export default function ChroniclePage() {
           </div>
         </div>
         <EraStrip eras={chronicle.eras} current={era.id} now={now} />
-        <p className="text-[11.5px] leading-relaxed text-ink-4">数据在 industry/chronicle/，每条都附出处；指标在两个有来源的数据点之间按对数插值；预测来自公开机构或社区，不代表本站观点。配图由 AI 按各时代的画风绘制。</p>
+        <p className="text-[11.5px] leading-relaxed text-ink-4">数据在 industry/chronicle/，每条都附出处；指标在两个有来源的数据点之间按对数插值；预测包含机构、社区观点与注明提出者的本站情景推演，年份不是确定的实现日期。配图由 AI 按各时代的画风绘制。</p>
       </div>
     </div>
   );

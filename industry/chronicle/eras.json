@@ -330,12 +330,57 @@
       "artStyle": "当代大画幅夜景摄影"
     },
     {
-      "id": "agi-speculative",
+      "id": "agent-teams-speculative",
+      "from": 2027,
+      "title": "长任务智能体协作（推测）",
+      "summary": "情景预测（2027—2029）：智能体团队可能在软件开发和资料研究中持续分工、检查与交付。前提是权限、验证和失败恢复成熟；复杂任务仍需人类负责。",
+      "art": "forecast-agent-teams",
+      "artStyle": "近未来情景写实插画（推测）",
+      "forecast": true
+    },
+    {
+      "id": "personal-ai-speculative",
+      "from": 2027.5,
+      "title": "个人 AI 与端侧协同（推测）",
+      "summary": "情景预测（2027—2030）：个人助手可能在手机与电脑间协同，更多常用任务在端侧完成。能否普及取决于功耗、隐私权限和可靠记忆，复杂任务仍可能依赖云端。",
+      "art": "forecast-personal-ai",
+      "artStyle": "近未来情景写实插画（推测）",
+      "forecast": true
+    },
+    {
+      "id": "controlled-robotics-speculative",
+      "from": 2028,
+      "title": "机器人进入受控场景（推测）",
+      "summary": "情景预测（2028—2031）：仓储、工厂和实验室中的机器人可能承担更多多步骤操作。先在环境可控的岗位扩展；成本、安全和故障处理仍限制普及，家家都有机器人并非基准情景。",
+      "art": "forecast-useful-robots",
+      "artStyle": "近未来情景写实插画（推测）",
+      "forecast": true
+    },
+    {
+      "id": "science-loop-speculative",
+      "from": 2029,
+      "title": "AI 科研与实验闭环（推测）",
+      "summary": "情景预测（2029—2031）：AI可能在部分材料与生命科学课题中连接假设、实验设计和结果分析，自动化设备缩短迭代。可复现的实验验证才算突破，并不意味着药物会立刻获批。",
+      "art": "forecast-science-loop",
+      "artStyle": "近未来情景写实插画（推测）",
+      "forecast": true
+    },
+    {
+      "id": "grid-compute-speculative",
       "from": 2030,
-      "title": "通用人工智能（推测）",
-      "summary": "推测：多方预测AI可能在2030年前后达到人类水平的通用能力，时间和影响都高度不确定。",
-      "art": "agi-speculative",
-      "artStyle": "全息线框（推测）",
+      "title": "算力与电网协同扩建（推测）",
+      "summary": "情景预测（2028—2031）：AI需求可能推动数据中心、电网、储能与冷却设施协同扩建。IEA的2030年用电预测提供需求依据；本站推演的建设节奏仍受并网、资金和供应链约束，不代表能源已无限廉价。",
+      "art": "forecast-grid-compute",
+      "artStyle": "近未来情景写实插画（推测）",
+      "forecast": true
+    },
+    {
+      "id": "interactive-worlds-speculative",
+      "from": 2031,
+      "title": "交互世界与仿真训练（推测）",
+      "summary": "情景预测（2029—2031）：可交互的生成世界可能用于创作、培训与机器人仿真。持续一致性、物理准确性与成本决定可用范围；可玩的画面不等于可信的现实模拟。",
+      "art": "forecast-interactive-worlds",
+      "artStyle": "近未来情景写实插画（推测）",
       "forecast": true
     },
     {

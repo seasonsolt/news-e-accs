@@ -2699,6 +2699,54 @@
       "source": "https://9to5google.com/2026/09/30/gemini-4-argon-announcement/"
     },
     {
+      "id": "forecast-agent-teams-speculative",
+      "t": 2027,
+      "precision": "year",
+      "date": "2027",
+      "title": "长任务智能体协作（推测）",
+      "detail": "情景预测（2027—2029）：智能体团队可能在软件开发和资料研究中持续分工、检查与交付。前提是权限、验证和失败恢复成熟；复杂任务仍需人类负责。 方向把握：中。年份为浏览锚点。",
+      "category": "ai",
+      "source": "https://www.anthropic.com/engineering/multi-agent-research-system",
+      "forecast": {
+        "by": "本站情景推演（2026-10-08）",
+        "url": "https://github.com/seasonsolt/news-e-accs/blob/main/docs/near-term-forecasts.md"
+      },
+      "art": "forecast-agent-teams",
+      "artStyle": "近未来情景写实插画（推测）"
+    },
+    {
+      "id": "forecast-personal-ai-speculative",
+      "t": 2027.5,
+      "precision": "month",
+      "date": "2027-07",
+      "title": "个人 AI 与端侧协同（推测）",
+      "detail": "情景预测（2027—2030）：个人助手可能在手机与电脑间协同，更多常用任务在端侧完成。能否普及取决于功耗、隐私权限和可靠记忆，复杂任务仍可能依赖云端。 方向把握：中。年份为浏览锚点。",
+      "category": "compute",
+      "source": "https://machinelearning.apple.com/research/introducing-third-generation-of-apple-foundation-models",
+      "forecast": {
+        "by": "本站情景推演（2026-10-08）",
+        "url": "https://github.com/seasonsolt/news-e-accs/blob/main/docs/near-term-forecasts.md"
+      },
+      "art": "forecast-personal-ai",
+      "artStyle": "近未来情景写实插画（推测）"
+    },
+    {
+      "id": "forecast-controlled-robotics-speculative",
+      "t": 2028,
+      "precision": "year",
+      "date": "2028",
+      "title": "机器人进入受控场景（推测）",
+      "detail": "情景预测（2028—2031）：仓储、工厂和实验室中的机器人可能承担更多多步骤操作。先在环境可控的岗位扩展；成本、安全和故障处理仍限制普及，家家都有机器人并非基准情景。 方向把握：中偏低。年份为浏览锚点。",
+      "category": "ai",
+      "source": "https://research.nvidia.com/labs/gear/gr00t-n1_6/",
+      "forecast": {
+        "by": "本站情景推演（2026-10-08）",
+        "url": "https://github.com/seasonsolt/news-e-accs/blob/main/docs/near-term-forecasts.md"
+      },
+      "art": "forecast-useful-robots",
+      "artStyle": "近未来情景写实插画（推测）"
+    },
+    {
       "id": "forecast-kurzweil-2029",
       "t": 2029,
       "precision": "year",
@@ -2711,6 +2759,22 @@
         "by": "Ray Kurzweil",
         "url": "https://en.wikipedia.org/wiki/The_Singularity_Is_Nearer"
       }
+    },
+    {
+      "id": "forecast-science-loop-speculative",
+      "t": 2029,
+      "precision": "year",
+      "date": "2029",
+      "title": "AI 科研与实验闭环（推测）",
+      "detail": "情景预测（2029—2031）：AI可能在部分材料与生命科学课题中连接假设、实验设计和结果分析，自动化设备缩短迭代。可复现的实验验证才算突破，并不意味着药物会立刻获批。 方向把握：中偏低。年份为浏览锚点。",
+      "category": "life",
+      "source": "https://deepmind.google/blog/co-scientist-a-multi-agent-ai-partner-to-accelerate-research/",
+      "forecast": {
+        "by": "本站情景推演（2026-10-08）",
+        "url": "https://github.com/seasonsolt/news-e-accs/blob/main/docs/near-term-forecasts.md"
+      },
+      "art": "forecast-science-loop",
+      "artStyle": "近未来情景写实插画（推测）"
     },
     {
       "id": "forecast-epoch-2e29",
@@ -2739,6 +2803,38 @@
         "by": "国际能源署（IEA）",
         "url": "https://www.iea.org/reports/energy-and-ai/executive-summary"
       }
+    },
+    {
+      "id": "forecast-grid-compute-speculative",
+      "t": 2030,
+      "precision": "year",
+      "date": "2030",
+      "title": "算力与电网协同扩建（推测）",
+      "detail": "情景预测（2028—2031）：AI需求可能推动数据中心、电网、储能与冷却设施协同扩建。IEA的2030年用电预测提供需求依据；本站推演的建设节奏仍受并网、资金和供应链约束，不代表能源已无限廉价。 方向把握：需求方向较高；建设进度中。年份为浏览锚点。",
+      "category": "energy",
+      "source": "https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai",
+      "forecast": {
+        "by": "本站情景推演（2026-10-08）",
+        "url": "https://github.com/seasonsolt/news-e-accs/blob/main/docs/near-term-forecasts.md"
+      },
+      "art": "forecast-grid-compute",
+      "artStyle": "近未来情景写实插画（推测）"
+    },
+    {
+      "id": "forecast-interactive-worlds-speculative",
+      "t": 2031,
+      "precision": "year",
+      "date": "2031",
+      "title": "交互世界与仿真训练（推测）",
+      "detail": "情景预测（2029—2031）：可交互的生成世界可能用于创作、培训与机器人仿真。持续一致性、物理准确性与成本决定可用范围；可玩的画面不等于可信的现实模拟。 方向把握：中偏低。年份为浏览锚点。",
+      "category": "compute",
+      "source": "https://deepmind.google/blog/genie-3-a-new-frontier-for-world-models/",
+      "forecast": {
+        "by": "本站情景推演（2026-10-08）",
+        "url": "https://github.com/seasonsolt/news-e-accs/blob/main/docs/near-term-forecasts.md"
+      },
+      "art": "forecast-interactive-worlds",
+      "artStyle": "近未来情景写实插画（推测）"
     },
     {
       "id": "forecast-metaculus-agi",
