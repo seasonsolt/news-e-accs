@@ -5,6 +5,7 @@ import { useRef, useState, type KeyboardEvent, type PointerEvent, type WheelEven
 import { axisTicks, fromAxis, timeLabel, toAxis, type ChronicleEra, type ChronicleMilestone } from "@aihot/contracts/chronicle";
 
 import { useMotionAllowed } from "../motion/preferences";
+import { stepEra } from "./format";
 
 const SNAP_PX = 8;
 
@@ -63,9 +64,8 @@ export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit }: {
 
   const nudge = (du: number) => onCommit(fromAxis(Math.min(1, Math.max(0, u + du)), now));
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    const step = e.shiftKey ? 0.05 : 0.004;
-    if (e.key === "ArrowLeft" || e.key === "ArrowDown") nudge(-step);
-    else if (e.key === "ArrowRight" || e.key === "ArrowUp") nudge(step);
+    if (e.key === "ArrowLeft" || e.key === "ArrowDown") onCommit(stepEra(eras, t, -1));
+    else if (e.key === "ArrowRight" || e.key === "ArrowUp") onCommit(stepEra(eras, t, 1));
     else if (e.key === "Home") onCommit(fromAxis(0, now));
     else if (e.key === "End") onCommit(now);
     else return;

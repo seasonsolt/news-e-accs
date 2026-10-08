@@ -1,5 +1,5 @@
 // Reader-facing numbers for the four-dimensional view: 79.6 亿人, 1.9×10¹³ 瓦, 3 天, 39,897 千米/时.
-import type { ChronicleMetric } from "@aihot/contracts/chronicle";
+import type { ChronicleEra, ChronicleMetric } from "@aihot/contracts/chronicle";
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
 
@@ -54,6 +54,13 @@ export function metricValue(metric: ChronicleMetric, v: number): { value: string
 /** A time for the URL: short, and exact enough to land on the same point of the axis. */
 export function timeParam(t: number, now: number): string {
   return Number(t.toPrecision(15)).toString().replace("e+", "e");
+}
+
+/** Keyboard navigation follows adjacent era plates, regardless of their distance on the log axis. */
+export function stepEra(eras: ChronicleEra[], t: number, direction: -1 | 1): number {
+  const current = eras.findLastIndex((era) => era.from <= t);
+  const next = eras[Math.min(eras.length - 1, Math.max(0, current + direction))];
+  return next?.from ?? t;
 }
 
 /** The next capability's distance, using the same units as the moment label. */
