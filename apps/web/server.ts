@@ -167,6 +167,9 @@ async function handle(req: import("node:http").IncomingMessage, res: import("nod
   }
   // The edge's secret goes no further than this process.
   delete req.headers["x-eacc-edge"];
+  // Cloudflare rewrites X-Forwarded-Host to the tunnel's hostname on the way in, so a request the edge
+  // vouched for is restored to the public host here (the api's MCP endpoint checks it).
+  if (edge && PUBLIC_ORIGIN) req.headers["x-forwarded-host"] = new URL(PUBLIC_ORIGIN).host;
 
   const decision = resolveRedirect(pathname, search);
   if (decision) {
