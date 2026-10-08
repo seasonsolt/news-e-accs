@@ -19,6 +19,8 @@ import { MediaGallery } from "../features/item/MediaGallery";
 import { QuotedPost } from "../features/item/QuotedPost";
 import { IconArrowLeft, IconCopy, IconDownload, IconExternal, IconImage, IconMenu, IconShare } from "../components/icons";
 import { ReadingGear } from "../features/art/ReadingGear";
+import { CATEGORY_ART } from "../features/art/CategoryBanner";
+import { Deck } from "../components/shell/Deck";
 
 const PosterSheet = lazy(() => import("../features/item/PosterSheet"));
 
@@ -224,6 +226,14 @@ export default function ItemPage() {
   return (
     <div className="mx-auto max-w-[var(--page-max-reading)] pb-8">
       {item.body && <ReadingGear />}
+      <Deck
+        compact
+        art={item.category ? CATEGORY_ART[item.category] : undefined}
+        label={isX ? item.x!.authorName : item.title}
+        kicker={<>{isX ? `${item.x!.authorName} · @${item.x!.handle} · X` : item.source.name} · <time dateTime={publishedIso}>{fullDateTime(publishedIso)}</time></>}
+        title={isX ? item.x!.authorName : item.title}
+        description={!isX && item.originalTitle ? item.originalTitle : undefined}
+      />
 
       {/* Phones: a sticky bar with back, 收藏, the original, share and more. Desktop puts these in the rails. */}
       <div className="sticky top-0 z-30 -mx-4 flex h-12 items-center gap-1.5 border-b border-line-soft bg-bg/95 px-4 backdrop-blur lg:hidden">
@@ -276,8 +286,6 @@ export default function ItemPage() {
               </span>
             )}
           </div>
-          {!isX && <h1 className="text-[26px] font-bold leading-[1.38] tracking-[-0.01em] text-ink lg:text-[32px] lg:leading-[1.34] xl:text-[36px] xl:leading-[1.3]">{item.title}</h1>}
-          {!isX && item.originalTitle && <p className="mt-2.5 text-[14px] leading-relaxed text-ink-4">{item.originalTitle}</p>}
 
           {item.summary && (
             <section className={isX ? "mt-4" : "mt-7 xl:mt-8"}>

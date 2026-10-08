@@ -9,6 +9,7 @@ import { loadOr404, queryString } from "../lib/api.server";
 import { requestAt, withAt } from "../features/chrono/at";
 import { breadcrumbLd, pageMeta, siteUrl, titled } from "../lib/seo";
 import { BrandMark } from "../features/leaderboard/BrandMark";
+import { Deck } from "../components/shell/Deck";
 import { EvidenceBadge } from "../features/leaderboard/Evidence";
 import { boardHref, listPrice, pctFixed, shortStamp, tokensWan, yuan } from "../features/leaderboard/format";
 import { IconArrowLeft, IconArrowRight, IconArrowUpRight, IconChevronDown, IconExternal } from "../components/icons";
@@ -294,30 +295,24 @@ export default function LeaderboardModelPage() {
   const withScores = d.categories.filter((c) => c.score !== null).length;
   return (
     <div className="pb-12">
-      <Link to={withAt(boardHref(from), d.at)} className="mt-4 inline-flex items-center gap-1.5 py-2 text-[13px] text-ink-3 transition-colors hover:text-accent lg:mt-0">
-        <IconArrowLeft size={14} /> 返回{LEADERBOARD_BOARD_LABELS[from as keyof typeof LEADERBOARD_BOARD_LABELS]}榜
-      </Link>
+      <Deck
+        compact
+        art="cat-models"
+        label={model.name}
+        kicker={<Link to={withAt(boardHref(from), d.at)} className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /> 返回{LEADERBOARD_BOARD_LABELS[from as keyof typeof LEADERBOARD_BOARD_LABELS]}榜</Link>}
+        title={<span className="inline-flex items-center gap-4"><BrandMark brand={model.brand} size={48} />{model.name}</span>}
+        description={<span className="num">{model.provider ?? "—"} · {model.releasedAt ? `${model.releasedAt} 发布` : "发布日期待核实"} · {shortStamp(d.run.generatedAt)} 更新</span>}
+        aside={
+          <span className="flex flex-col items-end">
+            <span className="font-mono text-[12px] text-[var(--deck-dim)]">
+              综合共识指数 · {overall.rank === null ? "未进入综合榜" : overall.onBoard ? `综合榜第 ${overall.rank} 名` : "综合榜前 30 名之外"}
+            </span>
+            <span className="deck-figure text-[96px] lg:text-[120px]">{overall.score !== null ? overall.score.toFixed(1) : "—"}</span>
+          </span>
+        }
+      />
 
-      <header className="mt-5 flex flex-col gap-5 pb-7 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex items-center gap-4">
-          <BrandMark brand={model.brand} size={52} />
-          <div className="min-w-0">
-            <h1 className="text-[24px] font-semibold leading-[1.3] tracking-[-0.02em] text-ink">{model.name}</h1>
-            <p className="num mt-1 text-[12.5px] text-ink-3">
-              {model.provider ?? "—"} · {model.releasedAt ? `${model.releasedAt} 发布` : "发布日期待核实"} · {shortStamp(d.run.generatedAt)} 更新
-            </p>
-          </div>
-        </div>
-        <div className="sm:text-right">
-          <span className="block text-[12px] text-ink-4">综合共识指数</span>
-          <strong className="mono block text-[48px] font-medium leading-[1.25] tracking-[-0.055em] text-accent lg:text-[55px]">{overall.score !== null ? overall.score.toFixed(1) : "—"}</strong>
-          <b className={`text-[12px] font-medium ${overall.onBoard ? "text-ink-3" : "text-ink-4"}`}>
-            {overall.rank === null ? "未进入综合榜" : overall.onBoard ? `综合榜第 ${overall.rank} 名` : "综合榜前 30 名之外"}
-          </b>
-        </div>
-      </header>
-
-      <section className="grid grid-cols-2 gap-x-4 gap-y-6 border-y border-line py-6 lg:grid-cols-4" aria-label="模型概览">
+      <section className="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 border-y border-line py-6 lg:grid-cols-4" aria-label="模型概览">
         <Stat label="分类成绩">
           {withScores}
           <small className="ml-1 font-sans text-[11px] font-normal text-ink-4">/ 4 项分类</small>

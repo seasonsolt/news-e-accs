@@ -6,7 +6,7 @@ import { shortSourceName } from "../lib/format";
 import { ABOUT, SITE, withSubject } from "@aihot/industry/site";
 import { organizationLd, pageMeta } from "../lib/seo";
 import { Kicker } from "../components/ui/Kicker";
-import { buttonClass } from "../components/ui/Controls";
+import { Deck } from "../components/shell/Deck";
 import { IconArrowRight } from "../components/icons";
 import { SignalRiver, type RiverSource } from "../features/about/SignalRiver";
 
@@ -209,33 +209,25 @@ export default function AboutPage() {
   }, [latest.length]);
 
   return (
-    <div className="mx-auto max-w-[var(--page-max-reading)] pb-14 pt-6 lg:pt-3">
-      <header className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_auto]">
-        <div>
-          <Kicker>{ABOUT.kicker}</Kicker>
-          <h1 className="mt-5 text-[34px] font-black leading-[1.18] tracking-[-0.03em] text-ink [text-wrap:balance] sm:text-[46px] xl:text-[56px] 2xl:text-[64px]">
-            {ABOUT.headline[0]}
-            <br />
-            <span className="text-accent">{ABOUT.headline[1]}</span>
-          </h1>
-          <p className="mt-5 max-w-[36em] text-[15.5px] leading-[1.85] text-ink-3 xl:text-[17px]">
-            {ABOUT.lead.split("{sources}").map((part, i) => (
-              <span key={i}>
-                {i > 0 && (stats ? <span className="num font-semibold text-ink">{stats.sources}</span> : "上百")}
-                {part}
-              </span>
-            ))}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3 lg:pb-2">
-          <Link to="/" prefetch="intent" className={buttonClass("primary", "lg")}>
-            看今天的精选 <IconArrowRight size={15} />
-          </Link>
-          <Link to="/daily" prefetch="intent" className={buttonClass("secondary", "lg")}>
-            读最新{withSubject("日报")}
-          </Link>
-        </div>
-      </header>
+    <>
+    <Deck
+      art="ambient-engine-room"
+      label="关于"
+      kicker={ABOUT.kicker}
+      title={<>{ABOUT.headline[0]}<br /><span className="text-[color:var(--heat)]">{ABOUT.headline[1]}</span></>}
+      description={ABOUT.lead.split("{sources}").map((part, i) => (
+        <span key={i}>
+          {i > 0 && (stats ? <span className="num font-semibold">{stats.sources}</span> : "上百")}
+          {part}
+        </span>
+      ))}
+    >
+      <div className="flex flex-wrap gap-2.5">
+        <Link to="/" prefetch="intent" className="deck-button is-primary">看今天的精选 <IconArrowRight size={15} className="ml-1" /></Link>
+        <Link to="/daily" prefetch="intent" className="deck-button">读最新{withSubject("日报")}</Link>
+      </div>
+    </Deck>
+    <div className="mx-auto max-w-[var(--page-max-reading)] pb-14">
 
       <section aria-labelledby="how" className="mt-10 xl:mt-14">
         <h2 id="how" className="sr-only">
@@ -291,5 +283,6 @@ export default function AboutPage() {
         </nav>
       </footer>
     </div>
+    </>
   );
 }

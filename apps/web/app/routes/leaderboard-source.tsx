@@ -5,6 +5,7 @@ import type { LbSourceDetail } from "@aihot/contracts/leaderboard";
 import { loadOr404 } from "../lib/api.server";
 import { breadcrumbLd, pageMeta, siteUrl, titled } from "../lib/seo";
 import { BrandMark } from "../features/leaderboard/BrandMark";
+import { Deck } from "../components/shell/Deck";
 import { SaturatedChip, StatusChip } from "../features/leaderboard/StatusChip";
 import { pct, shortStamp } from "../features/leaderboard/format";
 import { IconArrowLeft, IconArrowUpRight, IconChevronDown } from "../components/icons";
@@ -59,32 +60,19 @@ export default function LeaderboardSourcePage() {
   const { source } = d;
   return (
     <div className="pb-12">
-      <Link to="/leaderboard/sources" className="mt-4 inline-flex items-center gap-1.5 py-2 text-[13px] text-ink-3 transition-colors hover:text-accent lg:mt-0">
-        <IconArrowLeft size={14} /> 评测来源
-      </Link>
-
-      <header className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex gap-4">
-          <BrandMark brand={source.brand} size={44} />
-          <div className="min-w-0">
-            <h1 className="text-[22px] font-semibold leading-[1.35] text-ink">{source.fullName}</h1>
-            <p className="mt-1 text-[13px] leading-relaxed text-ink-3">
-              {source.operator}
-              {source.area ? ` / ${source.area}` : ""} · {source.description}
-            </p>
-          </div>
-        </div>
-        {source.officialUrl && (
-          <a
-            href={source.officialUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex h-8 shrink-0 items-center gap-1.5 self-start rounded-full border border-line-strong bg-surface px-3 text-[12.5px] text-ink-2 transition-colors hover:border-ink-4 hover:text-ink"
-          >
-            官方评测 <IconArrowUpRight size={13} />
+      <Deck
+        compact
+        art="cat-models"
+        label={source.fullName}
+        kicker={<Link to="/leaderboard/sources" className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /> 评测来源</Link>}
+        title={<span className="inline-flex items-center gap-4"><BrandMark brand={source.brand} size={44} />{source.fullName}</span>}
+        description={<>{source.operator}{source.area ? ` / ${source.area}` : ""} · {source.description}</>}
+        aside={source.officialUrl && (
+          <a href={source.officialUrl} target="_blank" rel="noopener noreferrer" className="deck-button">
+            官方评测 <IconArrowUpRight size={13} className="ml-1" />
           </a>
         )}
-      </header>
+      />
 
       <section className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 border-y border-line py-5 lg:grid-cols-4" aria-label={`在 ${SITE.name} 中`}>
         <div className="min-w-0">

@@ -34,7 +34,8 @@ export function ArtBanner({ art, title, note, label, titleAs: Title = "div", chi
   );
 }
 
-const ART: Record<CategoryKey, string> = {
+/** Each category's illustration (also the plate on an item's deck). */
+export const CATEGORY_ART: Record<CategoryKey, string> = {
   "ai-models": "cat-models",
   "ai-products": "cat-products",
   industry: "cat-industry",
@@ -46,7 +47,7 @@ const ART: Record<CategoryKey, string> = {
 /** The banner for the category (or first-party channel) a feed is filtered by; nothing when unfiltered. */
 export function CategoryBanner({ category, channel }: { category: CategoryKey | null; channel: ChannelKey }) {
   const meta = category ? CATEGORIES.find((c) => c.key === category) : null;
-  if (meta) return <ArtBanner art={ART[meta.key as CategoryKey]} title={meta.label} note={meta.guide} label={`${meta.label}分类`} />;
+  if (meta) return <ArtBanner art={CATEGORY_ART[meta.key as CategoryKey]} title={meta.label} note={meta.guide} label={`${meta.label}分类`} />;
   if (channel === "firstParty") {
     return <ArtBanner art="first-party" title="一手" note="模型厂商、公司和研究机构自己发布的消息：官网、官方博客和官方账号。" label="一手消息" />;
   }
