@@ -3,7 +3,7 @@
   "eras": [
     {
       "id": "big-bang",
-      "from": -13787000000.0,
+      "from": -13787000000,
       "title": "大爆炸",
       "summary": "宇宙从极热极密的状态中膨胀，最初的原子在冷却中形成。没有恒星，也没有任何观察者。",
       "art": "big-bang",
@@ -11,7 +11,7 @@
     },
     {
       "id": "first-stars-galaxies",
-      "from": -13687000000.0,
+      "from": -13687000000,
       "title": "第一代恒星与星系",
       "summary": "第一批恒星点亮并锻造出重元素，星系逐渐聚集，银河系开始成形。",
       "art": "first-stars-galaxies",
@@ -19,7 +19,7 @@
     },
     {
       "id": "solar-system",
-      "from": -4568000000.0,
+      "from": -4568000000,
       "title": "太阳系形成",
       "summary": "太阳和行星从分子云中诞生，地球与月球相继形成，原始地表炽热而荒凉。",
       "art": "solar-system",
@@ -27,7 +27,7 @@
     },
     {
       "id": "origin-of-life",
-      "from": -3500000000.0,
+      "from": -3500000000,
       "title": "地球生命起源",
       "summary": "单细胞生命延续了约30亿年；光合作用让大气有了氧气，真核细胞出现。",
       "art": "origin-of-life",
@@ -35,7 +35,7 @@
     },
     {
       "id": "cambrian-explosion",
-      "from": -538800000.0,
+      "from": -538800000,
       "title": "寒武纪大爆发",
       "summary": "复杂动物大量涌现，植物和动物先后登上陆地，生命开始改造整个星球。",
       "art": "cambrian-explosion",
@@ -43,7 +43,7 @@
     },
     {
       "id": "dinosaurs-mammals",
-      "from": -233000000.0,
+      "from": -233000000,
       "title": "恐龙与哺乳动物",
       "summary": "恐龙统治陆地一亿多年；小行星撞击后哺乳动物兴起，灵长类出现。",
       "art": "dinosaurs-mammals",
@@ -51,7 +51,7 @@
     },
     {
       "id": "homo-stone-tools",
-      "from": -3300000.0,
+      "from": -3300000,
       "title": "人属与石器",
       "summary": "人族直立行走并打制石器，直立人走出非洲。工具开始延伸身体，但还没有稳定的能源。",
       "art": "homo-stone-tools",
@@ -59,7 +59,7 @@
     },
     {
       "id": "taming-fire",
-      "from": -1000000.0,
+      "from": -1000000,
       "title": "火的驯服",
       "summary": "用火让人能烹饪、取暖、驱兽、照亮夜晚，这是人类在身体之外掌握的第一种能源。",
       "art": "taming-fire",
@@ -202,6 +202,14 @@
       "artStyle": "1990年代像素风"
     },
     {
+      "id": "social-web",
+      "from": 2004.0929,
+      "title": "社交网络",
+      "summary": "博客、社交网络、视频网站和网购让普通人也能发布内容、开店交易，互联网从浏览变成参与。",
+      "art": "internet",
+      "artStyle": "1990年代像素风"
+    },
+    {
       "id": "mobile-internet",
       "from": 2007.0219,
       "title": "移动互联网",
@@ -213,21 +221,109 @@
       "id": "deep-learning",
       "from": 2012.7459,
       "title": "深度学习",
-      "summary": "用GPU训练的深度神经网络在视觉、围棋和蛋白质结构上超越旧方法。",
-      "art": "deep-learning",
-      "artStyle": "DeepDream 迷幻"
+      "summary": "GPU训练的神经网络在图像识别和语音识别上取得突破，残差网络随后让更深的模型也能有效训练。",
+      "art": "deep-learning-lab",
+      "artStyle": "2010年代实验室写实插画"
     },
     {
-      "id": "large-models",
-      "from": 2022.9123,
-      "title": "大模型",
-      "summary": "大语言模型能对话、写作和编程，数亿人日常使用AI，算力投资急剧扩张。",
+      "id": "deep-reinforcement-learning",
+      "from": 2016.2022,
+      "title": "深度强化学习与 AlphaGo",
+      "summary": "深度网络与强化学习结合，AlphaGo在围棋比赛中战胜李世石，让机器学习策略的能力进入公众视野。",
+      "art": "deep-learning-lab",
+      "artStyle": "2010年代实验室写实插画"
+    },
+    {
+      "id": "transformer",
+      "from": 2017.4438,
+      "title": "Transformer",
+      "summary": "注意力架构让模型更高效地处理序列，成为后来语言大模型的技术基础；这时还不是大众使用的聊天助手。",
       "art": "large-models",
       "artStyle": "扩散模型三维渲染"
     },
     {
+      "id": "pretraining",
+      "from": 2018.4411,
+      "title": "语言预训练",
+      "summary": "GPT和BERT先从大量无标注文本中学习，再适配具体任务，语言模型从专用工具走向可复用的基础。",
+      "art": "large-models",
+      "artStyle": "扩散模型三维渲染"
+    },
+    {
+      "id": "foundation-models",
+      "from": 2020.4044,
+      "title": "规模化与少样本学习",
+      "summary": "GPT-3用提示和少量例子完成多种语言任务，AlphaFold 2展示深度学习在科学研究中的突破。",
+      "art": "large-models",
+      "artStyle": "扩散模型三维渲染"
+    },
+    {
+      "id": "ai-copilots",
+      "from": 2021.4904,
+      "title": "AI 编程助手",
+      "summary": "Copilot把代码生成放进编辑器，AI从实验演示进入工作流程，程序员用自然语言和上下文获得建议。",
+      "art": "agents",
+      "artStyle": "当代大画幅夜景摄影"
+    },
+    {
+      "id": "generative-ai",
+      "from": 2022.2603,
+      "title": "生成式图像",
+      "summary": "DALL·E 2、Midjourney和Stable Diffusion让文字变成图像，绘画与设计开始有了大众可用的生成工具。",
+      "art": "large-models",
+      "artStyle": "扩散模型三维渲染"
+    },
+    {
+      "id": "large-models",
+      "from": 2022.9123,
+      "title": "对话式大模型",
+      "summary": "指令训练和人类反馈让语言模型更能遵循用户意图，ChatGPT把写作、问答和编程带进普通人的日常。",
+      "art": "large-models",
+      "artStyle": "扩散模型三维渲染"
+    },
+    {
+      "id": "multimodal",
+      "from": 2023.1973,
+      "title": "多模态大模型",
+      "summary": "GPT-4展示图像理解能力，语言模型开始连接文字与视觉，随后Gemini等模型继续推进多模态能力。",
+      "art": "large-models",
+      "artStyle": "扩散模型三维渲染"
+    },
+    {
+      "id": "tool-use",
+      "from": 2023.4466,
+      "title": "工具调用",
+      "summary": "函数调用进入大模型API，模型可以请求外部程序查询信息、运行代码和执行操作，为智能体工作流程铺路。",
+      "art": "agents",
+      "artStyle": "当代大画幅夜景摄影"
+    },
+    {
+      "id": "generative-video",
+      "from": 2024.123,
+      "title": "生成式视频",
+      "summary": "Sora展示从文字生成视频的进展，生成内容从静态画面走向连续镜头；演示能力与实际可用性仍有距离。",
+      "art": "large-models",
+      "artStyle": "扩散模型三维渲染"
+    },
+    {
+      "id": "realtime-multimodal",
+      "from": 2024.3634,
+      "title": "实时语音与视觉交互",
+      "summary": "GPT-4o展示低延迟语音和视觉交互，AI助手开始从输入文字、等待回答，走向更自然的实时交流。",
+      "art": "agents",
+      "artStyle": "当代大画幅夜景摄影"
+    },
+    {
+      "id": "reasoning",
+      "from": 2024.6967,
+      "title": "推理模型",
+      "summary": "o1把回答前的推理计算作为新的扩展方向，数学与编程能力提高；推理表现仍需逐项检验。",
+      "art": "agents",
+      "artStyle": "当代大画幅夜景摄影"
+    },
+    {
       "id": "agents",
-      "from": 2025.0,
+      "from": 2025,
       "title": "智能体",
       "summary": "AI开始自主操作电脑、长时间编程、求解数学难题，前沿模型以周为单位迭代。",
       "art": "agents",
@@ -235,7 +331,7 @@
     },
     {
       "id": "agi-speculative",
-      "from": 2030.0,
+      "from": 2030,
       "title": "通用人工智能（推测）",
       "summary": "推测：多方预测AI可能在2030年前后达到人类水平的通用能力，时间和影响都高度不确定。",
       "art": "agi-speculative",
@@ -244,7 +340,7 @@
     },
     {
       "id": "abundance-speculative",
-      "from": 2045.0,
+      "from": 2045,
       "title": "能源与算力丰裕（推测）",
       "summary": "推测：若聚变、太阳能和AI持续进步，能源与算力可能变得极其廉价；目前没有定论。",
       "art": "abundance-speculative",
@@ -253,7 +349,7 @@
     },
     {
       "id": "kardashev-i-speculative",
-      "from": 2080.0,
+      "from": 2080,
       "title": "迈向卡尔达肖夫 I 型（推测）",
       "summary": "推测：I型文明约需10¹⁶瓦，约为今天的500倍；按历史增速仍需数百年，此处只标示方向。",
       "art": "kardashev-i-speculative",

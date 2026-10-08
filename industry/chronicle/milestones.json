@@ -1330,6 +1330,28 @@
       "source": "https://www.nature.com/articles/323533a0"
     },
     {
+      "id": "hubble-launch",
+      "t": 1990.3096,
+      "precision": "day",
+      "date": "1990-04-24",
+      "title": "哈勃望远镜升空",
+      "detail": "太空望远镜绕过大气层，给出深空清晰图像并测定宇宙膨胀速率。",
+      "category": "cosmos",
+      "capability": "太空光学观测",
+      "source": "https://en.wikipedia.org/wiki/Hubble_Space_Telescope"
+    },
+    {
+      "id": "lithium-ion-battery",
+      "t": 1991,
+      "precision": "year",
+      "date": "1991",
+      "title": "锂离子电池商用",
+      "detail": "索尼推出商用锂离子电池，手机、笔记本和电动车有了轻便电源。",
+      "category": "energy",
+      "capability": "可充电锂电池",
+      "source": "https://en.wikipedia.org/wiki/Lithium-ion_battery"
+    },
+    {
       "id": "world-wide-web",
       "t": 1991.5945,
       "precision": "day",
@@ -1341,6 +1363,28 @@
       "source": "https://en.wikipedia.org/wiki/World_Wide_Web",
       "art": "world-wide-web",
       "artStyle": "1990年代阴极射线管像素风"
+    },
+    {
+      "id": "linux",
+      "t": 1991.6466,
+      "precision": "day",
+      "date": "1991-08-25",
+      "title": "Linux 诞生",
+      "detail": "托瓦兹公开发布内核计划，此后成为服务器和安卓的开源基础。",
+      "category": "compute",
+      "capability": "开源操作系统",
+      "source": "https://en.wikipedia.org/wiki/History_of_Linux"
+    },
+    {
+      "id": "china-internet",
+      "t": 1994.2986,
+      "precision": "day",
+      "date": "1994-04-20",
+      "title": "中国接入互联网",
+      "detail": "中国通过64K专线全功能接入国际互联网。",
+      "category": "compute",
+      "capability": "全功能互联网接入",
+      "source": "https://www.cnnic.com.cn/IDR/hlwfzdsj/201306/t20130628_40563.htm"
     },
     {
       "id": "dolly",
@@ -1373,6 +1417,17 @@
       "source": "https://en.wikipedia.org/wiki/Deep_Blue_versus_Garry_Kasparov"
     },
     {
+      "id": "prius",
+      "t": 1997.9151,
+      "precision": "month",
+      "date": "1997-12",
+      "title": "普锐斯混合动力车",
+      "detail": "丰田在日本推出首款量产混合动力轿车，显著降低油耗。",
+      "category": "energy",
+      "capability": "量产混合动力车",
+      "source": "https://en.wikipedia.org/wiki/Toyota_Prius_(XW10)"
+    },
+    {
       "id": "google",
       "t": 1998,
       "precision": "year",
@@ -1384,6 +1439,50 @@
       "source": "https://en.wikipedia.org/wiki/Google",
       "art": "google",
       "artStyle": "1990年代末网页时代像素风"
+    },
+    {
+      "id": "oicq",
+      "t": 1999.1096,
+      "precision": "day",
+      "date": "1999-02-10",
+      "title": "OICQ 发布",
+      "detail": "腾讯发布即时通讯软件（后改名 QQ），中国网民有了在线聊天工具。",
+      "category": "culture",
+      "capability": "即时通讯",
+      "source": "https://zh.wikipedia.org/wiki/腾讯QQ"
+    },
+    {
+      "id": "wifi-80211b",
+      "t": 1999.6658,
+      "precision": "month",
+      "date": "1999-09",
+      "title": "Wi-Fi 标准确立",
+      "detail": "IEEE 802.11b 获批，无线局域网开始进入家庭和办公室。",
+      "category": "compute",
+      "capability": "无线局域网",
+      "source": "https://en.wikipedia.org/wiki/IEEE_802.11b-1999"
+    },
+    {
+      "id": "gps-sa-off",
+      "t": 2000.3333,
+      "precision": "day",
+      "date": "2000-05-02",
+      "title": "GPS 民用精度放开",
+      "detail": "美国关闭选择可用性干扰，民用定位精度提升到约十米级。",
+      "category": "compute",
+      "capability": "高精度民用定位",
+      "source": "https://en.wikipedia.org/wiki/Global_Positioning_System"
+    },
+    {
+      "id": "iss-crew",
+      "t": 2000.8361,
+      "precision": "day",
+      "date": "2000-11-02",
+      "title": "空间站开始常驻",
+      "detail": "首批乘组进驻国际空间站，人类此后从未离开近地轨道。",
+      "category": "cosmos",
+      "capability": "长期驻留太空",
+      "source": "https://en.wikipedia.org/wiki/Expedition_1"
     },
     {
       "id": "wikipedia",
@@ -1404,6 +1503,61 @@
       "detail": "人类基因组序列基本测定完成。",
       "category": "human",
       "source": "https://en.wikipedia.org/wiki/Human_Genome_Project"
+    },
+    {
+      "id": "taobao",
+      "t": 2003.3534,
+      "precision": "day",
+      "date": "2003-05-10",
+      "title": "淘宝网上线",
+      "detail": "个人可以开网店、网上购物，电商进入中国普通家庭。",
+      "category": "culture",
+      "capability": "网上购物",
+      "source": "https://zh.wikipedia.org/wiki/淘宝网"
+    },
+    {
+      "id": "shenzhou-5",
+      "t": 2003.7863,
+      "precision": "day",
+      "date": "2003-10-15",
+      "title": "神舟五号载人飞行",
+      "detail": "杨利伟进入太空，中国成为第三个独立载人航天的国家。",
+      "category": "cosmos",
+      "capability": "载人航天",
+      "source": "https://zh.wikipedia.org/wiki/神舟五号"
+    },
+    {
+      "id": "alipay",
+      "t": 2003.7863,
+      "precision": "day",
+      "date": "2003-10-15",
+      "title": "支付宝上线",
+      "detail": "担保交易在淘宝上线，解决了网购的信任问题。",
+      "category": "culture",
+      "capability": "网上支付",
+      "source": "https://zh.wikipedia.org/wiki/支付宝"
+    },
+    {
+      "id": "facebook",
+      "t": 2004.0929,
+      "precision": "day",
+      "date": "2004-02-04",
+      "title": "Facebook 上线",
+      "detail": "实名社交网络让人们在线维系关系网。",
+      "category": "culture",
+      "capability": "社交网络",
+      "source": "https://en.wikipedia.org/wiki/Facebook"
+    },
+    {
+      "id": "youtube",
+      "t": 2005.3068,
+      "precision": "day",
+      "date": "2005-04-23",
+      "title": "YouTube 首个视频",
+      "detail": "任何人都能上传并在线观看视频。",
+      "category": "culture",
+      "capability": "在线视频分享",
+      "source": "https://en.wikipedia.org/wiki/Me_at_the_zoo"
     },
     {
       "id": "amazon-s3",
@@ -1427,6 +1581,17 @@
       "detail": "辛顿与萨拉赫丁诺夫在《科学》发表训练深层网络的方法。",
       "category": "ai",
       "source": "https://www.science.org/doi/10.1126/science.1127647"
+    },
+    {
+      "id": "ipsc",
+      "t": 2006.5808,
+      "precision": "month",
+      "date": "2006-08",
+      "title": "诱导多能干细胞",
+      "detail": "山中伸弥用四个基因把成体细胞重编程为多能干细胞。",
+      "category": "life",
+      "capability": "细胞重编程",
+      "source": "https://en.wikipedia.org/wiki/Induced_pluripotent_stem_cell"
     },
     {
       "id": "iphone",
@@ -1455,6 +1620,50 @@
       "artStyle": "2000年代硬件宣传图"
     },
     {
+      "id": "kindle",
+      "t": 2007.8822,
+      "precision": "day",
+      "date": "2007-11-19",
+      "title": "Kindle 发布",
+      "detail": "电子墨水阅读器配合无线下载，一次装下成百上千本书。",
+      "category": "culture",
+      "capability": "电子书阅读",
+      "source": "https://en.wikipedia.org/wiki/Amazon_Kindle"
+    },
+    {
+      "id": "app-store",
+      "t": 2008.5219,
+      "precision": "day",
+      "date": "2008-07-10",
+      "title": "App Store 开张",
+      "detail": "第三方应用可一键安装到手机，移动应用生态形成。",
+      "category": "compute",
+      "capability": "移动应用分发",
+      "source": "https://en.wikipedia.org/wiki/App_Store_(Apple)"
+    },
+    {
+      "id": "beijing-tianjin-hsr",
+      "t": 2008.582,
+      "precision": "day",
+      "date": "2008-08-01",
+      "title": "京津城际开通",
+      "detail": "中国首条时速350公里高铁，京津半小时直达。",
+      "category": "energy",
+      "capability": "高速铁路",
+      "source": "https://zh.wikipedia.org/wiki/京津城际铁路"
+    },
+    {
+      "id": "android",
+      "t": 2008.7268,
+      "precision": "day",
+      "date": "2008-09-23",
+      "title": "安卓手机发布",
+      "detail": "首款安卓手机 HTC Dream 发布，开源系统让智能手机走向大众价位。",
+      "category": "compute",
+      "capability": "开放智能手机平台",
+      "source": "https://en.wikipedia.org/wiki/HTC_Dream"
+    },
+    {
       "id": "imagenet",
       "t": 2009,
       "precision": "year",
@@ -1473,6 +1682,28 @@
       "detail": "第一个去中心化加密货币网络开始运行。",
       "category": "compute",
       "source": "https://en.wikipedia.org/wiki/Bitcoin"
+    },
+    {
+      "id": "china-3g",
+      "t": 2009.0164,
+      "precision": "day",
+      "date": "2009-01-07",
+      "title": "中国发放3G牌照",
+      "detail": "三大运营商获3G牌照，手机上网开始普及。",
+      "category": "compute",
+      "capability": "移动宽带",
+      "source": "https://mg.co.za/business/2009-01-07-billions-at-stake-as-china-issues-3g-licences/"
+    },
+    {
+      "id": "wechat",
+      "t": 2011.0548,
+      "precision": "day",
+      "date": "2011-01-21",
+      "title": "微信上线",
+      "detail": "免费的移动即时通讯，后来扩展为社交、支付和小程序平台。",
+      "category": "culture",
+      "capability": "移动社交",
+      "source": "https://zh.wikipedia.org/wiki/微信"
     },
     {
       "id": "watson-jeopardy",
@@ -1498,6 +1729,17 @@
       "artStyle": "2010年代数据可视化"
     },
     {
+      "id": "tesla-model-s",
+      "t": 2012.4727,
+      "precision": "day",
+      "date": "2012-06-22",
+      "title": "Model S 交付",
+      "detail": "续航约四百公里的纯电动轿车开始交付用户。",
+      "category": "energy",
+      "capability": "长续航电动车",
+      "source": "https://en.wikipedia.org/wiki/Tesla_Model_S"
+    },
+    {
       "id": "higgs-boson",
       "t": 2012.5055,
       "precision": "day",
@@ -1506,6 +1748,17 @@
       "detail": "欧洲核子研究中心宣布发现希格斯玻色子。",
       "category": "human",
       "source": "https://en.wikipedia.org/wiki/Higgs_boson"
+    },
+    {
+      "id": "three-gorges",
+      "t": 2012.5055,
+      "precision": "day",
+      "date": "2012-07-04",
+      "title": "三峡电站全面投产",
+      "detail": "最后一台主机组投产，世界最大水电站全部发电。",
+      "category": "energy",
+      "capability": "巨型水电",
+      "source": "https://en.wikipedia.org/wiki/Three_Gorges_Dam"
     },
     {
       "id": "alexnet",
@@ -1517,8 +1770,30 @@
       "category": "ai",
       "capability": "深度学习",
       "source": "https://en.wikipedia.org/wiki/AlexNet",
-      "art": "alexnet",
-      "artStyle": "2010年代DeepDream风"
+      "art": "alexnet-classification",
+      "artStyle": "2010年代实验室写实插画"
+    },
+    {
+      "id": "china-4g",
+      "t": 2013.9233,
+      "precision": "day",
+      "date": "2013-12-04",
+      "title": "中国发放4G牌照",
+      "detail": "三大运营商获TD-LTE牌照，手机看视频、直播成日常。",
+      "category": "compute",
+      "capability": "高速移动网络",
+      "source": "https://convergedigest.com/china-issues-td-lte-operating-licenses/"
+    },
+    {
+      "id": "wechat-hongbao",
+      "t": 2014,
+      "precision": "month",
+      "date": "2014-01",
+      "title": "微信红包",
+      "detail": "春节抢红包让大批用户绑定银行卡，用上手机支付。",
+      "category": "culture",
+      "capability": "移动支付",
+      "source": "https://zh.wikipedia.org/wiki/微信支付"
     },
     {
       "id": "gan",
@@ -1541,6 +1816,28 @@
       "source": "https://en.wikipedia.org/wiki/First_observation_of_gravitational_waves"
     },
     {
+      "id": "resnet",
+      "t": 2015.9397,
+      "precision": "day",
+      "date": "2015-12-10",
+      "title": "ResNet：残差网络",
+      "detail": "残差连接让极深的神经网络更容易训练，152层模型在ImageNet上取得领先结果。",
+      "category": "ai",
+      "capability": "训练更深的网络",
+      "source": "https://arxiv.org/abs/1512.03385"
+    },
+    {
+      "id": "falcon9-landing",
+      "t": 2015.9726,
+      "precision": "day",
+      "date": "2015-12-22",
+      "title": "火箭一级首次回收",
+      "detail": "猎鹰9号一级火箭从轨道发射后垂直着陆，可回收火箭成为现实。",
+      "category": "cosmos",
+      "capability": "可回收火箭",
+      "source": "https://en.wikipedia.org/wiki/Falcon_9_flight_20"
+    },
+    {
       "id": "alphago",
       "t": 2016.2022,
       "precision": "day",
@@ -1551,6 +1848,50 @@
       "source": "https://en.wikipedia.org/wiki/AlphaGo_versus_Lee_Sedol"
     },
     {
+      "id": "mobike",
+      "t": 2016.306,
+      "precision": "day",
+      "date": "2016-04-22",
+      "title": "共享单车上线",
+      "detail": "摩拜在上海上线，扫码即可借还单车，无需固定桩。",
+      "category": "culture",
+      "capability": "共享出行",
+      "source": "https://zh.wikipedia.org/wiki/摩拜单车"
+    },
+    {
+      "id": "micius",
+      "t": 2016.623,
+      "precision": "day",
+      "date": "2016-08-16",
+      "title": "墨子号量子卫星",
+      "detail": "全球首颗量子科学实验卫星升空，实现星地量子密钥分发。",
+      "category": "compute",
+      "capability": "星地量子通信",
+      "source": "https://en.wikipedia.org/wiki/Micius_(satellite)"
+    },
+    {
+      "id": "douyin",
+      "t": 2016.7186,
+      "precision": "day",
+      "date": "2016-09-20",
+      "title": "抖音上线",
+      "detail": "短视频应用让普通人随手拍摄、分享、刷视频。",
+      "category": "culture",
+      "capability": "短视频",
+      "source": "https://zh.wikipedia.org/wiki/抖音"
+    },
+    {
+      "id": "fast",
+      "t": 2016.7322,
+      "precision": "day",
+      "date": "2016-09-25",
+      "title": "中国天眼落成",
+      "detail": "500米口径射电望远镜落成，世界最大单口径射电望远镜。",
+      "category": "cosmos",
+      "capability": "大口径射电观测",
+      "source": "https://en.wikipedia.org/wiki/Five-hundred-meter_Aperture_Spherical_Telescope"
+    },
+    {
       "id": "transformer",
       "t": 2017.4438,
       "precision": "day",
@@ -1559,6 +1900,17 @@
       "detail": "论文《注意力就是你所需要的》提出Transformer架构。",
       "category": "ai",
       "source": "https://arxiv.org/abs/1706.03762"
+    },
+    {
+      "id": "falcon-heavy",
+      "t": 2018.0986,
+      "precision": "day",
+      "date": "2018-02-06",
+      "title": "重型猎鹰首飞",
+      "detail": "现役运力最大的火箭首飞，两枚助推器同步回收着陆。",
+      "category": "cosmos",
+      "capability": "重型运载",
+      "source": "https://en.wikipedia.org/wiki/Falcon_Heavy_test_flight"
     },
     {
       "id": "gpt-1",
@@ -1581,6 +1933,17 @@
       "source": "https://arxiv.org/abs/1810.04805"
     },
     {
+      "id": "change-4",
+      "t": 2019.0055,
+      "precision": "day",
+      "date": "2019-01-03",
+      "title": "嫦娥四号着陆月背",
+      "detail": "人类探测器首次在月球背面软着陆。",
+      "category": "cosmos",
+      "capability": "月背探测",
+      "source": "https://en.wikipedia.org/wiki/Chang%27e_4"
+    },
+    {
       "id": "gpt-2",
       "t": 2019.1205,
       "precision": "day",
@@ -1589,6 +1952,17 @@
       "detail": "15亿参数模型能写出连贯长文，OpenAI分阶段发布。",
       "category": "ai",
       "source": "https://openai.com/index/better-language-models/"
+    },
+    {
+      "id": "black-hole-image",
+      "t": 2019.2712,
+      "precision": "day",
+      "date": "2019-04-10",
+      "title": "首张黑洞照片",
+      "detail": "事件视界望远镜公布 M87 黑洞阴影图像。",
+      "category": "cosmos",
+      "capability": "黑洞成像",
+      "source": "https://en.wikipedia.org/wiki/Event_Horizon_Telescope"
     },
     {
       "id": "quantum-supremacy",
@@ -1601,6 +1975,28 @@
       "source": "https://www.nature.com/articles/s41586-019-1666-5"
     },
     {
+      "id": "china-5g",
+      "t": 2019.8301,
+      "precision": "day",
+      "date": "2019-10-31",
+      "title": "中国 5G 商用",
+      "detail": "三大运营商推出 5G 套餐，5G 正式商用。",
+      "category": "compute",
+      "capability": "5G 网络",
+      "source": "https://www.caixinglobal.com/2019-10-31/china-launches-5g-with-monthly-plans-as-low-as-18-101477328.html"
+    },
+    {
+      "id": "rag",
+      "t": 2020.388,
+      "precision": "day",
+      "date": "2020-05-22",
+      "title": "RAG：检索增强生成",
+      "detail": "语言模型先检索外部文档再生成回答，让知识可以来自可更新的资料库，而不只依赖训练时记住的内容。",
+      "category": "ai",
+      "capability": "检索增强生成",
+      "source": "https://arxiv.org/abs/2005.11401"
+    },
+    {
       "id": "gpt-3",
       "t": 2020.4044,
       "precision": "day",
@@ -1609,6 +2005,28 @@
       "detail": "1750亿参数模型展示少样本学习能力。",
       "category": "ai",
       "source": "https://arxiv.org/abs/2005.14165"
+    },
+    {
+      "id": "ddpm",
+      "t": 2020.4645,
+      "precision": "day",
+      "date": "2020-06-19",
+      "title": "扩散模型的关键进展",
+      "detail": "DDPM通过逐步去噪生成高质量图像，为后来的扩散式图像生成工具奠定重要基础。",
+      "category": "ai",
+      "capability": "扩散式图像生成",
+      "source": "https://arxiv.org/abs/2006.11239"
+    },
+    {
+      "id": "beidou-3",
+      "t": 2020.5792,
+      "precision": "day",
+      "date": "2020-07-31",
+      "title": "北斗三号全球开通",
+      "detail": "北斗卫星导航系统开始提供全球服务。",
+      "category": "compute",
+      "capability": "全球卫星导航",
+      "source": "https://en.wikipedia.org/wiki/BeiDou"
     },
     {
       "id": "alphafold-2",
@@ -1634,6 +2052,39 @@
       "artStyle": "2020年代新闻摄影"
     },
     {
+      "id": "change-5",
+      "t": 2020.959,
+      "precision": "day",
+      "date": "2020-12-17",
+      "title": "嫦娥五号带回月壤",
+      "detail": "中国首次月球采样返回，带回1731克月壤。",
+      "category": "cosmos",
+      "capability": "地外采样返回",
+      "source": "https://en.wikipedia.org/wiki/Chang%27e_5"
+    },
+    {
+      "id": "zhurong",
+      "t": 2021.3671,
+      "precision": "day",
+      "date": "2021-05-15",
+      "title": "祝融号着陆火星",
+      "detail": "天问一号着陆器携祝融号火星车软着陆火星。",
+      "category": "cosmos",
+      "capability": "火星着陆巡视",
+      "source": "https://en.wikipedia.org/wiki/Zhurong_(rover)"
+    },
+    {
+      "id": "github-copilot",
+      "t": 2021.4904,
+      "precision": "day",
+      "date": "2021-06-29",
+      "title": "Copilot 预览",
+      "detail": "AI 在编辑器里按上下文补全代码，程序员有了编程助手。",
+      "category": "ai",
+      "capability": "AI 编程助手",
+      "source": "https://en.wikipedia.org/wiki/GitHub_Copilot"
+    },
+    {
       "id": "jwst-launch",
       "t": 2021.9808,
       "precision": "day",
@@ -1642,6 +2093,17 @@
       "detail": "红外空间望远镜升空，用于观测早期宇宙。",
       "category": "human",
       "source": "https://en.wikipedia.org/wiki/James_Webb_Space_Telescope"
+    },
+    {
+      "id": "instructgpt-paper",
+      "t": 2022.1699,
+      "precision": "day",
+      "date": "2022-03-04",
+      "title": "InstructGPT：人类反馈训练",
+      "detail": "论文介绍用人类示范和偏好排序训练语言模型，让回答更符合用户指令；这一训练路线随后用于ChatGPT。",
+      "category": "ai",
+      "capability": "指令遵循与人类反馈",
+      "source": "https://arxiv.org/abs/2203.02155"
     },
     {
       "id": "dall-e-2",
@@ -1664,6 +2126,17 @@
       "source": "https://effectiveaccelerationism.substack.com/p/repost-effective-accelerationism"
     },
     {
+      "id": "midjourney",
+      "t": 2022.526,
+      "precision": "day",
+      "date": "2022-07-12",
+      "title": "Midjourney公测",
+      "detail": "输入文字即可生成精美图像，向公众开放。",
+      "category": "ai",
+      "capability": "文生图",
+      "source": "https://en.wikipedia.org/wiki/Midjourney"
+    },
+    {
       "id": "stable-diffusion",
       "t": 2022.6384,
       "precision": "day",
@@ -1672,6 +2145,28 @@
       "detail": "图像生成模型公开权重，可在个人电脑上运行。",
       "category": "ai",
       "source": "https://stability.ai/news/stable-diffusion-public-release"
+    },
+    {
+      "id": "react",
+      "t": 2022.7616,
+      "precision": "day",
+      "date": "2022-10-06",
+      "title": "ReAct：推理与行动交替",
+      "detail": "模型交替进行推理和外部操作，并根据返回的信息调整下一步，成为工具型智能体的重要研究路线。",
+      "category": "ai",
+      "capability": "推理与行动协作",
+      "source": "https://arxiv.org/abs/2210.03629"
+    },
+    {
+      "id": "tiangong-t",
+      "t": 2022.8384,
+      "precision": "day",
+      "date": "2022-11-03",
+      "title": "天宫空间站成型",
+      "detail": "梦天舱转位完成，中国空间站T字基本构型在轨组装完成。",
+      "category": "cosmos",
+      "capability": "自建空间站",
+      "source": "https://en.wikipedia.org/wiki/Mengtian"
     },
     {
       "id": "chatgpt",
@@ -1720,6 +2215,39 @@
       "source": "https://openai.com/index/gpt-4-research/"
     },
     {
+      "id": "claude-1",
+      "t": 2023.1973,
+      "precision": "day",
+      "date": "2023-03-14",
+      "title": "Claude 发布",
+      "detail": "Anthropic 发布 Claude，先向合作方有限开放。",
+      "category": "ai",
+      "capability": "对话式 AI",
+      "source": "https://en.wikipedia.org/wiki/Claude_(language_model)"
+    },
+    {
+      "id": "starship-ift1",
+      "t": 2023.2986,
+      "precision": "day",
+      "date": "2023-04-20",
+      "title": "星舰首次整体试飞",
+      "detail": "史上最大火箭首次整箭发射。",
+      "category": "cosmos",
+      "capability": "超重型可复用火箭",
+      "source": "https://en.wikipedia.org/wiki/Starship_flight_test_1"
+    },
+    {
+      "id": "function-calling",
+      "t": 2023.4466,
+      "precision": "day",
+      "date": "2023-06-13",
+      "title": "函数调用进入大模型 API",
+      "detail": "OpenAI提供结构化函数调用，开发者可以把模型连接到查询、计算和其他软件工具。",
+      "category": "ai",
+      "capability": "结构化工具调用",
+      "source": "https://openai.com/index/function-calling-and-other-api-updates/"
+    },
+    {
       "id": "techno-optimist-manifesto",
       "t": 2023.789,
       "precision": "day",
@@ -1728,6 +2256,50 @@
       "detail": "马克·安德森发表宣言，主张以技术和市场加速进步。",
       "category": "culture",
       "source": "https://a16z.com/the-techno-optimist-manifesto/"
+    },
+    {
+      "id": "casgevy",
+      "t": 2023.874,
+      "precision": "day",
+      "date": "2023-11-16",
+      "title": "首个基因编辑疗法获批",
+      "detail": "英国批准 CRISPR 疗法 Casgevy，治疗镰状细胞病和地中海贫血。",
+      "category": "life",
+      "capability": "基因编辑治疗",
+      "source": "https://en.wikipedia.org/wiki/Exagamglogene_autotemcel"
+    },
+    {
+      "id": "gemini",
+      "t": 2023.9288,
+      "precision": "day",
+      "date": "2023-12-06",
+      "title": "Gemini 发布",
+      "detail": "谷歌推出原生多模态大模型 Gemini。",
+      "category": "ai",
+      "capability": "原生多模态模型",
+      "source": "https://en.wikipedia.org/wiki/Gemini_(language_model)"
+    },
+    {
+      "id": "neuralink-human",
+      "t": 2024.0765,
+      "precision": "day",
+      "date": "2024-01-29",
+      "title": "Neuralink 首次人体植入",
+      "detail": "Neuralink宣布其首位受试者接受无线脑机接口植入，随后展示用意念控制光标；其他脑机接口此前已有人体研究。",
+      "category": "life",
+      "capability": "脑机接口",
+      "source": "https://en.wikipedia.org/wiki/Neuralink"
+    },
+    {
+      "id": "sora",
+      "t": 2024.123,
+      "precision": "day",
+      "date": "2024-02-15",
+      "title": "Sora 首次展示",
+      "detail": "OpenAI 展示可生成一分钟高清视频的文生视频模型。",
+      "category": "ai",
+      "capability": "文生视频",
+      "source": "https://en.wikipedia.org/wiki/Sora_(text-to-video_model)"
     },
     {
       "id": "claude-3",
@@ -1748,6 +2320,17 @@
       "detail": "原生处理语音、图像和文本，API价格是GPT-4 Turbo的一半。",
       "category": "ai",
       "source": "https://openai.com/index/hello-gpt-4o/"
+    },
+    {
+      "id": "change-6",
+      "t": 2024.4809,
+      "precision": "day",
+      "date": "2024-06-25",
+      "title": "嫦娥六号月背采样",
+      "detail": "人类首次从月球背面带回样品。",
+      "category": "cosmos",
+      "capability": "月背采样返回",
+      "source": "https://en.wikipedia.org/wiki/Chang%27e_6"
     },
     {
       "id": "eu-ai-act",
@@ -1793,6 +2376,17 @@
       "source": "https://www.nobelprize.org/prizes/chemistry/2024/summary/"
     },
     {
+      "id": "starship-catch",
+      "t": 2024.7814,
+      "precision": "day",
+      "date": "2024-10-13",
+      "title": "发射塔接住助推器",
+      "detail": "星舰第五次试飞，超重助推器返回发射塔被机械臂夹住回收。",
+      "category": "cosmos",
+      "capability": "塔架回收火箭",
+      "source": "https://en.wikipedia.org/wiki/Starship_flight_test_5"
+    },
+    {
       "id": "computer-use",
       "t": 2024.806,
       "precision": "day",
@@ -1804,6 +2398,17 @@
       "source": "https://www.anthropic.com/news/3-5-models-and-computer-use",
       "art": "computer-use",
       "artStyle": "2020年代生成式AI美学"
+    },
+    {
+      "id": "deepseek-v3",
+      "t": 2024.9836,
+      "precision": "day",
+      "date": "2024-12-26",
+      "title": "DeepSeek-V3",
+      "detail": "以低训练成本达到前沿水平的开源大模型。",
+      "category": "ai",
+      "capability": "低成本前沿模型",
+      "source": "https://en.wikipedia.org/wiki/DeepSeek"
     },
     {
       "id": "deepseek-r1",
