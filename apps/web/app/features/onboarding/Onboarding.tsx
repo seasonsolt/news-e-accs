@@ -293,7 +293,7 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
               </li>
             ))}
           </ol>
-          <p className="mt-6 border-t border-line pt-4 text-[13px] text-ink-4"><Text value="什么是 e/acc：" /><a href="https://e-acc.ai/what-is-eacc" className="text-accent underline decoration-accent/35 underline-offset-[3px] hover:decoration-accent">
+          <p className="mt-6 border-t border-line pt-4 text-[13px] text-ink-4"><Text value="什么是 e/acc：" /><a href="/what-is-eacc" className="text-accent underline decoration-accent/35 underline-offset-[3px] hover:decoration-accent">
               e-acc.ai/what-is-eacc
             </a>
           </p>

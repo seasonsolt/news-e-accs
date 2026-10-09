@@ -14,4 +14,9 @@ export const FEATURES = {
    * 以及全站 ?at=日期：精选、热点榜、模型榜、日报回到那一天。不调用模型，不产生费用。
    */
   timeMachine: true,
+  /**
+   * e/acc 概念页：/what-is-eacc、/eacc-vs-dacc、/eacc-glossary（内容在 industry/concepts.ts，英文正文）。
+   * 从 e-acc.ai 的静态工具站搬来，网址和正文不变；别的站点设为 false。
+   */
+  eaccConcepts: true,
 } as const;

@@ -52,6 +52,7 @@ async function build(): Promise<string> {
     { loc: "/changelog", lastmod: now, changefreq: "weekly", priority: 0.5 },
   );
   if (FEATURES.timeMachine) entries.push({ loc: "/chronicle", changefreq: "weekly", priority: 0.5 });
+  if (FEATURES.eaccConcepts) for (const loc of ["/what-is-eacc", "/eacc-vs-dacc", "/eacc-glossary"]) entries.push({ loc, changefreq: "monthly", priority: 0.7 });
   if (FEATURES.leaderboard) {
     entries.push(
       { loc: "/leaderboard", changefreq: "daily", priority: 0.8 },

@@ -175,6 +175,32 @@ test("news pages carry NewsArticle data matching their visible dates and source"
   assert.equal(event.description, "事件综述");
 });
 
+test("the e/acc concept pages keep their English titles, text language and structured data", async () => {
+  const pages = [
+    { path: "/what-is-eacc", title: "What is e/acc? Effective Accelerationism, Explained | e-acc.ai", type: "FAQPage", count: 6 },
+    { path: "/eacc-vs-dacc", title: "e/acc vs d/acc: Accelerationism&#x27;s Two Camps | e-acc.ai", type: "FAQPage", count: 5 },
+    { path: "/eacc-glossary", title: "e/acc Glossary: Accelerationism Terms, Defined | e-acc.ai", type: "DefinedTermSet", count: 16 },
+  ];
+  for (const page of pages) {
+    // A Chinese interface still gets the English page: the body, title and og:locale describe the text.
+    const res = await fetch(`${origin}${page.path}`, { headers: { "Accept-Language": "zh-CN" } });
+    assert.equal(res.status, 200, page.path);
+    const html = await res.text();
+    assert.ok(html.includes(`<title>${page.title}</title>`), page.path);
+    assert.match(html, new RegExp(`<link rel="canonical" href="[^"]*${page.path}"/>`));
+    assert.match(html, /<meta property="og:locale" content="en"\/>/);
+    assert.match(html, /<article class="pb-14" lang="en">/);
+    const main = jsonLd(html).find((e) => e["@type"] === page.type)!;
+    assert.ok(main, `${page.path} ${page.type}`);
+    assert.equal((main.about as { name: string }).name, "Effective accelerationism");
+    const entries = (main.mainEntity ?? main.hasDefinedTerm) as unknown[];
+    assert.equal(entries.length, page.count, page.path);
+  }
+  const glossary = await (await fetch(`${origin}/eacc-glossary`)).text();
+  for (const id of ["decel", "doomer", "pdoom", "uacc"]) assert.match(glossary, new RegExp(`<li id="${id}">`));
+  assert.equal((await fetch(`${origin}/eacc-unknown`)).status, 404);
+});
+
 test("missing routes cannot be hidden by a root-only request; errors and redirects stay uncached", async () => {
   for (const pathname of ["/items/missing.data?_routes=root", "/does-not-exist.data?_routes=root", "/items/missing"]) {
     const res = await fetch(origin + pathname);

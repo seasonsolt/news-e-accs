@@ -25,7 +25,8 @@ export const TOOLS: NavItem[] = [
   { to: "/calculator", label: "成本计算器", icon: IconGrid, document: true },
   // The acceleration timeline moved into this site's four-dimensional view (/chronicle) when the time machine is on.
   ...(FEATURES.timeMachine ? [] : [{ to: "/timeline", label: "加速时间线", icon: IconHourglass, document: true }]),
-  { to: "/what-is-eacc", label: "什么是 e/acc", icon: IconInfo, document: true },
+  // Served by this site since the concept pages moved here (industry/concepts.ts).
+  { to: "/what-is-eacc", label: "什么是 e/acc", icon: IconInfo },
 ];
 
 /** The deck's top navigation: the reading sections, in the order a reader moves through them. */
