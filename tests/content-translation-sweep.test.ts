@@ -120,6 +120,55 @@ test('the real public priority projection finds new and edited headlines but exc
   assert.ok(!(await priorityContentEntries()).some(e => e.id === ids[1]));
 });
 
+test('provider editions complete receipts atomically; stale sources, dry runs and rollbacks leave answers received', async () => {
+  const T = tag(), sourceId = `test-receipt-save-${T}`;
+  const provider = await stub(() => ({ translations: { title: 'The public headline', summary: 'The public summary' } }));
+  try {
+    await sql`INSERT INTO sources(id,name,kind,tier,participation_mode,site_fulltext,next_fetch_at) VALUES(${sourceId},'Receipt fixture','rss','T1','editorial',false,'2100-01-01')`;
+    const material = await upsertMaterial({ sourceId, url: `https://example.com/receipt-save-${T}`, title: 'Original headline', language: 'en', bodyText: 'Summary only.', bodyStatus: 'none', via: 'fetch' });
+    const id = material.articleId;
+    await sql`INSERT INTO analyses(article_id,input_revision,origin,relevance,category,title_zh,summary_zh,score,selected)
+      VALUES(${id},1,'rule','pass','ai-products','公开标题','公开摘要',65,false)`;
+    await publishArticle(id);
+    const source = await currentContent('item', id); assert.ok(source);
+    const answer = await paidRequest({ service: 'deepseek', model: 'local-test', purpose: 'translate_content',
+      subject: `item:${id}@${source.sourceHash}#0`, identity: { id, sourceHash: source.sourceHash, segments: source.segments } },
+      async () => ({ response: await (await fetch(provider.url, { method: 'POST', body: JSON.stringify(source.segments) })).json(), usage: { total_tokens: 1 } }));
+    const edition = { ...source, translations: (answer.response as { translations: Record<string, string> }).translations };
+    const status = async () => (await sql`SELECT status FROM receipts WHERE id=${answer.receiptId}`)[0]!.status;
+    const count = async () => (await sql`SELECT 1 FROM content_translations WHERE kind='item' AND content_id=${id}`).length;
+    assert.equal(await status(), 'received');
+    await saveTranslation(edition, 'provider', 'local-test', [answer.receiptId], false);
+    assert.equal(await status(), 'received'); assert.equal(await count(), 0);
+
+    await sql`UPDATE publications SET title='修改后的公开标题' WHERE article_id=${id}`;
+    await assert.rejects(saveTranslation(edition, 'provider', 'local-test', [answer.receiptId], true), /stale source/);
+    assert.equal(await status(), 'received'); assert.equal(await count(), 0);
+    await sql`UPDATE publications SET title='公开标题' WHERE article_id=${id}`;
+
+    await assert.rejects(sql.begin(async tx => {
+      await saveTranslation(edition, 'provider', 'local-test', [answer.receiptId], true, tx);
+      const [inside] = await tx`SELECT status FROM receipts WHERE id=${answer.receiptId}`;
+      assert.equal(inside!.status, 'completed');
+      throw new Error('rollback business transaction');
+    }), /rollback business transaction/);
+    assert.equal(await status(), 'received'); assert.equal(await count(), 0);
+
+    await saveTranslation(edition, 'provider', 'local-test', [answer.receiptId], true);
+    assert.equal(await status(), 'completed'); assert.equal(await count(), 1);
+    const [saved] = await sql`SELECT provenance,receipt_ids FROM content_translations WHERE kind='item' AND content_id=${id}`;
+    assert.equal(saved!.provenance, 'provider'); assert.deepEqual(saved!.receipt_ids, [answer.receiptId]);
+    assert.equal(provider.hits(), 1);
+    const [beforeOffline] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM receipts`;
+    await assert.rejects(saveTranslation(edition, 'offline-agent', 'gpt-6-luna', [answer.receiptId], true), /offline imports/);
+    await saveTranslation(edition, 'offline-agent', 'gpt-6-luna', [], true);
+    const [afterOffline] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM receipts`;
+    assert.equal(afterOffline!.n, beforeOffline!.n);
+    const [offline] = await sql`SELECT provenance,receipt_ids FROM content_translations WHERE kind='item' AND content_id=${id}`;
+    assert.equal(offline!.provenance, 'offline-agent'); assert.deepEqual(offline!.receipt_ids, []);
+  } finally { await provider.close(); }
+});
+
 test('the opt-in defaults to closed', async () => {
   const previous = process.env.CONTENT_TRANSLATION_ENABLED;
   delete process.env.CONTENT_TRANSLATION_ENABLED;

@@ -2,6 +2,7 @@ import { load } from 'cheerio';
 import { shield, unshield } from '../editorial/translate.ts';
 import { sanitizeBody } from '../content/sanitize.ts';
 import { sql, type Db } from '../db.ts';
+import { completeReceipt } from '../providers/receipts.ts';
 import { fetchItemsByIds, toItemSummary } from './items.ts';
 import { loadItemDetail, withOutline } from './detail.ts';
 import { loadStoryDetail, resolveStory, loadHotStrip } from './stories.ts';
@@ -77,6 +78,9 @@ export async function saveTranslation(entry: TranslationEntry, provenance: 'prov
     VALUES (${entry.kind},${entry.id},${entry.sourceHash},${db.json(entry.segments)},${db.json(translations)},${provenance},${model},${receiptIds})
     ON CONFLICT (kind,content_id,lang) DO UPDATE SET source_hash=excluded.source_hash,source_segments=excluded.source_segments,
     translations=excluded.translations,provenance=excluded.provenance,model=excluded.model,receipt_ids=excluded.receipt_ids,translated_at=now()`;
+  // Business data and receipt completion commit together; a stale source or rolled-back edition
+  // leaves the received answer reusable. Offline imports never create or complete receipts.
+  if (provenance === 'provider') for (const id of new Set(receiptIds)) await completeReceipt(db, id);
 }
 
 export async function exportContentBatch(cursor = '', limit = 50) {
