@@ -32,12 +32,13 @@ export const TOOLS: NavItem[] = [
 /** The deck's top navigation: the reading sections, in the order a reader moves through them. */
 export const TOPNAV: NavItem[] = [
   { to: "/", label: "精选", icon: IconBolt, end: true },
-  { to: "/products", label: "产品目录", icon: IconApps },
+  // The acceleration (the chronicle) is the site's signature view: right after the picks.
+  ...(FEATURES.timeMachine ? [{ to: "/chronicle", label: "加速史", icon: IconHourglass }] : []),
   { to: "/all", label: "全部", icon: IconList },
   { to: "/hot", label: "热点", icon: IconFlame },
   { to: "/daily", label: withSubject("日报"), icon: IconDoc },
   ...(FEATURES.leaderboard ? [{ to: "/leaderboard", label: "模型前沿", icon: IconChart }] : []),
-  ...(FEATURES.timeMachine ? [{ to: "/chronicle", label: "四维视角", icon: IconHourglass }] : []),
+  { to: "/products", label: "产品目录", icon: IconApps },
 ];
 
 /** Everything else, under 更多 in the deck (and on the phone's 更多 page). */
@@ -66,14 +67,14 @@ export const MORE_MENU: Array<{ title: string; items: NavItem[] }> = [
 
 export const TABBAR: NavItem[] = [
   { to: "/", label: "精选", icon: IconBolt, end: true },
-  { to: "/products", label: "产品目录", icon: IconApps },
+  ...(FEATURES.timeMachine ? [{ to: "/chronicle", label: "加速史", icon: IconHourglass }] : [{ to: "/products", label: "产品目录", icon: IconApps }]),
   { to: "/all", label: "全部", icon: IconList },
   { to: "/daily", label: "日报", icon: IconDoc },
   { to: "/more", label: "更多", icon: IconApps, changelog: true },
 ];
 
 /** Pages reached from the mobile "更多" tab keep that tab highlighted. */
-export const MORE_PATHS = ["/products", "/more", "/chronicle", "/hot", "/topics", "/starred", "/leaderboard", "/codex-reset", "/agent", "/about", "/changelog", "/feedback", "/terms", "/privacy"];
+export const MORE_PATHS = ["/products", "/more", ...(FEATURES.timeMachine ? [] : ["/chronicle"]), "/hot", "/topics", "/starred", "/leaderboard", "/codex-reset", "/agent", "/about", "/changelog", "/feedback", "/terms", "/privacy"];
 
 export function tabIsActive(item: NavItem, pathname: string): boolean {
   if (item.end) return pathname === item.to;

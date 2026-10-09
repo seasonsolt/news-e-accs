@@ -34,7 +34,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 export const shouldRevalidate: ShouldRevalidateFunction = ({ currentUrl, nextUrl, defaultShouldRevalidate }) => currentUrl.pathname === nextUrl.pathname ? false : defaultShouldRevalidate;
 
 export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
-  return pageMeta({ title: "四维视角", description: "从大爆炸到此刻，再到公开的预测：拖动时间轴，看人类在每个时刻掌握了什么。", path: "/chronicle", image: "/og/pages/chronicle.png" }, localeFromMatches(matches ?? []));
+  return pageMeta({ title: "加速史：从大爆炸到智能体时代的 AI 与文明时间线", description: "从大爆炸到此刻，再到公开的预测：拖动时间轴，看人类在每个时刻掌握了什么。", path: "/chronicle", image: "/og/pages/chronicle.png" }, localeFromMatches(matches ?? []));
 }
 
 export function headers() {

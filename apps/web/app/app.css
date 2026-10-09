@@ -945,6 +945,7 @@ html[data-onboarding] .ambient-backdrop-image { background-image: none; }
 .hot-gauge { border-radius: var(--radius-panel); background: linear-gradient(var(--deck-2), var(--deck)); border: 1px solid #2c2318; box-shadow: inset 0 1px 0 rgb(217 164 65 / .35), 0 10px 24px -18px rgb(0 0 0 / .6); color: var(--deck-ink); }
 .kardashev-meter { display: block; width: min(420px, 100%); padding: 24px 26px; border-radius: 16px; background: linear-gradient(rgb(26 21 16 / .92), rgb(18 14 10 / .92)); border: 1px solid rgb(217 164 65 / .4); box-shadow: inset 0 1px 0 rgb(240 210 138 / .35); color: var(--deck-ink); }
 .kardashev-meter:hover { border-color: var(--brass); }
+.kardashev-meter-go { display: block; margin-top: 10px; font-size: 13px; font-weight: 600; color: var(--heat); }
 .kardashev-meter-head { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--deck-dim); }
 .kardashev-meter-reading { display: flex; align-items: baseline; gap: 12px; margin-top: 8px; }
 .kardashev-meter-figure { font-size: clamp(72px, 9vw, 108px); }

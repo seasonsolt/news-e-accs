@@ -82,7 +82,7 @@ export default function Home() {
         >
           <div className="flex flex-wrap gap-3">
             <Link to="/subscribe" className="deck-button is-primary"><Text value="订阅每日 08:00 日报" /></Link>
-            <Link to="/chronicle" className="deck-button"><Text value="打开四维视角" /></Link>
+            <Link to="/chronicle" className="deck-button"><Text value="打开加速史" /></Link>
           </div>
         </Deck>
       )}

@@ -135,6 +135,9 @@ test("interface preferences isolate HTML and Router data while public content st
   assert.match(chineseHtml, /<p class="deck-title">宇宙在降温/);
   assert.match(englishHtml, /<h1 class="deck-heading">AI daily news · today&#x27;s top AI stories and trends<\/h1>/);
   assert.match(chineseHtml, /"@type":"WebSite"/);
+  // The acceleration (/chronicle) is the signature view: second in the top bar and a tab on phones.
+  assert.match(chineseHtml, /aria-label="底部导航"[\s\S]*?href="\/chronicle"[^>]*>[\s\S]*?<span>加速史<\/span>/);
+  assert.match(englishHtml, /Explore the acceleration/);
   assert.notEqual(chineseHtml, englishHtml);
   const manual = await fetch(`${origin}/`, { headers: { "Accept-Language": "zh-CN", Cookie: "eacc_language=en; admin_session=private" } });
   assert.match(await manual.text(), /<html lang="en"/);

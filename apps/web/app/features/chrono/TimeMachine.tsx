@@ -65,7 +65,7 @@ export function TimeDial({ bounds, className = "" }: { bounds: TimeMachineBounds
     <div className={`time-dial ${at ? "is-away" : ""} ${className}`}>
       <div className="time-dial-head">
         <span className="flex items-center gap-1"><IconHourglass size={12} /><Text value="时光机" /></span>
-        <Link to={chronicleHref(at)} className="time-dial-link"><Text value="四维视角" /><IconChevronRight size={12} /></Link>
+        <Link to={chronicleHref(at)} className="time-dial-link"><Text value="加速史" /><IconChevronRight size={12} /></Link>
       </div>
       <div className="mt-1.5 flex items-center gap-1.5">
         <button type="button" className="time-knob" aria-label={tx("前一天")} disabled={!!earliest && !!at && at <= earliest} onClick={() => travel(stepAt(at, -1, today))}>
@@ -121,7 +121,7 @@ export function TimeBar({ bounds }: { bounds: TimeMachineBounds | null }) {
       <span className="ml-auto flex flex-wrap items-center gap-1.5">
         <Link to={withAt(here, prev)} className="time-bar-button" aria-label={tx("前一天")}><Text value="‹ 前一天" /></Link>
         <Link to={withAt(here, next)} className="time-bar-button" aria-label={tx("后一天")}><Text value="后一天 ›" /></Link>
-        <Link to={chronicleHref(at)} className="time-bar-button"><Text value="四维视角" /></Link>
+        <Link to={chronicleHref(at)} className="time-bar-button"><Text value="加速史" /></Link>
         <Link to={withAt(here, null)} className="time-bar-button is-primary"><Text value="回到现在" /></Link>
       </span>
     </div>
