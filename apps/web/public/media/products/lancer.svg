@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="lancer logo">
+  <title>lancer</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1B2440"/>
+      <stop offset="1" stop-color="#0E1426"/>
+    </linearGradient>
+    <linearGradient id="shaft" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7A1426"/>
+      <stop offset="1" stop-color="#E0344B"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="url(#bg)"/>
+  <!-- the shared cluster: three lanes -->
+  <g stroke="#3A4A78" stroke-width="6" stroke-linecap="round" stroke-dasharray="14 12">
+    <line x1="36" y1="76" x2="220" y2="76"/>
+    <line x1="36" y1="180" x2="220" y2="180"/>
+  </g>
+  <line x1="36" y1="128" x2="220" y2="128" stroke="#2A3760" stroke-width="22" stroke-linecap="round"/>
+  <!-- the breakpoint it lands on -->
+  <circle cx="222" cy="128" r="12" fill="#FF4F64" stroke="#0E1426" stroke-width="4"/>
+  <!-- the lance, running your lane: shaft, collar, leaf-shaped blade -->
+  <rect x="30" y="122" width="138" height="12" rx="6" fill="url(#shaft)"/>
+  <rect x="52" y="117" width="9" height="22" rx="3" fill="#F2C14E"/>
+  <rect x="160" y="117" width="9" height="22" rx="3" fill="#F2C14E"/>
+  <path d="M167 128 L190 110 L230 128 L190 146 Z" fill="#F04A5E"/>
+  <path d="M172 128 L224 128" stroke="#FFB3BD" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

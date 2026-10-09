@@ -267,13 +267,15 @@ test("a visitor cannot name its own address to the api without a trusted proxy i
   assert.equal(icon.headers.get("Cache-Control"), "public, max-age=3600");
 });
 
- test("product directory has separate navigation and localized public links", async () => {
+ test("product directory lists upcoming products with logos and no product links", async () => {
   const res = await fetch(origin + "/products", { headers: { "Accept-Language": "en" } });
   assert.equal(res.status, 200);
   const html = await res.text();
   assert.match(html, /Built to accelerate/);
-  assert.match(html, /https:\/\/twin.e-acc.ai/);
   assert.match(html, /RoboLabX/);
+  assert.match(html, /src="\/media\/products\/twin.svg"/);
+  assert.match(html, /Coming soon/);
+  assert.doesNotMatch(html, /twin\.e-acc\.ai|k12\.e-acc\.ai|github\.com\/seasonsolt\/(twin|tachi|lancer|skills)/);
   assert.doesNotMatch(html, /AudioStudio|Retake|seasonsolt\/legal/i);
   assert.match(html, /rel="canonical" href="[^"]+\/products"/);
 });

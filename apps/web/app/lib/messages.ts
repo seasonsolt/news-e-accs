@@ -1050,7 +1050,7 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "e/acc 历史日报，按日期归档。": "Past e/acc daily briefings, archived by date.",
   "本站如何处理浏览器本地数据、反馈资料与访问日志。": "How this site handles browser data, feedback and access logs.",
   "本站网站、RSS、公开 API 与 MCP 的使用规则。": "Terms for the website, RSS, public API and MCP.",
-  "e/acc 的公开产品与开源项目。": "Public products and open-source projects from e/acc.",
+  "e/acc 即将发布的产品与项目。": "Upcoming products and projects from e/acc.",
   "保存在这台设备上的 e/acc 收藏。": "Your e/acc stories saved on this device.",
   "人工智能 · 每日要闻": "Artificial intelligence · Daily briefing",
   "人工智能 · 每周综述": "Artificial intelligence · Weekly review",
