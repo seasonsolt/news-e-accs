@@ -190,6 +190,8 @@ test("the e/acc concept pages keep their English titles, text language and struc
     assert.match(html, new RegExp(`<link rel="canonical" href="[^"]*${page.path}"/>`));
     assert.match(html, /<meta property="og:locale" content="en"\/>/);
     assert.match(html, /<article class="pb-14" lang="en">/);
+    const english = await (await fetch(`${origin}${page.path}`, { headers: { "Accept-Language": "en" } })).text();
+    assert.doesNotMatch(english, /English editions appear when available/, page.path);
     const main = jsonLd(html).find((e) => e["@type"] === page.type)!;
     assert.ok(main, `${page.path} ${page.type}`);
     assert.equal((main.about as { name: string }).name, "Effective accelerationism");

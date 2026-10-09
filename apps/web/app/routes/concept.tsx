@@ -13,6 +13,9 @@ import { ArticleLayout, RailSection } from "../components/ui/Page";
 
 type Slug = keyof typeof CONCEPT_PAGES;
 
+/** The body is English already: no "English editions appear when available" line above it. */
+export const handle = { englishOriginal: true };
+
 export function loader({ request }: Route.LoaderArgs) {
   const slug = new URL(request.url).pathname.replace(/^\/+|\/+$/g, "") as Slug;
   if (!FEATURES.eaccConcepts || !(slug in CONCEPT_PAGES)) throw data({ message: "not_found" }, { status: 404 });
