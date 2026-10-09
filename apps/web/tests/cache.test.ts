@@ -7,6 +7,7 @@ import type { AddressInfo } from "node:net";
 import { after, before, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { CATEGORY_KEYS } from "@aihot/contracts/taxonomy";
+import { parseHTML } from "linkedom";
 import { releaseBoundCache } from "../app/lib/api.server.ts";
 
 const seoSource = { id: "src", name: "示例媒体", kind: "rss", firstParty: false, iconUrl: null };
@@ -51,6 +52,10 @@ const api = createServer((req, res) => {
     return res.end(JSON.stringify({ filters, cards: [], nextCursor: null, refreshAt, dayCounts: [], hot: null, generatedAt: "2026-09-28T00:00:00Z" }));
   }
   if (url.pathname === "/api/site/hot") return res.end(JSON.stringify({ entries: [] }));
+  if (url.pathname === "/api/site/changelog") {
+    const english=url.searchParams.get("lang")==="en";
+    return res.end(JSON.stringify({latestVersion:"2026-10-01T08:00",releases:[{date:"2026-10-01",time:"08:00",kind:"公告",title:english?"Website launch":"网站上线",body:[english?"A **daily briefing** every morning.":"每天早上出一份**日报**。"]}]}));
+  }
   if (url.pathname === "/api/site/cache-example") { res.setHeader("Cache-Control", "public, max-age=30, s-maxage=60"); return res.end("{}"); }
   if (url.pathname === "/feed/picks.xml") { res.setHeader("Content-Type", "application/rss+xml"); res.setHeader("Cache-Control", "public, max-age=60"); return res.end("<rss/>"); }
   if (url.pathname === "/api/site/echo-client") return res.end(JSON.stringify({ forwarded: req.headers["x-forwarded-for"], real: req.headers["x-real-ip"] }));
@@ -153,6 +158,19 @@ test("interface preferences isolate HTML and Router data while public content st
   const localized = await fetch(`${origin}/about.data`, { headers: { cookie: "eacc_language=zh" } });
   assert.match(await localized.text(), /"locale".*"zh"/);
   assert.ok(apiCookies.every((cookie) => !cookie));
+});
+
+test("changelog renders English prose, kind filters and calendar labels; Chinese remains available",async()=>{
+  const en=await fetch(`${origin}/changelog`,{headers:{"Accept-Language":"en"}});
+  assert.equal(en.status,200);assert.equal(en.headers.get("Cache-Control"),"private, no-store");
+  const english=parseHTML(await en.text()).document.querySelector("main")!;
+  assert.match(english.textContent!,/Website launch/);assert.match(english.textContent!,/Announcement/);
+  assert.match(english.textContent!,/Oct 1, 2026/);assert.match(english.textContent!,/Thursday/);assert.match(english.textContent!,/October 2026/);
+  assert.doesNotMatch(english.textContent!,/[\u3400-\u9fff]/u);
+  assert.equal(english.querySelector("article b")?.textContent,"daily briefing");
+  const zh=await fetch(`${origin}/changelog`,{headers:{"Accept-Language":"en",cookie:"eacc_language=zh"}});
+  const chinese=parseHTML(await zh.text()).document.querySelector("main")!;
+  assert.match(chinese.textContent!,/网站上线/);assert.match(chinese.textContent!,/公告/);assert.match(chinese.textContent!,/2026 年 10 月 1 日/);assert.match(chinese.textContent!,/周四/);
 });
 
 test("news pages carry NewsArticle data matching their visible dates and source", async () => {

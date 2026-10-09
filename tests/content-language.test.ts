@@ -29,6 +29,19 @@ test('DTO inputs ignore counters; overrides, report revisions and withdrawal cha
   assert.throws(()=>validateTranslation({...entry,translations:{title:'Title'}},entry),/incomplete/);
   assert.throws(()=>translationBatchSchema.parse({schemaVersion:1,targetLanguage:'en',entries:[{...entry,extra:true}]}));
 });
+test('changelog editions preserve release identity and reminder version while separating ETags',async()=>{
+  const en=await app.inject({method:'GET',url:'/api/site/changelog?lang=en'});
+  const zh=await app.inject({method:'GET',url:'/api/site/changelog?lang=zh'});
+  const original=await app.inject({method:'GET',url:'/api/site/changelog'});
+  assert.equal(en.statusCode,200);assert.equal(zh.statusCode,200);
+  assert.equal(en.json().latestVersion,zh.json().latestVersion);
+  assert.deepEqual(original.json(),zh.json());
+  assert.equal(en.json().releases[0].title,'Website launch');assert.equal(zh.json().releases[0].title,'网站上线');
+  assert.ok(en.json().releases.every((r:any)=>!/[\u3400-\u9fff]/u.test([r.title,...r.body].join(''))));
+  assert.deepEqual(en.json().releases.map(({date,time,kind}:any)=>({date,time,kind})),zh.json().releases.map(({date,time,kind}:any)=>({date,time,kind})));
+  assert.notEqual(en.headers.etag,zh.headers.etag);
+  const meta=await app.inject({method:'GET',url:'/api/site/meta'});assert.equal(meta.json().changelogVersion,en.json().latestVersion);
+});
 test('whole body blocks preserve inline spacing, links and code; invalid markup cannot import',()=>{
   const body=bodySource('a','<h2>标题</h2><p>你好<strong>世界</strong>，看<a href="https://example.com">这里</a>和<code>x()</code>。</p>');
   const output=body.render({'blocks.0.text':'Heading','blocks.1.text':'Hello <strong>world</strong>, see <a id="L0">here</a> and ⟦0⟧.'});

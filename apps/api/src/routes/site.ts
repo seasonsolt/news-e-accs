@@ -193,7 +193,7 @@ export function registerSite(app: FastifyInstance) {
   }));
 
   app.get("/api/site/changelog", siteHandler(async (req, reply) => {
-    return sendJsonWithEtag(req, reply, loadChangelog(), { etagPrefix: "changelog", cacheControl: "public, max-age=300, s-maxage=300" });
+    return sendJsonWithEtag(req, reply, loadChangelog(looseQuery(req).lang === "en" ? "en" : "zh"), { etagPrefix: "changelog", cacheControl: "public, max-age=300, s-maxage=300" });
   }));
 
   app.get("/api/site/items/availability", siteHandler(async (req, reply) => {
