@@ -80,7 +80,9 @@ node scripts/content-translations.ts --import /tmp/content-en-001.json --apply
 
 ## 可选 provider worker
 
-新 `content.localize` schedule 必须同时设置 `CONTENT_TRANSLATION_ENABLED=true` 和 `MODEL_CALLS_ENABLED=true` 才运行，前者默认关闭。这次不启用、不运行任何付费翻译。部署不能因为现有模型阀门已经开启就自动购买全历史英文翻译。若以后明确启用，使用已配置的 `modelFor('translate')` API 模型，chatJson→既有回执/预算熔断，purpose=translate_content；每批 subject 含当前 fingerprint，失败不推进游标，重试复用已接收回执。旧中文全文 translatePending schedule 保持原策略。
+新 `content.localize` schedule 每 5 分钟运行，必须同时设置 `CONTENT_TRANSLATION_ENABLED=true` 和 `MODEL_CALLS_ENABLED=true` 才调用模型；前者的代码默认值仍为关闭。运营者现已明确授权生产开启持续英文补译，并接受既有预算内额外 API 请求费用；配置和发布由运营者执行，开发/测试仍保持全部安全阀关闭。使用已配置的 `modelFor('translate')` API 模型，chatJson→既有回执/按请求数量的预算熔断，purpose=translate_content；Codex 离线 gpt-6-luna 来源标记不等于 API model ID。旧中文全文 translatePending schedule 保持原策略。
+
+默认每轮最多处理 5 个需要翻译的 edition，已完成候选不占名额。权威扫描每页 1000 条，跨页核验当前 fingerprint，必要时在同一轮回绕断点前的内容，避免 1700 条已完成数据拖成数十小时的重扫。先通过 publication 当前热点条和最新公开列表找 story/item 优先候选，最多占 4 个名额，至少保留 1 个历史队列名额；优先翻译不推进历史游标，重复候选不会再次购买。达到上限时游标停在实际处理的最后一条，不能直接跳到扫描页尾。失败不推进该轮游标，已存好的 edition 在重试时跳过；已收到但未提交业务结果的模型答案由含 fingerprint 的回执 subject 复用，预算熔断照常阻止继续付费。扫描仍逐条核验公开投影，规模增长会增加数据库读取负载，不承诺实时英文：排队、失败、预算停机或源内容再次编辑时，页面仍诚实显示原文和 pending 标记。
 
 ## 本轮实际验证（2026-10-09）
 
@@ -91,3 +93,5 @@ node scripts/content-translations.ts --import /tmp/content-en-001.json --apply
 - 另在本地 `eacc_content_preview_test` 构造真实公开 DTO 50 条，将 gpt-6-luna 实际批次 dry-run 校验后导入，重扫统计 scanned=50、alreadyComplete=50、pending=0。生产模式 SSR 的 `/all`、新闻详情标题/metadata 为真实英文，手动中文 cookie 恢复中文；运行中的完整 smoke 通过，3 个未发布的模型榜按脚本预期跳过。
 
 以上描述的是部署前的本地验证。2026-10-09 生产发布后另完成源站和公网 smoke、浏览器语言与 cookie 优先级、英文内容/搜索/ETag 检查；权威全量重扫为 scanned=1703、alreadyComplete=1703、pending=0。
+
+持续队列新增 `tests/content-translation-sweep.test.ts` 8 项通过，覆盖 2502 个候选跨页跳过完成项、翻译数量上限、中途断点、回绕发现编辑、热点去重与历史名额、失败不推进、真实本地 HTTP 回执复用、公开优先候选过滤及两级关闭阀门；模型/采集/推送安全阀保持关闭，未调用外部服务。`npm run typecheck` 与 diff 检查通过。本次队列修正的配置和发布由运营者另行执行。

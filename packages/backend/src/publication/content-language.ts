@@ -4,8 +4,9 @@ import { sanitizeBody } from '../content/sanitize.ts';
 import { sql, type Db } from '../db.ts';
 import { fetchItemsByIds, toItemSummary } from './items.ts';
 import { loadItemDetail, withOutline } from './detail.ts';
-import { loadStoryDetail, resolveStory } from './stories.ts';
+import { loadStoryDetail, resolveStory, loadHotStrip } from './stories.ts';
 import { loadReport } from './reports.ts';
+import { loadPool } from './pool.ts';
 import { contentSource, applyTranslations, validateTranslation, type ContentKind, type TranslationEntry } from './content-source.ts';
 
 export function bodySource(id: string, html: string): { entry: TranslationEntry; render: (translations: Record<string,string>) => string } {
@@ -98,6 +99,30 @@ export async function exportContentBatch(cursor = '', limit = 50) {
     if (ready) alreadyComplete++; else entries.push(entry);
   }
   return { schemaVersion:1 as const, targetLanguage:'en' as const, entries, nextCursor:rows.at(-1)?.cursor ?? null, scanned:rows.length, alreadyComplete };
+}
+
+/** Current visible headlines get a small priority lane; eligibility and fingerprints are still
+ * checked through the same canonical public projection as the historical sweep. */
+export async function priorityContentEntries() {
+  const [hot, pool] = await Promise.all([
+    loadHotStrip(), loadPool({ channel: 'all', category: null, tag: null, page: 1 }),
+  ]);
+  const refs = new Map<string, { kind: ContentKind; id: string }>();
+  const add = (kind: ContentKind, id: string | null | undefined) => {
+    if (id) refs.set(`${kind}:${id}`, { kind, id });
+  };
+  for (const headline of hot ?? []) {
+    add('story', headline.storyPublicId); add('item', headline.itemId);
+  }
+  for (const item of pool.items) add('item', item.id);
+  const entries: TranslationEntry[] = [];
+  for (const ref of refs.values()) {
+    const entry = await currentContent(ref.kind, ref.id);
+    if (!entry?.segments.length) continue;
+    const [ready] = await sql`SELECT 1 FROM content_translations WHERE kind=${entry.kind} AND content_id=${entry.id} AND source_hash=${entry.sourceHash}`;
+    if (!ready) entries.push(entry);
+  }
+  return entries;
 }
 
 // Readers only read stored editions. Source text must still match, including editorial overrides.
