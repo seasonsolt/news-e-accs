@@ -30,7 +30,7 @@ RSS、版本化公开 API（/api/v1）、MCP、Markdown 下载、llms.txt、站�
 
 ## 部署边界
 
-2026-10-09 已部署，详见 [发布记录](../deploy/releases/2026-10-09-i18n.md)。主域名 Worker 已把 `/products` 发往新闻源站。`deploy/edge-products-route.patch` 保留作为给 `seasonsolt/e-acc.ai` 的路由与测试补丁参考。没有新增 `/language` 路由。
+2026-10-09 已部署，详见 [发布记录](../deploy/releases/2026-10-09-i18n.md)。主域名 Worker 已把 `/products` 发往新闻源站。对应的路由与测试改动已合入 `seasonsolt/e-acc.ai` 的 `edge/src/route.mjs`。没有新增 `/language` 路由。
 
 ## 验证
 

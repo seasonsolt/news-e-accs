@@ -21,6 +21,7 @@
   npm run build -w @aihot/web && node --test apps/web/tests/*.test.ts
   node scripts/smoke.ts --base http://localhost:3000             # 站点跑起来以后
   ```
+- 我们自己的生产站（e-acc.ai）只用 `deploy/update.sh` 发布和回滚，见 `deploy/README.md`；不要在服务器上手动拉代码、构建或改 systemd 文件。新闻站新增顶层路由时，还要改入口仓库的 `edge/src/route.mjs`。
 - `tests/` 里部分测试用的是示例行业的分类、标签和公司，改了 `industry/taxonomy.ts` 后把这些例子换成新行业的对应项。
 
 ## 要守住的规则
