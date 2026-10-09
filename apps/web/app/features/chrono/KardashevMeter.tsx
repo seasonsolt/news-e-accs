@@ -29,6 +29,7 @@ export function KardashevMeter({ k }: { k: number }) {
         <span><Text value="1 · I 型文明" /></span>
       </span>
       <span className="kardashev-meter-note"><Text value="离 I 型文明还差约" />{Math.round(gap / 10) * 10}<Text value="倍。" /></span>
+      <span className="kardashev-meter-go"><Text value="翻开加速史" /> →</span>
     </Link>
   );
 }

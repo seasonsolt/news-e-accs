@@ -24,6 +24,8 @@ export function Observatory({ era, focus, label, distance }: { era: ChronicleEra
       <div className="observatory-shade" aria-hidden="true" />
       <header className="observatory-readout">
         <p className="observatory-kicker">
+          <span><Text value="加速史" /></span>
+          <span aria-hidden="true">·</span>
           <span><Text value="四维视角" /></span>
           <span aria-hidden="true">·</span>
           <span>{distance}</span>
