@@ -5,8 +5,8 @@
 #   tools/make-media.sh [SRC_DIR]     (default: apps/web/public/media/art/epochs)
 #
 # Every plate pushes in by the same amount (scale is re-evaluated per frame, so motion is sub-pixel
-# smooth — zoompan jitters at these speeds) over its own hold, so the push quickens as the holds shorten
-# toward the present: the film accelerates. Plates are chained with crossfades, and the chain ends on a
+# smooth — zoompan jitters at these speeds) over its own hold. Deep time holds long; from the steam age
+# the holds drop steeply, so the push turns into a sprint toward the present: the film accelerates. Plates are chained with crossfades, and the chain ends on a
 # copy of the first clip so trimming it from XF yields a seamless loop. The plate list and the holds
 # must match apps/web/app/features/onboarding/ascent.ts, whose captions follow the
 # playhead; apps/web/tests/onboarding.test.ts checks that. Outputs a 16:9 and a 9:16 cut and their
@@ -15,24 +15,24 @@ set -euo pipefail
 
 OUT=$(cd "$(dirname "$0")/../apps/web/public" && pwd)
 SRC=${1:-"$OUT/media/art/epochs"}
-FPS=24 XF=0.8 Z=1.12
+FPS=24 XF=0.6 Z=1.12
 
 # slug | source file | hold (seconds) | focus x y (where the push heads, 0..1 of free space)
 CLIPS=(
-  "big-bang|big-bang-1600.webp|4.0|0.50 0.50"
-  "origin-of-life|origin-of-life-1600.webp|3.6|0.50 0.45"
-  "cambrian-explosion|cambrian-explosion-1600.webp|3.2|0.50 0.40"
-  "taming-fire|taming-fire-1600.webp|2.9|0.55 0.55"
-  "cognitive-revolution|cognitive-revolution-1600.webp|2.6|0.50 0.45"
-  "cities-writing|cities-writing-1600.webp|2.4|0.50 0.45"
-  "printing|printing-1600.webp|2.2|0.50 0.50"
+  "big-bang|big-bang-1600.webp|5.0|0.50 0.50"
+  "origin-of-life|origin-of-life-1600.webp|4.5|0.50 0.45"
+  "cambrian-explosion|cambrian-explosion-1600.webp|4.0|0.50 0.40"
+  "taming-fire|taming-fire-1600.webp|3.5|0.55 0.55"
+  "cognitive-revolution|cognitive-revolution-1600.webp|3.1|0.50 0.45"
+  "cities-writing|cities-writing-1600.webp|2.8|0.50 0.45"
+  "printing|printing-1600.webp|2.5|0.50 0.50"
   "steam-age|steam-age-1600.webp|2.0|0.55 0.45"
-  "electric-age|electric-age-1600.webp|1.8|0.50 0.45"
-  "space-age|space-age-1600.webp|1.7|0.60 0.45"
-  "internet|internet-1600.webp|1.6|0.50 0.45"
-  "large-models|large-models-1600.webp|1.5|0.50 0.45"
-  "agents|agents-1600.webp|1.6|0.60 0.55"
-  "kardashev-i-speculative|kardashev-i-speculative-1600.webp|4.5|0.50 0.50"
+  "electric-age|electric-age-1600.webp|1.5|0.50 0.45"
+  "space-age|space-age-1600.webp|1.2|0.60 0.45"
+  "internet|internet-1600.webp|1.0|0.50 0.45"
+  "large-models|large-models-1600.webp|1.0|0.50 0.45"
+  "agents|agents-1600.webp|1.1|0.60 0.55"
+  "kardashev-i-speculative|kardashev-i-speculative-1600.webp|5.0|0.50 0.50"
 )
 
 render() { # $1=W $2=H $3=name
