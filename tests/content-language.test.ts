@@ -72,9 +72,20 @@ test('story overview, development titles and nested reports are localized; edits
   const result=await app.inject({method:'GET',url:`/api/site/stories/${publicId}?lang=en`});
   assert.equal(result.statusCode,200);assert.equal(result.json().digest,'English digest');assert.equal(result.json().developments[0].title,'English developments.0.title');
   const partial=await localizePublication({publicId,title:'事件标题'},'en');assert.equal(partial.title,'English title');
+  const strip={rank:1,title:'事件标题',heat:12,trend:'up',storyPublicId:publicId,itemId:id,participants:[],participantCount:1};
+  const home=await localizePublication({hot:[strip]},'en');
+  assert.equal(home.hot[0]!.title,'English title');
+  assert.equal((home.hot[0] as any).contentLanguage.status,'translated');
+  assert.equal(home.hot[0]!.storyPublicId,publicId);assert.equal(home.hot[0]!.heat,12);
+  assert.deepEqual(await localizePublication({hot:[strip]},'zh'),{hot:[strip]});
+  const itemSource=await currentContent('item',id);assert.ok(itemSource);
+  await saveTranslation(translated(itemSource),'offline-agent','gpt-6-luna',[],true);
+  const itemStrip={...strip,storyPublicId:null,title:itemSource.segments.find(s=>s.key==='title')!.text};
+  const fallback=await localizePublication({hot:[itemStrip]},'en');assert.equal(fallback.hot[0]!.title,'Orbital accelerator released');
   await sql`UPDATE stories SET digest='修改的综述' WHERE id=${story!.id}`;
   const stale=await app.inject({method:'GET',url:`/api/site/stories/${publicId}?lang=en`});
   assert.equal(stale.json().digest,'修改的综述');assert.equal(stale.json().contentLanguage.status,'original');
+  const staleStrip=await localizePublication({hot:[strip]},'en');assert.equal(staleStrip.hot[0]!.title,'事件标题');assert.equal((staleStrip.hot[0] as any).contentLanguage.status,'original');
 });
 test('report prose, index headline and republication use the same English edition',async()=>{
   await sql`INSERT INTO reports(kind,key,window_start,window_end,generated_at,content,origin)

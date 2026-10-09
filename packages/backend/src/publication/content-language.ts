@@ -108,6 +108,8 @@ export async function localizePublication<T>(input: T, lang: string, originalBod
     if (o && typeof o === 'object' && typeof o.title === 'string') {
       if (typeof o.id === 'string' && ('summary' in o || 'originalTitle' in o)) return {kind:'item',id:o.id};
       if (typeof o.publicId === 'string') return {kind:'story',id:o.publicId};
+      if (typeof o.storyPublicId === 'string') return {kind:'story',id:o.storyPublicId};
+      if (typeof o.itemId === 'string' && 'rank' in o && 'participants' in o) return {kind:'item',id:o.itemId};
       if (typeof o.key === 'string' && ['daily','weekly','monthly'].includes(o.kind)) return {kind:'report',id:`${o.kind}:${o.key}`};
     }
     return null;

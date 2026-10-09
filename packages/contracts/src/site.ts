@@ -101,6 +101,7 @@ export interface HotStripEntry {
   itemId: string | null;
   participants: HotParticipant[];
   participantCount: number;
+  contentLanguage?: { requested: "en"; status: "translated" | "original"; sourceLanguage: string };
 }
 
 export interface TimelineFilters {
