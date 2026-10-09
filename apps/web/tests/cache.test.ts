@@ -130,7 +130,7 @@ test("interface preferences isolate HTML and Router data while public content st
   assert.equal(english.status, 200);
   assert.match(englishHtml, /<html lang="en"/);
   assert.match(englishHtml, /The universe is cooling/);
-  assert.match(englishHtml, /English editions appear when available/);
+  assert.doesNotMatch(englishHtml, /English editions appear when available/);
   const chinese = await fetch(`${origin}/`, { headers: { "Accept-Language": "zh-TW,en;q=0.8" } });
   const chineseHtml = await chinese.text();
   assert.match(chineseHtml, /<html lang="zh-CN"/);
