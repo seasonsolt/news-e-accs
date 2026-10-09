@@ -580,12 +580,12 @@ html[data-onboarding] body { overflow: hidden; }
    the active overlay or /subscribe can fetch it; hidden overlays never acquire a background URL. */
 html[data-onboarding] .onboarding-poster,
 .steam-hero-page .onboarding-poster {
-  background: url("/media/hero-16x9-poster.jpg") center / cover no-repeat;
+  background: url("/media/ascent-16x9-poster.jpg") center / cover no-repeat;
 }
 @media (orientation: portrait) {
   html[data-onboarding] .onboarding-poster,
   .steam-hero-page .onboarding-poster {
-    background-image: url("/media/hero-9x16-poster.jpg");
+    background-image: url("/media/ascent-9x16-poster.jpg");
   }
 }
 /* On /subscribe it sits in the shell as a card a screen tall: the main column's top padding and a

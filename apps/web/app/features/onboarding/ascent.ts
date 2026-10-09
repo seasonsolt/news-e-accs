@@ -1,35 +1,47 @@
 // The onboarding film: the acceleration (/chronicle) from the Big Bang to a Type I civilization, one era
-// plate each, in order. tools/make-media.sh renders public/media/hero-*.mp4 from the same list and
-// timing (a test keeps them in step), and the film's caption follows the playhead with these labels.
+// plate each, in order. Every plate pushes in, and the holds shorten as history speeds up, from deep time
+// to the agent era, before the film settles on a Type I civilization and fades back to the start.
+// tools/make-media.sh renders public/media/ascent-*.mp4 from the same list and timing (a test keeps them
+// in step), and the film's caption follows the playhead with these labels.
 
-/** Seconds each plate holds before the next has fully faded in, and the length of each crossfade. */
-export const ASCENT_STEP = 2.4;
+/** The length of each crossfade, in seconds. */
 export const ASCENT_FADE = 0.8;
 
-/** `art` is the plate under /media/art/epochs/ (the era's own illustration). */
-export const ASCENT: ReadonlyArray<{ art: string; zh: string; en: string }> = [
-  { art: "big-bang", zh: "138 亿年前 · 大爆炸", en: "13.8 billion years ago · The Big Bang" },
-  { art: "origin-of-life", zh: "35 亿年前 · 生命起源", en: "3.5 billion years ago · Life begins" },
-  { art: "cambrian-explosion", zh: "5.4 亿年前 · 寒武纪大爆发", en: "540 million years ago · The Cambrian explosion" },
-  { art: "taming-fire", zh: "100 万年前 · 火的驯服", en: "1 million years ago · Taming fire" },
-  { art: "cognitive-revolution", zh: "6 万年前 · 认知革命", en: "60,000 years ago · The cognitive revolution" },
-  { art: "cities-writing", zh: "公元前 3500 年 · 城市与文字", en: "3500 BC · Cities and writing" },
-  { art: "printing", zh: "1440 · 印刷术", en: "1440 · Printing" },
-  { art: "steam-age", zh: "1769 · 蒸汽时代", en: "1769 · The steam age" },
-  { art: "electric-age", zh: "1879 · 电气时代", en: "1879 · The electric age" },
-  { art: "space-age", zh: "1957 · 太空时代", en: "1957 · The space age" },
-  { art: "internet", zh: "1991 · 互联网", en: "1991 · The internet" },
-  { art: "large-models", zh: "2022 · 对话式大模型", en: "2022 · Conversational models" },
-  { art: "agents", zh: "2025 · 智能体时代", en: "2025 · The agent era" },
-  { art: "kardashev-i-speculative", zh: "2080（推测）· 迈向 I 型文明", en: "2080 (speculative) · Toward a Type I civilization" },
+/**
+ * `art` is the plate under /media/art/epochs/ (the era's own illustration); `hold` is the time from the
+ * moment it has fully faded in to the moment the next plate has.
+ */
+export const ASCENT: ReadonlyArray<{ art: string; hold: number; zh: string; en: string }> = [
+  { art: "big-bang", hold: 4.0, zh: "138 亿年前 · 大爆炸", en: "13.8 billion years ago · The Big Bang" },
+  { art: "origin-of-life", hold: 3.6, zh: "35 亿年前 · 生命起源", en: "3.5 billion years ago · Life begins" },
+  { art: "cambrian-explosion", hold: 3.2, zh: "5.4 亿年前 · 寒武纪大爆发", en: "540 million years ago · The Cambrian explosion" },
+  { art: "taming-fire", hold: 2.9, zh: "100 万年前 · 火的驯服", en: "1 million years ago · Taming fire" },
+  { art: "cognitive-revolution", hold: 2.6, zh: "6 万年前 · 认知革命", en: "60,000 years ago · The cognitive revolution" },
+  { art: "cities-writing", hold: 2.4, zh: "公元前 3500 年 · 城市与文字", en: "3500 BC · Cities and writing" },
+  { art: "printing", hold: 2.2, zh: "1440 · 印刷术", en: "1440 · Printing" },
+  { art: "steam-age", hold: 2.0, zh: "1769 · 蒸汽时代", en: "1769 · The steam age" },
+  { art: "electric-age", hold: 1.8, zh: "1879 · 电气时代", en: "1879 · The electric age" },
+  { art: "space-age", hold: 1.7, zh: "1957 · 太空时代", en: "1957 · The space age" },
+  { art: "internet", hold: 1.6, zh: "1991 · 互联网", en: "1991 · The internet" },
+  { art: "large-models", hold: 1.5, zh: "2022 · 对话式大模型", en: "2022 · Conversational models" },
+  { art: "agents", hold: 1.6, zh: "2025 · 智能体时代", en: "2025 · The agent era" },
+  { art: "kardashev-i-speculative", hold: 4.5, zh: "2080（推测）· 迈向 I 型文明", en: "2080 (speculative) · Toward a Type I civilization" },
 ];
 
+/** The film's length: one hold per plate (the last crossfade runs into the first plate again). */
+export const ASCENT_LOOP = ASCENT.reduce((sum, a) => sum + a.hold, 0);
+
 /**
- * The plate on screen at a point in the loop: plate k starts fading in at k·STEP − FADE (the film is
- * trimmed so that plate 0 opens it), and the caption switches halfway through each crossfade.
+ * The plate on screen at a point in the loop. The film is trimmed so that plate 0 opens it; plate k is
+ * fully in at the sum of the holds before it and starts fading in FADE earlier, and the caption switches
+ * halfway through each crossfade.
  */
 export function ascentAt(seconds: number): number {
-  const n = ASCENT.length;
-  const k = Math.floor((seconds + ASCENT_FADE / 2) / ASCENT_STEP);
-  return ((k % n) + n) % n;
+  const u = ((seconds % ASCENT_LOOP) + ASCENT_LOOP) % ASCENT_LOOP + ASCENT_FADE / 2;
+  let fullyIn = 0;
+  for (let k = 0; k < ASCENT.length; k++) {
+    fullyIn += ASCENT[k]!.hold;
+    if (u < fullyIn) return k;
+  }
+  return 0;
 }
