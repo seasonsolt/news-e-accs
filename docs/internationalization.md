@@ -30,7 +30,7 @@ RSS、版本化公开 API（/api/v1）、MCP、Markdown 下载、llms.txt、站�
 
 ## 部署边界
 
-本任务未部署。主域名的 Worker 需要把 `/products` 发往新闻源站，否则会落到另一个静态 Pages 站点。`deploy/edge-products-route.patch` 是给 `seasonsolt/e-acc.ai` 的路由与测试补丁，应先或同步应用并部署 Worker，再部署本仓库 web。没有新增 `/language` 路由。
+2026-10-09 已部署，详见 [发布记录](../deploy/releases/2026-10-09-i18n.md)。主域名 Worker 已把 `/products` 发往新闻源站。`deploy/edge-products-route.patch` 保留作为给 `seasonsolt/e-acc.ai` 的路由与测试补丁参考。没有新增 `/language` 路由。
 
 ## 验证
 
@@ -74,7 +74,7 @@ node scripts/content-translations.ts --import /tmp/content-en-001.json --apply
 
 批次严格结构：`{schemaVersion:1,targetLanguage:"en",entries:[{kind:"item"|"story"|"report"|"body",id,sourceHash,segments:[{key,text}],translations:{key:"English text"}}]}`。report id 为 `daily:YYYY-MM-DD` / `weekly:YYYY-Www` / `monthly:YYYY-MM`；body id 仍是 article id。代理只填写 translations，保持其余字段原样。JSON 字符串保留段落、引文和事实；body 字段保留 shielded inline HTML 和占位符。不得把受限原始正文另塞入批次。
 
-全历史范围需要数据库权威导出保证完整；公开 pool 分页和 sitemap 可能漏掉 noneligible/nonindexable 的可读详情。通过旧线上 API 抓取的译文可先离线组装，但上线导入仍会按当前数据库文本复核；有变化须重导出受影响 entry。CLI 不读取自动生产连接，也不部署；DATABASE_URL 由操作者明确提供。本轮所有写入验证只在本地 *_test 数据库完成，线上仍需要迁移、逐批验证导入与应用部署。
+全历史范围需要数据库权威导出保证完整；公开 pool 分页和 sitemap 可能漏掉 noneligible/nonindexable 的可读详情。通过旧线上 API 抓取的译文可先离线组装，但上线导入仍会按当前数据库文本复核；有变化须重导出受影响 entry。CLI 不读取自动生产连接，也不部署；DATABASE_URL 由操作者明确提供。2026-10-09 已完成生产数据库权威盘点、迁移、逐批验证导入与部署。
 
 ## 可选 provider worker
 
@@ -88,4 +88,4 @@ node scripts/content-translations.ts --import /tmp/content-en-001.json --apply
 - 新空 `eacc_content_final_test` 应用 40 migrations 后完整 `npm test`：187 测试，160 通过，27 失败。27 个失败名称与改动前保持 MODEL_CALLS_ENABLED=false 时的基线完全相同（本次新增 9 个均通过）。代表失败 `tests/translate.test.ts:129` 的 `run.quotes >= 1`，既有模型 mock 链被关闭的模型阀门挡住；未为全绿开启安全阀。
 - 另在本地 `eacc_content_preview_test` 构造真实公开 DTO 50 条，将 gpt-6-luna 实际批次 dry-run 校验后导入，重扫统计 scanned=50、alreadyComplete=50、pending=0。生产模式 SSR 的 `/all`、新闻详情标题/metadata 为真实英文，手动中文 cookie 恢复中文；运行中的完整 smoke 通过，3 个未发布的模型榜按脚本预期跳过。
 
-以上写入仅是本地 test 数据库。现网未迁移、未写入译文、未部署；旧线上 API 不认识 lang，不能因本地代码/只读预览已显示英文就认为生产数据已经双语。
+以上描述的是部署前的本地验证。2026-10-09 生产发布后另完成源站和公网 smoke、浏览器语言与 cookie 优先级、英文内容/搜索/ETag 检查；权威全量重扫为 scanned=1703、alreadyComplete=1703、pending=0。
