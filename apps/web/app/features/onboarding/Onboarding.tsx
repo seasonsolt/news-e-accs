@@ -1,6 +1,6 @@
-import { Text, useTranslate } from "../../lib/i18n";
-// Newsletter onboarding: a full-bleed, rounded steampunk film loop (public/media, rendered by
-// tools/make-media.sh) behind the site name, the sign-up, the manifesto and a way to skip straight to
+import { Text, useLocale, useTranslate } from "../../lib/i18n";
+// Newsletter onboarding: a full-bleed, rounded film of the acceleration (public/media, rendered by
+// tools/make-media.sh from ascent.ts, captioned with the era on screen) behind the site name, the sign-up, the manifesto and a way to skip straight to
 // the news. On a first visit to the front page it covers the screen (html[data-onboarding], set before
 // paint by ONBOARDING_BOOT_SCRIPT); /subscribe shows it as a page, and there it also confirms the
 // link from the confirmation letter: the page confirms by script as it opens (mail scanners that fetch
@@ -16,6 +16,7 @@ import { DecryptedText } from "../motion/react-bits/DecryptedText";
 import { Magnet } from "../motion/react-bits/Magnet";
 import { ClickSpark } from "../motion/react-bits/ClickSpark";
 import { TearTicket } from "../motion/react-bits/TearTicket";
+import { ASCENT, ascentAt } from "./ascent";
 
 const MANIFESTO: Array<[string, string]> = [
   ["加速是默认值", "算力、能源、模型能力都在复利增长。我们记录它，而不是害怕它。"],
@@ -44,8 +45,11 @@ async function post(path: string, body: Record<string, string>): Promise<string 
  */
 export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; token?: string | null }) {
   const tx = useTranslate();
+  const locale = useLocale();
   const motionAllowed = useMotionAllowed();
   const video = useRef<HTMLVideoElement>(null);
+  // The era on screen; the poster is the film's first plate, so the caption starts there too.
+  const [era, setEra] = useState(0);
   const manifesto = useRef<HTMLDialogElement>(null);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [email, setEmail] = useState("");
@@ -97,6 +101,8 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
       else schedule();
     };
     const onLoad = () => { loaded = true; sync(); };
+    const onTime = () => setEra(ascentAt(v.currentTime));
+    v.addEventListener("timeupdate", onTime);
     window.addEventListener("load", onLoad, { once: true });
     sync();
     const observer = new MutationObserver(sync);
@@ -110,6 +116,7 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
       window.clearTimeout(timer);
       observer.disconnect();
       document.removeEventListener("visibilitychange", sync);
+      v.removeEventListener("timeupdate", onTime);
       v.pause();
     };
   }, [mode, motionAllowed]);
@@ -187,6 +194,7 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
         <span />
         <span />
       </div>
+      <p key={era} className="onboarding-era" aria-hidden="true">{locale === "en" ? ASCENT[era]!.en : ASCENT[era]!.zh}</p>
 
       <div className="relative flex h-full flex-col items-center justify-center gap-5 overflow-y-auto px-5 pb-16 pt-12 text-center lg:gap-7">
         <p className="mono text-[11px] uppercase tracking-[0.32em] text-[#e8c98a]"><DecryptedText text={tx("e-acc.ai · 加速日报")} /></p>

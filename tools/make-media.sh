@@ -1,27 +1,37 @@
 #!/usr/bin/env bash
-# Renders the steampunk hero loop ("动图") for e-acc.ai from still illustrations.
+# Renders the onboarding film ("动图") for e-acc.ai: the acceleration from the Big Bang to a Type I
+# civilization, one era plate each from the chronicle's own illustrations, in order.
 #
-#   tools/make-media.sh [SRC_DIR]     (default: ~/Desktop/danqing-bg-images)
+#   tools/make-media.sh [SRC_DIR]     (default: apps/web/public/media/art/epochs)
 #
-# Each still gets a slow zoom + pan (scale is re-evaluated per frame, so motion is
-# sub-pixel smooth — zoompan jitters at these speeds), stills are chained with 1.2s
-# crossfades, and the chain ends on a copy of the first clip so trimming [XF, end-D+XF)
-# yields a seamless loop. Outputs a 16:9 and a 9:16 cut and their posters into
-# apps/web/public/media/. Needs ffmpeg (libx264) and bc.
+# Each plate gets a slow zoom + pan (scale is re-evaluated per frame, so motion is sub-pixel smooth —
+# zoompan jitters at these speeds), plates are chained with crossfades, and the chain ends on a copy of
+# the first clip so trimming [XF, end-D+XF) yields a seamless loop. The plate list and the timing
+# (STEP = D − XF) must match apps/web/app/features/onboarding/ascent.ts, whose captions follow the
+# playhead; apps/web/tests/onboarding.test.ts checks that. Outputs a 16:9 and a 9:16 cut and their
+# posters into apps/web/public/media/. Needs ffmpeg (libx264) and bc.
 set -euo pipefail
 
-SRC=${1:-"$HOME/Desktop/danqing-bg-images"}
 OUT=$(cd "$(dirname "$0")/../apps/web/public" && pwd)
-FPS=24 D=6 XF=1.2
+SRC=${1:-"$OUT/media/art/epochs"}
+FPS=24 D=3.2 XF=0.8
 
 # slug | source file | zoom0 zoom1 | panX0 panX1 | panY0 panY1   (pan = 0..1 of free space)
 CLIPS=(
-  "factory|2026-07-21-software-dark-factory__P1-cover-bg-imagegen.png|1.00 1.12|0.50 0.45|0.55 0.40"
-  "press|2026-07-19-context-engineering__douyin__02-100k-compact__P1-cover-bg-imagegen.png|1.12 1.00|0.40 0.55|0.35 0.60"
-  "engine|2026-07-12-deep-agent-principle__deep-agent-art.png|1.00 1.10|0.50 0.50|0.20 0.55"
-  "rockets|2026-07-20-pi-vs-codex-claude__P1-cover-bg-imagegen.png|1.10 1.00|0.55 0.45|0.30 0.45"
-  "valves|2026-07-26-claude-opus-5-launch__P1-cover-bg-imagegen.png|1.00 1.12|0.45 0.60|0.70 0.45"
-  "automaton|2026-07-14-claudex-declares-war__P1-cover-bg-imagegen.png|1.12 1.00|0.35 0.60|0.45 0.50"
+  "big-bang|big-bang-1600.webp|1.00 1.10|0.50 0.50|0.50 0.45"
+  "origin-of-life|origin-of-life-1600.webp|1.10 1.00|0.45 0.55|0.50 0.50"
+  "cambrian-explosion|cambrian-explosion-1600.webp|1.00 1.10|0.55 0.45|0.45 0.55"
+  "taming-fire|taming-fire-1600.webp|1.10 1.00|0.50 0.50|0.55 0.45"
+  "cognitive-revolution|cognitive-revolution-1600.webp|1.00 1.10|0.45 0.55|0.50 0.50"
+  "cities-writing|cities-writing-1600.webp|1.10 1.00|0.55 0.45|0.45 0.50"
+  "printing|printing-1600.webp|1.00 1.10|0.50 0.50|0.50 0.40"
+  "steam-age|steam-age-1600.webp|1.10 1.00|0.45 0.55|0.40 0.50"
+  "electric-age|electric-age-1600.webp|1.00 1.10|0.55 0.45|0.50 0.50"
+  "space-age|space-age-1600.webp|1.10 1.00|0.50 0.50|0.45 0.55"
+  "internet|internet-1600.webp|1.00 1.10|0.45 0.55|0.50 0.50"
+  "large-models|large-models-1600.webp|1.10 1.00|0.55 0.45|0.50 0.45"
+  "agents|agents-1600.webp|1.00 1.10|0.50 0.50|0.55 0.45"
+  "kardashev-i-speculative|kardashev-i-speculative-1600.webp|1.10 1.00|0.50 0.50|0.45 0.50"
 )
 
 render() { # $1=W $2=H $3=name
