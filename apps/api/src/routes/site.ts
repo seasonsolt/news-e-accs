@@ -25,7 +25,17 @@ import { listReports, loadReport, reportKeyAt, reportNavigation, loadReportNavig
 import { loadSiteCodexResetPage, loadSiteCodexResetDay } from "@aihot/backend/publication/monitor";
 import { codexResetVersion } from "@aihot/backend/monitor/read";
 import { cached } from "@aihot/backend/lib/cache";
-import { looseQuery, sendJsonWithEtag, sendProblem } from "../http/respond.ts";
+import { looseQuery, sendJsonWithEtag as sendOriginalJson, sendProblem } from "../http/respond.ts";
+
+import { localizePublication } from "@aihot/backend/publication/content-language";
+async function sendJsonWithEtag(req: FastifyRequest, reply: FastifyReply, payload: unknown, opts: Parameters<typeof sendOriginalJson>[3]) {
+  const lang = looseQuery(req).lang === "en" ? "en" : "zh";
+  const localized = await localizePublication(payload, lang, opts.etagPrefix === "item-original");
+  // The URL includes lang, and the ETag fingerprints that exact edition including fallback status.
+  const content = opts.etagOf && typeof opts.etagOf === "object" && localized && typeof localized === "object"
+    ? Object.fromEntries(Object.keys(opts.etagOf).map(key => [key, (localized as Record<string, unknown>)[key]])) : localized;
+  return sendOriginalJson(req, reply, localized, { ...opts, etagOf: { lang, content } });
+}
 
 type Handler = (req: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
 
@@ -124,7 +134,7 @@ export function registerSite(app: FastifyInstance) {
     const page = Math.min(Math.max(Number(q.page) || 1, 1), 50);
     const search = q.q?.trim() ? q.q.trim().slice(0, 200) : null;
     const tab = q.tab === "relevance" ? "relevance" : "time";
-    const data = await loadPool({ ...filters, q: search, tab, page });
+    const data = await loadPool({ ...filters, q: search, tab, page, lang: q.lang === "en" ? "en" : "zh" });
     const { generatedAt: _, ...content } = data;
     return sendJsonWithEtag(req, reply, data, { etagPrefix: "pool", cacheControl: "public, max-age=60, s-maxage=60", etagOf: content });
   }));
@@ -134,7 +144,7 @@ export function registerSite(app: FastifyInstance) {
     if (!/^[a-zA-Z0-9_-]{1,80}$/.test(id)) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "item not found" });
     const result = await loadItemDetail(id);
     if (result.kind === "not_found") return sendProblem(req, reply, { status: 404, code: "not_found", detail: "item not found", cacheControl: "public, max-age=60" });
-    return sendJsonWithEtag(req, reply, siteItemDetail(result.detail), { etagPrefix: "item", cacheControl: "public, max-age=60, s-maxage=60" });
+    return sendJsonWithEtag(req, reply, siteItemDetail(result.detail, looseQuery(req).lang === "en"), { etagPrefix: "item", cacheControl: "public, max-age=60, s-maxage=60" });
   }));
 
   app.get("/api/site/items/:id/original", siteHandler(async (req, reply) => {
@@ -148,7 +158,7 @@ export function registerSite(app: FastifyInstance) {
   app.get("/api/site/stories/:publicId/followups", siteHandler(async (req, reply) => {
     const result = await loadStoryFollowups((req.params as { publicId: string }).publicId);
     if (!result) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "story not found" });
-    return reply.header("Cache-Control", "no-store").send(result);
+    return reply.header("Cache-Control", "no-store").send(await localizePublication(result, looseQuery(req).lang ?? "zh"));
   }));
 
   app.get("/api/site/groups/:factId/reports", siteHandler(async (req, reply) => {
@@ -159,7 +169,7 @@ export function registerSite(app: FastifyInstance) {
     if (data.kind === "not_found") return sendProblem(req, reply, { status: 404, code: "not_found", detail: "reading group unavailable" });
     if (data.kind === "changed") return sendProblem(req, reply, { status: 409, code: "group_changed", detail: "reading group changed; reload it" });
     reply.header("Cache-Control", "no-store");
-    return reply.send(data.body);
+    return reply.send(await localizePublication(data.body, looseQuery(req).lang ?? "zh"));
   }));
 
   app.get("/api/site/stories/:publicId/developments", siteHandler(async (req, reply) => {
@@ -170,7 +180,7 @@ export function registerSite(app: FastifyInstance) {
     if (data.kind === "not_found") return sendProblem(req, reply, { status: 404, code: "not_found", detail: "reading group unavailable" });
     if (data.kind === "changed") return sendProblem(req, reply, { status: 409, code: "group_changed", detail: "reading group changed; reload it" });
     reply.header("Cache-Control", "no-store");
-    return reply.send(data.body);
+    return reply.send(await localizePublication(data.body, looseQuery(req).lang ?? "zh"));
   }));
 
   app.get("/api/site/contact", siteHandler(async (req, reply) => {

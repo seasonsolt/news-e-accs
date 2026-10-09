@@ -1,3 +1,4 @@
+import { localeFromMatches, Text, useLocale, useTranslate } from "../lib/i18n";
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useLoaderData } from "react-router";
 import type { SiteStats } from "@aihot/contracts/site";
@@ -24,14 +25,14 @@ interface ContactSettings {
 
 export async function loader({ request }: { request: Request }) {
   const [contact, stats] = await Promise.all([
-    apiGet<ContactSettings>("/api/site/contact", { signal: request.signal }).catch((): ContactSettings => ({ wechatQr: null, feishuQr: null, makerAvatar: null })),
-    apiGet<SiteStats>("/api/site/stats", { signal: request.signal }).catch(() => null),
+    apiGet<ContactSettings>("/api/site/contact", { request, signal: request.signal }).catch((): ContactSettings => ({ wechatQr: null, feishuQr: null, makerAvatar: null })),
+    apiGet<SiteStats>("/api/site/stats", { request, signal: request.signal }).catch(() => null),
   ]);
   return { contact, stats };
 }
 
-export function meta() {
-  return pageMeta({ title: "关于", description: `关于 ${SITE.name}：${SITE.description}`, path: "/about", image: "/og/pages/about.png", jsonLd: organizationLd() });
+export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
+  return pageMeta({ title: "关于", description: `关于 ${SITE.name}：${SITE.description}`, path: "/about", image: "/og/pages/about.png", jsonLd: organizationLd() }, localeFromMatches(matches ?? []));
 }
 
 const NO_SOURCES: RiverSource[] = [];
@@ -42,13 +43,15 @@ function figure(n: number): { value: string; unit: string } {
 }
 
 function Figure({ n, unit }: { n: number; unit: string }) {
-  const f = figure(n);
+  const tx = useTranslate();
+  const locale = useLocale();
+  const f = locale === "en" ? { value: new Intl.NumberFormat("en", { notation: "compact" }).format(n), unit: "" } : figure(n);
   return (
     <div className="flex items-baseline gap-1.5">
       <span className="num text-[30px] font-black leading-none tracking-[-0.03em] text-ink xl:text-[36px]">{f.value}</span>
       <span className="text-[13px] text-ink-3">
-        {f.unit}
-        {unit}
+        {tx(f.unit)}
+        {tx(unit)}
       </span>
     </div>
   );
@@ -96,14 +99,14 @@ function stagesOf(stats: SiteStats | null): Stage[] {
       title: "收录",
       figure: stats && <Figure n={stats.items} unit="条动态" />,
       text: ABOUT.steps.store,
-      note: stats && <>过去 24 小时收进 {stats.day.collected.toLocaleString("en-US")} 条</>,
+      note: stats && <><Text value="过去 24 小时收进" />{stats.day.collected.toLocaleString("en-US")}<Text value="条" /></>,
     },
     {
       no: "03",
       title: "精选",
       figure: stats && <Figure n={stats.selected} unit="条精选" />,
       text: ABOUT.steps.select,
-      note: stats && <>过去 24 小时 {stats.day.selected} 条进了精选</>,
+      note: stats && <><Text value="过去 24 小时" />{stats.day.selected}<Text value="条进了精选" /></>,
     },
     {
       no: "04",
@@ -117,15 +120,17 @@ function stagesOf(stats: SiteStats | null): Stage[] {
 
 /** The maker's round avatar before the greeting; it steps aside if the image fails. */
 function MakerFace({ src }: { src: string }) {
+  const tx = useTranslate();
   const [failed, setFailed] = useState(false);
   if (failed) return null;
-  return <img src={src} alt={`${ABOUT.maker?.name ?? ""}的头像`} width={48} height={48} onError={() => setFailed(true)} className="size-11 shrink-0 rounded-full bg-bg-sunk object-cover ring-1 ring-line xl:size-12" />;
+  return <img src={src} alt={tx("{0}的头像", ABOUT.maker?.name ?? "")} width={48} height={48} onError={() => setFailed(true)} className="size-11 shrink-0 rounded-full bg-bg-sunk object-cover ring-1 ring-line xl:size-12" />;
 }
 
 function QrCard({ src, kind, title, note }: { src: string; kind: string; title: string; note: string }) {
+  const tx = useTranslate();
   return (
     <figure className="card flex items-center gap-5 p-5">
-      <img src={src} alt={`${kind}二维码`} width={112} height={112} loading="lazy" className="size-[104px] shrink-0 rounded-tile border border-line bg-white object-contain p-1.5 sm:size-[112px]" />
+      <img src={src} alt={tx("{0}二维码", kind)} width={112} height={112} loading="lazy" className="size-[104px] shrink-0 rounded-tile border border-line bg-white object-contain p-1.5 sm:size-[112px]" />
       <figcaption className="min-w-0">
         <div className="text-[12px] text-ink-4">{kind}</div>
         <div className="mt-1 text-[16px] font-semibold leading-snug text-ink">{title}</div>
@@ -137,40 +142,30 @@ function QrCard({ src, kind, title, note }: { src: string; kind: string; title: 
 
 /** The optional maker block (ABOUT.maker): a greeting on the left, the contact codes that are set on the right. */
 function Maker({ maker, contact }: { maker: NonNullable<typeof ABOUT.maker>; contact: ContactSettings }) {
+  const tx = useTranslate();
   const codes = [
-    contact.wechatQr && maker.wechat ? <QrCard key="wechat" src={contact.wechatQr} kind="微信公众号" title={maker.wechat.title} note={maker.wechat.note} /> : null,
-    contact.feishuQr && maker.feishu ? <QrCard key="feishu" src={contact.feishuQr} kind="飞书群" title={maker.feishu.title} note={maker.feishu.note} /> : null,
+    contact.wechatQr && maker.wechat ? <QrCard key="wechat" src={contact.wechatQr} kind={tx("微信公众号")} title={maker.wechat.title} note={maker.wechat.note} /> : null,
+    contact.feishuQr && maker.feishu ? <QrCard key="feishu" src={contact.feishuQr} kind={tx("飞书群")} title={maker.feishu.title} note={maker.feishu.note} /> : null,
   ].filter(Boolean);
   return (
     <section aria-labelledby="maker" className="mt-20 grid gap-10 xl:mt-28 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
       <div>
-        <Kicker>做这个站的人</Kicker>
+        <Kicker><Text value="做这个站的人" /></Kicker>
         <h2 id="maker" className="mt-4 flex items-center gap-3.5 text-[26px] font-black leading-[1.3] tracking-[-0.02em] text-ink xl:gap-4 xl:text-[34px]">
           {contact.makerAvatar && <MakerFace src={contact.makerAvatar} />}
-          <span>
-            嗨，我是 <span className="whitespace-nowrap text-accent">{maker.name}</span>
+          <span><Text value="嗨，我是" /><span className="whitespace-nowrap text-accent">{maker.name}</span>
           </span>
         </h2>
         <div className="mt-5 space-y-4 text-[15.5px] leading-[1.9] text-ink-2 xl:text-[16.5px]">
           {maker.greeting.map((line) => (
             <p key={line}>{line}</p>
           ))}
-          <p className="text-ink-3">
-            它一直在改，改了什么都写在
-            <Link to="/changelog" className="text-accent hover:underline">
-              更新日志
-            </Link>
-            里；有想法、遇到问题，去
-            <Link to="/feedback" className="text-accent hover:underline">
-              反馈页
-            </Link>
-            告诉我。
-          </p>
+          <p className="text-ink-3"><Text value="它一直在改，改了什么都写在" /><Link to="/changelog" className="text-accent hover:underline"><Text value="更新日志" /></Link><Text value="里；有想法、遇到问题，去" /><Link to="/feedback" className="text-accent hover:underline"><Text value="反馈页" /></Link><Text value="告诉我。" /></p>
         </div>
       </div>
       {codes.length > 0 && (
         <div className="grid content-start gap-3">
-          <h3 className="text-[15px] font-semibold text-ink">如果觉得有点用，欢迎加入</h3>
+          <h3 className="text-[15px] font-semibold text-ink"><Text value="如果觉得有点用，欢迎加入" /></h3>
           {codes}
         </div>
       )}
@@ -183,7 +178,7 @@ function Latest({ item, className = "" }: { item: SiteStats["latest"][number] | 
   if (!item) return null;
   return (
     <Link to={`/items/${item.id}`} prefetch="intent" className={`group block ${className}`}>
-      <span className="text-[11px] font-semibold tracking-[0.2em] text-accent">最近精选</span>
+      <span className="text-[11px] font-semibold tracking-[0.2em] text-accent"><Text value="最近精选" /></span>
       <span key={item.id} className="animate-fade-up mt-1.5 block">
         <span className="line-clamp-2 text-[13.5px] font-semibold leading-[1.55] text-ink transition-colors group-hover:text-accent">{item.title}</span>
         <span className="mt-1 block truncate text-[12px] text-ink-4">{shortSourceName(item.source)}</span>
@@ -193,6 +188,7 @@ function Latest({ item, className = "" }: { item: SiteStats["latest"][number] | 
 }
 
 export default function AboutPage() {
+  const tx = useTranslate();
   const { contact, stats } = useLoaderData<typeof loader>();
   const [focus, setFocus] = useState<number | null>(null);
   const [at, setAt] = useState(0);
@@ -212,31 +208,30 @@ export default function AboutPage() {
     <>
     <Deck
       art="ambient-engine-room"
-      label="关于"
-      kicker={ABOUT.kicker}
-      title={<>{ABOUT.headline[0]}<br /><span className="text-[color:var(--heat)]">{ABOUT.headline[1]}</span></>}
-      description={ABOUT.lead.split("{sources}").map((part, i) => (
+      label={tx("关于")}
+      kicker={tx(ABOUT.kicker)}
+      title={<>{tx(ABOUT.headline[0])}<br /><span className="text-[color:var(--heat)]">{tx(ABOUT.headline[1])}</span></>}
+      description={tx(ABOUT.lead).split("{sources}").map((part, i) => (
         <span key={i}>
-          {i > 0 && (stats ? <span className="num font-semibold">{stats.sources}</span> : "上百")}
+          {i > 0 && (stats ? <span className="num font-semibold">{stats.sources}</span> : tx("上百"))}
           {part}
         </span>
       ))}
     >
       <div className="flex flex-wrap gap-2.5">
-        <Link to="/" prefetch="intent" className="deck-button is-primary">看今天的精选 <IconArrowRight size={15} className="ml-1" /></Link>
-        <Link to="/daily" prefetch="intent" className="deck-button">读最新{withSubject("日报")}</Link>
+        <Link to="/" prefetch="intent" className="deck-button is-primary"><Text value="看今天的精选" /><IconArrowRight size={15} className="ml-1" /></Link>
+        <Link to="/daily" prefetch="intent" className="deck-button"><Text value="读最新" />{withSubject(tx("日报"))}</Link>
       </div>
     </Deck>
     <div className="mx-auto max-w-[var(--page-max-reading)] pb-14">
 
       <section aria-labelledby="how" className="mt-10 xl:mt-14">
         <h2 id="how" className="sr-only">
-          {SITE.name} 怎么工作
-        </h2>
+          {SITE.name}<Text value="怎么工作" /></h2>
         <SignalRiver sources={sources} focus={focus} onArrive={onArrive} className="h-[230px] sm:h-[300px] lg:h-[360px] 2xl:h-[420px]">
           <Latest item={latest[at]} className="absolute left-[75%] top-[calc(42%+42px)] hidden w-[25%] px-6 lg:block" />
         </SignalRiver>
-        <p className="sr-only">示意图：每条线是一个信源；线汇成一束束，代表同一件事的多篇报道；经过精选的闸门，只有少数几束通过，汇入每天的{withSubject("日报")}。</p>
+        <p className="sr-only"><Text value="示意图：每条线是一个信源；线汇成一束束，代表同一件事的多篇报道；经过精选的闸门，只有少数几束通过，汇入每天的" />{withSubject(tx("日报"))}。</p>
         <Latest item={latest[at]} className="mt-2 border-t border-line pt-4 lg:hidden" />
         <ol className="mt-4 grid grid-cols-1 border-t border-line-strong sm:grid-cols-2 lg:mt-0 lg:grid-cols-4">
           {stages.map((s, i) => (
@@ -251,11 +246,11 @@ export default function AboutPage() {
             >
               <div className="flex items-baseline gap-2.5">
                 <span className="num text-[12px] font-bold tracking-[0.12em] text-accent">{s.no}</span>
-                <h3 className="text-[17px] font-bold text-ink">{s.title}</h3>
+                <h3 className="text-[17px] font-bold text-ink">{tx(s.title)}</h3>
               </div>
               {s.figure && <div className="mt-4">{s.figure}</div>}
-              <p className="mt-3 text-[14px] leading-[1.8] text-ink-3">{s.text}</p>
-              {s.note && <p className="mt-3 text-[12px] text-ink-4">{s.note}</p>}
+              <p className="mt-3 text-[14px] leading-[1.8] text-ink-3">{tx(s.text)}</p>
+              {s.note && <p className="mt-3 text-[12px] text-ink-4">{typeof s.note === "string" ? tx(s.note) : s.note}</p>}
             </li>
           ))}
         </ol>
@@ -264,22 +259,14 @@ export default function AboutPage() {
       {ABOUT.maker && <Maker maker={ABOUT.maker} contact={contact} />}
 
       <p className="mt-16 well rounded-card px-5 py-4 text-[13px] leading-[1.85] text-ink-3">
-        {ABOUT.copyright}
-        <Link to="/feedback" className="text-accent hover:underline">
-          反馈页
-        </Link>
-        联系我们。
-      </p>
+        {tx(ABOUT.copyright)}
+        <Link to="/feedback" className="text-accent hover:underline"><Text value="反馈页" /></Link><Text value="联系我们。" /></p>
 
       <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5 text-[12.5px] text-ink-4">
-        <span>{SITE.footerNote}</span>
-        <nav className="flex gap-5" aria-label="规则与隐私">
-          <Link to="/terms" className="transition-colors hover:text-accent">
-            使用规则
-          </Link>
-          <Link to="/privacy" className="transition-colors hover:text-accent">
-            隐私说明
-          </Link>
+        <span>{tx(SITE.footerNote)}</span>
+        <nav className="flex gap-5" aria-label={tx("规则与隐私")}>
+          <Link to="/terms" className="transition-colors hover:text-accent"><Text value="使用规则" /></Link>
+          <Link to="/privacy" className="transition-colors hover:text-accent"><Text value="隐私说明" /></Link>
         </nav>
       </footer>
     </div>

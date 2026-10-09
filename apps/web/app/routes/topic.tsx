@@ -1,3 +1,4 @@
+import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { Link, redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/topic";
@@ -25,11 +26,11 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   if (params.page !== undefined && (!/^\d+$/.test(params.page) || page < 1)) throw new Response("Not found", { status: 404 });
   // Page 1 lives at the topic's own address (308).
   if (params.page === "1") throw redirect(`/topics/${params.slug}`, 308);
-  const data = await loadOr404<TopicPageData>(`/api/site/topics/${encodeURIComponent(params.slug)}?page=${page}`, { signal: request.signal });
+  const data = await loadOr404<TopicPageData>(`/api/site/topics/${encodeURIComponent(params.slug)}?page=${page}`, { request, signal: request.signal });
   return { data };
 }
 
-export function meta({ loaderData }: Route.MetaArgs) {
+export function meta({ matches, loaderData }: Route.MetaArgs) {
   if (!loaderData) return [{ title: titled("主题不存在") }, { name: "robots", content: "noindex" }];
   const { topic, page } = loaderData.data;
   const path = page > 1 ? `/topics/${topic.slug}/page/${page}` : `/topics/${topic.slug}`;
@@ -40,10 +41,11 @@ export function meta({ loaderData }: Route.MetaArgs) {
     image: `/og/topics/${topic.slug}.png`,
     noindex: !topic.indexable,
     jsonLd: breadcrumbLd([{ name: SITE.name, path: "/" }, { name: "主题", path: "/topics" }, { name: topic.name, path: `/topics/${topic.slug}` }]),
-  });
+  }, localeFromMatches(matches ?? []));
 }
 
 export default function TopicPage() {
+  const tx = useTranslate();
   const { data } = useLoaderData<typeof loader>();
   const { topic, items, page, pageCount } = data;
   const href = (p: number) => (p <= 1 ? `/topics/${topic.slug}` : `/topics/${topic.slug}/page/${p}`);
@@ -51,15 +53,14 @@ export default function TopicPage() {
   const last = first + items.length - 1;
   return (
     <div className="pb-6">
-      <Deck compact art="topics" label={topic.name} kicker={<Link to="/topics" className="hover:text-[var(--heat-hi)]">← 全部主题</Link>} title={topic.name} description={topic.definition} />
+      <Deck compact art="topics" label={topic.name} kicker={<Link to="/topics" className="hover:text-[var(--heat-hi)]"><Text value="← 全部主题" /></Link>} title={topic.name} description={topic.definition} />
       <header className="pb-4 pt-5">
         <div className="mt-3 flex flex-wrap items-baseline gap-x-5 gap-y-1">
           <span className="text-[12.5px] text-ink-4">
-            <span className="num mr-1 text-[20px] font-bold text-ink">{topic.total.toLocaleString("zh-CN")}</span>条精选
-          </span>
+            <span className="num mr-1 text-[20px] font-bold text-ink">{topic.total.toLocaleString("zh-CN")}</span><Text value="条精选" /></span>
           {topic.related.length > 0 && (
             <span className="flex flex-wrap items-center gap-1.5 text-[12.5px]">
-              <span className="text-ink-4">相关主题</span>
+              <span className="text-ink-4"><Text value="相关主题" /></span>
               {topic.related.map((r) => (
                 <Link key={r.slug} to={`/topics/${r.slug}`} className="chip">
                   {r.name}
@@ -71,16 +72,14 @@ export default function TopicPage() {
       </header>
 
       <div className="mb-1 mt-2 flex items-baseline justify-between">
-        <h2 className="text-[18px] font-bold text-ink">最新精选</h2>
+        <h2 className="text-[18px] font-bold text-ink"><Text value="最新精选" /></h2>
         {items.length > 0 && (
-          <span className="num text-[12px] text-ink-4">
-            第 {first}–{last} 条 · 共 {topic.total.toLocaleString("zh-CN")} 条
-          </span>
+          <span className="num text-[12px] text-ink-4"><Text value="第" />{first}–{last}<Text value="条 · 共" />{topic.total.toLocaleString("zh-CN")}<Text value="条" /></span>
         )}
       </div>
       {items.length === 0 ? (
         <div className="lg:card">
-          <EmptyState title="这个主题暂时还没有精选内容" />
+          <EmptyState title={tx("这个主题暂时还没有精选内容")} />
         </div>
       ) : (
         <DayList items={items} />

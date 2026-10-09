@@ -1,5 +1,6 @@
 // Server-side HTTP client for route loaders. The web process never touches the database;
 // SSR reads the api over loopback with keep-alive, one or two requests per page.
+import { contentUrl } from "./content-fetch.ts";
 import { data, redirect } from "react-router";
 
 const API_BASE = process.env.API_BASE_URL || "http://127.0.0.1:3001";
@@ -16,8 +17,8 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiGet<T>(path: string, init?: { signal?: AbortSignal; headers?: Record<string, string>; responseHeaders?: Headers }): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+export async function apiGet<T>(path: string, init?: { request?: Request; signal?: AbortSignal; headers?: Record<string, string>; responseHeaders?: Headers }): Promise<T> {
+  const res = await fetch(`${API_BASE}${contentUrl(path, init?.request)}`, {
     headers: { accept: "application/json", "x-aihot-ssr": "1", ...init?.headers },
     signal: init?.signal ? AbortSignal.any([init.signal, AbortSignal.timeout(15_000)]) : AbortSignal.timeout(15_000),
   });
@@ -36,7 +37,7 @@ export async function apiGet<T>(path: string, init?: { signal?: AbortSignal; hea
 }
 
 /** Maps API failures without repeating the request. */
-export function apiErrorResponse(error: unknown, opts: { busyRedirect?: string; signal?: AbortSignal } = {}) {
+export function apiErrorResponse(error: unknown, opts: { request?: Request; busyRedirect?: string; signal?: AbortSignal } = {}) {
   if (opts.signal?.aborted) throw error;
   if (error instanceof ApiError) {
     if (error.status === 404) return data({ message: "not_found" }, { status: 404 });
@@ -47,9 +48,9 @@ export function apiErrorResponse(error: unknown, opts: { busyRedirect?: string; 
 }
 
 /** Maps API failures to route responses: real 404s, search-busy page, otherwise 503. */
-export async function loadOr404<T>(path: string, opts: { busyRedirect?: string; responseHeaders?: Headers; signal?: AbortSignal } = {}): Promise<T> {
+export async function loadOr404<T>(path: string, opts: { request?: Request; busyRedirect?: string; responseHeaders?: Headers; signal?: AbortSignal } = {}): Promise<T> {
   try {
-    return await apiGet<T>(path, { responseHeaders: opts.responseHeaders, signal: opts.signal });
+    return await apiGet<T>(path, { request: opts.request, responseHeaders: opts.responseHeaders, signal: opts.signal });
   } catch (error) {
     throw apiErrorResponse(error, opts);
   }

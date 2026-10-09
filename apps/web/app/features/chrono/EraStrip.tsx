@@ -1,3 +1,4 @@
+import { Text, useTranslate } from "../../lib/i18n";
 // The film strip of eras: every plate in its own period style, in order, the current one lit. Real links,
 // so it is also the way through time without JavaScript.
 import { useEffect, useRef } from "react";
@@ -6,6 +7,7 @@ import type { ChronicleEra } from "@aihot/contracts/chronicle";
 import { timeParam } from "./format";
 
 export function EraStrip({ eras, current, now }: { eras: ChronicleEra[]; current: string; now: number }) {
+  const tx = useTranslate();
   const strip = useRef<HTMLDivElement>(null);
   // Keep the lit frame in view, moving the strip only (never the page).
   useEffect(() => {
@@ -18,10 +20,10 @@ export function EraStrip({ eras, current, now }: { eras: ChronicleEra[]; current
   return (
     <section aria-labelledby="era-strip">
       <div className="chronicle-section-head">
-        <h2 id="era-strip">时代画卷</h2>
-        <p>每个时代用它自己的画风来画。</p>
+        <h2 id="era-strip"><Text value="时代画卷" /></h2>
+        <p><Text value="每个时代用它自己的画风来画。" /></p>
       </div>
-      <nav aria-label="时代">
+      <nav aria-label={tx("时代")}>
         <div ref={strip} className="chronicle-strip">
           {eras.map((era) => (
             <Link

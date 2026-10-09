@@ -1,3 +1,4 @@
+import { useTranslate } from "../../lib/i18n";
 // Illustrated banners above a list (public/media/art, made by tools/make-art.sh): the words sit on the
 // page colour at the left, the engraving opens to the right, fades in on arrival and then drifts.
 import type { ReactNode } from "react";
@@ -46,10 +47,11 @@ export const CATEGORY_ART: Record<CategoryKey, string> = {
 
 /** The banner for the category (or first-party channel) a feed is filtered by; nothing when unfiltered. */
 export function CategoryBanner({ category, channel }: { category: CategoryKey | null; channel: ChannelKey }) {
+  const tx = useTranslate();
   const meta = category ? CATEGORIES.find((c) => c.key === category) : null;
-  if (meta) return <ArtBanner art={CATEGORY_ART[meta.key as CategoryKey]} title={meta.label} note={meta.guide} label={`${meta.label}分类`} />;
+  if (meta) return <ArtBanner art={CATEGORY_ART[meta.key as CategoryKey]} title={meta.label} note={meta.guide} label={tx("{0}分类", meta.label)} />;
   if (channel === "firstParty") {
-    return <ArtBanner art="first-party" title="一手" note="模型厂商、公司和研究机构自己发布的消息：官网、官方博客和官方账号。" label="一手消息" />;
+    return <ArtBanner art="first-party" title={tx("一手")} note={tx("模型厂商、公司和研究机构自己发布的消息：官网、官方博客和官方账号。")} label={tx("一手消息")} />;
   }
   return null;
 }

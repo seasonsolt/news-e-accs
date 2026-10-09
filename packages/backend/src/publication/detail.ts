@@ -22,7 +22,7 @@ export type DetailResult =
   | { kind: "not_found" };
 
 /** Adds stable ids to h2–h4 and returns the outline. */
-function withOutline(html: string): { html: string; outline: OutlineEntry[] } {
+export function withOutline(html: string): { html: string; outline: OutlineEntry[] } {
   const outline: OutlineEntry[] = [];
   let n = 0;
   const out = html.replace(/<h([2-4])(?: id="sec-\d+")?>([\s\S]*?)<\/h\1>/gi, (_m, level: string, inner: string) => {

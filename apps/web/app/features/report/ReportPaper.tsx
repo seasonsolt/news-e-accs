@@ -1,3 +1,5 @@
+import { ContentLanguage } from "../../components/ContentLanguage";
+import { Text, useTranslate } from "../../lib/i18n";
 // One report with a newspaper's structure in the site's own look: its deck (ReportDeck: the issue, its
 // headline and figures, rendered by the route above the layout), the front page (the lead, today's
 // highlights and the page index), then one page per section in two columns, the neighbouring issues
@@ -25,29 +27,29 @@ const LINK = "inline-flex min-h-7 items-center gap-0.5 font-medium transition-co
 
 /** The issue's deck: the press it comes off, its date and number, the headline and its figures. */
 export function ReportDeck({ report, index, aside }: { report: ReportDetail; index: ReportNavigationEntry[]; aside?: ReactNode }) {
+  const tx = useTranslate();
   const issue = issueNumber(index, report.key);
   const leadStory = leadStoryOf(report);
   const count = pagesOf(report, leadStory).reduce((sum, p) => sum + p.items.length, 0) + (leadStory ? 1 : 0);
   return (
     <Deck
       art="masthead-press"
-      label={`AI ${KIND_LABEL[report.kind]}`}
+      label={`AI ${tx(KIND_LABEL[report.kind])}`}
       kicker={
         <>
-          AI {KIND_LABEL[report.kind]} · <span className="num">{dateLine(report.kind, report.key)}</span>
-          {issue && <> · 第 {issue} 期</>} · 约 {report.readingMinutes} 分钟读完
-        </>
+          AI <Text value={KIND_LABEL[report.kind]} /> · <span className="num">{tx(dateLine(report.kind, report.key))}</span>
+          {issue && <><Text value="· 第" />{issue}<Text value="期" /></>}<Text value="· 约" />{report.readingMinutes}<Text value="分钟读完" /></>
       }
-      title={headline(report.kind, report.key, count)}
+      title={tx(headline(report.kind, report.key, count))}
       titleId="report-start"
-      description={MOTTO[report.kind]}
+      description={tx(MOTTO[report.kind])}
       aside={aside}
     >
       <div className="flex flex-wrap gap-x-10 gap-y-3 border-t border-[rgb(217_164_65/.45)] pt-5">
         {metricItems(report.metrics).map((m) => (
           <span key={m.unit} className="flex flex-col">
             <span className="deck-figure text-[44px]">{m.value}</span>
-            <span className="mt-1.5 text-[13px] text-[var(--deck-dim)]">{m.unit}</span>
+            <span className="mt-1.5 text-[13px] text-[var(--deck-dim)]"><Text value={m.unit} /></span>
           </span>
         ))}
       </div>
@@ -61,7 +63,7 @@ function Source({ c, size = 16 }: { c: ReportCitation; size?: number }) {
     <span className="inline-flex min-w-0 items-center gap-1.5">
       <SourceAvatar name={c.sourceName} iconUrl={c.sourceIconUrl} iconSrcSet={c.sourceIconSrcSet} size={size} />
       <span className="truncate">{shortSourceName(c.sourceName)}</span>
-      {c.firstParty && <Badge tone="accent">一手</Badge>}
+      {c.firstParty && <Badge tone="accent"><Text value="一手" /></Badge>}
     </span>
   );
 }
@@ -71,9 +73,9 @@ function Source({ c, size = 16 }: { c: ReportCitation; size?: number }) {
  * chose: first-hand first, then the best scored), so there is one place to go.
  */
 function Original({ c, className = "" }: { c: ReportCitation; className?: string }) {
+  const tx = useTranslate();
   return (
-    <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={`阅读${shortSourceName(c.sourceName)}原文：${c.title}（新标签页）`} className={`${LINK} text-[12.5px] text-ink-3 ${className}`}>
-      原文 <IconArrowUpRight size={12} />
+    <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={tx("阅读{0}原文：{1}（新标签页）", shortSourceName(c.sourceName), c.title)} className={`${LINK} text-[12.5px] text-ink-3 ${className}`}><Text value="原文" /><IconArrowUpRight size={12} />
     </a>
   );
 }
@@ -104,8 +106,7 @@ function Story({ c, dated, className = "" }: { c: ReportCitation; dated: boolean
         </>
       ) : (
         <p className="mt-3 text-[14px] leading-relaxed text-ink-4">
-          <span className="line-through">{c.title}</span> · 该内容已按来源方要求下架或调整展示方式。
-        </p>
+          <span className="line-through">{c.title}</span><Text value="· 该内容已按来源方要求下架或调整展示方式。" /></p>
       )}
     </article>
   );
@@ -179,30 +180,31 @@ function LeadPicture({ cover, onError, priority = false, className = "" }: { cov
           width={cover.width ?? undefined} height={cover.height ?? undefined}
           alt="" loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} decoding="async" onError={onError} className="size-full object-cover" />
       </div>
-      {cover.caption && <figcaption className="mt-2.5 line-clamp-2 text-[12.5px] leading-[1.6] text-ink-4">图 · {cover.caption}</figcaption>}
+      {cover.caption && <figcaption className="mt-2.5 line-clamp-2 text-[12.5px] leading-[1.6] text-ink-4"><Text value="图 ·" />{cover.caption}</figcaption>}
     </figure>
   );
 }
 
 /** The front page: the lead beside a column of today's highlights and the index of pages. */
 function FrontPage({ report, pages, leadStory, count }: { report: ReportDetail; pages: Page[]; leadStory: ReportCitation | null; count: number }) {
+  const tx = useTranslate();
   const daily = report.kind === "daily";
   // A picture that fails to load is dropped, and the lead is set as if it had none.
   const [broken, setBroken] = useState<string | null>(null);
   const cover = report.cover && report.cover.url !== broken ? report.cover : null;
   // A landscape picture opens the lead above its headline; a squarer one sits beside the paragraph.
   const wide = !cover?.width || !cover.height || cover.width / cover.height >= 1.25;
-  const title = report.lead?.title ?? leadStory?.title ?? headline(report.kind, report.key, count);
+  const title = report.lead?.title ?? leadStory?.title ?? tx(headline(report.kind, report.key, count));
   const dek = report.lead?.leadParagraph ?? leadStory?.summary ?? report.overview;
   const highlights = report.highlights.filter((h) => !leadStory || keyOf(h) !== keyOf(leadStory)).slice(0, 3);
   const inPage = new Set(pages.flatMap((p) => p.items.map((c) => c.itemId)).filter(Boolean));
-  const period = daily ? "今日" : report.kind === "weekly" ? "本周" : "本月";
-  const index = [...pages.map((p) => ({ id: p.id, label: p.label, n: `${p.items.length} 件` })), ...(report.flashes.length > 0 ? [{ id: "s-flash", label: "快讯", n: `${report.flashes.length} 条` }] : [])];
+  const period = daily ? tx("今日") : report.kind === "weekly" ? tx("本周") : tx("本月");
+  const index = [...pages.map((p) => ({ id: p.id, label: p.label, n: tx("{0} 件", p.items.length) })), ...(report.flashes.length > 0 ? [{ id: "s-flash", label: tx("快讯"), n: tx("{0} 条", report.flashes.length) }] : [])];
 
   return (
-    <section aria-label="头版" className="grid @[880px]:grid-cols-[minmax(0,1fr)_300px] @[1040px]:grid-cols-[minmax(0,1fr)_340px]">
+    <section aria-label={tx("头版")} className="grid @[880px]:grid-cols-[minmax(0,1fr)_300px] @[1040px]:grid-cols-[minmax(0,1fr)_340px]">
       <div id={leadStory ? (anchorOf(leadStory) ?? undefined) : undefined} className="min-w-0 scroll-mt-6 py-7 @[880px]:border-r @[880px]:border-line @[880px]:py-10 @[880px]:pr-10">
-        <Kicker>{daily ? "头条" : "本期导读"}</Kicker>
+        <Kicker>{daily ? tx("头条") : tx("本期导读")}</Kicker>
         {cover && wide && <LeadPicture cover={cover} onError={() => setBroken(cover.url)} priority className="mt-5" />}
         <h2 className="mt-4 text-[32px] font-black leading-[1.28] tracking-[-0.03em] text-ink [text-wrap:balance] @[520px]:text-[40px] @[1040px]:text-[48px] @[1040px]:leading-[1.22]">
           {leadStory?.itemId ? (
@@ -230,7 +232,7 @@ function FrontPage({ report, pages, leadStory, count }: { report: ReportDetail; 
       <aside className="min-w-0 border-t border-line py-7 @[880px]:border-t-0 @[880px]:py-10 @[880px]:pl-8">
         {highlights.length > 0 && (
           <>
-            <Kicker>{period}看点</Kicker>
+            <Kicker>{period}<Text value="看点" /></Kicker>
             <ol className="mt-2">
               {highlights.map((h, i) => {
                 const anchor = anchorOf(h);
@@ -251,8 +253,8 @@ function FrontPage({ report, pages, leadStory, count }: { report: ReportDetail; 
           </>
         )}
         {index.length > 0 && (
-          <nav aria-label="本期版面" className={highlights.length > 0 ? "mt-8" : ""}>
-            <Kicker>本期版面</Kicker>
+          <nav aria-label={tx("本期版面")} className={highlights.length > 0 ? "mt-8" : ""}>
+            <Kicker><Text value="本期版面" /></Kicker>
             <ol className="mt-3">
               {index.map((p, i) => (
                 <li key={p.id}>
@@ -290,15 +292,16 @@ export function SectionPage({ id, no, label, children }: { id: string; no?: numb
 const COLUMNS = "@[760px]:columns-2 @[760px]:gap-x-12 @[760px]:[column-rule:1px_solid_var(--line)]";
 
 function Neighbours({ report, index }: { report: ReportDetail; index: ReportNavigationEntry[] }) {
-  const titleOf = (key: string) => index.find((e) => e.key === key)?.title ?? `AI ${KIND_LABEL[report.kind]} · ${key}`;
+  const tx = useTranslate();
+  const titleOf = (key: string) => index.find((e) => e.key === key)?.title ?? `AI ${tx(KIND_LABEL[report.kind])} · ${key}`;
   const cell = "group flex min-w-0 flex-col py-6";
   const title = "mt-2.5 line-clamp-2 text-[16px] font-bold leading-[1.5] text-ink transition-colors group-hover:text-accent @[880px]:text-[18px]";
   return (
-    <nav aria-label={report.kind === "daily" ? "前后日报" : "前后各期"} className="mt-16 grid grid-cols-2 border-y border-line-strong">
+    <nav aria-label={report.kind === "daily" ? tx("前后日报") : tx("前后各期")} className="mt-16 grid grid-cols-2 border-y border-line-strong">
       {report.prev ? (
         <Link to={reportPath(report.kind, report.prev)} className={`${cell} pr-5 @[880px]:pr-10`}>
           <span className="inline-flex items-center gap-1 text-[12px] text-ink-4">
-            <IconArrowLeft size={13} /> {neighbourLabel(report.kind, report.prev, "prev")}
+            <IconArrowLeft size={13} /> {tx(neighbourLabel(report.kind, report.prev, "prev"))}
           </span>
           <span className={title}>{titleOf(report.prev)}</span>
         </Link>
@@ -308,7 +311,7 @@ function Neighbours({ report, index }: { report: ReportDetail; index: ReportNavi
       {report.next ? (
         <Link to={reportPath(report.kind, report.next)} className={`${cell} items-end border-l border-line pl-5 text-right @[880px]:pl-10`}>
           <span className="inline-flex items-center gap-1 text-[12px] text-ink-4">
-            {neighbourLabel(report.kind, report.next, "next")} <IconArrowRight size={13} />
+            {tx(neighbourLabel(report.kind, report.next, "next"))} <IconArrowRight size={13} />
           </span>
           <span className={title}>{titleOf(report.next)}</span>
         </Link>
@@ -320,17 +323,18 @@ function Neighbours({ report, index }: { report: ReportDetail; index: ReportNavi
 }
 
 function History({ report, index }: { report: ReportDetail; index: ReportNavigationEntry[] }) {
+  const tx = useTranslate();
   const others = index.filter((e) => e.key !== report.key).slice(0, 12);
   if (others.length === 0) return null;
   return (
     <section id="report-history" className="scroll-mt-6 pt-12">
-      <Kicker>往期 AI {KIND_LABEL[report.kind]}</Kicker>
+      <Kicker><Text value="往期 AI" /><Text value={KIND_LABEL[report.kind]} /></Kicker>
       <ul className="mt-3">
         {others.map((e) => (
           <li key={e.key}>
             <Link to={reportPath(report.kind, e.key)} className="group flex items-baseline gap-4 border-b border-line py-3">
               <span className="num w-[76px] shrink-0 text-[12.5px] text-ink-4">{e.key}</span>
-              <span className="min-w-0 flex-1 truncate text-[14px] text-ink-2 transition-colors group-hover:text-accent">{e.title ?? `${SITE.name} ${KIND_LABEL[report.kind]} · ${e.key}`}</span>
+              <span className="min-w-0 flex-1 truncate text-[14px] text-ink-2 transition-colors group-hover:text-accent">{e.title ?? `${SITE.name} ${tx(KIND_LABEL[report.kind])} · ${e.key}`}</span>
             </Link>
           </li>
         ))}
@@ -340,15 +344,17 @@ function History({ report, index }: { report: ReportDetail; index: ReportNavigat
 }
 
 export function ReportPaper({ report, index }: { report: ReportDetail; index: ReportNavigationEntry[] }) {
+  const tx = useTranslate();
   const daily = report.kind === "daily";
   const leadStory = leadStoryOf(report);
   const pages = pagesOf(report, leadStory);
   const count = pages.reduce((sum, p) => sum + p.items.length, 0) + (leadStory ? 1 : 0);
   return (
     <article className="@container">
+      <ContentLanguage content={report} />
       <ReadingGear />
       {count === 0 && report.flashes.length === 0 ? (
-        <p className="py-16 text-center text-[14px] text-ink-4">本期没有入选内容。</p>
+        <p className="py-16 text-center text-[14px] text-ink-4"><Text value="本期没有入选内容。" /></p>
       ) : (
         <FrontPage report={report} pages={pages} leadStory={leadStory} count={count} />
       )}
@@ -357,7 +363,7 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
         <SectionPage key={p.id} id={p.id} no={i + 1} label={p.label}>
           {p.summary && (
             <p className="border-b border-line py-5 text-[15.5px] leading-[1.9] text-ink-2 @[560px]:text-justify">
-              <span className="mr-2 font-semibold text-accent">本版导读</span>
+              <span className="mr-2 font-semibold text-accent"><Text value="本版导读" /></span>
               {p.summary}
             </p>
           )}
@@ -366,7 +372,7 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
       ))}
 
       {report.flashes.length > 0 && (
-        <SectionPage id="s-flash" no={pages.length + 1} label="快讯">
+        <SectionPage id="s-flash" no={pages.length + 1} label={tx("快讯")}>
           <ul className={`${COLUMNS} @[1040px]:columns-3`}>
             {report.flashes.map((f, i) => (
               <li key={`${keyOf(f)}-${i}`} className="flex break-inside-avoid gap-2.5 border-b border-line py-3 text-[14.5px] leading-[1.65]">
@@ -390,11 +396,11 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
       <Neighbours report={report} index={index} />
       {!daily && <History report={report} index={index} />}
       <footer className="py-10 text-center">
-        <div className="text-[13px] font-semibold tracking-[0.6em] text-ink-4">（本期完）</div>
+        <div className="text-[13px] font-semibold tracking-[0.6em] text-ink-4"><Text value="（本期完）" /></div>
         <p className="mt-3 text-[12px] text-ink-4">
-          {SITE.name} {KIND_LABEL[report.kind]}由编辑系统根据公开来源自动{daily ? "编辑" : "综合"}，每条均附原文 ·{" "}
+          {SITE.name} <Text value={KIND_LABEL[report.kind]} /><Text value="由编辑系统根据公开来源自动" />{daily ? tx("编辑") : tx("汇总")}<Text value="，每条均附原文 ·" />{" "}
           <Link to={daily ? "/daily/archive" : "#report-history"} className="font-medium text-ink-3 transition-colors hover:text-accent">
-            {daily ? "日报合订本" : `往期${KIND_LABEL[report.kind]}`}
+            {daily ? tx("日报合订本") : tx("往期{0}", tx(KIND_LABEL[report.kind]))}
           </Link>
         </p>
       </footer>

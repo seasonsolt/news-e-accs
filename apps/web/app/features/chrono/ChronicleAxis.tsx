@@ -1,3 +1,4 @@
+import { Text, useTranslate } from "../../lib/i18n";
 // The four-dimensional axis: the Big Bang at the left, the far future at the right, every power of ten
 // of distance from now the same width. Eras are bands, milestones are ticks (dashed when forecast);
 // drag, click, wheel or the arrow keys move the needle. A click lands on the nearest milestone.
@@ -19,6 +20,7 @@ export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit }: {
   /** On release (or a key, a click, the wheel): the moment is settled and goes into the address. */
   onCommit: (t: number) => void;
 }) {
+  const tx = useTranslate();
   const allowed = useMotionAllowed();
   const [dragging, setDragging] = useState(false);
   const track = useRef<HTMLDivElement>(null);
@@ -82,11 +84,11 @@ export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit }: {
         ref={track}
         role="slider"
         tabIndex={0}
-        aria-label="时间轴（对数刻度）"
+        aria-label={tx("时间轴（对数刻度）")}
         aria-valuemin={0}
         aria-valuemax={1000}
         aria-valuenow={Math.round(u * 1000)}
-        aria-valuetext={timeLabel(t, now)}
+        aria-valuetext={tx(timeLabel(t, now))}
         className={`chronicle-track ${allowed ? "motion-allowed" : ""}`}
         data-dragging={dragging || undefined}
         onPointerDown={onPointerDown}
@@ -119,7 +121,7 @@ export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit }: {
           />
         ))}
         <span className="chronicle-now" style={{ left: `${nowU * 100}%` }} aria-hidden="true">
-          <span>现在</span>
+          <span><Text value="现在" /></span>
         </span>
         <span className="chronicle-needle" style={{ left: `${u * 100}%` }} aria-hidden="true" />
       </div>

@@ -1,3 +1,4 @@
+import { Text, useTranslate } from "../../lib/i18n";
 import { useEffect, useId, useRef, useState, type CSSProperties, type SyntheticEvent } from "react";
 import { createPortal } from "react-dom";
 import type { LbConfidence, LbStability } from "@aihot/contracts/leaderboard";
@@ -19,6 +20,7 @@ function position(r: DOMRect): CSSProperties {
 
 /** Confidence as a dotted label. On desktop, hovering a sensitive ranking shows its scenario rank range. */
 export function EvidenceBadge({ confidence, stability, rank }: { confidence: LbConfidence; stability: LbStability | null; rank: number }) {
+  const tx = useTranslate();
   const id = useId();
   const anchor = useRef<HTMLSpanElement>(null);
   const [at, setAt] = useState<CSSProperties | null>(null);
@@ -57,13 +59,9 @@ export function EvidenceBadge({ confidence, stability, rank }: { confidence: LbC
           style={at}
           className="pointer-events-none fixed z-[60] w-56 rounded-tile border border-line bg-raised p-3 text-left text-[12px] leading-relaxed text-ink-2 shadow-[var(--shadow-pop)]"
         >
-          <span className="block text-[11px] text-ink-4">名次浮动范围</span>
+          <span className="block text-[11px] text-ink-4"><Text value="名次浮动范围" /></span>
           <span className="num block text-[15px] font-semibold text-ink">{rangeText(stability)}</span>
-          <span className="mt-1.5 block text-ink-3">
-            在 {stability.scenarios} 个对照情景中重新检查资格后的名次。
-            {stability.unavailable > 0 && ` ${stability.unavailable} 个情景下参评证据不足。`}
-            不是置信区间。
-          </span>
+          <span className="mt-1.5 block text-ink-3"><Text value="在" />{stability.scenarios}<Text value="个对照情景中重新检查资格后的名次。" />{stability.unavailable > 0 && tx(" {0} 个情景下参评证据不足。", stability.unavailable)}<Text value="不是置信区间。" /></span>
         </span>, document.body
       )}
     </span>

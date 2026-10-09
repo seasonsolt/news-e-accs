@@ -1,9 +1,11 @@
+import { Text, useTranslate } from "../../lib/i18n";
 // The milestones nearest the moment on the axis, as one compact rail; the closest is lit.
 import { timeLabel, toAxis, type ChronicleCategory, type ChronicleMilestone } from "@aihot/contracts/chronicle";
 
 export const CATEGORY: Record<ChronicleCategory, string> = { cosmos: "宇宙", life: "生命", human: "人类", energy: "能源", compute: "计算", ai: "智能", culture: "文化" };
 
 export function MomentList({ milestones, t, now, onCommit }: { milestones: ChronicleMilestone[]; t: number; now: number; onCommit: (t: number) => void }) {
+  const tx = useTranslate();
   const u = toAxis(t, now);
   const distance = (m: ChronicleMilestone) => Math.abs(toAxis(m.t, now) - u);
   const nearby = [...milestones].sort((a, b) => distance(a) - distance(b)).slice(0, 8).sort((a, b) => a.t - b.t);
@@ -11,8 +13,8 @@ export function MomentList({ milestones, t, now, onCommit }: { milestones: Chron
   return (
     <section aria-labelledby="nearby-moments" className="min-w-0">
       <div className="chronicle-section-head">
-        <h2 id="nearby-moments">此刻附近</h2>
-        <p>轴上离此刻最近的八件事，点标题跳过去。</p>
+        <h2 id="nearby-moments"><Text value="此刻附近" /></h2>
+        <p><Text value="轴上离此刻最近的八件事，点标题跳过去。" /></p>
       </div>
       <ol className="chronicle-rail">
         {nearby.map((m) => (
@@ -20,17 +22,17 @@ export function MomentList({ milestones, t, now, onCommit }: { milestones: Chron
             <span className="chronicle-rail-dot" aria-hidden="true" />
             {m.art && <img className="chronicle-rail-thumb" src={`/media/art/moments/${m.art}-800.webp`} alt="" loading="lazy" decoding="async" width={96} height={64} title={m.artStyle} />}
             <div className="chronicle-rail-meta">
-              <span className="num">{timeLabel(m.t, now, m.precision, m.date)}</span>
+              <span className="num">{tx(timeLabel(m.t, now, m.precision, m.date))}</span>
               <span>{CATEGORY[m.category]}</span>
-              {m.forecast && <span className="chronicle-gauge-badge">预测</span>}
+              {m.forecast && <span className="chronicle-gauge-badge"><Text value="预测" /></span>}
             </div>
             <button type="button" onClick={() => onCommit(m.t)} className="chronicle-rail-title">{m.title}</button>
             <p className="chronicle-rail-detail">
               {m.detail}{" "}
-              <a href={m.source} target="_blank" rel="noopener noreferrer">来源</a>
+              <a href={m.source} target="_blank" rel="noopener noreferrer"><Text value="来源" /></a>
               {m.forecast && (
                 <>
-                  {" · 预测方 "}
+                  {tx(" · 预测方 ")}
                   <a href={m.forecast.url} target="_blank" rel="noopener noreferrer">{m.forecast.by}</a>
                 </>
               )}

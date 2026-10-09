@@ -1,3 +1,5 @@
+import { LanguageSwitch } from "./LanguageSwitch";
+import { Text, useTranslate } from "../../lib/i18n";
 // The deck's top bar on every page: the wordmark, the reading sections, 更多 for the rest, and the
 // Kardashev pill (today's rating, from the chronicle's energy series) that opens the four-dimensional
 // view. Dark in either theme; a page's Deck continues it below. Phones keep the wordmark and the pill,
@@ -18,6 +20,7 @@ function itemHref(item: NavItem, at: string | null) {
 
 /** 更多: a disclosure, so it works before hydration; it closes on navigation and on a click outside. */
 function MoreMenu({ dot }: { dot: boolean }) {
+  const tx = useTranslate();
   const menu = useRef<HTMLDetailsElement>(null);
   const { pathname } = useLocation();
   const at = useAt();
@@ -33,20 +36,19 @@ function MoreMenu({ dot }: { dot: boolean }) {
   }, []);
   return (
     <details ref={menu} className="site-more">
-      <summary className="site-nav-link">
-        更多{dot && <span className="site-nav-dot" aria-label="有新的更新" />}
+      <summary className="site-nav-link"><Text value="更多" />{dot && <span className="site-nav-dot" aria-label={tx("有新的更新")} />}
       </summary>
       <div className="site-more-panel">
         {MORE_MENU.map((group) => (
-          <div key={group.title}>
-            <p className="site-more-title">{group.title}</p>
+          <div key={tx(group.title)}>
+            <p className="site-more-title">{tx(group.title)}</p>
             <ul>
               {group.items.map((item) => (
                 <li key={item.to}>
                   <Link to={itemHref(item, at)} reloadDocument={item.document} prefetch={item.document ? "none" : "intent"} className="site-more-link">
                     <item.icon size={15} />
-                    <span>{item.label}</span>
-                    {dot && item.changelog && <span className="site-nav-dot" aria-label="有新的更新" />}
+                    <span>{tx(item.label)}</span>
+                    {dot && item.changelog && <span className="site-nav-dot" aria-label={tx("有新的更新")} />}
                   </Link>
                 </li>
               ))}
@@ -59,16 +61,17 @@ function MoreMenu({ dot }: { dot: boolean }) {
 }
 
 export function SiteNav({ changelogVersion, kardashev }: { changelogVersion: string | null; kardashev: number | null }) {
+  const tx = useTranslate();
   const { pathname } = useLocation();
   const at = useAt();
   const dot = useChangelogDot(changelogVersion);
   return (
     <div className="site-nav">
       <div className="site-nav-inner">
-        <Link to={withAt("/", at)} className="site-nav-brand" aria-label={`${SITE.name} 首页`}>
+        <Link to={withAt("/", at)} className="site-nav-brand" aria-label={tx("{0} 首页", SITE.name)}>
           <Wordmark size={24} />
         </Link>
-        <nav aria-label="主导航" className="site-nav-links">
+        <nav aria-label={tx("主导航")} className="site-nav-links">
           {TOPNAV.map((item) => (
             <Link
               key={item.to}
@@ -77,13 +80,14 @@ export function SiteNav({ changelogVersion, kardashev }: { changelogVersion: str
               aria-current={tabIsActive(item, pathname) ? "page" : undefined}
               className="site-nav-link"
             >
-              {item.label}
+              {tx(item.label)}
             </Link>
           ))}
           <MoreMenu dot={dot} />
         </nav>
+        <LanguageSwitch />
         {FEATURES.timeMachine && kardashev !== null && (
-          <Link to={chronicleHref(at)} className="site-nav-k" title="卡尔达肖夫指数：人类一次能源功率换算，I 型文明为 1">
+          <Link to={chronicleHref(at)} className="site-nav-k" title={tx("卡尔达肖夫指数：人类一次能源功率换算，I 型文明为 1")}>
             <span className="site-nav-k-dot" aria-hidden="true" />K = {kardashev.toFixed(3)}
           </Link>
         )}

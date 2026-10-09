@@ -1,3 +1,5 @@
+import { contentFetch } from "../../lib/content-fetch";
+import { Text, useTranslate } from "../../lib/i18n";
 // The day-grouped feed (精选 home, topics): a time rail with cards on desktop, dated rows under grey
 // day bars on phones. Keeps its place across back navigation and loads further pages. There is no
 // "new items" prompt: readers refresh for the latest head (feedback #1199).
@@ -43,17 +45,18 @@ const WEEKDAY_SHORT = ["周日", "周一", "周二", "周三", "周四", "周五
 
 /** Sticky day header: a quiet row on desktop, a grey full-width bar on phones. */
 export function DayHeader({ day, today, count, collapsed, onToggle }: { day: string; today: string; count: number | null; collapsed?: boolean; onToggle?: () => void }) {
+  const tx = useTranslate();
   const [, m, d] = day.split("-").map(Number) as [number, number, number];
-  const date = `${m}月${d}日`;
-  const weekday = beijingWeekday(day);
+  const date = tx("{0}月{1}日", m, d);
+  const weekday = tx(beijingWeekday(day));
   const short = WEEKDAY_SHORT[new Date(`${day}T12:00:00+08:00`).getUTCDay()] ?? "";
   return (
     <div className="sticky top-0 z-20 -mx-4 bg-daybar px-4 lg:mx-0 lg:bg-bg lg:px-0">
       {/* Phones: a full-width day bar. */}
       <div className="flex h-9 items-center gap-2 lg:hidden">
-        <span className="text-[14px] font-bold text-ink">{day === today ? "今天" : date}</span>
+        <span className="text-[14px] font-bold text-ink">{day === today ? tx("今天") : date}</span>
         {day === today && <span className="text-[12.5px] text-ink-4">{date}</span>}
-        <span className="text-[12.5px] text-ink-4">{short}</span>
+        <span className="text-[12.5px] text-ink-4"><Text value={short} /></span>
       </div>
       {/* Desktop: the date ends where the times end, the fold toggle sits on the rail. */}
       <div className="hidden h-11 grid-cols-[64px_22px_minmax(0,1fr)] items-center lg:grid">
@@ -65,7 +68,7 @@ export function DayHeader({ day, today, count, collapsed, onToggle }: { day: str
             type="button"
             onClick={onToggle}
             aria-expanded={!collapsed}
-            aria-label={collapsed ? `展开${date}` : `收起${date}`}
+            aria-label={collapsed ? tx("展开{0}", date) : tx("收起{0}", date)}
             className="grid size-6 place-items-center justify-self-center rounded-full text-ink-4 transition-colors hover:bg-bg-sunk hover:text-ink"
           >
             <IconChevronDown size={14} className={`transition-transform duration-200 ${collapsed ? "-rotate-90" : ""}`} />
@@ -74,12 +77,11 @@ export function DayHeader({ day, today, count, collapsed, onToggle }: { day: str
           <span />
         )}
         <span className="text-[13px] text-ink-4">
-          {weekday}
+          <Text value={weekday} />
           {count !== null && (
             <>
               {" · "}
-              <span className="num">{count}</span> 条
-            </>
+              <span className="num">{count}</span><Text value="条" /></>
           )}
         </span>
       </div>
@@ -114,6 +116,7 @@ export function TimelineSlot({ at, children, fresh = false, arrived = false, del
 }
 
 export function Timeline({ initial, filters }: { initial: TimelineResponse; filters: TimelineFilters }) {
+  const tx = useTranslate();
   const location = useLocation();
   const navigation = useNavigation();
   const readSet = useReadSet();
@@ -228,10 +231,10 @@ export function Timeline({ initial, filters }: { initial: TimelineResponse; filt
     setLoadingMore(true);
     setLoadError(false);
     try {
-      const res = await fetch(`/api/site/timeline?${filterQuery(filters, { cursor: s.nextCursor })}`, { signal: controller.signal });
+      const res = await contentFetch(`/api/site/timeline?${filterQuery(filters, { cursor: s.nextCursor })}`, { signal: controller.signal });
       if (res.status === 400) {
         // Cursor no longer fits: start over from the head.
-        const head = await fetch(`/api/site/timeline?${key}`, { signal: controller.signal });
+        const head = await contentFetch(`/api/site/timeline?${key}`, { signal: controller.signal });
         if (head.ok && current()) {
           const response = (await head.json()) as TimelineResponse;
           if (!current()) return;
@@ -303,7 +306,7 @@ export function Timeline({ initial, filters }: { initial: TimelineResponse; filt
     <div className="relative">
       {days.length === 0 && (
         <div className="lg:card">
-          <EmptyState title="这个筛选下还没有精选内容">换个类别看看，或者去全部动态里找找。</EmptyState>
+          <EmptyState title={tx("这个筛选下还没有精选内容")}><Text value="换个类别看看，或者去全部动态里找找。" /></EmptyState>
         </div>
       )}
 
@@ -343,20 +346,15 @@ export function FeedEnd({ loading, error, hasMore, manual, empty, onMore }: { lo
     <div className="flex justify-center py-6">
       {loading ? (
         <span className="inline-flex items-center gap-2 text-[12.5px] text-ink-4">
-          <RingMark className="size-4 text-accent" spinning /> 正在加载
-        </span>
+          <RingMark className="size-4 text-accent" spinning /><Text value="正在加载" /></span>
       ) : error ? (
-        <button type="button" onClick={onMore} className="h-9 rounded-full border border-hot/30 px-4 text-[13px] text-hot hover:bg-hot-soft">
-          加载失败，点此重试
-        </button>
+        <button type="button" onClick={onMore} className="h-9 rounded-full border border-hot/30 px-4 text-[13px] text-hot hover:bg-hot-soft"><Text value="加载失败，点此重试" /></button>
       ) : hasMore ? (
         manual && (
-          <button type="button" onClick={onMore} className="h-9 rounded-full border border-line-strong bg-surface px-5 text-[13px] font-medium text-ink-2 transition-colors hover:border-ink-4 hover:text-ink">
-            加载更多
-          </button>
+          <button type="button" onClick={onMore} className="h-9 rounded-full border border-line-strong bg-surface px-5 text-[13px] font-medium text-ink-2 transition-colors hover:border-ink-4 hover:text-ink"><Text value="加载更多" /></button>
         )
       ) : (
-        !empty && <span className="text-[12px] text-ink-4">已经到底了</span>
+        !empty && <span className="text-[12px] text-ink-4"><Text value="已经到底了" /></span>
       )}
     </div>
   );

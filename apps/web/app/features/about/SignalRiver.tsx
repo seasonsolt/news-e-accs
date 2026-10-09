@@ -1,3 +1,4 @@
+import { useTranslate } from "../../lib/i18n";
 // The about page's river. Every line is one of the site's real sources (hover names it). Lines run in
 // from the left, gather into bundles (many reports of one story), meet the 精选 gate that lets a few
 // bundles through, and the ones that pass turn teal and run into a small newspaper: the day's report.
@@ -291,6 +292,7 @@ export function SignalRiver({
   className?: string;
   children?: ReactNode;
 }) {
+  const tx = useTranslate();
   const motionAllowed = useMotionAllowed();
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -484,7 +486,7 @@ export function SignalRiver({
       const p = L.paper;
       if (x >= p.x - 8 && x <= p.x + p.w + 8 && y >= p.y - 8 && y <= p.y + p.h + 8) {
         hover = { s: null, bundle: null, paper: true };
-        place(x, y, withSubject("日报"), "每天 08:00 出刊");
+        place(x, y, withSubject(tx("日报")), tx("每天 08:00 出刊"));
         redraw();
         return;
       }
@@ -507,13 +509,13 @@ export function SignalRiver({
       const b = L.bundles[s.bundle]!;
       if (x < L.x2) {
         hover = { s: best, bundle: null, paper: false };
-        const kind = s.source ? (KIND[s.source.kind] ?? "信源") : "信源";
-        place(x, y, s.source ? shortSourceName(s.source.name) : "一个信源", s.source?.heatOnly ? `${kind} · 只计入热度` : kind);
+        const kind = s.source ? (KIND[s.source.kind] ?? tx("信源")) : tx("信源");
+        place(x, y, s.source ? shortSourceName(s.source.name) : tx("一个信源"), s.source?.heatOnly ? tx("{0} · 只计入热度", kind) : kind);
       } else {
         hover = { s: null, bundle: s.bundle, paper: false };
-        if (x < L.gate) place(x, y, "同一件事", `${b.n} 个来源的报道合成一条`);
-        else if (b.kept) place(x, y, "进了精选", "有信息量，分数也够");
-        else place(x, y, "没进精选", "信息不够、重复或只是营销");
+        if (x < L.gate) place(x, y, tx("同一件事"), tx("{0} 个来源的报道合成一条", b.n));
+        else if (b.kept) place(x, y, tx("进了精选"), tx("有信息量，分数也够"));
+        else place(x, y, tx("没进精选"), tx("信息不够、重复或只是营销"));
       }
       redraw();
     };

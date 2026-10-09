@@ -1,3 +1,4 @@
+import { useTranslate } from "../../lib/i18n";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { Link } from "react-router";
 import { IntentLink } from "./IntentLink";
@@ -76,6 +77,7 @@ export function PillTabs({
   fill?: boolean;
   className?: string;
 }) {
+  const tx = useTranslate();
   const links = items.some((t) => t.to);
   const Track = links ? "nav" : "div";
   return (
@@ -93,7 +95,7 @@ export function PillTabs({
             <>
               {on && <Thumb id={layoutId} />}
               <span className="relative inline-flex items-center gap-1">
-                {t.label}
+                {typeof t.label === "string" ? tx(t.label) : t.label}
                 {t.count !== undefined && t.count !== null && <span className={`num text-[0.86em] font-normal ${on ? "text-ink-3" : "text-ink-4"}`}>{t.count}</span>}
               </span>
             </>

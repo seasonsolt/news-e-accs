@@ -1,3 +1,5 @@
+import { requestLocale, htmlLanguage, type Locale } from "./lib/locale";
+import { Text, translate, useLocale, useTranslate } from "./lib/i18n";
 import { titled } from "./lib/seo";
 import { SITE } from "@aihot/industry/site";
 import { FEATURES } from "@aihot/industry/features";
@@ -27,10 +29,11 @@ export const links: Route.LinksFunction = () => [
   { rel: "icon", type: "image/png", href: "/icon.png" },
   { rel: "apple-touch-icon", href: "/apple-icon.png" },
   { rel: "manifest", href: "/manifest.webmanifest" },
-  { rel: "alternate", type: "application/rss+xml", title: `${SITE.name} — 精选`, href: "/feed/picks.xml" },
+  { rel: "alternate", type: "application/rss+xml", title: `${SITE.name} — Picks / 精选`, href: "/feed/picks.xml" },
 ];
 
 interface SiteMeta {
+  locale: Locale;
   changelogVersion: string | null;
   /** Where the site's own record begins, for the time machine (null when it is off or unreadable). */
   timeBounds: TimeMachineBounds | null;
@@ -41,15 +44,16 @@ export async function loader({ request }: Route.LoaderArgs) {
     apiGet<{ changelogVersion: string | null }>("/api/site/meta", { signal: request.signal }).catch(() => ({ changelogVersion: null })),
     FEATURES.timeMachine ? apiGet<TimeMachineBounds>("/api/site/chronicle/bounds", { signal: request.signal }).catch(() => null) : null,
   ]);
-  return { changelogVersion: meta.changelogVersion, timeBounds } satisfies SiteMeta;
+  return { locale: requestLocale(request), changelogVersion: meta.changelogVersion, timeBounds } satisfies SiteMeta;
 }
 
 export const shouldRevalidate: ShouldRevalidateFunction = () => false;
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const at = useAt();
+  const locale = useLocale();
   return (
-    <html lang={SITE.locale} suppressHydrationWarning>
+    <html lang={htmlLanguage(locale)} suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -71,27 +75,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 /** Only a page nobody matched falls back to this; every page names itself. */
-export function meta({ error }: Route.MetaArgs) {
+export function meta({ error, loaderData }: Route.MetaArgs) {
   if (!error) return [];
   const notFound = isRouteErrorResponse(error) && error.status === 404;
-  return [{ title: titled(notFound ? "页面不存在" : "暂时无法加载") }, { name: "robots", content: "noindex" }];
+  return [{ title: titled(translate(loaderData?.locale ?? "en", notFound ? "页面不存在" : "暂时无法加载")) }, { name: "robots", content: "noindex" }];
 }
 
 /** The deck's top bar, the page (or an error), the footer and the phone tab bar. */
 function SiteShell({ changelogVersion, timeBounds, children }: { changelogVersion: string | null; timeBounds: TimeMachineBounds | null; children: ReactNode }) {
   const navigation = useNavigation();
+  const locale = useLocale();
   return (
     <div className="flex min-h-dvh flex-col">
       <NavigationProgress active={navigation.state === "loading"} />
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[70] focus:rounded-control focus:bg-surface focus:px-3 focus:py-2">
-        跳到正文
-      </a>
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[70] focus:rounded-control focus:bg-surface focus:px-3 focus:py-2"><Text value="跳到正文" /></a>
       <SiteNav changelogVersion={changelogVersion} kardashev={timeBounds?.kardashev ?? null} />
       {/* One centred column (640px on phones, the list width on desktop), 16px below the top bar; a
           page's Deck spans the window from inside it and takes up those 16px to sit flush. */}
       <main id="main" className="min-w-0 flex-1 overflow-x-clip pb-[calc(72px+env(safe-area-inset-bottom))] lg:pb-12">
         <div className="mx-auto w-full max-w-[640px] px-4 pt-4 lg:max-w-[var(--page-max-wide)] lg:px-8">
           <TimeBar bounds={timeBounds} />
+          {locale === "en" && <p className="mb-3 text-[12px] text-ink-4" lang="en">English editions appear when available. Pending translations and original source material are identified below.</p>}
           {children}
         </div>
       </main>
@@ -116,6 +120,7 @@ export default function App() {
 }
 
 export function ErrorBoundary() {
+  const tx = useTranslate();
   const error = useRouteError();
   const site = useRouteLoaderData<typeof loader>("root");
   const { pathname } = useLocation();
@@ -126,18 +131,14 @@ export function ErrorBoundary() {
       <div className="max-w-sm text-center">
         <EmptyArt lazy={false} className="mx-auto mb-6 w-[min(320px,85%)]" />
         {notFound ? <NotFoundBoard /> : <div className="mono text-[12px] text-ink-4">{status}</div>}
-        <h1 className="mt-1.5 text-[20px] font-bold text-ink">{notFound ? "这里没有内容" : "暂时无法加载"}</h1>
+        <h1 className="mt-1.5 text-[20px] font-bold text-ink">{notFound ? tx("这里没有内容") : tx("暂时无法加载")}</h1>
         <p className="mt-2 text-[13.5px] leading-relaxed text-ink-3">
-          {notFound ? "你访问的页面不存在，或内容已不再公开。" : "服务暂时繁忙，请稍后再试。已经加载过的内容不受影响。"}
+          {notFound ? tx("你访问的页面不存在，或内容已不再公开。") : tx("服务暂时繁忙，请稍后再试。已经加载过的内容不受影响。")}
         </p>
-        {notFound && <p data-telegraph-caption="" className="mono mt-3 text-[11px] tracking-wide text-ink-4">电报未送达 · 线路上没有这一页</p>}
+        {notFound && <p data-telegraph-caption="" className="mono mt-3 text-[11px] tracking-wide text-ink-4"><Text value="电报未送达 · 线路上没有这一页" /></p>}
         <div className="mt-6 flex justify-center gap-2.5">
-          <Link to="/" className={buttonClass("primary")}>
-            回到精选
-          </Link>
-          <Link to="/all" className={buttonClass("secondary")}>
-            浏览全部动态
-          </Link>
+          <Link to="/" className={buttonClass("primary")}><Text value="回到精选" /></Link>
+          <Link to="/all" className={buttonClass("secondary")}><Text value="浏览全部动态" /></Link>
         </div>
       </div>
     </div>

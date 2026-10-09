@@ -1,3 +1,4 @@
+import { Text, useTranslate } from "../../lib/i18n";
 // Newsletter onboarding: a full-bleed, rounded steampunk film loop (public/media, rendered by
 // tools/make-media.sh) behind the site name, the sign-up, the manifesto and a way to skip straight to
 // the news. On a first visit to the front page it covers the screen (html[data-onboarding], set before
@@ -42,6 +43,7 @@ async function post(path: string, body: Record<string, string>): Promise<string 
  * where `token` (from the confirmation letter) is confirmed on arrival, with a button to try again.
  */
 export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; token?: string | null }) {
+  const tx = useTranslate();
   const motionAllowed = useMotionAllowed();
   const video = useRef<HTMLVideoElement>(null);
   const manifesto = useRef<HTMLDialogElement>(null);
@@ -187,41 +189,39 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
       </div>
 
       <div className="relative flex h-full flex-col items-center justify-center gap-5 overflow-y-auto px-5 pb-16 pt-12 text-center lg:gap-7">
-        <p className="mono text-[11px] uppercase tracking-[0.32em] text-[#e8c98a]"><DecryptedText text="e-acc.ai · 加速日报" /></p>
+        <p className="mono text-[11px] uppercase tracking-[0.32em] text-[#e8c98a]"><DecryptedText text={tx("e-acc.ai · 加速日报")} /></p>
         <Title id={`onboarding-title-${mode}`} aria-label={SITE.name} className="font-display text-[clamp(84px,17vw,200px)] italic leading-[0.9] tracking-[-0.02em] [text-shadow:0_2px_30px_rgba(0,0,0,0.55)]">
           <BrassSheen text={SITE.name} visible={shown} />
         </Title>
 
         {phase.kind === "sent" ? (
-          <Notice title="去邮箱点一下确认" body={`确认邮件已经发到 ${phase.email}。点信里的「确认订阅」，明早 8 点就能收到第一期日报。没收到的话，看看「推广」和「垃圾邮件」。`}>
-            {toNews("先去看看今天的新闻", true)}
+          <Notice title={tx("去邮箱点一下确认")} body={tx("确认邮件已经发到 {0}。点信里的「确认订阅」，明早 8 点就能收到第一期日报。没收到的话，看看「推广」和「垃圾邮件」。", phase.email)}>
+            {toNews(tx("先去看看今天的新闻"), true)}
           </Notice>
         ) : phase.kind === "confirmed" ? (
           <>
-            <Notice title="订阅成功" body="每天早上 8 点，日报会准时出现在你的邮箱，每一封信的末尾都可以一键退订。用 Gmail 的话，第一封日报如果在「推广」里，把它拖到「主要」，以后就都在收件箱最前面了。">
-              {toNews("去看今天的新闻", true)}
+            <Notice title={tx("订阅成功")} body={tx("每天早上 8 点，日报会准时出现在你的邮箱，每一封信的末尾都可以一键退订。用 Gmail 的话，第一封日报如果在「推广」里，把它拖到「主要」，以后就都在收件箱最前面了。")}>
+              {toNews(tx("去看今天的新闻"), true)}
             </Notice>
             <TearTicket date={new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())} />
           </>
         ) : confirming ? (
           <div className="flex w-full max-w-md flex-col items-center gap-4">
-            <p className="text-[17px] font-medium text-[#f6ead2]/92 [text-shadow:0_1px_12px_rgba(0,0,0,0.6)]">最后一步：确认订阅 {SITE.name} 日报。</p>
+            <p className="text-[17px] font-medium text-[#f6ead2]/92 [text-shadow:0_1px_12px_rgba(0,0,0,0.6)]"><Text value="最后一步：确认订阅" />{SITE.name}<Text value="日报。" /></p>
             <button
               type="button"
               onClick={confirmToken}
               disabled={phase.kind === "sending"}
               className="inline-flex h-12 items-center rounded-full bg-gradient-to-br from-[#f0c56a] via-[#d9a441] to-[#9a5b1f] px-9 text-[16px] font-semibold text-[#1a1208] shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition-transform duration-200 hover:scale-[1.03] disabled:opacity-60"
             >
-              {phase.kind === "sending" ? "确认中…" : "确认订阅"}
+              {phase.kind === "sending" ? tx("确认中…") : tx("确认订阅")}
             </button>
             {phase.kind === "error" && <p role="alert" className="text-[14px] text-[#ffb89a] [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">{phase.message}</p>}
           </div>
         ) : (
           <>
             <form className="relative w-full max-w-md" onSubmit={subscribe}>
-              <label htmlFor={`onboarding-email-${mode}`} className="sr-only">
-                邮箱地址
-              </label>
+              <label htmlFor={`onboarding-email-${mode}`} className="sr-only"><Text value="邮箱地址" /></label>
               <input
                 id={`onboarding-email-${mode}`}
                 type="email"
@@ -231,13 +231,13 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
                 autoCapitalize="off"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="输入邮箱，每天早上收到日报"
+                placeholder={tx("输入邮箱，每天早上收到日报")}
                 className="h-12 w-full rounded-full border-2 border-[#f6ead2]/45 bg-[#1a120a]/35 pl-5 pr-14 text-[15px] text-[#f6ead2] shadow-sm backdrop-blur-md transition-[border-color,background-color] duration-200 placeholder:text-[#f6ead2]/75 focus:border-[#e8b85a] focus:bg-[#1a120a]/55 focus:outline-none"
               />
               <ClickSpark className="absolute right-1 top-1/2 size-10 -translate-y-1/2">
                 <button
                   type="submit"
-                  aria-label="订阅"
+                  aria-label={tx("订阅")}
                   disabled={phase.kind === "sending"}
                   className="relative flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-[#f0c56a] via-[#d9a441] to-[#9a5b1f] text-[#1a1208] shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition-transform duration-200 hover:scale-105 focus-visible:outline-[#f6ead2] disabled:opacity-60"
                 >
@@ -255,16 +255,12 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
             </form>
             {phase.kind === "error" && <p role="alert" className="-mt-2 text-[14px] text-[#ffb89a] [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">{phase.message}</p>}
 
-            <p className="max-w-xl text-pretty text-[16px] font-medium leading-[1.45] text-[#f6ead2]/92 [text-shadow:0_1px_12px_rgba(0,0,0,0.6)] lg:text-[19px]">
-              每天早上 8 点，一封 AI 圈值得看的几件事：模型发布、价格变动、算力扩张。免费，随时一键退订。
-            </p>
+            <p className="max-w-xl text-pretty text-[16px] font-medium leading-[1.45] text-[#f6ead2]/92 [text-shadow:0_1px_12px_rgba(0,0,0,0.6)] lg:text-[19px]"><Text value="每天早上 8 点，一封 AI 圈值得看的几件事：模型发布、价格变动、算力扩张。免费，随时一键退订。" /></p>
 
             <div className="mt-1 flex flex-wrap items-center justify-center gap-3">
-              <button type="button" onClick={() => manifesto.current?.showModal()} className="steam-shine relative h-10 overflow-hidden rounded-full border border-[#f6ead2]/35 bg-[#f6ead2]/12 px-8 text-[14px] font-semibold text-[#f6ead2] backdrop-blur-md transition-colors hover:bg-[#f6ead2]/20">
-                宣言 Manifesto
-              </button>
+              <button type="button" onClick={() => manifesto.current?.showModal()} className="steam-shine relative h-10 overflow-hidden rounded-full border border-[#f6ead2]/35 bg-[#f6ead2]/12 px-8 text-[14px] font-semibold text-[#f6ead2] backdrop-blur-md transition-colors hover:bg-[#f6ead2]/20"><Text value="宣言 Manifesto" /></button>
             </div>
-            <div className="mt-2">{toNews("先不订阅，直接看新闻 →")}</div>
+            <div className="mt-2">{toNews(tx("先不订阅，直接看新闻 →"))}</div>
           </>
         )}
       </div>
@@ -280,7 +276,7 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
             <h2 id={`manifesto-title-${mode}`} className="font-display text-[44px] italic leading-none text-ink">
               Manifesto
             </h2>
-            <button type="button" onClick={() => manifesto.current?.close()} aria-label="关闭" className="-mr-2 flex size-9 items-center justify-center rounded-full text-ink-3 hover:bg-bg-sunk hover:text-ink">
+            <button type="button" onClick={() => manifesto.current?.close()} aria-label={tx("关闭")} className="-mr-2 flex size-9 items-center justify-center rounded-full text-ink-3 hover:bg-bg-sunk hover:text-ink">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                 <path d="M6 6l12 12M18 6L6 18" />
               </svg>
@@ -291,15 +287,13 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
               <li key={head} className="flex gap-4">
                 <span className="w-9 shrink-0 font-display text-[26px] italic leading-none text-accent">{["I", "II", "III", "IV", "V"][i]}</span>
                 <div>
-                  <div className="text-[15.5px] font-semibold text-ink">{head}</div>
-                  <p className="mt-0.5 text-[14px] leading-relaxed text-ink-3">{body}</p>
+                  <div className="text-[15.5px] font-semibold text-ink">{tx(head)}</div>
+                  <p className="mt-0.5 text-[14px] leading-relaxed text-ink-3">{tx(body)}</p>
                 </div>
               </li>
             ))}
           </ol>
-          <p className="mt-6 border-t border-line pt-4 text-[13px] text-ink-4">
-            什么是 e/acc：
-            <a href="https://e-acc.ai/what-is-eacc" className="text-accent underline decoration-accent/35 underline-offset-[3px] hover:decoration-accent">
+          <p className="mt-6 border-t border-line pt-4 text-[13px] text-ink-4"><Text value="什么是 e/acc：" /><a href="https://e-acc.ai/what-is-eacc" className="text-accent underline decoration-accent/35 underline-offset-[3px] hover:decoration-accent">
               e-acc.ai/what-is-eacc
             </a>
           </p>
@@ -322,7 +316,7 @@ function Notice({ title, body, children }: { title: string; body: string; childr
   return (
     <div role="status" className="flex max-w-md flex-col items-center gap-4">
       <div className="text-[22px] font-bold [text-shadow:0_1px_12px_rgba(0,0,0,0.6)]">{title}</div>
-      <p className="text-pretty text-[16px] leading-[1.6] text-[#f6ead2]/92 [text-shadow:0_1px_12px_rgba(0,0,0,0.6)]">{body}</p>
+      <p className="text-pretty text-[16px] leading-[1.6] text-[#f6ead2]/92 [text-shadow:0_1px_12px_rgba(0,0,0,0.6)]"><Text value={body} /></p>
       {children}
     </div>
   );

@@ -1,3 +1,4 @@
+import { useTranslate } from "../../lib/i18n";
 // The hot list's pressure gauge: a brass dial whose needle rises, as the page opens, to how hot the
 // top story runs (its heat against FULL_SCALE). Decoration with a text twin: the zone name is read out.
 import type { CSSProperties } from "react";
@@ -15,13 +16,14 @@ function zoneOf(ratio: number): { label: string; tone: string } {
 }
 
 export function HeatGauge({ heat, className = "" }: { heat: number; className?: string }) {
+  const tx = useTranslate();
   const ratio = Math.max(0, Math.min(1, heat / FULL_SCALE));
   const zone = zoneOf(ratio);
   const angle = -SWEEP / 2 + ratio * SWEEP;
   // Tick marks every 20°, the last third of the dial in the hot colour.
   const ticks = Array.from({ length: SWEEP / 20 + 1 }, (_, i) => -SWEEP / 2 + i * 20);
   return (
-    <div className={`heat-gauge ${className}`} role="img" aria-label={`今日热度：${zone.label}`}>
+    <div className={`heat-gauge ${className}`} role="img" aria-label={tx("今日热度：{0}", zone.label)}>
       <svg viewBox="0 0 100 100" className="size-full" aria-hidden="true">
         <circle cx="50" cy="50" r="47" fill="#2a1f16" />
         <circle cx="50" cy="50" r="44" fill="#f4ecdc" stroke="#b0802f" strokeWidth="3" />

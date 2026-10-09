@@ -1,3 +1,4 @@
+import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { Link, useLoaderData, useNavigation, useSearchParams } from "react-router";
 import type { Route } from "./+types/all";
@@ -27,12 +28,12 @@ export async function loader({ request }: Route.LoaderArgs) {
   const page = Math.min(Math.max(Number.parseInt(url.searchParams.get("page") ?? "1", 10) || 1, 1), 50);
   const data = await loadOr404<PoolResponse>(
     `/api/site/pool${queryString({ channel: channel === "all" ? null : channel, category, tag, q, tab, page: page > 1 ? page : null })}`,
-    { signal: request.signal, busyRedirect: "/all/search-busy" },
+    { request, signal: request.signal, busyRedirect: "/all/search-busy" },
   );
   return { data };
 }
 
-export function meta({ loaderData }: Route.MetaArgs) {
+export function meta({ matches, loaderData }: Route.MetaArgs) {
   const f = loaderData?.data.filters;
   const q = f?.q;
   const page = loaderData?.data.page ?? 1;
@@ -41,7 +42,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
     description: `${SITE.name} 收录的全部${withSubject("动态")}，可按类别与标签筛选，支持中英文搜索。`,
     path: listPath("/all", { channel: f && f.channel !== "all" ? f.channel : null, category: f?.category, tag: f?.tag, q, tab: f?.tab === "relevance" ? "relevance" : null, page: page > 1 ? page : null }),
     noindex: !!q,
-  });
+  }, localeFromMatches(matches ?? []));
 }
 
 export function headers() {
@@ -60,6 +61,7 @@ function pageHref(params: URLSearchParams, page: number) {
 }
 
 export default function AllPage() {
+  const tx = useTranslate();
   const { data } = useLoaderData<typeof loader>();
   const [params] = useSearchParams();
   const navigation = useNavigation();
@@ -73,7 +75,7 @@ export default function AllPage() {
     else sp.delete("tab");
     return `/all?${sp}`;
   };
-  const title = f.q ? `搜索“${f.q}”` : f.tag ? `#${f.tag}` : null;
+  const title = f.q ? tx("搜索“{0}”", f.q) : f.tag ? `#${tx(f.tag)}` : null;
   const updated = new Date(data.freshness).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Shanghai" });
 
   return (
@@ -81,10 +83,10 @@ export default function AllPage() {
       <Deck
         compact
         art="ambient-engine-room"
-        label="全部动态"
-        kicker={f.q ? "搜索" : <>全部动态 · 今日 <span className="num">{data.todayCount}</span> 条</>}
-        title={title ?? `全部${withSubject("动态")}`}
-        description={f.q ? undefined : "信源抓到、进了内容池的全部内容，按时间排列；精选只是其中一部分。"}
+        label={tx("全部动态")}
+        kicker={f.q ? tx("搜索") : <><Text value="全部动态 · 今日" /><span className="num">{data.todayCount}</span><Text value="条" /></>}
+        title={title ?? tx("全部 AI 动态")}
+        description={f.q ? undefined : tx("信源抓到、进了内容池的全部内容，按时间排列；精选只是其中一部分。")}
       />
       {/* Desktop, as on 精选: one filter row with the search field aligned on the right. */}
       <div className="hidden lg:block">
@@ -108,12 +110,11 @@ export default function AllPage() {
           <PillTabs
             size="xs"
             layoutId="all-search-sort"
-            label="搜索排序"
+            label={tx("搜索排序")}
             active={f.tab}
-            items={(["time", "relevance"] as const).map((t) => ({ key: t, label: t === "time" ? "最新（标题与摘要）" : "全文相关", to: searchTabHref(t) }))}
+            items={(["time", "relevance"] as const).map((t) => ({ key: t, label: t === "time" ? tx("最新（标题与摘要）") : tx("全文相关"), to: searchTabHref(t) }))}
           />
-          <span className="text-[12px] text-ink-4">
-            找到 <span className="num">{data.total >= 2000 ? "2000+" : data.total}</span> 条 · 更新于 <span className="num">{updated}</span>
+          <span className="text-[12px] text-ink-4"><Text value="找到" /><span className="num">{data.total >= 2000 ? "2000+" : data.total}</span><Text value="条 · 更新于" /><span className="num">{updated}</span>
           </span>
         </div>
       )}
@@ -123,16 +124,14 @@ export default function AllPage() {
         {data.items.length === 0 ? (
           <div className="mt-2 lg:card">
             <EmptyState
-              title="没有找到相关内容"
+              title={tx("没有找到相关内容")}
               action={
                 f.q && f.tab === "time" ? (
-                  <Link to={searchTabHref("relevance")} className="text-[13px] font-medium text-accent hover:underline">
-                    试试“全文相关”，连正文一起搜
-                  </Link>
+                  <Link to={searchTabHref("relevance")} className="text-[13px] font-medium text-accent hover:underline"><Text value="试试“全文相关”，连正文一起搜" /></Link>
                 ) : undefined
               }
             >
-              {f.q ? "换个说法，或者去掉筛选再试。" : "这个筛选下暂时没有内容。"}
+              {f.q ? tx("换个说法，或者去掉筛选再试。") : tx("这个筛选下暂时没有内容。")}
             </EmptyState>
           </div>
         ) : (
@@ -140,7 +139,7 @@ export default function AllPage() {
         )}
       </div>
       <Pagination page={data.page} pageCount={data.pageCount} href={(p) => pageHref(params, p)} />
-      {data.page >= 50 && <p className="mt-4 text-center text-[12px] text-ink-4">最多提供 50 页，更早的内容请使用搜索或主题页。</p>}
+      {data.page >= 50 && <p className="mt-4 text-center text-[12px] text-ink-4"><Text value="最多提供 50 页，更早的内容请使用搜索或主题页。" /></p>}
     </div>
   );
 }
@@ -149,11 +148,11 @@ export function SearchBusy() {
   return (
     <div className="mx-auto max-w-sm py-24 text-center">
       <RingMark className="mx-auto mb-5 size-10 text-accent" spinning />
-      <h1 className="text-[20px] font-bold text-ink">搜索有点忙</h1>
-      <p className="mt-2 text-[14px] leading-relaxed text-ink-3">现在搜索的人比较多，请稍等几秒再试。列表浏览不受影响。</p>
+      <h1 className="text-[20px] font-bold text-ink"><Text value="搜索有点忙" /></h1>
+      <p className="mt-2 text-[14px] leading-relaxed text-ink-3"><Text value="现在搜索的人比较多，请稍等几秒再试。列表浏览不受影响。" /></p>
       <div className="mt-6 flex justify-center gap-2.5">
-        <Link to="/all" className="inline-flex h-9 items-center rounded-full bg-accent px-4 text-[13.5px] font-medium text-accent-contrast hover:bg-accent-ink">浏览全部动态</Link>
-        <Link to="/" className="inline-flex h-9 items-center rounded-full border border-line-strong bg-surface px-4 text-[13.5px] text-ink-2 hover:border-ink-4">回到精选</Link>
+        <Link to="/all" className="inline-flex h-9 items-center rounded-full bg-accent px-4 text-[13.5px] font-medium text-accent-contrast hover:bg-accent-ink"><Text value="浏览全部动态" /></Link>
+        <Link to="/" className="inline-flex h-9 items-center rounded-full border border-line-strong bg-surface px-4 text-[13.5px] text-ink-2 hover:border-ink-4"><Text value="回到精选" /></Link>
       </div>
     </div>
   );

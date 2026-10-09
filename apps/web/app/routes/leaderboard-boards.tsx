@@ -1,3 +1,4 @@
+import { Text, useTranslate } from "../lib/i18n";
 import { SITE } from "@aihot/industry/site";
 import { FEATURES } from "@aihot/industry/features";
 import { Link, Outlet, useRouteLoaderData } from "react-router";
@@ -14,20 +15,21 @@ export function headers() {
 
 /** Shared frame for the overall and category boards: the deck, then the board tabs; only the board below changes. */
 export default function LeaderboardFrame() {
+  const tx = useTranslate();
   const root = useRouteLoaderData<typeof rootLoader>("root");
   return (
     <div className="pb-10">
       <Deck
         art="cat-models"
-        label="模型前沿"
-        kicker={`${SITE.name} 模型前沿 · 汇总公开评测的共识排名`}
-        title="算力的前沿，此刻在哪"
-        description="汇集多种能力的真实评测，按多项公开评测的共同证据排名。共识分不是正确率，缺测不记零分，价格不参与排名。"
+        label={tx("模型前沿")}
+        kicker={tx("{0} 模型前沿 · 汇总公开评测的共识排名", SITE.name)}
+        title={tx("算力的前沿，此刻在哪")}
+        description={tx("汇集多种能力的真实评测，按多项公开评测的共同证据排名。共识分不是正确率，缺测不记零分，价格不参与排名。")}
         aside={FEATURES.timeMachine && <TimeDial bounds={root?.timeBounds ?? null} className="w-[300px] max-w-full" />}
       >
         <div className="flex flex-wrap gap-2.5">
-          <Link to="/leaderboard/sources" className="deck-button">评测来源 <IconArrowUpRight size={14} className="ml-1" /></Link>
-          <Link to="/leaderboard/rules" className="deck-button">排名怎么算 <IconArrowUpRight size={14} className="ml-1" /></Link>
+          <Link to="/leaderboard/sources" className="deck-button"><Text value="评测来源" /><IconArrowUpRight size={14} className="ml-1" /></Link>
+          <Link to="/leaderboard/rules" className="deck-button"><Text value="排名怎么算" /><IconArrowUpRight size={14} className="ml-1" /></Link>
         </div>
       </Deck>
       <div className="-mx-4 mt-6 px-4 lg:mx-0 lg:px-0">

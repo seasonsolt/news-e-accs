@@ -1,3 +1,4 @@
+import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { useEffect, useState } from "react";
 import { data, Link, useLoaderData, useLocation, useNavigate, useRouteLoaderData, type ShouldRevalidateFunction } from "react-router";
 import { FEATURES } from "@aihot/industry/features";
@@ -26,14 +27,14 @@ export async function loader({ request }: Route.LoaderArgs) {
   if (!FEATURES.timeMachine) throw data({ message: "not_found" }, { status: 404 });
   const now = decimalYear(Date.now());
   const t = moment(new URL(request.url).search, now);
-  const chronicle = await loadOr404<ChronicleResponse>("/api/site/chronicle", { signal: request.signal });
+  const chronicle = await loadOr404<ChronicleResponse>("/api/site/chronicle", { request, signal: request.signal });
   return { chronicle, now, t };
 }
 
 export const shouldRevalidate: ShouldRevalidateFunction = ({ currentUrl, nextUrl, defaultShouldRevalidate }) => currentUrl.pathname === nextUrl.pathname ? false : defaultShouldRevalidate;
 
-export function meta() {
-  return pageMeta({ title: "四维视角", description: "从大爆炸到此刻，再到公开的预测：拖动时间轴，看人类在每个时刻掌握了什么。", path: "/chronicle", image: "/og/pages/chronicle.png" });
+export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
+  return pageMeta({ title: "四维视角", description: "从大爆炸到此刻，再到公开的预测：拖动时间轴，看人类在每个时刻掌握了什么。", path: "/chronicle", image: "/og/pages/chronicle.png" }, localeFromMatches(matches ?? []));
 }
 
 export function headers() {
@@ -41,6 +42,7 @@ export function headers() {
 }
 
 export default function ChroniclePage() {
+  const tx = useTranslate();
   const { chronicle, now, t: initialT } = useLoaderData<typeof loader>();
   const [t, setT] = useState(initialT);
   const location = useLocation();
@@ -53,7 +55,7 @@ export default function ChroniclePage() {
     navigate(`?t=${timeParam(clamped, now)}`, { replace: true, preventScrollReset: true });
   };
   const era = eraAt(chronicle.eras, t);
-  if (!era) return <p className="py-8 text-ink-3">尚无时代数据。</p>;
+  if (!era) return <p className="py-8 text-ink-3"><Text value="尚无时代数据。" /></p>;
   // Standing on a milestone (a click snaps to one): the deck shows that event and, if drawn, its own plate.
   const u = toAxis(t, now);
   const focus = chronicle.milestones.reduce<ChronicleMilestone | null>((best, m) => {
@@ -65,18 +67,18 @@ export default function ChroniclePage() {
   const date = yearToDate(t);
   const present = !!date && !!bounds && date >= bounds.today;
   const recorded = !!date && !!bounds?.earliest && date >= bounds.earliest && date < bounds.today;
-  const links = [{ to: "/", label: "精选" }, { to: "/hot", label: "热点榜" }, ...(FEATURES.leaderboard ? [{ to: "/leaderboard", label: "模型榜" }] : []), { to: "/daily", label: "日报" }];
+  const links = [{ to: "/", label: tx("精选") }, { to: "/hot", label: tx("热点榜") }, ...(FEATURES.leaderboard ? [{ to: "/leaderboard", label: tx("模型榜") }] : []), { to: "/daily", label: tx("日报") }];
   return (
     <div className="chronicle-page pb-8 pt-3 lg:pt-0">
-      <Observatory era={era} focus={focus} label={focus ? timeLabel(focus.t, now, focus.precision, focus.date) : timeLabel(t, now)} distance={distanceLabel(t, now)} />
+      <Observatory era={era} focus={focus} label={focus ? tx(timeLabel(focus.t, now, focus.precision, focus.date)) : tx(timeLabel(t, now))} distance={tx(distanceLabel(t, now))} />
       {/* The chronometer docks under the deck and stays at hand while the readouts below scroll by. */}
-      <section aria-label="时间导航" className="chronometer">
+      <section aria-label={tx("时间导航")} className="chronometer">
         <ChronicleAxis eras={chronicle.eras} milestones={chronicle.milestones} now={now} t={t} onMove={setT} onCommit={commit} />
         <div className="chronometer-controls">
-          <button type="button" disabled={!previous} onClick={() => previous && commit(previous.t)} title={previous?.title}>‹ 上一个里程碑</button>
-          <span className="chronometer-hint">方向键逐幅切换时代 · 拖动或点击定位时间 · 每格是十倍的时间</span>
-          <button type="button" onClick={() => commit(now)}>回到现在</button>
-          <button type="button" disabled={!following} onClick={() => following && commit(following.t)} title={following?.title}>下一个里程碑 ›</button>
+          <button type="button" disabled={!previous} onClick={() => previous && commit(previous.t)} title={previous?.title}><Text value="‹ 上一个里程碑" /></button>
+          <span className="chronometer-hint"><Text value="方向键逐幅切换时代 · 拖动或点击定位时间 · 每格是十倍的时间" /></span>
+          <button type="button" onClick={() => commit(now)}><Text value="回到现在" /></button>
+          <button type="button" disabled={!following} onClick={() => following && commit(following.t)} title={following?.title}><Text value="下一个里程碑 ›" /></button>
         </div>
       </section>
 
@@ -90,9 +92,9 @@ export default function ChroniclePage() {
               <section className="chronicle-slice">
                 <h2>
                   <IconHourglass size={16} />
-                  {present ? "此刻的本站" : "这一天在本站"}
+                  {present ? tx("此刻的本站") : tx("这一天在本站")}
                 </h2>
-                <p>{present ? "时光机落在此刻：这就是现在的站点。" : `回到 ${atLabel(date!)}，看本站当天的样子。`}</p>
+                <p>{present ? tx("时光机落在此刻：这就是现在的站点。") : tx("回到 {0}，看本站当天的样子。", atLabel(date!))}</p>
                 <div className="chronicle-slice-links">
                   {links.map((link) => (
                     <Link key={link.to} to={withAt(link.to, recorded ? date : null)}>
@@ -106,7 +108,7 @@ export default function ChroniclePage() {
           </div>
         </div>
         <EraStrip eras={chronicle.eras} current={era.id} now={now} />
-        <p className="text-[11.5px] leading-relaxed text-ink-4">数据在 industry/chronicle/，每条都附出处；指标在两个有来源的数据点之间按对数插值；预测包含机构、社区观点与注明提出者的本站情景推演，年份不是确定的实现日期。配图由 AI 按各时代的画风绘制。</p>
+        <p className="text-[11.5px] leading-relaxed text-ink-4"><Text value="数据在 industry/chronicle/，每条都附出处；指标在两个有来源的数据点之间按对数插值；预测包含机构、社区观点与注明提出者的本站情景推演，年份不是确定的实现日期。配图由 AI 按各时代的画风绘制。" /></p>
       </div>
     </div>
   );

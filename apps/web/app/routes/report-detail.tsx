@@ -1,3 +1,4 @@
+import { localeFromMatches } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { data, useLoaderData, useRouteLoaderData } from "react-router";
 import type { Route } from "./+types/report-detail";
@@ -26,14 +27,14 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const key = params.key ?? "";
   if (!PATTERN[kind].test(key)) throw data({ message: "not_found" }, { status: 404 });
   const [report, { items: index }] = await Promise.all([
-    loadOr404<ReportDetail>(`/api/site/reports/${kind}/${key}`, { signal: request.signal }),
-    apiGet<{ items: ReportNavigationEntry[] }>(`/api/site/reports/${kind}/navigation/${key}`, { signal: request.signal }),
+    loadOr404<ReportDetail>(`/api/site/reports/${kind}/${key}`, { request, signal: request.signal }),
+    apiGet<{ items: ReportNavigationEntry[] }>(`/api/site/reports/${kind}/navigation/${key}`, { request, signal: request.signal }),
   ]);
   const at = requestAt(request);
   return { report, index, today: at ?? beijingDate(Date.now()), at };
 }
 
-export function meta({ loaderData }: Route.MetaArgs) {
+export function meta({ matches, loaderData }: Route.MetaArgs) {
   if (!loaderData) return [{ title: titled("报告不存在") }, { name: "robots", content: "noindex" }];
   const r = loaderData.report;
   return pageMeta({
@@ -43,7 +44,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
     image: `/og/reports/${r.kind}/${r.key}.png`,
     type: "article",
     noindex: !!loaderData.at,
-  });
+  }, localeFromMatches(matches ?? []));
 }
 
 export function headers() {

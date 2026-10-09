@@ -12,6 +12,8 @@ export const SITE = {
   subject: "AI",
   /** 首页的完整标题（浏览器标签、搜索结果）。 */
   homeTitle: "e/acc — AI 加速日报 · 每日精选与热点",
+  /** 首页的 h1：读者会搜的说法（行业词 + 日报/新闻/热点），首页大字标语只是装饰。 */
+  homeHeading: "AI 日报 · 今日人工智能新闻精选与热点",
   /** 一句话介绍：搜索引擎、分享卡片、RSS、llms.txt 会用。 */
   description: "e/acc 加速日报：自动盯住上百个信源，用模型摘要、打分、精选，把同一件事的多篇报道归到一起，每天早上出一份日报。",
   /** 首页左上角和侧边栏下面的一行小字。 */
@@ -28,7 +30,7 @@ export const SITE = {
   /** 对外联系邮箱（选填）：使用规则、llms.txt、响应头里会写。 */
   contactEmail: null as string | null,
   /** 页脚的一行小字（选填）。 */
-  footerNote: "由 AIHOT 开源框架驱动",
+  footerNote: "基于开源框架构建",
   /** 中国大陆网站的 ICP 备案号（选填），填了就显示在页脚并链接到工信部备案系统。 */
   icp: null as string | null,
   /** 结构化数据里的网站运营者（搜索引擎用）。 */

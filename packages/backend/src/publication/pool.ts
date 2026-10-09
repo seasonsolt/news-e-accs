@@ -103,6 +103,7 @@ async function poolCount(key: string | null, query: () => Promise<Array<{ n: num
 }
 
 export interface PoolQuery extends TimelineFilters {
+  lang?: "en" | "zh";
   q?: string | null;
   tab?: "time" | "relevance";
   page?: number;
@@ -136,6 +137,27 @@ export async function loadPool(query: PoolQuery): Promise<PoolResponse> {
         ORDER BY p.timeline_at DESC, p.article_id DESC`;
       return { rows, total: await poolCount(filterKey, () => db<{ n: number }[]>`
         SELECT count(*) AS n FROM (SELECT 1 FROM publications p WHERE ${listedCondition(now)} AND p.eligible ${filters} LIMIT ${cap}) t`) };
+    }
+    if (query.lang === "en") {
+      // Search the current English title/summary as well as the original index. Comparing the
+      // stored source segments to publication fields excludes editions invalidated by an edit.
+      const current = sql`ct.source_segments = (
+        SELECT coalesce(jsonb_agg(jsonb_build_object('key', key, 'text', text) ORDER BY ordinal), '[]'::jsonb)
+        FROM (VALUES (1,'title',p.title),(2,'summary',p.summary),(3,'reason',CASE WHEN p.selected THEN p.reason END)) fields(ordinal,key,text)
+        WHERE text IS NOT NULL AND btrim(text) <> '')`;
+      const english = sql`lower(coalesce(ct.translations->>'title','') || ' ' || coalesce(ct.translations->>'summary',''))`;
+      const matches = terms.reduce((acc,t)=>sql`${acc} AND (p.search_text LIKE ${'%' + t + '%'} OR (${current} AND ${english} LIKE ${'%' + t + '%'}))`,sql`TRUE`);
+      const relevance = terms.reduce((acc,t)=>sql`${acc} + CASE WHEN (lower(p.title) LIKE ${'%' + t + '%'} OR (${current} AND lower(coalesce(ct.translations->>'title','')) LIKE ${'%' + t + '%'})) THEN 6 ELSE 1 END`,sql`0`);
+      const join = sql`LEFT JOIN content_translations ct ON ct.kind='item' AND ct.content_id=p.article_id AND ct.lang='en'`;
+      const rows=await db<ItemRow[]>`WITH page AS (
+        SELECT p.article_id, p.timeline_at, ${relevance} AS relevance FROM publications p ${join}
+        WHERE ${listedCondition(now)} AND p.eligible ${filters} AND ${matches}
+        ORDER BY ${tab==='relevance'?sql`relevance DESC,`:sql``} p.timeline_at DESC,p.article_id DESC LIMIT ${POOL_PAGE_SIZE} OFFSET ${offset})
+        SELECT ${ITEM_COLUMNS} ${ITEM_FROM} JOIN page ON page.article_id=p.article_id
+        ORDER BY ${tab==='relevance'?sql`page.relevance DESC,`:sql``} p.timeline_at DESC,p.article_id DESC`;
+      const [count]=await db<{n:number}[]>`SELECT count(*) AS n FROM (SELECT 1 FROM publications p ${join}
+        WHERE ${listedCondition(now)} AND p.eligible ${filters} AND ${matches} LIMIT ${cap}) matches`;
+      return {rows,total:Number(count?.n??0)};
     }
     if (tab === "relevance") {
       // Rank narrow rows first: no article bodies or translations enter the sort/count. The public

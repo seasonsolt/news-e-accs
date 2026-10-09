@@ -1,3 +1,4 @@
+import { Text, useTranslate } from "../../lib/i18n";
 // The civilization readouts: each metric's value at the moment, how it compares with today, and its whole
 // sourced history as a small log-scale curve with the moment marked on it. Read along the axis, the
 // curves steepen toward the present: the acceleration, drawn by the data rather than said in words.
@@ -63,21 +64,22 @@ function KardashevDial({ k }: { k: number | null }) {
 }
 
 export function CivilizationGauges({ metrics, t, now }: { metrics: ChronicleMetric[]; t: number; now: number }) {
+  const tx = useTranslate();
   const energy = metrics.find((m) => m.key === "energy");
   const watts = energy ? interpolateMetric(energy.points, t, now, energy.forecastFrom) : null;
   const k = watts === null ? null : kardashev(watts);
   return (
     <section aria-labelledby="civilization-gauges">
       <div className="chronicle-section-head">
-        <h2 id="civilization-gauges">文明读数</h2>
-        <p>小曲线是每项指标的全部有据历史，横轴同样按对数时间；圆点是此刻。</p>
+        <h2 id="civilization-gauges"><Text value="文明读数" /></h2>
+        <p><Text value="小曲线是每项指标的全部有据历史，横轴同样按对数时间；圆点是此刻。" /></p>
       </div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <article className="chronicle-gauge is-dial">
-          <div className="chronicle-gauge-label">卡尔达肖夫指数</div>
+          <div className="chronicle-gauge-label"><Text value="卡尔达肖夫指数" /></div>
           <KardashevDial k={k} />
           <p className="num chronicle-gauge-value text-center">{k === null ? "—" : k.toFixed(3)}</p>
-          <p className="chronicle-gauge-note text-center">{k === null ? "尚无可靠数据" : "按一次能源功率换算 · I 型文明 = 1"}</p>
+          <p className="chronicle-gauge-note text-center">{k === null ? tx("尚无可靠数据") : tx("按一次能源功率换算 · I 型文明 = 1")}</p>
         </article>
         {metrics.map((metric) => {
           const v = interpolateMetric(metric.points, t, now, metric.forecastFrom);
@@ -88,18 +90,18 @@ export function CivilizationGauges({ metrics, t, now }: { metrics: ChronicleMetr
           return (
             <article key={metric.key} title={metric.note} className={`chronicle-gauge ${forecast ? "is-forecast" : ""}`}>
               <div className="chronicle-gauge-label">
-                <span className="min-w-0 truncate">{metric.label}</span>
-                {forecast && <span className="chronicle-gauge-badge">推测</span>}
-                <a href={metric.source.url} title={`来源：${metric.source.name}`} target="_blank" rel="noopener noreferrer" className="chronicle-gauge-source" aria-label={`${metric.label}的来源`}>
+                <span className="min-w-0 truncate"><Text value={metric.label} /></span>
+                {forecast && <span className="chronicle-gauge-badge"><Text value="推测" /></span>}
+                <a href={metric.source.url} title={tx("来源：{0}", metric.source.name)} target="_blank" rel="noopener noreferrer" className="chronicle-gauge-source" aria-label={tx("{0}的来源", metric.label)}>
                   <IconArrowUpRight size={12} />
                 </a>
               </div>
               <p className="chronicle-gauge-value">
-                <span className="num">{formatted?.value ?? "—"}</span>
-                {formatted?.unit && <span className="chronicle-gauge-unit">{formatted.unit}</span>}
+                <span className="num"><Text value={formatted?.value ?? "—"} /></span>
+                {formatted?.unit && <span className="chronicle-gauge-unit"><Text value={formatted.unit} /></span>}
               </p>
               <p className="chronicle-gauge-note">
-                {v === null ? `尚无可靠数据${first !== undefined && t < first ? ` · 数据始于${timeLabel(first, now, first < 0 ? "ka" : "year")}` : ""}` : versusToday(metric, v, today) ?? " "}
+                {v === null ? tx("尚无可靠数据{0}", first !== undefined && t < first ? ` · 数据始于${tx(timeLabel(first, now, first < 0 ? "ka" : "year"))}` : "") : tx(versusToday(metric, v, today) ?? " ")}
               </p>
               <Trace metric={metric} t={t} now={now} />
             </article>

@@ -1,3 +1,4 @@
+import { Text } from "../../lib/i18n";
 import type { ReactNode } from "react";
 
 type Tone = "selected" | "accent" | "amber" | "hot" | "ok" | "neutral";
@@ -24,8 +25,6 @@ export function Badge({ tone = "neutral", dot = false, children, className = "",
 /** The "精选" mark on a report. */
 export function SelectedBadge() {
   return (
-    <Badge tone="selected" dot>
-      精选
-    </Badge>
+    <Badge tone="selected" dot><Text value="精选" /></Badge>
   );
 }

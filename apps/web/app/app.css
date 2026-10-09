@@ -928,6 +928,7 @@ html[data-onboarding] .ambient-backdrop-image { background-image: none; }
 @media (min-width: 961px) { .deck-inner { padding: 0 32px; } }
 .deck-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 28px 40px; }
 .deck-copy { min-width: 0; max-width: 46rem; flex: 1 1 420px; }
+.deck-heading { margin-bottom: 6px; font-size: 15px; font-weight: 700; line-height: 1.5; color: var(--deck-ink); }
 .deck-kicker { font: 500 12.5px/1.6 var(--font-mono); letter-spacing: .12em; color: var(--heat); }
 .deck-title { margin-top: 12px; font-size: clamp(32px, 5.2vw, 64px); font-weight: 900; line-height: 1.1; letter-spacing: -.01em; color: var(--deck-ink); text-wrap: balance; }
 .deck.is-compact .deck-title { font-size: clamp(26px, 3.6vw, 42px); }

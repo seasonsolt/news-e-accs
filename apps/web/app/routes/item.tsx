@@ -1,10 +1,12 @@
+import { ContentLanguage } from "../components/ContentLanguage";
+import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLoaderData, useNavigate } from "react-router";
 import type { Route } from "./+types/item";
 import type { SiteItemDetail } from "@aihot/contracts/site";
 import { loadOr404 } from "../lib/api.server";
-import { breadcrumbLd, pageMeta, siteUrl, titled } from "../lib/seo";
+import { breadcrumbLd, newsArticleLd, pageMeta, siteUrl, titled } from "../lib/seo";
 import { fullDateTime, relativeTime } from "../lib/format";
 import { markRead } from "../lib/local-state";
 import { SelectedBadge } from "../components/ui/Badge";
@@ -25,11 +27,11 @@ import { Deck } from "../components/shell/Deck";
 const PosterSheet = lazy(() => import("../features/item/PosterSheet"));
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  const item = await loadOr404<SiteItemDetail>(`/api/site/items/${encodeURIComponent(params.id)}`, { signal: request.signal });
+  const item = await loadOr404<SiteItemDetail>(`/api/site/items/${encodeURIComponent(params.id)}`, { request, signal: request.signal });
   return { item };
 }
 
-export function meta({ loaderData }: Route.MetaArgs) {
+export function meta({ matches, loaderData }: Route.MetaArgs) {
   if (!loaderData) return [{ title: titled("内容不存在") }, { name: "robots", content: "noindex" }];
   const { item } = loaderData;
   return pageMeta({
@@ -39,12 +41,24 @@ export function meta({ loaderData }: Route.MetaArgs) {
     image: `/og/items/${item.id}.png`,
     type: "article",
     noindex: !item.indexable,
-    jsonLd: breadcrumbLd([
-      { name: SITE.name, path: "/" },
-      { name: item.selected ? "精选" : "全部动态", path: item.selected ? "/" : "/all" },
-      { name: item.title, path: `/items/${item.id}` },
-    ]),
-  });
+    jsonLd: [
+      newsArticleLd({
+        path: `/items/${item.id}`,
+        headline: item.title,
+        description: item.summary,
+        image: `/og/items/${item.id}.png`,
+        datePublished: item.publishedAt ?? item.discoveredAt,
+        inLanguage: item.contentLanguage?.status === "translated" ? "en" : SITE.locale,
+        basedOn: item.links.original,
+        keywords: item.tags,
+      }),
+      breadcrumbLd([
+        { name: SITE.name, path: "/" },
+        { name: item.selected ? "精选" : "全部动态", path: item.selected ? "/" : "/all" },
+        { name: item.title, path: `/items/${item.id}` },
+      ]),
+    ],
+  }, localeFromMatches(matches ?? []));
 }
 
 export function headers() {
@@ -74,6 +88,7 @@ async function shareOrCopy(item: Pick<SiteItemDetail, "id" | "title">): Promise<
 }
 
 export default function ItemPage() {
+  const tx = useTranslate();
   const { item } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const hasTranslation = item.hasTranslation;
@@ -94,16 +109,16 @@ export default function ItemPage() {
   };
   const share = async () => {
     const r = await shareOrCopy(item);
-    if (r === "copied") setToast("链接已复制");
+    if (r === "copied") setToast(tx("链接已复制"));
   };
 
   const bodyHtml = lang === "zh" ? (item.body?.zh ?? item.body?.original) : (item.body?.original ?? item.body?.zh);
-  const bodyLabel = !item.body ? null : lang === "zh" && item.body.zhKind === "translation" ? "正文 · AI 翻译" : lang === "original" && hasTranslation ? "正文 · 原文" : "正文";
+  const bodyLabel = !item.body ? null : item.bodyContentLanguage?.status === "translated" ? "Body · English translation" : item.bodyContentLanguage?.status === "original" ? "Body · English edition pending (original content)" : lang === "zh" && item.body.zhKind === "translation" ? tx("正文 · AI 翻译") : lang === "original" && hasTranslation ? tx("正文 · 原文") : tx("正文");
   const isX = item.channel === "x" && !!item.x;
   const publishedIso = item.publishedAt ?? item.discoveredAt;
   const summaryOnly = item.readingMode === "summary-only";
   const showOutline = item.outline.length >= 3;
-  const originalLabel = isX ? "在 X 查看原推" : "打开原文";
+  const originalLabel = isX ? tx("在 X 查看原推") : tx("打开原文");
 
   const related = item.relatedStories.filter((s) => s.publicId !== item.story?.publicId);
 
@@ -113,33 +128,28 @@ export default function ItemPage() {
   };
   const backButton = (
     <button type="button" onClick={back} className="-ml-1.5 inline-flex h-8 items-center gap-1.5 rounded-full px-1.5 text-[14px] text-ink-2 transition-colors hover:text-ink lg:text-[13px] lg:text-ink-3">
-      <IconArrowLeft size={16} /> 返回
-    </button>
+      <IconArrowLeft size={16} /><Text value="返回" /></button>
   );
   const moreMenu = (
-    <Menu label="更多操作" trigger={<IconMenu size={17} />}>
+    <Menu label={tx("更多操作")} trigger={<IconMenu size={17} />}>
       {(close) => (
         <>
-          <MenuItem icon={<IconShare size={15} />} onSelect={() => { close(); void share(); }}>分享链接</MenuItem>
-          <MenuItem icon={<IconImage size={15} />} onSelect={() => { close(); openPoster(); }}>生成分享海报</MenuItem>
+          <MenuItem icon={<IconShare size={15} />} onSelect={() => { close(); void share(); }}><Text value="分享链接" /></MenuItem>
+          <MenuItem icon={<IconImage size={15} />} onSelect={() => { close(); openPoster(); }}><Text value="生成分享海报" /></MenuItem>
           <MenuItem
             icon={<IconCopy size={15} />}
             onSelect={async () => {
               close();
               try {
                 await navigator.clipboard.writeText(`${siteUrl()}/items/${item.id}`);
-                setToast("链接已复制");
+                setToast(tx("链接已复制"));
               } catch {
                 // clipboard unavailable
               }
             }}
-          >
-            复制链接
-          </MenuItem>
+          ><Text value="复制链接" /></MenuItem>
           {item.markdownAvailable && (
-            <MenuItem icon={<IconDownload size={15} />} href={`/items/${item.id}/markdown`} download onSelect={close}>
-              导出 Markdown
-            </MenuItem>
+            <MenuItem icon={<IconDownload size={15} />} href={`/items/${item.id}/markdown`} download onSelect={close}><Text value="导出 Markdown" /></MenuItem>
           )}
         </>
       )}
@@ -170,23 +180,23 @@ export default function ItemPage() {
   // Rails: the piece's facts on the left (wide screens), the editor's notes on the right, the outline
   // under the facts (or under the notes when only the right rail shows).
   const facts = (
-    <RailSection title="来源">
+    <RailSection title={tx("来源")}>
       <div className="text-[14px] font-semibold leading-snug text-ink">{isX ? item.x!.authorName : item.source.name}</div>
       <div className="mt-1 text-[12.5px] leading-relaxed text-ink-3">
         {isX ? `@${item.x!.handle} · X` : item.author ?? hostOf(item.links.original)}
       </div>
-      <div className="mt-3 text-[12px] text-ink-4">发布时间</div>
+      <div className="mt-3 text-[12px] text-ink-4"><Text value="发布时间" /></div>
       <time dateTime={publishedIso} className="mono mt-0.5 block text-[12.5px] text-ink-2">
         {fullDateTime(publishedIso)}
       </time>
       <div className="mt-0.5 text-[12px] text-ink-4" suppressHydrationWarning>
-        {relativeTime(publishedIso)}
+        {tx(relativeTime(publishedIso))}
       </div>
     </RailSection>
   );
   const outline = showOutline && (
-    <RailSection title="本文目录">
-      <nav aria-label="本文目录">
+    <RailSection title={tx("本文目录")}>
+      <nav aria-label={tx("本文目录")}>
         <ol className="-ml-px space-y-0.5 border-l border-line">
           {item.outline.map((o) => (
             <li key={o.id}>
@@ -202,19 +212,19 @@ export default function ItemPage() {
   const notes = (
     <>
       {item.reason && !summaryOnly ? (
-        <RailSection title="推荐理由">
+        <RailSection title={tx("推荐理由")}>
           {verdict && <div className="mb-3">{verdict}</div>}
           <p className="text-[13.5px] leading-[1.8] text-ink-2">{item.reason}</p>
         </RailSection>
       ) : (
-        verdict && <RailSection title="AI 评分">{verdict}</RailSection>
+        verdict && <RailSection title={tx("AI 评分")}>{verdict}</RailSection>
       )}
       {item.tags.length > 0 && (
-        <RailSection title="标签">
+        <RailSection title={tx("标签")}>
           <div className="flex flex-wrap gap-1.5">
             {item.tags.slice(0, 8).map((t) => (
               <Link key={t} to={`/all?tag=${encodeURIComponent(t)}`} className="chip">
-                #{t}
+                #{tx(t)}
               </Link>
             ))}
           </div>
@@ -226,6 +236,7 @@ export default function ItemPage() {
   return (
     <div className="mx-auto max-w-[var(--page-max-reading)] pb-8">
       {item.body && <ReadingGear />}
+      <ContentLanguage content={item} />
       <Deck
         compact
         art={item.category ? CATEGORY_ART[item.category] : undefined}
@@ -241,9 +252,8 @@ export default function ItemPage() {
         <span className="flex-1" />
         <StarButton item={item} size={32} />
         <a href={item.links.original} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center gap-1 px-1.5 text-[14px] text-ink-2">
-          <IconExternal size={15} /> 原文
-        </a>
-        <button type="button" aria-label="分享" onClick={share} className="inline-flex size-8 items-center justify-center rounded-full text-ink-3 hover:text-ink">
+          <IconExternal size={15} /><Text value="原文" /></a>
+        <button type="button" aria-label={tx("分享")} onClick={share} className="inline-flex size-8 items-center justify-center rounded-full text-ink-3 hover:text-ink">
           <IconShare size={17} />
         </button>
         {moreMenu}
@@ -274,7 +284,7 @@ export default function ItemPage() {
             {item.author && !isX && <span>· {item.author}</span>}
             <span>·</span>
             <time dateTime={publishedIso} className="mono">{fullDateTime(publishedIso)}</time>
-            <span suppressHydrationWarning>· {relativeTime(publishedIso)}</span>
+            <span suppressHydrationWarning>· {tx(relativeTime(publishedIso))}</span>
             {item.selected && (
               <span className="ml-1 lg:hidden">
                 <SelectedBadge />
@@ -289,14 +299,14 @@ export default function ItemPage() {
 
           {item.summary && (
             <section className={isX ? "mt-4" : "mt-7 xl:mt-8"}>
-              <div className="mb-2 text-[12px] font-semibold text-accent">{summaryOnly ? "摘要" : "AI 导读"}</div>
+              <div className="mb-2 text-[12px] font-semibold text-accent">{summaryOnly ? tx("摘要") : tx("AI 导读")}</div>
               <p className="text-[18px] leading-[1.7] text-ink xl:text-[20px] xl:leading-[1.7]">{item.summary}</p>
             </section>
           )}
 
           {item.reason && !summaryOnly && (
             <section className="mt-6 border-t border-line pt-4 lg:hidden">
-              <div className="mb-1 text-[12px] font-semibold text-ink-3">推荐理由</div>
+              <div className="mb-1 text-[12px] font-semibold text-ink-3"><Text value="推荐理由" /></div>
               <p className="text-[15px] leading-[1.75] text-ink-2">{item.reason}</p>
             </section>
           )}
@@ -307,7 +317,7 @@ export default function ItemPage() {
             </div>
           )}
 
-          {summaryOnly && <p className="mt-7 rounded-control bg-bg-sunk px-4 py-3 text-[13.5px] leading-relaxed text-ink-3">应来源方要求，这里只提供摘要与原文入口。完整内容请阅读原文。</p>}
+          {summaryOnly && <p className="mt-7 rounded-control bg-bg-sunk px-4 py-3 text-[13.5px] leading-relaxed text-ink-3"><Text value="应来源方要求，这里只提供摘要与原文入口。完整内容请阅读原文。" /></p>}
 
           {item.body && bodyHtml && (
             <section className="mt-9 border-t border-line pt-4 xl:mt-10">
@@ -317,17 +327,17 @@ export default function ItemPage() {
                   <PillTabs
                     size="xs"
                     layoutId="item-body-lang"
-                    label="正文语言"
+                    label={tx("正文语言")}
                     active={lang}
                     items={[
-                      { key: "zh", label: "中文", prefetch: "intent", replace: true, to: `/items/${item.id}` },
-                      { key: "original", label: "原文", prefetch: "intent", replace: true, to: `/items/${item.id}/original` },
+                      { key: "zh", label: tx("中文"), prefetch: "intent", replace: true, to: `/items/${item.id}` },
+                      { key: "original", label: tx("原文"), prefetch: "intent", replace: true, to: `/items/${item.id}/original` },
                     ]}
                   />
                 )}
               </div>
               {hasTranslation && lang === "zh" && !item.body.complete && (
-                <p className="mb-5 rounded-control bg-bg-sunk px-3 py-2 text-[13px] text-ink-3">译文尚不完整，完整内容请切换到原文。</p>
+                <p className="mb-5 rounded-control bg-bg-sunk px-3 py-2 text-[13px] text-ink-3"><Text value="译文尚不完整，完整内容请切换到原文。" /></p>
               )}
               <div className="prose" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
             </section>
@@ -336,9 +346,7 @@ export default function ItemPage() {
           {isX && item.x!.media.length > 0 && <MediaGallery media={item.x!.media} postUrl={item.links.original} />}
           {isX && item.x!.quoted?.text && <QuotedPost quoted={item.x!.quoted} original={lang === "original"} />}
 
-          <p className="mt-8 text-[13px] text-ink-4">
-            来源：
-            <a href={item.links.original} target="_blank" rel="noopener noreferrer" className="text-ink-3 hover:text-accent">
+          <p className="mt-8 text-[13px] text-ink-4"><Text value="来源：" /><a href={item.links.original} target="_blank" rel="noopener noreferrer" className="text-ink-3 hover:text-accent">
               {isX ? item.x!.authorName : item.source.name}
             </a>
             <span> · {hostOf(item.links.original)}</span>
@@ -348,7 +356,7 @@ export default function ItemPage() {
             <div className="mt-4 flex flex-wrap gap-1.5 lg:hidden">
               {item.tags.slice(0, 6).map((t) => (
                 <Link key={t} to={`/all?tag=${encodeURIComponent(t)}`} className="chip">
-                  #{t}
+                  #{tx(t)}
                 </Link>
               ))}
             </div>
@@ -358,7 +366,7 @@ export default function ItemPage() {
 
           {related.length > 0 && (
             <section className="mt-8">
-              <h2 className="mb-2 text-[14px] font-semibold text-ink">相关事件</h2>
+              <h2 className="mb-2 text-[14px] font-semibold text-ink"><Text value="相关事件" /></h2>
               <ul className="divide-y divide-line-soft">
                 {related.map((s) => (
                   <li key={s.publicId}>

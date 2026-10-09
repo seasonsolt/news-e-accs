@@ -1,3 +1,4 @@
+import { useTranslate } from "../../lib/i18n";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import type { CopyDocument, RenderedCopy } from "../../lib/markdown";
@@ -9,13 +10,14 @@ import { Deck } from "../../components/shell/Deck";
  * left rail and its outline in the right (phones get the facts above the text and no outline).
  */
 export function CopyPage({ doc, rendered, eyebrow, footer, aside }: { doc: CopyDocument; rendered: RenderedCopy; eyebrow?: ReactNode; footer?: ReactNode; aside?: ReactNode }) {
+  const tx = useTranslate();
   const facts = (["版本", "生效日期", "运营主体", "备案号"] as const).filter((k) => doc.meta[k]);
   const info = facts.length > 0 && (
-    <RailSection title="文档信息">
+    <RailSection title={tx("文档信息")}>
       <dl className="space-y-2 text-[12.5px]">
         {facts.map((k) => (
           <div key={k}>
-            <dt className="text-ink-4">{k}</dt>
+            <dt className="text-ink-4">{tx(k)}</dt>
             <dd className="mt-0.5 text-ink-2">{doc.meta[k]}</dd>
           </div>
         ))}
@@ -23,8 +25,8 @@ export function CopyPage({ doc, rendered, eyebrow, footer, aside }: { doc: CopyD
     </RailSection>
   );
   const outline = rendered.outline.length > 2 && (
-    <RailSection title="目录">
-      <nav aria-label="目录">
+    <RailSection title={tx("目录")}>
+      <nav aria-label={tx("目录")}>
         <ol className="-ml-px space-y-0.5 border-l border-line">
           {rendered.outline.map((o) => (
             <li key={o.id}>
@@ -39,7 +41,7 @@ export function CopyPage({ doc, rendered, eyebrow, footer, aside }: { doc: CopyD
   );
   return (
     <>
-    <Deck compact label={doc.title} kicker={eyebrow} title={doc.title} description={doc.intro || undefined} />
+    <Deck compact label={tx(doc.title)} kicker={eyebrow} title={tx(doc.title)} description={doc.intro || undefined} />
     <div className="h-6" />
     <ArticleLayout
       left={
@@ -60,13 +62,13 @@ export function CopyPage({ doc, rendered, eyebrow, footer, aside }: { doc: CopyD
           <dl className="grid grid-cols-1 border-y border-line text-[12.5px] sm:grid-cols-2 lg:hidden">
             {facts.map((k) => (
               <div key={k} className="flex gap-4 border-b border-line-soft py-2.5 last:border-b-0 sm:[&:nth-last-child(-n+2)]:border-b-0">
-                <dt className="w-16 shrink-0 text-ink-4">{k}</dt>
+                <dt className="w-16 shrink-0 text-ink-4">{tx(k)}</dt>
                 <dd className="min-w-0 text-ink-2">{doc.meta[k]}</dd>
               </div>
             ))}
           </dl>
         )}
-        <div className="prose prose-compact mt-6 lg:mt-8" dangerouslySetInnerHTML={{ __html: rendered.html }} />
+        <div className="prose prose-compact mt-6 lg:mt-8" lang="zh-CN" dangerouslySetInnerHTML={{ __html: rendered.html }} />
         {footer && <div className="mt-12 border-t border-line pt-5 text-[12.5px] text-ink-3">{footer}</div>}
       </article>
     </ArticleLayout>

@@ -1,3 +1,4 @@
+import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { redirect, useLoaderData, useRouteLoaderData } from "react-router";
 import type { Route } from "./+types/report-latest";
@@ -21,16 +22,16 @@ export async function loader({ request }: Route.LoaderArgs) {
   // Time machine: the issue a reader had on that day (the bar stays set on it).
   const at = requestAt(request);
   if (at) {
-    const { key } = await loadOr404<{ key: string | null }>(`/api/site/reports/${kind}/at/${at}`, { signal: request.signal });
+    const { key } = await loadOr404<{ key: string | null }>(`/api/site/reports/${kind}/at/${at}`, { request, signal: request.signal });
     if (key) throw redirect(withAt(`/${kind}/${key}`, at));
     // Before the first issue: nothing had been published yet.
     return { kind, report: null, index: [], today: at, at };
   }
-  const { index, report } = await loadOr404<{ index: ReportNavigationEntry[]; report: ReportDetail | null }>(`/api/site/reports/${kind}/latest-page`, { signal: request.signal });
+  const { index, report } = await loadOr404<{ index: ReportNavigationEntry[]; report: ReportDetail | null }>(`/api/site/reports/${kind}/latest-page`, { request, signal: request.signal });
   return { kind, report, index, today: beijingDate(Date.now()), at };
 }
 
-export function meta({ loaderData, location }: Route.MetaArgs) {
+export function meta({ matches, loaderData, location }: Route.MetaArgs) {
   const kind = loaderData?.kind ?? "daily";
   return pageMeta({
     title: `AI ${KIND_LABEL[kind]}`,
@@ -38,7 +39,7 @@ export function meta({ loaderData, location }: Route.MetaArgs) {
     path: location.pathname,
     noindex: !!loaderData?.at,
     image: `/og/pages/${kind}.png`,
-  });
+  }, localeFromMatches(matches ?? []));
 }
 
 export function headers() {
@@ -46,13 +47,14 @@ export function headers() {
 }
 
 export default function ReportLatestPage() {
+  const tx = useTranslate();
   const { kind, report, index, today } = useLoaderData<typeof loader>();
   const root = useRouteLoaderData<typeof rootLoader>("root");
   const dial = FEATURES.timeMachine && <TimeDial bounds={root?.timeBounds ?? null} className="w-[300px] max-w-full" />;
   const deck = report ? <ReportDeck report={report} index={index} aside={dial} /> : <Deck art="masthead-press" label={`AI ${KIND_LABEL[kind]}`} title={`AI ${KIND_LABEL[kind]}`} aside={dial} />;
   return (
     <ReportLayout kind={kind} index={index} current={report?.key ?? null} today={today} deck={deck}>
-      {report ? <ReportPaper report={report} index={index} /> : <EmptyState title={`还没有发布 AI ${KIND_LABEL[kind]}`}>第一期发布后会出现在这里。</EmptyState>}
+      {report ? <ReportPaper report={report} index={index} /> : <EmptyState title={tx("还没有发布 AI {0}", KIND_LABEL[kind])}><Text value="第一期发布后会出现在这里。" /></EmptyState>}
     </ReportLayout>
   );
 }

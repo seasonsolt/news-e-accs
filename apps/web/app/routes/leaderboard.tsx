@@ -1,3 +1,4 @@
+import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { Link, data, useLoaderData } from "react-router";
 import type { Route } from "./+types/leaderboard";
@@ -19,18 +20,18 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const key = params.key ?? "overall";
   if (params.key !== undefined && !CATEGORY_KEYS.has(params.key)) throw data({ message: "not_found" }, { status: 404 });
   const at = requestAt(request);
-  if (!at) return { at, board: await loadOr404<LbBoardResponse>(`/api/site/leaderboard/boards/${key}`, { signal: request.signal }) };
+  if (!at) return { at, board: await loadOr404<LbBoardResponse>(`/api/site/leaderboard/boards/${key}`, { request, signal: request.signal }) };
   try {
-    return { at, board: await apiGet<LbBoardResponse>(`/api/site/leaderboard/boards/${key}${queryString({ at })}`, { signal: request.signal }) };
+    return { at, board: await apiGet<LbBoardResponse>(`/api/site/leaderboard/boards/${key}${queryString({ at })}`, { request, signal: request.signal }) };
   } catch (error) {
     // The time machine went back before the first ranking run.
     if (!request.signal.aborted && error instanceof ApiError && error.status === 404) return { at, board: null };
-    throw apiErrorResponse(error, { signal: request.signal });
+    throw apiErrorResponse(error, { request, signal: request.signal });
   }
 }
 
-export function meta({ loaderData }: Route.MetaArgs) {
-  if (!loaderData?.board) return pageMeta({ title: loaderData ? "模型榜" : "页面不存在", path: "/leaderboard", noindex: true });
+export function meta({ matches, loaderData }: Route.MetaArgs) {
+  if (!loaderData?.board) return pageMeta({ title: loaderData ? "模型榜" : "页面不存在", path: "/leaderboard", noindex: true }, localeFromMatches(matches ?? []));
   const { board, entries } = loaderData.board;
   const path = board.key === "overall" ? "/leaderboard" : `/leaderboard/category/${board.key}`;
   return pageMeta({
@@ -55,7 +56,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
           : [{ name: "模型榜", path: "/leaderboard" }, { name: `${board.name}榜`, path }],
       ),
     ],
-  });
+  }, localeFromMatches(matches ?? []));
 }
 
 export function headers() {
@@ -63,11 +64,12 @@ export function headers() {
 }
 
 export default function LeaderboardPage() {
+  const tx = useTranslate();
   const { board: loaded, at } = useLoaderData<typeof loader>();
   if (!loaded) {
     return (
       <div className="card mt-3">
-        <EmptyState title="这一天还没有模型榜">{at ? `${atLabel(at)}之前，本站还没有算出第一份共识排名。` : null}往后拨几天再看。</EmptyState>
+        <EmptyState title={tx("这一天还没有模型榜")}>{at ? tx("{0}之前，本站还没有算出第一份共识排名。", atLabel(at)) : null}<Text value="往后拨几天再看。" /></EmptyState>
       </div>
     );
   }
@@ -75,6 +77,7 @@ export default function LeaderboardPage() {
 }
 
 function Board({ data: { board, entries, run } }: { data: LbBoardResponse }) {
+  const tx = useTranslate();
   const at = useAt();
   const entrance = useEntrance();
   // Router reuses this route component across board URLs; the keyed subtree alone cannot detect
@@ -87,10 +90,9 @@ function Board({ data: { board, entries, run } }: { data: LbBoardResponse }) {
       <div className="mt-3 flex flex-col gap-1 lg:flex-row lg:items-center lg:justify-between">
         <p className="text-[13.5px] text-ink-2">{board.description}</p>
         <p className="num text-[12px] text-ink-4">
-          {board.sourceCount} 项评测<span className="mx-2">·</span>
-          {board.operatorCount} 家机构<span className="mx-2">·</span>
-          {shortStamp(run.generatedAt)} 更新
-        </p>
+          {board.sourceCount}<Text value="项评测" /><span className="mx-2">·</span>
+          {board.operatorCount}<Text value="家机构" /><span className="mx-2">·</span>
+          {shortStamp(run.generatedAt)}<Text value="更新" /></p>
       </div>
 
       <Podium entries={entries} board={board.key} />
@@ -98,34 +100,28 @@ function Board({ data: { board, entries, run } }: { data: LbBoardResponse }) {
       <section className="card mt-3 overflow-hidden" aria-labelledby="lb-board-title">
         <div className="flex items-center justify-between gap-3 px-4 py-3 lg:px-[22px]">
           <h2 id="lb-board-title" className="text-[16px] font-bold text-ink">
-            {board.key === "overall" ? "综合榜" : `${board.name}榜`}
+            {board.key === "overall" ? tx("综合榜") : tx("{0}榜", board.name)}
             <span className="mono ml-2 text-[11px] font-normal tracking-wide text-ink-4">TOP {entries.length}</span>
           </h2>
-          <span className="text-right text-[12px] text-ink-4">按多项公开评测的共同证据排名</span>
+          <span className="text-right text-[12px] text-ink-4"><Text value="按多项公开评测的共同证据排名" /></span>
         </div>
         <BoardTable entries={entries} board={board.key} viewSwitch={viewSwitch} />
         <div className="border-t border-line px-4 py-3 text-[12px] leading-relaxed text-ink-4 lg:px-[22px]">
-          <p>每个榜单最多展示 30 个模型</p>
-          <p>共识指数不是正确率；同分仍按共同证据确定的名次展示。</p>
+          <p><Text value="每个榜单最多展示 30 个模型" /></p>
+          <p><Text value="共识指数不是正确率；同分仍按共同证据确定的名次展示。" /></p>
         </div>
       </section>
 
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <section className="card p-5">
           <h2 className="flex items-center gap-1.5 text-[14px] font-semibold text-ink">
-            <IconInfo size={16} className="text-accent" />
-            如何看这张榜
-          </h2>
-          <p className="mt-2 text-[13px] leading-relaxed text-ink-3">{board.howToRead}价格不参与排名，缺测不记零分，指数不是正确率。</p>
-          <Link to="/leaderboard/rules" className="mt-2.5 inline-flex items-center gap-1 text-[12.5px] font-medium text-accent hover:text-accent-ink">
-            了解计算方法 →
-          </Link>
+            <IconInfo size={16} className="text-accent" /><Text value="如何看这张榜" /></h2>
+          <p className="mt-2 text-[13px] leading-relaxed text-ink-3">{board.howToRead}<Text value="价格不参与排名，缺测不记零分，指数不是正确率。" /></p>
+          <Link to="/leaderboard/rules" className="mt-2.5 inline-flex items-center gap-1 text-[12.5px] font-medium text-accent hover:text-accent-ink"><Text value="了解计算方法 →" /></Link>
         </section>
         <section className="card p-5">
-          <h2 className="text-[14px] font-semibold text-ink">关于价格</h2>
-          <p className="mt-2 text-[13px] leading-relaxed text-ink-3">
-            API 价格来自厂商官网，按每百万 Token 展示。{at && "价格为当前价，不是历史快照。"}{run.fx ? `美元报价按 ${run.fx.asOf} 汇率折算成人民币。` : ""}缓存价格指命中后的输入价格，缓存写入、存储及订阅费用另计。
-          </p>
+          <h2 className="text-[14px] font-semibold text-ink"><Text value="关于价格" /></h2>
+          <p className="mt-2 text-[13px] leading-relaxed text-ink-3"><Text value="API 价格来自厂商官网，按每百万 Token 展示。" />{at && tx("价格为当前价，不是历史快照。")}{run.fx ? tx("美元报价按 {0} 汇率折算成人民币。", run.fx.asOf) : ""}<Text value="缓存价格指命中后的输入价格，缓存写入、存储及订阅费用另计。" /></p>
         </section>
       </div>
     </div>

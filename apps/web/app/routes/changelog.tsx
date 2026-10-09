@@ -1,3 +1,4 @@
+import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { Fragment, useEffect, useState } from "react";
 import { Link, useLoaderData } from "react-router";
@@ -23,11 +24,11 @@ interface Release {
 }
 
 export async function loader({ request }: { request: Request }) {
-  return apiGet<{ latestVersion: string; releases: Release[] }>("/api/site/changelog", { signal: request.signal });
+  return apiGet<{ latestVersion: string; releases: Release[] }>("/api/site/changelog", { request, signal: request.signal });
 }
 
-export function meta() {
-  return pageMeta({ title: "更新日志", description: `${SITE.name} 的功能更新、优化、公告与下线记录。`, path: "/changelog", image: "/og/pages/changelog.png" });
+export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
+  return pageMeta({ title: "更新日志", description: `${SITE.name} 的功能更新、优化、公告与下线记录。`, path: "/changelog", image: "/og/pages/changelog.png" }, localeFromMatches(matches ?? []));
 }
 
 const KIND_DOT: Record<Release["kind"], string> = {
@@ -69,6 +70,7 @@ function ReleaseBody({ lines }: { lines: string[] }) {
 }
 
 export default function ChangelogPage() {
+  const tx = useTranslate();
   const data = useLoaderData<typeof loader>();
   useEffect(() => setChangelogSeen(data.latestVersion), [data.latestVersion]);
   const [kind, setKind] = useState<Release["kind"] | null>(null);
@@ -84,7 +86,7 @@ export default function ChangelogPage() {
 
   const aside = (
     <>
-      <AsideCard title="按类型看" className="hidden lg:block">
+      <AsideCard title={tx("按类型看")} className="hidden lg:block">
         <div className="-mx-2 -mb-1">
           {[null, ...KINDS].map((k) => (
             <button
@@ -95,28 +97,27 @@ export default function ChangelogPage() {
               className={`flex w-full items-center gap-2.5 rounded-control px-2 py-2 text-left text-[13.5px] transition-colors ${kind === k ? "bg-bg-sunk font-medium text-ink dark:bg-bg-muted/60" : "text-ink-2 hover:bg-bg-sunk hover:text-ink"}`}
             >
               <span className={`size-1.5 rounded-full ${k ? KIND_DOT[k] : "bg-ink-2"}`} aria-hidden="true" />
-              <span className="flex-1">{k ?? "全部"}</span>
+              <span className="flex-1">{k ?? tx("全部")}</span>
               <span className="num text-[12px] text-ink-4">{k ? data.releases.filter((r) => r.kind === k).length : data.releases.length}</span>
             </button>
           ))}
         </div>
       </AsideCard>
-      <AsideCard title="按月份" className="hidden lg:block">
-        <nav aria-label="按月份" className="-mx-2 -mb-1">
+      <AsideCard title={tx("按月份")} className="hidden lg:block">
+        <nav aria-label={tx("按月份")} className="-mx-2 -mb-1">
           {[...months.entries()].map(([month, m]) => {
             const [y, mo] = month.split("-").map(Number) as [number, number];
             return (
               <a key={month} href={`#d-${m.first}`} className="flex items-center justify-between rounded-control px-2 py-2 text-[13.5px] text-ink-2 transition-colors hover:bg-bg-sunk hover:text-ink">
-                {y} 年 {mo} 月<span className="num text-[12px] text-ink-4">{m.count} 条</span>
+                {y}<Text value="年" />{mo}<Text value="月" /><span className="num text-[12px] text-ink-4">{m.count}<Text value="条" /></span>
               </a>
             );
           })}
         </nav>
       </AsideCard>
-      <AsideCard title="有想法或遇到问题">
-        <p className="text-[13px] leading-[1.75] text-ink-3">想要的功能、用着不顺的地方，都可以在反馈页告诉我们。</p>
-        <Link to="/feedback" prefetch="intent" className="mt-3 inline-flex items-center gap-1 text-[13px] font-medium text-accent hover:underline">
-          去反馈 <IconChevronRight size={14} />
+      <AsideCard title={tx("有想法或遇到问题")}>
+        <p className="text-[13px] leading-[1.75] text-ink-3"><Text value="想要的功能、用着不顺的地方，都可以在反馈页告诉我们。" /></p>
+        <Link to="/feedback" prefetch="intent" className="mt-3 inline-flex items-center gap-1 text-[13px] font-medium text-accent hover:underline"><Text value="去反馈" /><IconChevronRight size={14} />
         </Link>
       </AsideCard>
     </>
@@ -124,7 +125,7 @@ export default function ChangelogPage() {
 
   return (
     <>
-    <Deck compact label="更新日志" title="更新日志" description="新功能、调整、下线，都写在这里。" />
+    <Deck compact label={tx("更新日志")} title={tx("更新日志")} description={tx("新功能、调整、下线，都写在这里。")} />
     <div className="h-6" />
     <ReadingLayout aside={aside}>
       <div className="space-y-4">

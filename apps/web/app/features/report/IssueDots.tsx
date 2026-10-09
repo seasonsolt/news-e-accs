@@ -1,3 +1,4 @@
+import { Text } from "../../lib/i18n";
 // The dot grid in the masthead's 报眼, beside the date: one dot per day of the month (dailies), week
 // of the year (weeklies) or month (monthlies). Issues that exist are ink dots, this issue is a larger
 // teal dot in a ring, the rest are faint. Hover names the day and its issue; a click opens it. Drawn
@@ -153,8 +154,8 @@ export function IssueDots({ kind, reportKey, index, className = "" }: { kind: Re
   return (
     <div className={className}>
       <div className="flex items-baseline justify-between text-[11px] text-ink-4">
-        <span className="font-semibold tracking-[0.2em] text-ink-2">{grid.title}</span>
-        <span className="num">{grid.note}</span>
+        <span className="font-semibold tracking-[0.2em] text-ink-2"><Text value={grid.title} /></span>
+        <span className="num"><Text value={grid.note} /></span>
       </div>
       {grid.heads && (
         <div className="mt-2 grid text-center text-[10px] leading-none text-ink-4" style={{ gridTemplateColumns: `repeat(${grid.columns}, minmax(0, 1fr))` }}>

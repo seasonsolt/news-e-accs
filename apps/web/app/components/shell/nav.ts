@@ -31,6 +31,7 @@ export const TOOLS: NavItem[] = [
 /** The deck's top navigation: the reading sections, in the order a reader moves through them. */
 export const TOPNAV: NavItem[] = [
   { to: "/", label: "精选", icon: IconBolt, end: true },
+  { to: "/products", label: "产品目录", icon: IconApps },
   { to: "/all", label: "全部", icon: IconList },
   { to: "/hot", label: "热点", icon: IconFlame },
   { to: "/daily", label: withSubject("日报"), icon: IconDoc },
@@ -43,6 +44,7 @@ export const MORE_MENU: Array<{ title: string; items: NavItem[] }> = [
   {
     title: "阅读",
     items: [
+      { to: "/products", label: "产品目录", icon: IconApps },
       { to: "/subscribe", label: "订阅日报", icon: IconMail },
       { to: "/topics", label: "主题", icon: IconGrid },
       { to: "/starred", label: "收藏", icon: IconBookmark },
@@ -63,13 +65,14 @@ export const MORE_MENU: Array<{ title: string; items: NavItem[] }> = [
 
 export const TABBAR: NavItem[] = [
   { to: "/", label: "精选", icon: IconBolt, end: true },
+  { to: "/products", label: "产品目录", icon: IconApps },
   { to: "/all", label: "全部", icon: IconList },
   { to: "/daily", label: "日报", icon: IconDoc },
   { to: "/more", label: "更多", icon: IconApps, changelog: true },
 ];
 
 /** Pages reached from the mobile "更多" tab keep that tab highlighted. */
-export const MORE_PATHS = ["/more", "/chronicle", "/hot", "/topics", "/starred", "/leaderboard", "/codex-reset", "/agent", "/about", "/changelog", "/feedback", "/terms", "/privacy"];
+export const MORE_PATHS = ["/products", "/more", "/chronicle", "/hot", "/topics", "/starred", "/leaderboard", "/codex-reset", "/agent", "/about", "/changelog", "/feedback", "/terms", "/privacy"];
 
 export function tabIsActive(item: NavItem, pathname: string): boolean {
   if (item.end) return pathname === item.to;

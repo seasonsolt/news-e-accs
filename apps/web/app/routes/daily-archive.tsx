@@ -1,3 +1,4 @@
+import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { Link, useLoaderData } from "react-router";
 import type { ReportIndexEntry } from "@aihot/contracts/site";
@@ -10,12 +11,12 @@ import { Rows, SectionPage } from "../features/report/ReportPaper";
 import { Deck } from "../components/shell/Deck";
 
 export async function loader({ request }: { request: Request }) {
-  const { items: index } = await apiGet<{ items: ReportIndexEntry[] }>("/api/site/reports/daily", { signal: request.signal });
+  const { items: index } = await apiGet<{ items: ReportIndexEntry[] }>("/api/site/reports/daily", { request, signal: request.signal });
   return { index, today: beijingDate(Date.now()) };
 }
 
-export function meta() {
-  return pageMeta({ title: `${withSubject("日报")} · 历史存档`, description: `${SITE.name} 历史日报，按日期归档。`, path: "/daily/archive", image: "/og/pages/daily.png" });
+export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
+  return pageMeta({ title: `${withSubject("日报")} · 历史存档`, description: `${SITE.name} 历史日报，按日期归档。`, path: "/daily/archive", image: "/og/pages/daily.png" }, localeFromMatches(matches ?? []));
 }
 
 export function headers() {
@@ -23,6 +24,7 @@ export function headers() {
 }
 
 export default function DailyArchive() {
+  const tx = useTranslate();
   const { index, today } = useLoaderData<typeof loader>();
   const months = archiveGroups("daily", index);
   return (
@@ -34,11 +36,11 @@ export default function DailyArchive() {
       deck={
         <Deck
           art="masthead-press"
-          label="日报合订本"
-          kicker={<>{SITE.name} · {withSubject("日报")} · 共 <span className="num">{index.length}</span> 期</>}
-          title="日报合订本"
+          label={tx("日报合订本")}
+          kicker={<>{SITE.name} · {withSubject(tx("日报"))}<Text value="· 共" /><span className="num">{index.length}</span><Text value="期" /></>}
+          title={tx("日报合订本")}
           titleId="report-start"
-          description="每天 08:00 一期，按月装订。"
+          description={tx("每天 08:00 一期，按月装订。")}
         />
       }
     >
@@ -50,13 +52,12 @@ export default function DailyArchive() {
                 <Link key={e.key} to={`/daily/${e.key}`} prefetch="intent" className={`group flex gap-4 py-4 ${cell}`}>
                   <span className="flex w-9 shrink-0 flex-col items-center">
                     <span className="num text-[24px] font-black leading-none tracking-[-0.03em] text-ink transition-colors group-hover:text-accent">{e.key.slice(8, 10)}</span>
-                    <span className="mt-1.5 text-[10.5px] leading-none text-ink-4">{beijingWeekday(e.key).replace("星期", "周")}</span>
+                    <span className="mt-1.5 text-[10.5px] leading-none text-ink-4">{tx(beijingWeekday(e.key)).replace("星期", "周")}</span>
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-[15px] font-bold leading-[1.55] text-ink transition-colors group-hover:text-accent">{e.title ?? `${withSubject("日报")} ${e.key}`}</span>
+                    <span className="block text-[15px] font-bold leading-[1.55] text-ink transition-colors group-hover:text-accent">{e.title ?? `${withSubject(tx("日报"))} ${e.key}`}</span>
                     <span className="mt-1 block text-[12px] text-ink-4">
-                      <span className="num">{e.count}</span> 件大事
-                    </span>
+                      <span className="num">{e.count}</span><Text value="件大事" /></span>
                   </span>
                 </Link>
               )}

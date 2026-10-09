@@ -1,3 +1,4 @@
+import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { Link, useLoaderData } from "react-router";
 import type { Route } from "./+types/leaderboard-source";
@@ -11,10 +12,10 @@ import { pct, shortStamp } from "../features/leaderboard/format";
 import { IconArrowLeft, IconArrowUpRight, IconChevronDown } from "../components/icons";
 
 export async function loader({ params, request }: Route.LoaderArgs) {
-  return loadOr404<LbSourceDetail>(`/api/site/leaderboard/sources/${encodeURIComponent(params.key)}`, { signal: request.signal });
+  return loadOr404<LbSourceDetail>(`/api/site/leaderboard/sources/${encodeURIComponent(params.key)}`, { request, signal: request.signal });
 }
 
-export function meta({ loaderData }: Route.MetaArgs) {
+export function meta({ matches, loaderData }: Route.MetaArgs) {
   if (!loaderData) return [{ title: titled("页面不存在") }];
   const { source } = loaderData;
   const path = `/leaderboard/sources/${source.key}`;
@@ -39,7 +40,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
         { name: source.name, path },
       ]),
     ],
-  });
+  }, localeFromMatches(matches ?? []));
 }
 
 export function headers() {
@@ -56,6 +57,7 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
 }
 
 export default function LeaderboardSourcePage() {
+  const tx = useTranslate();
   const d = useLoaderData<typeof loader>();
   const { source } = d;
   return (
@@ -64,19 +66,18 @@ export default function LeaderboardSourcePage() {
         compact
         art="cat-models"
         label={source.fullName}
-        kicker={<Link to="/leaderboard/sources" className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /> 评测来源</Link>}
+        kicker={<Link to="/leaderboard/sources" className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /><Text value="评测来源" /></Link>}
         title={<span className="inline-flex items-center gap-4"><BrandMark brand={source.brand} size={44} />{source.fullName}</span>}
         description={<>{source.operator}{source.area ? ` / ${source.area}` : ""} · {source.description}</>}
         aside={source.officialUrl && (
-          <a href={source.officialUrl} target="_blank" rel="noopener noreferrer" className="deck-button">
-            官方评测 <IconArrowUpRight size={13} className="ml-1" />
+          <a href={source.officialUrl} target="_blank" rel="noopener noreferrer" className="deck-button"><Text value="官方评测" /><IconArrowUpRight size={13} className="ml-1" />
           </a>
         )}
       />
 
-      <section className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 border-y border-line py-5 lg:grid-cols-4" aria-label={`在 ${SITE.name} 中`}>
+      <section className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 border-y border-line py-5 lg:grid-cols-4" aria-label={tx("在 {0} 中", SITE.name)}>
         <div className="min-w-0">
-          <span className="text-[11px] text-ink-4">在 {SITE.name} 中</span>
+          <span className="text-[11px] text-ink-4"><Text value="在" />{SITE.name}<Text value="中" /></span>
           <span className="mt-1.5 block">
             <span className="flex flex-wrap items-center gap-1.5">
               <StatusChip status={source.status} large />
@@ -84,47 +85,47 @@ export default function LeaderboardSourcePage() {
             </span>
           </span>
         </div>
-        <Stat label="证据预算">
+        <Stat label={tx("证据预算")}>
           {source.budget === null ? (
-            <span className="font-sans text-[14px] font-normal text-ink-3">不计分</span>
+            <span className="font-sans text-[14px] font-normal text-ink-3"><Text value="不计分" /></span>
           ) : source.saturated ? (
             <>
               {pct(source.effectiveBudget ?? source.budget)}
-              <span className="ml-1.5 font-sans text-[12px] font-normal text-ink-4">（接近饱和，原 {pct(source.budget)}）</span>
+              <span className="ml-1.5 font-sans text-[12px] font-normal text-ink-4"><Text value="（接近饱和，原" />{pct(source.budget)}）</span>
             </>
           ) : (
             pct(source.budget)
           )}
         </Stat>
-        <Stat label="上游数据时间">{d.collected ? shortStamp(d.upstreamAt) : <span className="font-sans text-[14px] font-normal text-ink-3">待核实</span>}</Stat>
-        <Stat label="最近成功同步">
-          {d.collected ? shortStamp(d.syncedAt) : <span className="font-sans text-[14px] font-normal text-ink-3">{source.status === "awaiting" ? "等待可比成绩" : "尚未开始采集"}</span>}
+        <Stat label={tx("上游数据时间")}>{d.collected ? shortStamp(d.upstreamAt) : <span className="font-sans text-[14px] font-normal text-ink-3"><Text value="待核实" /></span>}</Stat>
+        <Stat label={tx("最近成功同步")}>
+          {d.collected ? shortStamp(d.syncedAt) : <span className="font-sans text-[14px] font-normal text-ink-3">{source.status === "awaiting" ? tx("等待可比成绩") : tx("尚未开始采集")}</span>}
         </Stat>
       </section>
 
       <section className="mt-6 grid gap-6 md:grid-cols-2 md:gap-10">
         <div>
-          <h2 className="text-[14px] font-semibold text-ink">它测什么，怎么测</h2>
+          <h2 className="text-[14px] font-semibold text-ink"><Text value="它测什么，怎么测" /></h2>
           <p className="mt-2 text-[13px] leading-[1.8] text-ink-3">{source.what}</p>
         </div>
         <div>
-          <h2 className="text-[14px] font-semibold text-ink">如何使用这份证据</h2>
+          <h2 className="text-[14px] font-semibold text-ink"><Text value="如何使用这份证据" /></h2>
           <p className="mt-2 text-[13px] leading-[1.8] text-ink-3">{source.usage}</p>
         </div>
       </section>
 
       {d.collected && d.rows.length > 0 && (
         <section className="mt-10">
-          <h2 className="text-[18px] font-bold text-ink">评测成绩</h2>
+          <h2 className="text-[18px] font-bold text-ink"><Text value="评测成绩" /></h2>
           {d.rowsNote && <p className="mt-1 text-[12.5px] text-ink-3">{d.rowsNote}</p>}
           <div className="card mt-4 overflow-x-auto">
             <table className="w-full min-w-[560px] text-[13.5px]">
               <thead className="bg-[rgba(28,39,51,0.04)] text-[12px] text-ink-4 dark:bg-white/[0.03]">
                 <tr className="border-b border-line">
-                  <th scope="col" className="w-24 whitespace-nowrap px-4 py-2.5 text-left font-medium lg:px-[22px]">原榜名次</th>
-                  <th scope="col" className="px-3 py-2.5 text-left font-medium">原榜型号</th>
-                  <th scope="col" className="px-3 py-2.5 text-left font-medium">原始成绩</th>
-                  <th scope="col" className="px-4 py-2.5 text-left font-medium lg:px-[22px]">{d.systemRows ? "运行配置" : "代表配置"}</th>
+                  <th scope="col" className="w-24 whitespace-nowrap px-4 py-2.5 text-left font-medium lg:px-[22px]"><Text value="原榜名次" /></th>
+                  <th scope="col" className="px-3 py-2.5 text-left font-medium"><Text value="原榜型号" /></th>
+                  <th scope="col" className="px-3 py-2.5 text-left font-medium"><Text value="原始成绩" /></th>
+                  <th scope="col" className="px-4 py-2.5 text-left font-medium lg:px-[22px]">{d.systemRows ? tx("运行配置") : tx("代表配置")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -152,14 +153,12 @@ export default function LeaderboardSourcePage() {
       )}
 
       <details className="disclosure group mt-6 border-y border-line">
-        <summary className="flex items-center justify-between py-4 text-[14px] font-semibold text-ink">
-          评测局限与数据署名
-          <IconChevronDown size={16} className="text-ink-4 transition-transform duration-200 group-open:rotate-180" />
+        <summary className="flex items-center justify-between py-4 text-[14px] font-semibold text-ink"><Text value="评测局限与数据署名" /><IconChevronDown size={16} className="text-ink-4 transition-transform duration-200 group-open:rotate-180" />
         </summary>
         <div className="space-y-2 pb-5 text-[13px] leading-relaxed text-ink-3">
           <p>{source.limits}</p>
           <p>
-            <span className="text-ink-4">数据许可：</span>
+            <span className="text-ink-4"><Text value="数据许可：" /></span>
             {source.license}
           </p>
           <p className="text-ink-4">{source.attribution}</p>

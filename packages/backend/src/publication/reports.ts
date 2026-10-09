@@ -286,6 +286,7 @@ export async function listReports(kind: ReportKind, limit = INDEX_LIMIT): Promis
   return rows.map((r) => {
     const items = kind === "daily" ? (r.content.sections ?? []).flatMap((s: any) => s.items ?? []) : (r.content.themes ?? []).flatMap((t: any) => t.storyRefs ?? []);
     return {
+      kind,
       key: r.key,
       title: reportHeadline(r.content, shape, gone),
       generatedAt: r.generated_at.toISOString(),
@@ -364,7 +365,7 @@ export { siteUrl };
 
 export function reportNavigation(kind: ReportKind, index: ReportIndexEntry[], key: string): ReportNavigationEntry[] {
   const at = index.findIndex((e) => e.key === key);
-  return index.map((entry, n) => ({ key: entry.key,
+  return index.map((entry, n) => ({ kind, key: entry.key,
     ...(kind !== "daily" || entry.key.slice(0, 7) === key.slice(0, 7) || n < 3 || Math.abs(n - at) <= 1 ? { title: entry.title } : {}),
   }));
 }
@@ -374,5 +375,5 @@ export async function loadReportNavigation(kind: ReportKind, key: string) {
 }
 
 export async function loadReportMonth(kind: ReportKind, month: string) {
-  return (await listReports(kind)).filter((e) => e.key.startsWith(month)).map(({ key, title }) => ({ key, title }));
+  return (await listReports(kind)).filter((e) => e.key.startsWith(month)).map(({ key, title }) => ({ kind, key, title }));
 }

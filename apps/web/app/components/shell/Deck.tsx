@@ -27,11 +27,13 @@ export function Plate({ src, alt = "", className }: { src: string; alt?: string;
   );
 }
 
-export function Deck({ art, label, kicker, title, titleId, description, aside, children, compact = false }: {
+export function Deck({ art, label, heading, kicker, title, titleId, description, aside, children, compact = false }: {
   /** Path under /media/art/ without the width suffix: "hot", "epochs/agents". */
   art?: string;
   /** The band's accessible name (the page's name). */
   label: string;
+  /** The page's h1 when the title is display copy rather than the page's name (the front page's line). */
+  heading?: ReactNode;
   kicker?: ReactNode;
   title: ReactNode;
   /** An anchor on the title (a report's skip target). */
@@ -49,8 +51,9 @@ export function Deck({ art, label, kicker, title, titleId, description, aside, c
       <div className="deck-inner">
         <div className="deck-row">
           <div className="deck-copy">
+            {heading && <h1 className="deck-heading">{heading}</h1>}
             {kicker && <div className="deck-kicker">{kicker}</div>}
-            <h1 id={titleId} className="deck-title">{title}</h1>
+            {heading ? <p id={titleId} className="deck-title">{title}</p> : <h1 id={titleId} className="deck-title">{title}</h1>}
             {description && <div className="deck-desc">{description}</div>}
           </div>
           {aside && <div className="deck-aside">{aside}</div>}

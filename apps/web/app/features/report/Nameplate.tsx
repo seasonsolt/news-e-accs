@@ -1,3 +1,4 @@
+import { useLocale } from "../../lib/i18n";
 // The report nameplates (industry/brand/nameplates/, made by scripts/nameplates.ts from the pack's
 // subject word). Each logotype is cached on its own; the two paths take the theme's ink and accent.
 import daily from "@aihot/industry/brand/nameplates/daily.svg?url&no-inline";
@@ -14,7 +15,9 @@ const NAMEPLATES = {
 } as const;
 
 export function Nameplate({ which, className = "" }: { which: keyof typeof NAMEPLATES; className?: string }) {
+  const locale = useLocale();
   const n = NAMEPLATES[which];
+  if (locale === "en") return <span className={`font-display italic ${className}`}>{({ daily: "AI Daily", weekly: "AI Weekly", monthly: "AI Monthly", archive: "Daily Archive" })[which]}</span>;
   return (
     <svg viewBox={n.viewBox} className={className} aria-hidden="true" focusable="false">
       <use href={`${n.url}#accent`} className="fill-accent" />

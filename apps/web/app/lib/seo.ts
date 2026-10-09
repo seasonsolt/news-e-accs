@@ -1,3 +1,5 @@
+import { translate } from "./translate";
+import { htmlLanguage, type Locale } from "./locale";
 // Page metadata from one place: title template, canonical address, OG images, robots. The site's name
 // and wording come from the industry pack (industry/site.ts); its address from SITE_URL.
 import type { MetaDescriptor } from "react-router";
@@ -45,10 +47,11 @@ export function titled(title: string): string {
   return `${title} · ${SITE.name}`;
 }
 
-export function pageMeta(input: PageMetaInput): MetaDescriptor[] {
+export function pageMeta(input: PageMetaInput, locale: Locale = "en"): MetaDescriptor[] {
+  input = { ...input, title: input.title ? translate(locale, input.title) : input.title, description: input.description ? translate(locale, input.description) : input.description };
   const base = siteUrl();
-  const title = input.title ? (input.rawTitle ? input.title : titled(input.title)) : HOME_TITLE;
-  const description = input.description ?? SITE_DESCRIPTION;
+  const title = input.title ? (input.rawTitle ? input.title : titled(input.title)) : (locale === "en" ? "e/acc — AI daily news & trending stories" : HOME_TITLE);
+  const description = input.description ?? (locale === "en" ? "AI news, selected stories and daily briefings from e/acc. Reports are grouped into events, with original source links." : SITE_DESCRIPTION);
   const url = `${base}${input.path}`;
   const image = input.image ? (input.image.startsWith("http") ? input.image : `${base}${input.image}`) : `${base}/og/site.png`;
   const tags: MetaDescriptor[] = [
@@ -57,15 +60,15 @@ export function pageMeta(input: PageMetaInput): MetaDescriptor[] {
     { tagName: "link", rel: "canonical", href: url },
     { property: "og:site_name", content: SITE.name },
     { property: "og:type", content: input.type ?? "website" },
-    { property: "og:title", content: input.title ?? HOME_TITLE },
+    { property: "og:title", content: input.title ?? title },
     { property: "og:description", content: description },
     { property: "og:url", content: url },
     { property: "og:image", content: image },
     { property: "og:image:width", content: "1200" },
     { property: "og:image:height", content: "630" },
-    { property: "og:locale", content: SITE.locale.replace("-", "_") },
+    { property: "og:locale", content: htmlLanguage(locale).replace("-", "_") },
     { name: "twitter:card", content: "summary_large_image" },
-    { name: "twitter:title", content: input.title ?? HOME_TITLE },
+    { name: "twitter:title", content: input.title ?? title },
     { name: "twitter:description", content: description },
     { name: "twitter:image", content: image },
   ];
@@ -84,6 +87,59 @@ export function organizationLd() {
     url: base,
     logo: `${base}/icon.png`,
     ...(founder ? { founder: { "@type": "Person", name: founder.name, ...(founder.description ? { description: founder.description } : {}), ...(founder.url ? { sameAs: [founder.url] } : {}) } } : {}),
+  };
+}
+
+/** The front page's WebSite entry, with the /all search as its search action. */
+export function websiteLd() {
+  const base = siteUrl();
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE.name,
+    url: base,
+    inLanguage: SITE.locale,
+    potentialAction: { "@type": "SearchAction", target: { "@type": "EntryPoint", urlTemplate: `${base}/all?q={search_term_string}` }, "query-input": "required name=search_term_string" },
+  };
+}
+
+export interface NewsArticleInput {
+  path: string;
+  headline: string;
+  description?: string | null;
+  /** The page's share image (1200×630), site-relative or absolute. */
+  image: string;
+  /** The dates the page shows; Google matches them against the visible ones. */
+  datePublished: string | null;
+  dateModified?: string | null;
+  /** The language of the headline and summary (not of the interface). */
+  inLanguage: string;
+  /** The report the page summarizes, when it summarizes one. */
+  basedOn?: string | null;
+  keywords?: string[];
+}
+
+/** A news page (an item's summary, an event): written and published by the site, citing its sources. */
+export function newsArticleLd(input: NewsArticleInput) {
+  const base = siteUrl();
+  const url = `${base}${input.path}`;
+  const site = { "@type": "Organization", name: SITE.organization.name, url: base };
+  const modified = input.dateModified ?? input.datePublished;
+  return {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    url,
+    headline: input.headline,
+    ...(input.description ? { description: input.description } : {}),
+    image: [input.image.startsWith("http") ? input.image : `${base}${input.image}`],
+    ...(input.datePublished ? { datePublished: input.datePublished } : {}),
+    ...(modified ? { dateModified: modified } : {}),
+    inLanguage: input.inLanguage,
+    author: site,
+    publisher: { ...site, logo: { "@type": "ImageObject", url: `${base}/icon.png` } },
+    ...(input.basedOn ? { isBasedOn: input.basedOn } : {}),
+    ...(input.keywords?.length ? { keywords: input.keywords.join(", ") } : {}),
   };
 }
 

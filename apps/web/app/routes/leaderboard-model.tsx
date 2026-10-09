@@ -1,3 +1,4 @@
+import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLoaderData, useSearchParams } from "react-router";
@@ -16,11 +17,11 @@ import { IconArrowLeft, IconArrowRight, IconArrowUpRight, IconChevronDown, IconE
 
 export async function loader({ params, request }: Route.LoaderArgs) {
   const at = requestAt(request);
-  const detail = await loadOr404<LbModelDetail>(`/api/site/leaderboard/models/${encodeURIComponent(params.slug)}${queryString({ at })}`, { signal: request.signal });
+  const detail = await loadOr404<LbModelDetail>(`/api/site/leaderboard/models/${encodeURIComponent(params.slug)}${queryString({ at })}`, { request, signal: request.signal });
   return { ...detail, at };
 }
 
-export function meta({ loaderData }: Route.MetaArgs) {
+export function meta({ matches, loaderData }: Route.MetaArgs) {
   if (!loaderData) return [{ title: titled("页面不存在") }];
   const { model } = loaderData;
   const path = `/leaderboard/${model.slug}`;
@@ -45,7 +46,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
         { name: model.name, path },
       ]),
     ],
-  });
+  }, localeFromMatches(matches ?? []));
 }
 
 export function headers() {
@@ -77,9 +78,10 @@ function Stat({ label, children, foot }: { label: string; children: ReactNode; f
 }
 
 function Capability({ d, from }: { d: LbModelDetail; from: string }) {
+  const tx = useTranslate();
   return (
     <section className="mt-12">
-      <SectionHead eyebrow="CAPABILITY PROFILE" title="各有所长，看得更清楚。" sub="每项能力单独计算。没有足够的实测，就留空。" />
+      <SectionHead eyebrow="CAPABILITY PROFILE" title={tx("各有所长，看得更清楚。")} sub={tx("每项能力单独计算。没有足够的实测，就留空。")} />
       <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {d.categories.map((c) => (
           <Link
@@ -90,41 +92,42 @@ function Capability({ d, from }: { d: LbModelDetail; from: string }) {
             <span className="flex items-center justify-between gap-2">
               <span className="text-[14px] font-semibold text-ink transition-colors group-hover:text-accent">{c.name}</span>
               {c.rank !== null ? (
-                <span className={`mono text-[11.5px] font-semibold ${c.onBoard ? "text-accent" : "text-ink-4"}`}>{c.onBoard ? `#${c.rank}` : "30 名之外"}</span>
+                <span className={`mono text-[11.5px] font-semibold ${c.onBoard ? "text-accent" : "text-ink-4"}`}>{c.onBoard ? `#${c.rank}` : tx("30 名之外")}</span>
               ) : (
-                <span className="text-[11px] text-ink-4">证据待补齐</span>
+                <span className="text-[11px] text-ink-4"><Text value="证据待补齐" /></span>
               )}
             </span>
             {c.score !== null ? (
               <>
                 <span className="mono mt-4 text-[32px] font-medium leading-none tracking-[-0.03em] text-ink">{c.score.toFixed(1)}</span>
-                <span className="mt-auto pt-4 text-[12px] text-ink-3">{c.sourceCount} 项评测支持</span>
+                <span className="mt-auto pt-4 text-[12px] text-ink-3">{c.sourceCount}<Text value="项评测支持" /></span>
               </>
             ) : (
               <>
                 <span className="mono mt-4 text-[32px] font-medium leading-none text-ink-4">—</span>
-                <span className="mt-auto pt-4 text-[12px] text-ink-4">暂无足够的可比成绩</span>
+                <span className="mt-auto pt-4 text-[12px] text-ink-4"><Text value="暂无足够的可比成绩" /></span>
               </>
             )}
           </Link>
         ))}
       </div>
-      <p className="mt-3 text-[12px] text-ink-4">不同分类的分数反映各自参照组中的排序支持，不能直接相加或用来比较不同能力的绝对高低。</p>
+      <p className="mt-3 text-[12px] text-ink-4"><Text value="不同分类的分数反映各自参照组中的排序支持，不能直接相加或用来比较不同能力的绝对高低。" /></p>
     </section>
   );
 }
 
 function Stability({ d }: { d: LbModelDetail }) {
+  const tx = useTranslate();
   const s = d.overall.stability;
   const rank = d.overall.rank;
   if (!s || rank === null) return null;
   return (
     <section className="mt-12">
-      <SectionHead eyebrow="UNDERSTANDING THE RANK" title="综合名次，有多稳定？" sub="依次移除一项评测或一家机构、调整单项权重与误差处理，观察排名怎样变化。" />
+      <SectionHead eyebrow="UNDERSTANDING THE RANK" title={tx("综合名次，有多稳定？")} sub={tx("依次移除一项评测或一家机构、调整单项权重与误差处理，观察排名怎样变化。")} />
       <div className="mt-5 grid gap-5 border-b border-line pb-6 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)] lg:gap-10">
         <div>
-          <span className="text-[12px] text-ink-4">重新检查资格后的名次</span>
-          <span className="mt-1 block text-[30px] font-bold leading-tight text-ink">{s.from === s.to ? `第 ${s.from} 名` : `${s.from}—${s.to} 名`}</span>
+          <span className="text-[12px] text-ink-4"><Text value="重新检查资格后的名次" /></span>
+          <span className="mt-1 block text-[30px] font-bold leading-tight text-ink">{s.from === s.to ? tx("第 {0} 名", s.from) : tx("{0}—{1} 名", s.from, s.to)}</span>
           {d.overall.confidence && (
             <span className="mt-1 block">
               <EvidenceBadge confidence={d.overall.confidence} stability={null} rank={rank} />
@@ -133,9 +136,7 @@ function Stability({ d }: { d: LbModelDetail }) {
         </div>
         <div className="min-w-0">
           <p className="text-[13px] leading-relaxed text-ink-3">
-            {s.unavailable > 0 ? `${s.unavailable} 个情景下参评证据不足。` : s.incomplete > 0 ? `${s.incomplete} 个对照未完成。` : "已完成的对照中均具备参评资格。"}
-            保持原候选不变时为 {s.fixedFrom}—{s.fixedTo} 名。这个范围不是置信区间，也不包含从未公开的成绩。
-          </p>
+            {s.unavailable > 0 ? tx("{0} 个情景下参评证据不足。", s.unavailable) : s.incomplete > 0 ? tx("{0} 个对照未完成。", s.incomplete) : tx("已完成的对照中均具备参评资格。")}<Text value="保持原候选不变时为" />{s.fixedFrom}—{s.fixedTo}<Text value="名。这个范围不是置信区间，也不包含从未公开的成绩。" /></p>
         </div>
       </div>
       {d.comparisons.length > 0 && <Comparisons d={d} />}
@@ -146,7 +147,7 @@ function Stability({ d }: { d: LbModelDetail }) {
 /** Net support in shared evaluations, as a signed number: positive favours this model. */
 function NetValue({ net }: { net: number }) {
   const v = Math.round(net * 100) / 100;
-  if (v === 0) return <span className="text-[12px] text-ink-4">持平</span>;
+  if (v === 0) return <span className="text-[12px] text-ink-4"><Text value="持平" /></span>;
   return <span className={`mono text-[12.5px] font-semibold ${v > 0 ? "text-accent" : "text-amber-ink"}`}>{v > 0 ? `+${v.toFixed(2)}` : `−${Math.abs(v).toFixed(2)}`}</span>;
 }
 
@@ -155,13 +156,13 @@ function Comparisons({ d }: { d: LbModelDetail }) {
   return (
     <div className="border-b border-line">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center justify-between py-4 text-left">
-        <span className="text-[13.5px] font-semibold text-ink">查看与附近模型的共同证据</span>
+        <span className="text-[13.5px] font-semibold text-ink"><Text value="查看与附近模型的共同证据" /></span>
         <span className={`text-[18px] leading-none text-ink-4 transition-transform duration-300 ${open ? "rotate-45" : ""}`}>
           +
         </span>
       </button>
       <Collapse open={open} duration={300}>
-        <p className="text-[13px] text-ink-3">净支持只看双方共同参加的评测。全局排序还需处理其他模型间的冲突，因此非相邻名次可能与单独比较不同。</p>
+        <p className="text-[13px] text-ink-3"><Text value="净支持只看双方共同参加的评测。全局排序还需处理其他模型间的冲突，因此非相邻名次可能与单独比较不同。" /></p>
         <ul className="-mx-3 divide-y divide-line-soft pb-3 pt-2">
           {d.comparisons.map((c) => <ComparisonRow key={c.model.slug} c={c} name={d.model.name} />)}
         </ul>
@@ -171,32 +172,31 @@ function Comparisons({ d }: { d: LbModelDetail }) {
 }
 
 function ComparisonRow({ c, name }: { c: LbComparison; name: string }) {
+  const tx = useTranslate();
   const [open, setOpen] = useState(false);
-  const favours = c.net > 1e-9 ? "共同证据支持本模型" : c.net < -1e-9 ? "共同证据支持对方" : "共同证据持平";
+  const favours = c.net > 1e-9 ? tx("共同证据支持本模型") : c.net < -1e-9 ? tx("共同证据支持对方") : tx("共同证据持平");
   return (
     <li>
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center gap-3 rounded-tile px-3 py-3 text-left transition-colors hover:bg-bg-sunk">
         <BrandMark brand={c.model.brand} size={26} />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[14px] font-medium text-ink">{c.model.name} <span className="num text-[12px] text-ink-4">#{c.rank}</span></span>
-          <span className="text-[12px] text-ink-3">{c.sharedCount} 项共同评测 · {favours}</span>
+          <span className="text-[12px] text-ink-3">{c.sharedCount}<Text value="项共同评测 ·" />{favours}</span>
         </span>
         <NetValue net={c.net} />
         <span className={`text-ink-4 transition-transform duration-300 ${open ? "rotate-180" : ""}`}><IconChevronDown size={15} /></span>
       </button>
       <Collapse open={open} duration={300}>
         <div className="px-3 pb-4">
-          <p className="text-[12.5px] leading-relaxed text-ink-3">
-            双方共同拥有当前榜单 {pctFixed(c.sharedWeight)} 的名义票权。下表展示各项评测采用的成绩，已知误差的软化处理会影响净支持，不只数赢了几项。
-          </p>
+          <p className="text-[12.5px] leading-relaxed text-ink-3"><Text value="双方共同拥有当前榜单" />{pctFixed(c.sharedWeight)}<Text value="的名义票权。下表展示各项评测采用的成绩，已知误差的软化处理会影响净支持，不只数赢了几项。" /></p>
           <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[420px] text-[12.5px]">
               <thead className="text-ink-4">
                 <tr className="border-b border-line">
-                  <th className="py-2 text-left font-medium">共同评测</th>
+                  <th className="py-2 text-left font-medium"><Text value="共同评测" /></th>
                   <th className="py-2 text-right font-medium">{name}</th>
                   <th className="py-2 text-right font-medium">{c.model.name}</th>
-                  <th className="py-2 text-right font-medium">票权</th>
+                  <th className="py-2 text-right font-medium"><Text value="票权" /></th>
                 </tr>
               </thead>
               <tbody>
@@ -212,8 +212,7 @@ function ComparisonRow({ c, name }: { c: LbComparison; name: string }) {
             </table>
           </div>
           {c.hasPage && (
-            <Link to={`/leaderboard/${c.model.slug}`} className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-medium text-accent">
-              查看 {c.model.name} 的完整证据 <IconArrowRight size={13} />
+            <Link to={`/leaderboard/${c.model.slug}`} className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-medium text-accent"><Text value="查看" />{c.model.name}<Text value="的完整证据" /><IconArrowRight size={13} />
             </Link>
           )}
         </div>
@@ -223,6 +222,7 @@ function ComparisonRow({ c, name }: { c: LbComparison; name: string }) {
 }
 
 function EvidenceCard({ it }: { it: LbEvidenceItem }) {
+  const tx = useTranslate();
   const [open, setOpen] = useState(false);
   return (
     <li className="card overflow-hidden rounded-tile">
@@ -243,19 +243,18 @@ function EvidenceCard({ it }: { it: LbEvidenceItem }) {
       <Collapse open={open} duration={300}>
         <dl className="grid gap-3 border-t border-line-soft px-4 py-4 text-[12.5px] sm:grid-cols-2 lg:px-5">
           <div>
-            <dt className="text-ink-4">原榜型号</dt>
-            <dd className="mt-0.5 break-all font-mono text-[12px] text-ink-2">{it.sourceModelName ?? "—"}{it.sourceRank !== null && <span className="ml-1.5 font-sans text-ink-4">原榜第 {it.sourceRank} 名</span>}</dd>
+            <dt className="text-ink-4"><Text value="原榜型号" /></dt>
+            <dd className="mt-0.5 break-all font-mono text-[12px] text-ink-2">{it.sourceModelName ?? "—"}{it.sourceRank !== null && <span className="ml-1.5 font-sans text-ink-4"><Text value="原榜第" />{it.sourceRank}<Text value="名" /></span>}</dd>
           </div>
           <div>
-            <dt className="text-ink-4">代表配置</dt>
+            <dt className="text-ink-4"><Text value="代表配置" /></dt>
             <dd className="mt-0.5 text-ink-2">{it.configurationLabel ?? "—"}</dd>
           </div>
           {it.selectionReason && <p className="text-ink-3 sm:col-span-2">{it.selectionReason}</p>}
           <div className="sm:col-span-2">
-            <dt className="text-ink-4">本轮采用记录</dt>
-            <dd className="num mt-0.5 text-ink-2">
-              来源数据 {shortStamp(it.upstreamAt)} · 核验 {shortStamp(it.verifiedAt)} · {it.measuredAt ? `实测 ${shortStamp(it.measuredAt)}` : "实测日期未公开"}
-              {it.carriedForward && " · 沿用最近一次已核验记录"}
+            <dt className="text-ink-4"><Text value="本轮采用记录" /></dt>
+            <dd className="num mt-0.5 text-ink-2"><Text value="来源数据" />{shortStamp(it.upstreamAt)}<Text value="· 核验" />{shortStamp(it.verifiedAt)} · {it.measuredAt ? tx("实测 {0}", shortStamp(it.measuredAt)) : tx("实测日期未公开")}
+              {it.carriedForward && tx(" · 沿用最近一次已核验记录")}
             </dd>
           </div>
           {it.components.length > 0 && (
@@ -272,9 +271,9 @@ function EvidenceCard({ it }: { it: LbEvidenceItem }) {
             </div>
           )}
           <div className="flex gap-4 sm:col-span-2">
-            <Link to={`/leaderboard/sources/${it.sourceKey}`} className="inline-flex items-center gap-1 font-medium text-accent">查看这项评测 <IconArrowRight size={13} /></Link>
+            <Link to={`/leaderboard/sources/${it.sourceKey}`} className="inline-flex items-center gap-1 font-medium text-accent"><Text value="查看这项评测" /><IconArrowRight size={13} /></Link>
             {it.officialUrl && (
-              <a href={it.officialUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-ink-3 hover:text-accent">官方来源 <IconExternal size={12} /></a>
+              <a href={it.officialUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-ink-3 hover:text-accent"><Text value="官方来源" /><IconExternal size={12} /></a>
             )}
           </div>
         </dl>
@@ -284,6 +283,7 @@ function EvidenceCard({ it }: { it: LbEvidenceItem }) {
 }
 
 export default function LeaderboardModelPage() {
+  const tx = useTranslate();
   const d = useLoaderData<typeof loader>();
   const [params] = useSearchParams();
   // The server page is shared by every ?from= (a CDN caches it once), so the board to return
@@ -299,55 +299,52 @@ export default function LeaderboardModelPage() {
         compact
         art="cat-models"
         label={model.name}
-        kicker={<Link to={withAt(boardHref(from), d.at)} className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /> 返回{LEADERBOARD_BOARD_LABELS[from as keyof typeof LEADERBOARD_BOARD_LABELS]}榜</Link>}
+        kicker={<Link to={withAt(boardHref(from), d.at)} className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /><Text value="返回" />{LEADERBOARD_BOARD_LABELS[from as keyof typeof LEADERBOARD_BOARD_LABELS]}<Text value="榜" /></Link>}
         title={<span className="inline-flex items-center gap-4"><BrandMark brand={model.brand} size={48} />{model.name}</span>}
-        description={<span className="num">{model.provider ?? "—"} · {model.releasedAt ? `${model.releasedAt} 发布` : "发布日期待核实"} · {shortStamp(d.run.generatedAt)} 更新</span>}
+        description={<span className="num">{model.provider ?? "—"} · {model.releasedAt ? tx("{0} 发布", model.releasedAt) : tx("发布日期待核实")} · {shortStamp(d.run.generatedAt)}<Text value="更新" /></span>}
         aside={
           <span className="flex flex-col items-end">
-            <span className="font-mono text-[12px] text-[var(--deck-dim)]">
-              综合共识指数 · {overall.rank === null ? "未进入综合榜" : overall.onBoard ? `综合榜第 ${overall.rank} 名` : "综合榜前 30 名之外"}
+            <span className="font-mono text-[12px] text-[var(--deck-dim)]"><Text value="综合共识指数 ·" />{overall.rank === null ? tx("未进入综合榜") : overall.onBoard ? tx("综合榜第 {0} 名", overall.rank) : tx("综合榜前 30 名之外")}
             </span>
             <span className="deck-figure text-[96px] lg:text-[120px]">{overall.score !== null ? overall.score.toFixed(1) : "—"}</span>
           </span>
         }
       />
 
-      <section className="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 border-y border-line py-6 lg:grid-cols-4" aria-label="模型概览">
-        <Stat label="分类成绩">
+      <section className="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 border-y border-line py-6 lg:grid-cols-4" aria-label={tx("模型概览")}>
+        <Stat label={tx("分类成绩")}>
           {withScores}
-          <small className="ml-1 font-sans text-[11px] font-normal text-ink-4">/ 4 项分类</small>
+          <small className="ml-1 font-sans text-[11px] font-normal text-ink-4"><Text value="/ 4 项分类" /></small>
         </Stat>
-        <Stat label="已有成绩">
+        <Stat label={tx("已有成绩")}>
           {d.metricCount}
-          <small className="ml-1 font-sans text-[11px] font-normal text-ink-4">项评测</small>
+          <small className="ml-1 font-sans text-[11px] font-normal text-ink-4"><Text value="项评测" /></small>
         </Stat>
-        <Stat label="上下文窗口">
+        <Stat label={tx("上下文窗口")}>
           {tokensWan(model.contextWindowTokens)}
           <small className="ml-1 font-sans text-[11px] font-normal text-ink-4">Token</small>
         </Stat>
         <Stat
-          label={d.at ? "API 输入 / 输出 · 当前价 · 每百万 Token" : "API 输入 / 输出 · 每百万 Token"}
+          label={d.at ? tx("API 输入 / 输出 · 当前价 · 每百万 Token") : tx("API 输入 / 输出 · 每百万 Token")}
           foot={
             price ? (
               <span className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
-                {price.cachedCny !== null && <span className="num">缓存 {yuan(price.cachedCny)}</span>}
+                {price.cachedCny !== null && <span className="num"><Text value="缓存" />{yuan(price.cachedCny)}</span>}
                 {price.currency === "USD" && (
-                  <span className="num text-ink-4">
-                    原价 {listPrice(price.input, "USD")} / {listPrice(price.output, "USD")}
+                  <span className="num text-ink-4"><Text value="原价" />{listPrice(price.input, "USD")} / {listPrice(price.output, "USD")}
                   </span>
                 )}
                 {price.officialUrl && (
-                  <a href={price.officialUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 text-accent hover:text-accent-ink">
-                    厂商官方价格 <IconArrowUpRight size={12} />
+                  <a href={price.officialUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 text-accent hover:text-accent-ink"><Text value="厂商官方价格" /><IconArrowUpRight size={12} />
                   </a>
                 )}
               </span>
             ) : (
-              "尚未核到厂商官网价格"
+              tx("尚未核到厂商官网价格")
             )
           }
         >
-          {price ? `${yuan(price.inputCny)} / ${yuan(price.outputCny)}` : <span className="font-sans text-[15px] font-normal text-ink-4">待核验</span>}
+          {price ? `${yuan(price.inputCny)} / ${yuan(price.outputCny)}` : <span className="font-sans text-[15px] font-normal text-ink-4"><Text value="待核验" /></span>}
         </Stat>
       </section>
 
@@ -355,12 +352,12 @@ export default function LeaderboardModelPage() {
       <Stability d={d} />
 
       <section className="mt-12">
-        <SectionHead eyebrow="BEHIND THE SCORE" title="每一项成绩，都有来处。" sub="下面是该模型的公开汇总成绩。展开可查看运行配置与采用方式。" />
+        <SectionHead eyebrow="BEHIND THE SCORE" title={tx("每一项成绩，都有来处。")} sub={tx("下面是该模型的公开汇总成绩。展开可查看运行配置与采用方式。")} />
         {d.evidence.map((g) => (
           <div key={g.key} className="mt-6">
             <h3 className="flex items-baseline gap-2 text-[14px] font-semibold text-ink">
               {g.name}
-              <span className="num text-[11.5px] font-normal text-ink-4">{g.items.length} 项</span>
+              <span className="num text-[11.5px] font-normal text-ink-4">{g.items.length}<Text value="项" /></span>
             </h3>
             <ul className="mt-2.5 space-y-2">
               {g.items.map((it) => (
@@ -371,8 +368,8 @@ export default function LeaderboardModelPage() {
         ))}
         {d.unmeasured.length > 0 && (
           <div className="mt-6">
-            <h3 className="text-[14px] font-semibold text-ink">没有测到的计分评测</h3>
-            <p className="mt-1 text-[12.5px] text-ink-3">这些评测没有公开该模型的成绩，缺测不记零分。</p>
+            <h3 className="text-[14px] font-semibold text-ink"><Text value="没有测到的计分评测" /></h3>
+            <p className="mt-1 text-[12.5px] text-ink-3"><Text value="这些评测没有公开该模型的成绩，缺测不记零分。" /></p>
             <div className="mt-2.5 flex flex-wrap gap-1.5">
               {d.unmeasured.map((u) => (
                 <Link key={u.key} to={`/leaderboard/sources/${u.key}`} className="chip">
@@ -385,11 +382,9 @@ export default function LeaderboardModelPage() {
       </section>
 
       <section className="mt-10 border-t border-line pt-6">
-        <h2 className="text-[15px] font-semibold text-ink">还有一些未知</h2>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-ink-3">缺失的评测不会记成零分。模型的名次会随新证据变化，分数相近时不宜过度解读细小差距。</p>
-        <Link to="/leaderboard/rules" className="mt-2.5 inline-flex items-center gap-1 text-[13px] font-medium text-accent hover:text-accent-ink">
-          了解计算方法 →
-        </Link>
+        <h2 className="text-[15px] font-semibold text-ink"><Text value="还有一些未知" /></h2>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-ink-3"><Text value="缺失的评测不会记成零分。模型的名次会随新证据变化，分数相近时不宜过度解读细小差距。" /></p>
+        <Link to="/leaderboard/rules" className="mt-2.5 inline-flex items-center gap-1 text-[13px] font-medium text-accent hover:text-accent-ink"><Text value="了解计算方法 →" /></Link>
       </section>
     </div>
   );

@@ -1,3 +1,4 @@
+import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { Link, useLoaderData } from "react-router";
 import type { LbSourcesResponse } from "@aihot/contracts/leaderboard";
@@ -11,10 +12,10 @@ import { IconArrowLeft, IconArrowUpRight } from "../components/icons";
 import { Deck } from "../components/shell/Deck";
 
 export async function loader({ request }: { request: Request }) {
-  return loadOr404<LbSourcesResponse>("/api/site/leaderboard/sources", { signal: request.signal });
+  return loadOr404<LbSourcesResponse>("/api/site/leaderboard/sources", { request, signal: request.signal });
 }
 
-export function meta() {
+export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
   return pageMeta({
     title: "评测来源",
     description: `了解 ${SITE.name} 采用和观察中的评测来源、方法与数据进展。`,
@@ -24,7 +25,7 @@ export function meta() {
       { name: "模型榜", path: "/leaderboard" },
       { name: "评测来源", path: "/leaderboard/sources" },
     ]),
-  });
+  }, localeFromMatches(matches ?? []));
 }
 
 export function headers() {
@@ -32,36 +33,36 @@ export function headers() {
 }
 
 export default function LeaderboardSourcesPage() {
+  const tx = useTranslate();
   const { groups, rankedCount, totalCount } = useLoaderData<typeof loader>();
   return (
     <div className="pb-12">
       <Deck
         compact
         art="cat-models"
-        label="评测来源"
-        kicker={<Link to="/leaderboard" className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /> 返回模型前沿</Link>}
-        title="评测来源"
-        description="每个来源测什么、怎样更新、是否进入排名，都可以在这里找到。"
+        label={tx("评测来源")}
+        kicker={<Link to="/leaderboard" className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /><Text value="返回模型前沿" /></Link>}
+        title={tx("评测来源")}
+        description={tx("每个来源测什么、怎样更新、是否进入排名，都可以在这里找到。")}
       />
       <header className="pb-2 pt-3">
         <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
           <div className="flex items-baseline gap-6">
             <span className="flex items-baseline gap-1.5">
               <span className="mono text-[24px] font-semibold text-ink">{rankedCount}</span>
-              <span className="text-[12px] text-ink-4">本轮参与排名</span>
+              <span className="text-[12px] text-ink-4"><Text value="本轮参与排名" /></span>
             </span>
             <span className="flex items-baseline gap-1.5">
               <span className="mono text-[24px] font-semibold text-ink">{totalCount}</span>
-              <span className="text-[12px] text-ink-4">已审查来源与专项</span>
+              <span className="text-[12px] text-ink-4"><Text value="已审查来源与专项" /></span>
             </span>
           </div>
-          <Link to="/leaderboard/rules" className="inline-flex items-center gap-1.5 text-[13px] text-ink-3 transition-colors hover:text-accent">
-            排名怎么算 <IconArrowUpRight size={14} />
+          <Link to="/leaderboard/rules" className="inline-flex items-center gap-1.5 text-[13px] text-ink-3 transition-colors hover:text-accent"><Text value="排名怎么算" /><IconArrowUpRight size={14} />
           </Link>
         </div>
       </header>
 
-      <nav aria-label="来源分组" className="scrollbar-none -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:px-0">
+      <nav aria-label={tx("来源分组")} className="scrollbar-none -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:px-0">
         {groups.map((g) => (
           <a
             key={g.key}
@@ -99,7 +100,7 @@ export default function LeaderboardSourcesPage() {
                   <span className="mt-4 flex items-center justify-between gap-3 text-[11.5px] text-ink-4">
                     <span className="min-w-0 truncate">{s.operator}</span>
                     <span className="flex shrink-0 items-center gap-2.5">
-                      {s.budget !== null && <span className="num">证据预算 {pct(s.budget)}</span>}
+                      {s.budget !== null && <span className="num"><Text value="证据预算" />{pct(s.budget)}</span>}
                       <IconArrowUpRight size={13} className="transition-transform group-hover:-translate-y-px group-hover:translate-x-px" />
                     </span>
                   </span>
@@ -110,9 +111,7 @@ export default function LeaderboardSourcesPage() {
         </section>
       ))}
 
-      <p className="mt-10 border-t border-line pt-5 text-[12px] leading-relaxed text-ink-4">
-        “观察中”表示仍在核对数据、运行条件或使用边界，不参与综合榜和分类榜。“接近饱和”表示该评测前 10 名相差不到 3 个百分点、已难区分强模型，本轮按一半权重计分。同一评测的重复抓取和展示切片不会增加票权；不同评测之间的题库重叠仍需持续核对。
-      </p>
+      <p className="mt-10 border-t border-line pt-5 text-[12px] leading-relaxed text-ink-4"><Text value="“观察中”表示仍在核对数据、运行条件或使用边界，不参与综合榜和分类榜。“接近饱和”表示该评测前 10 名相差不到 3 个百分点、已难区分强模型，本轮按一半权重计分。同一评测的重复抓取和展示切片不会增加票权；不同评测之间的题库重叠仍需持续核对。" /></p>
     </div>
   );
 }

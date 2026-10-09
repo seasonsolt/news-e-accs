@@ -1,3 +1,4 @@
+import { useTranslate } from "../../lib/i18n";
 import { useEffect, useRef, useState } from "react";
 import { IconArrowUp } from "../icons";
 import { useMotionAllowed } from "../../features/motion/preferences";
@@ -32,6 +33,7 @@ export function NavigationProgress({ active }: { active: boolean }) {
 
 /** Round "back to top" button once the reader has scrolled a screen or so. */
 export function BackToTop() {
+  const tx = useTranslate();
   const motionAllowed = useMotionAllowed();
   const [shown, setShown] = useState(false);
   useEffect(() => {
@@ -43,7 +45,7 @@ export function BackToTop() {
   return (
     <button
       type="button"
-      aria-label="回到顶部"
+      aria-label={tx("回到顶部")}
       onClick={() => window.scrollTo({ top: 0, behavior: motionAllowed ? "smooth" : "auto" })}
       className={`fixed bottom-[calc(70px+env(safe-area-inset-bottom))] right-4 z-30 flex size-11 items-center justify-center rounded-full border border-line bg-surface text-ink-2 shadow-[var(--shadow-soft)] transition-all duration-200 hover:text-ink lg:bottom-6 lg:right-6 ${
         shown ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"

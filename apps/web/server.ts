@@ -128,6 +128,12 @@ function pageCache(req: import("node:http").IncomingMessage, res: import("node:h
   res.writeHead = ((status: number, messageOrHeaders?: string | import("node:http").OutgoingHttpHeaders, headers?: import("node:http").OutgoingHttpHeaders) => {
     const outgoing = typeof messageOrHeaders === "string" ? headers : messageOrHeaders;
     for (const [name, value] of Object.entries(outgoing ?? {})) if (value !== undefined) res.setHeader(name, value);
+    // Interface language depends on a preference cookie and Accept-Language. Keep personalized
+    // HTML and Router data out of shared caches (including proxies that ignore Vary: Cookie).
+    if (publicRead) {
+      res.setHeader("Vary", [...new Set(String(res.getHeader("Vary") ?? "").split(",").map((value) => value.trim()).filter(Boolean).concat(["Cookie", "Accept-Language"]))].join(", "));
+      res.setHeader("Cache-Control", "private, no-store");
+    }
     const cc = String(res.getHeader("Cache-Control") ?? "");
     if (!publicRead || status !== 200 || res.hasHeader("Set-Cookie") || !cc || /(?:private|no-store)/i.test(cc)) {
       res.removeHeader("Expires");

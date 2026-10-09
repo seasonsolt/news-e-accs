@@ -17,7 +17,7 @@ before(async () => { fixture = await startMotionFixture(); });
 after(async () => { await fixture?.close(); });
 
 async function html(path: string) {
-  const response = await fetch(fixture.origin + path);
+  const response = await fetch(fixture.origin + path, { headers: { "Accept-Language": "zh-CN" } });
   assert.equal(response.status, 200);
   return response.text();
 }
@@ -163,7 +163,7 @@ test("telegraph tape SSR has exactly the first five final headlines, linked once
 
 test("404 flap and caption are final and singular; other errors have neither egg", async () => {
   for (const [path, status] of [["/items/missing", 404], ["/items/broken", 503]] as const) {
-    const response = await fetch(fixture.origin + path);
+    const response = await fetch(fixture.origin + path, { headers: { "Accept-Language": "zh-CN" } });
     assert.equal(response.status, status);
     const { document } = parseHTML(await response.text());
     const board = document.querySelector(".not-found-board");
@@ -318,7 +318,7 @@ test("reading-flow SSR keeps each hot rank, heat, headline and feed string exact
 
 test("empty and error art have one final image, one copy of the accompanying text, no SSR mask", async () => {
   for (const [path, status, title] of [["/", 200, "这个筛选下还没有精选内容"], ["/items/missing", 404, "这里没有内容"]] as const) {
-    const response = await fetch(fixture.origin + path);
+    const response = await fetch(fixture.origin + path, { headers: { "Accept-Language": "zh-CN" } });
     assert.equal(response.status, status);
     const { document } = parseHTML(await response.text());
     const art = document.querySelectorAll(".empty-art");

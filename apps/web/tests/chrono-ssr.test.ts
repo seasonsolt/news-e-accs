@@ -8,7 +8,7 @@ before(async () => { fixture = await startChronoFixture(); });
 after(async () => { await fixture?.close(); });
 
 async function page(path: string, status = 200) {
-  const res = await fetch(fixture.origin + path);
+  const res = await fetch(fixture.origin + path, { headers: { "Accept-Language": "zh-CN" } });
   assert.equal(res.status, status);
   assert.equal(res.headers.get("set-cookie"), null);
   const body = await res.text();

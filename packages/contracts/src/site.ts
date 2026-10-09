@@ -43,6 +43,7 @@ export interface StoryRef {
 }
 
 export interface ItemSummary {
+  contentLanguage?: { requested: "en"; status: "translated" | "original"; sourceLanguage: string };
   id: string;
   revision: number;
   title: string;
@@ -267,6 +268,7 @@ export interface StoryFactView {
 }
 
 export interface StoryDetail {
+  contentLanguage?: { requested: "en"; status: "translated" | "original"; sourceLanguage: string };
   publicId: string;
   title: string;
   status: "active" | "watching" | "settled";
@@ -321,6 +323,7 @@ export interface ReportCitation {
 }
 
 export interface ReportDetail {
+  contentLanguage?: { requested: "en"; status: "translated" | "original"; sourceLanguage: string };
   kind: ReportKind;
   key: string;
   title: string;
@@ -376,6 +379,7 @@ export interface SiteStats {
 
 /** A reading page transfers one language; the canonical item retains both for exports. */
 export interface SiteItemDetail extends Omit<ItemDetail, "x"> {
+  bodyContentLanguage?: { status: "translated" | "original" | "original-english" };
   x: Omit<XPostView, "text" | "translation"> | null;
   hasTranslation: boolean;
   bodyLanguage: "zh" | "original";

@@ -1,0 +1,124 @@
+import { tag } from './setup.ts';
+import assert from 'node:assert/strict';
+import { after, before, test } from 'node:test';
+import { sql, closeDb } from '@aihot/backend/db';
+import { upsertMaterial } from '@aihot/backend/content/materials';
+import { publishArticle } from '@aihot/backend/publication/publish';
+import { contentSource, validateTranslation, translationBatchSchema } from '@aihot/backend/publication/content-source';
+import { bodySource, currentContent, saveTranslation, exportContentBatch, localizePublication } from '@aihot/backend/publication/content-language';
+import { translateContentPending } from '@aihot/backend/editorial/content-translate';
+import { buildApp } from '../apps/api/src/app.ts';
+const T=tag(), SOURCE=`test-content-language-${T}`;
+let id='';
+const app=await buildApp();
+before(async()=>{
+  await sql`INSERT INTO sources(id,name,kind,tier,participation_mode,site_fulltext,next_fetch_at) VALUES(${SOURCE},'Translation fixture','rss','T1','editorial',false,'2100-01-01')`;
+  const material=await upsertMaterial({sourceId:SOURCE,url:`https://example.com/content-${T}`,title:'Original title',language:'en',bodyText:'Private source body',bodyHtml:'<p>Private source body</p>',bodyStatus:'ok',via:'fetch',publishedAt:new Date()});
+  id=material.articleId;
+  await sql`INSERT INTO analyses(article_id,input_revision,origin,relevance,category,title_zh,summary_zh,reason_zh,score,selected) VALUES(${id},1,'rule','pass','ai-products','模型更新','中文摘要','推荐理由',90,true)`;
+  await publishArticle(id,{releasedAt:new Date(Date.now()-60000)});
+});
+after(async()=>{await sql`DELETE FROM reports WHERE kind='daily' AND key='2099-12-31'`;await app.close();await closeDb();});
+const translated=(entry:NonNullable<Awaited<ReturnType<typeof currentContent>>>)=>({...entry,translations:Object.fromEntries(entry.segments.map(s=>[s.key,s.key==='title'?'Orbital accelerator released':s.key==='summary'?'A precise English summary.':'Editorial rationale.']))});
+
+test('DTO inputs ignore counters; overrides, report revisions and withdrawal change source',()=>{
+  assert.equal(contentSource('item','a',{title:'标题',summary:'摘要',score:10}).sourceHash,contentSource('item','a',{title:'标题',summary:'摘要',score:90}).sourceHash);
+  assert.notEqual(contentSource('item','a',{title:'标题'}).sourceHash,contentSource('item','a',{title:'编辑改写'}).sourceHash);
+  assert.notEqual(contentSource('report','daily:2026-10-09',{title:'日报',revision:1}).sourceHash,contentSource('report','daily:2026-10-09',{title:'日报',revision:2}).sourceHash);
+  const entry=contentSource('item','a',{title:'标题',summary:'摘要'});
+  assert.throws(()=>validateTranslation({...entry,translations:{title:'Title'}},entry),/incomplete/);
+  assert.throws(()=>translationBatchSchema.parse({schemaVersion:1,targetLanguage:'en',entries:[{...entry,extra:true}]}));
+});
+test('whole body blocks preserve inline spacing, links and code; invalid markup cannot import',()=>{
+  const body=bodySource('a','<h2>标题</h2><p>你好<strong>世界</strong>，看<a href="https://example.com">这里</a>和<code>x()</code>。</p>');
+  const output=body.render({'blocks.0.text':'Heading','blocks.1.text':'Hello <strong>world</strong>, see <a id="L0">here</a> and ⟦0⟧.'});
+  assert.match(output,/Hello <strong>world<\/strong>, see/);
+  assert.match(output,/href="https:\/\/example.com\/?"/);assert.match(output,/<code>x\(\)<\/code>/);
+  assert.throws(()=>body.render({'blocks.0.text':'Heading','blocks.1.text':'Dropped links and code'}),/protected/);
+});
+test('offline dry run does not write; English SSR API and ETags use stored edition; Chinese remains original',async()=>{
+  const source=await currentContent('item',id);assert.ok(source);
+  await saveTranslation(translated(source),'offline-agent','gpt-6-luna',[],false);
+  assert.equal((await sql`SELECT 1 FROM content_translations WHERE content_id=${id}`).length,0);
+  await saveTranslation(translated(source),'offline-agent','gpt-6-luna',[],true);
+  const en=await app.inject({method:'GET',url:`/api/site/items/${id}?lang=en`});
+  const zh=await app.inject({method:'GET',url:`/api/site/items/${id}?lang=zh`});
+  assert.equal(en.statusCode,200);assert.equal(en.json().title,'Orbital accelerator released');assert.equal(zh.json().title,'模型更新');
+  assert.notEqual(en.headers.etag,zh.headers.etag);assert.equal(en.json().body,null,'source licence forbids fulltext in either edition');
+  const [row]=await sql`SELECT provenance,model,receipt_ids FROM content_translations WHERE content_id=${id}`;
+  assert.equal(row!.provenance,'offline-agent');assert.equal(row!.model,'gpt-6-luna');assert.deepEqual(row!.receipt_ids,[]);
+  assert.equal(await currentContent('body',id),null);
+});
+test('English search finds current translated text and stale translations immediately fall back',async()=>{
+  const search=await app.inject({method:'GET',url:'/api/site/pool?lang=en&q=orbital'});
+  assert.equal(search.statusCode,200);assert.ok(search.json().items.some((i:any)=>i.id===id));
+  const old=await currentContent('item',id);assert.ok(old);
+  await sql`UPDATE publications SET title='编辑更新后的中文标题' WHERE article_id=${id}`;
+  const en=await app.inject({method:'GET',url:`/api/site/items/${id}?lang=en`});
+  assert.equal(en.json().title,'编辑更新后的中文标题');assert.equal(en.json().contentLanguage.status,'original');
+  await assert.rejects(()=>saveTranslation(translated(old),'offline-agent','gpt-6-luna',[],true),/stale/);
+  const staleSearch=await app.inject({method:'GET',url:'/api/site/pool?lang=en&q=orbital'});
+  assert.ok(!staleSearch.json().items.some((i:any)=>i.id===id));
+});
+test('story overview, development titles and nested reports are localized; edits invalidate the edition',async()=>{
+  const publicId='77777777-7777-4777-8777-'+T.replace(/[^a-f0-9]/g,'').padEnd(12,'0').slice(0,12);
+  const [story]=await sql<{id:number}[]>`INSERT INTO stories(public_id,title,summary,digest,latest,latest_at) VALUES(${publicId},'事件标题','事件摘要','事件综述','最新进展',now()) RETURNING id`;
+  const [fact]=await sql<{id:number}[]>`INSERT INTO facts(public_id,story_id,title) VALUES(${`fact-${T}`},${story!.id},'进展标题') RETURNING id`;
+  await sql`INSERT INTO fact_articles(fact_id,article_id,role) VALUES(${fact!.id},${id},'primary')`;
+  await sql`UPDATE publications SET story_id=${story!.id},fact_id=${fact!.id} WHERE article_id=${id}`;
+  const source=await currentContent('story',publicId);assert.ok(source);
+  const translations=Object.fromEntries(source.segments.map(s=>[s.key,`English ${s.key}`]));
+  await saveTranslation({...source,translations},'offline-agent','gpt-6-luna',[],true);
+  const result=await app.inject({method:'GET',url:`/api/site/stories/${publicId}?lang=en`});
+  assert.equal(result.statusCode,200);assert.equal(result.json().digest,'English digest');assert.equal(result.json().developments[0].title,'English developments.0.title');
+  const partial=await localizePublication({publicId,title:'事件标题'},'en');assert.equal(partial.title,'English title');
+  await sql`UPDATE stories SET digest='修改的综述' WHERE id=${story!.id}`;
+  const stale=await app.inject({method:'GET',url:`/api/site/stories/${publicId}?lang=en`});
+  assert.equal(stale.json().digest,'修改的综述');assert.equal(stale.json().contentLanguage.status,'original');
+});
+test('report prose, index headline and republication use the same English edition',async()=>{
+  await sql`INSERT INTO reports(kind,key,window_start,window_end,generated_at,content,origin)
+    VALUES('daily','2099-12-31','2099-12-31','2100-01-01',now(),${sql.json({lead:{title:'今天的重要发布',leadParagraph:'日报导语'},sections:[{label:'产品发布',items:[{itemId:id,title:'编辑更新后的中文标题',summary:'报告摘要',sourceName:'Fixture',sourceUrl:'https://example.com'}]}]})},'manual')`;
+  const source=await currentContent('report','daily:2099-12-31');assert.ok(source);
+  const translations=Object.fromEntries(source.segments.map(s=>[s.key,s.key==='lead.title'?'Today’s major announcement':s.key==='sections.0.label'?'Product releases':`English ${s.key}`]));
+  await saveTranslation({...source,translations},'offline-agent','gpt-6-luna',[],true);
+  const detail=await app.inject({method:'GET',url:'/api/site/reports/daily/2099-12-31?lang=en'});
+  assert.equal(detail.statusCode,200);assert.equal(detail.json().lead.title,'Today’s major announcement');assert.equal(detail.json().sections[0].items[0].summary,'English sections.0.items.0.summary');
+  const index=await app.inject({method:'GET',url:'/api/site/reports/daily?lang=en'});
+  assert.equal(index.json().items.find((i:any)=>i.key==='2099-12-31').title,'Today’s major announcement');
+  await sql`UPDATE reports SET revision=revision+1 WHERE kind='daily' AND key='2099-12-31'`;
+  const republished=await app.inject({method:'GET',url:'/api/site/reports/daily/2099-12-31?lang=en'});
+  assert.equal(republished.json().lead.title,'今天的重要发布');assert.equal(republished.json().contentLanguage.status,'original');
+});
+test('licensed Chinese body has an independent fallback, English outline and unchanged original URL',async()=>{
+  const bodySourceId=`${SOURCE}-full`;
+  await sql`INSERT INTO sources(id,name,kind,tier,participation_mode,site_fulltext,next_fetch_at) VALUES(${bodySourceId},'Licensed fixture','rss','T1','editorial',true,'2100-01-01')`;
+  const material=await upsertMaterial({sourceId:bodySourceId,url:`https://example.com/licensed-${T}`,title:'中文原文',language:'zh',bodyText:'标题。正文。',bodyHtml:'<h2>标题</h2><p>完整正文。</p>',bodyStatus:'ok',via:'fetch',publishedAt:new Date()});
+  const bodyId=material.articleId;
+  await sql`INSERT INTO analyses(article_id,input_revision,origin,relevance,category,title_zh,summary_zh,reason_zh,score,selected) VALUES(${bodyId},1,'rule','pass','ai-products','中文原文','正文摘要','推荐理由',90,true)`;
+  await publishArticle(bodyId,{releasedAt:new Date(Date.now()-60000)});
+  const header=await currentContent('item',bodyId);assert.ok(header);
+  await saveTranslation(translated(header),'offline-agent','gpt-6-luna',[],true);
+  const pending=await app.inject({method:'GET',url:`/api/site/items/${bodyId}?lang=en`});
+  assert.equal(pending.json().contentLanguage.status,'translated');assert.equal(pending.json().bodyContentLanguage.status,'original');
+  const body=await currentContent('body',bodyId);assert.ok(body);
+  await saveTranslation({...body,translations:{'blocks.0.text':'Heading','blocks.1.text':'The complete article.'}},'offline-agent','gpt-6-luna',[],true);
+  const ready=await app.inject({method:'GET',url:`/api/site/items/${bodyId}?lang=en`});
+  assert.equal(ready.statusCode,200);assert.equal(ready.json().bodyContentLanguage.status,'translated');assert.match(ready.json().body.original,/The complete article/);assert.equal(ready.json().outline[0].text,'Heading');
+  const original=await app.inject({method:'GET',url:`/api/site/items/${bodyId}/original?lang=en`});
+  assert.match(original.json().body.zh,/完整正文/);
+  await sql`UPDATE publications SET body_mode='summary' WHERE article_id=${bodyId}`;
+  const revoked=await app.inject({method:'GET',url:`/api/site/items/${bodyId}?lang=en`});assert.equal(revoked.json().body,null);assert.equal(await currentContent('body',bodyId),null);
+});
+test('all-history export uses bounded stable cursors and excludes withdrawn content',async()=>{
+  const a=await exportContentBatch('',1);assert.equal(a.scanned,1);assert.ok(a.nextCursor);
+  const b=await exportContentBatch(a.nextCursor!,1);assert.ok(!b.nextCursor || b.nextCursor>a.nextCursor!);
+  await sql`UPDATE publications SET visibility='withdrawn' WHERE article_id=${id}`;
+  assert.equal(await currentContent('item',id),null);
+  const input={id,title:'编辑更新后的中文标题',summary:'中文摘要'};
+  assert.equal((await localizePublication(input,'en')).title,input.title);
+  await assert.rejects(()=>saveTranslation(translated(contentSource('item',id,input)),'offline-agent','gpt-6-luna',[],true),/not currently public/);
+});
+test('the scheduled translator respects the disabled model valve without any provider call',async()=>{
+  assert.deepEqual(await translateContentPending(),{disabled:true,translated:0});
+});

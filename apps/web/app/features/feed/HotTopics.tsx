@@ -1,3 +1,4 @@
+import { Text, useTranslate } from "../../lib/i18n";
 import { Link } from "react-router";
 import type { HotStripEntry } from "@aihot/contracts/site";
 import { IconArrowRight, IconMinus, IconTrendDown, IconTrendUp } from "../../components/icons";
@@ -10,11 +11,12 @@ function hrefOf(e: HotStripEntry): string {
 
 /** Where the heat is heading, as a small arrow (a "新" mark for a story new to the ranking). */
 function TrendMark({ trend }: { trend: HotStripEntry["trend"] }) {
-  if (trend === "up") return <IconTrendUp size={14} strokeWidth={2.2} className="text-[var(--heat)]" aria-label="热度上升" />;
-  if (trend === "down") return <IconTrendDown size={14} strokeWidth={2.2} className="text-[var(--deck-faint)]" aria-label="热度回落" />;
-  if (trend === "new") return <span className="rounded-full bg-[var(--heat)] px-1.5 text-[10.5px] font-semibold leading-4 text-[#140a03]">新</span>;
+  const tx = useTranslate();
+  if (trend === "up") return <IconTrendUp size={14} strokeWidth={2.2} className="text-[var(--heat)]" aria-label={tx("热度上升")} />;
+  if (trend === "down") return <IconTrendDown size={14} strokeWidth={2.2} className="text-[var(--deck-faint)]" aria-label={tx("热度回落")} />;
+  if (trend === "new") return <span className="rounded-full bg-[var(--heat)] px-1.5 text-[10.5px] font-semibold leading-4 text-[#140a03]"><Text value="新" /></span>;
   if (trend === "unknown") return null; // sources behind on collection: no comparison to show
-  return <IconMinus size={14} strokeWidth={2.2} className="text-[var(--deck-faint)]" aria-label="热度持平" />;
+  return <IconMinus size={14} strokeWidth={2.2} className="text-[var(--deck-faint)]" aria-label={tx("热度持平")} />;
 }
 
 /**
@@ -23,6 +25,7 @@ function TrendMark({ trend }: { trend: HotStripEntry["trend"] }) {
  * faces, from sm), the heat in the deck's figures and an arrow for where it is heading.
  */
 export function HotTopics({ entries }: { entries: HotStripEntry[] }) {
+  const tx = useTranslate();
   const at = useAt();
   if (entries.length === 0) return null;
   return (
@@ -32,11 +35,8 @@ export function HotTopics({ entries }: { entries: HotStripEntry[] }) {
           <span className="relative flex size-2" aria-hidden="true">
             <span className="absolute inline-flex size-full animate-ping rounded-full bg-[var(--heat)] opacity-40" />
             <span className="relative inline-flex size-2 rounded-full bg-[var(--heat)]" />
-          </span>
-          压力表 · 此刻最热
-        </h2>
-        <Link to={withAt("/hot", at)} className="group inline-flex items-center gap-1 text-[12.5px] text-[var(--deck-dim)] transition-colors hover:text-[var(--brass-hi)]">
-          完整热点榜 <IconArrowRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5" />
+          </span><Text value="压力表 · 此刻最热" /></h2>
+        <Link to={withAt("/hot", at)} className="group inline-flex items-center gap-1 text-[12.5px] text-[var(--deck-dim)] transition-colors hover:text-[var(--brass-hi)]"><Text value="完整热点榜" /><IconArrowRight size={13} className="transition-transform duration-200 group-hover:translate-x-0.5" />
         </Link>
       </div>
       <ol>
@@ -52,7 +52,7 @@ export function HotTopics({ entries }: { entries: HotStripEntry[] }) {
                 <Faces interactive={false} participants={e.participants} total={e.participantCount} size={20} />
               </span>
               <span className="flex items-center justify-end gap-2.5 sm:contents">
-                <span className="whitespace-nowrap text-right" title="热度指数">
+                <span className="whitespace-nowrap text-right" title={tx("热度指数")}>
                   <span className="deck-figure text-[24px]">{e.heat.toFixed(1)}</span>
                 </span>
                 <span className="flex w-5 justify-center">

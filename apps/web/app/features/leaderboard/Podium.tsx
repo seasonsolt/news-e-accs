@@ -1,3 +1,4 @@
+import { Text, useTranslate } from "../../lib/i18n";
 import { Link } from "react-router";
 import type { LbBoardEntry } from "@aihot/contracts/leaderboard";
 import { BrandMark } from "./BrandMark";
@@ -19,11 +20,12 @@ const RANK_TEXT = ["text-rank-1", "text-rank-2", "text-rank-3"];
  * evidence, then who the model is beside the consensus index.
  */
 export function Podium({ entries, board }: { entries: LbBoardEntry[]; board: string }) {
+  const tx = useTranslate();
   const at = useAt();
   const top = entries.filter((e) => e.rank <= 3).slice(0, 3);
   if (top.length < 3) return null;
   return (
-    <ol className="mt-3 hidden gap-3 md:grid md:grid-cols-3" aria-label="前三名">
+    <ol className="mt-3 hidden gap-3 md:grid md:grid-cols-3" aria-label={tx("前三名")}>
       {top.map((e, i) => (
         <li key={e.model.slug}>
           <Link to={withAt(modelHref(e.model.slug, board), at)} prefetch="intent" className={`card card-hover group relative flex h-full flex-col px-4 py-3.5 ${WASH[i]}`}>
@@ -31,7 +33,7 @@ export function Podium({ entries, board }: { entries: LbBoardEntry[]; board: str
             <span className="flex items-center justify-between gap-3">
               <span className={`mono text-[11px] font-bold tracking-[0.16em] ${RANK_TEXT[i]}`}>NO.{String(e.rank).padStart(2, "0")}</span>
               <span className="flex items-center gap-2 text-[11.5px] text-ink-4">
-                <span className="num">{e.sourceCount} 项评测</span>
+                <span className="num">{e.sourceCount}<Text value="项评测" /></span>
                 <EvidenceBadge confidence={e.confidence} stability={e.stability} rank={e.rank} />
               </span>
             </span>
@@ -42,7 +44,7 @@ export function Podium({ entries, board }: { entries: LbBoardEntry[]; board: str
                 <span className="block truncate text-[12px] text-ink-4">{e.model.provider ?? "—"}</span>
               </span>
               <span className="shrink-0 text-right">
-                <span className="block text-[11px] leading-none text-ink-4">共识指数</span>
+                <span className="block text-[11px] leading-none text-ink-4"><Text value="共识指数" /></span>
                 <span className="mono mt-1 block text-[26px] font-semibold leading-none tracking-[-0.03em] text-ink">{e.score.toFixed(1)}</span>
               </span>
             </span>
