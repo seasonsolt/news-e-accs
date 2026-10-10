@@ -17,6 +17,7 @@ import { MobileTabBar } from "./components/shell/MobileTabBar";
 import { BackToTop, NavigationProgress } from "./components/shell/Chrome";
 import { buttonClass } from "./components/ui/Controls";
 import { MOTION_BOOT_SCRIPT, ONBOARDING_BOOT_SCRIPT, THEME_BOOT_SCRIPT } from "./lib/local-state";
+import { DECK_BLEED_SCRIPT } from "./components/shell/Deck";
 import { apiGet } from "./lib/api.server";
 import { useHydratedFlag } from "./lib/hydration";
 import { EmptyArt } from "./features/art/EmptyArt";
@@ -75,6 +76,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <link rel="alternate" type="application/rss+xml" title={`${SITE.name} — ${locale === "en" ? "Picks" : "精选"}`} href={`/feed/v2${locale === "zh" ? "/zh" : ""}/picks.xml`} />
       </head>
       <body>
+        <script dangerouslySetInnerHTML={{ __html: DECK_BLEED_SCRIPT }} />
         {children}
         <ScrollRestoration getKey={(location) => location.key} />
         <Scripts />
