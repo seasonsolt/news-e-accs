@@ -1,3 +1,4 @@
+import { hasAlternateEdition } from "../lib/edition-meta.server";
 import type { Route } from "./+types/item-original";
 import type { SiteItemDetail } from "@aihot/contracts/site";
 import { loadOr404 } from "../lib/api.server";
@@ -6,5 +7,5 @@ export { default, headers, meta } from "./item";
 
 export async function loader({ params, request }: Route.LoaderArgs) {
   const item = await loadOr404<SiteItemDetail>(`/api/site/items/${encodeURIComponent(params.id)}/original`, { request, signal: request.signal });
-  return { item };
+  return { item, alternateEdition: await hasAlternateEdition(`/api/site/items/${encodeURIComponent(params.id)}/original`, item, request) };
 }

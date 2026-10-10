@@ -30,6 +30,10 @@ interface ArticleRow {
 }
 
 interface AnalysisRow {
+  editorial_language: "en" | "zh";
+  title: string | null;
+  summary: string | null;
+  reason: string | null;
   id: number;
   relevance: string | null;
   category: string | null;
@@ -48,6 +52,7 @@ interface OverrideRow {
 }
 
 interface PublicationRow {
+  editorial_language: "en" | "zh";
   article_id: string;
   revision: number;
   visibility: string;
@@ -159,7 +164,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
     SELECT id, name, kind, tier, participation_mode, first_party, site_fulltext, syndicate_fulltext FROM sources WHERE id = ${article.source_id}`;
   if (!source) return null;
   const [analysis] = await tx<AnalysisRow[]>`
-    SELECT id, relevance, category, tags, subjects, title_zh, summary_zh, reason_zh, score, selected
+    SELECT id, editorial_language, title, summary, reason, relevance, category, tags, subjects, title_zh, summary_zh, reason_zh, score, selected
     FROM analyses WHERE article_id = ${articleId} ORDER BY input_revision DESC, id DESC LIMIT 1`;
   const [override] = await tx<OverrideRow[]>`SELECT fields, visibility FROM editorial_overrides WHERE article_id = ${articleId}`;
   const [membership] = await tx<{ fact_id: number; story_id: number | null }[]>`
@@ -171,11 +176,11 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
 
   const f = override?.fields ?? {};
   const isChineseTitle = article.language === "zh" || /[一-鿿]/.test(article.title);
-  // An X post carries its Chinese in the summary and translation; without a Chinese title its own
-  // text is the title, where an article would still be a half-finished card.
-  const zhTitle = analysis?.title_zh?.trim() ? analysis.title_zh : null;
-  const title = pickString(f.title, zhTitle ?? (isChineseTitle || article.x_post ? collapseWhitespace(article.title) : null));
-  const summary = pickString(f.summary, analysis?.summary_zh ?? null);
+  // X posts may use their source text as a title; articles need editorial copy in their declared language.
+  const editorialLanguage = analysis?.editorial_language ?? "zh";
+  const nativeTitle = analysis?.title?.trim() ? analysis.title : editorialLanguage === "zh" ? analysis?.title_zh : null;
+  const title = pickString(f.title, nativeTitle ?? ((editorialLanguage === "zh" && isChineseTitle) || (editorialLanguage === "en" && article.language === "en") || (editorialLanguage === "zh" && article.x_post) ? collapseWhitespace(article.title) : null));
+  const summary = pickString(f.summary, analysis?.summary ?? (editorialLanguage === "zh" ? analysis?.summary_zh : null) ?? null);
   const category = pickString(f.category, analysis?.category ?? null);
   const tags = Array.isArray(f.tags) ? (f.tags as string[]) : [...new Set([...(analysis?.tags ?? []), ...(analysis?.subjects ?? []).map((s) => `entity:${s}`)])];
   const score = typeof f.score === "number" ? f.score : analysis?.score ?? null;
@@ -186,12 +191,12 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
 
   const eligible = isPoolEligible({ participationMode: source.participation_mode, relevance, title, summary });
   const selected = isSelectable(eligible, judgedSelected, source.tier);
-  const reason = selected ? pickString(f.reason, analysis?.reason_zh ?? null) : null;
+  const reason = selected ? pickString(f.reason, analysis?.reason ?? (editorialLanguage === "zh" ? analysis?.reason_zh : null) ?? null) : null;
   const hasXPost = !!article.x_post;
   const channel = channelOf(source.kind, hasXPost);
   const bodyMode = bodyModeOf(source, article.body_status, !!article.body_text && article.body_text.length > 0);
   const syndicate = mayRedistribute(source, bodyMode);
-  const originalTitle = isChineseTitle && title === collapseWhitespace(article.title) ? null : collapseWhitespace(article.title);
+  const originalTitle = (isChineseTitle || editorialLanguage === "en") && title === collapseWhitespace(article.title) ? null : collapseWhitespace(article.title);
 
   // Release gate: first time the item met the selected conditions, released after grouping or 180 s.
   let selectedReadyAt = previous?.selected_ready_at ?? null;
@@ -230,7 +235,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
   }
 
   const next = {
-    visibility, eligible, selected, title: title ?? collapseWhitespace(article.title), original_title: originalTitle, summary, reason,
+    editorial_language: editorialLanguage, visibility, eligible, selected, title: title ?? collapseWhitespace(article.title), original_title: originalTitle, summary, reason,
     category, tags, score: round1(score), body_mode: bodyMode, story_id: membership?.story_id ?? null, fact_id: membership?.fact_id ?? null,
     indexable,
   };
@@ -238,7 +243,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
     !previous ||
     stableJson({ ...next, tags: [...next.tags].sort() }) !==
       stableJson({
-        visibility: previous.visibility, eligible: previous.eligible, selected: previous.selected, title: previous.title,
+        editorial_language: previous.editorial_language, visibility: previous.visibility, eligible: previous.eligible, selected: previous.selected, title: previous.title,
         original_title: previous.original_title, summary: previous.summary, reason: previous.reason, category: previous.category,
         tags: [...previous.tags].sort(), score: previous.score === null ? null : Number(previous.score), body_mode: previous.body_mode,
         story_id: previous.story_id, fact_id: previous.fact_id, indexable: previous.indexable,
@@ -246,15 +251,15 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
   const revision = previous ? previous.revision + (changed ? 1 : 0) : 1;
 
   await tx`
-    INSERT INTO publications (article_id, analysis_id, revision, visibility, eligible, selected, title, original_title, summary,
+    INSERT INTO publications (article_id, analysis_id, editorial_language, revision, visibility, eligible, selected, title, original_title, summary,
       reason, category, tags, score, source_id, channel, first_party, url, published_at, discovered_at, timeline_at, backfill,
       selected_ready_at, visible_after, body_mode, syndicate, indexable, story_id, fact_id, search_text, sort_at, updated_at)
-    VALUES (${articleId}, ${analysis?.id ?? null}, ${revision}, ${visibility}, ${eligible}, ${selected}, ${next.title},
+    VALUES (${articleId}, ${analysis?.id ?? null}, ${editorialLanguage}, ${revision}, ${visibility}, ${eligible}, ${selected}, ${next.title},
       ${originalTitle}, ${summary}, ${reason}, ${category}, ${tags}, ${next.score}, ${source.id}, ${channel}, ${source.first_party},
       ${article.url}, ${article.published_at}, ${article.discovered_at}, ${article.timeline_at}, ${article.backfill},
       ${selectedReadyAt}, ${visibleAfter}, ${bodyMode}, ${syndicate}, ${indexable}, ${next.story_id}, ${next.fact_id}, ${searchText}, ${sortAt}, now())
     ON CONFLICT (article_id) DO UPDATE SET
-      analysis_id = EXCLUDED.analysis_id, revision = EXCLUDED.revision, visibility = EXCLUDED.visibility,
+      editorial_language = EXCLUDED.editorial_language, analysis_id = EXCLUDED.analysis_id, revision = EXCLUDED.revision, visibility = EXCLUDED.visibility,
       eligible = EXCLUDED.eligible, selected = EXCLUDED.selected, title = EXCLUDED.title, original_title = EXCLUDED.original_title,
       summary = EXCLUDED.summary, reason = EXCLUDED.reason, category = EXCLUDED.category, tags = EXCLUDED.tags,
       score = EXCLUDED.score, source_id = EXCLUDED.source_id, channel = EXCLUDED.channel, first_party = EXCLUDED.first_party,
@@ -263,7 +268,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
       visible_after = EXCLUDED.visible_after, body_mode = EXCLUDED.body_mode, syndicate = EXCLUDED.syndicate,
       indexable = EXCLUDED.indexable, story_id = EXCLUDED.story_id, fact_id = EXCLUDED.fact_id,
       search_text = EXCLUDED.search_text, sort_at = EXCLUDED.sort_at, updated_at = now()
-    WHERE (publications.analysis_id, publications.revision, publications.visibility, publications.eligible,
+    WHERE (publications.editorial_language, publications.analysis_id, publications.revision, publications.visibility, publications.eligible,
         publications.selected, publications.title, publications.original_title, publications.summary,
         publications.reason, publications.category, publications.tags, publications.score,
         publications.source_id, publications.channel, publications.first_party, publications.url,
@@ -271,7 +276,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
         publications.selected_ready_at, publications.visible_after, publications.body_mode, publications.syndicate,
         publications.indexable, publications.story_id, publications.fact_id, publications.search_text,
         publications.sort_at)
-      IS DISTINCT FROM (EXCLUDED.analysis_id, EXCLUDED.revision, EXCLUDED.visibility, EXCLUDED.eligible,
+      IS DISTINCT FROM (EXCLUDED.editorial_language, EXCLUDED.analysis_id, EXCLUDED.revision, EXCLUDED.visibility, EXCLUDED.eligible,
         EXCLUDED.selected, EXCLUDED.title, EXCLUDED.original_title, EXCLUDED.summary,
         EXCLUDED.reason, EXCLUDED.category, EXCLUDED.tags, EXCLUDED.score,
         EXCLUDED.source_id, EXCLUDED.channel, EXCLUDED.first_party, EXCLUDED.url,

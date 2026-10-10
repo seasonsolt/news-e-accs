@@ -1,11 +1,11 @@
-import { useRouteLoaderData } from "react-router";
+import { useLocation } from "react-router";
 import { translate } from "./translate";
 export { translate } from "./translate";
-import type { Locale } from "./locale";
+import { pathLocale, type Locale } from "./locale";
 
 export function useLocale(): Locale {
-  const root = useRouteLoaderData<{ locale: Locale }>("root");
-  return root?.locale ?? "en";
+  const { pathname } = useLocation();
+  return /^\/admin(?:\/|$)/.test(pathname) ? "zh" : pathLocale(pathname);
 }
 export function useTranslate() {
   const locale = useLocale();

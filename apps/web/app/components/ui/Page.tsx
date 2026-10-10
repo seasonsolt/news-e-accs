@@ -1,5 +1,6 @@
+import { Link } from "../../lib/navigation";
 import type { ReactNode } from "react";
-import { Link } from "react-router";
+
 import { IconChevronRight } from "../icons";
 import { EmptyArt } from "../../features/art/EmptyArt";
 

@@ -1,97 +1,104 @@
-# 界面与内容国际化
+# 界面、编辑语言与公开 editions
 
-本站保留资讯站首页，公开产品目录是独立的 `/products` 导航项（桌面和手机）。目录数据在 `industry/products.ts`，只收录已确认可公开推广的产品。`AudioStudio` / `Retake` 和私有 Legal 不在目录里。
+本页描述 English-native 迁移的**本地已实现能力**。此次集成没有访问生产、调用外部模型、发送真实邮件或部署。2026-10-09 的发布记录仍是历史记录，不能作为本次能力已上线的证明；生产当前配置、数据覆盖率和质量须在后续获授权的盘点与发布中确认。实施计划见 [english-native.md](plans/english-native.md)。
 
-## 语言选择
+## 固定语言 URL
 
-界面支持英文 `en` 和现有中文 `zh`（HTML 使用 `zh-CN`）。未设置偏好时，SSR 从浏览器发送的 `Accept-Language` 按 q 值及原有顺序选择首个支持的语言，忽略 q=0、非法 q 和不支持的语言；无法匹配则默认英文。`zh-TW`、`zh-HK` 等中文偏好使用同一份现有中文，尚未提供繁体转换。正常浏览器的此请求头反映其语言偏好（通常对应 `navigator.languages`）；本站不请求地理位置权限。
+公开无前缀 URL 固定英文，中文入口为 `/zh` 与 `/zh/...`。例如 `/all`、`/items/:id`、`/daily/:key` 对应 `/zh/all`、`/zh/items/:id`、`/zh/daily/:key`。`Accept-Language` 与 `eacc_language` cookie 不改变同一 URL 的返回语言；手动切换跳到对应地址，保留适用筛选条件与 hash，清除语言相关 cursor。cookie 仅保存选择偏好。后台仍为 `/admin` 中文界面。
 
-导航和页脚均有语言选择器。手动选择写入 `eacc_language=en|zh` 偏好 cookie，优先于浏览器偏好，保存一年，`Path=/; SameSite=Lax`，HTTPS 下加 `Secure`。它只包含语言选择，不包含身份信息。切换整页重载，服务器输出、HTML lang、metadata 和 hydration 从同一份 root loader 数据开始。后台保持原有中文操作界面。
+SSR、浏览器分页/展开/搜索及 React Router `.data` 导航按 URL 显式传 `lang=en|zh` 到 `/api/site`。站点 API 省略 `lang` 保持中文目标；非法及重复语言参数返回 400。新闻字段按实际返回语言标记，不按网页外壳猜测。
 
-文案字典在 `apps/web/app/lib/messages.ts`，检测逻辑在 `locale.ts`，纯翻译函数在 `translate.ts`，React 接入在 `i18n.tsx`。只在显式界面文案位置使用翻译函数；不遍历/改写新闻正文 HTML，不触发模型调用。新文案需要补齐英文键值，并实际检查渲染出的整句和空格。
+`/what-is-eacc`、`/eacc-vs-dacc`、`/eacc-glossary` 是已有英文概念页，不提供虚构中文镜像。`/coding-plan`、`/pricing`、`/calculator` 属于入口站工具。API、静态资源、OG、RSS、Markdown 下载及后台保持无 `/zh` 前缀，各自通过参数或版本化地址选语言。使用规则与隐私说明保留运营者模板；英文页明确披露现有中文正文，没有自行生成英文法律条款。信源、分类身份、选稿评分与全文许可规则未调整。
 
-## 当前覆盖与保留原文
+站点配置的公开介绍、首页与关于页以英文写作，web 字典为这些明确的 UI 文案提供中文对应项；不通过字典翻译数据库新闻。来源名、专名、文明历史材料等仍可保留原文。
 
-首轮覆盖站内公开导航、主要新闻阅读与搜索流程、热点和事件、报告外壳、订阅、公开产品目录、关于/反馈/Agent 接入、模型榜和文明视图的主要操作文案。UI 日期保持业务定义的北京时间（UTC+8），英文数字使用现有阿拉伯数字/英文紧凑单位。英文界面显示后台已就绪的内容英文版；未就绪时明确提示保留原文。订阅文案明确邮件当前是中文。
+## 主稿、辅助版与正文独立状态
 
-新闻标题、摘要、推荐理由、事件综述与报告正文使用后台或离线生成、入库且 fingerprint 匹配的英文版。单纯切换界面不会现场生成译文；没有有效译文时仍为原文。来源站名、主题定义、文明时代/里程碑资料、模型评测来源说明等配置或发布内容可能保留原文；行业静态分类/标签已有英文显示映射。使用规则/隐私说明的正文保持现有用户模板，没有自行改写或声称提供英文法律文本。语言偏好 cookie 的说明已记录在本文，正式上线前应由运营者确认并同步隐私说明。
+增量迁移 `0042_editorial_language.sql` 为 analyses/publications/stories/facts/reports 增加明确编辑语言；历史记录默认 `zh`，保留旧 `*_zh` 列与内容。新分析直接从原始材料输出 `editorial_language=en` 及中立 `title/summary/reason` 列；不把英文写进中文旧列。新事件、事实与报告直接编辑英文。人工锁定的旧中文事件标题保持中文，其 digest 也使用匹配语言；旧自动事件仅在真实证据更新时转换，不因切换语言重写历史。转换只重写 title/digest/latest；历史 summary 的语言保存在 frame.summaryLanguage，facts 继续保留自己的编辑语言。混合事件不宣称整个稿件为英文，保持 unknown/pending，可通过已存的完整英文辅助版修复 summary 与全部 development 标题；不覆盖历史事实或人工字段。
 
-RSS、版本化公开 API（/api/v1）、MCP、Markdown 下载、llms.txt、站点地图和分享图继续使用原有发布语言，本轮没有让这些出口提供英文 edition。它们不会跟随浏览器 cookie。网站的 /api/site 读取通过同一 publication 层显式选择 lang=en|zh；缺省 zh，兼容既有消费者。
+统一 publication 层在可见性、撤回、释放门槛及全文许可投影之后读取已存 editions。`contentLanguage.requested` 是目标，`sourceLanguage` 是主稿语言，`language` 是**实际返回文本语言**，`status` 为 `original|translated`。原生英文返回 `original` 且 `language=en`，无需英文二次翻译即可就绪。缺少中文 edition 时返回英文并披露状态；旧中文缺少英文时诚实返回中文。严格分发出口依据实际语言决定就绪，未知信息不冒充英文。无 analysis 的原始标题回退只按明确 article.language 标记实际语言，不把默认 zh 编辑存储标签当作中文证据；unknown 原标题不能通过严格目标语言检查，但网页仍可读。来源语言不会覆盖真实分析稿的语言。手工 item prose override 没有可信语言元数据，可能与分析摘要混合，因此保守标记 unknown，严格分发等待已验证的辅助版；不凭文本字符或来源域名猜语言。人工 story 标题的既有编辑语言与锁定 digest 规则不受影响。
 
-`/coding-plan`、`/pricing`、`/calculator`、`/what-is-eacc` 来自另一个静态站点仓库，此次没有翻译其正文。
+正文的 `bodyContentLanguage` 与标题摘要独立。明确标记的英文原文可直接显示，状态为 `original-english`；中文、法文与 unknown 原文保留各自真实状态。标题翻译完成不代表正文完成。新英文主稿的非英文许可正文直接从原始正文生成英文版，不经中文译文中转。链接、媒体、代码与引文使用既有 shield/unshield 保护；错误 markup 回退许可原文。`site_fulltext`、`body_mode`、syndication 和撤回仍优先，edition 不扩展许可。Unknown 正文显示 `lang=und` 及未验证提示。
 
-## SEO 与缓存
+辅助 editions 支持 en、zh，保存 source language、target language、公开 segment、fingerprint、provenance、model 和 receipt IDs。指纹包含编辑语言、当前文本及报告 revision；编辑、正文或 revision 改动使相应译文失效，标题与正文分别失效。导入与读取就绪判断都会检查目标 prose：普通英文不能回显为中文，保护后的 code、原始引文、短专名/缩写/版本标签可保留。正文丢失链接、代码或媒体保护标记仍拒绝；无效存储行和回显英文的旧中文正文不能通过就绪检查。该确定性检查不是完整语言识别器，短专名与标题存在歧义，英文 Latin-script 语言识别仍有限；真实模型质量须另行验收。兼容既有英文 edition 的旧指纹，不重写历史 hash；旧正文指纹缺少可靠原文语言时只兼容其已有身份，不补造语言声明。
 
-语言不增加独立 URL，canonical 保持原路径和现有有效筛选参数，历史页面继续 noindex。HTML lang、静态页面标题/描述和 OG locale 跟随本次 SSR 的界面语言；动态新闻标题/描述使用当前读取到的英文 edition，未完成时保留原语言。没有可以单独访问的语言版本 URL，所以不添加虚构的 hreflang。
+## 英文报告与日历
 
-生产 web server 对公开 HTML 和 React Router `.data` 使用 `private, no-store`、`X-Accel-Expires: 0`，并保留/追加 `Vary: Cookie, Accept-Language`。**不依赖 CDN 是否尊重 Vary: Cookie**，避免不同语言用户收到同一份共享 HTML。这会取消此前的页面与导航数据共享缓存和浏览器复用，增加 SSR/API 请求量；后续可设计独立语言 URL 或明确的边缘语言缓存键恢复性能。API、RSS、图片和静态资源仍按各自原策略缓存。
+报告候选始终来自相同公共选稿投影。先应用原有容量规则：日报每分类最多 8 条及全局最多 12 条快讯，周/月报告输入最多 40/60 条，主题与引用仍遵守既有摘要容量与选择语义。国际化不改变选稿数量或排名，也不要求模型引用每条 period 输入。
 
-部署前检查前置代理未强制覆盖个性化 HTML 的 no-store。当前已审计的 e-acc.ai Worker 转发浏览器请求头、未强制缓存新闻 HTML；其站点地图/robots/llms 的缓存不影响界面语言。
+在这些规则选出的输入中，不因缺失英文版额外丢稿。有效已存英文直接使用，缺失的旧中文或未定语言人工 override 标题/摘要可在**既有受回执与预算管控的报告请求**中修复。修复必须覆盖请求的精确 ID 集合、完整英文 prose 与原数字；不完整、错误 ID、未知引用或混合语言答案拒绝整次成刊，保留旧报告等待重试。不会覆盖原 publication，不另设未管控模型调用。
 
-## 部署边界
+`config.reportTimeZone` 来自经 IANA 校验的 `REPORT_TIME_ZONE`，默认仍为 `Asia/Shanghai`。`America/New_York` 是可选能力，未在此次启用生产配置。日报窗口是当地 `[D-1 08:00,D 08:00)`，周/月为当地日界线。当地时间按真实 DST offset 解析，不用午夜加 8 小时；纽约春/秋转换的日报可为 23/25 小时。schedule timezone、日报/周报/月报回调 key、catch-up 和邮件当前日期使用相同配置。日报当地 08:00，周一 10:00 周报，月初 10:30 月报。
 
-2026-10-09 已部署，详见 [发布记录](../deploy/releases/2026-10-09-i18n.md)。主域名 Worker 已把 `/products` 发往新闻源站。对应的路由与测试改动已合入 `seasonsolt/e-acc.ai` 的 `edge/src/route.mjs`。没有新增 `/language` 路由。
+每份新报告在 content 中保存 reportTimeZone；公开报告 DTO 与相关 v1 详情暴露该值。UI 的报告 masthead、元数据和 today/yesterday 使用存储日历，不对可选纽约报告宣称 UTC+8。旧报告缺省解释为上海；重生成使用已有 window/timezone，revision snapshot 保留原窗口、编辑语言和时区。切换日期、旧 key 冲突、选稿窗口交叠及监控须由运营者落实；新数据不能回滚给仅理解旧中文列的版本。
 
-## 验证
+**公共 time-machine 的 `at`、历史新闻筛选、热点切片及 Codex monitor 继续使用原北京时间语义。** reportTimeZone 不是全站显示时区开关，也没有新增读者本地时间模式。
 
-`apps/web/tests/locale.test.ts` 覆盖 q 值、q=0、语言回退、cookie 优先级、格式化界面文案与未知新闻不被翻译。生产 SSR 的 `cache.test.ts` 验证语言首屏、手动优先、HTML/data 缓存隔离、匿名 API 读取、静态资产/feeds 原缓存和独立产品目录。原有中文 SSR 用例显式带中文请求头，继续验证原行为。
+## 公开分发与兼容性
 
-## 动态内容 editions
+| 出口 | 默认与语言选择 | edition 缺失行为 |
+|---|---|---|
+| 网站 | 无前缀 en，`/zh` zh；site API 省略仍 zh | 显示原稿并披露实际语言/状态；不调用模型 |
+| 新 RSS | `/feed/v2/{picks,full,all,daily}.xml` en；`/feed/v2/zh/...` zh；分类地址保持稳定分类 ID | 严格版仅输出目标语言就绪条目，全文另校验许可与正文语言 |
+| 旧 RSS | `/feed/picks.xml`、`/feed/full.xml`、`/feed/all.xml`、`/feed/daily.xml` 等保持 zh 目标与历史 GUID | 未就绪目标条目不会悄悄混入英文；未知 query 不选语言 |
+| v1 API | 显式 `lang=en|zh`；**省略仍以 zh 为目标** | 新英文稿缺少中文时披露 native en fallback；旧 cursor 格式兼容，显式语言 cursor 不能换语言 |
+| MCP 3.0.0 | 工具 `lang` 默认 en，可 zh；cache key 含语言 | 必需目标版缺失/混合时 `edition_unavailable` |
+| Markdown | `/items/:id/markdown?lang=en|zh`，默认 en | 标题版未就绪 503 `edition_unavailable`；正文未就绪给明确提示与原文链接；引用帖子保留 attribution、原始 URL 及已验证译文，未验证/失效时明确标记原文语言 unknown 或请求版未就绪 |
+| OG/poster | 无前缀 endpoint，`?lang=en|zh` 默认 en | 目标版未就绪 404；读取已存稿件，不触发模型 |
+| llms.txt | 英文说明并列出语言与兼容入口 | 不随 cookie 变化 |
 
-迁移 `0040_content_translations.sql` 增加独立译文表，不改写中文 editorial 数据。英文新闻标题、摘要、推荐理由、事件标题/摘要/综述/最新进展/时间线标题/摘录、报告标题/导语/概览/分节/引用摘要存为稳定 segment→translation 映射。原始报道的链接、ID、日期、指标和归类不翻译；前端分类与行业静态标签使用显示映射，筛选仍传原身份。选稿、评分、采集标准不变。
+web RSS discovery、页脚、More 与 Agent RSS 地址使用真实 versioned endpoint，不能用旧 feed 上被忽略的 `?lang=en` 冒充英文。v1 旧字段保持，语言/时区为兼容附加字段；将 v1 默认切换英文仍需独立版本或公告，不包含在本次实施。
 
-`packages/backend/src/publication/content-source.ts` 是公开 DTO→segment/fingerprint 的纯模块，可给离线翻译代理使用；它不连接数据库、不调用模型。item 只取 title/summary/reason，所以公开列表与详情 hash 一致；story 另含 excerpt.text 和 developments.N.title；report 取已裁剪的公开正文字符串，跳过 available=false 的撤回引用，且报告 revision 参与 hash。计数、图像签名和时间不参与正文 hash。编辑覆盖改变公开文本后旧译文不再匹配；重新发布的报告也失效。
+## 邮件
 
-`content-language.ts` 只在公开读取结果上覆盖 hash 匹配、文本仍匹配的字段。没有有效 edition 时返回原文本及 `contentLanguage.status=original`；网站显示 `English edition pending · Original content`。文章正文有独立 `bodyContentLanguage`，不能用标题已翻译来冒充全文已翻译。英文来源可直接显示 original 正文；其余许可全文使用独立 body edition，完整段落通过既有 shield/unshield 保护链接、媒体和 inline code，恢复后 sanitize，重新生成英文目录。site_fulltext/body_mode 的限制由原 publication detail 投影先执行，译文不扩大可见范围。X 引用在英文页使用原引用，中文译文不会被当成英文。
+迁移 `0043_newsletter_languages.sql` 保存订阅 language 和 `language_preference_known`。新订阅默认 en；既有记录 zh 且 preference unknown，不能据此推断本人选择。确认邮件、确认链接与加入 Resend segment 使用已存语言；重复注册保留原 token、语言与 cooldown，不充当偏好修改。
 
-SSR、搜索与主阅读分页/展开请求显式传 lang，中文与英文 API URL、ETag 分开；共享 HTML 仍 no-store。筛选及 cursor 仍表示同一新闻集合，不因翻译改变选稿或排序。英文 /all 搜索同时匹配当前英文标题/摘要与原始索引，过期译文不参与搜索；英文关联性搜索使用标题优先、其次摘要/原始索引，暂未为英文翻译正文建立全文搜索索引。story 列表批量读基本字段，不为每条热点加载完整详情；报告索引校验仍需要对应报告的公开投影，英文归档首次请求会比原先多读数据库。
+`RESEND_SEGMENT_ID` 用于中文，英文需独立 `RESEND_SEGMENT_ID_EN`，两者不得相同；缺少/相同配置失败关闭，不退回旧中文名单。每种语言独立确认目标报告就绪，再按 `(report_key,language)` claim 发送；旧 `newsletter_sends` 的任何 claim 阻止两种语言再发该期。未就绪语言不 claim，可稍后重查；失败/unknown 保持既有不自动重发保障，迟到的历史报告不发邮件。英文原稿可先发送，中文等待自己的完整 edition；不发送混合报告。report citations 是经过许可/撤回投影的报告快照，其语言继承完整报告的已验证状态，不与当前 story/article 文案比较；关联事件改名或报告编辑摘要不同不会阻止就绪报告发送。
 
-更新日志通过 `industry/changelog.json` 中每条的 `en` 提供英文标题与正文，网站 API 按 `lang` 返回对应版本；版本提醒、类型身份和过滤保持一致，日期、月份与类型标签随界面语言显示。未附英文版的外部行业包条目仍回退原文。
+生产必须确认两个 segment 的成员隔离、旧订阅迁移选择、域名/from 配置以及防止旧 newsletter worker 并行运行。当前没有偏好更新 UI；旧后台 newsletter 统计尚未聚合新的 language send 表。Newsletter 开关在普通本地验证关闭，仅本地 HTTP stub 测试按需启用。
 
-文明年表原始历史材料、法律正文和另一静态站点的正文继续原语言。来源名、专名、用户搜索串保留原文。当前公开 RSS/v1/MCP/Markdown/分享图也继续原发布语言，不能声称已全出口英文。
+## 已收录英文 URL 的发布硬门槛
 
-## 全历史离线导出、验证与导入
+- 原有无前缀英文路径继续使用原地址，不迁移到 `/en`，不因语言 cookie、Accept-Language 或 IP 自动重定向到 `/zh`。
+- 已有英文页面的 canonical 保持原生产域名和原路径；中文版本自引用 `/zh`，不得让英文 canonical 指向中文。新增 hreflang 只声明实际可访问、已验证的版本。
+- 不因辅助译文未就绪撤下原英文 URL、改变公开身份或新增 noindex；撤回、合并及原有历史筛选规则继续按既有规则处理。
+- sitemap 中保留现有英文路径，新增中文入口不得替换或删掉已收录英文地址。导航、RSS、分享图和结构化数据的英文链接仍使用无前缀路径。
+- 发布前获取线上 sitemap 和已知收录 URL 清单，对照候选版本逐一核验 HTTP 状态、重定向链、英文正文就绪、canonical、robots、结构化数据及菜单 `.data`。新闻、事件、报告的 ID/期号及已有合并重定向必须保持一致。
+- Worker 修改应增加中文分流，不改变既有英文新闻及入口静态工具的归属；上线后从公网复核上述地址。发现原英文 URL 新增 404、错误语言重定向、错误 canonical/noindex 或正文缺失时阻止发布或回滚。
 
-本次译文由 Codex `gpt-6-luna` 代理离线生成；这是译文来源记录，不是已证实可用的 OpenAI API model id，也不生成伪造的付费回执。导入只做 JSON/schema、每个 segment key 完整性、非空文本、当前公开身份与 fingerprint 验证，不调用模型。全部校验通过后 `--apply` 的批次事务写入；当前源改变则拒绝整批。source 行写入时加共享锁，实际读者仍再次验证版本。可以重复导入相同内容，表按 kind/id/lang 更新，不增加重复版本。
+2026-10-10 本地空库检查 `/`、`/all`、`/what-is-eacc` 返回英文、自引用原 canonical；`/zh`、`/zh/all`、`/zh/about` 使用中文及自身 canonical，sitemap 保留无前缀地址。此检查不等于生产 Google 收录清单或历史详情 URL 已完成验证。
 
-先在要操作的数据库执行增量迁移，再使用 Node ≥24：
+## SEO、缓存与入口 Worker
+
+canonical 对应当前 edition URL；存在真实有效双语版本时提供 reciprocal en/zh-CN 与英文 x-default。item/story/report loader 最多用一次带 1 秒超时的匿名对侧 edition 读取验证 alternate；失败只抑制 alternate。正文回退的 lang/OG/NewsArticle 描述实际内容，不随 UI 偏好冒充英文。英文概念与中文法律正文不虚构对侧版本。
+
+公开 HTML 和 Router `.data` 保持 `private,no-store`、`X-Accel-Expires:0`；没有恢复共享 HTML 缓存。API、RSS、图片、资源保留各自策略。先验证匿名输出、onboarding、错误/redirect/action、管理员与 cookie 隔离，再另做安全的缓存优化。
+
+入口仓库 `seasonsolt/e-acc.ai` 本次不可用，**未编辑/发布其 `edge/src/route.mjs`**，是上线前置依赖。分类匹配须识别 `/zh` 与全部公开中文路由，以及对应 `.data`，转发原 path/query/method/body 不变。用于分类时可剥去末尾 `.data`、把 `/_` 映射为 `/`、`/zh/_` 映射为 `/zh`；覆盖 `/_.data`、`/zh.data`、`/zh/_.data`、`/zh/all.data`、中文 item/original/story/report/topic 分页与所有菜单 data 地址。无前缀英文菜单与三个英文概念 `.data` 也须通往新闻源站。API/assets/media/OG/feed/admin 与入口工具继续原策略；不要创造中文 API/资源前缀或让另一 origin 去剥 `_routes`。中文概念镜像按设计 404。代理必须尊重 HTML/data no-store。
+
+## 离线导出与 worker
+
+Node ≥24 下，CLI 默认只读扫描/export，`--lang en|zh` 选择辅助 edition；只有明确 `--apply` 才事务写入：
 
 ```bash
-# 默认只有扫描、统计和文件导出。--all 包含全部历史当前公开 editorial item，
-# 包括不在内容池/不被索引的公开详情，以及可读 stories 和全部 reports。
-# 排除撤回、非 editorial 信源、尚未释放的精选；body 仍由许可投影决定。
-node scripts/content-translations.ts --all --limit 50 \
-  --output /tmp/content-en-001.json --checkpoint /tmp/content-en-cursor.json
-node scripts/content-translations.ts --all --limit 50 \
-  --resume /tmp/content-en-cursor.json --output /tmp/content-en-002.json \
-  --checkpoint /tmp/content-en-cursor.json
-# 也支持 --cursor 'item:...'；游标按统一 C collation 排序，无页数/日期截断。
-# nextCursor=null 表示结束；完整扫完后从头重扫，可发现较早 ID 的编辑和新增。
-# 已完成且 hash 未变的 edition 计入 alreadyComplete，不重复导出。
-
-node scripts/content-translations.ts --import /tmp/content-en-001.json
-# 上一条默认 dry-run，仅验证。确认目标数据库和范围后才写：
-node scripts/content-translations.ts --import /tmp/content-en-001.json --apply
+node scripts/content-translations.ts --all --lang zh --limit 50 \
+  --output /tmp/content-zh-001.json --checkpoint /tmp/content-zh-cursor.json
+node scripts/content-translations.ts --all --lang zh --limit 50 \
+  --resume /tmp/content-zh-cursor.json --output /tmp/content-zh-002.json
+node scripts/content-translations.ts --import /tmp/content-zh-001.json
+# 确认目标数据库与范围后才执行 --apply
 ```
 
-批次严格结构：`{schemaVersion:1,targetLanguage:"en",entries:[{kind:"item"|"story"|"report"|"body",id,sourceHash,segments:[{key,text}],translations:{key:"English text"}}]}`。report id 为 `daily:YYYY-MM-DD` / `weekly:YYYY-Www` / `monthly:YYYY-MM`；body id 仍是 article id。代理只填写 translations，保持其余字段原样。JSON 字符串保留段落、引文和事实；body 字段保留 shielded inline HTML 和占位符。不得把受限原始正文另塞入批次。
+批次保存 targetLanguage，每条保存 sourceLanguage/targetLanguage，report 使用 sourceRevision。source segments、fingerprint、精确翻译 keys、非空 prose、当前可见身份与 body markup 全部验证；不伪造离线 paid receipts。权威扫描包含全部当前可读 publication，不以 pool/sitemap 替代历史完整性；正文范围仍受许可限制。checkpoint/cursor 与目标语言一致。
 
-全历史范围需要数据库权威导出保证完整；公开 pool 分页和 sitemap 可能漏掉 noneligible/nonindexable 的可读详情。通过旧线上 API 抓取的译文可先离线组装，但上线导入仍会按当前数据库文本复核；有变化须重导出受影响 entry。CLI 不读取自动生产连接，也不部署；DATABASE_URL 由操作者明确提供。2026-10-09 已完成生产数据库权威盘点、迁移、逐批验证导入与部署。
+`content.localize` 仅在 `CONTENT_TRANSLATION_ENABLED` 和 `MODEL_CALLS_ENABLED` 同时启用时调用既有 translate 模型，经 receipt/按请求数量的预算熔断；默认关闭。en/zh 使用独立 cursor，开始扫描前持久化下一轮目标；语言 lane 失败后仍允许另一 lane 在剩余额度内推进，最终记录失败。失败 lane 不推进游标；部分完成后失败会预留整段 allowance，不突破合并额度，单条额度的轮次通过下次轮换保证公平。不可用 prose/markup 将已收到回执标记 failed，允许受预算管控的重试；unknown outcome 保持阻断，不再次请求。回执 subject、prompt version 与语言方向身份保持现有规则。`translatePending` 保留既有中文全文流程，native en 的许可英文正文不多买中文中转。队列/预算/错误可能导致辅助版延迟，不承诺实时双语。
 
-## 可选 provider worker
+## 验证与上线前置
 
-新 `content.localize` schedule 每 5 分钟运行，必须同时设置 `CONTENT_TRANSLATION_ENABLED=true` 和 `MODEL_CALLS_ENABLED=true` 才调用模型；前者的代码默认值仍为关闭。运营者现已明确授权生产开启持续英文补译，并接受既有预算内额外 API 请求费用；配置和发布由运营者执行，开发/测试仍保持全部安全阀关闭。使用已配置的 `modelFor('translate')` API 模型，chatJson→既有回执/按请求数量的预算熔断，purpose=translate_content；Codex 离线 gpt-6-luna 来源标记不等于 API model ID。旧中文全文 translatePending schedule 保持原策略。
+此次本地使用现代 Node、全新空 `_test` 数据库应用全部增量迁移，collection/model/Feishu/IndexNow 关闭，真实 provider 路径不启用。执行 workspace typecheck、web build/tests、显式 `--experimental-test-module-mocks` 的 editorial/report/队列/分发/邮件/日历集成测试，以及 `buildApp()`（无 heartbeat/provider startup）与 built web 的本地 smoke 和 `/zh`/`.data` 请求。
 
-默认每轮最多处理 5 个需要翻译的 edition，已完成候选不占名额。权威扫描每页 1000 条，跨页核验当前 fingerprint，必要时在同一轮回绕断点前的内容，避免 1700 条已完成数据拖成数十小时的重扫。先通过 publication 当前热点条和最新公开列表找 story/item 优先候选，最多占 4 个名额，至少保留 1 个历史队列名额；优先翻译不推进历史游标，重复候选不会再次购买。达到上限时游标停在实际处理的最后一条，不能直接跳到扫描页尾。失败不推进该轮游标，已存好的 edition 在重试时跳过；已收到但未提交业务结果的模型答案由含 fingerprint 的回执 subject 复用，预算熔断照常阻止继续付费。扫描仍逐条核验公开投影，规模增长会增加数据库读取负载，不承诺实时英文：排队、失败、预算停机或源内容再次编辑时，页面仍诚实显示原文和 pending 标记。
+完整 `npm test` 包含显式开启 MODEL/COLLECT 阀门的既有测试，不能原样安全执行。安全广泛测试排除 `tests/analyze-shutdown.test.ts`、`tests/translate-shutdown.test.ts`、`tests/alerts.test.ts`、`tests/receipts.test.ts`，其余保留 model=false；已有依赖 enabled local-model stub 的失败另以 base checkout/独立空测试库复现。fixture module-mock 测试必须带 experimental flag，否则会 skip。精确次数、日志、基线差异与清理记录见本次集成报告，不以组件单独运行结果替代整体验收。
 
-## 本轮实际验证（2026-10-09）
+2026-10-10 首轮 review 修复使用新的本地空 eacc_review_fixes_final_20261010_test 数据库，全部 40 迁移已应用；95 focused backend 全通过，web 65 通过/1 既有 skip，typecheck/build、34 whole-site smoke、23 中文 HTML/data/RSS 与 3 英文概念镜像 404、4 mixed-story/More HTTP 检查通过。真实模型阀门始终关闭；provider 仅使用模块 fixture，邮件只指向本地 Resend stub。七项 finding 的回归、确切命令、清理和限制见 fixes/first-pass.md；既有 25 个 closed-model 广泛测试基线失败未重跑。本地 SSR 确认 unknown mixed story 也显示 pending edition 提示。
 
-- Node 26.5（满足仓库 ≥24）、`npm run typecheck` 与 web build 通过。
-- web tests 43：42 通过，1 个既有 feature-off skip，0 失败。
-- 新 content-language 集成测试 9 全通过；覆盖真实数据库导入默认不写、来源校验、英文 API/ETag/搜索、编辑与报告 revision 失效、story/索引、正文独立状态/英文目录/许可撤销、worker opt-in 关闭及 HTML 链接/code 保护。
-- 新空 `eacc_content_final_test` 应用 40 migrations 后完整 `npm test`：187 测试，160 通过，27 失败。27 个失败名称与改动前保持 MODEL_CALLS_ENABLED=false 时的基线完全相同（本次新增 9 个均通过）。代表失败 `tests/translate.test.ts:129` 的 `run.quotes >= 1`，既有模型 mock 链被关闭的模型阀门挡住；未为全绿开启安全阀。
-- 另在本地 `eacc_content_preview_test` 构造真实公开 DTO 50 条，将 gpt-6-luna 实际批次 dry-run 校验后导入，重扫统计 scanned=50、alreadyComplete=50、pending=0。生产模式 SSR 的 `/all`、新闻详情标题/metadata 为真实英文，手动中文 cookie 恢复中文；运行中的完整 smoke 通过，3 个未发布的模型榜按脚本预期跳过。
-
-以上描述的是部署前的本地验证。2026-10-09 生产发布后另完成源站和公网 smoke、浏览器语言与 cookie 优先级、英文内容/搜索/ETag 检查；权威全量重扫为 scanned=1703、alreadyComplete=1703、pending=0。
-
-持续队列新增 `tests/content-translation-sweep.test.ts` 8 项通过，覆盖 2502 个候选跨页跳过完成项、翻译数量上限、中途断点、回绕发现编辑、热点去重与历史名额、失败不推进、真实本地 HTTP 回执复用、公开优先候选过滤及两级关闭阀门；模型/采集/推送安全阀保持关闭，未调用外部服务。`npm run typecheck` 与 diff 检查通过。本次队列修正的配置和发布由运营者另行执行。
+上线尚需获授权的生产盘点与模型质量/预算观察、入口 Worker 路由发布、Resend 英文名单配置、明确报告日历 cutover、兼容 rollback 版本及浏览器验收。2026-10-10 独立 reviewer 已复查七项 finding 的修复，结论为 OK with notes，未发现新的证据支持的 P0/P1/P2 问题；此结论不代表已验证生产或真实 provider。新闻站仅用 `deploy/update.sh` 发布；本次没有执行生产动作。

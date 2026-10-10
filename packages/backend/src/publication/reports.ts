@@ -11,6 +11,7 @@ import { SITE, withSubject } from "@aihot/industry/site";
 export type { ReportKind };
 
 interface ReportRow {
+  editorial_language: "en" | "zh";
   kind: ReportKind;
   key: string;
   window_start: Date;
@@ -62,8 +63,8 @@ export async function unavailableIds(ids: string[]): Promise<Set<string>> {
 
 /** Directory/feed metadata only: citation summaries and full report prose stay in the detail read. */
 export async function reportIndexRows(kind: ReportKind, limit: number) {
-  return sql<{ key: string; content: Record<string, any>; generated_at: Date }[]>`
-    SELECT key, generated_at, jsonb_build_object(
+  return sql<{ editorial_language: "en" | "zh"; key: string; content: Record<string, any>; generated_at: Date }[]>`
+    SELECT editorial_language, key, generated_at, jsonb_build_object(
       'lead', content->'lead', 'headline', content->'headline', 'title', content->'title',
       CASE WHEN kind = 'daily' THEN 'sections' ELSE 'themes' END,
       jsonb_build_array(jsonb_build_object(CASE WHEN kind = 'daily' THEN 'items' ELSE 'storyRefs' END,
@@ -204,7 +205,7 @@ export async function reportKeyAt(kind: ReportKind, date: string): Promise<strin
 }
 
 export async function loadReport(kind: ReportKind, key: string): Promise<ReportDetail | null> {
-  const [r] = await sql<ReportRow[]>`SELECT kind, key, window_start, window_end, content, generated_at, revision FROM reports WHERE kind = ${kind} AND key = ${key}`;
+  const [r] = await sql<ReportRow[]>`SELECT editorial_language, kind, key, window_start, window_end, content, generated_at, revision FROM reports WHERE kind = ${kind} AND key = ${key}`;
   if (!r) return null;
   const c = r.content;
   const rawItems: Array<Record<string, any>> = [
@@ -236,13 +237,15 @@ export async function loadReport(kind: ReportKind, key: string): Promise<ReportD
   const [{ prev, next }, picture] = await Promise.all([neighbors(kind, key), leadItem?.itemId && leadItem.available ? leadCover(leadItem.itemId) : null]);
   const cover = picture && leadItem ? { ...picture, caption: kind === "daily" ? null : leadItem.title } : null;
   const headline = kind === "daily" ? null : periodicHeadline(c);
-  const title = kind === "daily" ? `${withSubject("日报")} · ${key}` : String(c.title ?? (kind === "weekly" ? `${SITE.name} 周报 · ${key}` : `${SITE.name} 月报 · ${key}`));
+  const title = r.editorial_language === "en" ? String(c.title ?? `${SITE.name} ${kind === "daily" ? "Daily" : kind === "weekly" ? "Weekly" : "Monthly"} · ${key}`) : kind === "daily" ? `${withSubject("日报")} · ${key}` : String(c.title ?? (kind === "weekly" ? `${SITE.name} 周报 · ${key}` : `${SITE.name} 月报 · ${key}`));
   return {
+    editorialLanguage: r.editorial_language,
     kind,
     key,
     title,
     windowStart: r.window_start.toISOString(),
     windowEnd: r.window_end.toISOString(),
+    reportTimeZone: c.reportTimeZone ?? "Asia/Shanghai",
     generatedAt: r.generated_at.toISOString(),
     revision: r.revision,
     lead: c.lead ?? (headline ? { title: headline, leadParagraph: String(c.overview ?? "") } : null),
@@ -286,6 +289,7 @@ export async function listReports(kind: ReportKind, limit = INDEX_LIMIT): Promis
   return rows.map((r) => {
     const items = kind === "daily" ? (r.content.sections ?? []).flatMap((s: any) => s.items ?? []) : (r.content.themes ?? []).flatMap((t: any) => t.storyRefs ?? []);
     return {
+      editorialLanguage: r.editorial_language,
       kind,
       key: r.key,
       title: reportHeadline(r.content, shape, gone),
@@ -321,8 +325,8 @@ export async function v1Dailies(limit: number) {
 
 export async function v1Daily(date: string | "latest") {
   const [r] = date === "latest"
-    ? await sql<ReportRow[]>`SELECT kind, key, window_start, window_end, content, generated_at, revision FROM reports WHERE kind = 'daily' ORDER BY key DESC LIMIT 1`
-    : await sql<ReportRow[]>`SELECT kind, key, window_start, window_end, content, generated_at, revision FROM reports WHERE kind = 'daily' AND key = ${date}`;
+    ? await sql<ReportRow[]>`SELECT editorial_language, kind, key, window_start, window_end, content, generated_at, revision FROM reports WHERE kind = 'daily' ORDER BY key DESC LIMIT 1`
+    : await sql<ReportRow[]>`SELECT editorial_language, kind, key, window_start, window_end, content, generated_at, revision FROM reports WHERE kind = 'daily' AND key = ${date}`;
   if (!r) return null;
   const c = r.content;
   const raw = [...(c.sections ?? []).flatMap((s: any) => s.items ?? []), ...(c.flashes ?? [])];
@@ -337,6 +341,7 @@ export async function v1Daily(date: string | "latest") {
       generatedAt: r.generated_at.toISOString(),
       windowStart: r.window_start.toISOString(),
       windowEnd: r.window_end.toISOString(),
+    reportTimeZone: c.reportTimeZone ?? "Asia/Shanghai",
       links: { aihot: url },
       attribution: attribution(url),
       lead: c.lead ? { title: String(c.lead.title), leadParagraph: String(c.lead.leadParagraph) } : null,

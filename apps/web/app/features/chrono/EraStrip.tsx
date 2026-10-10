@@ -1,8 +1,9 @@
+import { Link } from "../../lib/navigation";
 import { Text, useTranslate } from "../../lib/i18n";
 // The film strip of eras: every plate in its own period style, in order, the current one lit. Real links,
 // so it is also the way through time without JavaScript.
 import { useEffect, useRef } from "react";
-import { Link } from "react-router";
+
 import type { ChronicleEra } from "@aihot/contracts/chronicle";
 import { timeParam } from "./format";
 

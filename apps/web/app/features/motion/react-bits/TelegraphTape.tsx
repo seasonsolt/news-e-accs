@@ -1,10 +1,11 @@
+import { Link } from "../../../lib/navigation";
 // Adapted from React Bits CurvedLoop (https://reactbits.dev, David Haz), MIT + Commons Clause — see ./LICENSE.
 // Keep the paper-feed idea, not the repeated SVG text, measuring copy or infinite clock. One real
 // link per headline sits on a straight, natively scrollable tape in its final SSR position. Only a
 // proven below-fold reveal or the replay control starts a four-second feed. Reader scrolling or
 // following a headline settles it; runFrames also settles on viewport/tab exit and reduction.
 import { useEffect, useRef } from "react";
-import { Link } from "react-router";
+
 import type { HotEntryView } from "@aihot/contracts/site";
 import { hasFinePointer, useMotionAllowed } from "../preferences";
 import { useInViewOnce } from "../viewport";

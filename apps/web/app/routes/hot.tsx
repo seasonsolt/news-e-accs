@@ -1,6 +1,7 @@
+import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { withSubject } from "@aihot/industry/site";
-import { Link, useLoaderData, useRouteLoaderData } from "react-router";
+import { useLoaderData, useRouteLoaderData } from "react-router";
 import { FEATURES } from "@aihot/industry/features";
 import type { loader as rootLoader } from "../root";
 import { Deck } from "../components/shell/Deck";

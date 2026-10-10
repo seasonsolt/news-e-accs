@@ -101,7 +101,7 @@ for (const model of values.models!.split(",")) {
     const gold = x.r.gold.decision;
     if (gold === "either") { either++; continue; }
     if (pred === "select" && gold === "select") tp++;
-    else if (pred === "select" && gold === "reject") { fp++; mistakes.push({ kind: "FP", title: x.r.material.title, score: x.out.score, reason: x.out.reasonZh, stratum: x.r.samplingContext?.samplingStratum ?? null }); }
+    else if (pred === "select" && gold === "reject") { fp++; mistakes.push({ kind: "FP", title: x.r.material.title, score: x.out.score, reason: x.out.reason, stratum: x.r.samplingContext?.samplingStratum ?? null }); }
     else if (pred === "reject" && gold === "select") { fn++; mistakes.push({ kind: "FN", title: x.r.material.title, score: x.out.score, relevance: x.out.relevance, stratum: x.r.samplingContext?.samplingStratum ?? null }); }
     else tn++;
   }
@@ -148,7 +148,7 @@ for (const model of values.models!.split(",")) {
     score: x.out?.score ?? null,
     relevance: x.out?.relevance ?? null,
     category: x.out?.category ?? null,
-    reason: x.out?.reasonZh ?? null,
+    reason: x.out?.reason ?? null,
     receiptId: x.receiptIds[0] ?? null,
     error: x.error,
   }));

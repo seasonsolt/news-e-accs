@@ -1,5 +1,9 @@
 // v1 items and the selected sync (snapshot + changes), read from the same public read layer.
 import type { PublicApiCategoryKey } from "@aihot/contracts/taxonomy";
+import { localizePublication } from "./content-language.ts";
+import { itemUrl } from "./links.ts";
+import { loadReport, v1Daily, v1Dailies } from "./reports.ts";
+import type { DistributionLanguage } from "./distribution.ts";
 import { sql, type Db } from "../db.ts";
 import { decodeCursor, encodeCursor, InvalidCursorError, queryBinding } from "../lib/cursor.ts";
 import { newShortId } from "../lib/ids.ts";
@@ -8,6 +12,7 @@ import { publicMatchCondition, searchTerms, withSearchCapacity } from "./pool.ts
 import { v1Payload, type V1ItemPayload } from "./publish.ts";
 
 export interface V1ItemsQuery {
+  lang?: DistributionLanguage;
   mode: "selected" | "all";
   window: "24h" | "7d";
   by: "timeline" | "published";
@@ -35,7 +40,7 @@ export function rowToV1(row: ApiItemRow): V1ItemPayload {
 export async function v1Items(query: V1ItemsQuery, now = new Date()): Promise<V1ItemsResult> {
   const windowMs = query.window === "24h" ? 86400000 : 7 * 86400000;
   const windowStart = new Date(now.getTime() - windowMs);
-  const binding = queryBinding({ m: query.mode, w: query.window, b: query.by, c: query.category, q: query.q });
+  const binding = queryBinding({ m: query.mode, w: query.window, b: query.by, c: query.category, q: query.q, ...(query.lang ? { l: query.lang } : {}) });
   // by=timeline is the site's own order: a selected item at its reading-group anchor, anything else at its timeline time.
   const sortCol = query.by === "published" ? sql`coalesce(p.published_at, p.discovered_at)` : query.mode === "selected" ? sql`p.sort_at` : sql`p.timeline_at`;
   let after: { a: number; i: string } | null = null;
@@ -67,7 +72,7 @@ export async function v1Items(query: V1ItemsQuery, now = new Date()): Promise<V1
       mode: query.mode, category: query.category, window: query.window, q: query.q, by: query.by,
       ordering: query.by === "published" ? "publishedAtDesc" : "timelineDesc",
     },
-    items: page.map(rowToV1),
+    items: await localizeV1(page.map(rowToV1), query.lang),
     page: {
       count: page.length,
       hasMore,
@@ -112,13 +117,8 @@ function minimalOf(item: V1ItemPayload) {
   };
 }
 
-// Drop unused wide fields before crossing the database connection; minimalOf remains the output
-// whitelist, preserving its omission of absent keys and all existing null values.
-function ledgerPayload(minimal: boolean, payload = sql`payload`) {
-  return minimal ? sql`(${payload} - ARRAY['originalTitle', 'summary', 'reason', 'attribution']::text[]) #- '{links,original}'` : payload;
-}
-
 export interface SnapshotQuery {
+  lang?: DistributionLanguage;
   fields?: "default" | "minimal";
   limit: number;
   page: string | null;
@@ -126,15 +126,18 @@ export interface SnapshotQuery {
 
 export async function selectedSnapshot(q: SnapshotQuery, now = new Date()) {
   const epoch = await ledgerEpoch();
+  let lang = q.lang;
   let fields = q.fields ?? "default";
   let w: number;
   let afterId = "";
   let asOf: string;
   if (q.page) {
-    const p = decodeCursor<{ k: string; e: string; w: number; f: string; a: string; t: string }>(SYNC_PREFIX, q.page);
+    const p = decodeCursor<{ k: string; e: string; w: number; f: string; a: string; t: string; l?: DistributionLanguage }>(SYNC_PREFIX, q.page);
     if (p.k !== "page" || p.e !== epoch || (p.f !== "default" && p.f !== "minimal") ||
         (q.fields !== undefined && p.f !== q.fields) || typeof p.w !== "number") throw new InvalidCursorError("page token does not match this snapshot");
     // Only the first page defaults to full fields; continuations inherit their original projection.
+    if (q.lang !== undefined && p.l !== q.lang) throw new InvalidCursorError("language does not match snapshot");
+    lang = p.l;
     fields = p.f;
     w = p.w;
     afterId = p.a;
@@ -147,7 +150,7 @@ export async function selectedSnapshot(q: SnapshotQuery, now = new Date()) {
   // behind a not-yet-released entry must not reach new snapshots. Its remove still follows in changes,
   // which the client applies as a no-op.
   const rows = await sql<{ article_id: string; payload: V1ItemPayload }[]>`
-    SELECT latest.article_id, ${ledgerPayload(fields === "minimal", sql`latest.payload`)} AS payload FROM (
+    SELECT latest.article_id, latest.payload AS payload FROM (
       SELECT DISTINCT ON (article_id) article_id, op, payload FROM selected_ledger
       WHERE seq <= ${w} AND article_id > ${afterId}
       ORDER BY article_id, seq DESC
@@ -163,17 +166,17 @@ export async function selectedSnapshot(q: SnapshotQuery, now = new Date()) {
     schemaVersion: 1 as const,
     asOf,
     fields,
-    cursor: encodeCursor(SYNC_PREFIX, { k: "sync", e: epoch, w, f: fields }),
+    cursor: encodeCursor(SYNC_PREFIX, { k: "sync", e: epoch, w, f: fields, ...(lang ? { l: lang } : {}) }),
     count: page.length,
     hasMore,
-    nextPage: hasMore && last ? encodeCursor(SYNC_PREFIX, { k: "page", e: epoch, w, f: fields, a: last.article_id, t: asOf }) : null,
-    items: page.map((r) => (fields === "minimal" ? minimalOf(r.payload) : r.payload)),
+    nextPage: hasMore && last ? encodeCursor(SYNC_PREFIX, { k: "page", e: epoch, w, f: fields, a: last.article_id, t: asOf, ...(lang ? { l: lang } : {}) }) : null,
+    items: await localizeV1Items(page.map(r => r.payload), lang, fields === "minimal"),
   };
 }
 
-export async function selectedChanges(q: { cursor: string; limit: number }, now = new Date()) {
+export async function selectedChanges(q: { cursor: string; limit: number; lang?: DistributionLanguage }, now = new Date()) {
   const epoch = await ledgerEpoch();
-  let c: { k: string; e: string; w: number; f: "default" | "minimal" };
+  let c: { k: string; e: string; w: number; f: "default" | "minimal"; l?: DistributionLanguage };
   try {
     c = decodeCursor(SYNC_PREFIX, q.cursor);
   } catch {
@@ -182,13 +185,14 @@ export async function selectedChanges(q: { cursor: string; limit: number }, now 
   if (c.k !== "sync" || c.e !== epoch || typeof c.w !== "number" || (c.f !== "default" && c.f !== "minimal")) {
     throw new SnapshotRequiredError("watermark from another ledger epoch or format");
   }
+  if (q.lang !== undefined && q.lang !== c.l) throw new SnapshotRequiredError("language does not match sync cursor");
   const w = await effectiveWatermark(now);
   if (c.w > w) {
     const [max] = await sql<{ m: number }[]>`SELECT coalesce(max(seq), 0) AS m FROM selected_ledger`;
     if (c.w > Number(max?.m ?? 0)) throw new SnapshotRequiredError("watermark is ahead of this ledger");
   }
   const rows = await sql<{ seq: number; article_id: string; op: "upsert" | "remove"; changed_at: Date; payload: V1ItemPayload | null }[]>`
-    SELECT seq, article_id, op, changed_at, ${ledgerPayload(c.f === "minimal")} AS payload FROM selected_ledger
+    SELECT seq, article_id, op, changed_at, payload FROM selected_ledger
     WHERE seq > ${c.w} AND seq <= ${w}
     ORDER BY seq LIMIT ${q.limit + 1}`;
   const page = rows.slice(0, q.limit);
@@ -197,13 +201,70 @@ export async function selectedChanges(q: { cursor: string; limit: number }, now 
   return {
     schemaVersion: 1 as const,
     fields: c.f,
-    cursor: encodeCursor(SYNC_PREFIX, { k: "sync", e: epoch, w: nextW, f: c.f }),
+    cursor: encodeCursor(SYNC_PREFIX, { k: "sync", e: epoch, w: nextW, f: c.f, ...(c.l ? { l: c.l } : {}) }),
     count: page.length,
     hasMore,
-    changes: page.map((r) =>
+    changes: await Promise.all(page.map(async (r) =>
       r.op === "remove"
         ? { op: "remove" as const, changedAt: r.changed_at.toISOString(), id: r.article_id }
-        : { op: "upsert" as const, changedAt: r.changed_at.toISOString(), item: c.f === "minimal" ? minimalOf(r.payload!) : r.payload! },
-    ),
+        : { op: "upsert" as const, changedAt: r.changed_at.toISOString(), item: (await localizeV1Items([r.payload!], c.l, c.f === "minimal"))[0]! },
+    )),
   };
+}
+
+async function localizeV1Items(items: V1ItemPayload[], lang: DistributionLanguage | undefined, minimal: boolean) {
+  const localized = await localizeV1(items, lang);
+  return localized.map(item => minimal ? { ...minimalOf(item), ...('contentLanguage' in item ? { contentLanguage: item.contentLanguage } : {}) } : item);
+}
+
+/** v1 keeps its field names; localization happens on the canonical report DTO first. */
+export async function distributionDaily(date: string, lang?: DistributionLanguage) {
+  const legacy = await v1Daily(date);
+  if (!legacy) return legacy;
+  const key = legacy.report.date;
+  const source = await loadReport("daily", key);
+  if (!source) return null;
+  const report = await localizeV1(source, lang);
+  if (!lang && (!("editorialLanguage" in source) || source.editorialLanguage === "zh")) return legacy;
+  const citation = (item: typeof report.sections[number]['items'][number]) => ({ title: item.title, summary: item.summary ?? "", source: { name: item.sourceName },
+    links: { aihot: item.itemId ? itemUrl(item.itemId) : null, original: item.sourceUrl },
+    attribution: { name: legacy.report.attribution.name, url: item.itemId ? itemUrl(item.itemId) : legacy.report.links.aihot } });
+  return { ...legacy, report: { ...legacy.report, editorialLanguage: report.editorialLanguage, reportTimeZone: report.reportTimeZone, contentLanguage: report.contentLanguage, lead: report.lead,
+    sections: report.sections.map(section => ({ label: section.label, items: section.items.filter(item => item.available).map(citation) })),
+    flashes: report.flashes.filter(item => item.available).map(item => ({ ...citation(item), publishedAt: item.publishedAt ?? report.generatedAt })) } };
+}
+
+export async function distributionDailies(limit: number, lang?: DistributionLanguage) {
+  const legacy = await v1Dailies(limit);
+  const items = await Promise.all(legacy.items.map(async item => {
+    const source = await loadReport("daily", item.date);
+    if (!source) return item;
+    const report = await localizeV1(source, lang);
+    if (!lang && (!("editorialLanguage" in source) || source.editorialLanguage === "zh")) return item;
+    return { ...item, leadTitle: report.lead?.title ?? report.title, leadParagraph: report.lead?.leadParagraph ?? null, contentLanguage: report.contentLanguage };
+  }));
+  return { ...legacy, items };
+}
+
+export async function distributionHot<T extends { items: Array<{ title: string; links: { story: string } }> }>(body: T, lang?: DistributionLanguage): Promise<T> {
+  const items = body.items.map(item => ({ ...item, publicId: item.links.story.split('/').at(-1)! }));
+  const localized = await localizeV1(items, lang);
+  return { ...body, items: localized.map(({ publicId: _publicId, ...item }) => item) } as T;
+}
+
+/** The compatibility target stays Chinese even when the primary editorial language is English. */
+export async function localizeV1<T>(input: T, lang?: DistributionLanguage): Promise<T> {
+  const localized = await localizePublication(input, lang ?? "zh");
+  if (lang) return localized;
+  const legacy = (value: unknown): unknown => {
+    if (!value || typeof value !== "object") return value;
+    if (Array.isArray(value)) return value.map(legacy);
+    const out = Object.fromEntries(Object.entries(value).map(([key, child]) => [key, legacy(child)]));
+    // Old Chinese drafts need no extra fallback annotation; native English or translated editions do.
+    const state = out.contentLanguage as { requested?: string; sourceLanguage?: string; status?: string } | undefined;
+    if (state?.requested === "zh" && state.sourceLanguage === "zh" &&
+      ["native", "original"].includes(state.status ?? "")) delete out.contentLanguage;
+    return out;
+  };
+  return legacy(localized) as T;
 }

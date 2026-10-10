@@ -1,7 +1,8 @@
+import { Link } from "../../lib/navigation";
 import { Text, useTranslate } from "../../lib/i18n";
 // The civilization power meter on the front page's deck: today's Kardashev rating (from the chronicle's
 // energy series, served with the time machine's bounds) against a Type I civilization at 1.
-import { Link } from "react-router";
+
 import { chronicleHref } from "./TimeMachine";
 import { useAt } from "./at";
 

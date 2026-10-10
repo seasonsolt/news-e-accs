@@ -1,6 +1,7 @@
 // Stories (events) and the hot ranking through the public read layer. The website sees heat values;
 // v1 / MCP / Skill only see ranks and counts.
 import type { HeatPoint, HotResponse, StoryDetail, StoryReportView } from "@aihot/contracts/site";
+import { HEADER_SOURCE_LANGUAGE } from "./items.ts";
 import { sql } from "../db.ts";
 import { proxiedImage, proxiedImageSet } from "../media/imgproxy.ts";
 import { hotRankingAt, latestHotRanking, rankingExtras } from "../events/hot-read.ts";
@@ -47,6 +48,7 @@ interface ReportRow {
   source_kind: string;
   first_party: boolean;
   icon_url: string | null;
+  header_source_language: string;
   fact_public_id: string;
   fact_id: number;
 }
@@ -61,9 +63,10 @@ async function storyReports(storyId: number, now: Date): Promise<ReportRow[]> {
   return sql<ReportRow[]>`
     SELECT DISTINCT ON (p.article_id) p.article_id AS id, p.title, p.summary, p.url, p.selected,
       coalesce(p.published_at, p.discovered_at) AS at, s.id AS source_id, s.name AS source_name, s.kind AS source_kind,
-      p.first_party, s.icon_url, f.public_id AS fact_public_id, f.id AS fact_id
+      p.first_party, s.icon_url, f.public_id AS fact_public_id, f.id AS fact_id, ${HEADER_SOURCE_LANGUAGE} AS header_source_language
     FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id JOIN publications p ON p.article_id = fa.article_id
     JOIN sources s ON s.id = p.source_id
+    JOIN articles a ON a.id=p.article_id LEFT JOIN analyses an ON an.id=p.analysis_id
     WHERE f.story_id = ${storyId} AND p.visibility = 'public' AND s.participation_mode = 'editorial'
       AND (NOT p.selected OR p.visible_after <= ${now})
     ORDER BY p.article_id, (fa.role = 'primary') DESC`;
@@ -83,8 +86,8 @@ function reportView(r: ReportRow): StoryReportView {
 }
 
 async function storyContent(storyId: number, now: Date) {
-  const [s] = await sql<{ public_id: string; title: string; summary: string | null; first_report_at: Date | null; latest_at: Date | null; digest: string | null; digest_updated_at: Date | null; latest: string | null }[]>`
-    SELECT public_id::text, title, summary, first_report_at, latest_at, digest, digest_updated_at, latest FROM stories WHERE id = ${storyId}`;
+  const [s] = await sql<{ editorial_language: "en" | "zh"; public_id: string; title: string; summary: string | null; summary_language: string; first_report_at: Date | null; latest_at: Date | null; digest: string | null; digest_updated_at: Date | null; latest: string | null }[]>`
+    SELECT editorial_language, public_id::text, title, summary, coalesce(frame->>'summaryLanguage',editorial_language) AS summary_language, first_report_at, latest_at, digest, digest_updated_at, latest FROM stories WHERE id = ${storyId}`;
   if (!s) return null;
   const reports = await storyReports(storyId, now);
   if (reports.length === 0) return null;
@@ -92,19 +95,42 @@ async function storyContent(storyId: number, now: Date) {
 
   const byFact = new Map<number, ReportRow[]>();
   for (const r of reports) byFact.set(r.fact_id, [...(byFact.get(r.fact_id) ?? []), r]);
-  const facts = await sql<{ id: number; public_id: string; title: string; occurred_at: Date | null; created_at: Date }[]>`
-    SELECT id, public_id, title, occurred_at, created_at FROM facts WHERE story_id = ${storyId}`;
+  const facts = await sql<{ id: number; public_id: string; title: string; editorial_language: "en" | "zh"; occurred_at: Date | null; created_at: Date }[]>`
+    SELECT id, public_id, title, editorial_language, occurred_at, created_at FROM facts WHERE story_id = ${storyId}`;
   const developments = facts
     .filter((f) => byFact.has(f.id))
     .map((f) => {
       const members = byFact.get(f.id)!;
       const rep = [...members].sort((a, b) => Number(b.first_party) - Number(a.first_party) || Number(b.selected) - Number(a.selected) || a.at.getTime() - b.at.getTime())[0]!;
       const first = members.reduce((m, r) => (r.at < m ? r.at : m), members[0]!.at);
-      return { factId: f.public_id, title: f.title, occurredAt: f.occurred_at?.toISOString() ?? null, firstReportAt: first.toISOString(), reportCount: members.length, representative: rep };
+      return { factId: f.public_id, editorialLanguage: f.editorial_language, title: f.title, occurredAt: f.occurred_at?.toISOString() ?? null, firstReportAt: first.toISOString(), reportCount: members.length, representative: rep };
     })
     .sort((a, b) => Date.parse(b.firstReportAt) - Date.parse(a.firstReportAt));
 
-  return { s, reports, developments };
+  // A converted digest does not convert historical summaries or fact titles. Keep their provenance
+  // in the canonical edition identity so a stored edition can repair the remaining prose.
+  const excerpt = !s.digest && !s.summary ? developments.at(-1)?.representative : null;
+  const languages = new Set([
+    s.editorial_language, ...(s.summary ? [s.summary_language] : []),
+    ...developments.map(d => d.editorialLanguage), ...(excerpt?.summary ? [excerpt.header_source_language] : []),
+  ]);
+  const sourceLanguage = languages.size === 1 ? s.editorial_language : 'unknown';
+  return { s, reports, developments, sourceLanguage };
+}
+
+/** Only the prose that identifies an edition; uses the same reports and facts as story detail. */
+export async function loadStoryProse(storyId: number, now = new Date()) {
+  const content = await storyContent(storyId, now);
+  if (!content) return null;
+  const { s, developments, sourceLanguage } = content;
+  const origin = developments[developments.length - 1]?.representative;
+  return {
+    publicId: s.public_id, editorialLanguage: s.editorial_language,
+    contentLanguage: { requested: s.editorial_language, status: "original" as const, sourceLanguage, language: sourceLanguage },
+    title: s.title, summary: s.summary, digest: s.digest, latest: s.latest,
+    excerpt: !s.digest && !s.summary && origin?.summary ? { text: origin.summary, sourceName: origin.source_name } : null,
+    developments: developments.map(d => ({ title: d.title })),
+  };
 }
 
 async function relatedStories(storyId: number) {
@@ -116,7 +142,7 @@ async function relatedStories(storyId: number) {
 export async function loadStoryDetail(storyId: number, now = new Date()): Promise<StoryDetail | null> {
   const content = await storyContent(storyId, now);
   if (!content) return null;
-  const { s, reports, developments } = content;
+  const { s, reports, developments, sourceLanguage } = content;
   const [why] = await sql<{ p48: number; p6: number; r24: number }[]>`
     SELECT count(DISTINCT participant_key) FILTER (WHERE observed_at > ${now}::timestamptz - interval '48 hours') AS p48,
            count(DISTINCT participant_key) FILTER (WHERE observed_at > ${now}::timestamptz - interval '6 hours'
@@ -139,6 +165,8 @@ export async function loadStoryDetail(storyId: number, now = new Date()): Promis
   // Without a digest or a summary of its own, the story opens with its first development's representative report.
   const origin = developments[developments.length - 1]?.representative;
   return {
+    editorialLanguage: s.editorial_language,
+    contentLanguage: { requested: s.editorial_language, status: "original", sourceLanguage, language: sourceLanguage },
     publicId: s.public_id,
     title: s.title,
     status: storyStatusFor(latestAt, now.getTime()),

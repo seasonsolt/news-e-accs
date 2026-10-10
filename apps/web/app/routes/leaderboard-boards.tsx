@@ -1,7 +1,8 @@
+import { Link } from "../lib/navigation";
 import { Text, useTranslate } from "../lib/i18n";
 import { SITE } from "@aihot/industry/site";
 import { FEATURES } from "@aihot/industry/features";
-import { Link, Outlet, useRouteLoaderData } from "react-router";
+import { Outlet, useRouteLoaderData } from "react-router";
 import type { loader as rootLoader } from "../root";
 import { Deck } from "../components/shell/Deck";
 import { TimeDial } from "../features/chrono/TimeMachine";

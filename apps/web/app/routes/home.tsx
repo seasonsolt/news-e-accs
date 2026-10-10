@@ -1,6 +1,8 @@
+import { localePath, requestLocale } from "../lib/locale";
+import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
-import { data as withHeaders, Link, redirect, useLoaderData, useRouteLoaderData } from "react-router";
+import { data as withHeaders, redirect, useLoaderData, useRouteLoaderData } from "react-router";
 import type { Route } from "./+types/home";
 import type { TimelineResponse } from "@aihot/contracts/site";
 import { isCategoryKey, isChannelKey } from "@aihot/contracts/taxonomy";
@@ -21,7 +23,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const q = url.searchParams.get("q");
   // Search lives on /all; keep the parameters so old links still land on results.
-  if (q && q.trim()) throw redirect(`/all${url.search}`);
+  if (q && q.trim()) throw redirect(localePath(`/all${url.search}`, requestLocale(request)));
   const channelParam = url.searchParams.get("channel") ?? "all";
   const categoryParam = url.searchParams.get("category");
   const channel = isChannelKey(channelParam) ? channelParam : "all";
@@ -37,7 +39,7 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
   const f = loaderData?.filters;
   // A time-machine slice stands for the live page, which is the one to index.
   const path = listPath("/", { channel: f && f.channel !== "all" ? f.channel : null, category: f?.category, tag: f?.tag });
-  return pageMeta({ path, jsonLd: path === "/" && !f?.at ? [websiteLd(), organizationLd()] : undefined, noindex: !!f?.at }, localeFromMatches(matches ?? []));
+  return pageMeta({ path, jsonLd: path === "/" && !f?.at ? [websiteLd(localeFromMatches(matches ?? [])), organizationLd()] : undefined, noindex: !!f?.at }, localeFromMatches(matches ?? []));
 }
 
 export function headers({ loaderHeaders }: Route.HeadersArgs) {

@@ -1,4 +1,4 @@
-import { ENGLISH } from "./messages.ts";
+import { CHINESE, ENGLISH } from "./messages.ts";
 import type { Locale } from "./locale.ts";
 
 const patterns = Object.entries(ENGLISH).filter(([key]) => /\{\d+\}/.test(key)).map(([key, value]) => {
@@ -9,7 +9,7 @@ const patterns = Object.entries(ENGLISH).filter(([key]) => /\{\d+\}/.test(key)).
 }).sort((a, b) => b.specificity - a.specificity);
 /** Translate explicitly identified interface copy, never a whole article or a rendered HTML tree. */
 export function translate(locale: Locale, message: string, ...values: Array<unknown>): string {
-  let template = message;
+  let template = locale === "zh" ? CHINESE[message] ?? message : message;
   if (locale === "en") {
     template = ENGLISH[message] ?? message;
     // Existing date and report helpers produce formatted strings; match complete messages only.
@@ -20,7 +20,7 @@ export function translate(locale: Locale, message: string, ...values: Array<unkn
       if (date) return `${date[1]}-${date[2]!.padStart(2, "0")}-${date[3]!.padStart(2, "0")} · ${ENGLISH[date[4]!]}`;
       const month = /^(\d{4}) 年 (\d{1,2}) 月$/.exec(message);
       if (month) return `${month[1]}-${month[2]!.padStart(2, "0")}`;
-      const year = /^(\d{4})年?$/.exec(message);
+      const year = /^(\d{4})\s*年?$/.exec(message);
       if (year) return year[1]!;
       const count = /^([\d.]+)\s*(万|亿)$/.exec(message);
       if (count) return new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 2 }).format(Number(count[1]) * (count[2] === "亿" ? 1e8 : 1e4));

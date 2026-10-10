@@ -90,7 +90,8 @@ test('story overview, development titles and nested reports are localized; edits
   assert.equal(home.hot[0]!.title,'English title');
   assert.equal((home.hot[0] as any).contentLanguage.status,'translated');
   assert.equal(home.hot[0]!.storyPublicId,publicId);assert.equal(home.hot[0]!.heat,12);
-  assert.deepEqual(await localizePublication({hot:[strip]},'zh'),{hot:[strip]});
+  const chinese=await localizePublication({hot:[strip]},'zh');
+  assert.equal(chinese.hot[0]!.title,strip.title);assert.equal((chinese.hot[0] as any).contentLanguage.language,'zh');
   const itemSource=await currentContent('item',id);assert.ok(itemSource);
   await saveTranslation(translated(itemSource),'offline-agent','gpt-6-luna',[],true);
   const itemStrip={...strip,storyPublicId:null,title:itemSource.segments.find(s=>s.key==='title')!.text};

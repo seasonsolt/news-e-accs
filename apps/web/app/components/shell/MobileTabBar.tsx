@@ -1,5 +1,6 @@
+import { Link } from "../../lib/navigation";
 import { useTranslate } from "../../lib/i18n";
-import { Link, useLocation } from "react-router";
+import { useLocation } from "react-router";
 import { TABBAR, tabIsActive } from "./nav";
 import { useChangelogDot } from "./changelog";
 import { useAt, withAt } from "../../features/chrono/at";

@@ -1,4 +1,4 @@
-import { Text, useTranslate } from "../../lib/i18n";
+import { Text, useLocale, useTranslate } from "../../lib/i18n";
 // Share poster sheet: the server-rendered poster (with a QR code to the article), to save or hand to the
 // system share sheet. Loaded on demand from the article page; slides up on phones, centred on desktop.
 import { useEffect, useState } from "react";
@@ -8,7 +8,7 @@ import { IconClose, IconDownload, IconShare } from "../../components/icons";
 
 export default function PosterSheet({ id, title, open, onClose }: { id: string; title: string; open: boolean; onClose: () => void }) {
   const tx = useTranslate();
-  const src = `/og/posters/${id}.png`;
+  const src = `/og/posters/${id}.png?lang=${useLocale()}`;
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const [canShareFile, setCanShareFile] = useState(false);

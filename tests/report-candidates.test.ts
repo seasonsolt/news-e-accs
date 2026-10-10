@@ -11,11 +11,15 @@ import { candidates, composeDaily } from "@aihot/backend/reports/compose";
 
 const T = tag();
 const SOURCE = `test-report-boundary-${T}`;
-const provider = await stub((hit) => ({
+const provider = await stub((hit, req) => {
+  const user = String(JSON.parse(req.body).messages.at(-1).content);
+  const missing = user.includes('Missing English citations') ? JSON.parse(user.slice(user.lastIndexOf('\n') + 1)) as Array<{ itemId: string; title: string; summary: string }> : [];
+  return ({
   id: `report-boundary-${T}-${hit}`,
-  choices: [{ message: { content: JSON.stringify({ title: "测试导语", leadParagraph: "测试摘要", highlights: [1] }) } }],
+  choices: [{ message: { content: JSON.stringify({ title: "A model update", leadParagraph: "A model update has been released.", highlights: [1], citationCopies: missing.map(entry => ({ itemId: entry.itemId, title: entry.title.replace("标题", "Headline"), summary: entry.summary.replace("摘要", "Summary") })) }) } }],
   usage: { prompt_tokens: 10, completion_tokens: 10, total_tokens: 20 },
-}));
+});
+});
 process.env.DEEPSEEK_BASE_URL = `${provider.url}/v1`;
 process.env.DEEPSEEK_API_KEY = "test-key";
 

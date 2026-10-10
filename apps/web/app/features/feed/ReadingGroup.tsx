@@ -1,9 +1,10 @@
+import { Link } from "../../lib/navigation";
 import { contentFetch } from "../../lib/content-fetch";
 import { Text, useTranslate } from "../../lib/i18n";
 // Reading-group expansions on a feed item: the other sources of the card's fact ("另有 N 家信源报道")
 // and the event's developments ("展开 N 条进展"). Each loads on first open and pages on demand.
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Link, useLocation } from "react-router";
+import { useLocation } from "react-router";
 import { Collapse } from "../../components/ui/Presence";
 import type { Development, GroupInfo, GroupReport, TimelineFilters } from "@aihot/contracts/site";
 import { IconArrowUpRight, IconChevronDown } from "../../components/icons";

@@ -1,2 +1,3 @@
-{{quotedLabel}}（背景上下文，仅在理解主推文时参考，不要逐句复述）：
+Quoted post by {{quotedLabel}} (context, not the main author's work):
 {{quotedText}}
+Include only essential context with explicit attribution. Do not expand the quote or attribute its claims to the main author.

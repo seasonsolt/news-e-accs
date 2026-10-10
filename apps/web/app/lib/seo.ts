@@ -1,5 +1,6 @@
+import { contentLocale, hasBothEditions, type LanguageContent } from "./content-language";
 import { translate } from "./translate";
-import { htmlLanguage, type Locale } from "./locale";
+import { hasChineseRoute, localePath, publicPath, htmlLanguage, type Locale } from "./locale";
 // Page metadata from one place: title template, canonical address, OG images, robots. The site's name
 // and wording come from the industry pack (industry/site.ts); its address from SITE_URL.
 import type { MetaDescriptor } from "react-router";
@@ -19,6 +20,10 @@ export const SITE_DESCRIPTION = SITE.description;
 
 export interface PageMetaInput {
   title?: string | null;
+  /** Actual headline/summary language and edition availability, independent of the frame. */
+  content?: LanguageContent | null;
+  contentLocale?: Locale;
+  alternates?: boolean;
   /** Use `title` verbatim as the document title (no " · <site>" suffix). */
   rawTitle?: boolean;
   description?: string | null;
@@ -50,10 +55,13 @@ export function titled(title: string): string {
 export function pageMeta(input: PageMetaInput, locale: Locale = "en"): MetaDescriptor[] {
   input = { ...input, title: input.title ? translate(locale, input.title) : input.title, description: input.description ? translate(locale, input.description) : input.description };
   const base = siteUrl();
-  const title = input.title ? (input.rawTitle ? input.title : titled(input.title)) : (locale === "en" ? "e/acc — AI daily news & trending stories" : HOME_TITLE);
-  const description = input.description ?? (locale === "en" ? "AI news, selected stories and daily briefings from e/acc. Reports are grouped into events, with original source links." : SITE_DESCRIPTION);
-  const url = `${base}${input.path}`;
-  const image = input.image ? (input.image.startsWith("http") ? input.image : `${base}${input.image}`) : `${base}/og/site.png`;
+  const title = input.title ? (input.rawTitle ? input.title : titled(input.title)) : (locale === "en" ? "e/acc — AI daily news & trending stories" : translate(locale, HOME_TITLE));
+  const description = input.description ?? (locale === "en" ? "AI news, selected stories and daily briefings from e/acc. Reports are grouped into events, with original source links." : translate(locale, SITE_DESCRIPTION));
+  const path = localePath(input.path, locale);
+  const url = `${base}${path}`;
+  const actualLocale = input.contentLocale ?? (input.content ? contentLocale(input.content, locale) : locale);
+  const imagePath = input.image?.startsWith("/og/") ? `${input.image}${input.image.includes("?") ? "&" : "?"}lang=${actualLocale ?? locale}` : input.image;
+  const image = imagePath ? (imagePath.startsWith("http") ? imagePath : `${base}${imagePath}`) : `${base}/og/site.png?lang=${locale}`;
   const tags: MetaDescriptor[] = [
     { title },
     { name: "description", content: description },
@@ -66,15 +74,27 @@ export function pageMeta(input: PageMetaInput, locale: Locale = "en"): MetaDescr
     { property: "og:image", content: image },
     { property: "og:image:width", content: "1200" },
     { property: "og:image:height", content: "630" },
-    { property: "og:locale", content: htmlLanguage(locale).replace("-", "_") },
+    ...(actualLocale ? [{ property: "og:locale", content: htmlLanguage(actualLocale).replace("-", "_") }] : []),
     { name: "twitter:card", content: "summary_large_image" },
     { name: "twitter:title", content: input.title ?? title },
     { name: "twitter:description", content: description },
     { name: "twitter:image", content: image },
   ];
   if (input.noindex) tags.push({ name: "robots", content: input.nofollow ? "noindex, nofollow" : "noindex, follow" });
-  if (input.jsonLd) tags.push({ "script:ld+json": input.jsonLd });
+  const both = input.alternates ?? (input.content ? hasBothEditions(input.content) : !/^\/(?:items|story|daily|weekly|monthly)(?:\/|$)/.test(publicPath(path.split("?")[0]!)));
+  if (both && hasChineseRoute(path.split("?")[0]!)) {
+    for (const [language, edition] of [["en", "en"], ["zh-CN", "zh"], ["x-default", "en"]] as const) {
+      tags.push({ tagName: "link", rel: "alternate", hrefLang: language, href: `${base}${localePath(input.path, edition)}` });
+    }
+  }
+  if (input.jsonLd) tags.push({ "script:ld+json": localizeStructuredData(input.jsonLd, locale, base) });
   return tags;
+}
+
+function localizeStructuredData<T>(value: T, locale: Locale, base: string): T {
+  if (Array.isArray(value)) return value.map((entry) => localizeStructuredData(entry, locale, base)) as T;
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, localizeStructuredData(entry, locale, base)])) as T;
+  return typeof value === "string" && value.startsWith(base + "/") ? base + localePath(value.slice(base.length), locale) as T : value;
 }
 
 export function organizationLd() {
@@ -91,14 +111,14 @@ export function organizationLd() {
 }
 
 /** The front page's WebSite entry, with the /all search as its search action. */
-export function websiteLd() {
+export function websiteLd(locale: Locale = "en") {
   const base = siteUrl();
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: SITE.name,
     url: base,
-    inLanguage: SITE.locale,
+    inLanguage: htmlLanguage(locale),
     potentialAction: { "@type": "SearchAction", target: { "@type": "EntryPoint", urlTemplate: `${base}/all?q={search_term_string}` }, "query-input": "required name=search_term_string" },
   };
 }
@@ -113,7 +133,7 @@ export interface NewsArticleInput {
   datePublished: string | null;
   dateModified?: string | null;
   /** The language of the headline and summary (not of the interface). */
-  inLanguage: string;
+  inLanguage?: string;
   /** The report the page summarizes, when it summarizes one. */
   basedOn?: string | null;
   keywords?: string[];
@@ -125,6 +145,8 @@ export function newsArticleLd(input: NewsArticleInput) {
   const url = `${base}${input.path}`;
   const site = { "@type": "Organization", name: SITE.organization.name, url: base };
   const modified = input.dateModified ?? input.datePublished;
+  const language = input.inLanguage?.startsWith("zh") ? "zh" : input.inLanguage === "en" ? "en" : null;
+  const image = input.image.startsWith("/og/") && language ? `${input.image}?lang=${language}` : input.image;
   return {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -132,10 +154,10 @@ export function newsArticleLd(input: NewsArticleInput) {
     url,
     headline: input.headline,
     ...(input.description ? { description: input.description } : {}),
-    image: [input.image.startsWith("http") ? input.image : `${base}${input.image}`],
+    image: [image.startsWith("http") ? image : `${base}${image}`],
     ...(input.datePublished ? { datePublished: input.datePublished } : {}),
     ...(modified ? { dateModified: modified } : {}),
-    inLanguage: input.inLanguage,
+    ...(input.inLanguage ? { inLanguage: input.inLanguage } : {}),
     author: site,
     publisher: { ...site, logo: { "@type": "ImageObject", url: `${base}/icon.png` } },
     ...(input.basedOn ? { isBasedOn: input.basedOn } : {}),

@@ -1,3 +1,4 @@
+import { localePath } from "../app/lib/locale.ts";
 // Verify the real SSR output, not a source-code snapshot: final numbers and names must survive with
 // JavaScript off. Boot persistence is exercised in a sandbox, including unavailable browser storage.
 import assert from "node:assert/strict";
@@ -17,7 +18,7 @@ before(async () => { fixture = await startMotionFixture(); });
 after(async () => { await fixture?.close(); });
 
 async function html(path: string) {
-  const response = await fetch(fixture.origin + path, { headers: { "Accept-Language": "zh-CN" } });
+  const response = await fetch(fixture.origin + localePath(path, "zh"), { headers: { "Accept-Language": "en" } });
   assert.equal(response.status, 200);
   return response.text();
 }
@@ -153,7 +154,7 @@ test("telegraph tape SSR has exactly the first five final headlines, linked once
   links.forEach((link, i) => {
     assert.equal(link.textContent, `热点事件 ${i}`);
     assert.equal(tape.textContent?.split(`热点事件 ${i}`).length, 2);
-    assert.equal(link.getAttribute("href"), `/story/motion-story-${i}`);
+    assert.equal(link.getAttribute("href"), `/zh/story/motion-story-${i}`);
   });
   assert.equal(tape.querySelector("button")?.getAttribute("aria-label"), "重播热点电报");
   assert.equal(tape.textContent?.split("重播").length, 2);
@@ -163,7 +164,7 @@ test("telegraph tape SSR has exactly the first five final headlines, linked once
 
 test("404 flap and caption are final and singular; other errors have neither egg", async () => {
   for (const [path, status] of [["/items/missing", 404], ["/items/broken", 503]] as const) {
-    const response = await fetch(fixture.origin + path, { headers: { "Accept-Language": "zh-CN" } });
+    const response = await fetch(fixture.origin + localePath(path, "zh"), { headers: { "Accept-Language": "en" } });
     assert.equal(response.status, status);
     const { document } = parseHTML(await response.text());
     const board = document.querySelector(".not-found-board");
@@ -318,7 +319,7 @@ test("reading-flow SSR keeps each hot rank, heat, headline and feed string exact
 
 test("empty and error art have one final image, one copy of the accompanying text, no SSR mask", async () => {
   for (const [path, status, title] of [["/", 200, "这个筛选下还没有精选内容"], ["/items/missing", 404, "这里没有内容"]] as const) {
-    const response = await fetch(fixture.origin + path, { headers: { "Accept-Language": "zh-CN" } });
+    const response = await fetch(fixture.origin + localePath(path, "zh"), { headers: { "Accept-Language": "en" } });
     assert.equal(response.status, status);
     const { document } = parseHTML(await response.text());
     const art = document.querySelectorAll(".empty-art");

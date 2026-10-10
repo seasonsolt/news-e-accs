@@ -3,6 +3,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { parseEnv } from "node:util";
+import { assertTimeZone } from "@aihot/contracts/time";
 import { SITE } from "@aihot/industry/site";
 
 export const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
@@ -47,6 +48,8 @@ export const config = {
   indexNowSubmitEnabled: bool("INDEXNOW_SUBMIT_ENABLED", false),
   /** Newsletter mail (confirmation letters and the daily issue) through Resend; off in development and tests. */
   newsletterEnabled: bool("NEWSLETTER_ENABLED", false),
+  /** Opt-in report calendar; existing operations keep their Asia/Shanghai period definitions. */
+  reportTimeZone: assertTimeZone(str("REPORT_TIME_ZONE", "Asia/Shanghai")),
   /** IndexNow key (32 hex characters); without one nothing is submitted and no key file is served. */
   indexNowKey: /^[0-9a-f]{32}$/.test(env.INDEXNOW_KEY ?? "") ? env.INDEXNOW_KEY! : null,
   imgProxyRequireSig: bool("IMG_PROXY_REQUIRE_SIG", true),

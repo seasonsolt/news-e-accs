@@ -9,7 +9,7 @@ export function headers() {
 }
 
 export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
-  return pageMeta({ title: "订阅日报", description: `订阅 ${SITE.name} 日报：每天早上 8 点，一封 AI 圈值得看的几件事。免费，随时一键退订。`, path: "/subscribe", noindex: true }, localeFromMatches(matches ?? []));
+  return pageMeta({ title: "订阅日报", description: `订阅 ${SITE.name} 日报：每天一封 AI 圈值得看的几件事。免费，随时一键退订。`, path: "/subscribe", noindex: true }, localeFromMatches(matches ?? []));
 }
 
 /** The sign-up as a page (from the navigation), and where the confirmation letter's link lands. */

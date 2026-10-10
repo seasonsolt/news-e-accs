@@ -1,9 +1,11 @@
+import { contentHtmlLanguage } from "../../lib/content-language";
+import { Link } from "../../lib/navigation";
 import { ContentLanguage } from "../../components/ContentLanguage";
-import { useTranslate, Text } from "../../lib/i18n";
+import { useLocale, useTranslate, Text } from "../../lib/i18n";
 // One report in a feed. Desktop (≥ 961px): a white card beside the time rail. Mobile: a compact row
 // with a divider, the reason in a grey box. One markup, two presentations, as on the original site.
 import { memo } from "react";
-import { Link } from "react-router";
+
 import { IntentLink } from "../../components/ui/IntentLink";
 import type { GroupInfo, FeedItemSummary, TimelineFilters } from "@aihot/contracts/site";
 import { CATEGORY_LABELS } from "@aihot/contracts/taxonomy";
@@ -25,6 +27,7 @@ export interface FeedItemProps {
 
 export const FeedItem = memo(function FeedItem({ item, group, filters, read = false, onOpen, showTags = false }: FeedItemProps) {
   const tx = useTranslate();
+  const language = contentHtmlLanguage(item, useLocale()) ?? "und";
   const isX = item.channel === "x" && !!item.x;
   const open = () => onOpen?.(item.id);
   const showSources = !!group && (group.additionalSourceCount > 0 || (group.developmentCount <= 1 && group.reportCount > 1));
@@ -55,19 +58,19 @@ export const FeedItem = memo(function FeedItem({ item, group, filters, read = fa
 
       <ContentLanguage content={item} />
       {isX ? (
-        <p className={`mt-2 whitespace-pre-line text-[15px] leading-[1.75] line-clamp-5 lg:line-clamp-4 ${read ? "text-ink-4" : "text-ink"}`}>
+        <p lang={language} className={`mt-2 whitespace-pre-line text-[15px] leading-[1.75] line-clamp-5 lg:line-clamp-4 ${read ? "text-ink-4" : "text-ink"}`}>
           <IntentLink to={`/items/${item.id}`} onClick={open} className="after:absolute after:inset-0 after:content-['']">
             {item.summary ?? item.title}
           </IntentLink>
         </p>
       ) : (
         <>
-          <h3 className={`mt-2 line-clamp-2 text-[17px] font-bold leading-[1.55] lg:line-clamp-none lg:font-[650] ${read ? "text-ink-4" : "text-ink"}`}>
+          <h3 lang={language} className={`mt-2 line-clamp-2 text-[17px] font-bold leading-[1.55] lg:line-clamp-none lg:font-[650] ${read ? "text-ink-4" : "text-ink"}`}>
             <IntentLink to={`/items/${item.id}`} onClick={open} className="after:absolute after:inset-0 after:content-['']">
               {item.title}
             </IntentLink>
           </h3>
-          {item.summary && <p className="mt-1.5 line-clamp-2 text-[14.5px] leading-[1.75] text-ink-3 lg:mt-2 lg:line-clamp-3 lg:text-[15px]">{item.summary}</p>}
+          {item.summary && <p lang={language} className="mt-1.5 line-clamp-2 text-[14.5px] leading-[1.75] text-ink-3 lg:mt-2 lg:line-clamp-3 lg:text-[15px]">{item.summary}</p>}
         </>
       )}
 

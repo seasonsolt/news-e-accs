@@ -74,7 +74,7 @@ async function translateBatch(articleId: string, revision: number, index: number
   const res = await chatJson({
     model,
     purpose: "translate_body",
-    subject: `article:${articleId}@${revision}#${index}`,
+    subject: `article:${articleId}@${revision}:${sha256(JSON.stringify(parts))}:original->zh#${index}`,
     promptVersion: TRANSLATE_PROMPT_VERSION,
     system,
     user: JSON.stringify({ segments: parts }),
@@ -155,11 +155,12 @@ export function unshield(translated: string, s: Shielded): string | null {
 }
 
 export async function translateArticle(articleId: string): Promise<TranslateResult> {
-  const [row] = await sql<{ revision: number; channel: string; language: string | null; body_html: string | null; body_text: string | null; x_post: { text?: string } | null; title: string; selected: boolean; body_mode: string; visibility: string }[]>`
-    SELECT a.revision, p.channel, a.language, a.body_html, a.body_text, a.x_post, p.title, p.selected, p.body_mode, p.visibility
+  const [row] = await sql<{ revision: number; editorial_language: string; channel: string; language: string | null; body_html: string | null; body_text: string | null; x_post: { text?: string } | null; title: string; selected: boolean; body_mode: string; visibility: string }[]>`
+    SELECT a.revision, p.editorial_language, p.channel, a.language, a.body_html, a.body_text, a.x_post, p.title, p.selected, p.body_mode, p.visibility
     FROM publications p JOIN articles a ON a.id = p.article_id WHERE p.article_id = ${articleId}`;
   if (!row) return { articleId, status: "skipped", reason: "not published" };
   const result = (r: Omit<TranslateResult, "articleId" | "revision">): TranslateResult => ({ articleId, revision: row.revision, ...r });
+  if (row.editorial_language === "en") return result({ status: "skipped", reason: "native English bodies use content editions" });
   if (!row.selected || row.visibility !== "public" || row.body_mode !== "full") return result({ status: "skipped", reason: "not a selected full-text item" });
 
   if (row.channel === "x") {
@@ -255,7 +256,7 @@ export async function translateQuotes(opts: { days?: number; limit?: number; bud
       origin = "model";
       try {
         const res = await chatJson({
-          model: await modelFor("translate"), purpose: "translate_quoted", subject: `quote:${r.tweet_id}`, promptVersion: TRANSLATE_PROMPT_VERSION,
+          model: await modelFor("translate"), purpose: "translate_quoted", subject: `quote:${r.tweet_id}@${hash}:original->zh`, promptVersion: TRANSLATE_PROMPT_VERSION,
           system: SYSTEM_POST, user: JSON.stringify({ segments: [r.text] }), schema: Output, temperature: 0.2,
           maxTokens: Math.min(4000, Math.ceil(r.text.length * 1.5) + 200), timeoutMs: 120_000,
         });
@@ -287,7 +288,7 @@ export async function translatePending(opts: { limit?: number; budgetMs?: number
   const rows = await sql<{ article_id: string }[]>`
     SELECT p.article_id FROM publications p JOIN articles a ON a.id = p.article_id
     LEFT JOIN translations tr ON tr.article_id = p.article_id AND tr.lang = 'zh'
-    WHERE p.selected AND p.visibility = 'public' AND p.body_mode = 'full' AND coalesce(a.language, '') <> 'zh'
+    WHERE p.editorial_language = 'zh' AND p.selected AND p.visibility = 'public' AND p.body_mode = 'full' AND coalesce(a.language, '') <> 'zh'
       AND (p.discovered_at > now() - interval '3 days'
            OR EXISTS (SELECT 1 FROM article_revisions r WHERE r.article_id = a.id AND r.revision = a.revision AND r.revision > 1
                       AND r.created_at > now() - interval '3 days'))

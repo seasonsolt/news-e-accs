@@ -2,6 +2,7 @@
 // confirmed contacts (the daily issue). Resend's free tier carries this list, so calls are not receipted
 // like paid providers; idempotency is the caller's claim row plus Resend's Idempotency-Key.
 import { credential } from "../config.ts";
+import type { DistributionLanguage } from "../publication/distribution.ts";
 import { guardedFetch } from "../lib/http-fetch.ts";
 
 export class ResendError extends Error {
@@ -21,12 +22,19 @@ function base(): string {
 
 /** Sender shown to readers; its domain must be verified in Resend. */
 export function newsletterFrom(): string {
-  return credential("integrations", "NEWSLETTER_FROM") ?? "e/acc 日报 <daily@e-acc.ai>";
+  return credential("integrations", "NEWSLETTER_FROM") ?? "e/acc Daily <daily@e-acc.ai>";
 }
 
 /** Whether the credentials the newsletter needs are present (the NEWSLETTER_ENABLED valve is separate). */
-export function resendConfigured(): boolean {
-  return !!credential("integrations", "RESEND_API_KEY") && !!credential("integrations", "RESEND_SEGMENT_ID");
+export function newsletterSegment(language: DistributionLanguage = "zh"): string | null {
+  const segment = credential("integrations", language === "en" ? "RESEND_SEGMENT_ID_EN" : "RESEND_SEGMENT_ID");
+  // Sharing a segment would send both editions to the same readers.
+  const other = credential("integrations", language === "en" ? "RESEND_SEGMENT_ID" : "RESEND_SEGMENT_ID_EN");
+  return segment && segment !== other ? segment : null;
+}
+
+export function resendConfigured(language: DistributionLanguage = "zh"): boolean {
+  return !!credential("integrations", "RESEND_API_KEY") && !!newsletterSegment(language);
 }
 
 async function call(method: string, path: string, body?: unknown, idempotencyKey?: string): Promise<{ status: number; json: any }> {
@@ -65,9 +73,9 @@ export async function sendEmail(mail: { to: string; subject: string; html: strin
  * Makes a confirmed address a subscribed contact in the newsletter segment, whether it is new, was
  * unsubscribed through an earlier issue's link, or is already there (confirming twice is harmless).
  */
-export async function subscribeContact(email: string): Promise<void> {
-  const segment = credential("integrations", "RESEND_SEGMENT_ID");
-  if (!segment) throw new ResendError("RESEND_SEGMENT_ID is not configured", null, false);
+export async function subscribeContact(email: string, language: DistributionLanguage = "zh"): Promise<void> {
+  const segment = newsletterSegment(language);
+  if (!segment) throw new ResendError("Distinct newsletter segment is not configured", null, false);
   const path = `/contacts/${encodeURIComponent(email)}`;
   const updated = await call("PATCH", path, { unsubscribed: false });
   if (updated.status === 404) {
@@ -82,9 +90,9 @@ export async function subscribeContact(email: string): Promise<void> {
 }
 
 /** Creates and sends a broadcast to every subscribed contact in the segment; returns its id. */
-export async function sendBroadcast(issue: { name: string; subject: string; html: string; text: string }): Promise<string> {
-  const segment = credential("integrations", "RESEND_SEGMENT_ID");
-  if (!segment) throw new ResendError("RESEND_SEGMENT_ID is not configured", null, false);
+export async function sendBroadcast(issue: { name: string; subject: string; html: string; text: string }, language: DistributionLanguage = "zh"): Promise<string> {
+  const segment = newsletterSegment(language);
+  if (!segment) throw new ResendError("Distinct newsletter segment is not configured", null, false);
   const r = await call("POST", "/broadcasts", { segment_id: segment, from: newsletterFrom(), subject: issue.subject, html: issue.html, text: issue.text, name: issue.name, send: true });
   if (r.status !== 200 && r.status !== 201) fail("send broadcast", r);
   return String(r.json?.id ?? "");

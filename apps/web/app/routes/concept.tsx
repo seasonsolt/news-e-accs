@@ -1,7 +1,8 @@
+import { publicPath } from "../lib/locale";
+import { Link } from "../lib/navigation";
 // The e/acc concept pages (industry/concepts.ts): English explainers that rank for "e/acc", served at
-// their original addresses with their original titles. The body stays English in either interface
-// language; only the site's frame around it follows the reader's language.
-import { data, Link, useLoaderData } from "react-router";
+// their original addresses with their original titles. They have no Chinese edition.
+import { data, useLoaderData } from "react-router";
 import type { Route } from "./+types/concept";
 import { FEATURES } from "@aihot/industry/features";
 import { SITE } from "@aihot/industry/site";
@@ -18,7 +19,7 @@ export const handle = { englishOriginal: true };
 
 export function loader({ request }: Route.LoaderArgs) {
   // A client-side navigation asks for /<slug>.data; the page's own address is that without the suffix.
-  const slug = new URL(request.url).pathname.replace(/\.data$/, "").replace(/^\/+|\/+$/g, "") as Slug;
+  const slug = publicPath(new URL(request.url).pathname).replace(/^\/+|\/+$/g, "") as Slug;
   if (!FEATURES.eaccConcepts || !(slug in CONCEPT_PAGES)) throw data({ message: "not_found" }, { status: 404 });
   return { slug };
 }
@@ -136,7 +137,7 @@ export default function Concept() {
           </div>
           <aside className="mt-12 border-t border-line pt-6">
             <p className="text-[15px] font-semibold text-ink">Get the e/acc daily briefing</p>
-            <p className="mt-1 text-[14px] leading-relaxed text-ink-3">A few AI stories worth reading, every day at 08:00 (UTC+8): model releases, price changes and compute expansion. Free, with one-click unsubscribe. Briefings currently use Chinese.</p>
+            <p className="mt-1 text-[14px] leading-relaxed text-ink-3">A few AI stories worth reading, every day: model releases, price changes and compute expansion. Free, with one-click unsubscribe. Choose the English or Chinese edition.</p>
             <Link to="/subscribe" className="deck-button is-primary mt-4 inline-flex">Subscribe</Link>
           </aside>
         </article>

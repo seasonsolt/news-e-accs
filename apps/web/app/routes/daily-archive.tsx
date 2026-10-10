@@ -1,6 +1,7 @@
+import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
-import { Link, useLoaderData } from "react-router";
+import { useLoaderData } from "react-router";
 import type { ReportIndexEntry } from "@aihot/contracts/site";
 import { apiGet } from "../lib/api.server";
 import { pageMeta } from "../lib/seo";

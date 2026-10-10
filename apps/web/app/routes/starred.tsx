@@ -1,7 +1,9 @@
+import { contentFetch } from "../lib/content-fetch";
+import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE } from "@aihot/industry/site";
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+
 import { Presence } from "../components/ui/Presence";
 import { pageMeta } from "../lib/seo";
 import { exportBundle, importBundle, removeStar, useStarred, type ImportReport } from "../lib/local-state";
@@ -40,7 +42,7 @@ export default function StarredPage() {
   useEffect(() => {
     if (!mounted || !starredIds) return;
     const controller = new AbortController();
-    fetch(`/api/site/items/availability?ids=${encodeURIComponent(starredIds)}`, { signal: controller.signal })
+    contentFetch(`/api/site/items/availability?ids=${encodeURIComponent(starredIds)}`, { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : {}))
       .then((data) => { if (!controller.signal.aborted) setAvailability(data); })
       .catch(() => {});

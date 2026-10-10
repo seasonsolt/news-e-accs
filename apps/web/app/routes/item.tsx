@@ -1,8 +1,12 @@
+import { hasAlternateEdition } from "../lib/edition-meta.server";
+import { contentHtmlLanguage, bodyLocale } from "../lib/content-language";
+import { localePath, type Locale } from "../lib/locale";
+import { Link, useNavigate } from "../lib/navigation";
 import { ContentLanguage } from "../components/ContentLanguage";
-import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
+import { localeFromMatches, translate, Text, useTranslate, useLocale } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { Link, useLoaderData, useNavigate } from "react-router";
+import { useLoaderData } from "react-router";
 import type { Route } from "./+types/item";
 import type { SiteItemDetail } from "@aihot/contracts/site";
 import { loadOr404 } from "../lib/api.server";
@@ -28,16 +32,18 @@ const PosterSheet = lazy(() => import("../features/item/PosterSheet"));
 
 export async function loader({ params, request }: Route.LoaderArgs) {
   const item = await loadOr404<SiteItemDetail>(`/api/site/items/${encodeURIComponent(params.id)}`, { request, signal: request.signal });
-  return { item };
+  return { item, alternateEdition: await hasAlternateEdition(`/api/site/items/${encodeURIComponent(params.id)}`, item, request) };
 }
 
-export function meta({ matches, loaderData }: Route.MetaArgs) {
-  if (!loaderData) return [{ title: titled("内容不存在") }, { name: "robots", content: "noindex" }];
+export function meta({ matches, loaderData, location }: Route.MetaArgs) {
+  if (!loaderData) return [{ title: titled(translate(localeFromMatches(matches ?? []), "内容不存在")) }, { name: "robots", content: "noindex" }];
   const { item } = loaderData;
   return pageMeta({
+    content: item,
+    alternates: loaderData.alternateEdition,
     title: item.title,
     description: item.summary ?? undefined,
-    path: `/items/${item.id}`,
+    path: location.pathname,
     image: `/og/items/${item.id}.png`,
     type: "article",
     noindex: !item.indexable,
@@ -48,7 +54,7 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
         description: item.summary,
         image: `/og/items/${item.id}.png`,
         datePublished: item.publishedAt ?? item.discoveredAt,
-        inLanguage: item.contentLanguage?.status === "translated" ? "en" : SITE.locale,
+        inLanguage: contentHtmlLanguage(item, localeFromMatches(matches ?? [])),
         basedOn: item.links.original,
         keywords: item.tags,
       }),
@@ -73,8 +79,8 @@ function hostOf(url: string): string {
   }
 }
 
-async function shareOrCopy(item: Pick<SiteItemDetail, "id" | "title">): Promise<"shared" | "copied" | null> {
-  const url = `${siteUrl()}/items/${item.id}`;
+async function shareOrCopy(item: Pick<SiteItemDetail, "id" | "title">, locale: Locale): Promise<"shared" | "copied" | null> {
+  const url = `${siteUrl()}${localePath(`/items/${item.id}`, locale)}`;
   try {
     if (navigator.share && matchMedia("(pointer: coarse)").matches) {
       await navigator.share({ title: item.title, url });
@@ -89,6 +95,7 @@ async function shareOrCopy(item: Pick<SiteItemDetail, "id" | "title">): Promise<
 
 export default function ItemPage() {
   const tx = useTranslate();
+  const locale = useLocale();
   const { item } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const hasTranslation = item.hasTranslation;
@@ -108,12 +115,19 @@ export default function ItemPage() {
     setPosterOpen(true);
   };
   const share = async () => {
-    const r = await shareOrCopy(item);
+    const r = await shareOrCopy(item, locale);
     if (r === "copied") setToast(tx("链接已复制"));
   };
 
   const bodyHtml = lang === "zh" ? (item.body?.zh ?? item.body?.original) : (item.body?.original ?? item.body?.zh);
-  const bodyLabel = !item.body ? null : item.bodyContentLanguage?.status === "translated" ? "Body · English translation" : item.bodyContentLanguage?.status === "original" ? "Body · English edition pending (original content)" : lang === "zh" && item.body.zhKind === "translation" ? tx("正文 · AI 翻译") : lang === "original" && hasTranslation ? tx("正文 · 原文") : tx("正文");
+  const actualBodyLocale = !item.bodyContentLanguage && lang === "zh" && item.body?.zh ? "zh" : bodyLocale(item.bodyContentLanguage, locale, item.language);
+  const bodyLabel = !item.body ? null : item.bodyContentLanguage?.status === "translated" && actualBodyLocale === locale
+    ? locale === "en" ? "Body · English translation" : "正文 · 中文译文"
+    : actualBodyLocale && actualBodyLocale !== locale
+      ? locale === "en" ? "Body · English edition pending (original content)" : "正文 · 中文版本尚未就绪（原文）"
+      : item.bodyContentLanguage && !actualBodyLocale
+        ? locale === "en" ? "Body · Original content (language unverified)" : "正文 · 原文（语言尚未确认）"
+        : lang === "zh" && item.body.zhKind === "translation" ? tx("正文 · AI 翻译") : tx("正文");
   const isX = item.channel === "x" && !!item.x;
   const publishedIso = item.publishedAt ?? item.discoveredAt;
   const summaryOnly = item.readingMode === "summary-only";
@@ -141,7 +155,7 @@ export default function ItemPage() {
             onSelect={async () => {
               close();
               try {
-                await navigator.clipboard.writeText(`${siteUrl()}/items/${item.id}`);
+                await navigator.clipboard.writeText(`${siteUrl()}${localePath(`/items/${item.id}`, locale)}`);
                 setToast(tx("链接已复制"));
               } catch {
                 // clipboard unavailable
@@ -149,7 +163,7 @@ export default function ItemPage() {
             }}
           ><Text value="复制链接" /></MenuItem>
           {item.markdownAvailable && (
-            <MenuItem icon={<IconDownload size={15} />} href={`/items/${item.id}/markdown`} download onSelect={close}><Text value="导出 Markdown" /></MenuItem>
+            <MenuItem icon={<IconDownload size={15} />} href={`/items/${item.id}/markdown?lang=${locale}`} download onSelect={close}><Text value="导出 Markdown" /></MenuItem>
           )}
         </>
       )}
@@ -241,7 +255,7 @@ export default function ItemPage() {
         art={item.category ? CATEGORY_ART[item.category] : undefined}
         label={isX ? item.x!.authorName : item.title}
         kicker={<>{isX ? `${item.x!.authorName} · @${item.x!.handle} · X` : item.source.name} · <time dateTime={publishedIso}>{fullDateTime(publishedIso)}</time></>}
-        title={isX ? item.x!.authorName : item.title}
+        title={<span lang={contentHtmlLanguage(item, locale) ?? "und"}>{isX ? item.x!.authorName : item.title}</span>}
         description={!isX && item.originalTitle ? item.originalTitle : undefined}
       />
       <ContentLanguage content={item} />
@@ -277,7 +291,7 @@ export default function ItemPage() {
         }
       >
         <div className="hidden lg:block 2xl:hidden">{backButton}</div>
-        <article className="pb-6 pt-6 lg:pt-2 2xl:pt-1">
+        <article lang={contentHtmlLanguage(item, locale)} className="pb-6 pt-6 lg:pt-2 2xl:pt-1">
           <div className={`flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-ink-3 2xl:hidden ${isX ? "" : "mb-3"}`}>
             <span className="font-semibold text-ink-2">{isX ? item.x!.authorName : item.source.name}</span>
             {isX && <span>· @{item.x!.handle} · X</span>}
@@ -323,7 +337,7 @@ export default function ItemPage() {
             <section className="mt-9 border-t border-line pt-4 xl:mt-10">
               <div className="mb-6 flex items-center justify-between gap-3">
                 <span className="text-[12px] text-ink-4">{bodyLabel}</span>
-                {hasTranslation && (
+                {hasTranslation && locale === "zh" && (
                   <PillTabs
                     size="xs"
                     layoutId="item-body-lang"
@@ -339,7 +353,7 @@ export default function ItemPage() {
               {hasTranslation && lang === "zh" && !item.body.complete && (
                 <p className="mb-5 rounded-control bg-bg-sunk px-3 py-2 text-[13px] text-ink-3"><Text value="译文尚不完整，完整内容请切换到原文。" /></p>
               )}
-              <div className="prose" dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+              <div className="prose" lang={actualBodyLocale ?? "und"} dangerouslySetInnerHTML={{ __html: bodyHtml }} />
             </section>
           )}
 

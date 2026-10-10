@@ -1,13 +1,13 @@
-import { requestLocale, htmlLanguage, type Locale } from "./lib/locale";
+import { Link } from "./lib/navigation";
+import { requestLocale, localePath, htmlLanguage, type Locale } from "./lib/locale";
 import { Text, translate, useLocale, useTranslate } from "./lib/i18n";
 import { titled } from "./lib/seo";
+import { resolveRedirect } from "@aihot/contracts/http-policy";
+import { data, redirect } from "react-router";
 import { SITE } from "@aihot/industry/site";
 import { FEATURES } from "@aihot/industry/features";
 import type { TimeMachineBounds } from "@aihot/contracts/chronicle";
-import {
-  isRouteErrorResponse, Link, Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData, useLocation, useNavigation, useRouteError, useRouteLoaderData,
-  type ShouldRevalidateFunction,
-} from "react-router";
+import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData, useLocation, useNavigation, useRouteError, useRouteLoaderData, type ShouldRevalidateFunction } from "react-router";
 import { useEffect, useRef, type ReactNode } from "react";
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -29,7 +29,6 @@ export const links: Route.LinksFunction = () => [
   { rel: "icon", type: "image/png", href: "/icon.png" },
   { rel: "apple-touch-icon", href: "/apple-icon.png" },
   { rel: "manifest", href: "/manifest.webmanifest" },
-  { rel: "alternate", type: "application/rss+xml", title: `${SITE.name} — Picks / 精选`, href: "/feed/picks.xml" },
 ];
 
 interface SiteMeta {
@@ -40,14 +39,23 @@ interface SiteMeta {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
+  const url = new URL(request.url);
+  // Router must encode redirects for .data navigation; HTTP redirects cannot carry route data.
+  const rawPath = url.pathname.replace(/\.data$/, "");
+  const path = rawPath.replace(/^\/zh(?=\/|$)/, "") || "/";
+  const decision = resolveRedirect(path, url.search);
+  if (decision) {
+    if (decision.location) throw redirect(localePath(decision.location, requestLocale(request)), { status: decision.status, headers: decision.headers });
+    throw data({ message: "not_found" }, { status: decision.status, headers: decision.headers });
+  }
   const [meta, timeBounds] = await Promise.all([
-    apiGet<{ changelogVersion: string | null }>("/api/site/meta", { signal: request.signal }).catch(() => ({ changelogVersion: null })),
-    FEATURES.timeMachine ? apiGet<TimeMachineBounds>("/api/site/chronicle/bounds", { signal: request.signal }).catch(() => null) : null,
+    apiGet<{ changelogVersion: string | null }>("/api/site/meta", { request, signal: request.signal }).catch(() => ({ changelogVersion: null })),
+    FEATURES.timeMachine ? apiGet<TimeMachineBounds>("/api/site/chronicle/bounds", { request, signal: request.signal }).catch(() => null) : null,
   ]);
   return { locale: requestLocale(request), changelogVersion: meta.changelogVersion, timeBounds } satisfies SiteMeta;
 }
 
-export const shouldRevalidate: ShouldRevalidateFunction = () => false;
+export const shouldRevalidate: ShouldRevalidateFunction = ({ currentUrl, nextUrl }) => requestLocale(new Request(currentUrl)) !== requestLocale(new Request(nextUrl));
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const at = useAt();
@@ -64,6 +72,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {!at && <script dangerouslySetInnerHTML={{ __html: ONBOARDING_BOOT_SCRIPT }} />}
         <Meta />
         <Links />
+        <link rel="alternate" type="application/rss+xml" title={`${SITE.name} — ${locale === "en" ? "Picks" : "精选"}`} href={`/feed/v2${locale === "zh" ? "/zh" : ""}/picks.xml`} />
       </head>
       <body>
         {children}

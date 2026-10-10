@@ -1,6 +1,7 @@
+import { Link } from "../../lib/navigation";
 import { Text, useTranslate } from "../../lib/i18n";
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link } from "react-router";
+
 import type { LbBoardEntry } from "@aihot/contracts/leaderboard";
 import { LB_CONFIDENCE_LABELS } from "@aihot/contracts/leaderboard";
 import { BrandMark } from "./BrandMark";

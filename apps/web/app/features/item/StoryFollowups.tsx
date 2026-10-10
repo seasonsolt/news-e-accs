@@ -1,7 +1,8 @@
+import { Link } from "../../lib/navigation";
 import { contentFetch } from "../../lib/content-fetch";
 import { useTranslate, Text } from "../../lib/i18n";
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+
 import type { StoryFollowup, StoryFollowupsResponse, StoryRef } from "@aihot/contracts/site";
 import { MoreLink } from "../../components/ui/Page";
 import { relativeTime, shortSourceName } from "../../lib/format";
@@ -37,7 +38,7 @@ export function StoryFollowups({ story, currentId }: { story: StoryRef; currentI
     return () => { observer?.disconnect(); controller.abort(); };
   }, [story.publicId, currentId]);
   return <div ref={anchor}>
-    <noscript><a href={`/story/${story.publicId}`}><Text value="查看事件全部后续" /></a></noscript>
+    <noscript><Link to={`/story/${story.publicId}`}><Text value="查看事件全部后续" /></Link></noscript>
     {items && items.length > 0 && <Followups items={items} more={more} story={story} />}
   </div>;
 }

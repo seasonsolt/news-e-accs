@@ -128,8 +128,8 @@ function pageCache(req: import("node:http").IncomingMessage, res: import("node:h
   res.writeHead = ((status: number, messageOrHeaders?: string | import("node:http").OutgoingHttpHeaders, headers?: import("node:http").OutgoingHttpHeaders) => {
     const outgoing = typeof messageOrHeaders === "string" ? headers : messageOrHeaders;
     for (const [name, value] of Object.entries(outgoing ?? {})) if (value !== undefined) res.setHeader(name, value);
-    // Interface language depends on a preference cookie and Accept-Language. Keep personalized
-    // HTML and Router data out of shared caches (including proxies that ignore Vary: Cookie).
+    // URL fixes the edition, but onboarding and other personalized responses have not been
+    // proven safe for shared caching. Keep HTML and Router data no-store for both editions.
     if (publicRead) {
       res.setHeader("Vary", [...new Set(String(res.getHeader("Vary") ?? "").split(",").map((value) => value.trim()).filter(Boolean).concat(["Cookie", "Accept-Language"]))].join(", "));
       res.setHeader("Cache-Control", "private, no-store");
@@ -177,7 +177,7 @@ async function handle(req: import("node:http").IncomingMessage, res: import("nod
   // vouched for is restored to the public host here (the api's MCP endpoint checks it).
   if (edge && PUBLIC_ORIGIN) req.headers["x-forwarded-host"] = new URL(PUBLIC_ORIGIN).host;
 
-  const decision = resolveRedirect(pathname, search);
+  const decision = pathname.endsWith(".data") ? null : resolveRedirect(pathname, search);
   if (decision) {
     for (const [k, v] of Object.entries(decision.headers)) res.setHeader(k, v);
     if (decision.location) res.setHeader("Location", decision.location);

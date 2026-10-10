@@ -1,6 +1,6 @@
 import { type RouteConfig, index, layout, route } from "@react-router/dev/routes";
 
-export default [
+const publicRoutes: RouteConfig = [
   index("routes/home.tsx"),
   route("all", "routes/all.tsx"),
   route("all/search-busy", "routes/search-busy.tsx", { id: "all-search-busy" }),
@@ -43,6 +43,22 @@ export default [
   route("leaderboard/sources/:key", "routes/leaderboard-source.tsx"),
   route("leaderboard/rules", "routes/leaderboard-rules.tsx"),
   route("leaderboard/:slug", "routes/leaderboard-model.tsx"),
+];
+
+function chineseRoutes(entries: Awaited<RouteConfig>): Awaited<RouteConfig> {
+  return entries.filter((entry) => !["what-is-eacc", "eacc-vs-dacc", "eacc-glossary"].includes(entry.path ?? "")).map((entry) => ({
+    ...entry,
+    id: `zh-${entry.id ?? entry.file}`,
+    ...(entry.children ? { children: chineseRoutes(entry.children) } : {}),
+  }));
+}
+
+export default [
+  ...publicRoutes,
+  ...chineseRoutes(publicRoutes).map((entry) => ({ ...entry, index: undefined, path: entry.index ? "zh" : entry.path ? `zh/${entry.path}` : undefined,
+    // Pathless layouts keep their children beneath the language prefix.
+    ...(entry.children ? { children: entry.children.map((child) => ({ ...child, path: child.path ? `zh/${child.path}` : undefined })) } : {}),
+  })),
   route("admin/login", "routes/admin-login.tsx"),
   layout("routes/admin/layout.tsx", { id: "admin-layout" }, [
     route("admin", "routes/admin/index.tsx"),

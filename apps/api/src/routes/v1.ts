@@ -5,9 +5,9 @@ import { V1_CACHE_CONTROL } from "@aihot/contracts/http-policy";
 import { PUBLIC_API_CATEGORY_KEYS, type PublicApiCategoryKey } from "@aihot/contracts/taxonomy";
 import { InvalidCursorError } from "@aihot/backend/lib/cursor";
 import { SearchBusyError } from "@aihot/backend/publication/pool";
+import { distributionDaily, distributionDailies, distributionHot, localizeV1 } from "@aihot/backend/publication/v1";
 import { selectedChanges, selectedSnapshot, SnapshotRequiredError, v1Items } from "@aihot/backend/publication/v1";
 import { resolveStory, v1HotTopics, v1Story } from "@aihot/backend/publication/stories";
-import { v1Dailies, v1Daily } from "@aihot/backend/publication/reports";
 import { codexResetsRecent, codexResetsSnapshot } from "@aihot/backend/monitor/read";
 import { isValidDate } from "@aihot/contracts/time";
 import { applyPublicHeaders, QueryError, sendJsonWithEtag, sendProblem, strictQuery } from "../http/respond.ts";
@@ -56,9 +56,13 @@ export function publicHandler(fn: Handler): Handler {
   };
 }
 
+export function languageParam(value: string | undefined) {
+  return value === undefined ? undefined : enumParam(value, "lang", ["en", "zh"] as const, "en");
+}
+
 export function registerV1(app: FastifyInstance) {
   app.get("/api/v1/items", publicHandler(async (req, reply) => {
-    const q = strictQuery(req, ["mode", "category", "window", "by", "q", "limit", "cursor"]);
+    const q = strictQuery(req, ["mode", "category", "window", "by", "q", "limit", "cursor", "lang"]);
     const mode = enumParam(q.mode, "mode", ["selected", "all"] as const, "selected");
     const window = enumParam(q.window, "window", ["24h", "7d"] as const, "7d");
     const by = enumParam(q.by, "by", ["timeline", "published"] as const, "timeline");
@@ -71,68 +75,73 @@ export function registerV1(app: FastifyInstance) {
     }
     const limit = intParam(q.limit, "limit", 1, 100, 50);
     if (q.cursor !== undefined && q.cursor.length === 0) throw new InvalidCursorError("empty cursor");
-    const body = await v1Items({ mode, window, by, category, q: search, limit, cursor: q.cursor ?? null });
+    const body = await v1Items({ lang: languageParam(q.lang), mode, window, by, category, q: search, limit, cursor: q.cursor ?? null });
     return sendJsonWithEtag(req, reply, body, { etagPrefix: "v1-items", cacheControl: V1_CACHE_CONTROL.items });
   }));
 
   if (FEATURES.codexResetMonitor) registerCodexResets(app);
 
   app.get("/api/v1/hot-topics", publicHandler(async (req, reply) => {
-    strictQuery(req, []);
-    const body = await v1HotTopics();
+    const q = strictQuery(req, ["lang"]);
+    const lang = languageParam(q.lang);
+    const source = await v1HotTopics();
+    const body = await distributionHot(source, lang);
     return sendJsonWithEtag(req, reply, body, { etagPrefix: "v1-hot", cacheControl: V1_CACHE_CONTROL.hotTopics });
   }));
 
   app.get("/api/v1/stories/:publicId", publicHandler(async (req, reply) => {
-    strictQuery(req, []);
+    const q = strictQuery(req, ["lang"]);
+    const lang = languageParam(q.lang);
     const publicId = (req.params as { publicId: string }).publicId;
     if (publicId.length > 128) throw new QueryError("publicId must be a short opaque id.");
     const found = await resolveStory(publicId);
     if (found.kind === "merged") {
-      return reply.code(308).header("Location", `/api/v1/stories/${found.target}`).header("Cache-Control", V1_CACHE_CONTROL.storyByPublicId).send();
+      return reply.code(308).header("Location", `/api/v1/stories/${found.target}${lang ? `?lang=${lang}` : ""}`).header("Cache-Control", V1_CACHE_CONTROL.storyByPublicId).send();
     }
-    const body = found.kind === "found" ? await v1Story(found.storyId) : null;
+    const source = found.kind === "found" ? await v1Story(found.storyId) : null;
+    const body = source ? await localizeV1(source, lang) : null;
     if (!body) return sendProblem(req, reply, { status: 404, code: "not_found", detail: `No public story exists for ${publicId}.`, cacheControl: "public, max-age=60" });
     return sendJsonWithEtag(req, reply, body, { etagPrefix: "v1-story", cacheControl: V1_CACHE_CONTROL.storyByPublicId });
   }));
 
   app.get("/api/v1/dailies", publicHandler(async (req, reply) => {
-    const q = strictQuery(req, ["limit"]);
+    const q = strictQuery(req, ["limit", "lang"]);
     const limit = intParam(q.limit, "limit", 1, 180, 30);
-    return sendJsonWithEtag(req, reply, await v1Dailies(limit), { etagPrefix: "v1-dailies", cacheControl: V1_CACHE_CONTROL.dailies });
+    return sendJsonWithEtag(req, reply, await distributionDailies(limit, languageParam(q.lang)), { etagPrefix: "v1-dailies", cacheControl: V1_CACHE_CONTROL.dailies });
   }));
 
   app.get("/api/v1/dailies/latest", publicHandler(async (req, reply) => {
-    strictQuery(req, []);
-    const body = await v1Daily("latest");
+    const q = strictQuery(req, ["lang"]);
+    const body = await distributionDaily("latest", languageParam(q.lang));
     if (!body) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "No daily report has been published yet." });
     return sendJsonWithEtag(req, reply, body, { etagPrefix: "v1-daily", cacheControl: V1_CACHE_CONTROL.latestDaily });
   }));
 
   app.get("/api/v1/dailies/:date", publicHandler(async (req, reply) => {
-    strictQuery(req, []);
+    const q = strictQuery(req, ["lang"]);
     const date = (req.params as { date: string }).date;
     if (!isValidDate(date)) throw new QueryError("date must be a real YYYY-MM-DD calendar date.");
-    const body = await v1Daily(date);
+    const body = await distributionDaily(date, languageParam(q.lang));
     if (!body) return sendProblem(req, reply, { status: 404, code: "not_found", detail: `No daily report exists for ${date}.`, cacheControl: "public, max-age=60" });
     return sendJsonWithEtag(req, reply, body, { etagPrefix: "v1-daily", cacheControl: V1_CACHE_CONTROL.dailyByDate });
   }));
 
   app.get("/api/v1/selected/snapshot", publicHandler(async (req, reply) => {
-    const q = strictQuery(req, ["fields", "limit", "page"]);
+    const q = strictQuery(req, ["fields", "limit", "page", "lang"]);
     const fields = q.fields === undefined ? undefined : enumParam(q.fields, "fields", ["default", "minimal"] as const, "default");
     const limit = intParam(q.limit, "limit", 1, 1000, 500);
-    const body = await selectedSnapshot({ fields, limit, page: q.page ?? null });
+    const body = await selectedSnapshot({ lang: languageParam(q.lang), fields, limit, page: q.page ?? null });
     // asOf (and the next-page token that carries it) differ per request; the page content does not.
     const etagOf = { fields: body.fields, cursor: body.cursor, count: body.count, hasMore: body.hasMore, items: body.items };
     return sendJsonWithEtag(req, reply, body, { etagPrefix: "v1-snapshot", cacheControl: V1_CACHE_CONTROL.selectedSnapshot, etagOf });
   }));
 
   app.get("/api/v1/selected/changes", publicHandler(async (req, reply) => {
-    const q = strictQuery(req, ["cursor", "limit"]);
+    const q = strictQuery(req, ["cursor", "limit", "lang"]);
     const limit = intParam(q.limit, "limit", 1, 100, 100);
+    const lang = languageParam(q.lang);
     if (!q.cursor) throw new SnapshotRequiredError("missing cursor");
-    const body = await selectedChanges({ cursor: q.cursor, limit });
+    const body = await selectedChanges({ lang, cursor: q.cursor, limit });
     return sendJsonWithEtag(req, reply, body, { etagPrefix: "v1-changes", cacheControl: V1_CACHE_CONTROL.selectedChanges });
   }));
 }

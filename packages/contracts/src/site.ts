@@ -2,6 +2,21 @@
 // but it is served from the same public read layer as v1, RSS and MCP.
 import type { CategoryKey, ChannelKey } from "./taxonomy.ts";
 
+export type EditorialLanguage = "en" | "zh";
+/** sourceLanguage is the editorial source, language is the actual returned copy. */
+export interface ContentLanguage {
+  requested: EditorialLanguage;
+  status: "translated" | "original";
+  sourceLanguage: string;
+  language?: string;
+}
+export interface BodyContentLanguage {
+  requested?: EditorialLanguage;
+  status: "translated" | "original" | "original-english";
+  sourceLanguage?: string;
+  language?: string;
+}
+
 export type SourceKind = "rss" | "web_list" | "json_list" | "x_search" | "mp_account" | "external";
 
 export interface SourceRef {
@@ -38,12 +53,15 @@ export interface XPostView {
 }
 
 export interface StoryRef {
+  editorialLanguage?: EditorialLanguage;
+  contentLanguage?: ContentLanguage;
   publicId: string;
   title: string;
 }
 
 export interface ItemSummary {
-  contentLanguage?: { requested: "en"; status: "translated" | "original"; sourceLanguage: string };
+  editorialLanguage?: EditorialLanguage;
+  contentLanguage?: ContentLanguage;
   id: string;
   revision: number;
   title: string;
@@ -65,7 +83,7 @@ export interface ItemSummary {
 }
 
 /** The fields rendered by a site feed card; full original text lives in the item detail. */
-export interface FeedItemSummary extends Pick<ItemSummary, "id" | "title" | "summary" | "reason" | "publishedAt" | "timelineAt" | "category" | "tags" | "score" | "selected" | "channel"> {
+export interface FeedItemSummary extends Pick<ItemSummary, "editorialLanguage" | "contentLanguage" | "id" | "title" | "summary" | "reason" | "publishedAt" | "timelineAt" | "category" | "tags" | "score" | "selected" | "channel"> {
   source: Pick<SourceRef, "name">;
   x: (Pick<XPostView, "authorName" | "handle" | "avatarUrl" | "avatarSrcSet" | "media"> & {
     quoted: Omit<NonNullable<XPostView["quoted"]>, "url"> | null;
@@ -101,7 +119,8 @@ export interface HotStripEntry {
   itemId: string | null;
   participants: HotParticipant[];
   participantCount: number;
-  contentLanguage?: { requested: "en"; status: "translated" | "original"; sourceLanguage: string };
+  editorialLanguage?: EditorialLanguage;
+  contentLanguage?: ContentLanguage;
 }
 
 export interface TimelineFilters {
@@ -142,6 +161,7 @@ export interface OutlineEntry {
 }
 
 export interface ItemDetail extends ItemSummary {
+  bodyContentLanguage?: BodyContentLanguage;
   readingMode: "full" | "summary-only";
   author: string | null;
   language: string | null;
@@ -155,6 +175,8 @@ export interface ItemDetail extends ItemSummary {
 }
 
 export interface GroupReport {
+  editorialLanguage?: EditorialLanguage;
+  contentLanguage?: ContentLanguage;
   id: string;
   title: string;
   summary: string | null;
@@ -210,6 +232,8 @@ export interface HotParticipant {
 
 
 export interface HotEntryView {
+  editorialLanguage?: EditorialLanguage;
+  contentLanguage?: ContentLanguage;
   rank: number;
   story: StoryRef;
   heat: number;
@@ -249,6 +273,8 @@ export interface HeatPoint {
 }
 
 export interface StoryReportView {
+  editorialLanguage?: EditorialLanguage;
+  contentLanguage?: ContentLanguage;
   id: string;
   title: string;
   summary: string | null;
@@ -269,7 +295,8 @@ export interface StoryFactView {
 }
 
 export interface StoryDetail {
-  contentLanguage?: { requested: "en"; status: "translated" | "original"; sourceLanguage: string };
+  editorialLanguage?: EditorialLanguage;
+  contentLanguage?: ContentLanguage;
   publicId: string;
   title: string;
   status: "active" | "watching" | "settled";
@@ -324,12 +351,15 @@ export interface ReportCitation {
 }
 
 export interface ReportDetail {
-  contentLanguage?: { requested: "en"; status: "translated" | "original"; sourceLanguage: string };
+  editorialLanguage?: EditorialLanguage;
+  contentLanguage?: ContentLanguage;
   kind: ReportKind;
   key: string;
   title: string;
   windowStart: string;
   windowEnd: string;
+  /** Stored issue calendar; historical reports use Asia/Shanghai. */
+  reportTimeZone?: string;
   generatedAt: string;
   revision: number;
   lead: { title: string; leadParagraph: string } | null;
@@ -352,6 +382,8 @@ export interface ReportDetail {
 }
 
 export interface ReportIndexEntry {
+  editorialLanguage?: EditorialLanguage;
+  contentLanguage?: ContentLanguage;
   key: string;
   title: string | null;
   generatedAt: string;
@@ -380,7 +412,7 @@ export interface SiteStats {
 
 /** A reading page transfers one language; the canonical item retains both for exports. */
 export interface SiteItemDetail extends Omit<ItemDetail, "x"> {
-  bodyContentLanguage?: { status: "translated" | "original" | "original-english" };
+  bodyContentLanguage?: BodyContentLanguage;
   x: Omit<XPostView, "text" | "translation"> | null;
   hasTranslation: boolean;
   bodyLanguage: "zh" | "original";

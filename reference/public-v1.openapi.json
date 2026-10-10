@@ -103,6 +103,9 @@
               "type": "string"
             },
             "description": "Opaque, query-bound keyset cursor for the rolling window. It carries no issue time and does not expire on a timer, but the window keeps moving: once the cursor's own anchor has dropped out of the requested 24h or 7d window it is rejected with invalid_cursor, so restart the query from the first page instead of persisting a cursor across days. Older rows may also naturally leave the window between requests. Use selected snapshot + changes for an exact mirror."
+          },
+          {
+            "$ref": "#/components/parameters/Language"
           }
         ],
         "responses": {
@@ -720,6 +723,9 @@
           },
           {
             "$ref": "#/components/parameters/IfNoneMatch"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
           }
         ]
       }
@@ -744,6 +750,9 @@
               "type": "string",
               "maxLength": 128
             }
+          },
+          {
+            "$ref": "#/components/parameters/Language"
           }
         ],
         "responses": {
@@ -933,6 +942,9 @@
               "maximum": 180,
               "default": 30
             }
+          },
+          {
+            "$ref": "#/components/parameters/Language"
           }
         ],
         "responses": {
@@ -1252,6 +1264,9 @@
           },
           {
             "$ref": "#/components/parameters/IfNoneMatch"
+          },
+          {
+            "$ref": "#/components/parameters/Language"
           }
         ]
       }
@@ -1276,6 +1291,9 @@
               "type": "string",
               "format": "date"
             }
+          },
+          {
+            "$ref": "#/components/parameters/Language"
           }
         ],
         "responses": {
@@ -1483,6 +1501,9 @@
               "type": "string"
             },
             "description": "Opaque continuation cursor from the previous response's nextPage. Keep requesting pages while hasMore is true; only after the last page should you use cursor against /api/v1/selected/changes. The sync cursor is identical on every page and always refers to the watermark taken on the first page, so items changed mid-pagination are reconciled by the first changes call."
+          },
+          {
+            "$ref": "#/components/parameters/Language"
           }
         ],
         "responses": {
@@ -1677,6 +1698,9 @@
               "maximum": 100,
               "default": 100
             }
+          },
+          {
+            "$ref": "#/components/parameters/Language"
           }
         ],
         "responses": {
@@ -1863,6 +1887,18 @@
         "description": "Previously received ETag for this exact URL. A match returns 304 without a response body.",
         "schema": {
           "type": "string"
+        }
+      },
+      "Language": {
+        "name": "lang",
+        "in": "query",
+        "description": "Stored target edition. Omitted language preserves the legacy Chinese target; native English fallback is disclosed when Chinese is unavailable. Explicit-language cursors are bound to this choice; keep the same choice throughout pagination/sync. Invalid or repeated language values return 400.",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "en",
+            "zh"
+          ]
         }
       }
     },
@@ -2585,6 +2621,9 @@
           },
           "attribution": {
             "$ref": "#/components/schemas/Attribution"
+          },
+          "contentLanguage": {
+            "$ref": "#/components/schemas/ContentLanguage"
           }
         }
       },
@@ -2662,6 +2701,9 @@
           },
           "selected": {
             "type": "boolean"
+          },
+          "contentLanguage": {
+            "$ref": "#/components/schemas/ContentLanguage"
           }
         }
       },
@@ -2853,6 +2895,9 @@
           "latestAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "contentLanguage": {
+            "$ref": "#/components/schemas/ContentLanguage"
           }
         }
       },
@@ -2936,6 +2981,9 @@
                 "format": "uri"
               }
             }
+          },
+          "contentLanguage": {
+            "$ref": "#/components/schemas/ContentLanguage"
           }
         }
       },
@@ -3068,6 +3116,9 @@
             "items": {
               "$ref": "#/components/schemas/StoryNeighbor"
             }
+          },
+          "contentLanguage": {
+            "$ref": "#/components/schemas/ContentLanguage"
           }
         }
       },
@@ -3153,6 +3204,9 @@
           },
           "attribution": {
             "$ref": "#/components/schemas/Attribution"
+          },
+          "contentLanguage": {
+            "$ref": "#/components/schemas/ContentLanguage"
           }
         }
       },
@@ -3331,6 +3385,13 @@
                 }
               }
             }
+          },
+          "contentLanguage": {
+            "$ref": "#/components/schemas/ContentLanguage"
+          },
+          "reportTimeZone": {
+            "type": "string",
+            "description": "Stored IANA report calendar; historical issues default to Asia/Shanghai."
           }
         }
       },
@@ -3561,6 +3622,37 @@
               }
             }
           }
+        ]
+      },
+      "ContentLanguage": {
+        "type": "object",
+        "description": "Actual returned editorial language is independent of the requested edition. A missing edition may return original prose.",
+        "properties": {
+          "requested": {
+            "type": "string",
+            "enum": [
+              "en",
+              "zh"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "original",
+              "translated"
+            ]
+          },
+          "sourceLanguage": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "requested",
+          "status",
+          "sourceLanguage"
         ]
       }
     }

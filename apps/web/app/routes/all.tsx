@@ -1,6 +1,8 @@
+import { publicPath } from "../lib/locale";
+import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
-import { Link, useLoaderData, useNavigation, useSearchParams } from "react-router";
+import { useLoaderData, useNavigation, useSearchParams } from "react-router";
 import type { Route } from "./+types/all";
 import type { PoolResponse } from "@aihot/contracts/site";
 import { isCategoryKey, isChannelKey } from "@aihot/contracts/taxonomy";
@@ -66,7 +68,7 @@ export default function AllPage() {
   const [params] = useSearchParams();
   const navigation = useNavigation();
   const f = data.filters;
-  const busy = navigation.state === "loading" && navigation.location?.pathname === "/all";
+  const busy = navigation.state === "loading" && navigation.location && publicPath(navigation.location.pathname) === "/all";
   const keep = { channel: f.channel === "all" ? null : f.channel, category: f.category };
   const searchTabHref = (tab: "time" | "relevance") => {
     const sp = new URLSearchParams(params);

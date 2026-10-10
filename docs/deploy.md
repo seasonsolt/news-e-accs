@@ -108,3 +108,39 @@ cd apps/web && NODE_ENV=production node --env-file=../../.env server.ts   # 网�
 三个进程要一直运行，生产环境用 systemd 或 pm2 守护。
 
 开发时用带热更新的方式：`npm run dev:api`、`npm run dev:worker`、`npm run dev:web`。开发时想免登录进后台，在 `.env` 里设 `DEV_AUTH_ROLE=admin`（生产环境会拒绝启动）。
+
+### 英文分发、邮件与报告时区
+
+新版分发使用已存储的 publication edition，不在阅读请求中调用模型。英文 RSS 地址为
+`/feed/v2/picks.xml`、`/feed/v2/full.xml`、`/feed/v2/all.xml`、`/feed/v2/daily.xml`；中文地址在
+`/feed/v2/zh/` 下。分类地址为 `/feed/v2/category/<稳定分类 key>.xml`，全文分类在 `full/category/` 下。
+旧 `/feed/*.xml` 保持兼容。缺失目标语言的稿件暂不进入新版 feed；许可全文缺少目标语言正文时只提供摘要。
+MCP 3.0.0 的工具参数 `lang=en|zh` 默认 `en`，所需 edition 不完整时返回 `edition_unavailable`。
+v1 默认目标语言仍为中文；英文主稿缺少有效中文 edition 时诚实返回实际语言与回退状态，不宣称始终返回中文。显式 `?lang=en|zh` 返回所选 edition 和实际语言状态；快照的语言绑定到分页及增量 cursor。
+分享图 `?lang=en|zh` 默认英文。Markdown helper 默认英文，缺失正文 edition 会明确提示而不是混入其他语言。
+新增 `/feed/v2/` 或其他顶层入口发布前需要核对入口仓库 `edge/src/route.mjs` 的转发配置。
+
+新邮件订阅默认英文，可提交 `language=zh`（JSON 字段）选择中文。既有订阅记录保持中文发送，
+`language_preference_known=false` 仅表示兼容策略，不表示读者已选择中文。再次订阅和重试保持原记录语言；
+目前不通过重复订阅变更偏好，避免同一联系人进入两个分组。需要偏好变更时，应单独实现经过确认的分组迁移流程。
+确认链接和邮件内容使用记录中的语言，退订继续由 Resend 的一键退订链接处理。
+
+`RESEND_SEGMENT_ID` 保留为中文分组；英文必须单独设置 `RESEND_SEGMENT_ID_EN`。两个 ID 必须不同，缺失
+英文分组时不回退到中文分组。启用前必须在 Resend 核对分组成员互斥，旧联系人没有误入英文分组；本迁移不访问或更改
+线上分组。`NEWSLETTER_ENABLED=false` 时不发送任何邮件。英文日报只有完整目标 edition 可用时才领取发送权；
+缺失或混合版本等待之后的定时检查。原 `newsletter_sends` 记录阻止同一期任何语言重发；新增
+`newsletter_language_sends` 按期号和语言去重，`unknown` 状态保留人工核查，不自动重试。后台旧发送统计仍只读
+原发送表，语言分组统计需要后续接入新表。上线英文主稿后必须保留兼容新语言与新 claim 表的回滚版本，不并行运行旧邮件 worker。
+
+`REPORT_TIME_ZONE=Asia/Shanghai` 是兼容默认值。可在明确切换方案完成后选择
+`REPORT_TIME_ZONE=America/New_York`：报告和 newsletter 的 cron 独立使用此 IANA 时区，日报 cron 为本地 08:00，
+周报为周一 10:00，月报为每月 1 日 10:30；夏令时由 IANA 规则处理，不使用固定 UTC-5。
+其他运维、采集、热点与 time-machine 日历继续使用既有北京时间定义。
+
+报告 compose/catch-up 与 schedule 回调已同步采用
+`zonedDate(instant, timeZone)`、`zonedMidnight(date, timeZone)`、`zonedTime(instant, timeZone)` 和
+`zonedDateTime(date, "HH:mm", timeZone)`（contracts/time）；日终仍用 `calendarDayEnd`。
+`calendarDate`/`calendarMidnight` 与对应 zoned 名称兼容。发布时间必须用 `zonedDateTime(date, "08:00", zone)` 转换，
+不能用午夜加 8 小时：纽约 2026-03-08 的 08:00 为 12:00Z，2026-11-01 为 13:00Z。
+不存在的本地时间抛出 RangeError；重复时间确定选择较早的 UTC 时刻。
+新报告保存业务时区，公开 DTO/UI 披露存储的报告日历；旧报告默认为上海，重生成保持原期号/窗口。当前默认行为仍为北京时间；启用美东配置前必须明确切换日期、key 冲突和新旧边界去重方案。语言和报告日历独立，本变量不修改公共 time-machine/新闻历史筛选或提供浏览器本地显示时区。

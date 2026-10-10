@@ -1,3 +1,4 @@
+import { publicPath } from "../../lib/locale.ts";
 // Site navigation, one place for the desktop sidebar, the mobile tab bar and the mobile "更多" page.
 import { withSubject } from "@aihot/industry/site";
 import { FEATURES } from "@aihot/industry/features";
@@ -77,6 +78,7 @@ export const TABBAR: NavItem[] = [
 export const MORE_PATHS = ["/products", "/more", ...(FEATURES.timeMachine ? [] : ["/chronicle"]), "/hot", "/topics", "/starred", "/leaderboard", "/codex-reset", "/agent", "/about", "/changelog", "/feedback", "/terms", "/privacy"];
 
 export function tabIsActive(item: NavItem, pathname: string): boolean {
+  pathname = publicPath(pathname);
   if (item.end) return pathname === item.to;
   if (item.to === "/more") return MORE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   if (item.to === "/daily") return /^\/(daily|weekly|monthly)(\/|$)/.test(pathname);

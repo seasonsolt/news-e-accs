@@ -1,10 +1,12 @@
+import { publicPath } from "../../lib/locale";
+import { Link, useNavigate } from "../../lib/navigation";
 import { Text, useTranslate } from "../../lib/i18n";
 // The time machine's two controls: the brass dial at the foot of the desktop sidebar (always there),
 // and the bar over every page while the site is on a past day (phones reach the dial from 更多).
 import type { TimeMachineBounds } from "@aihot/contracts/chronicle";
 import { dateToYear } from "@aihot/contracts/chronicle";
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router";
+import { useLocation } from "react-router";
 import { IconChevronRight, IconHourglass } from "../../components/icons";
 import { SplitFlapText } from "../motion/react-bits/SplitFlapText";
 import { atLabel, followsTime, stepAt, useAt, withAt } from "./at";
@@ -17,6 +19,7 @@ export function chronicleHref(at: string | null): string {
 
 function travelPath(pathname: string): string {
   // A dated issue is where /daily redirected: a new day must choose its own latest issue.
+  pathname = publicPath(pathname);
   const report = /^\/(daily|weekly|monthly)\/\d/.exec(pathname);
   return report ? `/${report[1]}` : pathname;
 }

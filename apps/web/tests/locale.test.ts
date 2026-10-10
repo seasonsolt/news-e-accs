@@ -1,28 +1,34 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { htmlLanguage, preferredLanguage, requestLocale } from "../app/lib/locale.ts";
+import { htmlLanguage, requestLocale, publicPath, localePath, languageSwitchPath, hasChineseRoute } from "../app/lib/locale.ts";
 import { translate } from "../app/lib/translate.ts";
 
-test("browser language negotiation honors quality, order and supported fallbacks", () => {
-  assert.equal(preferredLanguage(null), "en");
-  assert.equal(preferredLanguage("fr-FR,de;q=0.8"), "en");
-  assert.equal(preferredLanguage("en;q=0.4,zh-TW;q=0.9"), "zh");
-  assert.equal(preferredLanguage("zh-HK,en;q=0.8"), "zh");
-  assert.equal(preferredLanguage("zh;q=0,en;q=0.5"), "en");
-  assert.equal(preferredLanguage("en;q=0,zh;q=0.2"), "zh");
-  assert.equal(preferredLanguage("zh;q=bad,en;q=0.1"), "en");
-  assert.equal(preferredLanguage("zh;q=2,en"), "en");
-  assert.equal(preferredLanguage("en,zh"), "en");
-  assert.equal(preferredLanguage("de,zh;q=0.2"), "zh");
-});
-test("valid manual preference wins; unrelated and malformed cookies do not", () => {
-  const request = (cookie: string) => new Request("https://e-acc.ai/", { headers: { cookie, "accept-language": "zh-CN" } });
-  assert.equal(requestLocale(request("admin_session=secret; eacc_language=en")), "en");
-  assert.equal(requestLocale(request("eacc_language=garbage")), "zh");
-  assert.equal(requestLocale(request("other_eacc_language=en")), "zh");
-  assert.equal(requestLocale(request("eacc_language=%65n")), "zh");
+test("URL language is stable across browser languages and preference cookies, including data requests", () => {
+  for (const path of ["/", "/all", "/weekly.data", "/_.data", "/items/123"]) {
+    for (const language of ["en", "zh-CN", "zh-HK,en;q=0.8"]) {
+      for (const cookie of ["", "eacc_language=zh", "eacc_language=en; admin_session=secret"]) {
+        assert.equal(requestLocale(new Request(`https://e-acc.ai${path}`, { headers: { cookie, "accept-language": language } })), "en");
+      }
+    }
+  }
+  for (const path of ["/zh", "/zh/", "/zh/all", "/zh/weekly.data", "/zh/_.data", "/zh.data"]) {
+    assert.equal(requestLocale(new Request(`https://e-acc.ai${path}`, { headers: { cookie: "eacc_language=en", "accept-language": "en" } })), "zh");
+  }
+  assert.equal(requestLocale(new Request("https://e-acc.ai/admin/login")), "zh");
   assert.equal(htmlLanguage("en"), "en");
   assert.equal(htmlLanguage("zh"), "zh-CN");
+});
+test("edition navigation preserves filters and keeps APIs, admin, assets and English concepts unprefixed", () => {
+  assert.equal(localePath("/all?q=robot&category=model#results", "zh"), "/zh/all?q=robot&category=model#results");
+  assert.equal(localePath("/zh/all?q=robot", "en"), "/all?q=robot");
+  assert.equal(localePath("/", "zh"), "/zh");
+  for (const path of ["/admin", "/api/site/items", "/feed/picks.xml", "/og/items/123.png", "/assets/file.js", "/items/123/markdown", "/what-is-eacc", "/eacc-vs-dacc", "/eacc-glossary", "//external.example/all"]) {
+    assert.equal(localePath(path, "zh"), path);
+  }
+  assert.equal(hasChineseRoute("/what-is-eacc"), false);
+  assert.equal(publicPath("/zh/weekly/2026-W39.data"), "/weekly/2026-W39");
+  assert.equal(publicPath("/zh/_.data"), "/");
+  assert.equal(languageSwitchPath("/zh/all", "?q=robot&page=2&cursor=old&_routes=root&lang=zh", "#results", "en"), "/all?q=robot&page=2#results");
 });
 test("explicit UI copy, placeholders and numeric units translate without changing unknown news", () => {
   assert.equal(translate("en", "精选"), "Picks");
@@ -36,4 +42,11 @@ test("explicit UI copy, placeholders and numeric units translate without changin
   assert.equal(translate("en", "2026 年 9 月 1 日 · 星期二"), "2026-09-01 · Tuesday");
   assert.equal(translate("en", "2026年9月1日 周二"), "2026-09-01 Tue");
   assert.equal(translate("en", "这是数据库中已发布的中文新闻标题"), "这是数据库中已发布的中文新闻标题");
+});
+
+
+test("native English site copy keeps explicit Chinese counterparts and news remains untouched", () => {
+  assert.equal(translate("zh", "Today’s AI news: editorial picks and emerging stories"), "今日 AI 新闻：精选与新兴事件");
+  assert.equal(translate("zh", "Built on open-source software"), "基于开源软件构建");
+  assert.equal(translate("zh", "Native English news headline"), "Native English news headline");
 });

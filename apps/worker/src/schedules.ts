@@ -1,7 +1,7 @@
-// Cron-style schedules (Asia/Shanghai). Each run is recorded in job_runs; missed slots run once.
+// Cron-style schedules (reports use their configured calendar; other jobs use Asia/Shanghai). Each run is recorded in job_runs; missed slots run once.
 import type { PgBoss } from "pg-boss";
 import { FEATURES } from "@aihot/industry/features";
-import { credential } from "@aihot/backend/config";
+import { config, credential } from "@aihot/backend/config";
 import { ensureQueue, recordRun } from "@aihot/backend/jobs/queue";
 import { sweepUnprocessed } from "@aihot/backend/jobs/content";
 import { translateContentPending } from "@aihot/backend/editorial/content-translate";
@@ -13,7 +13,7 @@ import { computeHotRanking, snapshotHeat } from "@aihot/backend/events/hot";
 import { refreshStoryStatuses } from "@aihot/backend/events/digest";
 import { linkRelatedStories } from "@aihot/backend/events/group";
 import { catchUpReports, composeDaily, composeMonthly, composeWeekly } from "@aihot/backend/reports/compose";
-import { addDays, beijingDate, isoWeekLabel } from "@aihot/contracts/time";
+import { addDays, zonedDate, isoWeekLabel } from "@aihot/contracts/time";
 import { runLeaderboardRound } from "@aihot/backend/leaderboard/method/run";
 import { refreshLeaderboard } from "@aihot/backend/leaderboard/fetch/refresh";
 import { monitorTick } from "@aihot/backend/monitor/scan";
@@ -26,11 +26,12 @@ import { backupConfigured, runBackup } from "@aihot/backend/operations/backup";
 import { sourceHealthWeekly } from "@aihot/backend/operations/reports";
 import { markStalePendingReceipts } from "@aihot/backend/providers/receipts";
 import { markStaleDeliveries } from "@aihot/backend/notify/deliver";
-import { sendDailyIssue } from "@aihot/backend/newsletter/issue";
+import { sendDailyIssues } from "@aihot/backend/newsletter/issue";
 
 interface Scheduled {
   name: string;
   cron: string;
+  timeZone?: string;
   run: () => Promise<unknown>;
   missed?: "skip" | "once";
 }
@@ -46,20 +47,21 @@ export const SCHEDULES: Scheduled[] = [
   { name: "hot.snapshot", cron: "2 * * * *", run: () => snapshotHeat() },
   { name: "stories.status", cron: "7 * * * *", run: refreshStoryStatuses },
   { name: "stories.links", cron: "12 * * * *", run: linkRelatedStories },
-  { name: "reports.daily", cron: "0 8 * * *", missed: "once", run: () => composeDaily(beijingDate(Date.now())) },
-  { name: "reports.weekly", cron: "0 10 * * 1", missed: "once", run: () => composeWeekly(isoWeekLabel(addDays(beijingDate(Date.now()), -7))) },
+  { name: "reports.daily", timeZone: config.reportTimeZone, cron: "0 8 * * *", missed: "once", run: () => composeDaily(zonedDate(Date.now(), config.reportTimeZone)) },
+  { name: "reports.weekly", timeZone: config.reportTimeZone, cron: "0 10 * * 1", missed: "once", run: () => composeWeekly(isoWeekLabel(addDays(zonedDate(Date.now(), config.reportTimeZone), -7))) },
   {
     name: "reports.monthly",
+    timeZone: config.reportTimeZone,
     cron: "30 10 1 * *",
     missed: "once",
     run: () => {
-      const [y, m] = beijingDate(Date.now()).split("-").map(Number) as [number, number];
+      const [y, m] = zonedDate(Date.now(), config.reportTimeZone).split("-").map(Number) as [number, number];
       return composeMonthly(m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`);
     },
   },
-  { name: "reports.catch-up", cron: "15 * * * *", run: () => catchUpReports() },
+  { name: "reports.catch-up", timeZone: config.reportTimeZone, cron: "15 * * * *", run: () => catchUpReports() },
   // Mails today's daily report as soon as it exists (claimed once per day; off unless NEWSLETTER_ENABLED).
-  { name: "newsletter.daily", cron: "*/10 8-12 * * *", run: () => sendDailyIssue() },
+  { name: "newsletter.daily", timeZone: config.reportTimeZone, cron: "*/10 8-12 * * *", run: () => sendDailyIssues() },
   { name: "ops.retention", cron: "30 3 * * *", missed: "once", run: () => dailyRetention() },
   { name: "sources.icons", cron: "40 4 * * *", missed: "once", run: () => refreshSourceIcons() },
   // IndexNow for new indexable pages (off unless INDEXNOW_SUBMIT_ENABLED).
@@ -105,7 +107,7 @@ export async function registerSchedules(boss: PgBoss) {
   for (const s of SCHEDULES) {
     const queue = `cron.${s.name}`;
     await ensureQueue(queue, { policy: "singleton", retryLimit: 1, expireInSeconds: 3600 });
-    await boss.schedule(queue, s.cron, {}, { tz: "Asia/Shanghai", missed: s.missed ?? "skip" });
+    await boss.schedule(queue, s.cron, {}, { tz: s.timeZone ?? "Asia/Shanghai", missed: s.missed ?? "skip" });
     // Schedules fire at minute boundaries; a 15 s pickup keeps them on time with a third of the polling.
     await boss.work(queue, { pollingIntervalSeconds: 15 }, async () => recordRun(s.name, s.run));
   }

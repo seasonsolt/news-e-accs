@@ -1,3 +1,4 @@
+import { Link } from "../../lib/navigation";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { Text, useTranslate } from "../../lib/i18n";
 // The deck's top bar on every page: the wordmark, the reading sections, 更多 for the rest, and the
@@ -7,7 +8,7 @@ import { Text, useTranslate } from "../../lib/i18n";
 import { SITE } from "@aihot/industry/site";
 import { FEATURES } from "@aihot/industry/features";
 import { useEffect, useRef } from "react";
-import { Link, useLocation } from "react-router";
+import { useLocation } from "react-router";
 import { Wordmark } from "../Logo";
 import { chronicleHref } from "../../features/chrono/TimeMachine";
 import { useAt, withAt } from "../../features/chrono/at";

@@ -9,6 +9,8 @@ import { displayTags } from "./rules.ts";
 export interface ItemRow {
   id: string;
   revision: number;
+  editorial_language?: "en" | "zh";
+  header_source_language?: string;
   title: string;
   original_title: string | null;
   summary: string | null;
@@ -50,11 +52,21 @@ export interface ItemRow {
   quoted_zh: string | null;
 }
 
+/** Untyped manual prose is unverified; raw title fallback follows only the known original language. */
+export const HEADER_SOURCE_LANGUAGE = sql`CASE
+  WHEN EXISTS (SELECT 1 FROM editorial_overrides eo WHERE eo.article_id=p.article_id AND
+    (nullif(btrim(eo.fields->>'title'),'') IS NOT NULL OR nullif(btrim(eo.fields->>'summary'),'') IS NOT NULL OR
+     (p.selected AND nullif(btrim(eo.fields->>'reason'),'') IS NOT NULL))) THEN 'unknown'
+  WHEN p.analysis_id IS NOT NULL AND coalesce(nullif(btrim(an.title),''),
+    CASE WHEN an.editorial_language='zh' THEN nullif(btrim(an.title_zh),'') END) IS NOT NULL THEN p.editorial_language
+  WHEN p.summary IS NULL AND p.reason IS NULL AND p.title=regexp_replace(btrim(a.title), '\\s+', ' ', 'g') THEN coalesce(a.language,'unknown')
+  ELSE 'unknown' END`;
+
 /** Columns every item listing selects. Internal judgement details never leave this layer. */
 export const ITEM_COLUMNS = sql`
-  p.article_id AS id, p.revision, p.title, p.original_title, p.summary, p.reason, p.category, p.tags, p.score,
+  p.article_id AS id, p.revision, p.editorial_language, ${HEADER_SOURCE_LANGUAGE} AS header_source_language, p.title, p.original_title, p.summary, p.reason, p.category, p.tags, p.score,
   p.selected, p.eligible, p.channel, p.url, p.published_at, p.discovered_at, p.timeline_at, p.sort_at, p.first_party, p.visibility,
-  p.body_mode, p.syndicate, p.indexable, p.visible_after, p.backfill, p.fact_id, p.story_id,
+  CASE WHEN s.site_fulltext THEN p.body_mode ELSE 'summary' END AS body_mode, p.syndicate, p.indexable, p.visible_after, p.backfill, p.fact_id, p.story_id,
   s.id AS source_id, s.name AS source_name, s.kind AS source_kind, s.participation_mode AS source_mode, s.icon_url AS source_icon,
   a.x_post, a.author, a.language,
   st.public_id::text AS story_public_id, st.title AS story_title,
@@ -72,6 +84,7 @@ export const ITEM_FROM = sql`
   FROM publications p
   JOIN sources s ON s.id = p.source_id
   JOIN articles a ON a.id = p.article_id
+  LEFT JOIN analyses an ON an.id = p.analysis_id
   LEFT JOIN stories st ON st.id = p.story_id AND st.merged_into IS NULL
   LEFT JOIN translations tr ON tr.article_id = p.article_id AND tr.lang = 'zh' AND tr.revision >= a.revision
   LEFT JOIN quote_translations qt ON p.channel = 'x' AND qt.tweet_id = substring(a.x_post->'quoted'->>'url' from '/status/([0-9]+)')`;
@@ -155,6 +168,8 @@ export function toItemSummary(row: ItemRow): ItemSummary {
   return {
     id: row.id,
     revision: row.revision,
+    editorialLanguage: row.editorial_language ?? "zh",
+    contentLanguage: { requested: row.editorial_language ?? "zh", status: "original", sourceLanguage: row.header_source_language ?? row.editorial_language ?? "zh", language: row.header_source_language ?? row.editorial_language ?? "zh" },
     title: row.title,
     originalTitle: row.original_title,
     summary: row.summary,
@@ -185,7 +200,7 @@ export function toItemSummary(row: ItemRow): ItemSummary {
 export function toFeedItemSummary(row: ItemRow): FeedItemSummary {
   const item = toItemSummary(row);
   return {
-    id: item.id, title: item.title, summary: item.summary, reason: item.reason,
+    id: item.id, editorialLanguage: item.editorialLanguage, title: item.title, summary: item.summary, reason: item.reason,
     source: { name: item.source.name }, publishedAt: item.publishedAt, timelineAt: item.timelineAt,
     category: item.category, tags: item.tags, score: item.score, selected: item.selected, channel: item.channel,
     x: item.x ? {

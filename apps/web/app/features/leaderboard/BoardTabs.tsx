@@ -1,3 +1,4 @@
+import { publicPath } from "../../lib/locale";
 import { Text, useTranslate } from "../../lib/i18n";
 import { useLocation } from "react-router";
 import { LEADERBOARD_BOARD_LABELS, LEADERBOARD_PUBLIC_BOARDS } from "@aihot/contracts/taxonomy";
@@ -9,7 +10,7 @@ import { useAt, withAt } from "../chrono/at";
 export function BoardTabs() {
   const tx = useTranslate();
   const { pathname } = useLocation();
-  const active = LEADERBOARD_PUBLIC_BOARDS.find((k) => boardHref(k) === pathname) ?? "overall";
+  const active = LEADERBOARD_PUBLIC_BOARDS.find((k) => boardHref(k) === publicPath(pathname)) ?? "overall";
   const at = useAt();
   return (
     <PillTabs

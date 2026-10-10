@@ -113,10 +113,10 @@ async function recallPool(withWaiting = false): Promise<PoolRow[]> {
 async function reportTexts(ids: string[]): Promise<Map<string, string>> {
   if (ids.length === 0) return new Map();
   const rows = await sql<{ id: string; title: string; summary: string | null }[]>`
-    SELECT a.id, coalesce(p.title, an.title_zh, a.title) AS title, coalesce(p.summary, an.summary_zh, '') AS summary
+    SELECT a.id, coalesce(p.title, an.title, a.title) AS title, coalesce(p.summary, an.summary, '') AS summary
     FROM articles a
     LEFT JOIN publications p ON p.article_id = a.id
-    LEFT JOIN LATERAL (SELECT title_zh, summary_zh FROM analyses x WHERE x.article_id = a.id ORDER BY input_revision DESC, id DESC LIMIT 1) an ON true
+    LEFT JOIN LATERAL (SELECT coalesce(title, title_zh) AS title, coalesce(summary, summary_zh) AS summary FROM analyses x WHERE x.article_id = a.id ORDER BY input_revision DESC, id DESC LIMIT 1) an ON true
     WHERE a.id = ANY(${ids})`;
   return new Map(rows.map((r) => [r.id, reportText(r.title, r.summary)]));
 }
@@ -305,18 +305,18 @@ async function judgeSignal(articleId: string, query: ReportView, cands: Candidat
 // Writes
 // ---------------------------------------------------------------------------
 
-async function createStory(db: Db, title: string, at: Date): Promise<number> {
+async function createStory(db: Db, title: string, at: Date, language: "en" | "zh"): Promise<number> {
   const [row] = await db<{ id: number }[]>`
-    INSERT INTO stories (public_id, title, status, first_report_at, latest_at, origin)
-    VALUES (${newUuid()}, ${title}, 'active', ${at}, ${at}, 'model') RETURNING id`;
+    INSERT INTO stories (public_id, title, editorial_language, status, first_report_at, latest_at, origin)
+    VALUES (${newUuid()}, ${title}, ${language}, 'active', ${at}, ${at}, 'model') RETURNING id`;
   return row!.id;
 }
 
-async function createFact(db: Db, storyId: number, title: string, frame: Record<string, any> | null, at: Date): Promise<number> {
+async function createFact(db: Db, storyId: number, title: string, frame: Record<string, any> | null, at: Date, language: "en" | "zh"): Promise<number> {
   const occurred = typeof frame?.occurredAt === "string" && /^\d{4}-\d{2}-\d{2}$/.test(frame.occurredAt) ? new Date(`${frame.occurredAt}T00:00:00+08:00`) : null;
   const [row] = await db<{ id: number }[]>`
-    INSERT INTO facts (public_id, story_id, title, subject, action, object, occurred_at, created_at)
-    VALUES (${`f${newShortId(8)}`}, ${storyId}, ${title}, ${frame?.subject ?? null}, ${frame?.action ?? null}, ${frame?.object ?? null}, ${occurred}, ${at})
+    INSERT INTO facts (public_id, story_id, title, editorial_language, subject, action, object, occurred_at, created_at)
+    VALUES (${`f${newShortId(8)}`}, ${storyId}, ${title}, ${language}, ${frame?.subject ?? null}, ${frame?.action ?? null}, ${frame?.object ?? null}, ${occurred}, ${at})
     RETURNING id`;
   return row!.id;
 }
@@ -637,20 +637,20 @@ async function decide(articleId: string, opts: GroupOptions): Promise<GroupResul
     return { verdict: "kept", factId: kept.factId, storyId: kept.storyId };
   }
 
-  const [an] = await sql<{ relevance: string | null; title_zh: string | null; summary_zh: string | null; output: Record<string, any> | null }[]>`
-    SELECT relevance, title_zh, summary_zh, output FROM analyses WHERE article_id = ${articleId} ORDER BY input_revision DESC, id DESC LIMIT 1`;
+  const [an] = await sql<{ relevance: string | null; title: string | null; summary: string | null; editorial_language: "en" | "zh"; output: Record<string, any> | null }[]>`
+    SELECT relevance, coalesce(title, title_zh) AS title, coalesce(summary, summary_zh) AS summary, editorial_language, output FROM analyses WHERE article_id = ${articleId} ORDER BY input_revision DESC, id DESC LIMIT 1`;
   const frame = (an?.output?.fact ?? null) as Record<string, any> | null;
   if (!an || an.relevance !== "pass") {
     await markGrouped(articleId);
     await publishArticle(articleId);
     return { verdict: "standalone" };
   }
-  const title = an.title_zh || a.title;
+  const title = an.title || a.title;
   const query: ReportView = {
-    title, source: a.source_name, firstParty: a.first_party, at: observedAt, summary: an.summary_zh,
+    title, source: a.source_name, firstParty: a.first_party, at: observedAt, summary: an.summary,
     frame: frame ? { subject: frame.subject, action: frame.action, object: frame.object, occurredAt: frame.occurredAt } : null,
   };
-  const newTitle = String(frame?.title || title).slice(0, 60);
+  const newTitle = String(frame?.title || title).slice(0, 160);
 
   const { sameUrl, referenced } = await relatedPosts(a);
   let verdict: GroupResult["verdict"] = "new-story";
@@ -666,7 +666,7 @@ async function decide(articleId: string, opts: GroupOptions): Promise<GroupResul
     storyId = sameUrl.story_id;
   } else {
     try {
-      cands = await candidateViews(await recallFacts(articleId, reportText(title, an.summary_zh), RECALL_MIN_COSINE, RECALL_TOP_FACTS, referenced));
+      cands = await candidateViews(await recallFacts(articleId, reportText(title, an.summary), RECALL_MIN_COSINE, RECALL_TOP_FACTS, referenced));
       if (cands.length) {
         const judged = await judgeBatch(articleId, query, cands);
         verdicts = judged.verdicts;
@@ -722,8 +722,8 @@ async function decide(articleId: string, opts: GroupOptions): Promise<GroupResul
       await tx`UPDATE articles SET grouped_at = coalesce(grouped_at, now()) WHERE id = ${articleId}`;
       return { manual: late, factId: null, storyId: null };
     }
-    const story = storyId ?? (await createStory(tx, newTitle, observedAt));
-    const fact = factId ?? (await createFact(tx, story, newTitle, frame, observedAt));
+    const story = storyId ?? (await createStory(tx, newTitle, observedAt, an.editorial_language));
+    const fact = factId ?? (await createFact(tx, story, newTitle, frame, observedAt, an.editorial_language));
     const [hasPrimary] = await tx<{ n: number }[]>`SELECT count(*) AS n FROM fact_articles WHERE fact_id = ${fact} AND role = 'primary'`;
     const role = a.first_party && Number(hasPrimary?.n ?? 0) === 0 ? "primary" : "report";
     await tx`INSERT INTO fact_articles (fact_id, article_id, role, created_at) VALUES (${fact}, ${articleId}, ${role}, ${observedAt}) ON CONFLICT (fact_id, article_id) DO NOTHING`;
@@ -763,7 +763,7 @@ async function decide(articleId: string, opts: GroupOptions): Promise<GroupResul
   // A new fact may be what discussion posts of the last hours were about before any report came.
   if (verdict === "new-story" || verdict === "new-fact-in-story") {
     try {
-      result.rematched = await rematchSignals(articleId, reportText(title, an.summary_zh));
+      result.rematched = await rematchSignals(articleId, reportText(title, an.summary));
     } catch (error) {
       result.rematchError = String(error).slice(0, 300);
     }

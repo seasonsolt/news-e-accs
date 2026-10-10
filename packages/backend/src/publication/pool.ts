@@ -141,10 +141,25 @@ export async function loadPool(query: PoolQuery): Promise<PoolResponse> {
     if (query.lang === "en") {
       // Search the current English title/summary as well as the original index. Comparing the
       // stored source segments to publication fields excludes editions invalidated by an edit.
-      const current = sql`ct.source_segments = (
+      const fields = sql`(VALUES (1,'title',p.title),(2,'summary',p.summary),(3,'reason',CASE WHEN p.selected THEN p.reason END))`;
+      // Build the same JSON string as contentSource, including its pre-migration spelling.
+      const segments = sql`(SELECT '[' || coalesce(string_agg('{"key":' || to_json(key)::text || ',"text":' || to_json(text)::text || '}', ',' ORDER BY ordinal),'') || ']'
+        FROM ${fields} fields(ordinal,key,text) WHERE text IS NOT NULL AND btrim(text) <> '')`;
+      const identity = sql`'{"kind":"item","id":' || to_json(p.article_id)::text`;
+      const hash = sql`encode(sha256(convert_to(${identity} || ',"sourceLanguage":' || to_json(p.editorial_language)::text || ',"segments":' || ${segments} || '}', 'UTF8')), 'hex')`;
+      const legacyHash = sql`encode(sha256(convert_to(${identity} || ',"segments":' || ${segments} || '}', 'UTF8')), 'hex')`;
+      const storedSegments = sql`CASE WHEN jsonb_typeof(ct.source_segments)='array' THEN ct.source_segments ELSE '[]'::jsonb END`;
+      const storedTranslations = sql`CASE WHEN jsonb_typeof(ct.translations)='object' THEN ct.translations ELSE '{}'::jsonb END`;
+      const current = sql`ct.source_language=p.editorial_language AND p.editorial_language <> 'en'
+        AND (ct.source_hash=${hash} OR (ct.source_language='zh' AND ct.source_hash=${legacyHash}))
+        AND jsonb_typeof(ct.translations)='object'
+        AND (SELECT count(*) FROM jsonb_object_keys(${storedTranslations}))=jsonb_array_length(${storedSegments})
+        AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements(${storedSegments}) segment
+          WHERE jsonb_typeof(ct.translations->(segment->>'key')) IS DISTINCT FROM 'string'
+            OR btrim(ct.translations->>(segment->>'key'))='' OR ct.translations->>(segment->>'key') ~ '</?[a-zA-Z][^>]*>')
+        AND ct.source_segments = (
         SELECT coalesce(jsonb_agg(jsonb_build_object('key', key, 'text', text) ORDER BY ordinal), '[]'::jsonb)
-        FROM (VALUES (1,'title',p.title),(2,'summary',p.summary),(3,'reason',CASE WHEN p.selected THEN p.reason END)) fields(ordinal,key,text)
-        WHERE text IS NOT NULL AND btrim(text) <> '')`;
+        FROM ${fields} fields(ordinal,key,text) WHERE text IS NOT NULL AND btrim(text) <> '')`;
       const english = sql`lower(coalesce(ct.translations->>'title','') || ' ' || coalesce(ct.translations->>'summary',''))`;
       const matches = terms.reduce((acc,t)=>sql`${acc} AND (p.search_text LIKE ${'%' + t + '%'} OR (${current} AND ${english} LIKE ${'%' + t + '%'}))`,sql`TRUE`);
       const relevance = terms.reduce((acc,t)=>sql`${acc} + CASE WHEN (lower(p.title) LIKE ${'%' + t + '%'} OR (${current} AND lower(coalesce(ct.translations->>'title','')) LIKE ${'%' + t + '%'})) THEN 6 ELSE 1 END`,sql`0`);

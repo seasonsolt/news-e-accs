@@ -1,9 +1,13 @@
+import { hasAlternateEdition } from "../lib/edition-meta.server";
+import { contentHtmlLanguage } from "../lib/content-language";
+import { localePath, requestLocale } from "../lib/locale";
+import { Link } from "../lib/navigation";
 import { ContentLanguage } from "../components/ContentLanguage";
 import { contentUrl } from "../lib/content-fetch";
-import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
+import { localeFromMatches, translate, Text, useTranslate, useLocale } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link, redirect, useLoaderData } from "react-router";
+import { redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/story";
 import type { StoryDetail, StoryReportView } from "@aihot/contracts/site";
 import { data as routeData } from "react-router";
@@ -20,17 +24,20 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const res = await fetch(contentUrl(`${process.env.API_BASE_URL || "http://127.0.0.1:3001"}/api/site/stories/${encodeURIComponent(params.publicId)}`, request), { redirect: "manual", signal: AbortSignal.any([request.signal, AbortSignal.timeout(15000)]) });
   if (res.status === 308) {
     const target = (await res.json()) as { mergedInto: string };
-    throw redirect(`/story/${target.mergedInto}`, 308);
+    throw redirect(localePath(`/story/${target.mergedInto}${new URL(request.url).search}`, requestLocale(request)), 308);
   }
   if (res.status === 404) throw routeData({ message: "not_found" }, { status: 404 });
   if (!res.ok) throw routeData({ message: "unavailable" }, { status: 503 });
-  return { story: (await res.json()) as StoryDetail };
+  const story = (await res.json()) as StoryDetail;
+  return { story, alternateEdition: await hasAlternateEdition(`/api/site/stories/${encodeURIComponent(params.publicId)}`, story, request) };
 }
 
 export function meta({ matches, loaderData }: Route.MetaArgs) {
-  if (!loaderData) return [{ title: titled("事件不存在") }, { name: "robots", content: "noindex" }];
+  if (!loaderData) return [{ title: titled(translate(localeFromMatches(matches ?? []), "事件不存在")) }, { name: "robots", content: "noindex" }];
   const s = loaderData.story;
   return pageMeta({
+    content: s,
+    alternates: loaderData.alternateEdition,
     title: s.title,
     description: (s.digest ?? s.summary)?.slice(0, 150) ?? `${s.sourceCount} 个报道来源 ${s.reportCount} 篇报道，完整时间线与最新进展。`,
     path: `/story/${s.publicId}`,
@@ -44,7 +51,7 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
         image: `/og/stories/${s.publicId}.png`,
         datePublished: s.firstReportAt,
         dateModified: s.latestAt,
-        inLanguage: s.contentLanguage?.status === "translated" ? "en" : SITE.locale,
+        inLanguage: contentHtmlLanguage(s, localeFromMatches(matches ?? [])),
       }),
       breadcrumbLd([{ name: SITE.name, path: "/" }, { name: "热点榜", path: "/hot" }, { name: s.title, path: `/story/${s.publicId}` }]),
     ],
@@ -170,6 +177,7 @@ type Filter = "all" | "official" | "selected";
 
 export default function StoryPage() {
   const tx = useTranslate();
+  const locale = useLocale();
   const { story } = useLoaderData<typeof loader>();
   const [filter, setFilter] = useState<Filter>("all");
   const [order, setOrder] = useState<"desc" | "asc">("desc");
@@ -221,7 +229,7 @@ export default function StoryPage() {
             <span><Text value="热点事件 ·" />{tx(status.label)}</span>
           </nav>
         }
-        title={story.title}
+        title={<span lang={contentHtmlLanguage(story, locale) ?? "und"}>{story.title}</span>}
         description={
           <span className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px]">
             <span className="inline-flex items-center gap-1.5">
@@ -264,7 +272,7 @@ export default function StoryPage() {
           <Panel id={SECTIONS.overview} title={tx("先了解这件事")} right={overview?.label} className="order-1">
             {overview ? (
               <>
-                <p className="whitespace-pre-line text-[15px] leading-[1.85] text-ink-2">{overview.text}</p>
+                <p lang={contentHtmlLanguage(story, locale) ?? "und"} className="whitespace-pre-line text-[15px] leading-[1.85] text-ink-2">{overview.text}</p>
                 {overview.note && (
                   <p className="mt-2 text-[12px] text-ink-4" suppressHydrationWarning>
                     {overview.note}
@@ -341,7 +349,7 @@ export default function StoryPage() {
             ) : (
               days.map(({ day, rows }) => (
                 <div key={day}>
-                  <div className="pb-0.5 pt-5 text-[14px] font-semibold text-ink">{dayLabelOf(day)}</div>
+                  <div className="pb-0.5 pt-5 text-[14px] font-semibold text-ink">{tx(dayLabelOf(day))}</div>
                   <ol>
                     {rows.map((r) => (
                       <TimelineRow key={r.id} r={r} />

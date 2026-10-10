@@ -52,4 +52,29 @@ export function registerFeeds(app: FastifyInstance) {
       }
     });
   }
+  // Explicitly versioned feeds default to English; existing feed addresses remain compatible.
+  for (const lang of ["en", "zh"] as const) {
+    const prefix = `/feed/v2${lang === "zh" ? "/zh" : ""}`;
+    for (const [file, kind] of [["picks", "selected"], ["full", "selected-full"], ["all", "all"]] as const) {
+      app.get(`${prefix}/${file}.xml`, async (req, reply) => {
+        try { return await sendFeed(req, reply, await itemFeed(kind, null, new Date(), lang)); }
+        catch (error) { req.log.error({ err: error }, "feed error"); return feedError(reply); }
+      });
+    }
+    app.get(`${prefix}/daily.xml`, async (req, reply) => {
+      try { return await sendFeed(req, reply, await dailyFeed(lang)); }
+      catch (error) { req.log.error({ err: error }, "feed error"); return feedError(reply); }
+    });
+    for (const full of [false, true]) {
+      app.get(`${prefix}/${full ? "full/" : ""}category/:file`, async (req, reply) => {
+        const file = (req.params as { file: string }).file;
+        const category = file.replace(/\.xml$/, "");
+        if (!file.endsWith(".xml") || !isFeedCategory(category)) return reply.code(404).send("Not found");
+        try { return await sendFeed(req, reply, await itemFeed(full ? "selected-full" : "selected", category, new Date(), lang)); }
+        catch (error) { req.log.error({ err: error }, "feed error"); return feedError(reply); }
+      });
+    }
+    app.options(`${prefix}/*`, async (_req, reply) => reply.code(204).header("Allow", "GET, HEAD, OPTIONS").send());
+  }
+
 }

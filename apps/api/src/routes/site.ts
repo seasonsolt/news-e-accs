@@ -5,6 +5,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { isCategoryKey, isChannelKey, type CategoryKey, type ChannelKey } from "@aihot/contracts/taxonomy";
 import { InvalidCursorError } from "@aihot/backend/lib/cursor";
 import { exportMarkdown, loadItemDetail, siteItemDetail } from "@aihot/backend/publication/detail";
+import { distributionLanguage, EditionUnavailableError } from "@aihot/backend/publication/distribution";
 import { loadPool, SearchBusyError } from "@aihot/backend/publication/pool";
 import { loadTimeline } from "@aihot/backend/publication/timeline";
 import { loadStoryFollowups } from "@aihot/backend/publication/followups";
@@ -55,8 +56,11 @@ export function cacheUntil(reply: FastifyReply, defaultSeconds: number, refreshA
 export function siteHandler(fn: Handler): Handler {
   return async (req, reply) => {
     try {
+      const languages = new URL(req.raw.url ?? req.url, "http://localhost").searchParams.getAll("lang");
+      if (languages.length > 1 || languages.some(lang => lang !== "en" && lang !== "zh")) throw new BadRequest("lang must be a single en or zh value");
       return await fn(req, reply);
     } catch (error) {
+      if (error instanceof EditionUnavailableError) return sendProblem(req, reply, { status: 503, code: "edition_unavailable", detail: "The requested stored edition is not ready", retryAfter: 60 });
       if (error instanceof BadRequest) return sendProblem(req, reply, { status: 400, code: "invalid_request", detail: error.message });
       if (error instanceof InvalidCursorError) return sendProblem(req, reply, { status: 400, code: "invalid_cursor", detail: error.message });
       if (error instanceof SearchBusyError) {
@@ -296,7 +300,9 @@ export function registerSite(app: FastifyInstance) {
   app.get("/items/:id/markdown", siteHandler(async (req, reply) => {
     const id = (req.params as { id: string }).id;
     if (!/^[a-zA-Z0-9_-]{1,80}$/.test(id)) return reply.code(404).type("text/plain; charset=utf-8").send("Not found");
-    const md = await exportMarkdown(id);
+    const requestedLanguage = looseQuery(req).lang;
+    if (requestedLanguage !== undefined && requestedLanguage !== "en" && requestedLanguage !== "zh") throw new BadRequest("lang must be en or zh");
+    const md = await exportMarkdown(id, distributionLanguage(requestedLanguage));
     if (!md) return reply.code(404).header("Cache-Control", "public, max-age=60").type("text/plain; charset=utf-8").send("Not found");
     return reply
       .header("Content-Type", "text/markdown; charset=utf-8")

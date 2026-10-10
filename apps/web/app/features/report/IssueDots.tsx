@@ -1,3 +1,4 @@
+import { useNavigate } from "../../lib/navigation";
 import { Text } from "../../lib/i18n";
 // The dot grid in the masthead's 报眼, beside the date: one dot per day of the month (dailies), week
 // of the year (weeklies) or month (monthlies). Issues that exist are ink dots, this issue is a larger
@@ -5,7 +6,7 @@ import { Text } from "../../lib/i18n";
 // on a canvas in the same dot language as the nameplate; the archive column is the accessible way
 // to the same issues.
 import { useEffect, useMemo, useRef } from "react";
-import { useNavigate } from "react-router";
+
 import type { ReportNavigationEntry, ReportKind } from "@aihot/contracts/site";
 import { KIND_PATH, periodGrid } from "./format";
 

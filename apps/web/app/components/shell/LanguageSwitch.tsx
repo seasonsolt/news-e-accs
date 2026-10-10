@@ -1,21 +1,26 @@
+import { useLocation, useNavigate } from "react-router";
 import { useLocale } from "../../lib/i18n";
-import { LANGUAGE_COOKIE, type Locale } from "../../lib/locale";
+import { hasChineseRoute, languageSwitchPath, LANGUAGE_COOKIE, type Locale } from "../../lib/locale";
 
-/** A manual preference survives navigation and is visible to SSR on the next request. */
+/** Store a navigation preference, then navigate to the requested edition's stable URL. */
 export function LanguageSwitch() {
   const locale = useLocale();
+  const navigate = useNavigate();
+  const { pathname, search, hash } = useLocation();
+  // Explicit language switching uses the raw router, bypassing same-edition navigation.
+  const chineseAvailable = hasChineseRoute(pathname);
   function choose(value: Locale) {
     document.cookie = `${LANGUAGE_COOKIE}=${value}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
-    location.reload();
+    void navigate(languageSwitchPath(pathname, search, hash, value));
   }
   return (
     <label className="inline-flex items-center gap-1.5 text-[12px] text-ink-3">
       <span>{locale === "en" ? "Language" : "语言"}</span>
-      <select aria-label={locale === "en" ? "Interface language" : "界面语言"} value={locale}
+      <select aria-label={locale === "en" ? "Edition language" : "版本语言"} value={locale}
         onChange={(event) => choose(event.target.value as Locale)}
         className="h-[34px] rounded-full border border-line bg-bg-sunk px-2 text-ink">
         <option value="en">English</option>
-        <option value="zh">中文</option>
+        <option value="zh" disabled={!chineseAvailable}>中文</option>
       </select>
     </label>
   );

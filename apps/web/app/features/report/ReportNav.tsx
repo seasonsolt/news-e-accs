@@ -1,8 +1,9 @@
+import { Link } from "../../lib/navigation";
 import { contentFetch } from "../../lib/content-fetch";
 import { Text, useTranslate } from "../../lib/i18n";
 // Moving between reports: the archive card beside the issue on desktop, a tab row and recent-issue chips on phones.
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
+
 import type { ReportNavigationEntry, ReportKind } from "@aihot/contracts/site";
 import { useAt, withAt } from "../chrono/at";
 import { PillTabs } from "../../components/ui/Tabs";
@@ -90,7 +91,7 @@ function ArchiveGroup({ g, kind, current, initiallyOpen }: {
           );
         })}
       </ul>}
-      {kind === "daily" && !open && <noscript><a href="/daily/archive"><Text value="查看完整日报归档" /></a></noscript>}
+      {kind === "daily" && !open && <noscript><Link to="/daily/archive"><Text value="查看完整日报归档" /></Link></noscript>}
     </details>
   );
 }

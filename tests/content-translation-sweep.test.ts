@@ -9,7 +9,7 @@ import { publishArticle } from '@aihot/backend/publication/publish';
 import { currentContent, saveTranslation, priorityContentEntries } from '@aihot/backend/publication/content-language';
 import { paidRequest, completeReceipt } from '@aihot/backend/providers/receipts';
 import { contentSource, type TranslationEntry } from '@aihot/backend/publication/content-source';
-import { runContentTranslationSweep, translateContentPending } from '@aihot/backend/editorial/content-translate';
+import { runContentTranslationSweep, runContentTranslationLanes, translateContentPending } from '@aihot/backend/editorial/content-translate';
 
 // This file owns its test process; close its model valve even when CI leaves the global default
 // enabled for other files' local model stubs. No environment/production config is changed.
@@ -183,3 +183,45 @@ test('the deployed entry point remains disabled with the model valve closed', as
   finally { if (previous === undefined) delete process.env.CONTENT_TRANSLATION_ENABLED; else process.env.CONTENT_TRANSLATION_ENABLED = previous; }
 });
 after(closeDb);
+
+
+test('failed language sweeps keep their cursor and receipts while the other lane proceeds and rotation persists', async () => {
+  const cursor = { en: '', zh: 'body:old' }, calls: string[] = [], rotations: string[] = [];
+  let next: 'en' | 'zh' = 'zh';
+  const deps = {
+    rotate: async (language: 'en' | 'zh') => { next = language; rotations.push(language); },
+    run: async (language: 'en' | 'zh', allowance: number) => runContentTranslationSweep(cursor[language], allowance, {
+      priority: async () => [],
+      scan: async () => ({ entries: [contentSource('item', `${language}-pending`, { title: 'Pending headline', editorialLanguage: language === 'en' ? 'zh' : 'en' }, language)], scanned: 1, nextCursor: null }),
+      translate: async () => { calls.push(language); if (language === 'zh') throw new Error('body translation lost protected links/code/media'); },
+      checkpoint: async value => { cursor[language] = value; },
+    }),
+  };
+  const first = await runContentTranslationLanes(next, 5, deps);
+  assert.match(first.errors!.zh!, /body translation lost/); assert.equal(first.translated, 1);
+  assert.deepEqual(calls, ['zh', 'en']); assert.equal(cursor.zh, 'body:old'); assert.equal(next, 'en');
+  await runContentTranslationLanes(next, 5, deps);
+  assert.deepEqual(calls.slice(2), ['en', 'zh']); assert.deepEqual(rotations, ['en', 'zh']);
+  const unknown = await runContentTranslationLanes('zh', 5, { ...deps, run: async (language, allowance) => {
+    if (language === 'zh') throw new Error('receipt outcome unknown'); return deps.run(language, allowance);
+  } });
+  assert.equal(unknown.translated, 1); assert.match(unknown.errors!.zh!, /receipt outcome unknown/); assert.equal(cursor.zh, 'body:old');
+  assert.equal(config.modelCallsEnabled, false);
+});
+
+
+test('a failed partially completed lane reserves its allowance without exceeding the combined budget', async () => {
+  const allowances: number[] = [];
+  const result = await runContentTranslationLanes('zh',5,{rotate:async()=>{},run:async(language,allowance)=>{
+    allowances.push(allowance);
+    if(language === 'zh') throw new Error('failure after partial progress');
+    return {translated:allowance,scanned:allowance};
+  }});
+  assert.deepEqual(allowances,[3,2]); assert.equal(result.translated,2);
+  const starts: string[] = []; let next: 'en'|'zh' = 'zh';
+  const deps = {rotate:async(language:'en'|'zh')=>{next=language;},run:async(language:'en'|'zh')=>{
+    starts.push(language); if(language === 'zh') throw new Error('still failed'); return {translated:1,scanned:1};
+  }};
+  await runContentTranslationLanes(next,1,deps); await runContentTranslationLanes(next,1,deps);
+  assert.deepEqual(starts,['zh','en'],'a one-entry tick rotates rather than overspending or starving');
+});

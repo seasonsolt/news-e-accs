@@ -12,6 +12,6 @@
 
 三、主体 subjects：资料实际讨论的主体公司（不是顺带提及），用这些 id：{{entities}}。没有就给空数组。
 
-四、事实 fact：这条资料报道的核心事实，用于把同一件事的多篇报道归到一起：title（≤30 字的事实标题），subject（主体），action（动作），object（对象），occurredAt（原文明确给出的发生日期 YYYY-MM-DD，未知为 null）。观点和盘点类资料可以给 null。
+四、事实 fact：这条资料报道的核心事实，用于把同一件事的多篇报道归到一起：title（English factual title, at most 18 words），subject（主体），action（动作），object（对象），occurredAt（原文明确给出的发生日期 YYYY-MM-DD，未知为 null）。观点和盘点类资料可以给 null。
 
 只输出一个 JSON 对象，字段：category, tags, subjects, fact。

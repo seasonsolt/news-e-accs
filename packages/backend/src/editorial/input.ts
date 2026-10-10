@@ -9,6 +9,7 @@ export interface AnalyzeInputArticle {
   id: string;
   revision: number;
   title: string;
+  language?: string | null;
   url: string;
   author: string | null;
   publishedAt: Date | null;
@@ -46,26 +47,23 @@ export function withXArticle(xPost: Record<string, any> | null, article: { title
 
 export async function loadAnalyzeInput(articleId: string): Promise<AnalyzeInputArticle | null> {
   const [row] = await sql<{
-    id: string; revision: number; title: string; url: string; author: string | null; published_at: Date | null; discovered_at: Date;
+    id: string; revision: number; title: string; language: string | null; url: string; author: string | null; published_at: Date | null; discovered_at: Date;
     body_text: string | null; excerpt: string | null; body_status: string; x_post: Record<string, any> | null; x_article: { title?: string; text?: string } | null;
     media: Array<Record<string, any>>; source_name: string; source_kind: string; tier: string; first_party: boolean; source_tags: string[]; owner_entity_id: string | null;
-    config: Record<string, any>; translation_zh: string | null;
+    config: Record<string, any>;
   }[]>`
-    SELECT a.id, a.revision, a.title, a.url, a.author, a.published_at, a.discovered_at, a.body_text, a.excerpt, a.body_status, a.x_post, a.x_article, a.media,
-           s.name AS source_name, s.kind AS source_kind, s.tier, s.first_party, s.tags AS source_tags, s.owner_entity_id, s.config,
-           tr.body_text AS translation_zh
+    SELECT a.id, a.revision, a.title, a.language, a.url, a.author, a.published_at, a.discovered_at, a.body_text, a.excerpt, a.body_status, a.x_post, a.x_article, a.media,
+           s.name AS source_name, s.kind AS source_kind, s.tier, s.first_party, s.tags AS source_tags, s.owner_entity_id, s.config
     FROM articles a JOIN sources s ON s.id = a.source_id
-    LEFT JOIN translations tr ON tr.article_id = a.id AND tr.lang = 'zh' AND tr.revision >= a.revision
     WHERE a.id = ${articleId}`;
   if (!row) return null;
   return {
-    id: row.id, revision: row.revision, title: row.title, url: row.url, author: row.author, publishedAt: row.published_at, discoveredAt: row.discovered_at,
+    id: row.id, revision: row.revision, title: row.title, language: row.language, url: row.url, author: row.author, publishedAt: row.published_at, discoveredAt: row.discovered_at,
     bodyText: row.body_text, excerpt: row.excerpt, bodyStatus: row.body_status, xPost: withXArticle(row.x_post, row.x_article), media: row.media,
     source: {
       name: row.source_name, kind: row.source_kind, tier: row.tier, firstParty: row.first_party, tags: row.source_tags, ownerEntityId: row.owner_entity_id,
       fetchesBody: row.config?.fetchPublicContent === true || !!row.config?.detail || row.source_kind === "web_list",
     },
-    translationZh: row.translation_zh,
   };
 }
 
@@ -87,12 +85,10 @@ export function buildMaterial(a: AnalyzeInputArticle): string {
     lines.push(`作者：${a.xPost.authorName ?? ""} (@${a.xPost.handle ?? ""})`);
     lines.push(`帖子：\n${truncate(String(a.xPost.text ?? a.title), 4000)}`);
     if (a.xPost.quoted?.text) lines.push(`引用的帖子（@${a.xPost.quoted.handle ?? ""}）：\n${truncate(String(a.xPost.quoted.text), 2000)}`);
-    if (a.translationZh) lines.push(`帖子中文译文：\n${truncate(a.translationZh, 4000)}`);
   } else {
     lines.push(`标题：${collapseWhitespace(a.title)}`);
     const body = a.bodyText ?? a.excerpt ?? "";
     lines.push(body ? `正文：\n${truncate(body, 7000)}` : "正文：（无）");
-    if (a.translationZh && !a.bodyText) lines.push(`正文中文译文：\n${truncate(a.translationZh, 5000)}`);
   }
   lines.push(`原文链接：${a.url}`);
   lines.push("</material>");

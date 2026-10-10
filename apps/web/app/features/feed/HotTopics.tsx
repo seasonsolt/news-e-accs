@@ -1,5 +1,6 @@
+import { Link } from "../../lib/navigation";
 import { Text, useTranslate } from "../../lib/i18n";
-import { Link } from "react-router";
+
 import type { HotStripEntry } from "@aihot/contracts/site";
 import { IconArrowRight, IconMinus, IconTrendDown, IconTrendUp } from "../../components/icons";
 import { Faces } from "../hot/Faces";

@@ -1,3 +1,5 @@
+import { hasAlternateEdition } from "../lib/edition-meta.server";
+import { localePath, requestLocale } from "../lib/locale";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { redirect, useLoaderData, useRouteLoaderData } from "react-router";
@@ -6,7 +8,7 @@ import type { ReportDetail, ReportNavigationEntry } from "@aihot/contracts/site"
 import { loadOr404 } from "../lib/api.server";
 import { requestAt, withAt } from "../features/chrono/at";
 import { pageMeta } from "../lib/seo";
-import { beijingDate } from "../lib/format";
+import { zonedDate } from "@aihot/contracts/time";
 import { EmptyState } from "../components/ui/Page";
 import { ReportLayout } from "../features/report/ReportLayout";
 import { ReportDeck, ReportPaper } from "../features/report/ReportPaper";
@@ -23,19 +25,22 @@ export async function loader({ request }: Route.LoaderArgs) {
   const at = requestAt(request);
   if (at) {
     const { key } = await loadOr404<{ key: string | null }>(`/api/site/reports/${kind}/at/${at}`, { request, signal: request.signal });
-    if (key) throw redirect(withAt(`/${kind}/${key}`, at));
+    if (key) throw redirect(localePath(withAt(`/${kind}/${key}`, at), requestLocale(request)));
     // Before the first issue: nothing had been published yet.
-    return { kind, report: null, index: [], today: at, at };
+    return { kind, report: null, index: [], alternateEdition: false, today: at, at };
   }
   const { index, report } = await loadOr404<{ index: ReportNavigationEntry[]; report: ReportDetail | null }>(`/api/site/reports/${kind}/latest-page`, { request, signal: request.signal });
-  return { kind, report, index, today: beijingDate(Date.now()), at };
+  return { kind, report, index, alternateEdition: report ? await hasAlternateEdition(`/api/site/reports/${kind}/${report.key}`, report, request) : false, today: zonedDate(Date.now(), report?.reportTimeZone ?? "Asia/Shanghai"), at };
 }
 
 export function meta({ matches, loaderData, location }: Route.MetaArgs) {
   const kind = loaderData?.kind ?? "daily";
+  const locale = localeFromMatches(matches ?? []);
   return pageMeta({
+    content: loaderData?.report,
+    alternates: !!loaderData?.alternateEdition,
     title: `AI ${KIND_LABEL[kind]}`,
-    description: kind === "daily" ? `${SITE.name} 每天 08:00（北京时间）发布的${withSubject("日报")}。` : kind === "weekly" ? "每周综合回顾。" : "每月盘点。",
+    description: locale === "en" ? kind === "daily" ? `${SITE.name} daily AI briefing, published at 08:00 (${loaderData?.report?.reportTimeZone ?? "Asia/Shanghai"}).` : kind === "weekly" ? "A weekly review." : "A monthly review." : kind === "daily" ? `${SITE.name} 每天 08:00（${loaderData?.report?.reportTimeZone ?? "Asia/Shanghai"}）发布的${withSubject("日报")}。` : kind === "weekly" ? "每周综合回顾。" : "每月盘点。",
     path: location.pathname,
     noindex: !!loaderData?.at,
     image: `/og/pages/${kind}.png`,
@@ -51,7 +56,7 @@ export default function ReportLatestPage() {
   const { kind, report, index, today } = useLoaderData<typeof loader>();
   const root = useRouteLoaderData<typeof rootLoader>("root");
   const dial = FEATURES.timeMachine && <TimeDial bounds={root?.timeBounds ?? null} className="w-[300px] max-w-full" />;
-  const deck = report ? <ReportDeck report={report} index={index} aside={dial} /> : <Deck art="masthead-press" label={`AI ${KIND_LABEL[kind]}`} title={`AI ${KIND_LABEL[kind]}`} aside={dial} />;
+  const deck = report ? <ReportDeck report={report} index={index} aside={dial} /> : <Deck art="masthead-press" label={`AI ${tx(KIND_LABEL[kind])}`} title={`AI ${tx(KIND_LABEL[kind])}`} aside={dial} />;
   return (
     <ReportLayout kind={kind} index={index} current={report?.key ?? null} today={today} deck={deck}>
       {report ? <ReportPaper report={report} index={index} /> : <EmptyState title={tx("还没有发布 AI {0}", KIND_LABEL[kind])}><Text value="第一期发布后会出现在这里。" /></EmptyState>}

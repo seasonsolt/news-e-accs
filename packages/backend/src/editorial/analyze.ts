@@ -3,7 +3,7 @@
 //   1. prefilter: does the material belong to this industry at all (wide recall). Only BLOCK stops an
 //      item; UNKNOWN goes on like PASS (a BLOCK given while material is missing counts as UNKNOWN);
 //   2. score: two independent scores against the source tier's threshold (industry/selection.ts) decide 精选;
-//   3. writing: the Chinese title, summary and reason by the content understanding for selected and
+//   3. writing: the English title, summary and reason by the content understanding for selected and
 //      near-selected items, by the cheaper title/summary prompts for the rest;
 //   4. structure (no reader-facing text): category, tags, subject companies and the fact frame the
 //      topics and the event grouping need; it runs beside the scoring.
@@ -21,8 +21,8 @@ import { buildMaterial, firstImagePart, loadAnalyzeInput, type AnalyzeInputArtic
 import { pageFetchable } from "../content/extract.ts";
 import { shutdownSignal } from "../jobs/queue.ts";
 import {
-  buildArticlePrompt, buildLongTweetPrompt, buildShortTweetPrompt, finalizeCopy, isShortTweetInput, looksZh, MAX_BODY_CHARS, missingEvidence,
-  needsShortTweetTranslation, parseTranslateOutput, PREFILTER_SYSTEM, prefilterUser, translateInputOf, UNDERSTAND_SYSTEM, understandUser,
+  buildArticlePrompt, buildLongTweetPrompt, buildShortTweetPrompt, finalizeCopy, isShortTweetInput, looksEnglish, MAX_BODY_CHARS, missingEvidence,
+  parseWritingOutput, PREFILTER_SYSTEM, prefilterUser, translateInputOf, UNDERSTAND_SYSTEM, understandUser,
   type IdentityGuard,
 } from "./writing.ts";
 import { CATEGORY_BY_ITEM_TYPE, CATEGORY_GUIDE, CATEGORY_TAGS, ENTITIES, ENTITY_TAGS, ITEM_TYPES, normalizeTags, TOPIC_TAGS } from "./vocabulary.ts";
@@ -82,7 +82,7 @@ export function scoreInputTime(at: Date): string {
 
 /**
  * The score input: no source facts (the prompt forbids guessing them), the publication time, the
- * original title (items are scored before any Chinese copy exists) and the whole body.
+ * original title (items are scored before any English copy exists) and the whole body.
  */
 export function buildScoreInput(a: AnalyzeInputArticle): string {
   let body: string;
@@ -111,7 +111,7 @@ const PrefilterSchema = z.object({
 
 const FactSchema = z
   .object({
-    title: z.string().max(80),
+    title: z.string().max(220),
     subject: z.string().max(80).nullable().optional(),
     action: z.string().max(80).nullable().optional(),
     object: z.string().max(160).nullable().optional(),
@@ -132,11 +132,11 @@ const UnderstandSchema = z.object({
   authorRole: z.enum(["principal", "observer", "relayer"]).catch("relayer"),
   tags: z.array(z.string()).max(12).catch([]),
   editorialJudgment: z.string().max(400).catch(""),
-  titleZh: z.string().trim().min(1).max(200),
-  summaryZh: z.string().trim().min(1).max(4000),
+  title: z.string().trim().min(1).max(200),
+  summary: z.string().trim().min(1).max(4000),
 });
 
-const SummarizeSchema = z.object({ titleZh: z.string(), summaryZh: z.string(), bodyZh: z.string() });
+const SummarizeSchema = z.object({ title: z.string(), summary: z.string(), body: z.string() });
 
 const ZH_COUNT = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"];
 
@@ -157,13 +157,13 @@ export interface AnalysisRun {
    * is not scored. `refused`: the model's content filter declined it, so it is not selected.
    */
   scores: { model: string; threshold: number; values: number[]; receiptIds: number[]; reused: boolean; refused?: boolean } | null;
-  /** The reader-facing copy: `understand` (selected, near-selected), `summarize`, `verbatim` (a Chinese short post), `none`. */
+  /** The reader-facing copy: `understand` (selected, near-selected), `summarize`, `verbatim` (an English short post), `none`. */
   writing: {
     kind: "understand" | "summarize" | "verbatim" | "none";
     model: string | null;
-    titleZh: string;
-    summaryZh: string;
-    reasonZh: string | null;
+    title: string;
+    summary: string;
+    reason: string | null;
     tags: string[] | null;
     itemType?: string;
     authorRole?: string;
@@ -256,7 +256,7 @@ async function runStructure(a: AnalyzeInputArticle, opts: StepOpts): Promise<Non
     attemptTag: tagged(opts.attemptTag, "structure"),
   });
   const subjects = [...new Set(res.data.subjects.map((s) => s.trim().toLowerCase()).filter((s) => s in ENTITIES))];
-  return { model: res.model, category: res.data.category, tags: normalizeTags(res.data.tags), subjects, fact: res.data.fact, receiptId: res.receiptId, reused: res.reused };
+  return { model: res.model, category: res.data.category, tags: normalizeTags(res.data.tags), subjects, fact: res.data.fact && looksEnglish(res.data.fact.title) ? res.data.fact : null, receiptId: res.receiptId, reused: res.reused };
 }
 
 /** The content understanding; null when the model's content filter declines the material. */
@@ -288,9 +288,9 @@ async function runUnderstand(a: AnalyzeInputArticle, opts: StepOpts): Promise<An
     }
   }
   const d = res.data;
-  const copy = finalizeCopy(translateInputOf(a), { titleZh: d.titleZh, summaryZh: d.summaryZh });
+  const copy = finalizeCopy(translateInputOf(a), { title: d.title, summary: d.summary });
   return {
-    kind: "understand", model: res.model, titleZh: copy.titleZh, summaryZh: copy.summaryZh, reasonZh: d.editorialJudgment.trim() || null,
+    kind: "understand", model: res.model, title: copy.title, summary: copy.summary, reason: (looksEnglish(d.editorialJudgment) ? d.editorialJudgment.trim() : null),
     tags: normalizeTags(d.tags, { fallbackCategory: CATEGORY_BY_ITEM_TYPE[d.itemType] }), itemType: d.itemType, authorRole: d.authorRole,
     identityGuard: copy.identityGuard, receiptIds: [res.receiptId], reused: res.reused,
   };
@@ -301,11 +301,11 @@ async function runSummarize(a: AnalyzeInputArticle, opts: StepOpts): Promise<Non
   const t = translateInputOf(a);
   const isX = t.sourceKind === "x_search";
   const short = isShortTweetInput(t);
-  const main = collapseWhitespace(t.mainText || t.title);
-  const plain = { reasonZh: null, tags: null, receiptIds: [] as number[], reused: true };
-  // A short post already in Chinese is its own copy, and too little text is not written up from a title.
-  if (short && !needsShortTweetTranslation(main)) return { kind: "verbatim", model: null, titleZh: main, summaryZh: main, ...plain };
-  if (!short && t.text.trim().length < 20) return { kind: "none", model: null, titleZh: looksZh(t.title) ? t.title : "", summaryZh: "", ...plain };
+  const main = (t.mainText || t.title).trim();
+  const plain = { reason: null, tags: null, receiptIds: [] as number[], reused: true };
+  // A short post explicitly in English is its own copy, and too little text is not written up from a title.
+  if (short && a.language === "en" && !t.quotedText && looksEnglish(main)) return { kind: "verbatim", model: null, title: collapseWhitespace(main), summary: main, ...plain };
+  if (!short && t.text.trim().length < 20) return { kind: "none", model: null, title: looksEnglish(t.title) ? t.title : "", summary: "", ...plain };
   const model = await modelFor("summarize");
   checkAnalysisRunning();
   const res = await chatJson({
@@ -317,19 +317,19 @@ async function runSummarize(a: AnalyzeInputArticle, opts: StepOpts): Promise<Non
     user: short ? buildShortTweetPrompt(t) : isX ? buildLongTweetPrompt(t) : buildArticlePrompt(t),
     schema: SummarizeSchema,
     json: false,
-    parse: parseTranslateOutput,
+    parse: parseWritingOutput,
     temperature: 0.2,
     maxTokens: 2048,
     attemptTag: tagged(opts.attemptTag, "summarize"),
   });
   const p = res.data;
   const draft = short
-    ? { titleZh: p.titleZh || (looksZh(main) ? main : ""), summaryZh: p.bodyZh || p.summaryZh }
+    ? { title: p.title || (looksEnglish(main) ? main : ""), summary: p.body || p.summary }
     : isX
-      ? { titleZh: p.titleZh, summaryZh: p.summaryZh || p.bodyZh }
-      : { titleZh: p.titleZh || (looksZh(t.title) ? t.title : ""), summaryZh: p.summaryZh };
+      ? { title: p.title, summary: p.summary || p.body }
+      : { title: p.title || (looksEnglish(t.title) ? t.title : ""), summary: p.summary };
   const copy = finalizeCopy(t, draft);
-  return { kind: "summarize", model: res.model, titleZh: copy.titleZh, summaryZh: copy.summaryZh, reasonZh: null, tags: null, identityGuard: copy.identityGuard, receiptIds: [res.receiptId], reused: res.reused };
+  return { kind: "summarize", model: res.model, title: copy.title, summary: copy.summary, reason: null, tags: null, identityGuard: copy.identityGuard, receiptIds: [res.receiptId], reused: res.reused };
 }
 
 /**
@@ -366,11 +366,11 @@ export async function runAnalysis(a: AnalyzeInputArticle, opts: StepOpts & { sta
 /** One judgement from the steps: the selection rule, the reader-facing copy and the structure. */
 export function normalizeAnalysis(run: AnalysisRun) {
   const label = run.prefilter.label;
-  const titleZh = collapseWhitespace(run.writing?.titleZh ?? "");
-  const summaryZh = (run.writing?.summaryZh ?? "").trim();
-  // Past the prefilter (PASS or UNKNOWN) an item is relevant, but without a usable Chinese title and
+  const title = collapseWhitespace(run.writing?.title ?? "");
+  const summary = (run.writing?.summary ?? "").trim();
+  // Past the prefilter (PASS or UNKNOWN) an item is relevant, but without a usable English title and
   // summary it cannot be published: it waits.
-  const relevance = label === "BLOCK" ? "block" : run.writing && (!titleZh || !summaryZh) ? "unknown" : "pass";
+  const relevance = label === "BLOCK" ? "block" : run.writing && (!title || !summary) ? "unknown" : "pass";
   // Selected when the two scores add up to twice the tier threshold; the mean, floored,
   // is the score shown (it never decides a half point on its own).
   const values = run.scores && !run.scores.refused ? run.scores.values : null;
@@ -385,6 +385,7 @@ export function normalizeAnalysis(run: AnalysisRun) {
     if (display && !tags.includes(display)) tags.push(display);
   }
   return {
+    editorialLanguage: "en" as const,
     relevance,
     selected,
     score,
@@ -395,9 +396,9 @@ export function normalizeAnalysis(run: AnalysisRun) {
     category: run.structure?.category ?? null,
     tags,
     subjects,
-    titleZh,
-    summaryZh,
-    reasonZh: run.writing?.reasonZh ?? null,
+    title,
+    summary,
+    reason: run.writing?.reason ?? null,
     fact: run.structure?.fact ?? null,
   };
 }
@@ -439,9 +440,9 @@ export async function analyzeArticle(articleId: string, opts: StepOpts = {}): Pr
     const stale = !current || current.revision !== input.revision;
     const [row] = await tx<{ id: number }[]>`
       INSERT INTO analyses (article_id, input_revision, origin, model, prompt_version, receipt_ids, relevance, category, tags,
-        subjects, title_zh, summary_zh, reason_zh, score, selected, output)
+        subjects, editorial_language, title, summary, reason, score, selected, output)
       VALUES (${articleId}, ${input.revision}, 'model', ${w?.model ?? run.prefilter.model}, ${ANALYZE_PROMPT_VERSION}, ${receiptIds},
-        ${out.relevance}, ${out.category}, ${out.tags}, ${out.subjects}, ${out.titleZh}, ${out.summaryZh}, ${out.reasonZh},
+        ${out.relevance}, ${out.category}, ${out.tags}, ${out.subjects}, 'en', ${out.title}, ${out.summary}, ${out.reason},
         ${out.score}, ${out.selected}, ${tx.json(detail as never)})
       RETURNING id`;
     for (const id of receiptIds) await completeReceipt(tx, id);

@@ -1,6 +1,7 @@
-import { useTranslate } from "../../lib/i18n";
+import { Link } from "../../lib/navigation";
+import { useLocale, useTranslate } from "../../lib/i18n";
 import type { ReactNode } from "react";
-import { Link } from "react-router";
+
 import type { CopyDocument, RenderedCopy } from "../../lib/markdown";
 import { ArticleLayout, RailSection } from "../../components/ui/Page";
 import { Deck } from "../../components/shell/Deck";
@@ -11,6 +12,7 @@ import { Deck } from "../../components/shell/Deck";
  */
 export function CopyPage({ doc, rendered, eyebrow, footer, aside }: { doc: CopyDocument; rendered: RenderedCopy; eyebrow?: ReactNode; footer?: ReactNode; aside?: ReactNode }) {
   const tx = useTranslate();
+  const locale = useLocale();
   const facts = (["版本", "生效日期", "运营主体", "备案号"] as const).filter((k) => doc.meta[k]);
   const info = facts.length > 0 && (
     <RailSection title={tx("文档信息")}>
@@ -42,6 +44,7 @@ export function CopyPage({ doc, rendered, eyebrow, footer, aside }: { doc: CopyD
   return (
     <>
     <Deck compact label={tx(doc.title)} kicker={eyebrow} title={tx(doc.title)} description={doc.intro || undefined} />
+    {locale === "en" && <p className="mt-4 text-[13px] text-ink-3" lang="en">This document is available in Chinese. An English version has not been published.</p>}
     <div className="h-6" />
     <ArticleLayout
       left={

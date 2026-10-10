@@ -1,3 +1,4 @@
+import { publicPath } from "../../lib/locale.ts";
 // The time machine's place in the URL: `?at=YYYY-MM-DD` (a Beijing day) puts the whole site on that
 // day. It lives in the address, never in a cookie, so a slice is server-rendered, shareable and
 // cached as its own page (tests/cache.test.ts keeps public pages cookie-free).
@@ -24,6 +25,7 @@ export function useAt(): string | null {
 
 /** Pages whose content follows the time machine; the rest show the present beneath its bar. */
 export function followsTime(pathname: string): boolean {
+  pathname = publicPath(pathname);
   return pathname === "/" || pathname === "/hot" || /^\/(leaderboard|daily|weekly|monthly)(\/|$)/.test(pathname);
 }
 

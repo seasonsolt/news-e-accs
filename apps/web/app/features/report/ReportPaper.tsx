@@ -1,5 +1,7 @@
+import { contentHtmlLanguage } from "../../lib/content-language";
+import { Link } from "../../lib/navigation";
 import { ContentLanguage } from "../../components/ContentLanguage";
-import { Text, useTranslate } from "../../lib/i18n";
+import { Text, useLocale, useTranslate } from "../../lib/i18n";
 // One report with a newspaper's structure in the site's own look: its deck (ReportDeck: the issue, its
 // headline and figures, rendered by the route above the layout), the front page (the lead, today's
 // highlights and the page index), then one page per section in two columns, the neighbouring issues
@@ -9,7 +11,7 @@ import { Text, useTranslate } from "../../lib/i18n";
 // sit in rows of two whose rules run across the page, each story as tall as its neighbour.
 import { SITE } from "@aihot/industry/site";
 import { useState, type ReactNode } from "react";
-import { Link } from "react-router";
+
 import type { ReportCitation, ReportDetail, ReportNavigationEntry } from "@aihot/contracts/site";
 import { shortSourceName } from "../../lib/format";
 import { Badge } from "../../components/ui/Badge";
@@ -37,7 +39,7 @@ export function ReportDeck({ report, index, aside }: { report: ReportDetail; ind
       label={`AI ${tx(KIND_LABEL[report.kind])}`}
       kicker={
         <>
-          AI <Text value={KIND_LABEL[report.kind]} /> · <span className="num">{tx(dateLine(report.kind, report.key))}</span>
+          AI <Text value={KIND_LABEL[report.kind]} /> · {report.reportTimeZone ?? "Asia/Shanghai"} · <span className="num">{tx(dateLine(report.kind, report.key))}</span>
           {issue && <><Text value="· 第" />{issue}<Text value="期" /></>}<Text value="· 约" />{report.readingMinutes}<Text value="分钟读完" /></>
       }
       title={tx(headline(report.kind, report.key, count))}
@@ -345,12 +347,13 @@ function History({ report, index }: { report: ReportDetail; index: ReportNavigat
 
 export function ReportPaper({ report, index }: { report: ReportDetail; index: ReportNavigationEntry[] }) {
   const tx = useTranslate();
+  const locale = useLocale();
   const daily = report.kind === "daily";
   const leadStory = leadStoryOf(report);
   const pages = pagesOf(report, leadStory);
   const count = pages.reduce((sum, p) => sum + p.items.length, 0) + (leadStory ? 1 : 0);
   return (
-    <article className="@container">
+    <article lang={contentHtmlLanguage(report, locale) ?? "und"} className="@container">
       <ContentLanguage content={report} />
       <ReadingGear />
       {count === 0 && report.flashes.length === 0 ? (

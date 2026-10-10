@@ -1,6 +1,7 @@
+import { Link } from "../../lib/navigation";
 import { useTranslate } from "../../lib/i18n";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
-import { Link } from "react-router";
+
 import { IntentLink } from "./IntentLink";
 import { useEntrance } from "../../lib/hydration";
 import { useMotionAllowed } from "../../features/motion/preferences";

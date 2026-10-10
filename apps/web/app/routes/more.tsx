@@ -1,8 +1,9 @@
-import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
+import { Link } from "../lib/navigation";
+import { localeFromMatches, Text, useLocale, useTranslate } from "../lib/i18n";
 import { SITE } from "@aihot/industry/site";
 import { FEATURES } from "@aihot/industry/features";
 import type { ReactNode } from "react";
-import { Link, useRouteLoaderData } from "react-router";
+import { useRouteLoaderData } from "react-router";
 import type { loader as rootLoader } from "../root";
 import { useChangelogDot } from "../components/shell/changelog";
 import { pageMeta } from "../lib/seo";
@@ -66,6 +67,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 
 export default function MorePage() {
   const tx = useTranslate();
+  const locale = useLocale();
   const at = useAt();
   const root = useRouteLoaderData<typeof rootLoader>("root");
   const changelogDot = useChangelogDot(root?.changelogVersion ?? null);
@@ -113,7 +115,7 @@ export default function MorePage() {
       <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[12px] text-ink-4">
         <Link to="/terms" className="hover:text-ink-2"><Text value="使用规则" /></Link>
         <Link to="/privacy" className="hover:text-ink-2"><Text value="隐私说明" /></Link>
-        <a href="/feed/picks.xml" className="hover:text-ink-2">RSS</a>
+        <a href={`/feed/v2${locale === "zh" ? "/zh" : ""}/picks.xml`} className="hover:text-ink-2">RSS</a>
         {SITE.icp && <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-ink-2">{SITE.icp}</a>}
       </div>
     </div>

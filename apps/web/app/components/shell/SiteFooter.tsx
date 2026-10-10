@@ -1,14 +1,16 @@
+import { Link } from "../../lib/navigation";
 import { LanguageSwitch } from "./LanguageSwitch";
-import { Text, useTranslate } from "../../lib/i18n";
+import { Text, useLocale, useTranslate } from "../../lib/i18n";
 // The foot of every page: preferences (appearance, motion), the rules and feeds, and the ICP number.
 // These lived at the foot of the sidebar before the deck's top bar replaced it.
 import { SITE } from "@aihot/industry/site";
-import { Link } from "react-router";
+
 import { ThemeSwitch } from "./ThemeSwitch";
 import { MotionSwitch } from "../../features/motion/MotionSwitch";
 
 export function SiteFooter() {
   const tx = useTranslate();
+  const locale = useLocale();
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
@@ -16,7 +18,7 @@ export function SiteFooter() {
           {SITE.footerNote && <span>{tx(SITE.footerNote)}</span>}
           <Link to="/terms" className="hover:text-ink-2"><Text value="使用规则" /></Link>
           <Link to="/privacy" className="hover:text-ink-2"><Text value="隐私说明" /></Link>
-          <a href="/feed/picks.xml" className="hover:text-ink-2">RSS</a>
+          <a href={`/feed/v2${locale === "zh" ? "/zh" : ""}/picks.xml`} className="hover:text-ink-2">RSS</a>
           {SITE.icp && (
             <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-ink-2">
               {SITE.icp}

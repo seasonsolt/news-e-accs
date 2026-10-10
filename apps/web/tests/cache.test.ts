@@ -1,3 +1,4 @@
+import { UNSAFE_decodeViaTurboStream } from "react-router";
 // Run after `npm run build -w @aihot/web`. Real production server/router, synthetic HTTP API only.
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -30,6 +31,10 @@ function jsonLd(html: string): Array<Record<string, unknown>> {
   return [...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].flatMap((m) => [JSON.parse(m[1]!)].flat());
 }
 
+function alternate(document: ReturnType<typeof parseHTML>["document"], language: string) {
+  return [...document.querySelectorAll('link[rel="alternate"]')].find((link) => (link.getAttribute("hrefLang") ?? link.getAttribute("hreflang")) === language);
+}
+
 let web: ChildProcess;
 let origin: string;
 let logs = "";
@@ -37,9 +42,11 @@ let deadline: number;
 let refreshAt: string;
 let metaDelayMs = 0;
 const apiCookies: Array<string | undefined> = [];
+const apiRequests: string[] = [];
 const api = createServer((req, res) => {
   const url = new URL(req.url!, "http://api.local");
   apiCookies.push(req.headers.cookie);
+  apiRequests.push(url.pathname + url.search);
   res.setHeader("Content-Type", "application/json");
   if (url.pathname === "/api/site/meta") {
     const respond = () => res.end(JSON.stringify({ changelogVersion: "2026-09-28T12:00" }));
@@ -59,8 +66,37 @@ const api = createServer((req, res) => {
   if (url.pathname === "/api/site/cache-example") { res.setHeader("Cache-Control", "public, max-age=30, s-maxage=60"); return res.end("{}"); }
   if (url.pathname === "/feed/picks.xml") { res.setHeader("Content-Type", "application/rss+xml"); res.setHeader("Cache-Control", "public, max-age=60"); return res.end("<rss/>"); }
   if (url.pathname === "/api/site/echo-client") return res.end(JSON.stringify({ forwarded: req.headers["x-forwarded-for"], real: req.headers["x-real-ip"] }));
+  if (/^\/api\/site\/items\/(native-en|legacy-zh|bilingual|actual-en|foreign-body|unknown-body)(?:\/original)?$/.test(url.pathname)) {
+    const id = url.pathname.split("/")[4]!;
+    const zh = url.searchParams.get("lang") === "zh";
+    const bilingual = id === "bilingual";
+    const legacy = id === "legacy-zh";
+    const actual = legacy ? "zh" : bilingual && zh ? "zh" : "en";
+    return res.end(JSON.stringify({ ...seoItem, id, title: actual === "zh" ? "中文标题" : "Native English headline", summary: actual === "zh" ? "中文摘要" : "English summary", editorialLanguage: legacy || id === "actual-en" ? "zh" : "en", language: "en",
+      readingMode: "full", body: { original: id === "foreign-body" ? "<p>Texte original français autorisé.</p>" : "<p>Permitted original English body.</p>", zh: null, zhKind: null, complete: true }, bodyLanguage: "original",
+      contentLanguage: { requested: zh ? "zh" : "en", status: bilingual && zh ? "translated" : "original", sourceLanguage: legacy || id === "actual-en" ? "zh" : "en", language: actual },
+      bodyContentLanguage: { requested: zh ? "zh" : "en", status: id === "foreign-body" || id === "unknown-body" ? "original" : "original-english", sourceLanguage: id === "foreign-body" ? "fr" : "en", language: id === "foreign-body" ? "fr" : id === "unknown-body" ? "unknown" : "en" },
+    }));
+  }
+  if (url.pathname === "/api/site/pool") return res.end(JSON.stringify({ filters: { channel: "all", category: null, tag: null, q: url.searchParams.get("q"), tab: "latest" }, items: [], page: 1, pageCount: 1, total: 0 }));
+  if (url.pathname === "/api/site/topics") return res.end(JSON.stringify({ topics: [{ slug: "robots", name: "Robots", definition: "Robotics news", group: "field", total: 40, recent: 0, indexable: true, latestAt: null }] }));
+  if (url.pathname === "/api/site/topics/robots") return res.end(JSON.stringify({ topic: { slug: "robots", name: "Robots", definition: "Robotics news", group: "field", total: 40, indexable: true, related: [{ slug: "agents", name: "Agents" }] }, items: [], page: Number(url.searchParams.get("page") ?? 1), pageCount: 2 }));
+  const report = /^\/api\/site\/reports\/(daily|weekly|monthly)\/(latest-page|navigation\/[^/]+|[^/]+)$/.exec(url.pathname);
+  if (report) {
+    const kind = report[1]!;
+    const key = kind === "daily" ? "2026-09-01" : kind === "weekly" ? "2026-W39" : "2026-09";
+    const zh = url.searchParams.get("lang") === "zh";
+    const entry = { key, title: zh ? "中文报告" : "English briefing" };
+    const detail = { ...entry, kind, reportTimeZone: "America/New_York", windowStart: "2026-09-01T00:00:00Z", windowEnd: "2026-09-02T00:00:00Z", generatedAt: "2026-09-02T00:00:00Z", revision: 1, lead: null, overview: null, highlights: [], sections: [], stories: [], flashes: [], cover: null, metrics: {}, readingMinutes: 1, prev: null, next: null,
+      editorialLanguage: "en", contentLanguage: { status: zh ? "translated" : "original", sourceLanguage: "en" } };
+    return res.end(JSON.stringify(report[2] === "latest-page" ? { report: detail, index: [entry] } : report[2]!.startsWith("navigation/") ? { items: [entry] } : detail));
+  }
   if (url.pathname === "/api/site/items/long-lived") return res.end(JSON.stringify({ id: "long-lived", title: "t" }));
   if (url.pathname === "/api/site/items/seo-sample") return res.end(JSON.stringify(seoItem));
+  if (url.pathname === "/api/site/stories/mixed-story") return res.end(JSON.stringify({ ...seoStory, publicId:"mixed-story",title:"An English digest title",digest:"A new English digest.",summary:"历史中文摘要",editorialLanguage:"en",
+    contentLanguage:{requested:url.searchParams.get("lang"),status:"original",sourceLanguage:"unknown",language:"unknown"},
+    developments:[1,2].map(index=>({factId:`legacy-fact-${index}`,title:`历史事实 ${index}`,firstReportAt:seoStory.firstReportAt,occurredAt:null,reportCount:1,representative:{id:`legacy-${index}`,title:"A current English article",summary:"A verified English summary.",source:seoSource,publishedAt:seoStory.firstReportAt,originalUrl:"https://example.com/report",selected:true}})),
+  }));
   if (url.pathname === "/api/site/stories/seo-story") return res.end(JSON.stringify(seoStory));
   if (url.pathname === "/api/site/contact") return res.end(JSON.stringify({ wechatQr: "/qr.png", feishuQr: "/qr.png" }));
   if (url.pathname === "/api/site/stories/merged") {
@@ -124,27 +160,27 @@ test("public route subsets produce the same complete navigation data; filters st
   assert.notEqual(body, answers[0]);
 });
 
-test("interface preferences isolate HTML and Router data while public content stays anonymous", async () => {
+test("URL editions isolate HTML and Router data while preferences cannot change a URL", async () => {
   const english = await fetch(`${origin}/`, { headers: { "Accept-Language": "en-US" } });
   const englishHtml = await english.text();
   assert.equal(english.status, 200);
   assert.match(englishHtml, /<html lang="en"/);
   assert.match(englishHtml, /The universe is cooling/);
   assert.doesNotMatch(englishHtml, /English editions appear when available/);
-  const chinese = await fetch(`${origin}/`, { headers: { "Accept-Language": "zh-TW,en;q=0.8" } });
+  const chinese = await fetch(`${origin}/zh`, { headers: { "Accept-Language": "zh-TW,en;q=0.8" } });
   const chineseHtml = await chinese.text();
   assert.match(chineseHtml, /<html lang="zh-CN"/);
   assert.match(chineseHtml, /宇宙在降温/);
   // The front page's h1 is what readers search for; the line under it is display copy.
-  assert.match(chineseHtml, /<h1 class="deck-heading">AI 日报 · 今日人工智能新闻精选与热点<\/h1>/);
+  assert.match(chineseHtml, /<h1 class="deck-heading">今日 AI 新闻：精选与新兴事件<\/h1>/);
   assert.match(chineseHtml, /<p class="deck-title">宇宙在降温/);
-  assert.match(englishHtml, /<h1 class="deck-heading">AI daily news · today&#x27;s top AI stories and trends<\/h1>/);
+  assert.match(englishHtml, /<h1 class="deck-heading">Today’s AI news: editorial picks and emerging stories<\/h1>/);
   assert.match(chineseHtml, /"@type":"WebSite"/);
   // The acceleration (/chronicle) is the signature view: second in the top bar and a tab on phones.
-  assert.match(chineseHtml, /aria-label="底部导航"[\s\S]*?href="\/chronicle"[^>]*>[\s\S]*?<span>加速史<\/span>/);
+  assert.match(chineseHtml, /aria-label="底部导航"[\s\S]*?href="\/zh\/chronicle"[^>]*>[\s\S]*?<span>加速史<\/span>/);
   assert.match(englishHtml, /Explore the acceleration/);
   assert.notEqual(chineseHtml, englishHtml);
-  const manual = await fetch(`${origin}/`, { headers: { "Accept-Language": "zh-CN", Cookie: "eacc_language=en; admin_session=private" } });
+  const manual = await fetch(`${origin}/`, { headers: { "Accept-Language": "zh-CN", Cookie: "eacc_language=zh; admin_session=private" } });
   assert.match(await manual.text(), /<html lang="en"/);
   for (const res of [english, chinese, manual]) {
     assert.equal(res.headers.get("Cache-Control"), "private, no-store");
@@ -159,7 +195,9 @@ test("interface preferences isolate HTML and Router data while public content st
   assert.equal(signedIn.headers.get("Set-Cookie"), null);
   assert.equal(await signedIn.text(), await plain.text());
   const localized = await fetch(`${origin}/about.data`, { headers: { cookie: "eacc_language=zh" } });
-  assert.match(await localized.text(), /"locale".*"zh"/);
+  assert.match(await localized.text(), /"locale".*"en"/);
+  const chineseData = await fetch(`${origin}/zh/about.data`, { headers: { cookie: "eacc_language=en" } });
+  assert.match(await chineseData.text(), /"locale".*"zh"/);
   assert.ok(apiCookies.every((cookie) => !cookie));
 });
 
@@ -171,7 +209,7 @@ test("changelog renders English prose, kind filters and calendar labels; Chinese
   assert.match(english.textContent!,/Oct 1, 2026/);assert.match(english.textContent!,/Thursday/);assert.match(english.textContent!,/October 2026/);
   assert.doesNotMatch(english.textContent!,/[\u3400-\u9fff]/u);
   assert.equal(english.querySelector("article b")?.textContent,"daily briefing");
-  const zh=await fetch(`${origin}/changelog`,{headers:{"Accept-Language":"en",cookie:"eacc_language=zh"}});
+  const zh=await fetch(`${origin}/zh/changelog`,{headers:{"Accept-Language":"en",cookie:"eacc_language=zh"}});
   const chinese=parseHTML(await zh.text()).document.querySelector("main")!;
   assert.match(chinese.textContent!,/网站上线/);assert.match(chinese.textContent!,/公告/);assert.match(chinese.textContent!,/2026 年 10 月 1 日/);assert.match(chinese.textContent!,/周四/);
 });
@@ -336,4 +374,184 @@ test("a visitor cannot name its own address to the api without a trusted proxy i
   assert.doesNotMatch(html, /twin\.e-acc\.ai|k12\.e-acc\.ai|github\.com\/seasonsolt\/(twin|tachi|lancer|skills)/);
   assert.doesNotMatch(html, /AudioStudio|Retake|seasonsolt\/legal/i);
   assert.match(html, /rel="canonical" href="[^"]+\/products"/);
+});
+
+test("public URLs and Router data stay English despite Chinese cookies and browser language", async () => {
+  for (const path of ["/", "/all", "/items/native-en", "/weekly", "/monthly", "/topics/robots", "/about"]) {
+    const headers = { Cookie: "eacc_language=zh; admin_session=private", "Accept-Language": "zh-CN" };
+    const htmlResponse = await fetch(origin + path, { headers });
+    assert.equal(htmlResponse.status, 200, path);
+    const document = parseHTML(await htmlResponse.text()).document;
+    assert.equal(document.documentElement.lang, "en", path);
+    const dataPath = path === "/" ? "/_.data" : `${path}.data`;
+    const response = await fetch(origin + dataPath + "?_routes=root", { headers });
+    assert.equal(response.status, 200, dataPath);
+    assert.equal(response.headers.get("cache-control"), "private, no-store");
+    const decoded = (await UNSAFE_decodeViaTurboStream(response.body!, globalThis)).value as { root: { data: { locale: string } } };
+    assert.equal(decoded.root.data.locale, "en", dataPath);
+  }
+});
+
+test("Chinese menu links request working data routes with distinct IDs and explicit API language", async () => {
+  const response = await fetch(origin + "/zh", { headers: { Cookie: "eacc_language=en", "Accept-Language": "en-US" } });
+  const document = parseHTML(await response.text()).document;
+  assert.equal(document.documentElement.lang, "zh-CN");
+  for (const path of ["/zh/all", "/zh/topics", "/zh/subscribe", "/zh/about", "/zh/changelog", "/what-is-eacc"]) {
+    assert.ok(document.querySelector(`a[href="${path}"]`), path);
+    const before = apiRequests.length;
+    const data = await fetch(origin + path + ".data?_routes=root");
+    assert.equal(data.status, 200, path);
+    const body = await data.text();
+    if (path !== "/zh/subscribe") assert.match(body, path.startsWith("/zh/") ? /zh-routes|zh-concept/ : /concept-what-is-eacc/);
+    const publicReads = apiRequests.slice(before).filter((url) => url.startsWith("/api/site/"));
+    assert.ok(publicReads.every((url) => new URL(url, origin).searchParams.get("lang") === (path.startsWith("/zh/") ? "zh" : "en")), path);
+  }
+  for (const path of ["/zh.data", "/zh/_.data"]) {
+    const response = await fetch(origin + path + "?_routes=root");
+    assert.equal(response.status, 200, path);
+    assert.match(await response.text(), /zh-routes\/home/);
+  }
+});
+
+test("report kind, topic pagination and redirects retain Chinese paths in HTML and data", async () => {
+  for (const [kind, key] of [["weekly", "2026-W39"], ["monthly", "2026-09"]]) {
+    const before = apiRequests.length;
+    for (const suffix of ["", ".data?_routes=root"]) {
+      const response = await fetch(`${origin}/zh/${kind}/${key}${suffix}`);
+      assert.equal(response.status, 200);
+      assert.match(await response.text(), /中文报告/);
+    }
+    assert.ok(apiRequests.slice(before).some((path) => path.startsWith(`/api/site/reports/${kind}/${key}?lang=zh`)));
+    assert.ok(!apiRequests.slice(before).some((path) => path.startsWith("/api/site/reports/daily")));
+  }
+  const topic = parseHTML(await (await fetch(origin + "/zh/topics/robots/page/2")).text()).document;
+  assert.ok(topic.querySelector('a[href="/zh/topics/robots"]'));
+  assert.ok(topic.querySelector('a[href="/zh/topics/agents"]'));
+  assert.match(topic.querySelector('link[rel="canonical"]')!.getAttribute("href")!, /\/zh\/topics\/robots\/page\/2$/);
+  for (const [path, target, status] of [["/zh/topics/robots/page/1?q=robot", "/zh/topics/robots?q=robot", 308], ["/zh?q=robot", "/zh/all?q=robot", 302], ["/zh/story/merged", "/zh/story/surviving-story", 308], ["/zh/leaderboard/methodology", "/zh/leaderboard/sources", 308], ["/zh/all/?q=robot", "/zh/all?q=robot", 301]] as const) {
+    const response = await fetch(origin + path, { redirect: "manual" });
+    assert.equal(response.status, status, path);
+    assert.equal(response.headers.get("location"), target, path);
+    const url = new URL(path, origin);
+    const data = await fetch(origin + `${url.pathname === "/zh" ? "/zh/_.data" : url.pathname + ".data"}${url.search}`);
+    assert.equal(data.status, 202, path);
+    assert.ok((await data.text()).includes(target), path);
+  }
+});
+
+test("native English originals do not carry a pending marker and fallback language is honest", async () => {
+  const english = parseHTML(await (await fetch(origin + "/items/native-en")).text()).document;
+  assert.doesNotMatch(english.querySelector("main")!.textContent!, /edition pending/);
+  assert.equal(english.querySelector('article[lang="en"]')?.getAttribute("lang"), "en");
+  assert.equal(english.querySelector('meta[property="og:locale"]')?.getAttribute("content"), "en");
+  assert.equal(jsonLd(english.toString()).find((value) => value["@type"] === "NewsArticle")!.inLanguage, "en");
+  assert.equal(alternate(english, "zh-CN"), undefined);
+  const fallback = parseHTML(await (await fetch(origin + "/items/legacy-zh")).text()).document;
+  assert.match(fallback.querySelector("main")!.textContent!, /English edition pending/);
+  assert.equal(fallback.querySelector('meta[property="og:locale"]')?.getAttribute("content"), "zh_CN");
+  assert.equal(fallback.querySelector('article[lang="zh-CN"]')?.getAttribute("lang"), "zh-CN");
+  assert.equal(alternate(fallback, "zh-CN"), undefined);
+  const chineseFallback = parseHTML(await (await fetch(origin + "/zh/items/native-en")).text()).document;
+  assert.match(chineseFallback.querySelector("main")!.textContent!, /中文版本尚未就绪/);
+  assert.equal(chineseFallback.querySelector('meta[property="og:locale"]')?.getAttribute("content"), "en");
+});
+
+test("existing editions have reciprocal hreflang, self canonicals and localized structured URLs", async () => {
+  for (const prefix of ["", "/zh"]) {
+    const response = await fetch(origin + prefix + "/items/bilingual");
+    const html = await response.text();
+    const document = parseHTML(html).document;
+    assert.match(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!, new RegExp(`${prefix}/items/bilingual$`));
+    assert.match(alternate(document, "en")!.getAttribute("href")!, /(?<!\/zh)\/items\/bilingual$/);
+    assert.match(alternate(document, "zh-CN")!.getAttribute("href")!, /\/zh\/items\/bilingual$/);
+    assert.match(alternate(document, "x-default")!.getAttribute("href")!, /(?<!\/zh)\/items\/bilingual$/);
+    const article = jsonLd(html).find((entry) => entry["@type"] === "NewsArticle")!;
+    assert.equal(article.inLanguage, prefix ? "zh-CN" : "en");
+    assert.match(String(article.url), new RegExp(`${prefix}/items/bilingual$`));
+  }
+});
+
+test("concepts have no Chinese mirrors and legal pages disclose the preserved Chinese template", async () => {
+  for (const path of ["/what-is-eacc", "/eacc-vs-dacc", "/eacc-glossary"]) {
+    const response = await fetch(origin + path);
+    const document = parseHTML(await response.text()).document;
+    assert.equal(alternate(document, "zh-CN"), undefined);
+    assert.equal(document.querySelector('option[value="zh"]')?.hasAttribute("disabled"), true);
+    assert.equal((await fetch(origin + "/zh" + path)).status, 404);
+    assert.equal((await fetch(origin + "/zh" + path + ".data?_routes=root")).status, 404);
+  }
+  for (const path of ["/terms", "/privacy"]) {
+    const english = parseHTML(await (await fetch(origin + path)).text()).document;
+    assert.match(english.querySelector("main")!.textContent!, /This document is available in Chinese/);
+    assert.ok(english.querySelector('.prose[lang="zh-CN"]'));
+    assert.equal(alternate(english, "zh-CN"), undefined);
+    assert.equal(english.querySelector('meta[property="og:locale"]')?.getAttribute("content"), "zh_CN");
+    assert.equal((await fetch(origin + "/zh" + path + ".data?_routes=root")).status, 200);
+  }
+  for (const path of ["/zh/admin/login", "/zh/api/site/meta", "/zh/assets/unknown.js"]) assert.equal((await fetch(origin + path)).status, 404);
+  const admin = parseHTML(await (await fetch(origin + "/admin/login")).text()).document;
+  assert.equal(admin.documentElement.lang, "zh-CN");
+});
+
+test("English public UI and empty states use English copy", async () => {
+  for (const path of ["/", "/all", "/topics", "/topics/robots", "/about", "/products", "/more", "/subscribe", "/daily", "/weekly", "/monthly", "/daily/2026-09-01"]) {
+    const response = await fetch(origin + path);
+    assert.equal(response.status, 200, path);
+    const document = parseHTML(await response.text()).document;
+    const text = document.querySelector("main")!.textContent!;
+    const remaining = text.match(/.{0,20}[\p{Script=Han}].{0,20}/gu) ?? [];
+    assert.deepEqual(remaining, [], path);
+    for (const copy of [document.title, document.querySelector('meta[name="description"]')?.getAttribute("content") ?? ""]) {
+      assert.deepEqual(copy.match(/.{0,20}[\p{Script=Han}].{0,20}/gu) ?? [], [], `${path} metadata`);
+    }
+  }
+});
+
+
+test("actual returned language takes precedence over canonical language for readiness and body labels", async () => {
+  const ready = parseHTML(await (await fetch(origin + "/items/actual-en")).text()).document;
+  assert.doesNotMatch(ready.querySelector("main")!.textContent!, /edition pending/);
+  assert.equal(ready.querySelector('meta[property="og:locale"]')?.getAttribute("content"), "en");
+  assert.equal(ready.querySelector('.prose[lang="en"]')?.getAttribute("lang"), "en");
+  const unknown = parseHTML(await (await fetch(origin + "/items/unknown-body")).text()).document;
+  assert.match(unknown.querySelector("main")!.textContent!, /language unverified/);
+  assert.equal(unknown.querySelector('.prose[lang="und"]')?.getAttribute("lang"), "und");
+  const foreign = parseHTML(await (await fetch(origin + "/items/foreign-body")).text()).document;
+  assert.match(foreign.querySelector("main")!.textContent!, /Body · English edition pending/);
+  assert.equal(foreign.querySelector('.prose[lang="fr"]')?.getAttribute("lang"), "fr");
+});
+
+
+test("report metadata and masthead expose the stored opt-in calendar without a fixed offset claim", async () => {
+  for (const path of ["/daily", "/zh/daily", "/daily/2026-09-01"]) {
+    const html = await (await fetch(`${origin}${path}`)).text();
+    assert.match(html, /America\/New_York/);
+    assert.doesNotMatch(html, /UTC\+8/);
+  }
+});
+
+
+test("RSS discovery and footer links use the actual versioned language endpoint", async () => {
+  for (const [path, feed] of [["/", "/feed/v2/picks.xml"], ["/zh", "/feed/v2/zh/picks.xml"]]) {
+    const { document } = parseHTML(await (await fetch(`${origin}${path}`)).text());
+    assert.equal(document.querySelector('link[type="application/rss+xml"]')!.getAttribute("href"), feed);
+    assert.equal([...document.querySelectorAll("footer a")].find(link => link.textContent === "RSS")!.getAttribute("href"), feed);
+  }
+});
+
+
+test('More RSS links select the same versioned language as the URL', async () => {
+  for (const [path, feed] of [['/more','/feed/v2/picks.xml'],['/zh/more','/feed/v2/zh/picks.xml']]) {
+    const { document } = parseHTML(await (await fetch(origin + path)).text());
+    assert.equal([...document.querySelectorAll('main a')].find(link => link.textContent === 'RSS')!.getAttribute('href'),feed);
+  }
+});
+
+
+test('mixed historical story developments render with an honest pending notice in each URL edition', async () => {
+  for(const [path,notice] of [['/story/mixed-story','English edition pending'],['/zh/story/mixed-story','中文版本尚未就绪']]) {
+    const response=await fetch(origin+path); assert.equal(response.status,200);
+    const main=parseHTML(await response.text()).document.querySelector('main')!;
+    assert.ok(main.textContent!.includes(notice)); assert.match(main.textContent!,/历史事实 1/); assert.match(main.textContent!,/历史事实 2/);
+  }
 });

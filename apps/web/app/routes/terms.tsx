@@ -13,7 +13,7 @@ export function headers() {
 }
 
 export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
-  return pageMeta({ title: "使用规则", description: `本站网站、RSS、公开 API 与 MCP 的使用规则。`, path: "/terms", image: "/og/pages/terms.png" }, localeFromMatches(matches ?? []));
+  return pageMeta({ contentLocale: "zh", alternates: false, title: "使用规则", description: `本站网站、RSS、公开 API 与 MCP 的使用规则。`, path: "/terms", image: "/og/pages/terms.png" }, localeFromMatches(matches ?? []));
 }
 
 export default function TermsPage() {

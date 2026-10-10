@@ -1,7 +1,8 @@
+import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { useSearchParams } from "react-router";
 import { Presence } from "../components/ui/Presence";
 import { pageMeta } from "../lib/seo";
 import { KEYS } from "../lib/local-state";

@@ -1,3 +1,4 @@
+import { Link } from "../../lib/navigation";
 import { Text, useLocale, useTranslate } from "../../lib/i18n";
 // Newsletter onboarding: a full-bleed, rounded film of the acceleration (public/media, rendered by
 // tools/make-media.sh from ascent.ts, captioned with the era on screen) behind the site name, the sign-up, the manifesto and a way to skip straight to
@@ -8,7 +9,7 @@ import { Text, useLocale, useTranslate } from "../../lib/i18n";
 // stops under prefers-reduced-motion.
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { SITE } from "@aihot/industry/site";
-import { Link } from "react-router";
+
 import { markOnboarded } from "../../lib/local-state";
 import { useMotionAllowed } from "../motion/preferences";
 import { BrassSheen } from "../motion/BrassSheen";
@@ -139,7 +140,7 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
   async function subscribe(e: FormEvent) {
     e.preventDefault();
     setPhase({ kind: "sending" });
-    const error = await post("/api/site/newsletter/subscribe", { email });
+    const error = await post("/api/site/newsletter/subscribe", { email, language: locale });
     if (error) return setPhase({ kind: "error", message: error });
     setPhase({ kind: "sent", email: email.trim() });
     markOnboarded();
@@ -203,12 +204,12 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
         </Title>
 
         {phase.kind === "sent" ? (
-          <Notice title={tx("去邮箱点一下确认")} body={tx("确认邮件已经发到 {0}。点信里的「确认订阅」，明早 8 点就能收到第一期日报。没收到的话，看看「推广」和「垃圾邮件」。", phase.email)}>
+          <Notice title={tx("去邮箱点一下确认")} body={tx("确认邮件已经发到 {0}。点信里的「确认订阅」，就能在所选语言的日报就绪后收到邮件。没收到的话，看看「推广」和「垃圾邮件」。", phase.email)}>
             {toNews(tx("先去看看今天的新闻"), true)}
           </Notice>
         ) : phase.kind === "confirmed" ? (
           <>
-            <Notice title={tx("订阅成功")} body={tx("每天早上 8 点，日报会准时出现在你的邮箱，每一封信的末尾都可以一键退订。用 Gmail 的话，第一封日报如果在「推广」里，把它拖到「主要」，以后就都在收件箱最前面了。")}>
+            <Notice title={tx("订阅成功")} body={tx("所选语言的日报就绪后会送到你的邮箱，每一封信的末尾都可以一键退订。用 Gmail 的话，第一封日报如果在「推广」里，把它拖到「主要」，以后就都在收件箱最前面了。")}>
               {toNews(tx("去看今天的新闻"), true)}
             </Notice>
             <TearTicket date={new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())} />
@@ -263,7 +264,7 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
             </form>
             {phase.kind === "error" && <p role="alert" className="-mt-2 text-[14px] text-[#ffb89a] [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">{phase.message}</p>}
 
-            <p className="max-w-xl text-pretty text-[16px] font-medium leading-[1.45] text-[#f6ead2]/92 [text-shadow:0_1px_12px_rgba(0,0,0,0.6)] lg:text-[19px]"><Text value="每天早上 8 点，一封 AI 圈值得看的几件事：模型发布、价格变动、算力扩张。免费，随时一键退订。" /></p>
+            <p className="max-w-xl text-pretty text-[16px] font-medium leading-[1.45] text-[#f6ead2]/92 [text-shadow:0_1px_12px_rgba(0,0,0,0.6)] lg:text-[19px]"><Text value="每天一封 AI 圈值得看的几件事：模型发布、价格变动、算力扩张。免费，随时一键退订。" /></p>
 
             <div className="mt-1 flex flex-wrap items-center justify-center gap-3">
               <button type="button" onClick={() => manifesto.current?.showModal()} className="steam-shine relative h-10 overflow-hidden rounded-full border border-[#f6ead2]/35 bg-[#f6ead2]/12 px-8 text-[14px] font-semibold text-[#f6ead2] backdrop-blur-md transition-colors hover:bg-[#f6ead2]/20"><Text value="宣言 Manifesto" /></button>

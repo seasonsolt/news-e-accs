@@ -1,7 +1,9 @@
+import { publicPath } from "../../lib/locale";
+import { Form, Link } from "../../lib/navigation";
 import { Text, useTranslate } from "../../lib/i18n";
 // Feed filters: the channel and category row, and search.
 import { useEffect, useRef, useState } from "react";
-import { Form, Link, useNavigation, useSearchParams } from "react-router";
+import { useNavigation, useSearchParams } from "react-router";
 import { CATEGORY_KEYS, CATEGORY_LABELS, CHANNEL_LABELS, type CategoryKey, type ChannelKey } from "@aihot/contracts/taxonomy";
 import { IconClose, IconSearch } from "../../components/icons";
 import { PillTabs } from "../../components/ui/Tabs";
@@ -63,7 +65,7 @@ export function SearchField({ action = "/all", defaultValue = "", keep = {}, var
   useEffect(() => {
     if (autoFocus) inputRef.current?.focus();
   }, [autoFocus]);
-  const searching = navigation.state === "loading" && navigation.location?.pathname === action && !!new URLSearchParams(navigation.location.search).get("q");
+  const searching = navigation.state === "loading" && navigation.location && publicPath(navigation.location.pathname) === publicPath(action) && !!new URLSearchParams(navigation.location.search).get("q");
   const hidden = Object.entries(keep).map(([k, v]) => (v ? <input key={k} type="hidden" name={k} value={v} /> : null));
 
   if (variant === "bar") {

@@ -13,7 +13,7 @@ export function headers() {
 }
 
 export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
-  return pageMeta({ title: "隐私说明", description: `本站如何处理浏览器本地数据、反馈资料与访问日志。`, path: "/privacy", image: "/og/pages/privacy.png" }, localeFromMatches(matches ?? []));
+  return pageMeta({ contentLocale: "zh", alternates: false, title: "隐私说明", description: `本站如何处理浏览器本地数据、反馈资料与访问日志。`, path: "/privacy", image: "/og/pages/privacy.png" }, localeFromMatches(matches ?? []));
 }
 
 export default function PrivacyPage() {

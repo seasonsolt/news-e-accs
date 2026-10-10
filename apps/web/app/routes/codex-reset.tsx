@@ -1,3 +1,4 @@
+import { contentFetch } from "../lib/content-fetch";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { useEffect, useState } from "react";
@@ -44,7 +45,7 @@ function useVersionPolling(version: string) {
       if (document.visibilityState !== "visible" || request) return;
       request = new AbortController();
       try {
-        const res = await fetch("/api/site/codex-reset/version", { cache: "no-store", signal: request.signal });
+        const res = await contentFetch("/api/site/codex-reset/version", { cache: "no-store", signal: request.signal });
         if (!res.ok) return;
         const v = (await res.json()) as { version: string };
         if (!stopped && v.version !== version) revalidator.revalidate();

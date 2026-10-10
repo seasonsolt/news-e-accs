@@ -3,10 +3,14 @@ import type { ItemDetail, SiteItemDetail, OutlineEntry, StoryRef } from "@aihot/
 import TurndownService from "turndown";
 import { sql } from "../db.ts";
 import { proxyBodyImages } from "../media/imgproxy.ts";
+import { sha256 } from "../lib/ids.ts";
 import { textToHtml } from "../content/sanitize.ts";
 import { ITEM_COLUMNS, ITEM_FROM, selectedCondition, toItemSummary, xView, type ItemRow } from "./items.ts";
-import { itemUrl } from "./links.ts";
 import { hasItemPage } from "./rules.ts";
+import { targetLanguageProse } from "./content-source.ts";
+import { localizePublication } from "./content-language.ts";
+import { bodyEditionReady, editionPath, editionReady, EditionUnavailableError, type DistributionLanguage } from "./distribution.ts";
+import { siteUrl } from "./links.ts";
 import { SITE } from "@aihot/industry/site";
 
 interface DetailRow extends ItemRow {
@@ -153,30 +157,40 @@ export function markdownAvailable(row: {
 
 const turndown = new TurndownService({ headingStyle: "atx", codeBlockStyle: "fenced", bulletListMarker: "-" });
 
-export async function exportMarkdown(id: string): Promise<{ filename: string; body: string } | null> {
-  const row = await loadRow(id);
-  if (!row || !markdownAvailable(row)) return null;
-  const lines: string[] = [];
-  lines.push(`# ${row.title}`, "");
-  if (row.original_title) lines.push(`> 原标题：${row.original_title}`, "");
-  lines.push(`- 来源：${row.source_name}`);
-  lines.push(`- 发布时间：${(row.published_at ?? row.discovered_at).toISOString()}`);
-  lines.push(`- ${SITE.name}：${itemUrl(row.id)}`);
-  lines.push(`- 原文：${row.url}`, "");
-  if (row.summary) lines.push("## 摘要", "", row.summary, "");
-  if (row.selected && row.reason) lines.push("## 推荐理由", "", row.reason, "");
-  if (row.channel === "x" && row.x_post?.text) {
-    lines.push("## 正文", "", String(row.x_post.text), "");
-    if (row.zh_text) lines.push("## 中文译文", "", row.zh_text, "");
-    const q = row.x_post.quoted as { handle?: string; text?: string; url?: string } | null | undefined;
-    if (q?.text) lines.push(`## 引用 @${q.handle ?? ""}`, "", ...String(q.text).split("\n").map((l) => `> ${l}`), "", ...(q.url ? [q.url, ""] : []));
-    if (q?.text && row.quoted_zh) lines.push("### 引用中文译文", "", ...row.quoted_zh.split("\n").map((l) => `> ${l}`), "");
-  } else if (row.body_mode === "full" && row.body_html) {
-    const isZh = row.language === "zh";
-    if (!isZh && row.tr_html && row.tr_complete) lines.push("## 正文 · 中文译文", "", turndown.turndown(row.tr_html), "");
-    lines.push(isZh ? "## 正文" : "## 正文 · 原文", "", turndown.turndown(row.body_html), "");
+export async function exportMarkdown(id: string, lang: DistributionLanguage = "en"): Promise<{ filename: string; body: string } | null> {
+  const found = await loadItemDetail(id);
+  if (found.kind !== "found" || !markdownAvailable(found.row)) return null;
+  const detail = await localizePublication(found.detail, lang);
+  if (!editionReady(detail, lang)) throw new EditionUnavailableError();
+  const en = lang === "en";
+  const lines = [`# ${detail.title}`, "", `- ${en ? "Edition" : "语言"}: ${lang}`];
+  if (detail.originalTitle) lines.push(`- ${en ? "Original title" : "原标题"}: ${detail.originalTitle}`);
+  lines.push(`- ${en ? "Source" : "来源"}: ${detail.source.name}`);
+  lines.push(`- ${en ? "Published" : "发布时间"}: ${detail.publishedAt ?? detail.discoveredAt}`);
+  lines.push(`- ${SITE.name}: ${siteUrl(editionPath(`/items/${id}`, lang))}`);
+  lines.push(`- ${en ? "Original" : "原文"}: ${detail.links.original}`, "");
+  if (detail.summary) lines.push(en ? "## Summary" : "## 摘要", "", detail.summary, "");
+  if (detail.selected && detail.reason) lines.push(en ? "## Why it matters" : "## 推荐理由", "", detail.reason, "");
+  const ready = bodyEditionReady(detail, lang);
+  const html = lang === "zh" ? detail.body?.zh ?? detail.body?.original : detail.body?.original;
+  if (ready && html) lines.push(en ? "## Body" : "## 正文", "", turndown.turndown(html), "");
+  else if (detail.x?.text && detail.language === lang) lines.push(en ? "## Original post" : "## 原文帖子", "", detail.x.text, "");
+  else if (detail.body || detail.x) lines.push(en ? "The requested body edition is not ready. Read the original at the source link above." : "所选语言的正文版本尚未就绪，请通过上方原文链接阅读。", "");
+  const quoted = detail.x?.quoted;
+  if (quoted?.text) {
+    const originalLanguage = found.row.x_post?.quoted?.language ?? "unknown";
+    const quoteId = /\/status\/(\d+)/.exec(quoted.url)?.[1];
+    const [storedQuote] = lang === "zh" && quoteId
+      ? await sql<{ text_hash: string; text_zh: string }[]>`SELECT text_hash,text_zh FROM quote_translations WHERE tweet_id=${quoteId}` : [];
+    const translated = storedQuote?.text_hash === sha256(quoted.text) && targetLanguageProse(storedQuote.text_zh, "zh") ? storedQuote.text_zh : null;
+    lines.push(en ? "## Quoted post" : "## 引用帖子", "", `${en ? "Quoted from" : "引用自"} @${quoted.handle || quoted.authorName}`, "");
+    if (!translated && originalLanguage !== lang) lines.push(en
+      ? `The requested quote edition is unavailable. Original quoted evidence follows (language: ${originalLanguage}).`
+      : `所选语言的引用版本尚未就绪。以下为原始引用（语言：${originalLanguage}）。`, "");
+    lines.push(...(translated ?? quoted.text).split("\n").map(line => `> ${line}`), "");
+    if (quoted.url) lines.push(`${en ? "Quoted source" : "引用原文"}: ${quoted.url}`, "");
   }
-  return { filename: `aihot-${row.id}.md`, body: lines.join("\n").replace(/\n{3,}/g, "\n\n") };
+  return { filename: `eacc-${id}-${lang}.md`, body: lines.join("\n").replace(/\n{3,}/g, "\n\n") };
 }
 
 /** Site reading projection: default text remains SSR, a second language has its own readable URL. */

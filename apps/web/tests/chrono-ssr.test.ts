@@ -8,7 +8,7 @@ before(async () => { fixture = await startChronoFixture(); });
 after(async () => { await fixture?.close(); });
 
 async function page(path: string, status = 200) {
-  const res = await fetch(fixture.origin + path, { headers: { "Accept-Language": "zh-CN" } });
+  const res = await fetch(fixture.origin + (path.startsWith("/?") ? path.replace("/?", "/zh?") : `/zh${path}`), { headers: { "Accept-Language": "en" } });
   assert.equal(res.status, status);
   assert.equal(res.headers.get("set-cookie"), null);
   const body = await res.text();
@@ -22,11 +22,11 @@ test("a historical hot page SSR has one final title/bar and carries at through b
   assert.equal(main.textContent?.split("时光机停在").length, 2);
   assert.match(main.textContent!, /2026年9月1日/);
   for (const scope of [document.querySelector('nav[aria-label="主导航"]')!, document.querySelector('nav[aria-label="底部导航"]')!]) {
-    assert.ok(scope.querySelector('a[href="/?at=2026-09-01"]'));
-    assert.ok(scope.querySelector('a[href="/daily?at=2026-09-01"]'));
+    assert.ok(scope.querySelector('a[href="/zh?at=2026-09-01"]'));
+    assert.ok(scope.querySelector('a[href="/zh/daily?at=2026-09-01"]'));
   }
   assert.match(document.querySelector('meta[name="robots"]')!.getAttribute("content")!, /noindex/);
-  assert.ok(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith("/hot"));
+  assert.ok(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith("/zh/hot"));
 });
 
 test("home, empty board and empty report history are noindex without cookies", async () => {
@@ -36,7 +36,7 @@ test("home, empty board and empty report history are noindex without cookies", a
     assert.doesNotMatch(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!, /at=/);
     assert.equal(document.querySelector(".onboarding-overlay"), null);
     assert.ok([...document.querySelectorAll("script")].every((script) => !script.textContent?.includes("eacc-onboarded")), "history must not run the pre-paint onboarding lock");
-    if (path.startsWith("/?")) assert.ok(document.querySelector('a[href="/hot?at=2026-09-01"]'));
+    if (path.startsWith("/?")) assert.ok(document.querySelector('a[href="/zh/hot?at=2026-09-01"]'));
     if (path.startsWith("/leaderboard")) assert.match(document.querySelector("main")!.textContent!, /这一天还没有模型榜/);
   }
 });
@@ -47,10 +47,10 @@ test("dated reports redirect to the right issue, retain at and stay noindex", as
   assert.equal(res.headers.get("location"), "/daily/2026-09-01?at=2026-09-02");
   const document = await page("/daily/2026-09-01?at=2026-09-02");
   assert.match(document.querySelector('meta[name="robots"]')!.getAttribute("content")!, /noindex/);
-  assert.ok(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith("/daily/2026-09-01"));
-  assert.ok(document.querySelector('a[href="/weekly?at=2026-09-02"]'));
-  assert.equal(document.querySelector('.time-bar a[aria-label="后一天"]')!.getAttribute("href"), "/daily?at=2026-09-03");
-  assert.ok(document.querySelector('.time-bar a[href="/daily"]'));
+  assert.ok(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith("/zh/daily/2026-09-01"));
+  assert.ok(document.querySelector('a[href="/zh/weekly?at=2026-09-02"]'));
+  assert.equal(document.querySelector('.time-bar a[aria-label="后一天"]')!.getAttribute("href"), "/zh/daily?at=2026-09-03");
+  assert.ok(document.querySelector('.time-bar a[href="/zh/daily"]'));
 });
 
 test("a failing historical board makes exactly one upstream request", async () => {
@@ -72,7 +72,7 @@ test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era
   assert.equal(document.querySelector('nav[aria-label="时代"] a[aria-current]')!.textContent, "蒸汽时代");
   assert.match(document.querySelector("main")!.textContent!, /卡尔达肖夫指数/);
   assert.equal(document.querySelector('meta[name="robots"]'), null);
-  assert.ok(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith("/chronicle"));
+  assert.ok(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith("/zh/chronicle"));
 });
 
 test("unknown and out-of-range moments are bounded; future energy is unknown", async () => {
@@ -88,10 +88,10 @@ test("recorded day links include at, current site links do not", async () => {
   const { dateToYear } = await import("@aihot/contracts/chronicle");
   const past = await page(`/chronicle?t=${dateToYear("2026-09-01")}`);
   const card = [...past.querySelectorAll("section")].find((el) => el.textContent?.includes("这一天在本站"))!;
-  for (const to of ["/", "/hot", "/leaderboard", "/daily"]) assert.ok(card.querySelector(`a[href="${to}?at=2026-09-01"]`));
+  for (const to of ["/", "/hot", "/leaderboard", "/daily"]) assert.ok(card.querySelector(`a[href="${to === "/" ? "/zh" : `/zh${to}`}?at=2026-09-01"]`));
   const present = await page("/chronicle?t=2040");
   const live = [...present.querySelectorAll("section")].find((el) => el.textContent?.includes("此刻的本站"))!;
-  assert.ok(live.querySelector('a[href="/hot"]'));
+  assert.ok(live.querySelector('a[href="/zh/hot"]'));
 });
 
 test.skip("feature-off chronicle 404 (compile-time industry switch)", () => {});

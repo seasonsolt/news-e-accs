@@ -1,3 +1,4 @@
+import { localePath, requestLocale, type Locale } from "./locale.ts";
 // Server-side HTTP client for route loaders. The web process never touches the database;
 // SSR reads the api over loopback with keep-alive, one or two requests per page.
 import { contentUrl } from "./content-fetch.ts";
@@ -17,8 +18,8 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiGet<T>(path: string, init?: { request?: Request; signal?: AbortSignal; headers?: Record<string, string>; responseHeaders?: Headers }): Promise<T> {
-  const res = await fetch(`${API_BASE}${contentUrl(path, init?.request)}`, {
+export async function apiGet<T>(path: string, init?: { lang?: Locale; request?: Request; signal?: AbortSignal; headers?: Record<string, string>; responseHeaders?: Headers }): Promise<T> {
+  const res = await fetch(`${API_BASE}${contentUrl(path, init?.request, init?.lang)}`, {
     headers: { accept: "application/json", "x-aihot-ssr": "1", ...init?.headers },
     signal: init?.signal ? AbortSignal.any([init.signal, AbortSignal.timeout(15_000)]) : AbortSignal.timeout(15_000),
   });
@@ -41,7 +42,7 @@ export function apiErrorResponse(error: unknown, opts: { request?: Request; busy
   if (opts.signal?.aborted) throw error;
   if (error instanceof ApiError) {
     if (error.status === 404) return data({ message: "not_found" }, { status: 404 });
-    if (error.status === 503 && opts.busyRedirect) return redirect(opts.busyRedirect);
+    if (error.status === 503 && opts.busyRedirect) return redirect(localePath(opts.busyRedirect, opts.request ? requestLocale(opts.request) : "en"));
     if (error.status === 400) return data({ message: "bad_request" }, { status: 400 });
   }
   return data({ message: "unavailable" }, { status: 503 });

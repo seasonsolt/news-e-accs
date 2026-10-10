@@ -1,5 +1,6 @@
+import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
-import { Link, useLoaderData } from "react-router";
+import { useLoaderData } from "react-router";
 import { apiGet } from "../lib/api.server";
 import { pageMeta } from "../lib/seo";
 import { Deck } from "../components/shell/Deck";

@@ -3,11 +3,14 @@
 // sources that explicitly allow redistribution. Titles come from the site's name and categories.
 import { CATEGORY_LABELS, PUBLIC_API_CATEGORY_KEYS, type PublicApiCategoryKey } from "@aihot/contracts/taxonomy";
 import { SITE, withSubject } from "@aihot/industry/site";
+import { localizePublication } from "./content-language.ts";
+import { loadItemDetail } from "./detail.ts";
+import { bodyEditionReady, distributionCategory, editionPath, editionReady, type DistributionLanguage } from "./distribution.ts";
 import { config } from "../config.ts";
 import { sql } from "../db.ts";
 import { escapeXml } from "../lib/text.ts";
 import { proxyBodyImages } from "../media/imgproxy.ts";
-import { reportHeadline, reportIndex } from "./reports.ts";
+import { loadReport, reportHeadline, reportIndex } from "./reports.ts";
 import { textToHtml } from "../content/sanitize.ts";
 import { categoryCondition, listedCondition, selectedCondition, xView, type ItemRow } from "./items.ts";
 import { dailyUrl, itemUrl, siteUrl } from "./links.ts";
@@ -39,14 +42,14 @@ function rfc822(d: Date): string {
   return d.toUTCString();
 }
 
-function channel(meta: { title: string; description: string; homePath: string; selfPath: string; ttl: number }, items: string[]): string {
+function channel(meta: { title: string; description: string; homePath: string; selfPath: string; ttl: number }, items: string[], lang: DistributionLanguage = "zh"): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>${escapeXml(meta.title)}</title>
     <link>${escapeXml(siteUrl(meta.homePath))}</link>
     <description>${escapeXml(meta.description)}</description>
-    <language>zh-CN</language>
+    <language>${lang === "en" ? "en-US" : "zh-CN"}</language>
     <atom:link href="${escapeXml(siteUrl(meta.selfPath))}" rel="self" type="application/rss+xml" />
     <ttl>${meta.ttl}</ttl>
     <generator>${escapeXml(`${SITE.name} (${siteUrl("/agent")})`)}</generator>
@@ -84,15 +87,15 @@ function fullContent(r: FeedRow, aihot: string): string | null {
   return `${proxyBodyImages(html, true, FEED_IMAGE_SECONDS)}<p>—— 本文由 ${escapeXml(SITE.name)} 聚合整理，完整版与更多动态见 <a href="${aihot}">${aihot}</a></p>`;
 }
 
-function itemXml(r: FeedRow, includeContent: boolean): string {
-  const aihot = itemUrl(r.id);
+function itemXml(r: FeedRow, includeContent: boolean, lang?: DistributionLanguage, editionBody?: string | null): string {
+  const aihot = lang ? siteUrl(editionPath(`/items/${r.id}`, lang)) : itemUrl(r.id);
   const summary = r.summary ?? "";
-  const description = `<p>${escapeXml(summary)}</p>\n<p>🔗 <a href="${escapeXml(r.url)}">阅读原文</a></p>\n<p>via ${escapeXml(SITE.name)} · <a href="${aihot}">${aihot}</a></p>`;
-  const label = r.category ? CATEGORY_LABELS[r.category as PublicApiCategoryKey] : undefined;
+  const description = `<p>${escapeXml(summary)}</p>\n<p>🔗 <a href="${escapeXml(r.url)}">${lang === "en" ? "Read the source" : "阅读原文"}</a></p>\n<p>via ${escapeXml(SITE.name)} · <a href="${aihot}">${aihot}</a></p>`;
+  const label = r.category ? (lang ? distributionCategory(r.category as PublicApiCategoryKey, lang) : CATEGORY_LABELS[r.category as PublicApiCategoryKey]) : undefined;
   const category = label ? `\n      <category>${escapeXml(label)}</category>` : "";
   let content = "";
   if (includeContent && r.syndicate) {
-    const html = fullContent(r, aihot);
+    const html = lang ? editionBody : fullContent(r, aihot);
     if (html) content = `\n      <content:encoded>${cdata(html)}</content:encoded>`;
   }
   const pub = r.published_at ?? r.discovered_at;
@@ -111,7 +114,7 @@ export type ItemFeedKind = "selected" | "selected-full" | "all";
 // Like the live feeds, items are the newest by their original publish time (the pubDate shown):
 // 50 per feed; a category feed holds only its last 7 days (by original publish time).
 
-export async function itemFeed(kind: ItemFeedKind, category: PublicApiCategoryKey | null, now = new Date()): Promise<string> {
+export async function itemFeed(kind: ItemFeedKind, category: PublicApiCategoryKey | null, now = new Date(), lang?: DistributionLanguage): Promise<string> {
   const includeContent = kind === "selected-full";
   const scope = kind === "all"
     ? sql`${listedCondition(now)} AND p.eligible AND coalesce(p.published_at, p.discovered_at) > ${now}::timestamptz - interval '7 days'
@@ -148,19 +151,61 @@ export async function itemFeed(kind: ItemFeedKind, category: PublicApiCategoryKe
     const m = FEEDS[kind === "selected" ? "selected" : kind === "selected-full" ? "selectedFull" : "all"];
     meta = { title: m.title, description: m.description, homePath: m.homePath, selfPath: m.path, ttl: m.pollHintMinutes };
   }
-  return channel(meta, rows.map((r) => itemXml(r, includeContent)));
+  if (!lang) {
+    const editions = await localizePublication(rows.map(({ id, title, summary }) => ({ id, title, summary })), "zh");
+    const legacy = rows.map((row, index) => ({ ...row, ...editions[index]! })).filter(row => editionReady(row, "zh", true));
+    return channel(meta, legacy.map(row => itemXml(row, includeContent)));
+  }
+  const editions = await localizePublication(rows.map(({ id, title, summary }) => ({ id, title, summary })), lang);
+  const localized = rows.map((row, index) => ({ ...row, ...editions[index]! }));
+  const ready = localized.filter(row => editionReady(row, lang));
+  const items = await Promise.all(ready.map(async row => {
+    let body: string | null = null;
+    if (includeContent && row.syndicate) {
+      const detail = await loadItemDetail(row.id);
+      if (detail.kind === "found") {
+        const dto = await localizePublication(detail.detail, lang);
+        if (bodyEditionReady(dto, lang)) {
+          const html = lang === "zh" ? dto.body?.zh ?? dto.body?.original : dto.body?.original;
+          if (html) body = `${proxyBodyImages(html, true, FEED_IMAGE_SECONDS)}<p>via ${escapeXml(SITE.name)} · <a href="${escapeXml(siteUrl(editionPath(`/items/${row.id}`, lang)))}">${escapeXml(SITE.name)}</a></p>`;
+        }
+      }
+    }
+    return itemXml(row, includeContent, lang, body);
+  }));
+  const name = category ? distributionCategory(category, lang) : lang === "en" ? (kind === "all" ? "All news" : includeContent ? "Picks with permitted full text" : "Editorial picks") : "精选";
+  const selfPath = `/feed/v2${lang === "zh" ? "/zh" : ""}${meta.selfPath.slice(5)}`;
+  return channel({ ...meta, title: `${SITE.name} — ${name}`, description: lang === "en" ? "Stored English editions of public AI news. Full text is included only when redistribution is permitted." : meta.description,
+    homePath: editionPath(meta.homePath, lang), selfPath }, items, lang);
 }
 
-export async function dailyFeed(): Promise<string> {
+export async function dailyFeed(lang?: DistributionLanguage): Promise<string> {
   const index = await reportIndex("daily");
   const rows = index.rows.slice(0, 30);
   const m = FEEDS.daily;
+  if (lang) {
+    const items: string[] = [];
+    for (const row of rows) {
+      const source = await loadReport("daily", row.key);
+      if (!source) continue;
+      const report = await localizePublication(source, lang);
+      if (!editionReady(report, lang)) continue;
+      const url = siteUrl(editionPath(`/daily/${report.key}`, lang));
+      const title = `${SITE.name} ${lang === "en" ? "Daily briefing" : "日报"} · ${report.key} — ${report.lead?.title ?? report.title}`;
+      items.push(`    <item><title>${cdata(title)}</title><link>${escapeXml(url)}</link><description>${cdata(`<p>${escapeXml(report.lead?.leadParagraph ?? report.overview ?? "")}</p><p><a href="${escapeXml(url)}">${lang === "en" ? "Read the full briefing" : "阅读日报"}</a></p>`)}</description><pubDate>${rfc822(new Date(report.generatedAt))}</pubDate><guid isPermaLink="false">daily-${escapeXml(report.key)}-${lang}</guid><author>${AUTHOR} (${escapeXml(SITE.name)})</author></item>`);
+    }
+    return channel({ title: `${SITE.name} ${lang === "en" ? "Daily briefing" : "日报"}`, description: lang === "en" ? "Daily AI briefings in stored English editions." : m.description,
+      homePath: editionPath(m.homePath, lang), selfPath: `/feed/v2${lang === "zh" ? "/zh" : ""}/daily.xml`, ttl: m.pollHintMinutes }, items, lang);
+  }
   const gone = index.gone;
-  const items = rows.map((r) => {
+  const items = await Promise.all(rows.map(async (r) => {
+    const source = await loadReport("daily", r.key);
+    const report = source ? await localizePublication(source, "zh") : null;
+    if (!report || !editionReady(report, "zh", true)) return null;
     const url = dailyUrl(r.key);
-    const lead = reportHeadline(r.content, "daily", gone);
+    const lead = report.lead?.title ?? reportHeadline(r.content, "daily", gone);
     const title = lead ? `${SITE.name} ${withSubject("日报")} · ${r.key} — ${lead}` : `${SITE.name} ${withSubject("日报")} · ${r.key}`;
-    const description = `<p>${escapeXml(r.content.lead?.leadParagraph ?? lead ?? "")} — 点击查看完整日报</p>\n<p>via ${escapeXml(SITE.name)} · <a href="${url}">${url}</a></p>`;
+    const description = `<p>${escapeXml(report.lead?.leadParagraph ?? lead ?? "")} — 点击查看完整日报</p>\n<p>via ${escapeXml(SITE.name)} · <a href="${url}">${url}</a></p>`;
     return `    <item>
       <title>${cdata(title)}</title>
       <link>${url}</link>
@@ -169,8 +214,8 @@ export async function dailyFeed(): Promise<string> {
       <guid isPermaLink="false">daily-${escapeXml(r.key)}</guid>
       <author>${AUTHOR} (${escapeXml(SITE.name)})</author>
     </item>`;
-  });
-  return channel({ title: m.title, description: m.description, homePath: m.homePath, selfPath: m.path, ttl: m.pollHintMinutes }, items);
+  }));
+  return channel({ title: m.title, description: m.description, homePath: m.homePath, selfPath: m.path, ttl: m.pollHintMinutes }, items.filter((item): item is string => item !== null));
 }
 
 export function isFeedCategory(v: string): v is PublicApiCategoryKey {

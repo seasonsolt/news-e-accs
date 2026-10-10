@@ -1,7 +1,8 @@
+import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useLocale, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { Fragment, useEffect, useState } from "react";
-import { Link, useLoaderData } from "react-router";
+import { useLoaderData } from "react-router";
 import { apiGet } from "../lib/api.server";
 import { pageMeta } from "../lib/seo";
 import { setChangelogSeen } from "../lib/local-state";

@@ -1,4 +1,5 @@
-import { localeFromMatches } from "../lib/i18n";
+import { hasAlternateEdition } from "../lib/edition-meta.server";
+import { localeFromMatches, translate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { data, useLoaderData, useRouteLoaderData } from "react-router";
 import type { Route } from "./+types/report-detail";
@@ -6,7 +7,7 @@ import type { ReportDetail, ReportNavigationEntry, ReportKind } from "@aihot/con
 import { requestAt } from "../features/chrono/at";
 import { apiGet, loadOr404 } from "../lib/api.server";
 import { pageMeta, titled } from "../lib/seo";
-import { beijingDate } from "../lib/format";
+import { zonedDate } from "@aihot/contracts/time";
 import { ReportLayout } from "../features/report/ReportLayout";
 import { ReportDeck, ReportPaper } from "../features/report/ReportPaper";
 import { FEATURES } from "@aihot/industry/features";
@@ -31,15 +32,18 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     apiGet<{ items: ReportNavigationEntry[] }>(`/api/site/reports/${kind}/navigation/${key}`, { request, signal: request.signal }),
   ]);
   const at = requestAt(request);
-  return { report, index, today: at ?? beijingDate(Date.now()), at };
+  return { report, index, alternateEdition: await hasAlternateEdition(`/api/site/reports/${kind}/${key}`, report, request), today: at ?? zonedDate(Date.now(), report.reportTimeZone ?? "Asia/Shanghai"), at };
 }
 
 export function meta({ matches, loaderData }: Route.MetaArgs) {
-  if (!loaderData) return [{ title: titled("报告不存在") }, { name: "robots", content: "noindex" }];
+  if (!loaderData) return [{ title: titled(translate(localeFromMatches(matches ?? []), "报告不存在")) }, { name: "robots", content: "noindex" }];
   const r = loaderData.report;
+  const locale = localeFromMatches(matches ?? []);
   return pageMeta({
-    title: r.kind === "daily" ? `${withSubject("日报")} ${r.key}` : r.title.replace(`${SITE.name} `, `${SITE.subject} `),
-    description: r.lead?.leadParagraph ?? r.overview?.slice(0, 150) ?? `${SITE.name} ${r.key} 的${withSubject(KIND_LABEL[r.kind])}。`,
+    content: r,
+    alternates: loaderData.alternateEdition,
+    title: r.kind === "daily" ? `${SITE.subject} ${translate(locale, "日报")} ${r.key}` : r.title.replace(`${SITE.name} `, `${SITE.subject} `),
+    description: r.lead?.leadParagraph ?? r.overview?.slice(0, 150) ?? (locale === "en" ? `${SITE.name} ${translate(locale, KIND_LABEL[r.kind])} for ${r.key}.` : `${SITE.name} ${r.key} 的${withSubject(KIND_LABEL[r.kind])}。`),
     path: `/${r.kind}/${r.key}`,
     image: `/og/reports/${r.kind}/${r.key}.png`,
     type: "article",

@@ -76,3 +76,70 @@ export function toBeijingIso(instant: Date | string | number): string {
   const d = new Date(new Date(instant).getTime() + OFFSET_MS);
   return `${d.toISOString().slice(0, 19)}+08:00`;
 }
+
+// IANA calendar helpers for report operations. The Beijing helpers above deliberately retain
+// their historical meaning for time-machine slices and the reset monitor.
+const calendars = new Map<string, Intl.DateTimeFormat>();
+
+export function assertTimeZone(timeZone: string): string {
+  if (/^[+-]/.test(timeZone)) throw new RangeError("Expected an IANA time zone, not a fixed offset");
+  new Intl.DateTimeFormat("en-US", { timeZone }).format(0);
+  return timeZone;
+}
+
+function calendarParts(instant: Date | string | number, timeZone: string): Record<string, string> {
+  let formatter = calendars.get(timeZone);
+  if (!formatter) {
+    assertTimeZone(timeZone);
+    formatter = new Intl.DateTimeFormat("en-US", { timeZone, year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" });
+    calendars.set(timeZone, formatter);
+  }
+  return Object.fromEntries(formatter.formatToParts(new Date(instant)).map(p => [p.type, p.value]));
+}
+
+/** Calendar date at an instant in an IANA zone, independent of editorial/UI language. */
+export function calendarDate(instant: Date | string | number, timeZone: string): string {
+  const p = calendarParts(instant, timeZone);
+  return `${p.year}-${p.month}-${p.day}`;
+}
+
+/** UTC instant of local midnight; a missing local midnight is rejected rather than shifted. */
+export function calendarMidnight(date: string, timeZone: string): Date {
+  return zonedDateTime(date, "00:00", timeZone);
+}
+
+export const zonedDate = calendarDate;
+export const zonedMidnight = calendarMidnight;
+
+/** HH:mm at an instant in an IANA zone. */
+export function zonedTime(instant: Date | string | number, timeZone: string): string {
+  const p = calendarParts(instant, timeZone);
+  return `${p.hour}:${p.minute}`;
+}
+
+/** Local wall time to UTC: reject DST gaps; choose the earliest instant in an overlap. */
+export function zonedDateTime(date: string, time: string, timeZone: string): Date {
+  if (!isValidDate(date)) throw new RangeError("Invalid calendar date");
+  if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new RangeError("Invalid local time; expected HH:mm");
+  const [hour, minute] = time.split(":");
+  const nominal = Date.parse(`${date}T${time}:00Z`);
+  const candidates = new Set<number>();
+  // Sample both sides of a transition; convert the requested wall time with each observed offset.
+  for (let hours = -36; hours <= 36; hours += 6) {
+    const sample = nominal + hours * 3600_000;
+    const p = calendarParts(sample, timeZone);
+    const offset = Date.parse(`${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}Z`) - sample;
+    const candidate = nominal - offset;
+    const check = calendarParts(candidate, timeZone);
+    if (calendarDate(candidate, timeZone) === date && check.hour === hour && check.minute === minute && check.second === "00") candidates.add(candidate);
+  }
+  if (!candidates.size) throw new RangeError("Local date/time does not exist in this time zone");
+  return new Date(Math.min(...candidates));
+}
+
+/** End of a local calendar day; DST days may contain 23 or 25 hours. */
+export function calendarDayEnd(date: string, timeZone: string): Date {
+  if (!isValidDate(date)) throw new RangeError("Invalid calendar date");
+  return new Date(calendarMidnight(addDays(date, 1), timeZone).getTime() - 1);
+}

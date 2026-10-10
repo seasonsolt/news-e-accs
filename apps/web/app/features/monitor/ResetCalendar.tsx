@@ -1,3 +1,5 @@
+import { contentFetch } from "../../lib/content-fetch";
+import { Link } from "../../lib/navigation";
 import { Text, useTranslate } from "../../lib/i18n";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { CodexCalendarMark, CodexResetEvent, CodexResetDay } from "@aihot/contracts/monitor";
@@ -80,7 +82,7 @@ export function ResetCalendar({ marks, events, today, historyFrom, now, avatar, 
     setFailed(false);
     if (daysLoaded[selected] || !marks.some((m) => m.date === selected)) return;
     const controller = new AbortController();
-    fetch(`/api/site/codex-reset/days/${selected}`, { signal: controller.signal, cache: "no-store" })
+    contentFetch(`/api/site/codex-reset/days/${selected}`, { signal: controller.signal, cache: "no-store" })
       .then((r) => { if (!r.ok) throw new Error("day unavailable"); return r.json(); })
       .then((data: CodexResetDay) => {
         // The page or this day may predate the latest monitor update. Do not cache either mismatch;
@@ -119,7 +121,7 @@ export function ResetCalendar({ marks, events, today, historyFrom, now, avatar, 
       <h2 id="calendar-title" className="text-[18px] font-bold text-ink"><Text value="重置日历" /></h2>
       <p className="mt-1 text-[12.5px] text-ink-3"><Text value="点日期查看当天的重置、发卡和 Tibo 原帖。" /></p>
 
-      <noscript><nav aria-label={tx("历史重置记录")}>{[...new Set(marks.map((m) => m.date))].sort().reverse().map((d) => <a key={d} href={`/codex-reset/history/${d}`} className="mr-3 inline-block">{d}</a>)}</nav></noscript>
+      <noscript><nav aria-label={tx("历史重置记录")}>{[...new Set(marks.map((m) => m.date))].sort().reverse().map((d) => <Link key={d} to={`/codex-reset/history/${d}`} className="mr-3 inline-block">{d}</Link>)}</nav></noscript>
       <div className="mt-4 overflow-hidden rounded-card border border-line-strong bg-surface lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,1fr)] xl:grid-cols-[minmax(0,1.45fr)_minmax(300px,1fr)]">
         <div className="px-3 py-[18px] sm:p-6">
           <div className="flex items-center justify-between gap-3">
@@ -168,9 +170,9 @@ export function ResetCalendar({ marks, events, today, historyFrom, now, avatar, 
                 const isSel = d === selected;
                 const future = d > today;
                 return (
-                  <a
+                  <Link
                     key={d}
-                    href={`/codex-reset/history/${d}` }
+                    to={`/codex-reset/history/${d}` }
                     role="gridcell"
                     data-day={d}
                     tabIndex={isSel ? 0 : -1}
@@ -191,7 +193,7 @@ export function ResetCalendar({ marks, events, today, historyFrom, now, avatar, 
                         {ms.length > 1 ? ` +${ms.length - 1}` : ""}
                       </span>
                     )}
-                  </a>
+                  </Link>
                 );
               })}
             </div>
@@ -214,7 +216,7 @@ export function ResetCalendar({ marks, events, today, historyFrom, now, avatar, 
             <span className="num text-[12px] text-ink-4">{selected.slice(0, 4)}</span>
           </div>
           <p className="sr-only"><Text value="已选择" />{selected}，{selectedMarks.length}<Text value="条记录。" /></p>
-          {selectedMarks.length > 0 && !daysLoaded[selected] && <p className="text-[13px] text-ink-3">{failed ? <a href={`/codex-reset/history/${selected}`} className="text-accent"><Text value="重新读取当天记录" /></a> : tx("正在读取当天记录…")}</p>}
+          {selectedMarks.length > 0 && !daysLoaded[selected] && <p className="text-[13px] text-ink-3">{failed ? <Link to={`/codex-reset/history/${selected}`} className="text-accent"><Text value="重新读取当天记录" /></Link> : tx("正在读取当天记录…")}</p>}
           {selectedMarks.map((m, i) => {
             const e = eventById.get(m.eventId);
             if (!e) return null;

@@ -1,6 +1,7 @@
+import { Link, useNavigate } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { useEffect, useState } from "react";
-import { data, Link, useLoaderData, useLocation, useNavigate, useRouteLoaderData, type ShouldRevalidateFunction } from "react-router";
+import { data, useLoaderData, useLocation, useRouteLoaderData, type ShouldRevalidateFunction } from "react-router";
 import { FEATURES } from "@aihot/industry/features";
 import { AXIS_FUTURE_YEARS, BIG_BANG, decimalYear, eraAt, timeLabel, toAxis, yearToDate, type ChronicleMilestone, type ChronicleResponse } from "@aihot/contracts/chronicle";
 import type { Route } from "./+types/chronicle";

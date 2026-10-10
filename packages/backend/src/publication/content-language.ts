@@ -5,17 +5,17 @@ import { sql, type Db } from '../db.ts';
 import { completeReceipt } from '../providers/receipts.ts';
 import { fetchItemsByIds, toItemSummary } from './items.ts';
 import { loadItemDetail, withOutline } from './detail.ts';
-import { loadStoryDetail, resolveStory, loadHotStrip } from './stories.ts';
+import { loadStoryProse, resolveStory, loadHotStrip } from './stories.ts';
 import { loadReport } from './reports.ts';
 import { loadPool } from './pool.ts';
-import { contentSource, applyTranslations, validateTranslation, type ContentKind, type TranslationEntry } from './content-source.ts';
+import { contentSource, applyTranslations, validateTranslation, editionMatches, targetLanguageProse, type ContentKind, type TranslationEntry } from './content-source.ts';
 
-export function bodySource(id: string, html: string): { entry: TranslationEntry; render: (translations: Record<string,string>) => string } {
+export function bodySource(id: string, html: string, sourceLanguage = "zh", targetLanguage: "en" | "zh" = "en"): { entry: TranslationEntry; render: (translations: Record<string,string>) => string } {
   const $ = load(html, null, false);
   const blocks = $('p,h2,h3,h4,h5,li,blockquote,figcaption,td,th,dt,dd,caption').toArray()
     .filter(node => !$(node).parents('pre,code').length && !$(node).find('p,h2,h3,h4,h5,li,blockquote,figcaption,td,th,dt,dd,caption,pre').length && $(node).text().trim());
   const protectedBlocks = blocks.map(node => shield($(node).html() ?? ''));
-  const entry = contentSource('body', id, { blocks: protectedBlocks.map(block => ({ text: block.html })) });
+  const entry = contentSource('body', id, { editorialLanguage: sourceLanguage, blocks: protectedBlocks.map(block => ({ text: block.html })) }, targetLanguage);
   return { entry, render: translations => {
     blocks.forEach((node,index) => {
       const translated = translations[`blocks.${index}.text`];
@@ -29,27 +29,45 @@ export function bodySource(id: string, html: string): { entry: TranslationEntry;
   } };
 }
 
-export async function currentContent(kind: ContentKind, id: string): Promise<TranslationEntry | null> {
+type EditionLanguage = 'en' | 'zh';
+function canonicalBody(detail: { editorialLanguage?: EditionLanguage; language: string | null; body: { zh: string | null; original: string | null; zhKind: "translation" | "original" | null; complete: boolean } | null }, originalBody = false) {
+  const body = detail.body;
+  if (!body) return null;
+  // Native editorial copy translates directly from the original source, never through Chinese.
+  const useOriginal = originalBody || detail.language === 'en' || detail.editorialLanguage === 'en' || !body.zh;
+  const html = useOriginal ? body.original ?? body.zh : body.zh ?? body.original;
+  const original = (useOriginal && !!body.original) || body.zhKind === 'original';
+  const language = original ? detail.language ?? 'unknown' : 'zh';
+  if (!original && html && !targetLanguageProse(html, 'zh')) {
+    return body.original ? { html: body.original, language: detail.language ?? 'unknown', complete: true }
+      : { html, language: 'unknown', complete: false };
+  }
+  const complete = original || body.complete;
+  return html ? { html, language, complete } : null;
+}
+export async function currentContent(kind: ContentKind, id: string, targetLanguage: EditionLanguage = 'en'): Promise<TranslationEntry | null> {
   if (kind === 'item' || kind === 'body') {
     const row = (await fetchItemsByIds([id])).get(id);
     if (!row || row.visibility !== 'public' || row.source_mode !== 'editorial' || (row.selected && (!row.visible_after || row.visible_after > new Date()))) return null;
-    if (kind === 'item') return contentSource(kind, id, toItemSummary(row));
-    if (row.language === 'en') return null;
+    if (kind === 'item') {
+      if ((row.header_source_language ?? row.editorial_language ?? 'zh') === targetLanguage) return null;
+      return contentSource(kind, id, toItemSummary(row), targetLanguage);
+    }
     const detail = await loadItemDetail(id);
-    if (detail.kind !== 'found' || !detail.detail.body) return null;
-    const html = detail.detail.body.zh ?? detail.detail.body.original;
-    return html ? bodySource(id, html).entry : null;
+    if (detail.kind !== 'found') return null;
+    const body = canonicalBody(detail.detail);
+    return body && body.language !== targetLanguage ? bodySource(id, body.html, body.language, targetLanguage).entry : null;
   }
   if (kind === 'story') {
     const found = await resolveStory(id);
     if (found.kind !== 'found') return null;
-    const dto = await loadStoryDetail(found.storyId);
-    return dto ? contentSource(kind,id,dto) : null;
+    const dto = await loadStoryProse(found.storyId);
+    return dto && contentSource(kind,id,dto,targetLanguage).sourceLanguage !== targetLanguage ? contentSource(kind,id,dto,targetLanguage) : null;
   }
   const [reportKind,key] = id.split(':');
   if (!['daily','weekly','monthly'].includes(reportKind!)) return null;
   const dto = await loadReport(reportKind as 'daily'|'weekly'|'monthly', key!);
-  return dto ? contentSource(kind,id,dto) : null;
+  return dto && contentSource(kind,id,dto,targetLanguage).sourceLanguage !== targetLanguage ? contentSource(kind,id,dto,targetLanguage) : null;
 }
 
 export async function saveTranslation(entry: TranslationEntry, provenance: 'provider'|'offline-agent'|'original', model: string, receiptIds: number[] = [], write = false, db: Db = sql): Promise<void> {
@@ -64,26 +82,28 @@ export async function saveTranslation(entry: TranslationEntry, provenance: 'prov
       await db`SELECT id FROM reports WHERE kind=${kind!} AND key=${key!} FOR SHARE`;
     }
   }
-  const current = await currentContent(entry.kind,entry.id);
+  const current = await currentContent(entry.kind,entry.id,entry.targetLanguage ?? "en");
   if (!current) throw new Error(`not currently public: ${entry.kind}:${entry.id}`);
   const translations = validateTranslation(entry,current);
   if (provenance === 'offline-agent' && receiptIds.length) throw new Error('offline imports cannot have provider receipts');
   if (entry.kind === 'body') {
     const detail = await loadItemDetail(entry.id);
     if (detail.kind !== 'found' || !detail.detail.body) throw new Error('body no longer public');
-    bodySource(entry.id, detail.detail.body.zh ?? detail.detail.body.original ?? '').render(translations);
+    const body = canonicalBody(detail.detail);
+    if (!body) throw new Error('body no longer public');
+    bodySource(entry.id, body.html, body.language, entry.targetLanguage ?? 'en').render(translations);
   }
   if (!write) return;
-  await db`INSERT INTO content_translations (kind,content_id,source_hash,source_segments,translations,provenance,model,receipt_ids)
-    VALUES (${entry.kind},${entry.id},${entry.sourceHash},${db.json(entry.segments)},${db.json(translations)},${provenance},${model},${receiptIds})
-    ON CONFLICT (kind,content_id,lang) DO UPDATE SET source_hash=excluded.source_hash,source_segments=excluded.source_segments,
+  await db`INSERT INTO content_translations (kind,content_id,lang,source_language,source_hash,source_segments,translations,provenance,model,receipt_ids)
+    VALUES (${entry.kind},${entry.id},${entry.targetLanguage ?? 'en'},${entry.sourceLanguage ?? 'zh'},${entry.sourceHash},${db.json(entry.segments)},${db.json(translations)},${provenance},${model},${receiptIds})
+    ON CONFLICT (kind,content_id,lang) DO UPDATE SET source_language=excluded.source_language,source_hash=excluded.source_hash,source_segments=excluded.source_segments,
     translations=excluded.translations,provenance=excluded.provenance,model=excluded.model,receipt_ids=excluded.receipt_ids,translated_at=now()`;
   // Business data and receipt completion commit together; a stale source or rolled-back edition
   // leaves the received answer reusable. Offline imports never create or complete receipts.
   if (provenance === 'provider') for (const id of new Set(receiptIds)) await completeReceipt(db, id);
 }
 
-export async function exportContentBatch(cursor = '', limit = 50) {
+export async function exportContentBatch(cursor = '', limit = 50, targetLanguage: EditionLanguage = 'en') {
   const rows = await sql<{ kind: ContentKind; id: string; cursor: string }[]>`
     SELECT * FROM (
       SELECT 'item'::text AS kind, article_id AS id, 'item:' || article_id AS cursor FROM publications p JOIN sources s ON s.id=p.source_id
@@ -97,17 +117,17 @@ export async function exportContentBatch(cursor = '', limit = 50) {
   const entries: TranslationEntry[] = [];
   let alreadyComplete = 0;
   for (const row of rows) {
-    const entry = await currentContent(row.kind,row.id);
+    const entry = await currentContent(row.kind,row.id,targetLanguage);
     if (!entry?.segments.length) continue;
-    const [ready] = await sql`SELECT 1 FROM content_translations WHERE kind=${entry.kind} AND content_id=${entry.id} AND source_hash=${entry.sourceHash}`;
-    if (ready) alreadyComplete++; else entries.push(entry);
+    const [ready] = await sql<{source_hash:string;source_language:string;source_segments:TranslationEntry['segments'];translations:Record<string,string>}[]>`SELECT source_hash,source_language,source_segments,translations FROM content_translations WHERE kind=${entry.kind} AND content_id=${entry.id} AND lang=${targetLanguage}`;
+    if (ready && editionMatches(entry,ready)) alreadyComplete++; else entries.push(entry);
   }
-  return { schemaVersion:1 as const, targetLanguage:'en' as const, entries, nextCursor:rows.at(-1)?.cursor ?? null, scanned:rows.length, alreadyComplete };
+  return { schemaVersion:1 as const, targetLanguage, entries, nextCursor:rows.at(-1)?.cursor ?? null, scanned:rows.length, alreadyComplete };
 }
 
 /** Current visible headlines get a small priority lane; eligibility and fingerprints are still
  * checked through the same canonical public projection as the historical sweep. */
-export async function priorityContentEntries() {
+export async function priorityContentEntries(targetLanguage: EditionLanguage = 'en') {
   const [hot, pool] = await Promise.all([
     loadHotStrip(), loadPool({ channel: 'all', category: null, tag: null, page: 1 }),
   ]);
@@ -121,19 +141,21 @@ export async function priorityContentEntries() {
   for (const item of pool.items) add('item', item.id);
   const entries: TranslationEntry[] = [];
   for (const ref of refs.values()) {
-    const entry = await currentContent(ref.kind, ref.id);
+    const entry = await currentContent(ref.kind, ref.id,targetLanguage);
     if (!entry?.segments.length) continue;
-    const [ready] = await sql`SELECT 1 FROM content_translations WHERE kind=${entry.kind} AND content_id=${entry.id} AND source_hash=${entry.sourceHash}`;
-    if (!ready) entries.push(entry);
+    const [ready] = await sql<{source_hash:string;source_language:string;source_segments:TranslationEntry['segments'];translations:Record<string,string>}[]>`SELECT source_hash,source_language,source_segments,translations FROM content_translations WHERE kind=${entry.kind} AND content_id=${entry.id} AND lang=${targetLanguage}`;
+    if (!ready || !editionMatches(entry,ready)) entries.push(entry);
   }
   return entries;
 }
 
-// Readers only read stored editions. Source text must still match, including editorial overrides.
+// Readers only read stored editions after canonical visibility and licence projection.
 export async function localizePublication<T>(input: T, lang: string, originalBody = false): Promise<T> {
-  if (lang !== 'en') return input;
-  const records = new Map<string,{kind: ContentKind; id:string; current:TranslationEntry|null}>();
+  if (lang !== 'en' && lang !== 'zh') return input;
+  const targetLanguage = lang;
+  const records = new Map<string,{kind: ContentKind; id:string; dto:any}>();
   const identify = (o:any): {kind:ContentKind;id:string}|null => {
+    if (o?.story?.publicId && 'rank' in o && 'summary' in o) return {kind:'story',id:o.story.publicId};
     if (o && typeof o === 'object' && typeof o.title === 'string') {
       if (typeof o.id === 'string' && ('summary' in o || 'originalTitle' in o)) return {kind:'item',id:o.id};
       if (typeof o.publicId === 'string') return {kind:'story',id:o.publicId};
@@ -145,65 +167,85 @@ export async function localizePublication<T>(input: T, lang: string, originalBod
   };
   const collect = (o:any) => {
     if (!o || typeof o !== 'object' || o.available === false) return;
-    const ref=identify(o); if(ref) records.set(`${ref.kind}:${ref.id}`,{...ref,current:null});
+    const ref=identify(o); if(ref) records.set(`${ref.kind}:${ref.id}`,{...ref,dto:null});
+    if (ref?.kind === 'report') return;
     for(const child of Object.values(o)) collect(child);
   };
   collect(input);
-  const itemIds = [...records.values()].filter(r=>r.kind==='item').map(r=>r.id);
-  const items = await fetchItemsByIds(itemIds);
+  const items = await fetchItemsByIds([...records.values()].filter(r=>r.kind==='item').map(r=>r.id));
   const ids=[...new Set([...records.values()].map(r=>r.id))];
-  const translations=ids.length ? await sql<{kind:ContentKind;content_id:string;source_hash:string;source_segments:TranslationEntry['segments'];translations:Record<string,string>}[]>`SELECT kind,content_id,source_hash,source_segments,translations FROM content_translations WHERE content_id=ANY(${ids}::text[]) AND lang='en'` : [];
-  const stored=new Map(translations.map(r=>[`${r.kind}:${r.content_id}`,r]));
-  const storyIds=[...records.values()].filter(r=>r.kind==='story').map(r=>r.id);
-  const stories=storyIds.length ? await sql<{public_id:string;title:string;summary:string|null;digest:string|null;latest:string|null}[]>`
-    SELECT public_id::text,title,summary,digest,latest FROM stories st WHERE public_id::text=ANY(${storyIds}::text[]) AND merged_into IS NULL
-      AND EXISTS(SELECT 1 FROM facts f JOIN fact_articles fa ON fa.fact_id=f.id JOIN publications p ON p.article_id=fa.article_id JOIN sources s ON s.id=p.source_id WHERE f.story_id=st.id AND p.visibility='public' AND s.participation_mode='editorial' AND (NOT p.selected OR p.visible_after <= now()))` : [];
-  const storyRows=new Map(stories.map(r=>[r.public_id,r]));
+  type Edition = { kind:ContentKind; content_id:string; source_hash:string; source_language:string; source_segments:TranslationEntry['segments']; translations:Record<string,string> };
+  const editions=ids.length ? await sql<Edition[]>`SELECT kind,content_id,source_hash,source_language,source_segments,translations FROM content_translations WHERE content_id=ANY(${ids}::text[]) AND lang=${targetLanguage}` : [];
+  const stored=new Map(editions.map(r=>[`${r.kind}:${r.content_id}`,r]));
   for(const record of records.values()) {
     if(record.kind==='item') {
       const row=items.get(record.id);
-      if(row?.visibility==='public' && row.source_mode==='editorial' && (!row.selected || (!!row.visible_after && row.visible_after<=new Date()))) record.current=contentSource('item',record.id,toItemSummary(row));
+      if(row?.visibility==='public' && row.source_mode==='editorial' && (!row.selected || (!!row.visible_after && row.visible_after<=new Date()))) record.dto=toItemSummary(row);
     } else if(record.kind==='story') {
-      const row=storyRows.get(record.id);const edition=stored.get(`story:${record.id}`);
-      if(row&&edition){
-        const core=contentSource('story',record.id,row).segments;
-        const previous=edition.source_segments.filter(s=>['title','summary','digest','latest'].includes(s.key));
-        if(JSON.stringify(core)===JSON.stringify(previous)) record.current={kind:'story',id:record.id,sourceHash:edition.source_hash,segments:edition.source_segments};
-      }
-    } else record.current=await currentContent(record.kind,record.id);
+      const found=await resolveStory(record.id);
+      if(found.kind==='found') record.dto=await loadStoryProse(found.storyId);
+    } else {
+      const [kind,key]=record.id.split(':');
+      record.dto=await loadReport(kind as 'daily'|'weekly'|'monthly',key!);
+    }
   }
   const visit=async(o:any):Promise<any>=>{
     if(!o || typeof o!=='object' || o.available===false) return o;
-    let out=Array.isArray(o)?[]:{...o};
-    for(const [key,child] of Object.entries(o)) out[key]=await visit(child);
+    let out:any=Array.isArray(o)?[]:{...o};
     const ref=identify(o);
+    if (ref?.kind === 'report') out=structuredClone(o);
+    else for(const [key,child] of Object.entries(o)) out[key]=await visit(child);
     if(ref){
-      const record=records.get(`${ref.kind}:${ref.id}`); const source=record?.current; const ready=stored.get(`${ref.kind}:${ref.id}`);
-      const matches=!!source && ready?.source_hash===source.sourceHash && (ref.kind!=='story' || !('developments' in o) || contentSource('story',ref.id,o).sourceHash===source.sourceHash);
+      const dto=records.get(`${ref.kind}:${ref.id}`)?.dto;
+      if (!dto) return out;
+      const source=contentSource(ref.kind,ref.id,dto,targetLanguage);
+      const ready=stored.get(`${ref.kind}:${ref.id}`);
+      const native=source.sourceLanguage===targetLanguage;
+      const hotStory=ref.kind==='story' && o.story?.publicId && 'rank' in o && 'summary' in o;
+      const projectionMatches=hotStory
+        ? o.story.title===dto.title && o.summary===(dto.digest ?? dto.summary) && o.latest===dto.latest
+        : ref.kind==='report' && !o.sections
+        ? source.segments.some(segment=>segment.text===o.title)
+        : contentSource(ref.kind,ref.id,o,targetLanguage).segments.every(segment=>source.segments.some(current=>current.key===segment.key && current.text===segment.text));
+      const matches=!native && projectionMatches && !!ready && editionMatches(source,ready,dto.revision ?? null);
       if(matches) {
-        out=applyTranslations(out,source!,ready!.translations);
+        out=applyTranslations(out,source,ready!.translations);
+        if (hotStory && o.summary) out.summary=ready!.translations[dto.digest?'digest':'summary'] ?? out.summary;
         if(ref.kind==='report' && !o.sections){
-          const title=source!.segments.find(s=>s.key==='lead.title'&&s.text===o.title);
-          if(title && ready!.translations[title.key]) out.title=ready!.translations[title.key];
+          const title=source.segments.find(s=>s.key==='lead.title'&&s.text===o.title);
+          if(title) out.title=ready!.translations[title.key];
         }
       }
-      if(ref.kind==='item' && out.x?.quoted) out.x.quoted.translation=null;
-      out.contentLanguage={requested:'en',status:matches?'translated':'original',sourceLanguage:'original'};
-      if(ref.kind==='item' && o.body && !originalBody){
-        if(o.language==='en' && o.body.original){
-          out.body={...o.body,zh:null,original:o.body.original};out.bodyLanguage='original';
-          out.bodyContentLanguage={status:'original-english'};out.outline=withOutline(o.body.original).outline;
-        } else {
-          const html=o.body.zh??o.body.original;
-          if(html){
-            const body=bodySource(ref.id,html);
-            const [edition]=await sql<{source_hash:string;translations:Record<string,string>}[]>`SELECT source_hash,translations FROM content_translations WHERE kind='body' AND content_id=${ref.id} AND lang='en'`;
-            if(edition?.source_hash===body.entry.sourceHash){
-              const rendered=withOutline(body.render(edition.translations));
-              out.body={...o.body,zh:null,original:rendered.html};out.bodyLanguage='original';
-              out.bodyContentLanguage={status:'translated'};out.outline=rendered.outline;out.hasTranslation=true;
-            } else out.bodyContentLanguage={status:'original'};
+      out.editorialLanguage=dto.editorialLanguage ?? 'zh';
+      out.contentLanguage={requested:targetLanguage,status:matches?'translated':'original',sourceLanguage:source.sourceLanguage,language:matches?targetLanguage:projectionMatches?source.sourceLanguage:o.editorialLanguage ?? 'unknown'};
+      if (ref.kind === 'report') {
+        // Citations are edited report snapshots, not current story/item projections.
+        for (const citation of [...(out.sections ?? []).flatMap((section:any) => section.items ?? []), ...(out.stories ?? []), ...(out.highlights ?? []), ...(out.flashes ?? [])]) {
+          if (citation.available !== false) citation.contentLanguage={...out.contentLanguage};
+        }
+      }
+      if(ref.kind==='item' && out.x?.quoted && targetLanguage==='en') out.x.quoted.translation=null;
+      if(ref.kind==='item' && o.body){
+        const detail=await loadItemDetail(ref.id);
+        if(detail.kind!=='found' || !detail.detail.body) { out.body=null; out.outline=[]; return out; }
+        const body=canonicalBody(detail.detail,originalBody);
+        if(body){
+          let html=body.html, language=body.language, translated=false;
+          if (!originalBody && body.language!==targetLanguage) {
+            const sourceBody=bodySource(ref.id,body.html,body.language,targetLanguage);
+            const edition=stored.get(`body:${ref.id}`);
+            if(edition && editionMatches(sourceBody.entry,edition)) {
+              try { html=sourceBody.render(edition.translations); language=targetLanguage; translated=true; } catch { /* Invalid body markup falls back to the licensed source. */ }
+            } else if (targetLanguage==='zh' && detail.detail.body.zh && detail.detail.body.complete && targetLanguageProse(detail.detail.body.zh, 'zh')) {
+              html=detail.detail.body.zh; language='zh'; translated=detail.detail.body.zhKind==='translation';
+            }
           }
+          const rendered=withOutline(html);
+          out.body={...detail.detail.body,zh:language==='zh'?rendered.html:null,original:language==='zh'?null:rendered.html,
+              zhKind:language==='zh'?(translated?'translation':'original'):null,complete:language===body.language || translated?body.complete:detail.detail.body.complete};
+          out.bodyLanguage=language==='zh'?'zh':'original'; out.outline=rendered.outline;
+          out.hasTranslation=translated || !!(detail.detail.body.zh && detail.detail.body.original);
+          out.bodyContentLanguage={requested:targetLanguage,status:translated?'translated':language==='en'?'original-english':'original',sourceLanguage:body.language,language};
         }
       }
     }

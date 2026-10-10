@@ -22,14 +22,14 @@ const provider = await stub((_hit, req) => {
   const content =
     system.includes("宽召回") ? { label: "PASS", reason: "测试" }
     : system.includes("事件注意力评分器") ? { attentionScore: 80 }
-    : system.includes("内容理解编辑") ? { itemType: "product_launch", authorRole: "principal", tags: ["产品更新"], editorialJudgment: "理由", titleZh: "一个模型的标题", summaryZh: "一个模型写的摘要。第二句。" }
+    : system.includes("内容理解编辑") ? { itemType: "product_launch", authorRole: "principal", tags: ["产品更新"], editorialJudgment: "A useful detail", title: "A model headline", summary: "A model summary. A supported second detail." }
     : system.includes("资料结构化助手") ? { category: "ai-products", tags: ["产品更新"], subjects: [], fact: null }
-    : user.includes("title_zh") ? "title_zh: 标题\nsummary_zh: 摘要。"
+    : user.includes("title") ? "title: 标题\nsummary: 摘要。"
     : null;
   if (content === null) throw new Error("unexpected request");
   return { id: `stub-${seen.length}`, choices: [{ message: { content: typeof content === "string" ? content : JSON.stringify(content) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } };
 });
-Object.assign(process.env, { LLM_BASE_URL: `${provider.url}/v1`, LLM_API_KEY: "test-key", LLM_MODEL: "one-model", MODEL_CALLS_ENABLED: "true" });
+Object.assign(process.env, { LLM_BASE_URL: `${provider.url}/v1`, LLM_API_KEY: "test-key", LLM_MODEL: "one-model" });
 
 before(async () => {
   await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, next_fetch_at) VALUES (${SOURCE}, 'Test default model', 'rss', 'T1', 'editorial', '2100-01-01')`;
@@ -47,7 +47,7 @@ test("one model runs the prefilter, both scores, the writing and the structure",
   } as never);
   const res = await analyzeArticle(articleId);
   assert.equal(res!.output!.selected, true);
-  assert.equal(res!.output!.titleZh, "一个模型的标题");
+  assert.equal(res!.output!.title, "A model headline");
   assert.equal(seen.length, 5, "prefilter, two scores, understand, structure");
   assert.ok(seen.every((r) => r.model === "one-model"), "every request names the configured model");
   const services = await sql<{ service: string }[]>`SELECT DISTINCT service FROM receipts WHERE subject LIKE ${`article:${articleId}%`}`;

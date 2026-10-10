@@ -1,6 +1,7 @@
-import { localeFromMatches, Text, useLocale, useTranslate } from "../lib/i18n";
+import { Link } from "../lib/navigation";
+import { localeFromMatches, translate, Text, useLocale, useTranslate } from "../lib/i18n";
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
-import { Link, useLoaderData } from "react-router";
+import { useLoaderData } from "react-router";
 import type { SiteStats } from "@aihot/contracts/site";
 import { apiGet } from "../lib/api.server";
 import { shortSourceName } from "../lib/format";
@@ -32,7 +33,7 @@ export async function loader({ request }: { request: Request }) {
 }
 
 export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
-  return pageMeta({ title: "关于", description: `关于 ${SITE.name}：${SITE.description}`, path: "/about", image: "/og/pages/about.png", jsonLd: organizationLd() }, localeFromMatches(matches ?? []));
+  return pageMeta({ title: "关于", description: localeFromMatches(matches ?? []) === "en" ? `How ${SITE.name} collects, selects and groups AI news from public sources.` : `关于 ${SITE.name}：${translate("zh", SITE.description)}`, path: "/about", image: "/og/pages/about.png", jsonLd: organizationLd() }, localeFromMatches(matches ?? []));
 }
 
 const NO_SOURCES: RiverSource[] = [];

@@ -22,10 +22,13 @@ try {
     const saved=args.includes('--resume')?JSON.parse(await readFile(value('--resume')!,'utf8')):null;
     const cursor=args.includes('--cursor')?value('--cursor')!:saved?.nextCursor??'';
     if(typeof cursor !== 'string') throw new Error('invalid resume cursor');
-    const batch=await exportContentBatch(cursor,limit);
+    const targetLanguage=args.includes('--lang')?value('--lang'):saved?.targetLanguage??'en';
+    if(targetLanguage!=='en'&&targetLanguage!=='zh') throw new Error('--lang must be en or zh');
+    if(saved?.targetLanguage&&saved.targetLanguage!==targetLanguage) throw new Error('resume target language mismatch');
+    const batch=await exportContentBatch(cursor,limit,targetLanguage);
     const {nextCursor,scanned,alreadyComplete,...payload}=batch;
     if(args.includes('--output')) await writeFile(value('--output')!,JSON.stringify(payload,null,2)+'\n');
     console.log(JSON.stringify({mode:'dry-run-export',scanned,alreadyComplete,pending:payload.entries.length,nextCursor}));
-    if(args.includes('--checkpoint')) await writeFile(value('--checkpoint')!,JSON.stringify({nextCursor,scanned,alreadyComplete})+'\n');
+    if(args.includes('--checkpoint')) await writeFile(value('--checkpoint')!,JSON.stringify({nextCursor,scanned,alreadyComplete,targetLanguage})+'\n');
   }
 } finally {await sql.end();}

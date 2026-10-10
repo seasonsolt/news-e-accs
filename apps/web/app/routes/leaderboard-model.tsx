@@ -1,7 +1,8 @@
+import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { useEffect, useState, type ReactNode } from "react";
-import { Link, useLoaderData, useSearchParams } from "react-router";
+import { useLoaderData, useSearchParams } from "react-router";
 import { Collapse } from "../components/ui/Presence";
 import type { Route } from "./+types/leaderboard-model";
 import type { LbComparison, LbEvidenceItem, LbModelDetail } from "@aihot/contracts/leaderboard";

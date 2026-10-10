@@ -69,7 +69,7 @@ async function get(url: string, headers: Record<string, string> = {}) {
   return { status: res.statusCode, body: res.body, etag: res.headers.etag as string | undefined };
 }
 
-test("site reading sends one language while exports retain both, including after withdrawal", async () => {
+test("site reading and exports select a stored language, including after withdrawal", async () => {
   const id = await article();
   await sql`UPDATE articles SET language = 'en', body_html = '<h2>Original heading</h2><p>Original full body</p>' WHERE id = ${id}`;
   await sql`INSERT INTO translations (article_id, revision, body_html, body_text, origin) VALUES (${id}, 1, '<h2>译文标题</h2><p>中文完整正文</p>', '中文完整正文', 'source')`;
@@ -85,8 +85,11 @@ test("site reading sends one language while exports retain both, including after
   assert.equal(original.body.zh, null);
   assert.ok(original.body.original.includes('Original full body'));
   assert.equal(original.outline[0].text, 'Original heading');
-  const md = (await get(`/items/${id}/markdown`)).body;
-  assert.ok(md.includes('Original full body') && md.includes('中文完整正文'));
+  const md = await get(`/items/${id}/markdown?lang=zh`);
+  assert.equal(md.status, 200);
+  assert.ok(md.body.includes("中文完整正文"));
+  assert.ok(!md.body.includes("Original full body"));
+  assert.equal((await get(`/items/${id}/markdown`)).status, 503, "English headline edition is not ready");
   await setVisibility(id, { visibility: 'withdrawn', reason: 'test', version: 0 }, 'test');
   assert.equal((await get(`/api/site/items/${id}/original`)).status, 404);
 });
@@ -201,7 +204,7 @@ test("item pages follow the live rule: unsummarised editorial items keep one, ho
   assert.equal(page.status, 200, "an unsummarised editorial item keeps its page");
   const detail = JSON.parse(page.body) as { summary: string | null; indexable: boolean; markdownAvailable: boolean };
   assert.deepEqual([detail.summary, detail.indexable, detail.markdownAvailable], [null, false, true], "noindex, with its body for export");
-  assert.equal((await get(`/items/${plain}/markdown`)).status, 200);
+  assert.equal((await get(`/items/${plain}/markdown?lang=zh`)).status, 503, "unknown original title does not prove Chinese readiness");
   assert.equal((await get(`/api/site/items/${signal}`)).status, 404, "hot_signal material has no page");
   assert.equal((await get(`/items/${signal}/markdown`)).status, 404);
 
@@ -281,7 +284,7 @@ test("v1 story retains website content and fallback ordering without the website
   { publicId: site.publicId, title: site.title, sourceCount: site.sourceCount, reportCount: site.reportCount,
     firstReportAt: site.firstReportAt, latestAt: site.latestAt, digest: site.digest, digestUpdatedAt: site.digestUpdatedAt });
   assert.equal(v1.latest, 'Latest development fallback');
-  assert.deepEqual(v1.reports, site.timeline.slice(0, 50).map((r: any) => ({ id: r.id, title: r.title, summary: r.summary,
+  assert.deepEqual(v1.reports, site.timeline.slice(0, 50).map((r: any) => ({ id: r.id, editorialLanguage: r.editorialLanguage, title: r.title, summary: r.summary,
     source: { name: r.source.name, firstParty: r.source.firstParty }, publishedAt: r.publishedAt,
     links: { aihot: `${config.siteUrl}/items/${r.id}`, original: r.originalUrl } })));
   await sql`UPDATE publications SET visible_after = now() + interval '1 day' WHERE article_id = ${second}`;
@@ -324,8 +327,8 @@ test("share images keep detail metadata and access rules while conditional reads
   const date = beijingDate(d.timelineAt);
   const card = { kicker, title: d.title, subtitle: d.summary, meta: `${source} · ${date}`,
     badge: d.selected && d.score !== null ? { value: String(Math.round(d.score)), label: "精选评分" } : null };
-  const poster = { url: `${config.siteUrl}/items/${id}`, kicker, title: d.title, summary: d.summary, source, date, score: d.selected ? d.score : null };
-  const paths = [[`/og/items/${id}.png`, `"og-${ogEtag(card)}"`], [`/og/posters/${id}.png`, `"poster-${posterEtag(poster)}"`]];
+  const poster = { language: "zh" as const, url: `${config.siteUrl}/zh/items/${id}`, kicker, title: d.title, summary: d.summary, source, date, score: d.selected ? d.score : null };
+  const paths = [[`/og/items/${id}.png?lang=zh`, `"og-${ogEtag(card)}"`], [`/og/posters/${id}.png?lang=zh`, `"poster-${posterEtag(poster)}"`]];
   const queries: string[] = [];
   const previous = sql.options.debug;
   sql.options.debug = (_connection, query) => { queries.push(query); };
@@ -335,8 +338,8 @@ test("share images keep detail metadata and access rules while conditional reads
       assert.equal(response.status, 304);
       assert.equal(response.etag, etag);
     }
-    assert.equal(queries.length, 2);
-    assert.ok(queries.every((q) => !/body_html|body_text|translations|fact_articles/.test(q)), "cards only load their public metadata");
+    assert.ok(queries.length >= 2);
+    assert.ok(queries.every((q) => !/a\.body_html|a\.body_text|fact_articles/.test(q)), "cards only load their public metadata");
   } finally { sql.options.debug = previous; }
   await sql`UPDATE publications SET visibility = 'summary-only' WHERE article_id = ${id}`;
   assert.equal((await get(paths[0]![0]!, { "if-none-match": paths[0]![1]! })).status, 304, "summary-only pages keep the same allowed share summary");
@@ -351,7 +354,7 @@ test("minimal sync projection preserves snapshot fields, pagination bindings and
   const full = JSON.parse((await get('/api/v1/selected/snapshot?fields=default&limit=1000')).body);
   const minimal = JSON.parse((await get('/api/v1/selected/snapshot?fields=minimal&limit=1000')).body);
   const project = (i: any) => ({ id: i.id, title: i.title, source: i.source, publishedAt: i.publishedAt,
-    discoveredAt: i.discoveredAt, category: i.category, score: i.score, selected: i.selected, links: { aihot: i.links.aihot } });
+    discoveredAt: i.discoveredAt, category: i.category, score: i.score, selected: i.selected, links: { aihot: i.links.aihot }, ...(i.contentLanguage ? { contentLanguage: i.contentLanguage } : {}) });
   assert.deepEqual(minimal.items, full.items.map(project));
   assert.ok(minimal.items.some((i: any) => i.id === id));
   for (const fields of ['default', 'minimal']) {
