@@ -72,7 +72,7 @@ export default function Concept() {
   const headings = page.blocks.map((b) => (b.kind === "faq" ? "Frequently asked questions" : b.kind === "terms" ? "Terms" : b.heading));
   return (
     <>
-      <Deck compact label={page.h1} kicker="e/acc" title={<span lang="en">{page.h1}</span>} />
+      <Deck compact night art="concepts/horizon" label={page.h1} kicker="e/acc" title={<span lang="en">{page.h1}</span>} />
       <div className="h-6" />
       <ArticleLayout
         right={

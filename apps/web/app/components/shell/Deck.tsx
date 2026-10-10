@@ -35,7 +35,7 @@ export function Plate({ src, alt = "", className }: { src: string; alt?: string;
   );
 }
 
-export function Deck({ art, label, heading, kicker, title, titleId, description, aside, children, compact = false }: {
+export function Deck({ art, label, heading, kicker, title, titleId, description, aside, children, compact = false, night = false }: {
   /** Path under /media/art/ without the width suffix: "hot", "epochs/agents". */
   art?: string;
   /** The band's accessible name (the page's name). */
@@ -51,9 +51,11 @@ export function Deck({ art, label, heading, kicker, title, titleId, description,
   children?: ReactNode;
   /** A slim band for reading pages and small pages. */
   compact?: boolean;
+  /** A dark plate (a night sky): a lighter shade from the side instead of from below, so it still shows. */
+  night?: boolean;
 }) {
   return (
-    <section className={`deck ${compact ? "is-compact" : ""}`} aria-label={label}>
+    <section className={`deck ${compact ? "is-compact" : ""} ${night ? "is-night" : ""}`} aria-label={label}>
       {art && <Plate key={art} src={`/media/art/${art}`} className="deck-plate" />}
       <div className="deck-shade" aria-hidden="true" />
       <div className="deck-inner">
