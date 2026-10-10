@@ -336,10 +336,10 @@
     },
     {
       "id": "cuneiform",
-      "t": -3299,
+      "t": -3199,
       "precision": "year",
       "title": "楔形文字",
-      "detail": "苏美尔人约公元前3300年在泥板上记事，发展出已知最早的文字。",
+      "detail": "苏美尔人约公元前3200年在泥板上记事，发展出已知最早的文字。",
       "category": "culture",
       "capability": "文字",
       "source": "https://en.wikipedia.org/wiki/Cuneiform",
@@ -910,19 +910,6 @@
       "source": "https://en.wikipedia.org/wiki/Annus_mirabilis_papers"
     },
     {
-      "id": "haber-bosch",
-      "t": 1913,
-      "precision": "year",
-      "date": "1913",
-      "title": "合成氨工业化",
-      "detail": "哈伯法在巴斯夫奥堡工厂投产，氮肥从此可以大规模生产。",
-      "category": "energy",
-      "capability": "合成氨",
-      "source": "https://en.wikipedia.org/wiki/Haber_process",
-      "art": "haber-bosch",
-      "artStyle": "1910年代工业石版画"
-    },
-    {
       "id": "assembly-line",
       "t": 1913,
       "precision": "year",
@@ -934,6 +921,19 @@
       "source": "https://en.wikipedia.org/wiki/Assembly_line",
       "art": "assembly-line",
       "artStyle": "1910年代福特工厂照片"
+    },
+    {
+      "id": "haber-bosch",
+      "t": 1913.6877,
+      "precision": "day",
+      "date": "1913-09-09",
+      "title": "合成氨工业化",
+      "detail": "哈伯法在巴斯夫奥堡工厂投产，氮肥从此可以大规模生产。",
+      "category": "energy",
+      "capability": "合成氨",
+      "source": "https://en.wikipedia.org/wiki/Haber_process",
+      "art": "haber-bosch",
+      "artStyle": "1910年代工业石版画"
     },
     {
       "id": "kdka-broadcast",
