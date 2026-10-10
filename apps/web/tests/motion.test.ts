@@ -6,6 +6,7 @@ import { after, before, test } from "node:test";
 import { runInNewContext } from "node:vm";
 import { createElement, type ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { MemoryRouter } from "react-router";
 import { createServer } from "vite";
 import { parseHTML } from "linkedom";
 import { SITE } from "@aihot/site";
@@ -101,7 +102,8 @@ test("subscription ticket SSR has one final stamp, issue time and operable stub"
   const server = await createServer({ configFile: false, root: new URL("../", import.meta.url).pathname, server: { middlewareMode: true }, appType: "custom" });
   try {
     const { TearTicket } = await server.ssrLoadModule("/app/features/motion/react-bits/TearTicket.tsx") as { TearTicket: ComponentType<{ date: string }> };
-    const { document } = parseHTML(renderToStaticMarkup(createElement(TearTicket, { date: "2026-10-04" })));
+    const render = (path: string) => parseHTML(renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] }, createElement(TearTicket, { date: "2026-10-04" })))).document;
+    const document = render("/zh/subscribe");
     const ticket = document.querySelector("[data-subscription-ticket]")!;
     for (const text of ["e/acc 日报 · 订阅凭证", "每天 08:00", "2026-10-04", "撕下票根"]) assert.equal(ticket.textContent?.split(text).length, 2);
     assert.equal(ticket.querySelector("time")?.getAttribute("dateTime"), "2026-10-04");
@@ -111,6 +113,11 @@ test("subscription ticket SSR has one final stamp, issue time and operable stub"
     assert.equal(ticket.querySelector("[tabindex]"), null);
     assert.equal(ticket.querySelector("[style]"), null);
     assert.equal(ticket.hasAttribute("data-torn"), false);
+    const english = render("/subscribe").querySelector("[data-subscription-ticket]")!;
+    assert.match(english.textContent!, /e\/acc Daily · Subscription receipt/);
+    assert.match(english.textContent!, /Daily at 08:00/);
+    assert.equal(english.querySelector("button")?.getAttribute("aria-label"), "Tear off the stub");
+    assert.doesNotMatch(english.textContent!, /[\u3400-\u9fff]/u);
   } finally { await server.close(); }
 });
 
@@ -128,6 +135,11 @@ test("telegraph tape SSR has exactly the first five final headlines, linked once
   assert.equal(tape.textContent?.split("重播").length, 2);
   assert.equal(tape.querySelector("[tabindex], [style]"), null);
   assert.ok(tape.querySelector(".overflow-x-auto"));
+  const response = await fetch(fixture.origin + "/hot");
+  const english = parseHTML(await response.text()).document.querySelector("[data-telegraph-tape]")!;
+  assert.equal(english.getAttribute("aria-label"), "Trending telegram");
+  assert.equal(english.querySelector("button")?.getAttribute("aria-label"), "Replay trending telegram");
+  assert.equal(english.querySelector("button")?.textContent, "Replay");
 });
 
 test("404 flap and caption are final and singular; other errors have neither egg", async () => {

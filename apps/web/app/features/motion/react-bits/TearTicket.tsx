@@ -6,8 +6,10 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { useMotionAllowed } from "../preferences";
 import { runFrames } from "../viewport";
+import { Text, useTranslate } from "../../../lib/i18n";
 
 export function TearTicket({ date }: { date: string }) {
+  const tx = useTranslate();
   const allowed = useMotionAllowed();
   const root = useRef<HTMLDivElement>(null);
   const stub = useRef<HTMLSpanElement>(null);
@@ -76,12 +78,12 @@ export function TearTicket({ date }: { date: string }) {
   return (
     <div ref={root} data-subscription-ticket="" data-torn={torn || undefined} className="subscription-ticket grid w-full max-w-md grid-cols-[minmax(0,1fr)_96px] rounded-control border border-amber p-1 text-left text-ink shadow-soft">
       <div className="min-w-0 px-3 py-3">
-        <p className="text-[13px] font-semibold tracking-wide text-accent-ink">e/acc 日报 · 订阅凭证</p>
-        <p className="mono mt-2 text-[14px]">每天 08:00</p>
+        <p className="text-[13px] font-semibold tracking-wide text-accent-ink"><Text value="e/acc 日报 · 订阅凭证" /></p>
+        <p className="mono mt-2 text-[14px]"><Text value="每天 08:00" /></p>
         <time dateTime={date} className="mono mt-1 block text-[11px] text-ink-3">{date}</time>
       </div>
       <div className="relative border-l-2 border-dashed border-amber/60">
-        <button ref={button} type="button" disabled={torn} aria-label={torn ? "票根已撕下" : "撕下票根"}
+        <button ref={button} type="button" disabled={torn} aria-label={tx(torn ? "票根已撕下" : "撕下票根")}
           onPointerDown={(event) => {
             if (used.current || event.button !== 0 || drag.current) return;
             suppressClick.current = false;
@@ -95,9 +97,9 @@ export function TearTicket({ date }: { date: string }) {
           onLostPointerCapture={() => { if (drag.current) reset(); }}
           onClick={(event) => { if (event.detail === 0 || !suppressClick.current) tear(); }}
           className="flex h-full min-h-24 w-full touch-none select-none items-center justify-center rounded-control px-2 text-center text-[12px] font-semibold text-accent-ink disabled:text-ink-2">
-          <span role="status">{torn ? "明早 8 点见" : "撕下票根"}</span>
+          <span role="status">{tx(torn ? "明早 8 点见" : "撕下票根")}</span>
         </button>
-        <span ref={stub} aria-hidden="true" data-stub="撕下票根" className="ticket-stub pointer-events-none absolute inset-0 flex origin-top-left items-center justify-center rounded-control px-2 text-center text-[12px] font-semibold text-accent-ink opacity-0 before:content-[attr(data-stub)]" />
+        <span ref={stub} aria-hidden="true" data-stub={tx("撕下票根")} className="ticket-stub pointer-events-none absolute inset-0 flex origin-top-left items-center justify-center rounded-control px-2 text-center text-[12px] font-semibold text-accent-ink opacity-0 before:content-[attr(data-stub)]" />
       </div>
     </div>
   );

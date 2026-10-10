@@ -66,7 +66,7 @@ export function llmsTxt(opts: {
     + (clients ? `agents without ${clients} can read it directly, and ${clients} use the same addresses.` : "agents can read it directly."),
   );
   lines.push(...opts.modules.ways);
-  lines.push(`- [MCP](${u("/api/mcp")}): Streamable HTTP, version ${v}. ${opts.tools.length} read-only tools: ${opts.tools.join(", ")}. lang=en (default) or zh; unavailable required editions return an explicit error.`);
+  lines.push(`- [MCP](${u("/api/mcp")}): Streamable HTTP, version ${v}. ${opts.tools.length} read-only tools: ${opts.tools.join(", ")}. Latest news, search, hot topics, story and daily tools accept the tool argument lang=en (default) or zh; unavailable required editions return an explicit error. Weekly and monthly tools do not accept lang: they return the stored report language with Chinese instructions.`);
   lines.push(
     `- [English editorial picks RSS](${u("/feed/v2/picks.xml")}): Latest stored English editions.`,
     `- [English full-text RSS](${u("/feed/v2/full.xml")}): Full text only when redistribution is permitted and the requested body edition is ready.`,
@@ -87,18 +87,19 @@ export function llmsTxt(opts: {
     lines.push(`- [API v1 daily list](${u("/api/v1/dailies?lang=en")}): The index of past dailies; a date is /api/v1/dailies/{YYYY-MM-DD}. Withdrawn citations are removed, so revalidate with If-None-Match before reusing a cached one.`);
   }
   if (opts.hasWeekly) {
-    lines.push(`- [API v1 latest weekly](${u("/api/v1/weeklies/latest?lang=en")}): The latest structured weekly briefing.`);
-    lines.push(`- [API v1 weekly list](${u("/api/v1/weeklies?lang=en")}): The index of past weeklies; a week is /api/v1/weeklies/{YYYY-Www} (ISO week, e.g. 2026-W39).`);
+    lines.push(`- [API v1 latest weekly](${u("/api/v1/weeklies/latest")}): The latest structured weekly briefing.`);
+    lines.push(`- [API v1 weekly list](${u("/api/v1/weeklies")}): The index of past weeklies; a week is /api/v1/weeklies/{YYYY-Www} (ISO week, e.g. 2026-W39).`);
   }
   if (opts.hasMonthly) {
-    lines.push(`- [API v1 latest monthly](${u("/api/v1/monthlies/latest?lang=en")}): The latest structured monthly briefing.`);
-    lines.push(`- [API v1 monthly list](${u("/api/v1/monthlies?lang=en")}): The index of past monthlies; a month is /api/v1/monthlies/{YYYY-MM}.`);
+    lines.push(`- [API v1 latest monthly](${u("/api/v1/monthlies/latest")}): The latest structured monthly briefing.`);
+    lines.push(`- [API v1 monthly list](${u("/api/v1/monthlies")}): The index of past monthlies; a month is /api/v1/monthlies/{YYYY-MM}.`);
   }
   lines.push(`- [Selected snapshot](${u("/api/v1/selected/snapshot?lang=en")}): Start here, then pass the returned cursor to selected/changes. Language is bound to the cursor.`);
   lines.push(`- [Selected changes](${u("/api/v1/selected/changes")}): Upserts and removals; never guess a window from publication times.`);
   lines.push(`- [${POLICY.terms.name}](${u("/terms")})${POLICY.terms.covers ? `: ${POLICY.terms.covers}` : ""}`);
   lines.push(`- [Privacy](${u("/privacy")})${POLICY.privacy.covers ? `: ${POLICY.privacy.covers}` : ""}`, "");
-  lines.push("API v1 targets Chinese when lang is omitted, preserving the legacy language choice. If a Chinese edition is pending, its actual fallback language/status is disclosed. Explicit lang=en|zh exposes actual contentLanguage readiness; a missing edition may return its original with status. Existing /feed/*.xml addresses retain legacy behavior. Versioned feeds omit unavailable editions rather than label another language as English.");
+  lines.push("Weekly and monthly JSON indexes and details do not accept lang and return the original stored language. For Chinese editions, subscribe to /feed/v2/zh/weekly.xml or /feed/v2/zh/monthly.xml.");
+  lines.push("API v1 items, hot-topics, stories, dailies and initial selected snapshots target Chinese when lang is omitted, preserving the legacy language choice. Selected paging and changes inherit the cursor language. If a Chinese edition is pending, its actual fallback language/status is disclosed. Explicit lang=en|zh exposes actual contentLanguage readiness; a missing edition may return its original with status. Existing /feed/*.xml addresses retain legacy behavior. Versioned feeds omit unavailable editions rather than label another language as English.");
   lines.push("Markdown exports use the stored requested edition (English by default) and never call a model. Original licensed text is independent of editorial language; unavailable body editions are identified rather than silently mixed.", "");
   lines.push("## Polling and caching (please follow when writing client code)", "");
   lines.push("- Compression: send Accept-Encoding: gzip or br (curl --compressed); JSON shrinks to a quarter or an eighth.");

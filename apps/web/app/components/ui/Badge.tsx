@@ -1,4 +1,4 @@
-import { Text } from "../../lib/i18n";
+import { Text, useTranslate } from "../../lib/i18n";
 import type { ReactNode } from "react";
 
 type Tone = "selected" | "accent" | "amber" | "hot" | "ok" | "neutral";
@@ -31,5 +31,6 @@ export function SelectedBadge() {
 
 /** A selected report whose fact is shown by another report (the one holding its selected seat). */
 export function SameEventBadge() {
-  return <Badge title="同一新闻已有精选代表">同新闻</Badge>;
+  const tx = useTranslate();
+  return <Badge title={tx("同一新闻已有精选代表")}><Text value="同新闻" /></Badge>;
 }

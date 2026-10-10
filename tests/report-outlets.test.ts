@@ -125,6 +125,21 @@ test('discovery counts exactly the publicly indexed topics it lists', () => {
   assert.match(text, /\(1 topics, listed below\)/);
 });
 
+test('discovery uses only supported report language parameters', () => {
+  const text = llmsTxt({ hasDailies: true, hasWeekly: true, hasMonthly: true, topics: [], tools: [],
+    modules: { api: [], pace: [], pages: [], topics: [], access: [], usage: [], guideClients: [], ways: [] } });
+  assert.match(text, /\/api\/v1\/dailies\/latest\?lang=en/);
+  assert.match(text, /Weekly and monthly tools do not accept lang/);
+  assert.match(text, /Weekly and monthly JSON indexes and details do not accept lang/);
+  for (const kind of ['weeklies', 'monthlies']) {
+    for (const suffix of ['', '/latest']) {
+      const path = `/api/v1/${kind}${suffix}`;
+      assert.ok(text.includes(`${path})`), `discovery links to ${path} without lang`);
+      assert.ok(!text.includes(`${path}?`));
+    }
+  }
+});
+
 // A saved overview/section introduction can still repeat the withdrawn citation after the list and
 // headline drop it. All three reductions use the same availability decision; intact prose is kept.
 // Weekly and monthly prose come from one period path: the full reduction matrix runs on weeklies.

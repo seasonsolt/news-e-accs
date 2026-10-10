@@ -2,7 +2,9 @@
 // once its own heading has scrolled up under the bar, or a switch that always shows; right: actions. Tab
 // pages also get a large title under the bar. Desktop pages keep their own headers.
 import { forwardRef, useEffect, useLayoutEffect, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useLocation } from "react-router";
+import { useNavigate } from "../../lib/navigation";
+import { useTranslate } from "../../lib/i18n";
 import { IconChevronLeft } from "../icons";
 import { historyIndex, previousScreen } from "./screens";
 import { markBack } from "./transitions";
@@ -70,6 +72,7 @@ export function PhoneBar({ back, title, large = false, sub, leading, center, act
 
 /** "‹ 精选": back through the reader's history, or to the page's parent when it was opened directly. */
 function BackButton({ to, label }: BackTarget) {
+  const tx = useTranslate();
   const navigate = useNavigate();
   const { key } = useLocation();
   const [text, setText] = useState(label);
@@ -89,7 +92,7 @@ function BackButton({ to, label }: BackTarget) {
       className="flex h-11 min-w-11 items-center pl-1 pr-2 text-[16px] text-accent transition-opacity active:opacity-50"
     >
       <IconChevronLeft size={25} strokeWidth={2.1} />
-      <span className="max-w-[7em] truncate">{text}</span>
+      <span className="max-w-[7em] truncate">{tx(text)}</span>
     </button>
   );
 }
@@ -99,12 +102,13 @@ export const BarButton = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTML
   { label, on = false, children, className = "", ...rest },
   ref,
 ) {
+  const tx = useTranslate();
   return (
     <button
       ref={ref}
       type="button"
-      aria-label={label}
-      title={label}
+      aria-label={tx(label)}
+      title={tx(label)}
       className={`relative grid size-11 shrink-0 place-items-center rounded-full transition-colors active:bg-bg-sunk ${on ? "text-accent" : "text-ink-2"} ${className}`}
       {...rest}
     >

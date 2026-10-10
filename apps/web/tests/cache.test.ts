@@ -193,11 +193,21 @@ test("URL editions isolate HTML and Router data while preferences cannot change 
     assert.match(res.headers.get("Vary")!, /Cookie/);
     assert.equal(res.headers.get("Set-Cookie"), null);
   }
+  const started = Date.now();
   const plain = await fetch(`${origin}/about.data`);
   const signedIn = await fetch(`${origin}/about.data?_routes=root`, { headers: { cookie: "admin_session=private; aihot_vid=reader" } });
   assert.equal(plain.headers.get("Cache-Control"), "private, no-store");
   assert.equal(signedIn.headers.get("Set-Cookie"), null);
-  assert.equal(await signedIn.text(), await plain.text());
+  const decoded = await Promise.all([plain, signedIn].map(async (response) => {
+    const { value } = await UNSAFE_decodeViaTurboStream(response.body!, globalThis);
+    const result = value as { root: { data: { locale: string } }; "routes/about": { data: { expiresAt: number } } };
+    assert.equal(result.root.data.locale, "en");
+    const { expiresAt, ...content } = result["routes/about"].data;
+    // Each read owns its server deadline; crossing a second must not change business content.
+    assert.ok(expiresAt >= started + 299_000 && expiresAt <= Date.now() + 300_000);
+    return { ...result, "routes/about": { data: content } };
+  }));
+  assert.deepEqual(decoded[1], decoded[0]);
   const localized = await fetch(`${origin}/about.data`, { headers: { cookie: "eacc_language=zh" } });
   assert.match(await localized.text(), /"locale".*"en"/);
   const chineseData = await fetch(`${origin}/zh/about.data`, { headers: { cookie: "eacc_language=en" } });

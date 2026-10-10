@@ -1,7 +1,7 @@
 import { useTranslate } from "../../lib/i18n";
 // The missing-page signal is a small brass flap, not a loading animation. SSR keeps one final
 // status string; a fine-pointer hover or a real button activation supplies the optional trigger.
-// SplitFlapText owns reduction and the bounded clock, just as on the leaderboard.
+// SplitFlapText owns reduced-motion handling and the bounded animation clock.
 import { useState } from "react";
 import { hasFinePointer } from "./preferences";
 import { SplitFlapText } from "./react-bits/SplitFlapText";

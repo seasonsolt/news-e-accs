@@ -3,6 +3,8 @@
 // and pictures that are not links open in the viewer, stepping through the body's pictures.
 import { useEffect, useRef, useState } from "react";
 import { Lightbox, type LightboxImage } from "../../components/ui/Lightbox";
+import { useLocale, translate } from "../../lib/i18n";
+import type { Locale } from "../../lib/locale";
 
 /** Pictures worth enlarging: not inside a link, not tiny icons. */
 function canZoom(img: HTMLImageElement): boolean {
@@ -13,7 +15,8 @@ function zoomable(root: HTMLElement): HTMLImageElement[] {
   return [...root.querySelectorAll<HTMLImageElement>("img")].filter(canZoom);
 }
 
-function enhanceCode(root: HTMLElement): () => void {
+function enhanceCode(root: HTMLElement, locale: Locale): () => void {
+  const tx = (message: string) => translate(locale, message);
   const blocks = [...root.querySelectorAll<HTMLPreElement>("pre")].filter((pre) => pre.textContent?.trim());
   if (!blocks.length) return () => {};
   let disposed = false;
@@ -51,12 +54,12 @@ function enhanceCode(root: HTMLElement): () => void {
     const head = document.createElement("div");
     head.className = "code-block-head";
     const label = document.createElement("span");
-    label.textContent = "代码";
+    label.textContent = tx("代码");
     const button = document.createElement("button");
     button.type = "button";
     button.className = "code-block-copy";
-    button.textContent = "复制";
-    button.setAttribute("aria-label", "复制代码");
+    button.textContent = tx("复制");
+    button.setAttribute("aria-label", tx("复制代码"));
     button.addEventListener("click", async () => {
       let ok = true;
       try {
@@ -65,11 +68,11 @@ function enhanceCode(root: HTMLElement): () => void {
         ok = false;
       }
       button.dataset.status = ok ? "copied" : "error";
-      button.textContent = ok ? "已复制" : "请手动复制";
+      button.textContent = tx(ok ? "已复制" : "请手动复制");
       const timer = setTimeout(() => {
         timers.delete(timer);
         button.dataset.status = "";
-        button.textContent = "复制";
+        button.textContent = tx("复制");
       }, ok ? 1800 : 2400);
       timers.add(timer);
     });
@@ -100,19 +103,20 @@ function enhanceCode(root: HTMLElement): () => void {
 }
 
 export function ArticleBody({ html, lang }: { html: string; lang?: string }) {
+  const locale = useLocale();
   const ref = useRef<HTMLDivElement>(null);
   const [images, setImages] = useState<LightboxImage[]>([]);
   const [open, setOpen] = useState<number | null>(null);
   useEffect(() => {
     const root = ref.current;
     if (!root) return;
-    const cleanCode = enhanceCode(root);
+    const cleanCode = enhanceCode(root, locale);
     const mark = (img: HTMLImageElement) => {
       if (canZoom(img)) {
         img.classList.add("zoomable");
         img.tabIndex = 0;
         img.setAttribute("role", "button");
-        img.setAttribute("aria-label", img.alt ? `查看大图：${img.alt}` : "查看大图");
+        img.setAttribute("aria-label", img.alt ? translate(locale, "查看大图：{0}", img.alt) : translate(locale, "查看大图"));
       } else if (img.classList.contains("zoomable")) {
         img.classList.remove("zoomable");
         img.removeAttribute("tabindex");
@@ -146,10 +150,10 @@ export function ArticleBody({ html, lang }: { html: string; lang?: string }) {
       root.removeEventListener("click", showImage);
       root.removeEventListener("keydown", onKeyDown);
     };
-  }, [html]);
+  }, [html, locale]);
   return (
     <>
-      <div ref={ref} className="prose" lang={lang} dangerouslySetInnerHTML={{ __html: html }} />
+      <div key={locale} ref={ref} className="prose" lang={lang} dangerouslySetInnerHTML={{ __html: html }} />
       <Lightbox images={images} index={open} onIndex={setOpen} onClose={() => setOpen(null)} />
     </>
   );

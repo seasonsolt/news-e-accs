@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Sheet } from "../../components/ui/Sheet";
 import { IconBookmark, IconExternal, IconList, IconShare } from "../../components/icons";
 import { useStar } from "../feed/parts";
+import { useTranslate } from "../../lib/i18n";
 import type { FeedItemSummary } from "@aihot/contracts/site";
 
 type Starrable = Pick<FeedItemSummary, "id" | "title" | "summary" | "source" | "publishedAt" | "score" | "selected">;
@@ -40,16 +41,17 @@ function useReadingDown(): boolean {
 }
 
 function Tool({ icon, label, onClick, href, pressed }: { icon: ReactNode; label: string; onClick?: () => void; href?: string; pressed?: boolean }) {
+  const tx = useTranslate();
   const cls = `flex flex-col items-center justify-center gap-[2px] text-[10.5px] transition-colors active:opacity-50 disabled:opacity-40 ${pressed ? "font-semibold text-accent" : "text-ink-3"}`;
   return href ? (
     <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>
       {icon}
-      {label}
+      {tx(label)}
     </a>
   ) : (
     <button type="button" onClick={onClick} disabled={!onClick} aria-pressed={pressed} className={cls}>
       {icon}
-      {label}
+      {tx(label)}
     </button>
   );
 }
@@ -63,11 +65,12 @@ export function ReaderToolbar({ item, originalUrl, originalLabel, onOutline, onS
   onOutline?: () => void;
   onShare: () => void;
 }) {
+  const tx = useTranslate();
   const hidden = useReadingDown();
   const star = useStar(item);
   return (
     <nav
-      aria-label="阅读工具"
+      aria-label={tx("阅读工具")}
       className={`fixed inset-x-0 bottom-0 z-40 bg-surface/90 pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] shadow-[0_-1px_0_var(--line)] backdrop-blur-xl backdrop-saturate-150 transition-transform duration-300 ease-[var(--ease-out-quart)] lg:hidden ${hidden ? "translate-y-full" : ""}`}
     >
       <div className={`mx-auto grid h-[50px] max-w-[640px] ${onOutline ? "grid-cols-4" : "grid-cols-3"}`}>
@@ -100,16 +103,17 @@ export interface ActionRow {
 
 /** The article's further actions as a sheet of rows (phones; desktop keeps its menu). */
 export function ActionsSheet({ open, onClose, rows }: { open: boolean; onClose: () => void; rows: ActionRow[] }) {
+  const tx = useTranslate();
   const row = "flex h-[52px] w-full items-center gap-3.5 rounded-tile px-3 text-left text-[16px] text-ink transition-colors active:bg-bg-sunk";
   return (
-    <Sheet open={open} onClose={onClose} label="更多操作">
+    <Sheet open={open} onClose={onClose} label={tx("更多操作")}>
       <ul className="px-2 pt-2">
         {rows.map((r) => (
           <li key={r.key}>
             {r.href ? (
               <a href={r.href} download={r.download} onClick={onClose} className={row}>
                 <span className="text-ink-3">{r.icon}</span>
-                {r.label}
+                {tx(r.label)}
               </a>
             ) : (
               <button
@@ -121,7 +125,7 @@ export function ActionsSheet({ open, onClose, rows }: { open: boolean; onClose: 
                 className={row}
               >
                 <span className="text-ink-3">{r.icon}</span>
-                {r.label}
+                {tx(r.label)}
               </button>
             )}
           </li>

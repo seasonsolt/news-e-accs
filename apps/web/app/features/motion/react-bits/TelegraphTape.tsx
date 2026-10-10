@@ -1,4 +1,5 @@
 import { Link } from "../../../lib/navigation";
+import { Text, useTranslate } from "../../../lib/i18n";
 // Adapted from React Bits CurvedLoop (https://reactbits.dev, David Haz), MIT + Commons Clause — see ./LICENSE.
 // Keep the paper-feed idea, not the repeated SVG text, measuring copy or infinite clock. One real
 // link per headline sits on a straight, natively scrollable tape in its final SSR position. Only a
@@ -12,6 +13,7 @@ import { useInViewOnce } from "../viewport";
 import { animateReadingChange } from "../reading-flow";
 
 export function TelegraphTape({ entries }: { entries: readonly HotEntryView[] }) {
+  const tx = useTranslate();
   const allowed = useMotionAllowed();
   const root = useRef<HTMLElement>(null);
   const tape = useRef<HTMLOListElement>(null);
@@ -38,13 +40,13 @@ export function TelegraphTape({ entries }: { entries: readonly HotEntryView[] })
   }, [seen, allowed]);
   if (!entries.length) return null;
   return (
-    <section ref={root} data-telegraph-tape="" aria-label="热点电报" className="my-4 min-w-0">
+    <section ref={root} data-telegraph-tape="" aria-label={tx("热点电报")} className="my-4 min-w-0">
       <div className="mb-1.5 flex items-center justify-between px-1 text-[11px] text-ink-4">
-        <span className="mono tracking-wider">热点电报 · 前五条</span>
-        <button type="button" aria-label="重播热点电报" onClick={print}
+        <span className="mono tracking-wider"><Text value="热点电报 · 前五条" /></span>
+        <button type="button" aria-label={tx("重播热点电报")} onClick={print}
           onPointerEnter={(event) => { if (event.pointerType !== "touch" && hasFinePointer()) print(); }}
           onFocus={() => { if (hasFinePointer()) print(); }}
-          className="min-h-8 rounded-control border border-line-strong px-3 text-accent-ink">重播</button>
+          className="min-h-8 rounded-control border border-line-strong px-3 text-accent-ink"><Text value="重播" /></button>
       </div>
       <div className="telegraph-rollers relative min-w-0 rounded-control border border-amber/60 bg-bg-sunk px-3">
         <div onPointerDown={settle} onWheel={settle} onFocusCapture={settle} className="overflow-x-auto overscroll-x-contain py-1 scrollbar-thin">
