@@ -5,7 +5,7 @@ import { sql, type Db } from '../db.ts';
 import { completeReceipt } from '../providers/receipts.ts';
 import { fetchItemsByIds, toItemSummary } from './items.ts';
 import { loadItemDetail, withOutline } from './detail.ts';
-import { loadStoryProse, resolveStory, loadHotStrip } from './stories.ts';
+import { loadStoryProse, resolveStory, loadHotStrip, loadHot } from './stories.ts';
 import { loadReport } from './reports.ts';
 import { loadPool } from './pool.ts';
 import { contentSource, applyTranslations, validateTranslation, editionMatches, targetLanguageProse, type ContentKind, type TranslationEntry } from './content-source.ts';
@@ -128,8 +128,8 @@ export async function exportContentBatch(cursor = '', limit = 50, targetLanguage
 /** Current visible headlines get a small priority lane; eligibility and fingerprints are still
  * checked through the same canonical public projection as the historical sweep. */
 export async function priorityContentEntries(targetLanguage: EditionLanguage = 'en') {
-  const [hot, pool] = await Promise.all([
-    loadHotStrip(), loadPool({ channel: 'all', category: null, tag: null, page: 1 }),
+  const [hot, ranking, pool] = await Promise.all([
+    loadHotStrip(), loadHot(), loadPool({ channel: 'all', category: null, tag: null, page: 1 }),
   ]);
   const refs = new Map<string, { kind: ContentKind; id: string }>();
   const add = (kind: ContentKind, id: string | null | undefined) => {
@@ -138,6 +138,8 @@ export async function priorityContentEntries(targetLanguage: EditionLanguage = '
   for (const headline of hot ?? []) {
     add('story', headline.storyPublicId); add('item', headline.itemId);
   }
+  // The strip shows five; /hot shows the whole ranking, whose titles readers see too.
+  for (const entry of ranking.entries) add('story', entry.story.publicId);
   for (const item of pool.items) add('item', item.id);
   const entries: TranslationEntry[] = [];
   for (const ref of refs.values()) {

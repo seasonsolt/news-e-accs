@@ -13,7 +13,8 @@ type ScanPage = Pick<Awaited<ReturnType<typeof exportContentBatch>>, 'entries' |
 interface SweepDependencies {
   scan: (cursor: string, size: number) => Promise<ScanPage>;
   priority: () => Promise<TranslationEntry[]>;
-  translate: (entry: TranslationEntry) => Promise<void>;
+  /** Resolves false when it left the edition untranslated (UNUSABLE_EDITION_LIMIT): no allowance used. */
+  translate: (entry: TranslationEntry) => Promise<boolean | void>;
   checkpoint: (cursor: string) => Promise<void>;
 }
 
@@ -26,9 +27,11 @@ export async function runContentTranslationSweep(startCursor: string, limit: num
   const keyOf = (entry: TranslationEntry) => `${entry.kind}:${entry.id}`;
   const editionKey = (entry: TranslationEntry) => `${keyOf(entry)}:${entry.sourceLanguage ?? "zh"}->${entry.targetLanguage ?? "en"}@${entry.sourceHash}`;
   // Reserve a historical slot, so sustained new headlines cannot starve older bodies/reports.
-  for (const entry of (await deps.priority()).slice(0, take - 1)) {
-    await deps.translate(entry);
-    processed.add(editionKey(entry)); translated++;
+  for (const entry of await deps.priority()) {
+    if (translated >= take - 1) break;
+    const done = await deps.translate(entry);
+    processed.add(editionKey(entry));
+    if (done !== false) translated++;
   }
   while (translated < take) {
     const page = await deps.scan(cursor, SCAN_PAGE_SIZE);
@@ -38,8 +41,10 @@ export async function runContentTranslationSweep(startCursor: string, limit: num
       const key = keyOf(entry);
       if (wrapped && key > startCursor) { passedStart = true; break; }
       if (processed.has(editionKey(entry))) continue;
-      await deps.translate(entry);
-      processed.add(editionKey(entry)); translated++;
+      const done = await deps.translate(entry);
+      processed.add(editionKey(entry));
+      if (done === false) continue;
+      translated++;
       if (translated === take) {
         // Stopping at the last processed entry, rather than the page tail, leaves every later
         // pending entry for the next tick. Exceptions never reach this checkpoint write.
@@ -70,9 +75,19 @@ export function contentTranslationPrompt(entry: TranslationEntry) {
   };
 }
 
+/** Unusable answers (see the rejection below) for one edition before it stays in its source language. */
+export const UNUSABLE_EDITION_LIMIT = 3;
+
 export async function translateContentEntry(entry: TranslationEntry) {
   // Large licensed articles are split by segment; the receipt subject includes the source hash.
   const translations: Record<string, string> = {}, receipts: number[] = [];
+  // A source the model keeps answering unusably (e.g. mostly English prose bound for zh) would cost a
+  // paid call every tick; after the limit the edition is left untranslated until its source changes.
+  const subjects = entry.segments.map((_, i) => i).filter((i) => i % 20 === 0).map((offset) => `${contentTranslationPrompt(entry).subject}#${offset}`);
+  const [exhausted] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM receipts
+    WHERE purpose = 'translate_content' AND subject = ANY(${subjects}) AND status = 'failed'
+      AND error LIKE 'unusable edition:%' AND attempts >= ${UNUSABLE_EDITION_LIMIT}`;
+  if (exhausted!.n > 0) return false;
   const model = await modelFor('translate');
   for (let offset = 0; offset < entry.segments.length; offset += 20) {
     const segments = entry.segments.slice(offset, offset + 20);

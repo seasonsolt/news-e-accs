@@ -9,7 +9,7 @@ import { publishArticle } from '@aihot/backend/publication/publish';
 import { currentContent, saveTranslation, priorityContentEntries } from '@aihot/backend/publication/content-language';
 import { paidRequest, completeReceipt } from '@aihot/backend/providers/receipts';
 import { contentSource, type TranslationEntry } from '@aihot/backend/publication/content-source';
-import { runContentTranslationSweep, runContentTranslationLanes, translateContentPending } from '@aihot/backend/editorial/content-translate';
+import { runContentTranslationSweep, runContentTranslationLanes, translateContentPending, translateContentEntry, contentTranslationPrompt, UNUSABLE_EDITION_LIMIT } from '@aihot/backend/editorial/content-translate';
 
 // This file owns its test process; close its model valve even when CI leaves the global default
 // enabled for other files' local model stubs. No environment/production config is changed.
@@ -224,4 +224,19 @@ test('a failed partially completed lane reserves its allowance without exceeding
   }};
   await runContentTranslationLanes(next,1,deps); await runContentTranslationLanes(next,1,deps);
   assert.deepEqual(starts,['zh','en'],'a one-entry tick rotates rather than overspending or starving');
+});
+
+test('an edition the model keeps answering unusably stops costing calls and leaves the allowance to others', async () => {
+  const T = tag(), e = { ...entry(`unusable-${T}`), targetLanguage: 'zh' as const, sourceLanguage: 'en' };
+  const subject = `${contentTranslationPrompt(e).subject}#0`;
+  await sql`INSERT INTO receipts(logical_key,service,model,purpose,subject,status,error,attempts)
+    VALUES (${`unusable-${T}`},'deepseek','local-test','translate_content',${subject},'failed','unusable edition: translation prose must use zh',${UNUSABLE_EDITION_LIMIT - 1})`;
+  // Below the limit the model is asked again (its valve is closed in this file, so the call fails).
+  await assert.rejects(translateContentEntry(e));
+  await sql`UPDATE receipts SET attempts=${UNUSABLE_EDITION_LIMIT} WHERE logical_key=${`unusable-${T}`}`;
+  assert.equal(await translateContentEntry(e), false, 'no model call at the limit');
+  const rows = [entry('a'), entry('b'), entry('c')], q = queue(rows);
+  const skip = { ...q.deps, translate: async (x: TranslationEntry) => (x.id === 'a' ? false : q.deps.translate(x)) };
+  const result = await runContentTranslationSweep('', 2, skip);
+  assert.equal(result.translated, 2); assert.deepEqual(q.calls, ['b', 'c']);
 });
