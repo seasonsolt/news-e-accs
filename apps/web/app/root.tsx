@@ -8,7 +8,7 @@ import {
   isRouteErrorResponse, Link, Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData, useLocation, useNavigation, useRouteError, useRouteLoaderData,
   type ShouldRevalidateFunction,
 } from "react-router";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import type { Route } from "./+types/root";
 import "./app.css";
 import { SiteNav } from "./components/shell/SiteNav";
@@ -108,6 +108,19 @@ export default function App() {
   const meta = useLoaderData<typeof loader>();
   useHydratedFlag();
   const { pathname } = useLocation();
+  const countedPath = useRef<string | null>(null);
+  useEffect(() => {
+    if (pathname === "/admin" || pathname.startsWith("/admin/") || countedPath.current === pathname) return;
+    countedPath.current = pathname;
+    void fetch("/api/site/analytics", {
+      method: "POST",
+      credentials: "omit",
+      cache: "no-store",
+      keepalive: true,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event: "page_view", path: pathname }),
+    }).catch(() => {});
+  }, [pathname]);
   // The admin has its own chrome.
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return <Outlet />;
   return (

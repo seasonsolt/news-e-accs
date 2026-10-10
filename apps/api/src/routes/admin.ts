@@ -3,6 +3,8 @@
 import { readFile } from "node:fs/promises";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { actorOf } from "@aihot/backend/admin/auth";
+import { siteAnalyticsOverview } from "@aihot/backend/admin/analytics";
+import { newsletterOverview } from "@aihot/backend/admin/newsletter";
 
 import { importSelectBenchRun, listSelectBenchRuns, selectBenchRun } from "@aihot/backend/admin/selectbench";
 import { modelsOverview, switchModel } from "@aihot/backend/admin/models";
@@ -116,6 +118,13 @@ export function registerAdmin(app: FastifyInstance) {
   }));
   app.put("/api/admin/budgets/:service", adminHandler(async (req, _reply, admin) => updateBudget(param(req, "service"), body(req) as never, actorOf(admin))));
 
+
+  // Newsletter and site analytics
+  app.get("/api/admin/newsletter", adminHandler(async (req) => {
+    const f = q(req);
+    return newsletterOverview(Number(f.days) || 30, page(req));
+  }));
+  app.get("/api/admin/analytics", adminHandler(async (req) => siteAnalyticsOverview(Number(q(req).days) || 30)));
 
   // Models and evaluation (F20)
   app.get("/api/admin/models", adminHandler(async (req) => modelsOverview(Math.min(90, Number(q(req).days) || 7))));

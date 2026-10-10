@@ -9,6 +9,7 @@ import { beijingDate, addDays } from "@aihot/contracts/time";
 import { config } from "@aihot/backend/config";
 import { closeDb, sql } from "@aihot/backend/db";
 import { stopBoss } from "@aihot/backend/jobs/queue";
+import { newsletterOverview } from "@aihot/backend/admin/newsletter";
 import { confirm, NewsletterRejected, subscribe } from "@aihot/backend/newsletter/subscribe";
 import { sendDailyIssue } from "@aihot/backend/newsletter/issue";
 
@@ -131,6 +132,17 @@ test("confirming subscribes the contact in the segment, and confirming again re-
   const calls = hits.slice(again).map((h) => `${h.method} ${h.path}`);
   assert.deepEqual(calls, [`PATCH /contacts/${encodeURIComponent(EMAIL.toLowerCase())}`, `POST /contacts/${encodeURIComponent(EMAIL.toLowerCase())}/segments/seg-test`]);
   assert.deepEqual(hits[again]!.body, { unsubscribed: false });
+});
+
+test("the admin newsletter overview summarizes and lists subscription records", async () => {
+  const overview = await newsletterOverview(7);
+  assert.equal(overview.days, 7);
+  assert.equal(overview.daily.length, 7);
+  assert.ok(overview.totals.total >= 1);
+  assert.ok(overview.totals.confirmed >= 1);
+  assert.ok(overview.rows.some((row) => row.email === EMAIL.toLowerCase() && row.status === "confirmed"));
+  const today = overview.daily.find((row) => row.day === TODAY);
+  assert.ok(today && today.signups >= 1 && today.confirmations >= 1);
 });
 
 test("today's report goes out as one broadcast, once", async () => {

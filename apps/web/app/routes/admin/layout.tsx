@@ -31,6 +31,7 @@ const NAV: Array<{ group: string; items: Array<{ to: string; label: string; coun
       { to: "/admin/sources", label: "信源", count: "sources", tone: "bad" },
       ...(FEATURES.codexResetMonitor ? [{ to: "/admin/monitor", label: "Codex 重置", count: "monitor" as const, tone: "accent" as const }] : []),
       { to: "/admin/feedback", label: "反馈", count: "feedback", tone: "accent" },
+      { to: "/admin/newsletter", label: "订阅" },
     ],
   },
   {
@@ -40,6 +41,7 @@ const NAV: Array<{ group: string; items: Array<{ to: string; label: string; coun
       { to: "/admin/models", label: "模型与评测" },
       { to: "/admin/selectbench", label: "SelectBench" },
       { to: "/admin/settings", label: "设置" },
+      { to: "/admin/analytics", label: "访问统计" },
       { to: "/admin/audit", label: "审计记录" },
     ],
   },
