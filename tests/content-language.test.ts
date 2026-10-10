@@ -29,6 +29,19 @@ test('DTO inputs ignore counters; overrides, report revisions and withdrawal cha
   assert.throws(()=>validateTranslation({...entry,translations:{title:'Title'}},entry),/incomplete/);
   assert.throws(()=>translationBatchSchema.parse({schemaVersion:1,targetLanguage:'en',entries:[{...entry,extra:true}]}));
 });
+test('changelog editions preserve release identity and reminder version while separating ETags',async()=>{
+  const en=await app.inject({method:'GET',url:'/api/site/changelog?lang=en'});
+  const zh=await app.inject({method:'GET',url:'/api/site/changelog?lang=zh'});
+  const original=await app.inject({method:'GET',url:'/api/site/changelog'});
+  assert.equal(en.statusCode,200);assert.equal(zh.statusCode,200);
+  assert.equal(en.json().latestVersion,zh.json().latestVersion);
+  assert.deepEqual(original.json(),zh.json());
+  assert.equal(en.json().releases[0].title,'Website launch');assert.equal(zh.json().releases[0].title,'网站上线');
+  assert.ok(en.json().releases.every((r:any)=>!/[\u3400-\u9fff]/u.test([r.title,...r.body].join(''))));
+  assert.deepEqual(en.json().releases.map(({date,time,kind}:any)=>({date,time,kind})),zh.json().releases.map(({date,time,kind}:any)=>({date,time,kind})));
+  assert.notEqual(en.headers.etag,zh.headers.etag);
+  const meta=await app.inject({method:'GET',url:'/api/site/meta'});assert.equal(meta.json().changelogVersion,en.json().latestVersion);
+});
 test('whole body blocks preserve inline spacing, links and code; invalid markup cannot import',()=>{
   const body=bodySource('a','<h2>标题</h2><p>你好<strong>世界</strong>，看<a href="https://example.com">这里</a>和<code>x()</code>。</p>');
   const output=body.render({'blocks.0.text':'Heading','blocks.1.text':'Hello <strong>world</strong>, see <a id="L0">here</a> and ⟦0⟧.'});
@@ -72,9 +85,20 @@ test('story overview, development titles and nested reports are localized; edits
   const result=await app.inject({method:'GET',url:`/api/site/stories/${publicId}?lang=en`});
   assert.equal(result.statusCode,200);assert.equal(result.json().digest,'English digest');assert.equal(result.json().developments[0].title,'English developments.0.title');
   const partial=await localizePublication({publicId,title:'事件标题'},'en');assert.equal(partial.title,'English title');
+  const strip={rank:1,title:'事件标题',heat:12,trend:'up',storyPublicId:publicId,itemId:id,participants:[],participantCount:1};
+  const home=await localizePublication({hot:[strip]},'en');
+  assert.equal(home.hot[0]!.title,'English title');
+  assert.equal((home.hot[0] as any).contentLanguage.status,'translated');
+  assert.equal(home.hot[0]!.storyPublicId,publicId);assert.equal(home.hot[0]!.heat,12);
+  assert.deepEqual(await localizePublication({hot:[strip]},'zh'),{hot:[strip]});
+  const itemSource=await currentContent('item',id);assert.ok(itemSource);
+  await saveTranslation(translated(itemSource),'offline-agent','gpt-6-luna',[],true);
+  const itemStrip={...strip,storyPublicId:null,title:itemSource.segments.find(s=>s.key==='title')!.text};
+  const fallback=await localizePublication({hot:[itemStrip]},'en');assert.equal(fallback.hot[0]!.title,'Orbital accelerator released');
   await sql`UPDATE stories SET digest='修改的综述' WHERE id=${story!.id}`;
   const stale=await app.inject({method:'GET',url:`/api/site/stories/${publicId}?lang=en`});
   assert.equal(stale.json().digest,'修改的综述');assert.equal(stale.json().contentLanguage.status,'original');
+  const staleStrip=await localizePublication({hot:[strip]},'en');assert.equal(staleStrip.hot[0]!.title,'事件标题');assert.equal((staleStrip.hot[0] as any).contentLanguage.status,'original');
 });
 test('report prose, index headline and republication use the same English edition',async()=>{
   await sql`INSERT INTO reports(kind,key,window_start,window_end,generated_at,content,origin)

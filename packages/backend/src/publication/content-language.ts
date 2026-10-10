@@ -2,10 +2,12 @@ import { load } from 'cheerio';
 import { shield, unshield } from '../editorial/translate.ts';
 import { sanitizeBody } from '../content/sanitize.ts';
 import { sql, type Db } from '../db.ts';
+import { completeReceipt } from '../providers/receipts.ts';
 import { fetchItemsByIds, toItemSummary } from './items.ts';
 import { loadItemDetail, withOutline } from './detail.ts';
-import { loadStoryDetail, resolveStory } from './stories.ts';
+import { loadStoryDetail, resolveStory, loadHotStrip } from './stories.ts';
 import { loadReport } from './reports.ts';
+import { loadPool } from './pool.ts';
 import { contentSource, applyTranslations, validateTranslation, type ContentKind, type TranslationEntry } from './content-source.ts';
 
 export function bodySource(id: string, html: string): { entry: TranslationEntry; render: (translations: Record<string,string>) => string } {
@@ -76,6 +78,9 @@ export async function saveTranslation(entry: TranslationEntry, provenance: 'prov
     VALUES (${entry.kind},${entry.id},${entry.sourceHash},${db.json(entry.segments)},${db.json(translations)},${provenance},${model},${receiptIds})
     ON CONFLICT (kind,content_id,lang) DO UPDATE SET source_hash=excluded.source_hash,source_segments=excluded.source_segments,
     translations=excluded.translations,provenance=excluded.provenance,model=excluded.model,receipt_ids=excluded.receipt_ids,translated_at=now()`;
+  // Business data and receipt completion commit together; a stale source or rolled-back edition
+  // leaves the received answer reusable. Offline imports never create or complete receipts.
+  if (provenance === 'provider') for (const id of new Set(receiptIds)) await completeReceipt(db, id);
 }
 
 export async function exportContentBatch(cursor = '', limit = 50) {
@@ -100,6 +105,30 @@ export async function exportContentBatch(cursor = '', limit = 50) {
   return { schemaVersion:1 as const, targetLanguage:'en' as const, entries, nextCursor:rows.at(-1)?.cursor ?? null, scanned:rows.length, alreadyComplete };
 }
 
+/** Current visible headlines get a small priority lane; eligibility and fingerprints are still
+ * checked through the same canonical public projection as the historical sweep. */
+export async function priorityContentEntries() {
+  const [hot, pool] = await Promise.all([
+    loadHotStrip(), loadPool({ channel: 'all', category: null, tag: null, page: 1 }),
+  ]);
+  const refs = new Map<string, { kind: ContentKind; id: string }>();
+  const add = (kind: ContentKind, id: string | null | undefined) => {
+    if (id) refs.set(`${kind}:${id}`, { kind, id });
+  };
+  for (const headline of hot ?? []) {
+    add('story', headline.storyPublicId); add('item', headline.itemId);
+  }
+  for (const item of pool.items) add('item', item.id);
+  const entries: TranslationEntry[] = [];
+  for (const ref of refs.values()) {
+    const entry = await currentContent(ref.kind, ref.id);
+    if (!entry?.segments.length) continue;
+    const [ready] = await sql`SELECT 1 FROM content_translations WHERE kind=${entry.kind} AND content_id=${entry.id} AND source_hash=${entry.sourceHash}`;
+    if (!ready) entries.push(entry);
+  }
+  return entries;
+}
+
 // Readers only read stored editions. Source text must still match, including editorial overrides.
 export async function localizePublication<T>(input: T, lang: string, originalBody = false): Promise<T> {
   if (lang !== 'en') return input;
@@ -108,6 +137,8 @@ export async function localizePublication<T>(input: T, lang: string, originalBod
     if (o && typeof o === 'object' && typeof o.title === 'string') {
       if (typeof o.id === 'string' && ('summary' in o || 'originalTitle' in o)) return {kind:'item',id:o.id};
       if (typeof o.publicId === 'string') return {kind:'story',id:o.publicId};
+      if (typeof o.storyPublicId === 'string') return {kind:'story',id:o.storyPublicId};
+      if (typeof o.itemId === 'string' && 'rank' in o && 'participants' in o) return {kind:'item',id:o.itemId};
       if (typeof o.key === 'string' && ['daily','weekly','monthly'].includes(o.kind)) return {kind:'report',id:`${o.kind}:${o.key}`};
     }
     return null;

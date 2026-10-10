@@ -1,4 +1,4 @@
-import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
+import { localeFromMatches, Text, useLocale, useTranslate } from "../lib/i18n";
 import { SITE, withSubject } from "@aihot/industry/site";
 import { Fragment, useEffect, useState } from "react";
 import { Link, useLoaderData } from "react-router";
@@ -7,7 +7,7 @@ import { pageMeta } from "../lib/seo";
 import { setChangelogSeen } from "../lib/local-state";
 import { AsideCard, ReadingLayout } from "../components/ui/Page";
 import { IconChevronRight } from "../components/icons";
-import { Inline, dateHeading } from "../features/changelog/text";
+import { Inline, dateHeading, monthHeading } from "../features/changelog/text";
 import { Deck } from "../components/shell/Deck";
 
 /** Shared caches may keep this page for five minutes. */
@@ -71,6 +71,7 @@ function ReleaseBody({ lines }: { lines: string[] }) {
 
 export default function ChangelogPage() {
   const tx = useTranslate();
+  const locale = useLocale();
   const data = useLoaderData<typeof loader>();
   useEffect(() => setChangelogSeen(data.latestVersion), [data.latestVersion]);
   const [kind, setKind] = useState<Release["kind"] | null>(null);
@@ -97,7 +98,7 @@ export default function ChangelogPage() {
               className={`flex w-full items-center gap-2.5 rounded-control px-2 py-2 text-left text-[13.5px] transition-colors ${kind === k ? "bg-bg-sunk font-medium text-ink dark:bg-bg-muted/60" : "text-ink-2 hover:bg-bg-sunk hover:text-ink"}`}
             >
               <span className={`size-1.5 rounded-full ${k ? KIND_DOT[k] : "bg-ink-2"}`} aria-hidden="true" />
-              <span className="flex-1">{k ?? tx("全部")}</span>
+              <span className="flex-1">{tx(k ?? "全部")}</span>
               <span className="num text-[12px] text-ink-4">{k ? data.releases.filter((r) => r.kind === k).length : data.releases.length}</span>
             </button>
           ))}
@@ -106,10 +107,9 @@ export default function ChangelogPage() {
       <AsideCard title={tx("按月份")} className="hidden lg:block">
         <nav aria-label={tx("按月份")} className="-mx-2 -mb-1">
           {[...months.entries()].map(([month, m]) => {
-            const [y, mo] = month.split("-").map(Number) as [number, number];
             return (
               <a key={month} href={`#d-${m.first}`} className="flex items-center justify-between rounded-control px-2 py-2 text-[13.5px] text-ink-2 transition-colors hover:bg-bg-sunk hover:text-ink">
-                {y}<Text value="年" />{mo}<Text value="月" /><span className="num text-[12px] text-ink-4">{m.count}<Text value="条" /></span>
+                {monthHeading(month, locale)}<span className="num text-[12px] text-ink-4">{m.count}<Text value="条" /></span>
               </a>
             );
           })}
@@ -130,7 +130,7 @@ export default function ChangelogPage() {
     <ReadingLayout aside={aside}>
       <div className="space-y-4">
         {[...groups.entries()].map(([date, releases]) => {
-          const h = dateHeading(date);
+          const h = dateHeading(date, locale);
           const plain = releases;
           return (
             <Fragment key={date}>
@@ -149,7 +149,7 @@ export default function ChangelogPage() {
                           <span className="mono block text-[12.5px] text-ink-3">{r.time}</span>
                           <span className="inline-flex items-center gap-1.5 text-[11.5px] text-ink-4 sm:mt-1.5">
                             <span className={`size-1.5 rounded-full ${KIND_DOT[r.kind]}`} aria-hidden="true" />
-                            {r.kind}
+                            {tx(r.kind)}
                           </span>
                         </div>
                         <article className="min-w-0 sm:border-l sm:border-line sm:pl-8">

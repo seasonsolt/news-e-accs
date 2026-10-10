@@ -210,7 +210,6 @@ export default function StoryPage() {
 
   return (
     <div className="mx-auto max-w-[var(--page-max-reading)] pb-10">
-      <ContentLanguage content={story} />
       <Deck
         compact
         label={tx("事件详情")}
@@ -242,6 +241,7 @@ export default function StoryPage() {
           </span>
         )}
       />
+      <ContentLanguage content={story} />
 
       <div className="sticky top-0 z-20 -mx-4 mt-5 bg-bg/90 px-4 py-2 backdrop-blur-md lg:mx-0 lg:px-0">
         <PillTabs

@@ -5,7 +5,7 @@ import { SITE } from "@aihot/industry/site";
 import { FEATURES } from "@aihot/industry/features";
 import type { TimeMachineBounds } from "@aihot/contracts/chronicle";
 import {
-  isRouteErrorResponse, Link, Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData, useLocation, useMatches, useNavigation, useRouteError, useRouteLoaderData,
+  isRouteErrorResponse, Link, Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData, useLocation, useNavigation, useRouteError, useRouteLoaderData,
   type ShouldRevalidateFunction,
 } from "react-router";
 import type { ReactNode } from "react";
@@ -84,9 +84,6 @@ export function meta({ error, loaderData }: Route.MetaArgs) {
 /** The deck's top bar, the page (or an error), the footer and the phone tab bar. */
 function SiteShell({ changelogVersion, timeBounds, children }: { changelogVersion: string | null; timeBounds: TimeMachineBounds | null; children: ReactNode }) {
   const navigation = useNavigation();
-  const locale = useLocale();
-  // Pages written in English (handle.englishOriginal) have no translations to point out.
-  const englishOriginal = useMatches().some((m) => (m.handle as { englishOriginal?: boolean } | undefined)?.englishOriginal);
   return (
     <div className="flex min-h-dvh flex-col">
       <NavigationProgress active={navigation.state === "loading"} />
@@ -97,8 +94,6 @@ function SiteShell({ changelogVersion, timeBounds, children }: { changelogVersio
       <main id="main" className="min-w-0 flex-1 overflow-x-clip pb-[calc(72px+env(safe-area-inset-bottom))] lg:pb-12">
         <div className="mx-auto w-full max-w-[640px] px-4 pt-4 lg:max-w-[var(--page-max-wide)] lg:px-8">
           <TimeBar bounds={timeBounds} />
-          {/* mb-4: a page's Deck pulls itself up 16px to meet the top bar; less would slide it over this line. */}
-          {locale === "en" && !englishOriginal && <p className="mb-4 text-[12px] text-ink-4" lang="en">English editions appear when available. Pending translations and original source material are identified below.</p>}
           {children}
         </div>
       </main>

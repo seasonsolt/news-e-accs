@@ -236,7 +236,6 @@ export default function ItemPage() {
   return (
     <div className="mx-auto max-w-[var(--page-max-reading)] pb-8">
       {item.body && <ReadingGear />}
-      <ContentLanguage content={item} />
       <Deck
         compact
         art={item.category ? CATEGORY_ART[item.category] : undefined}
@@ -245,6 +244,7 @@ export default function ItemPage() {
         title={isX ? item.x!.authorName : item.title}
         description={!isX && item.originalTitle ? item.originalTitle : undefined}
       />
+      <ContentLanguage content={item} />
 
       {/* Phones: a sticky bar with back, 收藏, the original, share and more. Desktop puts these in the rails. */}
       <div className="sticky top-0 z-30 -mx-4 flex h-12 items-center gap-1.5 border-b border-line-soft bg-bg/95 px-4 backdrop-blur lg:hidden">
