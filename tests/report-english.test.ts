@@ -133,6 +133,18 @@ test('catch-up uses the configured local publication clock and never rewrites ex
   config.reportTimeZone = 'America/New_York';
   try {
     await sql`DELETE FROM reports WHERE (kind='daily' AND key IN ('2097-03-09','2097-03-10')) OR (kind='weekly' AND key='2097-W10') OR (kind='monthly' AND key='2097-02')`;
+    // A window with no judged report is a failed judging run, not a quiet day: give each issue a scored report.
+    const T = tag(), catchUpSource = `test-report-catchup-${T}`;
+    await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, next_fetch_at) VALUES (${catchUpSource}, 'Catch-up fixture', 'rss', 'T1', 'editorial', '2100-01-01')`;
+    for (const [index, at] of ['2097-03-09T00:00:00Z', '2097-03-09T20:00:00Z'].entries()) {
+      const id = `catchup-${T}-${index}`, when = new Date(at);
+      await sql`INSERT INTO articles (id, source_id, identity_key, url, title, discovered_at, timeline_at, published_at)
+        VALUES (${id}, ${catchUpSource}, ${id}, ${`https://example.org/${id}`}, ${`Catch-up report ${index}`}, ${when}, ${when}, ${when})`;
+      await sql`INSERT INTO publications (article_id, editorial_language, title, summary, source_id, channel, url, discovered_at, timeline_at, published_at, sort_at,
+          eligible, selected, visible_after, visibility, score)
+        VALUES (${id}, 'en', ${`Catch-up report ${index}`}, 'A catch-up fixture summary.', ${catchUpSource}, 'news', ${`https://example.org/${id}`}, ${when}, ${when}, ${when}, ${when},
+          true, false, ${when}, 'public', 70)`;
+    }
     const before = await catchUpReports(new Date('2097-03-10T11:59:00Z'), 1);
     assert.ok(before.generated.includes('daily:2097-03-09'));
     assert.ok(!before.generated.includes('daily:2097-03-10'));

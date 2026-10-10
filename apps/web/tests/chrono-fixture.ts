@@ -39,24 +39,23 @@ export async function startChronoFixture() {
     const send = (body: unknown) => res.end(JSON.stringify(body));
     if (path === "/api/site/meta") return send({ changelogVersion: null });
     if (path === "/api/site/chronicle") return send(chronicle);
-    if (path === "/api/site/chronicle/bounds") return send({ earliest: "2026-08-01", feed: "2026-08-01", hot: "2026-08-01", leaderboard: "2026-08-01", daily: "2026-08-01", today: beijingDate(Date.now()) });
+    if (path === "/api/site/chronicle/bounds") return send({ earliest: "2026-08-01", feed: "2026-08-01", hot: "2026-08-01", daily: "2026-08-01", today: beijingDate(Date.now()) });
     if (path === "/api/site/hot") {
       const computedAt = `${at ?? "2026-10-01"}T15:00:00.000Z`;
-      const body: HotResponse = { computedAt, ruleVersion: "test", windowHours: 48, entries: [{
-        rank: 1, story: { publicId: "archive-story", title: at ? `历史热点 ${at}` : "当前热点条目" }, heat: 42, trend: "flat", trendPct: null, badges: [], participantCount: 0, sourceCount: 0, signalCount: 0, reportCount: 0, sourceNames: [], latestAt: computedAt, firstReportAt: computedAt, representative: null, participants: [], spark: [], summary: "本地历史数据", latest: null, cover: null,
+      const body: HotResponse = { computedAt, windowHours: 48, entries: [{
+        rank: 1, story: { publicId: "archive-story", title: at ? `历史热点 ${at}` : "当前热点条目" }, heat: 42, trend: "flat", trendPct: null, badges: [], participantCount: 0, sourceCount: 0, sourceNames: [], participants: [], spark: [], summary: "本地历史数据", latest: null, cover: null,
       }] };
       return send(body);
     }
     if (path === "/api/site/timeline") {
-      const body: TimelineResponse = { filters: { channel: "all", category: null, tag: null, topic: null, at }, cards: [], nextCursor: null, dayCounts: {}, hot: Array.from({ length: 3 }, (_, i) => ({ rank: i + 1, title: `精选页热点 ${i}`, heat: 42, trend: "flat" as const, storyPublicId: "archive-story", itemId: null, participants: [], participantCount: 0 })), refreshAt: null, generatedAt: "2026-09-01T15:00:00Z" };
+      const body: TimelineResponse = { filters: { channel: "all", category: null, tag: null, topic: null, at }, cards: [], nextCursor: null, dayCounts: {}, hot: Array.from({ length: 3 }, (_, i) => ({ rank: i + 1, title: `精选页热点 ${i}`, heat: 42, trend: "flat" as const, storyPublicId: "archive-story", itemId: null, participants: [], participantCount: 0 })) };
       return send(body);
     }
-    if (path.startsWith("/api/site/leaderboard/boards/")) { res.statusCode = path.endsWith("coding") ? 503 : 404; return send({ code: "not_found" }); }
     if (path === "/api/site/reports/daily/at/2026-09-02") return send({ key: "2026-09-01" });
     if (/^\/api\/site\/reports\/daily\/at\//.test(path)) return send({ key: null });
     if (path === "/api/site/reports/daily/navigation/2026-09-01") return send({ items: [{ key: "2026-09-01", title: "测试日报" }] });
     if (path === "/api/site/reports/daily/2026-09-01") {
-      const body: ReportDetail = { kind: "daily", key: "2026-09-01", title: "测试日报", windowStart: "2026-08-31T16:00:00Z", windowEnd: "2026-09-01T16:00:00Z", generatedAt: "2026-09-01T00:00:00Z", revision: 1, lead: null, overview: null, highlights: [], sections: [], stories: [], flashes: [], cover: null, metrics: {}, readingMinutes: 1, prev: null, next: null };
+      const body: ReportDetail = { kind: "daily", key: "2026-09-01", issueNumber: 1, leadItemId: null, title: "测试日报", windowStart: "2026-08-31T16:00:00Z", windowEnd: "2026-09-01T16:00:00Z", generatedAt: "2026-09-01T00:00:00Z", lead: null, overview: null, highlights: [], sections: [], flashes: [], cover: null, metrics: {}, readingMinutes: 1, prev: null, next: null };
       return send(body);
     }
     res.statusCode = 404;

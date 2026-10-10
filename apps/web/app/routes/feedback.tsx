@@ -1,19 +1,20 @@
 import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
-import { SITE, withSubject } from "@aihot/industry/site";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
+import { SITE } from "@aihot/site";
 import { Presence } from "../components/ui/Presence";
+import { edgeTtl } from "../lib/api.server";
 import { pageMeta } from "../lib/seo";
-import { KEYS } from "../lib/local-state";
+import { KEYS, lastPage, readJson, writeRaw } from "../lib/local-state";
 import { IconCheck, IconClose, IconImage } from "../components/icons";
-import { RingMark } from "../components/Logo";
+import { RingMark } from "@aihot/site/brand/Logo.tsx";
 import { AsideCard, ReadingLayout } from "../components/ui/Page";
 import { Deck } from "../components/shell/Deck";
+import { webModules } from "../site-modules";
 
-/** Shared caches may keep this page for five minutes. */
 export function headers() {
-  return { "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=600" };
+  return edgeTtl(300);
 }
 
 export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
@@ -26,24 +27,27 @@ interface Draft {
   pageUrl: string;
 }
 
-function readDraft(): Draft | null {
-  try {
-    const raw = localStorage.getItem(KEYS.feedbackDraft);
-    if (!raw) return null;
-    const d = JSON.parse(raw);
-    return typeof d === "object" && d ? { content: String(d.content ?? ""), email: String(d.email ?? ""), pageUrl: String(d.pageUrl ?? "") } : null;
-  } catch {
-    return null;
-  }
+function parseDraft(value: unknown): Draft | null {
+  if (!value || typeof value !== "object") return null;
+  const d = value as Record<string, unknown>;
+  return { content: String(d.content ?? ""), email: String(d.email ?? ""), pageUrl: String(d.pageUrl ?? "") };
 }
 
-function writeDraft(d: Draft | null) {
-  try {
-    if (d === null) localStorage.removeItem(KEYS.feedbackDraft);
-    else localStorage.setItem(KEYS.feedbackDraft, JSON.stringify({ ...d, savedAt: new Date().toISOString() }));
-  } catch {
-    // storage unavailable: the form still works
-  }
+/** Drafts the site's modules keep elsewhere in this browser. */
+const otherDrafts = () => webModules().flatMap((m) => (m.feedbackDraft ? [m.feedbackDraft] : []));
+
+function readDraft(): Draft | null {
+  let draft = parseDraft(readJson(KEYS.feedbackDraft));
+  for (const other of otherDrafts()) draft ??= parseDraft(other.read());
+  return draft;
+}
+
+/** Saves the draft in this browser, or clears it (null); false when the browser refused. */
+function writeDraft(d: Draft | null): boolean {
+  const saved = writeRaw(KEYS.feedbackDraft, d && JSON.stringify({ ...d, savedAt: new Date().toISOString() }));
+  // Another draft is kept until this one is saved; a submitted draft clears them all.
+  if (saved || d === null) for (const other of otherDrafts()) other.clear();
+  return saved;
 }
 
 const TIPS = ["出问题的页面或文章链接", "你看到了什么，原本想做什么", "有截图更好，记得先遮盖敏感信息"];
@@ -57,7 +61,7 @@ function FeedbackAside() {
           {TIPS.map((t, i) => (
             <li key={t} className="flex gap-2.5 text-[13px] leading-[1.6] text-ink-3">
               <span className="mono mt-px text-[11px] font-bold text-accent">{String(i + 1).padStart(2, "0")}</span>
-              {t}
+              {tx(t)}
             </li>
           ))}
         </ol>
@@ -67,6 +71,20 @@ function FeedbackAside() {
       </AsideCard>
     </>
   );
+}
+
+/**
+ * Some phones report a JPEG as image/jpg, or give no type at all: the file name decides then. The
+ * server checks the picture's real bytes either way.
+ */
+function screenshotType(file: File): string {
+  const type = file.type.trim().toLowerCase();
+  if (type === "image/jpg") return "image/jpeg";
+  if (type && type !== "application/octet-stream") return type;
+  if (/\.png$/i.test(file.name)) return "image/png";
+  if (/\.jpe?g$/i.test(file.name)) return "image/jpeg";
+  if (/\.webp$/i.test(file.name)) return "image/webp";
+  return type;
 }
 
 const MAX_IMAGE = 5 * 1024 * 1024;
@@ -83,8 +101,12 @@ export default function FeedbackPage() {
 
   useEffect(() => {
     const saved = readDraft();
-    if (saved) setDraft((d) => ({ ...saved, pageUrl: d.pageUrl || saved.pageUrl }));
-    else if (!params.get("from") && document.referrer.startsWith(location.origin)) setDraft((d) => ({ ...d, pageUrl: document.referrer }));
+    // The page the reader was on before coming here (tracked across in-site navigation, "更多" skipped);
+    // a document the browser opened fresh falls back to its referrer.
+    const before = params.get("from") ? null : (lastPage() ?? (document.referrer.startsWith(location.origin) ? document.referrer : null));
+    const from = before ? new URL(before, location.origin).href : null;
+    if (saved) setDraft((d) => ({ ...saved, pageUrl: d.pageUrl || from || saved.pageUrl }));
+    else if (from) setDraft((d) => ({ ...d, pageUrl: from }));
   }, []);
   useEffect(() => {
     const t = setTimeout(() => writeDraft(draft.content || draft.email ? draft : null), 400);
@@ -96,9 +118,11 @@ export default function FeedbackPage() {
     return () => URL.revokeObjectURL(shot.url);
   }, [shot]);
 
-  const pick = (file: File | null | undefined) => {
-    if (!file) return;
-    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) return setState({ kind: "error", message: tx("截图需要是 PNG、JPEG 或 WebP。") });
+  const pick = (picked: File | null | undefined) => {
+    if (!picked) return;
+    const type = screenshotType(picked);
+    if (!/^image\/(png|jpeg|webp)$/.test(type)) return setState({ kind: "error", message: tx("截图需要是 PNG、JPEG 或 WebP。") });
+    const file = type === picked.type ? picked : new File([picked], picked.name, { type });
     if (file.size > MAX_IMAGE) return setState({ kind: "error", message: tx("截图原图不超过 5 MB。") });
     setShot({ file, url: URL.createObjectURL(file) });
     setState({ kind: "idle" });
@@ -155,7 +179,7 @@ export default function FeedbackPage() {
   const canSend = draft.content.trim().length >= 2 && state.kind !== "sending";
   return (
     <>
-    <Deck compact label={tx("反馈")} title={tx("说说你的想法")} description={tx("发现 bug、想要的功能、看不顺眼的地方，都可以告诉我，我都会看到。")} />
+    <Deck compact label={tx("反馈")} title={tx("说说你的想法")} description={tx(SITE.feedbackLead)} />
     <div className="h-6" />
     <ReadingLayout aside={<FeedbackAside />}>
 
@@ -186,7 +210,7 @@ export default function FeedbackPage() {
                 maxLength={MAX_TEXT}
                 value={draft.content}
                 onChange={(e) => setDraft({ ...draft, content: e.target.value })}
-                placeholder={tx("例如：我在搜索“OpenAI”时遇到……我原本想……")}
+                placeholder={tx(SITE.feedbackExample)}
                 className={`${field} block resize-y px-4 pb-8 pt-3.5 text-[14.5px] leading-relaxed`}
               />
               <span className="mono pointer-events-none absolute bottom-3 right-4 text-[11px] text-ink-4">
@@ -196,13 +220,15 @@ export default function FeedbackPage() {
           </div>
 
           <div>
-            <label htmlFor="fb-email" className={label}><Text value="邮箱" /><span className="font-normal text-ink-4"><Text value="（选填）" /></span>
+            <label htmlFor="fb-email" className={label}>
+              <Text value="邮箱" /> <span className="font-normal text-ink-4"><Text value="（选填）" /></span>
             </label>
-            <input id="fb-email" type="email" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} placeholder={tx("留下邮箱，我可以回信联系你")} className={`${field} h-11 px-4 text-[14.5px]`} />
+            <input id="fb-email" type="email" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} placeholder={tx(SITE.feedbackEmailHint)} className={`${field} h-11 px-4 text-[14.5px]`} />
           </div>
 
           <div>
-            <span className={label}><Text value="截图" /><span className="font-normal text-ink-4"><Text value="（选填）" /></span>
+            <span className={label}>
+              <Text value="截图" /> <span className="font-normal text-ink-4"><Text value="（选填）" /></span>
             </span>
             {shot ? (
               <div className="flex items-center gap-4 well rounded-card p-3">
@@ -241,13 +267,21 @@ export default function FeedbackPage() {
         </div>
 
         <div className="flex flex-col-reverse gap-4 border-t border-line-soft bg-bg-sunk/50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:bg-bg-muted/30">
-          <p className="text-[12px] leading-relaxed text-ink-4 sm:max-w-[400px]"><Text value="请勿提交密钥、身份证件或与问题无关的敏感信息。提交即表示你知悉反馈内容、选填邮箱、页面信息和截图将按" /><Link to="/privacy" className="text-accent hover:underline"><Text value="隐私说明" /></Link><Text value="处理。" /></p>
+          <p className="text-[12px] leading-relaxed text-ink-4 sm:max-w-[400px]">
+            <Text value="请勿提交密钥、身份证件或与问题无关的敏感信息。提交即表示你知悉反馈内容、选填邮箱、页面信息和截图将按" />
+            <Link viewTransition to="/privacy" className="text-accent hover:underline">
+              <Text value="隐私说明" />
+            </Link>
+            <Text value="处理。" />
+          </p>
           <button
             type="submit"
             disabled={!canSend}
             className="inline-flex h-10 shrink-0 items-center justify-center gap-2 self-start rounded-full bg-accent px-6 text-[14px] font-medium text-accent-contrast transition-[background-color,opacity] hover:bg-accent-ink disabled:bg-line-strong disabled:text-ink-4 sm:self-auto"
           >
-            {state.kind === "sending" && <RingMark className="size-4" spinning />}<Text value="发送反馈" /></button>
+            {state.kind === "sending" && <RingMark className="size-4" spinning />}
+            <Text value="发送反馈" />
+          </button>
         </div>
       </form>
     </ReadingLayout>

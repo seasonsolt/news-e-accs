@@ -1,17 +1,31 @@
 // Stories (events) and the hot ranking through the public read layer. The website sees heat values;
-// v1 / MCP / Skill only see ranks and counts.
+// v1 and MCP only see ranks and counts.
 import type { HeatPoint, HotResponse, StoryDetail, StoryReportView } from "@aihot/contracts/site";
+import { SITE } from "@aihot/site";
 import { HEADER_SOURCE_LANGUAGE } from "./items.ts";
 import { sql } from "../db.ts";
+import { cachedByKey, SHARED_ONLY } from "../lib/cache.ts";
 import { proxiedImage, proxiedImageSet } from "../media/imgproxy.ts";
-import { hotRankingAt, latestHotRanking, rankingExtras } from "../events/hot-read.ts";
-export { loadHotStrip } from "../events/hot-read.ts";
-import { behindSources, sourceClocks } from "../events/hot.ts";
-import { storyStatusFor } from "../events/digest.ts";
-import { itemUrl, storyApiUrl, storyUrl } from "./links.ts";
-import { SITE } from "@aihot/industry/site";
+import { behindSources, currentSignals, heatSeries, sourceClocks, type HotRanking } from "../events/hot.ts";
+import { relatedEvidence, RELATED_MIN_REPORTS } from "../events/related.ts";
+import { pickRepresentative, REPRESENTATIVE_COLUMNS, type RepresentativeIdentity } from "./representative.ts";
+import { compositeCondition, evidenceCondition, listedCondition, storyReportCondition } from "./scope.ts";
+import { publicSourceName } from "./rules.ts";
+import { hotRankingAt, latestHotRanking, rankingExtras } from "./hot.ts";
+export { loadHotStrip } from "./hot.ts";
+import { storyTexts } from "./story-text.ts";
+import { topicsOfStory } from "./topics.ts";
+import { itemUrl, storyUrl, v1StoryApiUrl, v1StoryUrl } from "./links.ts";
 
 export type StoryLookup = { kind: "found"; storyId: number; publicId: string } | { kind: "merged"; target: string } | { kind: "not_found" };
+
+function storyStatusFor(latestAt: Date | null, now: number): "active" | "watching" | "settled" {
+  if (!latestAt) return "settled";
+  const age = now - latestAt.getTime();
+  if (age < 24 * 3600 * 1000) return "active";
+  if (age < 72 * 3600 * 1000) return "watching";
+  return "settled";
+}
 
 export async function resolveStory(publicId: string): Promise<StoryLookup> {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(publicId)) return { kind: "not_found" };
@@ -36,7 +50,11 @@ export async function resolveStory(publicId: string): Promise<StoryLookup> {
   return { kind: "found", storyId: s!.id, publicId };
 }
 
-interface ReportRow {
+interface ReportRow extends RepresentativeIdentity {
+  role: string;
+  body_mode: "full" | "summary";
+  score: number | null;
+  timeline_at: Date;
   id: string;
   title: string;
   summary: string | null;
@@ -45,31 +63,28 @@ interface ReportRow {
   at: Date;
   source_id: string;
   source_name: string;
-  source_kind: string;
   first_party: boolean;
-  icon_url: string | null;
   header_source_language: string;
-  fact_public_id: string;
   fact_id: number;
 }
 
 /**
  * Every report linked to the story's facts that has a public page (rules.hasItemPage: editorial source,
  * summarised or not), mentions included (an article's other events). New grouping only links
- * pool-eligible articles; imported hot stories also carry reports the AI pool leaves out, which the live
- * pages showed. hot_signal material only adds heat and is not listed, as on the live pages.
+ * pool-eligible articles; imported hot stories also carry reports the pool leaves out. hot_signal
+ * material only adds heat and is not listed.
  */
 async function storyReports(storyId: number, now: Date): Promise<ReportRow[]> {
   return sql<ReportRow[]>`
     SELECT DISTINCT ON (p.article_id) p.article_id AS id, p.title, p.summary, p.url, p.selected,
-      coalesce(p.published_at, p.discovered_at) AS at, s.id AS source_id, s.name AS source_name, s.kind AS source_kind,
-      p.first_party, s.icon_url, f.public_id AS fact_public_id, f.id AS fact_id, ${HEADER_SOURCE_LANGUAGE} AS header_source_language
+      coalesce(p.published_at, p.discovered_at) AS at, s.id AS source_id, s.name AS source_name,
+      (s.tier = 'T1') AS first_party, f.id AS fact_id, ${HEADER_SOURCE_LANGUAGE} AS header_source_language,
+      CASE WHEN ${compositeCondition()} THEN 'mention' ELSE fa.role END AS role, p.body_mode, p.score, p.timeline_at, ${REPRESENTATIVE_COLUMNS}
     FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id JOIN publications p ON p.article_id = fa.article_id
     JOIN sources s ON s.id = p.source_id
-    JOIN articles a ON a.id=p.article_id LEFT JOIN analyses an ON an.id=p.analysis_id
-    WHERE f.story_id = ${storyId} AND p.visibility = 'public' AND s.participation_mode = 'editorial'
-      AND (NOT p.selected OR p.visible_after <= ${now})
-    ORDER BY p.article_id, (fa.role = 'primary') DESC`;
+    JOIN articles a ON a.id = p.article_id LEFT JOIN analyses an ON an.id = p.analysis_id
+    WHERE f.story_id = ${storyId} AND ${storyReportCondition(now)}
+    ORDER BY p.article_id, (fa.role = 'primary') DESC, (fa.role <> 'mention') DESC, f.id`;
 }
 
 function reportView(r: ReportRow): StoryReportView {
@@ -77,93 +92,111 @@ function reportView(r: ReportRow): StoryReportView {
     id: r.id,
     title: r.title,
     summary: r.summary,
-    source: { id: r.source_id, name: r.source_name, kind: r.source_kind as never, firstParty: r.first_party, iconUrl: proxiedImage(r.icon_url, "avatar") },
+    source: { name: publicSourceName(r.source_name), firstParty: r.first_party },
     publishedAt: r.at.toISOString(),
-    originalUrl: r.url,
     selected: r.selected,
-    factId: r.fact_public_id,
   };
 }
 
+/** The story's reports newest first, its developments, and its latest and first non-mention reports. */
 async function storyContent(storyId: number, now: Date) {
-  const [s] = await sql<{ editorial_language: "en" | "zh"; public_id: string; title: string; summary: string | null; summary_language: string; first_report_at: Date | null; latest_at: Date | null; digest: string | null; digest_updated_at: Date | null; latest: string | null }[]>`
-    SELECT editorial_language, public_id::text, title, summary, coalesce(frame->>'summaryLanguage',editorial_language) AS summary_language, first_report_at, latest_at, digest, digest_updated_at, latest FROM stories WHERE id = ${storyId}`;
+  const [s] = await sql<{ editorial_language: "en" | "zh"; public_id: string; title: string; summary_language: string }[]>`
+    SELECT editorial_language, public_id::text, title, coalesce(frame->>'summaryLanguage', editorial_language) AS summary_language FROM stories WHERE id = ${storyId}`;
   if (!s) return null;
   const reports = await storyReports(storyId, now);
   if (reports.length === 0) return null;
-  reports.sort((a, b) => b.at.getTime() - a.at.getTime());
+  reports.sort((a, b) => b.at.getTime() - a.at.getTime() || a.id.localeCompare(b.id));
 
+  const primaryReports = reports.filter((r) => r.role !== "mention");
   const byFact = new Map<number, ReportRow[]>();
-  for (const r of reports) byFact.set(r.fact_id, [...(byFact.get(r.fact_id) ?? []), r]);
-  const facts = await sql<{ id: number; public_id: string; title: string; editorial_language: "en" | "zh"; occurred_at: Date | null; created_at: Date }[]>`
-    SELECT id, public_id, title, editorial_language, occurred_at, created_at FROM facts WHERE story_id = ${storyId}`;
+  for (const r of primaryReports) byFact.set(r.fact_id, [...(byFact.get(r.fact_id) ?? []), r]);
+  const facts = await sql<{ id: number; public_id: string; title: string; editorial_language: "en" | "zh" }[]>`
+    SELECT id, public_id, title, editorial_language FROM facts WHERE story_id = ${storyId}`;
   const developments = facts
     .filter((f) => byFact.has(f.id))
     .map((f) => {
       const members = byFact.get(f.id)!;
-      const rep = [...members].sort((a, b) => Number(b.first_party) - Number(a.first_party) || Number(b.selected) - Number(a.selected) || a.at.getTime() - b.at.getTime())[0]!;
+      const selected = members.filter((r) => r.selected);
+      const rep = pickRepresentative(selected.length ? selected : members);
       const first = members.reduce((m, r) => (r.at < m ? r.at : m), members[0]!.at);
-      return { factId: f.public_id, editorialLanguage: f.editorial_language, title: f.title, occurredAt: f.occurred_at?.toISOString() ?? null, firstReportAt: first.toISOString(), reportCount: members.length, representative: rep };
+      return { factId: f.public_id, editorialLanguage: f.editorial_language, title: f.title, firstReportAt: first.toISOString(), reportCount: members.length, representative: rep };
     })
     .sort((a, b) => Date.parse(b.firstReportAt) - Date.parse(a.firstReportAt));
 
-  // A converted digest does not convert historical summaries or fact titles. Keep their provenance
-  // in the canonical edition identity so a stored edition can repair the remaining prose.
-  const excerpt = !s.digest && !s.summary ? developments.at(-1)?.representative : null;
+  const latestReport = primaryReports[0];
+  if (!latestReport) return null;
+  const firstReportAt = primaryReports[primaryReports.length - 1]!.at;
+  const text = (await storyTexts([storyId], now)).get(storyId)!;
+  // Historical stories without listed evidence retain their latest readable report.
+  const latest = text.latest ?? latestReport;
+  const origin = developments[developments.length - 1]?.representative;
+  // Without a digest or a summary of its own, the story opens with its first development's representative report.
+  const excerpt = !text.digest && !text.summary && origin?.summary ? origin : null;
+
+  // A converted digest does not convert historical summaries, fact titles or the latest title. Keep their
+  // provenance in the canonical edition identity so a stored edition can repair the remaining prose.
   const languages = new Set([
-    s.editorial_language, ...(s.summary ? [s.summary_language] : []),
-    ...developments.map(d => d.editorialLanguage), ...(excerpt?.summary ? [excerpt.header_source_language] : []),
+    s.editorial_language, ...(text.summary ? [s.summary_language] : []),
+    ...developments.map((d) => d.editorialLanguage), ...(excerpt ? [excerpt.header_source_language] : []),
+    reports.find((r) => r.id === latest.id)?.header_source_language ?? "unknown",
   ]);
-  const sourceLanguage = languages.size === 1 ? s.editorial_language : 'unknown';
-  return { s, reports, developments, sourceLanguage };
+  const sourceLanguage = languages.size === 1 ? s.editorial_language : "unknown";
+  return { s, reports, primaryReports, developments, latestReport, firstReportAt, text, latest, excerpt, sourceLanguage };
 }
 
-/** Only the prose that identifies an edition; uses the same reports and facts as story detail. */
+/** Only the prose that identifies an edition; uses the same reports, facts and evidence as story detail. */
 export async function loadStoryProse(storyId: number, now = new Date()) {
   const content = await storyContent(storyId, now);
   if (!content) return null;
-  const { s, developments, sourceLanguage } = content;
-  const origin = developments[developments.length - 1]?.representative;
+  const { s, developments, text, latest, excerpt, sourceLanguage } = content;
   return {
     publicId: s.public_id, editorialLanguage: s.editorial_language,
     contentLanguage: { requested: s.editorial_language, status: "original" as const, sourceLanguage, language: sourceLanguage },
-    title: s.title, summary: s.summary, digest: s.digest, latest: s.latest,
-    excerpt: !s.digest && !s.summary && origin?.summary ? { text: origin.summary, sourceName: origin.source_name } : null,
-    developments: developments.map(d => ({ title: d.title })),
+    title: s.title, summary: text.summary, digest: text.digest, latest: latest.title,
+    excerpt: excerpt ? { text: excerpt.summary!, sourceName: publicSourceName(excerpt.source_name) } : null,
+    developments: developments.map((d) => ({ title: d.title })),
   };
 }
 
-async function relatedStories(storyId: number) {
-  return sql<{ public_id: string; title: string; relation: "storyline" | "related"; latest_at: Date | null }[]>`
-    SELECT st.public_id::text, st.title, l.relation, st.latest_at FROM story_links l JOIN stories st ON st.id = l.other_id
-    WHERE l.story_id = ${storyId} AND st.merged_into IS NULL ORDER BY st.latest_at DESC NULLS LAST LIMIT 8`;
+async function relatedStories(storyId: number, now: Date) {
+  return sql<{ public_id: string; title: string; relation: "storyline" | "related" }[]>`
+    SELECT st.public_id::text, st.title, l.relation FROM story_links l JOIN stories st ON st.id = l.other_id
+    LEFT JOIN LATERAL (
+      SELECT count(*) FILTER (WHERE valid) AS reports, bool_and(valid) AS unchanged
+      FROM ${relatedEvidence(sql`l.story_id`, sql`l.other_id`, now)} evidence
+    ) support ON l.relation = 'related'
+    WHERE l.story_id = ${storyId} AND st.merged_into IS NULL
+      AND (l.relation <> 'related' OR support.unchanged IS NOT FALSE OR support.reports >= ${RELATED_MIN_REPORTS})
+      AND EXISTS (
+      SELECT 1 FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id JOIN publications p ON p.article_id = fa.article_id
+      JOIN sources s ON s.id = p.source_id
+      WHERE f.story_id = st.id AND ${evidenceCondition()} AND ${storyReportCondition(now)}
+    ) ORDER BY st.latest_at DESC NULLS LAST, st.id DESC LIMIT 8`;
 }
 
 export async function loadStoryDetail(storyId: number, now = new Date()): Promise<StoryDetail | null> {
   const content = await storyContent(storyId, now);
   if (!content) return null;
-  const { s, reports, developments, sourceLanguage } = content;
+  const { s, reports, developments, firstReportAt, text, latest, excerpt, sourceLanguage } = content;
   const [why] = await sql<{ p48: number; p6: number; r24: number }[]>`
+    WITH cs AS (SELECT * FROM ${currentSignals()} c WHERE story_id = ${storyId} AND observed_at <= ${now})
     SELECT count(DISTINCT participant_key) FILTER (WHERE observed_at > ${now}::timestamptz - interval '48 hours') AS p48,
            count(DISTINCT participant_key) FILTER (WHERE observed_at > ${now}::timestamptz - interval '6 hours'
-             AND participant_key NOT IN (SELECT participant_key FROM story_signals x WHERE x.story_id = ${storyId} AND x.observed_at <= ${now}::timestamptz - interval '6 hours')) AS p6,
+             AND participant_key NOT IN (SELECT participant_key FROM cs x WHERE x.observed_at <= ${now}::timestamptz - interval '6 hours')) AS p6,
            count(*) FILTER (WHERE kind = 'editorial' AND observed_at > ${now}::timestamptz - interval '24 hours') AS r24
-    FROM story_signals WHERE story_id = ${storyId} AND observed_at <= ${now}`;
+    FROM cs`;
   const ranking = await latestHotRanking();
   const entry = ranking?.entries.find((e) => e.storyId === storyId) ?? null;
-  // Only hours observed in full are drawn (the chart leaves a gap otherwise).
-  const heat = await sql<{ hour: Date; heat: number; participants: number }[]>`
-    SELECT hour, heat, participants FROM story_heat_hourly WHERE story_id = ${storyId} AND complete AND hour > ${now}::timestamptz - interval '7 days' ORDER BY hour`;
+  // Only hours observed in full are drawn (the chart leaves a gap otherwise), over one comparable group.
+  const heat = await heatSeries(storyId, now);
   // Complete when none of the sources behind the last 48 hours' participants is behind on collection.
   const behind = behindSources(await sourceClocks(), now.getTime(), true);
   const [partial] = behind.length
-    ? await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM story_signals WHERE story_id = ${storyId} AND source_id = ANY(${behind}::text[])
+    ? await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM ${currentSignals()} cs WHERE story_id = ${storyId} AND source_id = ANY(${behind}::text[])
                                   AND observed_at > ${now}::timestamptz - interval '48 hours' AND observed_at <= ${now}`
     : [{ n: 0 }];
-  const related = await relatedStories(storyId);
-  const latestAt = s.latest_at ?? reports[0]!.at;
-  // Without a digest or a summary of its own, the story opens with its first development's representative report.
-  const origin = developments[developments.length - 1]?.representative;
+  const [related, topics] = await Promise.all([relatedStories(storyId, now), topicsOfStory(storyId, now)]);
+  const latestAt = latest.at;
   return {
     editorialLanguage: s.editorial_language,
     contentLanguage: { requested: s.editorial_language, status: "original", sourceLanguage, language: sourceLanguage },
@@ -172,26 +205,27 @@ export async function loadStoryDetail(storyId: number, now = new Date()): Promis
     status: storyStatusFor(latestAt, now.getTime()),
     reportCount: reports.length,
     sourceCount: new Set(reports.map((r) => r.source_id)).size,
-    firstReportAt: (s.first_report_at ?? reports[reports.length - 1]!.at).toISOString(),
+    firstReportAt: firstReportAt.toISOString(),
     latestAt: latestAt.toISOString(),
-    digest: s.digest,
-    digestUpdatedAt: s.digest_updated_at?.toISOString() ?? null,
-    summary: s.summary,
-    excerpt: !s.digest && !s.summary && origin?.summary ? { text: origin.summary, sourceName: origin.source_name } : null,
-    latest: s.latest,
+    digest: text.digest,
+    digestUpdatedAt: text.digestUpdatedAt?.toISOString() ?? null,
+    summary: text.summary,
+    excerpt: excerpt ? { text: excerpt.summary!, sourceName: publicSourceName(excerpt.source_name) } : null,
+    latest: latest.title,
+    latestReport: { id: latest.id },
     whyHot: {
       participants48h: Number(why?.p48 ?? 0),
       newParticipants6h: Number(why?.p6 ?? 0),
       recentReports24h: Number(why?.r24 ?? 0),
       observationComplete: !partial?.n,
       rank: entry?.rank ?? null,
-      heat: entry?.heat ?? null,
     },
     developments: developments.map((d) => ({ ...d, representative: reportView(d.representative) })),
-    officialReports: reports.filter((r) => r.first_party).slice(0, 12).map(reportView),
+    officialReports: reports.filter((r) => r.role !== "mention" && r.first_party).slice(0, 12).map(reportView),
     timeline: reports.slice(0, 100).map(reportView),
     heat: heat.map((h): HeatPoint => ({ hour: h.hour.toISOString(), heat: Number(h.heat), participants: h.participants })),
-    related: related.map((r) => ({ publicId: r.public_id, title: r.title, relation: r.relation, latestAt: r.latest_at?.toISOString() ?? null })),
+    related: related.map((r) => ({ publicId: r.public_id, title: r.title, relation: r.relation })),
+    topics,
   };
 }
 
@@ -215,27 +249,12 @@ async function sparklines(storyIds: number[], at: Date): Promise<Map<number, Arr
   return out;
 }
 
-// Pictures for a ranking change only with the ranking, so they are read once per ranking.
-type HotCoverMap = Map<number, { url: string; width: number | null; height: number | null }>;
-let coversCache: { rankingId: number; covers: HotCoverMap } | null = null;
-const coversPending = new Map<number, Promise<HotCoverMap>>();
+// Shared by concurrent readers of a ranking, but read again each time: a cover's visibility and licence
+// follow publication changes.
+const hotCovers = cachedByKey((ranking: HotRanking) => String(ranking.id), (ranking: HotRanking) => queryHotCovers(ranking), { ...SHARED_ONLY, maxKeys: 4 });
 
 /** A picture per story from its public full-text reports, the representative first, wide enough for a card. */
-async function hotCovers(rankingId: number, entries: Array<{ storyId: number; representativeItemId: string | null }>, at: Date, keep: boolean) {
-  if (coversCache?.rankingId === rankingId) return coversCache.covers;
-  if (!keep) return queryHotCovers(entries, at);
-  const pending = coversPending.get(rankingId);
-  if (pending) return pending;
-  const load = queryHotCovers(entries, at);
-  coversPending.set(rankingId, load);
-  try {
-    const covers = await load;
-    coversCache = { rankingId, covers };
-    return covers;
-  } finally { coversPending.delete(rankingId); }
-}
-
-async function queryHotCovers(entries: Array<{ storyId: number; representativeItemId: string | null }>, at: Date) {
+async function queryHotCovers({ entries }: HotRanking, at = new Date()) {
   const ids = entries.map((e) => e.storyId);
   const reps = entries.map((e) => e.representativeItemId).filter((id): id is string => !!id);
   const rows = await sql<{ story_id: number; m: { url: string; width?: number; height?: number } }[]>`
@@ -245,8 +264,7 @@ async function queryHotCovers(entries: Array<{ storyId: number; representativeIt
       SELECT m FROM jsonb_array_elements(coalesce(a.media, '[]'::jsonb)) m
       WHERE m->>'kind' = 'image' AND coalesce((m->>'width')::numeric, 800) >= 480 LIMIT 1
     ) img
-    WHERE p.story_id = ANY(${ids}::bigint[]) AND p.visibility = 'public' AND p.eligible AND p.body_mode <> 'summary'
-      AND (NOT p.selected OR p.visible_after <= ${at})
+    WHERE p.story_id = ANY(${ids}::bigint[]) AND ${listedCondition(at)} AND p.body_mode <> 'summary'
     ORDER BY p.story_id, (p.article_id::text = ANY(${reps}::text[])) DESC, p.first_party DESC, p.selected DESC, coalesce(p.score, 0) DESC, p.article_id`;
   const covers = new Map(rows.map((c) => [Number(c.story_id), { url: c.m.url, width: typeof c.m.width === "number" ? c.m.width : null, height: typeof c.m.height === "number" ? c.m.height : null }]));
   return covers;
@@ -255,24 +273,26 @@ async function queryHotCovers(entries: Array<{ storyId: number; representativeIt
 /** The hot list; `asOf` (the time machine) reads the last ranking computed by then instead of the latest. */
 export async function loadHot(asOf: Date | null = null): Promise<HotResponse> {
   const ranking = asOf ? await hotRankingAt(asOf) : await latestHotRanking();
-  if (!ranking) return { computedAt: null, ruleVersion: null, windowHours: 48, entries: [] };
+  if (!ranking) return { computedAt: null, windowHours: 48, entries: [] };
   const at = new Date(ranking.computedAt);
   const [sparks, covers, extras] = await Promise.all([
     sparklines(
       ranking.entries.map((e) => e.storyId),
       at,
     ),
-    hotCovers(ranking.id, ranking.entries, at, !asOf),
-    rankingExtras(ranking, !asOf),
+    // A past ranking shows the pictures of reports released by then, and is not kept.
+    asOf ? queryHotCovers(ranking, at) : hotCovers(ranking),
+    rankingExtras(ranking),
   ]);
   return {
     computedAt: ranking.computedAt,
-    ruleVersion: ranking.ruleVersion,
     windowHours: 48,
     entries: ranking.entries.map((e) => {
       const picture = covers.get(e.storyId);
       const coverUrl = picture ? proxiedImage(picture.url, "full") : null;
       const text = extras.text(e);
+      // The card clips its text to a few lines; complete public words belong to the event page.
+      const summary = text.summary ? Array.from(text.summary) : null;
       return {
         rank: e.rank,
         story: { publicId: e.storyPublicId, title: e.title },
@@ -282,15 +302,10 @@ export async function loadHot(asOf: Date | null = null): Promise<HotResponse> {
         badges: e.badges,
         participantCount: e.participantCount,
         sourceCount: e.sourceCount,
-        signalCount: e.signalCount,
-        reportCount: e.reportCount,
-        sourceNames: e.sourceNames,
-        latestAt: e.latestAt,
-        firstReportAt: e.firstReportAt,
-        representative: e.representativeItemId ? { id: e.representativeItemId, url: e.representativeUrl ?? "", sourceName: e.representativeSource ?? "" } : null,
+        sourceNames: [...new Set(e.sourceNames.map(publicSourceName))],
         participants: extras.participants(e),
         spark: sparks.get(e.storyId) ?? [],
-        summary: text.summary,
+        summary: summary && summary.length > 480 ? summary.slice(0, 480).join('') + '…' : text.summary,
         latest: text.latest,
         cover: picture && coverUrl ? { url: coverUrl, srcSet: proxiedImageSet(picture.url, "hero") ?? undefined, width: picture.width, height: picture.height } : null,
       };
@@ -298,28 +313,29 @@ export async function loadHot(asOf: Date | null = null): Promise<HotResponse> {
   };
 }
 
-// ---------------------------------------------------------------------------
 // v1 shapes (ranks and counts only; no heat values)
-// ---------------------------------------------------------------------------
 
 export async function v1HotTopics() {
   const ranking = await latestHotRanking();
-  const items = (ranking?.entries ?? []).map((e) => ({
-    rank: e.rank,
-    id: e.representativeItemId ?? e.storyPublicId,
-    title: e.title,
-    source: { name: e.representativeSource ?? e.sourceNames[0] ?? SITE.name },
-    links: {
+  const items = (ranking?.entries ?? []).map((e) => {
+    const links = {
       aihot: e.representativeItemId ? itemUrl(e.representativeItemId) : storyUrl(e.storyPublicId),
       original: e.representativeUrl ?? storyUrl(e.storyPublicId),
-      story: storyUrl(e.storyPublicId),
-    },
-    sourceCount: e.sourceCount,
-    signalCount: e.signalCount,
-    participantCount: e.participantCount,
-    sourceNames: e.sourceNames,
-    latestAt: new Date(e.latestAt).toISOString(),
-  }));
+      story: v1StoryUrl(e.storyPublicId),
+    };
+    return {
+      rank: e.rank,
+      id: e.representativeItemId ?? e.storyPublicId,
+      title: e.title,
+      source: { name: e.representativeSource ?? e.sourceNames[0] ?? SITE.name },
+      links,
+      sourceCount: e.sourceCount,
+      signalCount: e.signalCount,
+      participantCount: e.participantCount,
+      sourceNames: e.sourceNames,
+      latestAt: new Date(e.latestAt).toISOString(),
+    };
+  });
   return { schemaVersion: 1 as const, count: items.length, items };
 }
 
@@ -327,9 +343,13 @@ export async function v1Story(storyId: number) {
   const now = new Date();
   const content = await storyContent(storyId, now);
   if (!content) return null;
-  const { s, reports, developments } = content;
-  const latestAt = s.latest_at ?? reports[0]!.at;
-  const neighbors = (await relatedStories(storyId)).map((r) => ({ publicId: r.public_id, title: r.title, relation: r.relation, links: { aihot: storyUrl(r.public_id), api: storyApiUrl(r.public_id) } }));
+  // The latest development and digest follow the same evidence as the website.
+  const { s, reports, firstReportAt, text, latest } = content;
+  const latestAt = latest.at;
+  const neighbors = (await relatedStories(storyId, now)).map((r) => {
+    const links = { aihot: storyUrl(r.public_id), api: v1StoryApiUrl(r.public_id) };
+    return { publicId: r.public_id, title: r.title, relation: r.relation, links };
+  });
   return {
     schemaVersion: 1 as const,
     story: {
@@ -338,17 +358,17 @@ export async function v1Story(storyId: number) {
       status: storyStatusFor(latestAt, now.getTime()) === "settled" ? ("settled" as const) : ("active" as const),
       sourceCount: new Set(reports.map((r) => r.source_id)).size,
       reportCount: reports.length,
-      firstReportAt: (s.first_report_at ?? reports[reports.length - 1]!.at).toISOString(),
+      firstReportAt: firstReportAt.toISOString(),
       latestAt: latestAt.toISOString(),
-      latest: s.latest ?? developments[0]?.title ?? s.title,
-      digest: s.digest,
-      digestUpdatedAt: s.digest_updated_at?.toISOString() ?? null,
+      latest: latest.title,
+      digest: text.digest,
+      digestUpdatedAt: text.digestUpdatedAt?.toISOString() ?? null,
       links: { aihot: storyUrl(s.public_id) },
       reports: reports.slice(0, 50).map((r) => ({
         id: r.id,
         title: r.title,
         summary: r.summary,
-        source: { name: r.source_name, firstParty: r.first_party },
+        source: { name: publicSourceName(r.source_name), firstParty: r.first_party },
         publishedAt: r.at.toISOString(),
         links: { aihot: itemUrl(r.id), original: r.url },
       })),

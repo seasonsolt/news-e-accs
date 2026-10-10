@@ -5,11 +5,11 @@ import { Text, useTranslate } from "../../lib/i18n";
 // Kardashev pill (today's rating, from the chronicle's energy series) that opens the four-dimensional
 // view. Dark in either theme; a page's Deck continues it below. Phones keep the wordmark and the pill,
 // and move between sections with the bottom tab bar.
-import { SITE } from "@aihot/industry/site";
+import { SITE } from "@aihot/site";
 import { FEATURES } from "@aihot/industry/features";
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router";
-import { Wordmark } from "../Logo";
+import { Wordmark } from "@aihot/site/brand/Logo.tsx";
 import { chronicleHref } from "../../features/chrono/TimeMachine";
 import { useAt, withAt } from "../../features/chrono/at";
 import { MORE_MENU, TOPNAV, tabIsActive, type NavItem } from "./nav";

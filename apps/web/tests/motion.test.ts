@@ -8,7 +8,7 @@ import { createElement, type ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createServer } from "vite";
 import { parseHTML } from "linkedom";
-import { SITE } from "@aihot/industry/site";
+import { SITE } from "@aihot/site";
 import { startMotionFixture } from "./motion-fixture.ts";
 import { runFrames } from "../app/features/motion/viewport.ts";
 import { addedCardKeys, animateReadingChange, printHalftone } from "../app/features/motion/reading-flow.ts";
@@ -22,16 +22,6 @@ async function html(path: string) {
   assert.equal(response.status, 200);
   return response.text();
 }
-
-test("SSR delivers final ranks and decimal scores on every board", async () => {
-  for (const [path, score] of [["/leaderboard", "98.7"], ["/leaderboard/category/coding", "95.7"]]) {
-    const body = await html(path);
-    assert.ok(body.includes(`共识指数 ${score}`));
-    const { document } = parseHTML(body);
-    assert.equal(document.querySelector('tr[data-slug="motion-model-29"] td')?.textContent, "30");
-    assert.doesNotMatch(body, /<canvas/);
-  }
-});
 
 test("onboarding keeps real text and mobile exposes an operable motion toggle", async () => {
   const home = await html("/");
@@ -102,28 +92,6 @@ test("onboarding boot preloads only the first-visit poster, before styles and hy
       assert.equal(link.media, `(orientation: ${i ? "landscape" : "portrait"})`);
       assert.equal(link.href, `/media/hero-${i ? "16x9" : "9x16"}-poster.jpg`);
     });
-  }
-});
-
-test("SSR motion text occurs exactly once in score cells, ranks, titles and kickers", async () => {
-  const { document: board } = parseHTML(await html("/leaderboard"));
-  const rows = board.querySelectorAll("tbody tr[data-slug]");
-  assert.equal(rows.length, 30);
-  function once(element: Element | null, final: string) {
-    assert.ok(element);
-    const text = element.textContent?.trim();
-    assert.equal(text, final);
-    assert.equal(text.split(final).length - 1, 1);
-  }
-  rows.forEach((row, i) => once(row.querySelector("td:last-child"), (98.7 - i).toFixed(1)));
-  once(rows[0]!.querySelector("td:first-child"), "01");
-  for (const [path, mode] of [["/", "overlay"], ["/subscribe", "page"]]) {
-    const { document } = parseHTML(await html(path!));
-    const title = document.querySelector(`#onboarding-title-${mode}`);
-    once(title, SITE.name);
-    once(title?.previousElementSibling ?? null, "e-acc.ai · 加速日报");
-    assert.equal(title?.tagName, mode === "page" ? "H1" : "H2");
-    assert.equal(title?.previousElementSibling?.querySelector("[tabindex]"), null);
   }
 });
 
@@ -339,8 +307,3 @@ test("arrival eligibility excludes every existing key, including overlapping pag
   assert.deepEqual([...addedCardKeys(before, before)], []);
 });
 
-test("source lineage keeps all final names, periods and notes in HTML", async () => {
-  const body = await html("/leaderboard/sources");
-  for (const name of ["SWE-bench Verified", "DeepSWE", "FrontierCode"]) assert.ok(body.includes(name));
-  assert.equal((body.match(/data-lineage-rule=""/g) ?? []).length, 3);
-});

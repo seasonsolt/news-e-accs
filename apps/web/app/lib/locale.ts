@@ -22,7 +22,7 @@ export function htmlLanguage(locale: Locale): string { return locale === "zh" ? 
 export function hasChineseRoute(pathname: string): boolean {
   const path = publicPath(pathname);
   if (ENGLISH_ONLY_PATHS.has(path)) return false;
-  return /^\/(?:$|all(?:\/search-busy)?$|search-busy$|items\/[^/]+(?:\/original)?$|hot$|story\/[^/]+$|daily(?:\/[^/]+)?$|weekly(?:\/[^/]+)?$|monthly(?:\/[^/]+)?$|topics(?:\/[^/]+(?:\/page\/\d+)?)?$|chronicle$|products$|about$|terms$|privacy$|changelog$|feedback$|subscribe$|more$|starred$|agent$|codex-reset(?:\/history\/[^/]+)?$|leaderboard(?:\/.*)?$)/.test(path);
+  return /^\/(?:$|all(?:\/search-busy)?$|search-busy$|items\/[^/]+(?:\/original)?$|hot$|story\/[^/]+$|daily(?:\/[^/]+)?$|weekly(?:\/[^/]+)?$|monthly(?:\/[^/]+)?$|topics(?:\/[^/]+(?:\/page\/\d+)?)?$|chronicle$|products$|about$|terms$|privacy$|changelog$|feedback$|subscribe$|more$|starred$|agent$)/.test(path);
 }
 export function localePath(to: string, locale: Locale): string {
   if (!to.startsWith("/") || to.startsWith("//")) return to;

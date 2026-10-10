@@ -3,7 +3,7 @@ import { LanguageSwitch } from "./LanguageSwitch";
 import { Text, useLocale, useTranslate } from "../../lib/i18n";
 // The foot of every page: preferences (appearance, motion), the rules and feeds, and the ICP number.
 // These lived at the foot of the sidebar before the deck's top bar replaced it.
-import { SITE } from "@aihot/industry/site";
+import { SITE } from "@aihot/site";
 
 import { ThemeSwitch } from "./ThemeSwitch";
 import { MotionSwitch } from "../../features/motion/MotionSwitch";

@@ -1,39 +1,32 @@
 import { Link } from "../lib/navigation";
 import { localeFromMatches, translate, Text, useLocale, useTranslate } from "../lib/i18n";
-import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import { IntentLink } from "../components/ui/IntentLink";
 import { useLoaderData } from "react-router";
-import type { SiteStats } from "@aihot/contracts/site";
-import { apiGet } from "../lib/api.server";
-import { shortSourceName } from "../lib/format";
-import { ABOUT, SITE, withSubject } from "@aihot/industry/site";
+import type { SiteContact, SiteStats } from "@aihot/contracts/site";
+import { ABOUT, POLICY, REPORTS, SITE } from "@aihot/site";
+import { apiGet, cachedPage } from "../lib/api.server";
+import { pageReuse } from "../lib/page-reuse";
 import { organizationLd, pageMeta } from "../lib/seo";
 import { Kicker } from "../components/ui/Kicker";
 import { Deck } from "../components/shell/Deck";
 import { IconArrowRight } from "../components/icons";
 import { SignalRiver, type RiverSource } from "../features/about/SignalRiver";
 
-/** Shared caches may keep this page for five minutes. */
-export function headers() {
-  return { "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=600" };
-}
-
-interface ContactSettings {
-  wechatQr: string | null;
-  feishuQr: string | null;
-  /** The maker's X avatar through the image proxy, when the site follows that account. */
-  makerAvatar?: string | null;
-}
+export { pageHeaders as headers } from "../lib/api.server";
+export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 
 export async function loader({ request }: { request: Request }) {
   const [contact, stats] = await Promise.all([
-    apiGet<ContactSettings>("/api/site/contact", { request, signal: request.signal }).catch((): ContactSettings => ({ wechatQr: null, feishuQr: null, makerAvatar: null })),
+    apiGet<SiteContact>("/api/site/contact", { request, signal: request.signal }).catch(() => null),
     apiGet<SiteStats>("/api/site/stats", { request, signal: request.signal }).catch(() => null),
   ]);
-  return { contact, stats };
+  return cachedPage(300, { contact, stats });
 }
 
 export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
-  return pageMeta({ title: "关于", description: localeFromMatches(matches ?? []) === "en" ? `How ${SITE.name} collects, selects and groups AI news from public sources.` : `关于 ${SITE.name}：${translate("zh", SITE.description)}`, path: "/about", image: "/og/pages/about.png", jsonLd: organizationLd() }, localeFromMatches(matches ?? []));
+  const locale = localeFromMatches(matches ?? []);
+  return pageMeta({ title: "关于", description: locale === "en" ? `How ${SITE.name} collects, selects and groups AI news from public sources.` : translate("zh", ABOUT.description), path: "/about", image: "/og/pages/about.png", jsonLd: organizationLd() }, locale);
 }
 
 const NO_SOURCES: RiverSource[] = [];
@@ -105,14 +98,14 @@ function stagesOf(stats: SiteStats | null): Stage[] {
     {
       no: "03",
       title: "精选",
-      figure: stats && <Figure n={stats.selected} unit="条精选" />,
+      figure: stats && <Figure n={stats.selected} unit={REPORTS.metricUnits.selectedCount} />,
       text: ABOUT.steps.select,
       note: stats && <><Text value="过去 24 小时" />{stats.day.selected}<Text value="条进了精选" /></>,
     },
     {
       no: "04",
       title: "成刊",
-      figure: stats && <Figure n={stats.dailies} unit="期日报" />,
+      figure: stats && <Figure n={stats.dailies} unit={REPORTS.metricUnits.reportsCovered} />,
       text: ABOUT.steps.publish,
       note: "也可以用 RSS、API、MCP 订阅",
     },
@@ -141,27 +134,40 @@ function QrCard({ src, kind, title, note }: { src: string; kind: string; title: 
   );
 }
 
-/** The optional maker block (ABOUT.maker): a greeting on the left, the contact codes that are set on the right. */
-function Maker({ maker, contact }: { maker: NonNullable<typeof ABOUT.maker>; contact: ContactSettings }) {
+/**
+ * The optional maker block (ABOUT.maker): a greeting on the left, the contact codes that are set on the
+ * right. Without the contact settings (the api did not answer) the codes stay out, as the figures do.
+ */
+function Maker({ maker, contact }: { maker: NonNullable<typeof ABOUT.maker>; contact: SiteContact | null }) {
   const tx = useTranslate();
   const codes = [
-    contact.wechatQr && maker.wechat ? <QrCard key="wechat" src={contact.wechatQr} kind={tx("微信公众号")} title={maker.wechat.title} note={maker.wechat.note} /> : null,
-    contact.feishuQr && maker.feishu ? <QrCard key="feishu" src={contact.feishuQr} kind={tx("飞书群")} title={maker.feishu.title} note={maker.feishu.note} /> : null,
+    contact?.wechatQr && maker.wechat ? <QrCard key="wechat" src={contact.wechatQr} kind={tx(maker.wechat.kind)} title={maker.wechat.title} note={maker.wechat.note} /> : null,
+    contact?.feishuQr && maker.feishu ? <QrCard key="feishu" src={contact.feishuQr} kind={tx(maker.feishu.kind)} title={maker.feishu.title} note={maker.feishu.note} /> : null,
   ].filter(Boolean);
   return (
     <section aria-labelledby="maker" className="mt-20 grid gap-10 xl:mt-28 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
       <div>
         <Kicker><Text value="做这个站的人" /></Kicker>
         <h2 id="maker" className="mt-4 flex items-center gap-3.5 text-[26px] font-black leading-[1.3] tracking-[-0.02em] text-ink xl:gap-4 xl:text-[34px]">
-          {contact.makerAvatar && <MakerFace src={contact.makerAvatar} />}
-          <span><Text value="嗨，我是" /><span className="whitespace-nowrap text-accent">{maker.name}</span>
+          {contact?.makerAvatar && <MakerFace src={contact.makerAvatar} />}
+          <span><Text value="嗨，我是" /> <span className="whitespace-nowrap text-accent">{maker.name}</span>
           </span>
         </h2>
         <div className="mt-5 space-y-4 text-[15.5px] leading-[1.9] text-ink-2 xl:text-[16.5px]">
           {maker.greeting.map((line) => (
             <p key={line}>{line}</p>
           ))}
-          <p className="text-ink-3"><Text value="它一直在改，改了什么都写在" /><Link to="/changelog" className="text-accent hover:underline"><Text value="更新日志" /></Link><Text value="里；有想法、遇到问题，去" /><Link to="/feedback" className="text-accent hover:underline"><Text value="反馈页" /></Link><Text value="告诉我。" /></p>
+          <p className="text-ink-3">
+            <Text value="它一直在改，改了什么都写在" />
+            <Link viewTransition to="/changelog" className="text-accent hover:underline">
+              <Text value="更新日志" />
+            </Link>
+            <Text value="里；有想法、遇到问题，去" />
+            <Link viewTransition to="/feedback" className="text-accent hover:underline">
+              <Text value="反馈页" />
+            </Link>
+            <Text value="告诉我。" />
+          </p>
         </div>
       </div>
       {codes.length > 0 && (
@@ -178,13 +184,13 @@ function Maker({ maker, contact }: { maker: NonNullable<typeof ABOUT.maker>; con
 function Latest({ item, className = "" }: { item: SiteStats["latest"][number] | undefined; className?: string }) {
   if (!item) return null;
   return (
-    <Link to={`/items/${item.id}`} prefetch="intent" className={`group block ${className}`}>
+    <IntentLink viewTransition to={`/items/${item.id}`} className={`group block ${className}`}>
       <span className="text-[11px] font-semibold tracking-[0.2em] text-accent"><Text value="最近精选" /></span>
       <span key={item.id} className="animate-fade-up mt-1.5 block">
         <span className="line-clamp-2 text-[13.5px] font-semibold leading-[1.55] text-ink transition-colors group-hover:text-accent">{item.title}</span>
-        <span className="mt-1 block truncate text-[12px] text-ink-4">{shortSourceName(item.source)}</span>
+        <span className="mt-1 block truncate text-[12px] text-ink-4">{item.source}</span>
       </span>
-    </Link>
+    </IntentLink>
   );
 }
 
@@ -213,26 +219,27 @@ export default function AboutPage() {
       kicker={tx(ABOUT.kicker)}
       title={<>{tx(ABOUT.headline[0])}<br /><span className="text-[color:var(--heat)]">{tx(ABOUT.headline[1])}</span></>}
       description={tx(ABOUT.lead).split("{sources}").map((part, i) => (
-        <span key={i}>
-          {i > 0 && (stats ? <span className="num font-semibold">{stats.sources}</span> : tx("上百"))}
+        <Fragment key={i}>
+          {i > 0 && (stats ? <>{" "}<span className="num font-semibold">{stats.sources}</span>{" "}</> : tx(ABOUT.sourcesFallback))}
           {part}
-        </span>
+        </Fragment>
       ))}
     >
       <div className="flex flex-wrap gap-2.5">
-        <Link to="/" prefetch="intent" className="deck-button is-primary"><Text value="看今天的精选" /><IconArrowRight size={15} className="ml-1" /></Link>
-        <Link to="/daily" prefetch="intent" className="deck-button"><Text value="读最新" />{withSubject(tx("日报"))}</Link>
+        <IntentLink to="/" className="deck-button is-primary"><Text value="看今天的精选" /><IconArrowRight size={15} className="ml-1" /></IntentLink>
+        <IntentLink to="/daily" className="deck-button"><Text value="读最新" />{tx("日报")}</IntentLink>
       </div>
     </Deck>
     <div className="mx-auto max-w-[var(--page-max-reading)] pb-14">
 
       <section aria-labelledby="how" className="mt-10 xl:mt-14">
         <h2 id="how" className="sr-only">
-          {SITE.name}<Text value="怎么工作" /></h2>
+          {SITE.name}<Text value="怎么工作" />
+        </h2>
         <SignalRiver sources={sources} focus={focus} onArrive={onArrive} className="h-[230px] sm:h-[300px] lg:h-[360px] 2xl:h-[420px]">
           <Latest item={latest[at]} className="absolute left-[75%] top-[calc(42%+42px)] hidden w-[25%] px-6 lg:block" />
         </SignalRiver>
-        <p className="sr-only"><Text value="示意图：每条线是一个信源；线汇成一束束，代表同一件事的多篇报道；经过精选的闸门，只有少数几束通过，汇入每天的" />{withSubject(tx("日报"))}。</p>
+        <p className="sr-only"><Text value="示意图：每条线是一个信源；线汇成一束束，代表同一件事的多篇报道；经过精选的闸门，只有少数几束通过，汇入每天的" />{tx("日报")}。</p>
         <Latest item={latest[at]} className="mt-2 border-t border-line pt-4 lg:hidden" />
         <ol className="mt-4 grid grid-cols-1 border-t border-line-strong sm:grid-cols-2 lg:mt-0 lg:grid-cols-4">
           {stages.map((s, i) => (
@@ -260,14 +267,27 @@ export default function AboutPage() {
       {ABOUT.maker && <Maker maker={ABOUT.maker} contact={contact} />}
 
       <p className="mt-16 well rounded-card px-5 py-4 text-[13px] leading-[1.85] text-ink-3">
-        {tx(ABOUT.copyright)}
-        <Link to="/feedback" className="text-accent hover:underline"><Text value="反馈页" /></Link><Text value="联系我们。" /></p>
+        {tx(ABOUT.copyright[0])}
+        <Link viewTransition to="/feedback" className="text-accent hover:underline">
+          <Text value="反馈页" />
+        </Link>
+        {tx(ABOUT.copyright[1])}
+      </p>
 
       <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5 text-[12.5px] text-ink-4">
         <span>{tx(SITE.footerNote)}</span>
         <nav className="flex gap-5" aria-label={tx("规则与隐私")}>
-          <Link to="/terms" className="transition-colors hover:text-accent"><Text value="使用规则" /></Link>
-          <Link to="/privacy" className="transition-colors hover:text-accent"><Text value="隐私说明" /></Link>
+          <Link
+            viewTransition
+            id={ABOUT.termsAnchor ?? undefined}
+            to="/terms"
+            className="transition-colors hover:text-accent"
+          >
+            <Text value={POLICY.terms.name} />
+          </Link>
+          <Link viewTransition to="/privacy" className="transition-colors hover:text-accent">
+            <Text value="隐私说明" />
+          </Link>
         </nav>
       </footer>
     </div>

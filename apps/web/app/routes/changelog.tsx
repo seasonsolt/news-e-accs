@@ -1,9 +1,11 @@
-import { Link } from "../lib/navigation";
+import { useEffect, useState, type ComponentType } from "react";
 import { localeFromMatches, Text, useLocale, useTranslate } from "../lib/i18n";
-import { SITE, withSubject } from "@aihot/industry/site";
-import { Fragment, useEffect, useState } from "react";
+import { IntentLink } from "../components/ui/IntentLink";
+import type { ChangelogRelease, ChangelogResponse } from "@aihot/contracts/site";
+import { SITE } from "@aihot/site";
 import { useLoaderData } from "react-router";
-import { apiGet } from "../lib/api.server";
+import { apiGet, cachedPage } from "../lib/api.server";
+import { pageReuse } from "../lib/page-reuse";
 import { pageMeta } from "../lib/seo";
 import { setChangelogSeen } from "../lib/local-state";
 import { AsideCard, ReadingLayout } from "../components/ui/Page";
@@ -11,21 +13,13 @@ import { IconChevronRight } from "../components/icons";
 import { Inline, dateHeading, monthHeading } from "../features/changelog/text";
 import { Deck } from "../components/shell/Deck";
 
-/** Shared caches may keep this page for five minutes. */
-export function headers() {
-  return { "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=600" };
-}
+export { pageHeaders as headers } from "../lib/api.server";
+export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 
-interface Release {
-  date: string;
-  time: string;
-  kind: "更新" | "优化" | "公告" | "下线";
-  title: string;
-  body: string[];
-}
+type Release = ChangelogRelease;
 
 export async function loader({ request }: { request: Request }) {
-  return apiGet<{ latestVersion: string; releases: Release[] }>("/api/site/changelog", { request, signal: request.signal });
+  return cachedPage(300, await apiGet<ChangelogResponse>("/api/site/changelog", { request, signal: request.signal }));
 }
 
 export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
@@ -67,6 +61,67 @@ function ReleaseBody({ lines }: { lines: string[] }) {
         <Inline text={b} />
       </p>
     ),
+  );
+}
+
+/** One date's releases in a card; `id` is the jump target of the month index. */
+function Day({ date, releases, id }: { date: string; releases: Release[]; id?: string }) {
+  const tx = useTranslate();
+  const h = dateHeading(date, useLocale());
+  return (
+    <section id={id} className="card scroll-mt-[calc(var(--bar-h)+1.5rem)] px-5 lg:px-7">
+      <h2 className="flex items-baseline gap-3 border-b border-line-soft py-4">
+        <time dateTime={date} className="text-[18px] font-bold text-ink">
+          {h.label}
+        </time>
+        <span className="text-[12px] text-ink-4">{h.weekday}</span>
+      </h2>
+      <ol>
+        {releases.map((r) => (
+          <li
+            key={`${r.date}-${r.time}-${r.title}`}
+            className={`grid gap-x-8 gap-y-2 border-b border-line-soft py-5 last:border-b-0 sm:grid-cols-[88px_minmax(0,1fr)] ${r.urgent ? "-mx-5 border-l-4 border-l-hot bg-hot-soft pl-4 pr-5 lg:-mx-7 lg:pl-6 lg:pr-7" : ""}`}
+          >
+            <div className="flex items-center gap-3 sm:block">
+              <span className="mono block text-[12.5px] text-ink-3">{r.time}</span>
+              <span className="inline-flex items-center gap-1.5 text-[11.5px] text-ink-4 sm:mt-1.5">
+                <span className={`size-1.5 rounded-full ${r.urgent ? "bg-hot" : KIND_DOT[r.kind]}`} aria-hidden="true" />
+                {tx(r.kind)}
+              </span>
+            </div>
+            <article className={`min-w-0 sm:border-l sm:pl-8 ${r.urgent ? "sm:border-hot/40" : "sm:border-line"}`}>
+              {r.urgent && <span className="mb-2 inline-flex rounded-full bg-hot px-2.5 py-0.5 text-[12px] font-semibold text-white"><Text value="重要" /></span>}
+              <h3 className={`text-[15px] font-bold leading-snug ${r.urgent ? "text-hot" : "text-ink"}`}>{r.title}</h3>
+              <ReleaseBody lines={r.body} />
+            </article>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+/** Draws a major release: its `feature`, whose shape is the site's. */
+type FeatureDrawing = ComponentType<{ release: Release; id?: string }>;
+
+/** The site's drawing (site/changelog/FeatureRelease.tsx), when it ships one. */
+const SITE_FEATURE = Object.values(import.meta.glob<FeatureDrawing>("../../../../site/changelog/FeatureRelease.tsx", { eager: true, import: "FeatureRelease" }))[0];
+
+/**
+ * A date with a major release: each release's `feature` is drawn as its own block by the site's drawing,
+ * the first one carrying the date's anchor, above a card of the date's other releases; `body` stays the
+ * short form.
+ */
+function FeatureDay({ date, releases, Drawing }: { date: string; releases: Release[]; Drawing: FeatureDrawing }) {
+  const features = releases.filter((r) => r.feature);
+  const plain = releases.filter((r) => !r.feature);
+  return (
+    <>
+      {features.map((r, i) => (
+        <Drawing key={`${r.date}-${r.time}`} release={r} id={i === 0 ? `d-${date}` : undefined} />
+      ))}
+      {plain.length > 0 && <Day date={date} releases={plain} />}
+    </>
   );
 }
 
@@ -118,8 +173,9 @@ export default function ChangelogPage() {
       </AsideCard>
       <AsideCard title={tx("有想法或遇到问题")}>
         <p className="text-[13px] leading-[1.75] text-ink-3"><Text value="想要的功能、用着不顺的地方，都可以在反馈页告诉我们。" /></p>
-        <Link to="/feedback" prefetch="intent" className="mt-3 inline-flex items-center gap-1 text-[13px] font-medium text-accent hover:underline"><Text value="去反馈" /><IconChevronRight size={14} />
-        </Link>
+        <IntentLink viewTransition to="/feedback" className="mt-3 inline-flex items-center gap-1 text-[13px] font-medium text-accent hover:underline">
+          <Text value="去反馈" /> <IconChevronRight size={14} />
+        </IntentLink>
       </AsideCard>
     </>
   );
@@ -131,39 +187,8 @@ export default function ChangelogPage() {
     <ReadingLayout aside={aside}>
       <div className="space-y-4">
         {[...groups.entries()].map(([date, releases]) => {
-          const h = dateHeading(date, locale);
-          const plain = releases;
-          return (
-            <Fragment key={date}>
-              {plain.length > 0 && (
-                <section id={`d-${date}`} className="card scroll-mt-6 px-5 lg:px-7">
-                  <h2 className="flex items-baseline gap-3 border-b border-line-soft py-4">
-                    <time dateTime={date} className="text-[18px] font-bold text-ink">
-                      {h.label}
-                    </time>
-                    <span className="text-[12px] text-ink-4">{h.weekday}</span>
-                  </h2>
-                  <ol>
-                    {plain.map((r) => (
-                      <li key={`${r.date}-${r.time}-${r.title}`} className="grid gap-x-8 gap-y-2 border-b border-line-soft py-5 last:border-b-0 sm:grid-cols-[88px_minmax(0,1fr)]">
-                        <div className="flex items-center gap-3 sm:block">
-                          <span className="mono block text-[12.5px] text-ink-3">{r.time}</span>
-                          <span className="inline-flex items-center gap-1.5 text-[11.5px] text-ink-4 sm:mt-1.5">
-                            <span className={`size-1.5 rounded-full ${KIND_DOT[r.kind]}`} aria-hidden="true" />
-                            {tx(r.kind)}
-                          </span>
-                        </div>
-                        <article className="min-w-0 sm:border-l sm:border-line sm:pl-8">
-                          <h3 className="text-[15px] font-bold leading-snug text-ink">{r.title}</h3>
-                          <ReleaseBody lines={r.body} />
-                        </article>
-                      </li>
-                    ))}
-                  </ol>
-                </section>
-              )}
-            </Fragment>
-          );
+          if (SITE_FEATURE && releases.some((r) => r.feature)) return <FeatureDay key={date} date={date} releases={releases} Drawing={SITE_FEATURE} />;
+          return <Day key={date} id={`d-${date}`} date={date} releases={releases} />;
         })}
       </div>
     </ReadingLayout>

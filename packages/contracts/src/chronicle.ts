@@ -59,11 +59,10 @@ export interface ChronicleResponse {
 /** First day (Beijing) each part of the site has history for; null when it has none yet. */
 export interface TimeMachineBounds {
   today: string;
-  /** The earliest of the four: where the site's own record begins. */
+  /** The earliest of the three: where the site's own record begins. */
   earliest: string | null;
   feed: string | null;
   hot: string | null;
-  leaderboard: string | null;
   daily: string | null;
   /** Kardashev rating of today's primary power (the masthead's K pill); null without energy data. */
   kardashev: number | null;

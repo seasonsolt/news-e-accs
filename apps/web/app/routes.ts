@@ -1,4 +1,16 @@
-import { type RouteConfig, index, layout, route } from "@react-router/dev/routes";
+import { type RouteConfig, type RouteConfigEntry, index, layout, route } from "@react-router/dev/routes";
+import type { ModulePage } from "@aihot/contracts/modules";
+import { MODULES } from "@aihot/site/modules";
+
+/** A module's route module, from the app directory. */
+const file = (module: string, path: string) => `../../../modules/${module}/${path}`;
+const page = (module: string, p: ModulePage) => route(p.path, file(module, p.file), p.id ? { id: p.id } : {});
+
+/** The site's modules' pages, after the engine's. */
+const modulePages: RouteConfigEntry[] = MODULES.flatMap((m) =>
+  (m.pages ?? []).map((p) => ("layout" in p ? layout(file(m.name, p.layout), p.id ? { id: p.id } : {}, p.pages.map((c) => page(m.name, c))) : page(m.name, p))),
+);
+const moduleAdminPages: RouteConfigEntry[] = MODULES.flatMap((m) => (m.adminPages ?? []).map((p) => page(m.name, p)));
 
 const publicRoutes: RouteConfig = [
   index("routes/home.tsx"),
@@ -33,16 +45,6 @@ const publicRoutes: RouteConfig = [
   route("more", "routes/more.tsx"),
   route("starred", "routes/starred.tsx"),
   route("agent", "routes/agent.tsx"),
-  route("codex-reset", "routes/codex-reset.tsx"),
-  route("codex-reset/history/:date", "routes/codex-reset.tsx", { id: "codex-reset-day" }),
-  layout("routes/leaderboard-boards.tsx", [
-    route("leaderboard", "routes/leaderboard.tsx", { id: "leaderboard" }),
-    route("leaderboard/category/:key", "routes/leaderboard.tsx", { id: "leaderboard-category" }),
-  ]),
-  route("leaderboard/sources", "routes/leaderboard-sources.tsx"),
-  route("leaderboard/sources/:key", "routes/leaderboard-source.tsx"),
-  route("leaderboard/rules", "routes/leaderboard-rules.tsx"),
-  route("leaderboard/:slug", "routes/leaderboard-model.tsx"),
 ];
 
 function chineseRoutes(entries: Awaited<RouteConfig>): Awaited<RouteConfig> {
@@ -59,6 +61,8 @@ export default [
     // Pathless layouts keep their children beneath the language prefix.
     ...(entry.children ? { children: entry.children.map((child) => ({ ...child, path: child.path ? `zh/${child.path}` : undefined })) } : {}),
   })),
+  // Site modules' pages stay outside the /zh mirror: a module owns its own language handling.
+  ...modulePages,
   route("admin/login", "routes/admin-login.tsx"),
   layout("routes/admin/layout.tsx", { id: "admin-layout" }, [
     route("admin", "routes/admin/index.tsx"),
@@ -67,7 +71,6 @@ export default [
     route("admin/sources", "routes/admin/sources.tsx"),
     route("admin/sources/new", "routes/admin/source-new.tsx"),
     route("admin/sources/:id", "routes/admin/source.tsx"),
-    route("admin/monitor", "routes/admin/monitor.tsx"),
     route("admin/feedback", "routes/admin/feedback.tsx"),
     route("admin/newsletter", "routes/admin/newsletter.tsx"),
     route("admin/analytics", "routes/admin/analytics.tsx"),
@@ -77,5 +80,6 @@ export default [
     route("admin/selectbench/:runId", "routes/admin/selectbench-run.tsx"),
     route("admin/settings", "routes/admin/settings.tsx"),
     route("admin/audit", "routes/admin/audit.tsx"),
+    ...moduleAdminPages,
   ]),
 ] satisfies RouteConfig;

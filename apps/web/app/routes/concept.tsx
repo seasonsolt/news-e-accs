@@ -5,7 +5,7 @@ import { Link } from "../lib/navigation";
 import { data, useLoaderData } from "react-router";
 import type { Route } from "./+types/concept";
 import { FEATURES } from "@aihot/industry/features";
-import { SITE } from "@aihot/industry/site";
+import { SITE } from "@aihot/site";
 import { CONCEPT_PAGES, EACC_ENTITY, type ConceptPage } from "@aihot/industry/concepts";
 import { useTranslate } from "../lib/i18n";
 import { breadcrumbLd, pageMeta, siteUrl } from "../lib/seo";

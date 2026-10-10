@@ -68,7 +68,7 @@ export default function ChroniclePage() {
   const date = yearToDate(t);
   const present = !!date && !!bounds && date >= bounds.today;
   const recorded = !!date && !!bounds?.earliest && date >= bounds.earliest && date < bounds.today;
-  const links = [{ to: "/", label: tx("精选") }, { to: "/hot", label: tx("热点榜") }, ...(FEATURES.leaderboard ? [{ to: "/leaderboard", label: tx("模型榜") }] : []), { to: "/daily", label: tx("日报") }];
+  const links = [{ to: "/", label: tx("精选") }, { to: "/hot", label: tx("热点榜") }, { to: "/daily", label: tx("日报") }];
   return (
     <div className="chronicle-page pb-8 pt-3 lg:pt-0">
       <Observatory era={era} focus={focus} label={focus ? tx(timeLabel(focus.t, now, focus.precision, focus.date)) : tx(timeLabel(t, now))} distance={tx(distanceLabel(t, now))} />

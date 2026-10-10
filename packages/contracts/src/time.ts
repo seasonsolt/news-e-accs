@@ -24,6 +24,11 @@ export function beijingDayEnd(date: string): Date {
   return new Date(beijingMidnight(addDays(date, 1)).getTime() - 1);
 }
 
+/** UTC instant of an HH:mm Beijing time on the given calendar day. */
+export function beijingAt(date: string, time: string): Date {
+  return new Date(Date.parse(`${date}T${time}:00+08:00`));
+}
+
 export function addDays(date: string, days: number): string {
   const t = Date.parse(`${date}T00:00:00Z`) + days * 86400000;
   return new Date(t).toISOString().slice(0, 10);
@@ -63,6 +68,14 @@ export function isoWeekRange(label: string): { start: string; end: string } | nu
   const startDate = start.toISOString().slice(0, 10);
   if (isoWeekLabel(startDate) !== label) return null;
   return { start: startDate, end: addDays(startDate, 6) };
+}
+
+/** First and last day (YYYY-MM-DD) of a calendar month label such as 2026-09; null for anything else. */
+export function monthRange(label: string): { start: string; end: string } | null {
+  const m = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(label);
+  if (!m) return null;
+  const next = Number(m[2]) === 12 ? `${Number(m[1]) + 1}-01-01` : `${m[1]}-${String(Number(m[2]) + 1).padStart(2, "0")}-01`;
+  return { start: `${label}-01`, end: addDays(next, -1) };
 }
 
 export function isValidDate(date: string): boolean {

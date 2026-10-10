@@ -1,33 +1,35 @@
-// Daily, weekly and monthly reports. Windows use the configured report calendar and written into the report;
-// missed schedule points are caught up; regeneration creates a revision. The editors' prompts are in
-// the industry pack (industry/prompts/report-*.md), the sections follow its categories.
+// Daily, weekly and monthly reports. Windows use the configured report calendar and are written into the
+// report; missed schedule points are caught up; regeneration creates a revision. What every issue carries
+// is decided by rule: a daily from edition.ts without a model judging anything; a weekly or monthly is
+// compiled from its dailies and a model only writes its overview and introductions, from the brief in the
+// industry pack (industry/prompts/report-period*.md). Reports are English: a cited report with no English
+// copy yet (legacy Chinese prose) has one written by the model, checked, before the issue is saved.
 import { z } from "zod";
-import { SITE } from "@aihot/industry/site";
-import { CATEGORIES } from "@aihot/industry/taxonomy";
+import { EDITION_TIMES, REPORTS, SITE } from "@aihot/site";
+import { PLAIN_TERMS, RELEASE } from "@aihot/industry/taxonomy";
 import { promptText, promptVersion } from "../editorial/prompts.ts";
 import { modelFor } from "../editorial/models.ts";
-import { addDays, zonedDate, zonedTime, zonedMidnight, zonedDateTime, isoWeekLabel, isoWeekRange } from "@aihot/contracts/time";
+import { ENTITIES, isRelease } from "../editorial/vocabulary.ts";
+import { addDays, isoWeekLabel, isoWeekRange, monthRange, zonedDate, zonedDateTime, zonedMidnight, zonedTime } from "@aihot/contracts/time";
 import { sql } from "../db.ts";
 import { config } from "../config.ts";
-import { editionReady } from "../publication/distribution.ts";
-import { localizePublication } from "../publication/content-language.ts";
+import { logError } from "../lib/log-error.ts";
 import { looksEnglish } from "../editorial/writing.ts";
 import { sha256, stableJson } from "../lib/ids.ts";
 import { chatJson } from "../providers/llm.ts";
 import { completeReceipt } from "../providers/receipts.ts";
 import { shutdownSignal } from "../jobs/queue.ts";
+import { emit } from "../modules.ts";
+import { arrangeDaily, candidates, dailyEdition, periodEntries, sectionOf, SECTION_ORDER, type Candidate, type EditionEntry, type ReportEntry } from "./edition.ts";
 
-export const REPORT_VERSION = promptVersion("report-daily-lead", "report-period", "report-citations");
+export { candidates };
+export type { Candidate, ReportEntry };
 
-const SECTION_EN: Record<string, string> = {
-  "模型发布/更新": "Model releases and updates", "产品发布/更新": "Product releases and updates",
-  "行业动态": "Industry", "论文研究": "Research", "技巧与观点": "Tips and perspectives",
-};
-const SECTION_OF: Record<string, string> = Object.fromEntries(CATEGORIES.map((c) => [c.key, SECTION_EN[c.section] ?? c.section]));
-const SECTION_ORDER = [...new Set(Object.values(SECTION_OF))];
+export const REPORT_VERSION = promptVersion("report-period", "report-period-sections", "report-period-no-sections", "report-citations");
+
 export const reportTimeZone = () => config.reportTimeZone;
 export function dailyReportWindow(date: string, timeZone = reportTimeZone()) {
-  return { start: zonedDateTime(addDays(date, -1), "08:00", timeZone), end: zonedDateTime(date, "08:00", timeZone) };
+  return { start: zonedDateTime(addDays(date, -1), EDITION_TIMES.daily, timeZone), end: zonedDateTime(date, EDITION_TIMES.daily, timeZone) };
 }
 export function periodReportWindow(startDate: string, endDateInclusive: string, timeZone = reportTimeZone()) {
   return { start: zonedMidnight(startDate, timeZone), end: zonedMidnight(addDays(endDateInclusive, 1), timeZone) };
@@ -41,267 +43,289 @@ async function issueWindow(kind: "daily" | "weekly" | "monthly", key: string, pl
     : { ...planned, timeZone: reportTimeZone() };
 }
 
-/** Where an item without a category goes. */
-const DEFAULT_SECTION = SECTION_OF.industry ?? SECTION_ORDER.at(-1)!;
-
-export interface ReportEntry {
-  itemId: string;
-  factId: string | null;
-  storyPublicId: string | null;
-  title: string;
-  summary: string;
-  sourceName: string;
-  sourceUrl: string;
-  sourceId: string;
-  firstParty: boolean;
-  role: string;
-  score: number | null;
-  publishedAt: string;
+/**
+ * The masthead's figures, counted in events: sources over every report its entries cite; releases
+ * (`modelsReleased`, its public name) are the entries of the pack's headline launch kind (RELEASE: its
+ * category and its tag, so not a ranking or a test) that a maker announced itself, new that day. An
+ * industry without such a kind has no release figure.
+ */
+export function dailyMetrics(main: EditionEntry[]) {
+  return {
+    totalEvents: main.length,
+    sourcesCount: new Set(main.flatMap((e) => [e.entry.sourceId, ...(e.entry.related ?? []).map((r) => r.sourceId)])).size,
+    ...(RELEASE ? { modelsReleased: main.filter((e) => isRelease(e.category, e.tags) && !e.previous && e.authority < 3).length } : {}),
+    firstPartyEvents: main.filter((e) => e.entry.firstParty).length,
+  };
 }
 
-export interface Candidate extends ReportEntry {
-  category: string | null;
-  factKey: string;
-  needsEnglishCopy: boolean;
+type ReportKind = "daily" | "weekly" | "monthly";
+
+/** How many events an issue already published carries; nothing when it does not exist yet. */
+async function savedReport(kind: ReportKind, key: string) {
+  const [row] = await sql<{ entries: number }[]>`
+    SELECT coalesce(CASE WHEN kind = 'daily' THEN (content->'metrics'->>'totalEvents')::int ELSE jsonb_array_length(content->'storyOrder') END, 0) AS entries
+    FROM reports WHERE kind = ${kind} AND key = ${key}`;
+  return row;
 }
 
-function roleOf(kind: string, firstParty: boolean): string {
-  if (firstParty) return kind === "x_search" ? "Official · X" : "Official";
-  if (kind === "x_search") return "Commentary · X";
-  if (kind === "mp_account") return "WeChat";
-  return "Media";
-}
-
-export async function candidates(start: Date, end: Date): Promise<Candidate[]> {
-  const rows = await sql.begin("isolation level read committed", async (tx) => {
-    // Wait for in-flight releases and keep later ones outside this snapshot. The following SELECT
-    // gets a fresh READ COMMITTED snapshot; model calls and report writes happen after the lock ends.
-    await tx`SELECT pg_advisory_xact_lock(hashtext('report_candidates'))`;
-    return tx<{
-      id: string; editorial_language: "en" | "zh"; title: string; summary: string | null; url: string; category: string | null; score: number | null; first_party: boolean;
-      source_id: string; source_name: string; source_kind: string; fact_public_id: string | null; story_public_id: string | null; at: Date; backfill: boolean;
-    }[]>`
-      SELECT p.article_id AS id, p.editorial_language, p.title, p.summary, p.url, p.category, p.score, p.first_party, s.id AS source_id, s.name AS source_name,
-             s.kind AS source_kind, f.public_id AS fact_public_id, st.public_id::text AS story_public_id, p.timeline_at AS at, p.backfill
-      FROM publications p JOIN sources s ON s.id = p.source_id
-      LEFT JOIN facts f ON f.id = p.fact_id LEFT JOIN stories st ON st.id = f.story_id
-      -- Attribute each item by the later of arrival and release; either range can use its index.
-      WHERE p.visibility = 'public' AND p.selected AND NOT p.backfill
-        AND (
-          (p.visible_after <= p.timeline_at AND p.timeline_at >= ${start} AND p.timeline_at < ${end})
-          OR (p.visible_after > p.timeline_at AND p.visible_after >= ${start} AND p.visible_after < ${end})
-        )`;
-  });
-  const localized = await localizePublication(rows.map(r => ({ id: r.id, title: r.title, summary: r.summary, editorialLanguage: r.editorial_language })), "en");
-  const english = new Map(localized.map(r => [r.id, r]));
-  // One entry per fact: first-party first, then score.
-  const byFact = new Map<string, Candidate>();
-  for (const r of rows) {
-    const copy = english.get(r.id)!;
-    const ready = editionReady(copy, "en");
-    const key = r.fact_public_id ?? `a:${r.id}`;
-    const c: Candidate = {
-      itemId: r.id, factId: r.fact_public_id, storyPublicId: r.story_public_id, title: copy.title, summary: copy.summary ?? "",
-      sourceName: r.source_name, sourceUrl: r.url, sourceId: r.source_id, firstParty: r.first_party, role: roleOf(r.source_kind, r.first_party),
-      score: r.score === null ? null : Number(r.score), publishedAt: r.at.toISOString(), category: r.category, factKey: key, needsEnglishCopy: !ready,
-    };
-    const prev = byFact.get(key);
-    if (!prev || Number(c.firstParty) - Number(prev.firstParty) > 0 || (c.firstParty === prev.firstParty && (c.score ?? 0) > (prev.score ?? 0))) byFact.set(key, c);
-  }
-  return [...byFact.values()].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-}
-
-/** Facts and items already covered by recent editions are not repeated. */
-async function recentlyCovered(kind: "daily", before: string, days = 7): Promise<Set<string>> {
-  const rows = await sql<{ content: Record<string, any> }[]>`
-    SELECT content FROM reports WHERE kind = ${kind} AND key < ${before} AND key >= ${addDays(before, -days)}`;
-  const out = new Set<string>();
-  for (const r of rows) {
-    for (const s of r.content.sections ?? []) for (const it of s.items ?? []) {
-      if (it.itemId) out.add(`a:${it.itemId}`);
-      if (it.factId) out.add(it.factId);
-      if (it.clusterId) out.add(`c:${it.clusterId}`);
+/**
+ * Without a reason (the scheduled run) only a missing issue is written: one already published stays as
+ * it is. With a reason (an explicit regeneration) the issue is replaced and the edition it replaces is
+ * kept as a revision (with the window and calendar it was written in). Says whether the issue was written.
+ */
+async function saveReport(kind: ReportKind, key: string, start: Date, end: Date, content: Record<string, unknown>, reason: string | undefined, model: string | null, receiptIds: number[]): Promise<boolean> {
+  return sql.begin(async (tx) => {
+    const insert = async () => (await tx`INSERT INTO reports (kind, key, window_start, window_end, content, generated_at, model, origin, editorial_language)
+      VALUES (${kind}, ${key}, ${start}, ${end}, ${tx.json(content as never)}, now(), ${model}, 'model', 'en') ON CONFLICT (kind, key) DO NOTHING`).count > 0;
+    let written: boolean;
+    if (reason === undefined) written = await insert();
+    else {
+      const [existing] = await tx<{ id: number; revision: number; content: Record<string, unknown>; generated_at: Date; window_start: Date; window_end: Date; editorial_language: string }[]>`
+        SELECT id, revision, content, generated_at, window_start, window_end, editorial_language FROM reports WHERE kind = ${kind} AND key = ${key} FOR UPDATE`;
+      if (existing) {
+        const snapshot = { ...existing.content, editorialLanguage: existing.editorial_language,
+          windowStart: existing.window_start.toISOString(), windowEnd: existing.window_end.toISOString(),
+          reportTimeZone: existing.content.reportTimeZone ?? "Asia/Shanghai" };
+        await tx`INSERT INTO report_revisions (report_id, revision, content, generated_at, reason)
+                 VALUES (${existing.id}, ${existing.revision}, ${tx.json(snapshot as never)}, ${existing.generated_at}, ${reason}) ON CONFLICT DO NOTHING`;
+        await tx`UPDATE reports SET content = ${tx.json(content as never)}, window_start = ${start}, window_end = ${end}, generated_at = now(),
+                   editorial_language = 'en', model = ${model}, revision = revision + 1, origin = 'model', updated_at = now() WHERE id = ${existing.id}`;
+        written = true;
+      } else written = await insert();
     }
-  }
-  return out;
+    // A new issue changes the latest page, the archive, its neighbours' navigation and the report feeds.
+    if (written) await emit("reportsChanged", { reason: `${kind} ${key} published` }, tx);
+    for (const id of receiptIds) await completeReceipt(tx, id);
+    return written;
+  });
 }
+
+// English citations for reports that have no English copy yet
 
 const CitationSchema = z.object({ itemId: z.string().min(1), title: z.string().trim().min(1).max(220), summary: z.string().trim().min(1).max(2000) }).strict();
+type CitationCopy = z.infer<typeof CitationSchema>;
+type CitedCopy = Pick<ReportEntry, "itemId" | "title" | "summary">;
+
 /** An incomplete/unknown/duplicate ID set defers the report; publications are never overwritten. */
-export function validateReportCitationCopies(expected: ReportEntry[], copies: Array<z.infer<typeof CitationSchema>>) {
-  const ids = expected.map(e => e.itemId).sort(), actual = copies.map(e => e.itemId).sort();
+export function validateReportCitationCopies(expected: CitedCopy[], copies: CitationCopy[]) {
+  const ids = expected.map((e) => e.itemId).sort(), actual = copies.map((e) => e.itemId).sort();
   if (JSON.stringify(ids) !== JSON.stringify(actual) || new Set(actual).size !== actual.length) throw new Error("incomplete or unknown report citation IDs");
-  const source = new Map(expected.map(entry => [entry.itemId, entry]));
+  const source = new Map(expected.map((entry) => [entry.itemId, entry]));
   const numbers = (text: string) => [...new Set(text.match(/\d+(?:[.,]\d+)*/g) ?? [])].sort();
   for (const copy of copies) {
     if (!looksEnglish(copy.title) || !looksEnglish(copy.summary)) throw new Error("report citations must be English");
     const original = source.get(copy.itemId)!;
     if (JSON.stringify(numbers(`${original.title} ${original.summary}`)) !== JSON.stringify(numbers(`${copy.title} ${copy.summary}`))) throw new Error("report citation numbers changed");
   }
-  return new Map(copies.map(copy => [copy.itemId, copy]));
+  return new Map(copies.map((copy) => [copy.itemId, copy]));
 }
-function citationBrief(entries: ReportEntry[]) {
-  return entries.length ? `\n\nMissing English citations (translate each, return exact itemId):\n${JSON.stringify(entries.map(e => ({ itemId: e.itemId, title: e.title, summary: e.summary, sourceName: e.sourceName })))}` : "";
+function citationBrief(entries: Array<CitedCopy & { sourceName: string }>) {
+  return entries.length ? `\n\nMissing English citations (translate each, return exact itemId):\n${JSON.stringify(entries.map((e) => ({ itemId: e.itemId, title: e.title, summary: e.summary, sourceName: e.sourceName })))}` : "";
 }
-function applyCitationCopies(entries: ReportEntry[], copies: Map<string, z.infer<typeof CitationSchema>>) {
-  for (const entry of entries) { const copy = copies.get(entry.itemId); if (copy) { entry.title = copy.title; entry.summary = copy.summary; } }
-}
-
-const LeadSchema = z.object({
-  title: z.string().max(220),
-  leadParagraph: z.string().max(1200),
-  citationCopies: z.array(CitationSchema).default([]),
-  highlights: z.array(z.union([z.number(), z.string()])).max(6).catch([]),
-});
-
-async function writeLead(kind: string, key: string, entries: ReportEntry[], model: string, missing: ReportEntry[], timeZone: string) {
-  if (entries.length === 0) return null;
-  const list = entries.slice(0, 30).map((e, i) => `${i + 1}. ${e.title}｜${e.summary.slice(0, 120)}`).join("\n");
-  const res = await chatJson({
-    model, purpose: "report_lead", subject: `report:${kind}:${key}@${sha256(stableJson({ entries, missing, timeZone }))}`, promptVersion: REPORT_VERSION,
-    system: `${promptText("report-daily-lead")}\n${promptText("report-citations")}`,
-    user: list + citationBrief(missing), schema: LeadSchema.superRefine((data, ctx) => {
-      try {
-        validateReportCitationCopies(missing, data.citationCopies);
-        if (!looksEnglish(data.title) || !looksEnglish(data.leadParagraph)) throw new Error("report lead must be English");
-      } catch (error) { ctx.addIssue({ code: "custom", message: (error as Error).message }); }
-    }), temperature: 0.3, maxTokens: missing.length ? 16000 : 1500,
-  });
-  if (!looksEnglish(res.data.title) || !looksEnglish(res.data.leadParagraph)) throw new Error("report lead must be English");
-  const citationCopies = validateReportCitationCopies(missing, res.data.citationCopies);
-  const highlights = res.data.highlights
-    .map((h) => entries[Number(h) - 1])
-    .filter((e): e is ReportEntry => !!e)
-    .map((e) => e.itemId);
-  return { lead: { title: res.data.title, leadParagraph: res.data.leadParagraph }, highlights, citationCopies, receiptId: res.receiptId };
-}
-
-async function saveReport(kind: "daily" | "weekly" | "monthly", key: string, start: Date, end: Date, content: Record<string, unknown>, reason: string, model: string) {
-  await sql.begin(async (tx) => {
-    const [existing] = await tx<{ id: number; revision: number; content: Record<string, unknown>; generated_at: Date; window_start: Date; window_end: Date; editorial_language: string }[]>`
-      SELECT id, revision, content, generated_at, window_start, window_end, editorial_language FROM reports WHERE kind = ${kind} AND key = ${key} FOR UPDATE`;
-    if (existing) {
-      const snapshot = { ...existing.content, editorialLanguage: existing.editorial_language,
-        windowStart: existing.window_start.toISOString(), windowEnd: existing.window_end.toISOString(),
-        reportTimeZone: existing.content.reportTimeZone ?? "Asia/Shanghai" };
-      await tx`INSERT INTO report_revisions (report_id, revision, content, generated_at, reason)
-               VALUES (${existing.id}, ${existing.revision}, ${tx.json(snapshot as never)}, ${existing.generated_at}, ${reason}) ON CONFLICT DO NOTHING`;
-      await tx`UPDATE reports SET content = ${tx.json(content as never)}, window_start = ${start}, window_end = ${end}, generated_at = now(),
-                 editorial_language = 'en', model = ${model}, revision = revision + 1, origin = 'model', updated_at = now() WHERE id = ${existing.id}`;
-    } else {
-      await tx`INSERT INTO reports (kind, key, window_start, window_end, content, generated_at, model, origin, editorial_language)
-               VALUES (${kind}, ${key}, ${start}, ${end}, ${tx.json(content as never)}, now(), ${model}, 'model', 'en')`;
-    }
-  });
-}
-
-/** Calendar-local [D-1 08:00, D 08:00); DST can make the window 23 or 25 hours. */
-export async function composeDaily(date: string, reason = "scheduled"): Promise<{ key: string; entries: number }> {
-  const { start, end, timeZone } = await issueWindow("daily", date, dailyReportWindow(date));
-  const covered = await recentlyCovered("daily", date);
-  const all = await candidates(start, end);
-  const fresh = all.filter((c) => !covered.has(c.factKey) && !covered.has(`a:${c.itemId}`));
-  const perSection = new Map<string, Candidate[]>();
-  const flashes: Array<{ itemId: string; title: string; sourceName: string; sourceUrl: string; publishedAt: string }> = [];
-  for (const c of fresh) {
-    const label = SECTION_OF[c.category ?? ""] ?? DEFAULT_SECTION;
-    const list = perSection.get(label) ?? [];
-    if (list.length < 8) list.push(c);
-    else if (flashes.length < 12) flashes.push({ itemId: c.itemId, title: c.title, sourceName: c.sourceName, sourceUrl: c.sourceUrl, publishedAt: c.publishedAt });
-    perSection.set(label, list);
+/** Puts the checked copies on the issue's entries and on what is listed under them. */
+function applyCitationCopies(entries: Array<{ itemId: string; title: string; summary?: string; related?: Array<{ itemId: string; title: string }> }>, copies: Map<string, CitationCopy>) {
+  for (const entry of entries) {
+    const copy = copies.get(entry.itemId);
+    if (copy) { entry.title = copy.title; if (entry.summary !== undefined) entry.summary = copy.summary; }
+    for (const related of entry.related ?? []) { const c = copies.get(related.itemId); if (c) related.title = c.title; }
   }
-  const sections = SECTION_ORDER.filter((l) => perSection.get(l)?.length).map((label) => ({
-    label,
-    items: perSection.get(label)!.map(({ category: _c, factKey: _f, needsEnglishCopy: _n, ...entry }) => entry),
-  }));
-  const ordered = sections.flatMap((s) => s.items).sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+}
+
+const RepairSchema = z.object({ citationCopies: z.array(CitationSchema).default([]) });
+const REPAIR_SYSTEM = `You prepare English citations for the ${SITE.name} briefing. Return only JSON {"citationCopies":[...]}.\n`;
+
+/** One model call for the daily's reports without an English copy; a call that fails or answers badly defers the issue. */
+async function repairCitations(key: string, missing: Array<CitedCopy & { sourceName: string }>, timeZone: string) {
   const model = await modelFor("report");
-  const usedIds = new Set([...ordered, ...flashes].map(e => e.itemId));
-  const missing = fresh.filter(e => usedIds.has(e.itemId) && e.needsEnglishCopy);
-  const lead = ordered.length ? await writeLead("daily", date, ordered, model, missing, timeZone) : null;
-  if (lead) {
-    applyCitationCopies(ordered, lead.citationCopies);
-    for (const flash of flashes) { const copy = lead.citationCopies.get(flash.itemId); if (copy) flash.title = copy.title; }
-  }
+  const res = await chatJson({
+    model, purpose: "report_lead", subject: `report:daily:${key}@${sha256(stableJson({ missing, timeZone }))}`, promptVersion: REPORT_VERSION,
+    system: REPAIR_SYSTEM + promptText("report-citations"), user: citationBrief(missing).trimStart(),
+    schema: RepairSchema.superRefine((data, ctx) => {
+      try { validateReportCitationCopies(missing, data.citationCopies); } catch (error) { ctx.addIssue({ code: "custom", message: (error as Error).message }); }
+    }),
+    temperature: 0.3, maxTokens: 16000,
+  });
+  return { model, copies: validateReportCitationCopies(missing, res.data.citationCopies), receiptId: res.receiptId };
+}
+
+// Daily
+
+/** "2026-10-04 08:00": one end of a quiet issue's window, as its lead paragraph names it. */
+function windowPoint(at: Date, timeZone: string): string {
+  return `${zonedDate(at, timeZone)} ${zonedTime(at, timeZone)}`;
+}
+
+/** The quiet-day lead: the site's own wording when it is English, else the engine's. */
+function quietLead(start: Date, end: Date, timeZone: string) {
+  const own = looksEnglish(REPORTS.quiet.title) && looksEnglish(REPORTS.quiet.paragraph.replace(/\{\w+\}/g, " "));
+  const quiet = own ? REPORTS.quiet : { title: "A quiet day: no major news", paragraph: `No new major ${SITE.subject} news between {start} and {end} (${timeZone}).` };
+  return { title: quiet.title, leadParagraph: quiet.paragraph.replace("{start}", windowPoint(start, timeZone)).replace("{end}", windowPoint(end, timeZone)) };
+}
+
+/**
+ * Daily report for local date D covers the 24 hours up to the site's edition time on D (EDITION_TIMES) in
+ * the report calendar; DST can make the window 23 or 25 hours. Its most important entry leads, in its own
+ * words, and the next three are today's highlights. A window the editors judged with nothing new in it
+ * still has its issue: no entries, and a lead that says so (REPORTS.quiet).
+ */
+export async function composeDaily(date: string, reason?: string): Promise<{ key: string; entries: number }> {
+  const previous = await savedReport("daily", date);
+  if (previous && reason === undefined) return { key: date, entries: previous.entries };
+  const { start, end, timeZone } = await issueWindow("daily", date, dailyReportWindow(date));
+  const edition = await dailyEdition(date, start, end);
+  // Nothing judged in the window is a failure upstream, not a quiet day: the run fails and is caught up later.
+  if (edition.entries.length === 0 && edition.stats.judgedReports === 0) throw new Error(`daily ${date}: nothing judged in its window`);
+  const issue = arrangeDaily(edition.entries);
+  const cited = [...issue.main, ...issue.flashes].map((e) => e.entry);
+  const used = new Set(cited.flatMap((e) => [e.itemId, ...(e.related ?? []).map((r) => r.itemId)]));
+  const missing = [...edition.legacy.values()].filter((e) => used.has(e.itemId));
+  const repair = missing.length ? await repairCitations(date, missing, timeZone) : null;
+  if (repair) applyCitationCopies(cited, repair.copies);
+  const [lead, ...rest] = issue.main;
   const content = {
     date,
     title: `${SITE.name} Daily Briefing · ${date}`,
     reportTimeZone: timeZone,
-    lead: lead?.lead ?? null,
-    highlights: lead?.highlights ?? [],
-    sections,
-    flashes,
-    metrics: {
-      totalEvents: ordered.length,
-      sourcesCount: new Set(ordered.map((e) => e.sourceId)).size,
-      modelsReleased: perSection.get(SECTION_OF["ai-models"]!)?.length ?? 0,
-      firstPartyEvents: ordered.filter((e) => e.firstParty).length,
-    },
+    lead: lead ? { title: lead.entry.title, leadParagraph: lead.entry.summary } : quietLead(start, end, timeZone),
+    leadItemId: lead?.entry.itemId ?? null,
+    highlights: rest.slice(0, 3).map((e) => e.entry.itemId),
+    sections: SECTION_ORDER
+      .map((label) => ({ label, items: issue.main.filter((e) => sectionOf(e.category) === label).map((e) => e.entry) }))
+      .filter((s) => s.items.length > 0),
+    flashes: issue.flashes.map((e) => e.entry),
+    metrics: dailyMetrics(issue.main),
     windowStart: start.toISOString(),
     windowEnd: end.toISOString(),
-    generator: { version: REPORT_VERSION, model, repeatsSuppressed: all.length - fresh.length },
+    generator: { version: REPORT_VERSION, ...edition.stats, ...issue.stats },
   };
-  await saveReport("daily", date, start, end, content, reason, model);
-  if (lead) await completeReceipt(sql, lead.receiptId);
-  return { key: date, entries: ordered.length };
+  await saveReport("daily", date, start, end, content, reason, repair?.model ?? null, repair ? [repair.receiptId] : []);
+  return { key: date, entries: issue.main.length };
 }
 
+// Weekly and monthly
+
+/** A weekly's or monthly's size: the events it carries, chosen and ordered by rule. */
+const PERIOD_EVENTS = { weekly: 20, monthly: 30 } as const;
+/** A section is introduced once it carries this many events; one or two are read faster than introduced. */
+const INTRO_EVENTS = 3;
+/** The longest overview and introduction an issue prints; the brief asks for less, writers overshoot. */
+const OVERVIEW_CHARS = { weekly: 760, monthly: 1100 } as const;
+const INTRO_CHARS = 260;
+/** The brief's values for each kind: its name, its span and how long its overview should be. */
+const BRIEF = {
+  weekly: { kindName: "weekly", span: "week", sentences: "three sentences", words: "90" },
+  monthly: { kindName: "monthly", span: "month", sentences: "three to four sentences", words: "130" },
+} as const;
+
 export const PeriodSchema = z.object({
-  // A headline is asked for, but a missing or unusable one leaves the issue on its generic name.
+  overview: z.string().max(5000).catch(""),
+  sections: z.record(z.string(), z.string().max(1500)).catch({}),
   citationCopies: z.array(CitationSchema).default([]),
-  headline: z.string().max(220).catch(""),
-  overview: z.string().max(5000),
-  themes: z
-    // A theme cites at most eight entries; a model that lists more keeps its first eight rather than failing the issue.
-    .array(z.object({ heading: z.string().max(180), summary: z.string().max(2000), refs: z.array(z.union([z.number(), z.string()])).transform((refs) => refs.slice(0, 8)) }))
-    .min(1)
-    .transform((themes) => themes.slice(0, 6)),
 });
 
-/** The editor's brief for a week or month: its top entries as a numbered list, each with its section. */
-export function periodPrompt(kind: "weekly" | "monthly", startDate: string, endDateInclusive: string, top: Candidate[]) {
-  const list = top.map((e, i) => `${i + 1}. [${SECTION_OF[e.category ?? ""] ?? DEFAULT_SECTION}] ${e.title}｜${e.summary.slice(0, 140)}`).join("\n");
+/**
+ * The writer's brief for a week or month: its events as chosen, ordered and grouped by rule. It writes
+ * the overview and the introductions of the sections large enough for one, and decides nothing about
+ * what the issue carries.
+ */
+export function periodPrompt(kind: "weekly" | "monthly", startDate: string, endDateInclusive: string, groups: Array<{ label: string; items: CitedCopy[] }>) {
+  const list = groups.map((g) => [`[${g.label}]`, ...g.items.map((e) => `- ${e.title} | ${e.summary.slice(0, 140)}`)].join("\n")).join("\n");
+  const introduced = groups.filter((g) => g.items.length >= INTRO_EVENTS).map((g) => g.label);
   return {
-    system: promptText("report-period", { kindName: kind === "weekly" ? "weekly" : "monthly", overviewLength: kind === "weekly" ? "100–200" : "150–300" }),
+    system: promptText("report-period", {
+      ...BRIEF[kind],
+      sections: introduced.length ? promptText("report-period-sections", { columns: introduced.map((l) => `"${l}"`).join(", ") }) : promptText("report-period-no-sections"),
+      sectionsExample: introduced.length ? `{"${introduced[0]}": "..."}` : "{}",
+    }),
     user: `Period: ${startDate} to ${endDateInclusive}\n${list}`,
   };
 }
 
-async function composePeriod(kind: "weekly" | "monthly", key: string, startDate: string, endDateInclusive: string, reason: string) {
+const COMPANY_NAMES = Object.values(ENTITIES).map((e) => [e.name, ...e.aliases, ...(e.otherNames ?? [])].map((n) => n.toLowerCase()));
+/** Words a writer may use that name nothing in particular: the pack's plain terms and the site's name. */
+const PLAIN = new Set([...PLAIN_TERMS, SITE.name.toLowerCase()]);
+
+/**
+ * Whether written text names only what the listed items name: every capitalised or numbered Latin token
+ * (Acme, Nova-2.5, X1; a plain word that only starts a sentence is not one), every figure of three or more
+ * digits or with a decimal point or percent (845, 129.3, 40%) and every company of the vocabulary appears
+ * in the items' own words; a company may be named in either language (谷歌 for Google).
+ */
+export function grounded(text: string, corpus: string): boolean {
+  const known = corpus.toLowerCase();
+  const companies = COMPANY_NAMES.filter((names) => names.some((n) => known.includes(n)));
+  const named = (word: string) => PLAIN.has(word) || known.includes(word) || companies.some((names) => names.includes(word));
+  const words = [...text.matchAll(/[A-Za-z][A-Za-z0-9.+-]*/g)]
+    .filter((m) => !(/^[A-Z][a-z]+$/.test(m[0]) && /(?:^|[.!?]["'”’)]*\s+)$/.test(text.slice(0, m.index))))
+    .map((m) => m[0].replace(/[.+-]+$/, "")).filter((w) => /[A-Z0-9]/.test(w));
+  const figures = (text.match(/\d+(?:\.\d+)?%?/g) ?? []).filter((f) => f.length >= 3 || /[.%]/.test(f));
+  const lower = text.toLowerCase();
+  const mentioned = COMPANY_NAMES.filter((names) => names.some((n) => /\p{Script=Han}/u.test(n) && lower.includes(n)));
+  return words.every((w) => named(w.toLowerCase())) && figures.every((f) => known.includes(f)) && mentioned.every((names) => companies.includes(names));
+}
+
+/** The leading whole sentences of a text that fit in `max` characters; null when not even the first does. */
+export function fitted(text: string, max: number): string | null {
+  let out = "";
+  // A full stop ends a sentence only before a space (2.5 does not); the Chinese marks end one anywhere.
+  for (const sentence of text.trim().match(/[^。！？]+?(?:[。！？]+[」”’）]*|[.!?]+["'”’)]*(?=\s|$)|$)\s*/g) ?? []) {
+    if ([...out + sentence].length > max) break;
+    out += sentence;
+  }
+  return out.trim() || null;
+}
+
+/**
+ * A weekly or monthly, compiled from the dailies dated in the period. Its events, their order and their
+ * sections are decided by rule: the first event leads and the next three are the highlights. A model
+ * only writes the overview and the introductions of sections with three or more events; text naming
+ * anything the events do not name is not used, and overlong text keeps the leading sentences that fit.
+ * Without a usable overview the issue is saved with none (see periodOverview). Events whose reports have
+ * no English copy yet get one in the same call; an answer that fails to supply them defers the issue.
+ */
+async function composePeriod(kind: "weekly" | "monthly", key: string, startDate: string, endDateInclusive: string, reason: string | undefined) {
+  const previous = await savedReport(kind, key);
+  if (previous && reason === undefined) return { key, entries: previous.entries };
   const { start, end, timeZone } = await issueWindow(kind, key, periodReportWindow(startDate, endDateInclusive));
-  const all = await candidates(start, end);
-  const top = all.slice(0, kind === "weekly" ? 40 : 60);
-  const dailyCount = (await sql<{ n: number }[]>`SELECT count(*) AS n FROM reports WHERE kind = 'daily' AND key >= ${startDate} AND key <= ${endDateInclusive}`)[0]?.n ?? 0;
-  let themes: Array<{ heading: string; summary: string; storyRefs: ReportEntry[] }> = [];
-  let headline = "";
-  let overview = "";
-  let receiptId: number | null = null;
+  const { entries, issues } = await periodEntries(startDate, endDateInclusive);
+  const top = entries.slice(0, PERIOD_EVENTS[kind]);
+  if (!top.length) throw new Error(`${kind} ${key}: no daily entries in the period`);
+  const selected = await candidates(start, end);
+  const missing = top.filter((e) => e.needsEnglishCopy);
+  const groupsOf = () => SECTION_ORDER
+    .map((label) => ({ label, items: top.filter((e) => sectionOf(e.category) === label) }))
+    .filter((g) => g.items.length > 0);
   const model = await modelFor("report");
-  if (top.length) {
-    const missing = top.filter(e => e.needsEnglishCopy);
-    const brief = periodPrompt(kind, startDate, endDateInclusive, top);
+  let written: z.infer<typeof PeriodSchema> = { overview: "", sections: {}, citationCopies: [] };
+  let receiptId: number | null = null;
+  try {
+    const brief = periodPrompt(kind, startDate, endDateInclusive, groupsOf());
     const res = await chatJson({
       model, purpose: `report_${kind}`, subject: `report:${kind}:${key}@${sha256(stableJson({ top, startDate, endDateInclusive, timeZone }))}`, promptVersion: REPORT_VERSION,
-      system: `${brief.system}\n${promptText("report-citations")}`, user: brief.user + citationBrief(missing), schema: PeriodSchema.superRefine((data, ctx) => {
-        try {
-          validateReportCitationCopies(missing, data.citationCopies);
-          if (data.themes.some(theme => theme.refs.some(ref => !Number.isInteger(Number(ref)) || Number(ref) < 1 || Number(ref) > top.length))) throw new Error("unknown period report citation reference");
-          if ((data.headline && !looksEnglish(data.headline)) || !looksEnglish(data.overview) || data.themes.some(t => !looksEnglish(t.heading) || !looksEnglish(t.summary))) throw new Error("period report must be English");
-        } catch (error) { ctx.addIssue({ code: "custom", message: (error as Error).message }); }
-      }), temperature: 0.3, maxTokens: missing.length ? 20000 : 5000,
+      system: `${brief.system}\n${promptText("report-citations")}`, user: brief.user + citationBrief(missing),
+      schema: PeriodSchema.superRefine((data, ctx) => {
+        try { validateReportCitationCopies(missing, data.citationCopies); } catch (error) { ctx.addIssue({ code: "custom", message: (error as Error).message }); }
+      }),
+      temperature: 0.3, maxTokens: missing.length ? 20000 : 2500,
     });
-    const copies = validateReportCitationCopies(missing, res.data.citationCopies);
-    applyCitationCopies(top, copies);
-    if ((res.data.headline && !looksEnglish(res.data.headline)) || !looksEnglish(res.data.overview) || res.data.themes.some(t => !looksEnglish(t.heading) || !looksEnglish(t.summary))) throw new Error("period report must be English");
+    written = res.data;
     receiptId = res.receiptId;
-    headline = res.data.headline.trim();
-    overview = res.data.overview;
-    themes = res.data.themes.map((t) => ({
-      heading: t.heading,
-      summary: t.summary,
-      storyRefs: t.refs.map((r) => top[Number(r) - 1]).filter((e): e is Candidate => !!e).map(({ category: _c, factKey: _f, needsEnglishCopy: _n, ...e }) => e),
-    }));
+  } catch (error) {
+    // Without the English copies the issue cannot go out; otherwise it goes out with its plain overview.
+    if (shutdownSignal.signal.aborted || missing.length) throw error;
+    console.error(JSON.stringify({ level: "warn", msg: "period writer failed; the issue goes out with its plain overview", report: `${kind}:${key}`, error: logError(error) }));
   }
+  if (missing.length) applyCitationCopies(top, validateReportCitationCopies(missing, written.citationCopies));
+  const groups = groupsOf();
+  const corpus = [`${startDate} ${endDateInclusive}`, ...top.map((e) => `${e.title} ${e.summary}`)].join("\n");
+  const usable = (text: string | undefined, max: number) => {
+    const fit = fitted(text ?? "", max);
+    return fit && looksEnglish(fit) && grounded(fit, corpus) ? fit : null;
+  };
+  // Without a usable one the read layer says what the issue carries, naming only what is still public.
+  const overview = usable(written.overview, OVERVIEW_CHARS[kind]);
+  const intro = (g: { label: string; items: Candidate[] }) => g.items.length >= INTRO_EVENTS ? usable(written.sections[g.label], INTRO_CHARS) : null;
+  const [lead] = top as [Candidate, ...Candidate[]];
   const content = {
     kind,
     title: kind === "weekly" ? `${SITE.name} Weekly Briefing · ${key}` : `${SITE.name} Monthly Briefing · ${key}`,
@@ -311,74 +335,137 @@ async function composePeriod(kind: "weekly" | "monthly", key: string, startDate:
     windowEnd: end.toISOString(),
     periodStart: startDate,
     periodEnd: endDateInclusive,
-    ...(headline ? { headline } : {}),
+    headline: lead.title,
+    leadItemId: lead.itemId,
+    highlights: top.slice(1, 4).map((e) => e.itemId),
     overview,
-    themes,
+    themes: groups.map((g) => ({ heading: g.label, summary: intro(g), storyRefs: g.items.map(({ category: _c, factKey: _f, needsEnglishCopy: _n, ...e }) => e) })),
     storyOrder: top.map((e) => e.itemId),
-    metrics: { totalStories: themes.reduce((n, t) => n + t.storyRefs.length, 0), selectedCount: all.length, reportsCovered: Number(dailyCount) },
-    generator: { version: REPORT_VERSION, model },
+    metrics: { totalStories: top.length, selectedCount: selected.length, reportsCovered: issues },
+    generator: { version: REPORT_VERSION, model, written: overview !== null },
   };
-  await saveReport(kind, key, start, end, content, reason, model);
-  if (receiptId) await completeReceipt(sql, receiptId);
+  await saveReport(kind, key, start, end, content, reason, model, receiptId === null ? [] : [receiptId]);
   return { key, entries: top.length };
 }
 
-export async function composeWeekly(label: string, reason = "scheduled") {
+export async function composeWeekly(label: string, reason?: string) {
   const range = isoWeekRange(label);
   if (!range) throw new Error(`bad week label ${label}`);
   return composePeriod("weekly", label, range.start, range.end, reason);
 }
 
-export async function composeMonthly(label: string, reason = "scheduled") {
-  const m = /^(\d{4})-(\d{2})$/.exec(label);
-  if (!m) throw new Error(`bad month label ${label}`);
-  const start = `${label}-01`;
-  const next = Number(m[2]) === 12 ? `${Number(m[1]) + 1}-01-01` : `${m[1]}-${String(Number(m[2]) + 1).padStart(2, "0")}-01`;
-  return composePeriod("monthly", label, start, addDays(next, -1), reason);
+export async function composeMonthly(label: string, reason?: string) {
+  const range = monthRange(label);
+  if (!range) throw new Error(`bad month label ${label}`);
+  return composePeriod("monthly", label, range.start, range.end, reason);
+}
+
+// What is due
+
+/** The newest daily due by `now`: today's from its edition time (report calendar), yesterday's before. */
+export function dueDaily(now = new Date(), timeZone = reportTimeZone()): string {
+  const today = zonedDate(now, timeZone);
+  return zonedTime(now, timeZone) >= EDITION_TIMES.daily ? today : addDays(today, -1);
+}
+
+/** The newest weekly due by `now`: the last complete ISO week from its edition time on Monday, the one before until then. */
+export function dueWeekly(now = new Date(), timeZone = reportTimeZone()): string {
+  const today = zonedDate(now, timeZone);
+  const dow = (new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7;
+  const due = dow > 0 || zonedTime(now, timeZone) >= EDITION_TIMES.weekly;
+  return isoWeekLabel(addDays(today, -dow - (due ? 7 : 14)));
+}
+
+/** The newest monthly due by `now`: the last complete month from its edition time on the 1st, the one before until then. */
+export function dueMonthly(now = new Date(), timeZone = reportTimeZone()): string {
+  const [y, m, d] = zonedDate(now, timeZone).split("-").map(Number) as [number, number, number];
+  const due = d > 1 || zonedTime(now, timeZone) >= EDITION_TIMES.monthly;
+  const back = due ? 1 : 2;
+  const month = (y * 12 + (m - 1) - back);
+  return `${Math.floor(month / 12)}-${String((month % 12) + 1).padStart(2, "0")}`;
+}
+
+const nextWeek = (label: string) => isoWeekLabel(addDays(isoWeekRange(label)!.start, 7));
+const nextMonth = (label: string) => {
+  const [y, m] = label.split("-").map(Number) as [number, number];
+  return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+};
+
+/**
+ * Weeklies and monthlies sum up dailies: a period that ended before the site's first daily has nothing to
+ * sum up and is not due (a site started mid-month would otherwise fail that month's issue on every run).
+ */
+async function firstDailyKey(): Promise<string | null> {
+  const [row] = await sql<{ first: string | null }[]>`SELECT min(key) AS first FROM reports WHERE kind = 'daily'`;
+  return row?.first ?? null;
 }
 
 /**
- * Catch-up: generates any missing daily report for the last `days` days (never the future and never
- * before the first report in the database), the last complete week and the last complete month.
+ * The scheduled run (every half hour): every issue due by `now` that does not exist yet, oldest first.
+ * The newest one appears at the first run after it falls due (above); a long stop or an older gap is
+ * filled too. A kind with no issue yet only gets its latest due one. An issue that fails does not hold
+ * up the others; at most `limit` issues are written per run, the next run continues.
+ */
+export async function composeDueReports(now = new Date(), limit = 8): Promise<{ generated: string[]; failed: string[] }> {
+  const generated: string[] = [];
+  const failed: string[] = [];
+  const kinds: Array<{ kind: ReportKind; due: string; next: (k: string) => string; end: (k: string) => string; compose: (k: string) => Promise<unknown> }> = [
+    { kind: "daily", due: dueDaily(now), next: (k) => addDays(k, 1), end: (k) => k, compose: composeDaily },
+    { kind: "weekly", due: dueWeekly(now), next: nextWeek, end: (k) => isoWeekRange(k)!.end, compose: composeWeekly },
+    { kind: "monthly", due: dueMonthly(now), next: nextMonth, end: (k) => monthRange(k)!.end, compose: composeMonthly },
+  ];
+  const firstDaily = await firstDailyKey();
+  kinds: for (const k of kinds) {
+    const have = new Set((await sql<{ key: string }[]>`SELECT key FROM reports WHERE kind = ${k.kind}`).map((r) => r.key));
+    const first = [...have].sort()[0] ?? k.due;
+    for (let key = first; key <= k.due; key = k.next(key)) {
+      if (have.has(key)) continue;
+      if (k.kind !== "daily" && (!firstDaily || k.end(key) < firstDaily)) continue;
+      if (shutdownSignal.signal.aborted || generated.length >= limit) break kinds;
+      try {
+        await k.compose(key);
+        generated.push(`${k.kind}:${key}`);
+      } catch (error) {
+        failed.push(`${k.kind}:${key}`);
+        console.error(JSON.stringify({ level: "error", msg: "report failed", report: `${k.kind}:${key}`, error: logError(error) }));
+      }
+    }
+  }
+  if (failed.length) throw new Error(`reports: ${failed.join(", ")} failed${generated.length ? `; ${generated.join(", ")} written` : ""}`);
+  return { generated, failed };
+}
+
+/**
+ * The hourly catch-up: the last `days` dailies due by `now` that are missing, then the last due weekly and
+ * monthly if missing. Unlike composeDueReports it never walks back past `days`, so a long-stopped site (or a
+ * test database) is not filled issue by issue. A published issue is never rewritten.
  */
 export async function catchUpReports(now = new Date(), days = 7): Promise<{ generated: string[] }> {
   const generated: string[] = [];
-  const today = zonedDate(now, reportTimeZone());
-  const localTime = zonedTime(now, reportTimeZone());
-  const localHour = Number(localTime.slice(0, 2));
-  const [first] = await sql<{ key: string | null }[]>`SELECT min(key) AS key FROM reports WHERE kind = 'daily'`;
-  const latestDue = localHour >= 8 ? today : addDays(today, -1);
+  const first = await firstDailyKey();
+  const latestDue = dueDaily(now);
   for (let i = days - 1; i >= 0; i--) {
     if (shutdownSignal.signal.aborted) return { generated }; // the next hourly run continues
     const d = addDays(latestDue, -i);
-    if (first?.key && d < first.key) continue;
+    if (first && d < first) continue;
     const [exists] = await sql`SELECT 1 FROM reports WHERE kind = 'daily' AND key = ${d}`;
     if (!exists) {
       await composeDaily(d, "catch-up");
       generated.push(`daily:${d}`);
     }
   }
-  // Last complete ISO week (Monday 10:00 onwards).
-  const dow = (new Date(`${today}T00:00:00Z`).getUTCDay() + 6) % 7;
-  const lastWeek = isoWeekLabel(addDays(today, -dow - 7));
-  const weekDue = dow > 0 || localHour >= 10;
-  if (weekDue) {
-    const [w] = await sql`SELECT 1 FROM reports WHERE kind = 'weekly' AND key = ${lastWeek}`;
-    if (!w) {
-      await composeWeekly(lastWeek, "catch-up");
-      generated.push(`weekly:${lastWeek}`);
-    }
+  const firstDaily = await firstDailyKey();
+  const lastWeek = dueWeekly(now);
+  const [w] = await sql`SELECT 1 FROM reports WHERE kind = 'weekly' AND key = ${lastWeek}`;
+  if (!w && firstDaily && isoWeekRange(lastWeek)!.end >= firstDaily) {
+    await composeWeekly(lastWeek, "catch-up");
+    generated.push(`weekly:${lastWeek}`);
   }
-  // Last complete month (1st 10:30 onwards).
-  const [y, mo, dd] = today.split("-").map(Number) as [number, number, number];
-  const prevMonth = mo === 1 ? `${y - 1}-12` : `${y}-${String(mo - 1).padStart(2, "0")}`;
-  const monthDue = dd > 1 || localHour > 10 || (localHour === 10 && Number(localTime.slice(3, 5)) >= 30);
-  if (monthDue) {
-    const [m] = await sql`SELECT 1 FROM reports WHERE kind = 'monthly' AND key = ${prevMonth}`;
-    if (!m) {
-      await composeMonthly(prevMonth, "catch-up");
-      generated.push(`monthly:${prevMonth}`);
-    }
+  const prevMonth = dueMonthly(now);
+  const [m] = await sql`SELECT 1 FROM reports WHERE kind = 'monthly' AND key = ${prevMonth}`;
+  if (!m && firstDaily && monthRange(prevMonth)!.end >= firstDaily) {
+    await composeMonthly(prevMonth, "catch-up");
+    generated.push(`monthly:${prevMonth}`);
   }
   return { generated };
 }

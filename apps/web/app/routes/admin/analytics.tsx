@@ -1,4 +1,4 @@
-import { SITE } from "@aihot/industry/site";
+import { SITE } from "@aihot/site";
 import type { Route } from "./+types/analytics";
 import { LineChart } from "../../features/admin/charts";
 import { num } from "../../features/admin/format";

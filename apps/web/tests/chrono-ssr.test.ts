@@ -29,15 +29,14 @@ test("a historical hot page SSR has one final title/bar and carries at through b
   assert.ok(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith("/zh/hot"));
 });
 
-test("home, empty board and empty report history are noindex without cookies", async () => {
-  for (const path of ["/?at=2026-09-01", "/leaderboard?at=2026-09-01", "/daily?at=2026-09-01"]) {
+test("home and empty report history are noindex without cookies", async () => {
+  for (const path of ["/?at=2026-09-01", "/daily?at=2026-09-01"]) {
     const document = await page(path);
     assert.match(document.querySelector('meta[name="robots"]')!.getAttribute("content")!, /noindex/);
     assert.doesNotMatch(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!, /at=/);
     assert.equal(document.querySelector(".onboarding-overlay"), null);
     assert.ok([...document.querySelectorAll("script")].every((script) => !script.textContent?.includes("eacc-onboarded")), "history must not run the pre-paint onboarding lock");
     if (path.startsWith("/?")) assert.ok(document.querySelector('a[href="/zh/hot?at=2026-09-01"]'));
-    if (path.startsWith("/leaderboard")) assert.match(document.querySelector("main")!.textContent!, /这一天还没有模型榜/);
   }
 });
 
@@ -51,13 +50,6 @@ test("dated reports redirect to the right issue, retain at and stay noindex", as
   assert.ok(document.querySelector('a[href="/zh/weekly?at=2026-09-02"]'));
   assert.equal(document.querySelector('.time-bar a[aria-label="后一天"]')!.getAttribute("href"), "/zh/daily?at=2026-09-03");
   assert.ok(document.querySelector('.time-bar a[href="/zh/daily"]'));
-});
-
-test("a failing historical board makes exactly one upstream request", async () => {
-  const key = "/api/site/leaderboard/boards/coding";
-  const before = fixture.hits.get(key) ?? 0;
-  await page("/leaderboard/category/coding?at=2026-09-01", 503);
-  assert.equal((fixture.hits.get(key) ?? 0) - before, 1);
 });
 
 test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era links", async () => {
@@ -88,7 +80,7 @@ test("recorded day links include at, current site links do not", async () => {
   const { dateToYear } = await import("@aihot/contracts/chronicle");
   const past = await page(`/chronicle?t=${dateToYear("2026-09-01")}`);
   const card = [...past.querySelectorAll("section")].find((el) => el.textContent?.includes("这一天在本站"))!;
-  for (const to of ["/", "/hot", "/leaderboard", "/daily"]) assert.ok(card.querySelector(`a[href="${to === "/" ? "/zh" : `/zh${to}`}?at=2026-09-01"]`));
+  for (const to of ["/", "/hot", "/daily"]) assert.ok(card.querySelector(`a[href="${to === "/" ? "/zh" : `/zh${to}`}?at=2026-09-01"]`));
   const present = await page("/chronicle?t=2040");
   const live = [...present.querySelectorAll("section")].find((el) => el.textContent?.includes("此刻的本站"))!;
   assert.ok(live.querySelector('a[href="/zh/hot"]'));

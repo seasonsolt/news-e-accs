@@ -4,22 +4,25 @@ import { localePath, type Locale } from "../lib/locale";
 import { Link, useNavigate } from "../lib/navigation";
 import { ContentLanguage } from "../components/ContentLanguage";
 import { localeFromMatches, translate, Text, useTranslate, useLocale } from "../lib/i18n";
-import { SITE, withSubject } from "@aihot/industry/site";
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { ITEM_COPY, SITE } from "@aihot/site";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { useLoaderData } from "react-router";
 import type { Route } from "./+types/item";
 import type { SiteItemDetail } from "@aihot/contracts/site";
-import { loadOr404 } from "../lib/api.server";
+import { cachedPage, loadOr404 } from "../lib/api.server";
+import { pageReuse } from "../lib/page-reuse";
 import { breadcrumbLd, newsArticleLd, pageMeta, siteUrl, titled } from "../lib/seo";
 import { fullDateTime, relativeTime } from "../lib/format";
 import { markRead } from "../lib/local-state";
-import { SelectedBadge } from "../components/ui/Badge";
-import { ScoreLabel } from "../components/ui/Score";
+import { SameEventBadge, SelectedBadge } from "../components/ui/Badge";
+import { ScoreLabel, shownScore } from "../components/ui/Score";
 import { PillTabs } from "../components/ui/Tabs";
 import { ArticleLayout, RailSection } from "../components/ui/Page";
 import { Menu, MenuItem } from "../components/ui/Menu";
 import { StarButton } from "../features/feed/parts";
-import { GroupSources } from "../features/feed/ReadingGroup";
+import { GroupButton, GroupSources } from "../features/feed/ReadingGroup";
+import { ArticleBody } from "../features/item/ArticleBody";
+import { scrollToAnchor } from "../components/ui/OutlineSheet";
 import { StoryFollowups } from "../features/item/StoryFollowups";
 import { MediaGallery } from "../features/item/MediaGallery";
 import { QuotedPost } from "../features/item/QuotedPost";
@@ -28,11 +31,14 @@ import { ReadingGear } from "../features/art/ReadingGear";
 import { CATEGORY_ART } from "../features/art/CategoryBanner";
 import { Deck } from "../components/shell/Deck";
 
+export { pageHeaders as headers } from "../lib/api.server";
+export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
+
 const PosterSheet = lazy(() => import("../features/item/PosterSheet"));
 
 export async function loader({ params, request }: Route.LoaderArgs) {
   const item = await loadOr404<SiteItemDetail>(`/api/site/items/${encodeURIComponent(params.id)}`, { request, signal: request.signal });
-  return { item, alternateEdition: await hasAlternateEdition(`/api/site/items/${encodeURIComponent(params.id)}`, item, request) };
+  return cachedPage(600, { item, alternateEdition: await hasAlternateEdition(`/api/site/items/${encodeURIComponent(params.id)}`, item, request) });
 }
 
 export function meta({ matches, loaderData, location }: Route.MetaArgs) {
@@ -67,8 +73,17 @@ export function meta({ matches, loaderData, location }: Route.MetaArgs) {
   }, localeFromMatches(matches ?? []));
 }
 
-export function headers() {
-  return { "Cache-Control": "public, max-age=0, s-maxage=600, stale-while-revalidate=120" };
+/** An outline link: a plain click scrolls in place (above); modifier clicks keep the browser's behaviour. */
+function jumpTo(e: React.MouseEvent, id: string) {
+  if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  if (!document.getElementById(id)) return;
+  e.preventDefault();
+  scrollToAnchor(id);
+}
+
+/** WeChat's in-app browser cannot save downloads: there the Markdown is copied instead. */
+function inWeChat(): boolean {
+  return typeof navigator !== "undefined" && /MicroMessenger/i.test(navigator.userAgent);
 }
 
 function hostOf(url: string): string {
@@ -119,6 +134,17 @@ export default function ItemPage() {
     if (r === "copied") setToast(tx("链接已复制"));
   };
 
+  const copyMarkdown = async () => {
+    try {
+      const res = await fetch(`/items/${item.id}/markdown?lang=${locale}`);
+      if (!res.ok) throw new Error(String(res.status));
+      await navigator.clipboard.writeText(await res.text());
+      setToast(tx("Markdown 已复制"));
+    } catch {
+      setToast(tx("复制失败，请在浏览器中打开后导出"));
+    }
+  };
+
   const bodyHtml = lang === "zh" ? (item.body?.zh ?? item.body?.original) : (item.body?.original ?? item.body?.zh);
   const actualBodyLocale = !item.bodyContentLanguage && lang === "zh" && item.body?.zh ? "zh" : bodyLocale(item.bodyContentLanguage, locale, item.language);
   const bodyLabel = !item.body ? null : item.bodyContentLanguage?.status === "translated" && actualBodyLocale === locale
@@ -129,7 +155,9 @@ export default function ItemPage() {
         ? locale === "en" ? "Body · Original content (language unverified)" : "正文 · 原文（语言尚未确认）"
         : lang === "zh" && item.body.zhKind === "translation" ? tx("正文 · AI 翻译") : tx("正文");
   const isX = item.channel === "x" && !!item.x;
+  // Without a reliable date from the original, the time shown is when it was collected, labelled as such.
   const publishedIso = item.publishedAt ?? item.discoveredAt;
+  const timeLabel = item.publishedAt ? "发布时间" : "收录时间";
   const summaryOnly = item.readingMode === "summary-only";
   const showOutline = item.outline.length >= 3;
   const originalLabel = isX ? tx("在 X 查看原推") : tx("打开原文");
@@ -162,9 +190,12 @@ export default function ItemPage() {
               }
             }}
           ><Text value="复制链接" /></MenuItem>
-          {item.markdownAvailable && (
-            <MenuItem icon={<IconDownload size={15} />} href={`/items/${item.id}/markdown?lang=${locale}`} download onSelect={close}><Text value="导出 Markdown" /></MenuItem>
-          )}
+          {item.markdownAvailable &&
+            (inWeChat() ? (
+              <MenuItem icon={<IconDownload size={15} />} onSelect={() => { close(); void copyMarkdown(); }}><Text value="复制 Markdown" /></MenuItem>
+            ) : (
+              <MenuItem icon={<IconDownload size={15} />} href={`/items/${item.id}/markdown?lang=${locale}`} download onSelect={close}><Text value="导出 Markdown" /></MenuItem>
+            ))}
         </>
       )}
     </Menu>
@@ -184,9 +215,9 @@ export default function ItemPage() {
       {moreMenu}
     </div>
   );
-  const verdict = (item.selected || item.score !== null) && (
+  const verdict = (item.selected || shownScore(item.score) !== null) && (
     <div className="flex items-center gap-2">
-      {item.selected && <SelectedBadge />}
+      {item.selected && (item.sameEvent ? <SameEventBadge /> : <SelectedBadge />)}
       <ScoreLabel score={item.score} />
     </div>
   );
@@ -199,7 +230,7 @@ export default function ItemPage() {
       <div className="mt-1 text-[12.5px] leading-relaxed text-ink-3">
         {isX ? `@${item.x!.handle} · X` : item.author ?? hostOf(item.links.original)}
       </div>
-      <div className="mt-3 text-[12px] text-ink-4"><Text value="发布时间" /></div>
+      <div className="mt-3 text-[12px] text-ink-4"><Text value={timeLabel} /></div>
       <time dateTime={publishedIso} className="mono mt-0.5 block text-[12.5px] text-ink-2">
         {fullDateTime(publishedIso)}
       </time>
@@ -214,7 +245,7 @@ export default function ItemPage() {
         <ol className="-ml-px space-y-0.5 border-l border-line">
           {item.outline.map((o) => (
             <li key={o.id}>
-              <a href={`#${o.id}`} className={`-ml-px block border-l border-transparent py-1 text-[12.5px] leading-snug text-ink-3 transition-colors hover:border-accent hover:text-ink ${o.level > 2 ? "pl-5" : "pl-3"}`}>
+              <a href={`#${o.id}`} onClick={(e) => jumpTo(e, o.id)} className={`-ml-px block border-l border-transparent py-1 text-[12.5px] leading-snug text-ink-3 transition-colors hover:border-accent hover:text-ink ${o.level > 2 ? "pl-5" : "pl-3"}`}>
                 {o.text}
               </a>
             </li>
@@ -226,12 +257,23 @@ export default function ItemPage() {
   const notes = (
     <>
       {item.reason && !summaryOnly ? (
-        <RailSection title={tx("推荐理由")}>
+        <RailSection title={tx(ITEM_COPY.reasonLabel)}>
           {verdict && <div className="mb-3">{verdict}</div>}
           <p className="text-[13.5px] leading-[1.8] text-ink-2">{item.reason}</p>
         </RailSection>
       ) : (
-        verdict && <RailSection title={tx("AI 评分")}>{verdict}</RailSection>
+        verdict && <RailSection title={shownScore(item.score) !== null ? tx("AI 评分") : undefined}>{verdict}</RailSection>
+      )}
+      {item.topics.length > 0 && (
+        <RailSection title={tx("主题")}>
+          <div className="flex flex-wrap gap-1.5">
+            {item.topics.map((t) => (
+              <Link viewTransition key={t.slug} to={`/topics/${t.slug}`} className="chip">
+                {t.name}
+              </Link>
+            ))}
+          </div>
+        </RailSection>
       )}
       {item.tags.length > 0 && (
         <RailSection title={tx("标签")}>
@@ -290,28 +332,30 @@ export default function ItemPage() {
           </>
         }
       >
-        <div className="hidden lg:block 2xl:hidden">{backButton}</div>
+        {/* Between lg and 2xl the left rail is hidden: 返回 stays at the top while reading. */}
+        <div className="sticky top-0 z-20 -mx-2 hidden bg-bg/95 px-2 py-1.5 backdrop-blur lg:block 2xl:hidden">{backButton}</div>
         <article lang={contentHtmlLanguage(item, locale)} className="pb-6 pt-6 lg:pt-2 2xl:pt-1">
           <div className={`flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-ink-3 2xl:hidden ${isX ? "" : "mb-3"}`}>
             <span className="font-semibold text-ink-2">{isX ? item.x!.authorName : item.source.name}</span>
             {isX && <span>· @{item.x!.handle} · X</span>}
             {item.author && !isX && <span>· {item.author}</span>}
             <span>·</span>
+            {!item.publishedAt && <span><Text value="收录于" /></span>}
             <time dateTime={publishedIso} className="mono">{fullDateTime(publishedIso)}</time>
             <span suppressHydrationWarning>· {tx(relativeTime(publishedIso))}</span>
             {item.selected && (
               <span className="ml-1 lg:hidden">
-                <SelectedBadge />
+                {item.sameEvent ? <SameEventBadge /> : <SelectedBadge />}
               </span>
             )}
-            {item.score !== null && (
+            {shownScore(item.score) !== null && (
               <span className="ml-1 lg:hidden">
                 <ScoreLabel score={item.score} />
               </span>
             )}
           </div>
 
-          {item.summary && (
+          {item.summary && (!isX || item.summary.replace(/\s+/g, " ").trim() !== item.title) && (
             <section className={isX ? "mt-4" : "mt-7 xl:mt-8"}>
               <div className="mb-2 text-[12px] font-semibold text-accent">{summaryOnly ? tx("摘要") : tx("AI 导读")}</div>
               <p className="text-[18px] leading-[1.7] text-ink xl:text-[20px] xl:leading-[1.7]">{item.summary}</p>
@@ -320,14 +364,24 @@ export default function ItemPage() {
 
           {item.reason && !summaryOnly && (
             <section className="mt-6 border-t border-line pt-4 lg:hidden">
-              <div className="mb-1 text-[12px] font-semibold text-ink-3"><Text value="推荐理由" /></div>
+              <div className="mb-1 text-[12px] font-semibold text-ink-3"><Text value={ITEM_COPY.reasonLabel} /></div>
               <p className="text-[15px] leading-[1.75] text-ink-2">{item.reason}</p>
             </section>
           )}
 
+          {item.sameEvent && (
+            <p className="mt-5 text-[13px] leading-relaxed text-ink-4">
+              <Text value="同一新闻，精选展示" />
+              <Link viewTransition to={`/items/${item.sameEvent.id}`} className="text-ink-3 transition-colors hover:text-accent">
+                《{item.sameEvent.title}》
+              </Link>
+            </p>
+          )}
+
           {item.group && item.group.reportCount > 1 && (
             <div className="mt-5">
-              <GroupSources group={item.group} parentId={item.id} />
+              <div className="hidden lg:block"><GroupSources group={item.group} parentId={item.id} /></div>
+              <GroupButton group={item.group} parentId={item.id} />
             </div>
           )}
 
@@ -353,7 +407,7 @@ export default function ItemPage() {
               {hasTranslation && lang === "zh" && !item.body.complete && (
                 <p className="mb-5 rounded-control bg-bg-sunk px-3 py-2 text-[13px] text-ink-3"><Text value="译文尚不完整，完整内容请切换到原文。" /></p>
               )}
-              <div className="prose" lang={actualBodyLocale ?? "und"} dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+              <ArticleBody html={bodyHtml} lang={actualBodyLocale ?? "und"} />
             </section>
           )}
 
@@ -366,8 +420,13 @@ export default function ItemPage() {
             <span> · {hostOf(item.links.original)}</span>
           </p>
 
-          {item.tags.length > 0 && (
+          {(item.topics.length > 0 || item.tags.length > 0) && (
             <div className="mt-4 flex flex-wrap gap-1.5 lg:hidden">
+              {item.topics.map((t) => (
+                <Link viewTransition key={t.slug} to={`/topics/${t.slug}`} className="chip">
+                  {t.name}
+                </Link>
+              ))}
               {item.tags.slice(0, 6).map((t) => (
                 <Link key={t} to={`/all?tag=${encodeURIComponent(t)}`} className="chip">
                   #{tx(t)}

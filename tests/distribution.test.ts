@@ -140,7 +140,7 @@ test('MCP advertises English defaults and refuses mixed or missing required edit
     return JSON.parse(text);
   };
   const initialized = await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'distribution-test', version: '1' } });
-  assert.equal(initialized.result.serverInfo.version, '3.0.0');
+  assert.equal(initialized.result.serverInfo.version, '4.0.0');
   const listing = await rpc('tools/list', {});
   assert.equal(listing.result.tools.find((tool: any) => tool.name === MCP_TOOL_NAMES.latest).inputSchema.properties.lang.default, 'en');
   const result = await rpc('tools/call', { name: MCP_TOOL_NAMES.latest, arguments: { limit: 2 } });
@@ -220,6 +220,8 @@ test('native English and stored Chinese DTOs agree across site, v1, feeds, Markd
     assert.equal(translated.contentLanguage.language, 'zh'); assert.equal(translated.reportTimeZone, 'America/New_York');
     assert.match(dailyIssueMail(translated, 'zh').text, /中文日报正文/);
     await sql`UPDATE reports SET revision=revision+1 WHERE kind='daily' AND key=${key}`;
+    assert.equal((await app.inject(`/api/site/reports/daily/${key}?lang=zh`)).json().contentLanguage.language, 'zh', 'a republication with the same text keeps its edition');
+    await sql`UPDATE reports SET content=jsonb_set(content,'{lead,title}','"Corrected native lead"') WHERE kind='daily' AND key=${key}`;
     assert.equal((await app.inject(`/api/site/reports/daily/${key}?lang=zh`)).json().contentLanguage.language, 'en');
   } finally {
     await sql`DELETE FROM content_translations WHERE content_id IN (${id},${`daily:${key}`})`;
@@ -235,7 +237,9 @@ test('OpenAPI describes explicit edition selection while preserving historical m
   assert.deepEqual(document.components.parameters.Language.schema.enum, ['en', 'zh']);
   for (const [path, methods] of Object.entries(document.paths) as Array<[string, any]>) {
     const language = methods.get.parameters.some((parameter: any) => parameter.$ref === '#/components/parameters/Language');
-    assert.equal(language, !path.startsWith('/api/v1/codex-resets'), path);
+    // The weekly, monthly and Agent endpoints return the stored issue as written; they take no edition parameter.
+    if (/^\/api\/v1\/(weeklies|monthlies|agent)/.test(path)) continue;
+    assert.equal(language, true, path);
   }
 });
 
@@ -282,10 +286,14 @@ test('original-only headline readiness uses known source provenance and does not
 
 test('Markdown preserves attributed quote evidence and links with honest missing-language markers', async () => {
   const quoteId = `8${Date.now()}`, ids: string[] = [];
+  // X posts are shown only from a licensed X source (their text, quotes and media follow the source's site permission).
+  const xSource = `${SOURCE}-x`;
+  await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, site_fulltext, syndicate_fulltext, next_fetch_at)
+    VALUES (${xSource}, 'Distribution X fixture', 'x_search', 'T1', 'editorial', true, true, '2100-01-01')`;
   try {
     for (const language of ['en', 'zh']) {
-      const material = await upsertMaterial({ sourceId: SOURCE, url: `https://x.com/reader/status/${Date.now()}-${language}`,
-        title: 'A reader discusses a model release', language: 'en', via: 'fetch', xPost: { tweetId: `9${Date.now()}`, handle: 'reader', authorName: 'Reader', text: 'Read this release.',
+      const material = await upsertMaterial({ sourceId: xSource, url: `https://x.com/reader/status/${Date.now()}-${language}`,
+        title: 'A reader discusses a model release', language: 'en', bodyText: 'Read this release.', bodyHtml: '<p>Read this release.</p>', bodyStatus: 'ok', via: 'fetch', xPost: { tweetId: `9${Date.now()}`, handle: 'reader', authorName: 'Reader', text: 'Read this release.',
           quoted: { handle: 'lab', authorName: 'Lab', text: language === 'en' ? 'The quoted lab releases a model.' : '被引用的实验室发布新模型。', url: `https://x.com/lab/status/${quoteId}` } } });
       ids.push(material.articleId);
       await sql`INSERT INTO analyses(article_id,input_revision,origin,editorial_language,relevance,category,title,summary,score,selected)

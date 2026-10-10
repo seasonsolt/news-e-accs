@@ -26,7 +26,7 @@ export function useAt(): string | null {
 /** Pages whose content follows the time machine; the rest show the present beneath its bar. */
 export function followsTime(pathname: string): boolean {
   pathname = publicPath(pathname);
-  return pathname === "/" || pathname === "/hot" || /^\/(leaderboard|daily|weekly|monthly)(\/|$)/.test(pathname);
+  return pathname === "/" || pathname === "/hot" || /^\/(daily|weekly|monthly)(\/|$)/.test(pathname);
 }
 
 /** `to` with `at` set (or removed when null), keeping its other parameters and hash. */

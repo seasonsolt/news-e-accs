@@ -1,4 +1,5 @@
 import { editionReady, bodyEditionReady } from '@aihot/backend/publication/distribution';
+import { digestInputsHash, digestReports } from '@aihot/backend/publication/story-evidence';
 import { loadReport } from '@aihot/backend/publication/reports';
 import { tag } from './setup.ts';
 import assert from 'node:assert/strict';
@@ -66,6 +67,7 @@ test('header and body edits independently invalidate editions; body permission a
   await sql`UPDATE articles SET body_html='<h2>Changed</h2><p>Updated English body.</p>' WHERE id=${id}`;
   const changed:any=await localizePublication(await projection(),'zh');assert.equal(changed.bodyContentLanguage.language,'en');assert.equal(changed.bodyContentLanguage.status,'original-english');
   await sql`UPDATE sources SET site_fulltext=false WHERE id=${sourceId}`;
+  await publishArticle(id); // a licence change reaches readers when the item is republished
   const revoked:any=await localizePublication(await projection(),'zh');assert.equal(revoked.body,null);assert.equal(await currentContent('body',id,'zh'),null);
   await sql`UPDATE publications SET visibility='withdrawn' WHERE article_id=${id}`;
   assert.equal((await loadItemDetail(id)).kind,'not_found');assert.equal(await currentContent('item',id,'zh'),null);
@@ -87,16 +89,22 @@ test('existing pre-migration Chinese-to-English edition remains valid and incomp
 });
 
 test('native English story and report editions work without reinterpreting revisions',async()=>{
+  // The event's latest development is its newest public report: make that report native English again.
+  await sql`UPDATE analyses SET editorial_language='en',title='Native English accelerator',summary='Native English summary',reason='Native reason',title_zh=NULL,summary_zh=NULL,reason_zh=NULL WHERE article_id=${id}`;
+  await sql`UPDATE sources SET site_fulltext=true WHERE id=${sourceId}`;
+  await publishArticle(id);
   const publicId='88888888-8888-4888-8888-'+T.replace(/[^a-f0-9]/g,'').padEnd(12,'0').slice(0,12);
   const [story]=await sql<{id:number}[]>`INSERT INTO stories(public_id,editorial_language,title,summary,digest,latest,latest_at)
     VALUES(${publicId},'en','English event','English event summary','English digest','English development',now()) RETURNING id`;
   const [fact]=await sql<{id:number}[]>`INSERT INTO facts(public_id,story_id,editorial_language,title) VALUES(${`native-fact-${T}`},${story!.id},'en','English fact') RETURNING id`;
   await sql`INSERT INTO fact_articles(fact_id,article_id,role) VALUES(${fact!.id},${id},'primary')`;
+  const evidence=await digestReports(sql,[story!.id]);
+  await sql`INSERT INTO story_digests(story_id,version,digest,latest,article_ids,inputs_hash) VALUES(${story!.id},1,'English digest','English development',${evidence.map(r=>r.id)},${digestInputsHash(evidence)})`;
   assert.equal(await currentContent('story',publicId,'en'),null);
   const storyEntry=await currentContent('story',publicId,'zh');assert.ok(storyEntry);
   await saveTranslation({...storyEntry,translations:Object.fromEntries(storyEntry.segments.map(s=>[s.key,`中文 ${s.key}`]))},'offline-agent','fixture',[],true);
   const localized:any=await localizePublication({publicId,title:'English event'},'zh');assert.equal(localized.title,'中文 title');assert.equal(localized.editorialLanguage,'en');
-  const hot:any=await localizePublication({entries:[{rank:1,story:{publicId,title:'English event'},summary:'English digest',latest:'English development'}]},'zh');
+  const hot:any=await localizePublication({entries:[{rank:1,story:{publicId,title:'English event'},summary:'English digest',latest:'Native English accelerator'}]},'zh'); // the latest development is the newest public report's headline
   assert.equal(hot.entries[0].story.title,'中文 title');assert.equal(hot.entries[0].summary,'中文 digest');assert.equal(hot.entries[0].latest,'中文 latest');assert.equal(hot.entries[0].contentLanguage.language,'zh');
   await sql`UPDATE facts SET title='Changed English fact' WHERE id=${fact!.id}`;
   const changedStory:any=await localizePublication({publicId,title:'English event'},'zh');assert.equal(changedStory.contentLanguage.status,'original');
@@ -109,6 +117,8 @@ test('native English story and report editions work without reinterpreting revis
     await saveTranslation({...report,translations:Object.fromEntries(report.segments.map(s=>[s.key,`中文 ${s.key}`]))},'offline-agent','fixture',[],true);
     const translated:any=await localizePublication({kind:'daily',key,title:'English lead'},'zh');assert.equal(translated.title,'中文 lead.title');
     await sql`UPDATE reports SET revision=revision+1 WHERE kind='daily' AND key=${key}`;
+    const same:any=await localizePublication({kind:'daily',key,title:'English lead'},'zh');assert.equal(same.contentLanguage.status,'translated','a republication with the same text keeps its edition');
+    await sql`UPDATE reports SET content=jsonb_set(content,'{lead,title}','"Corrected English lead"') WHERE kind='daily' AND key=${key}`;
     const stale:any=await localizePublication({kind:'daily',key,title:'English lead'},'zh');assert.equal(stale.contentLanguage.status,'original');
   } finally { await sql`DELETE FROM reports WHERE kind='daily' AND key=${key}`; }
 });

@@ -1,16 +1,17 @@
-import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
-import { withSubject } from "@aihot/industry/site";
+import { subjectAfter, withSubject } from "@aihot/site";
 import { useLoaderData, useRouteLoaderData } from "react-router";
+import { IntentLink } from "../components/ui/IntentLink";
 import { FEATURES } from "@aihot/industry/features";
 import type { loader as rootLoader } from "../root";
 import { Deck } from "../components/shell/Deck";
 import { TimeDial } from "../features/chrono/TimeMachine";
 import type { HotEntryView, HotResponse } from "@aihot/contracts/site";
-import { loadOr404, queryString } from "../lib/api.server";
+import { cachedPage, loadOr404, queryString } from "../lib/api.server";
+import { pageReuse } from "../lib/page-reuse";
 import { atLabel, requestAt } from "../features/chrono/at";
 import { pageMeta } from "../lib/seo";
-import { monthDayTime, shortSourceName } from "../lib/format";
+import { monthDayTime } from "../lib/format";
 import { Badge } from "../components/ui/Badge";
 import { EmptyState } from "../components/ui/Page";
 import { IconChevronDown, IconInfo } from "../components/icons";
@@ -20,23 +21,22 @@ import { Delta } from "../features/hot/Delta";
 import { HotHeat, HotMotion, HotRank } from "../features/hot/HotMotion";
 import { TelegraphTape } from "../features/motion/react-bits/TelegraphTape";
 
+export { pageHeaders as headers } from "../lib/api.server";
+export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
+
 export async function loader({ request }: { request: Request }) {
   const at = requestAt(request);
-  return { hot: await loadOr404<HotResponse>(`/api/site/hot${queryString({ at })}`, { request, signal: request.signal }), at };
+  return cachedPage(120, { hot: await loadOr404<HotResponse>(`/api/site/hot${queryString({ at })}`, { request, signal: request.signal }), at });
 }
 
 export function meta({ matches, loaderData }: { loaderData?: { at: string | null }; matches?: Array<{ id: string; data?: unknown }> }) {
   return pageMeta({
     title: withSubject("热点榜"),
-    description: "过去 48 小时 AI 圈讨论最多的 10 个事件：热度指数、趋势与组成热度的公开来源。",
+    description: `${subjectAfter("过去 48 小时", "圈")}讨论最多的 10 个事件：热度指数、趋势与组成热度的公开来源。`,
     path: "/hot",
     image: "/og/pages/hot.png",
     noindex: !!loaderData?.at,
   }, localeFromMatches(matches ?? []));
-}
-
-export function headers() {
-  return { "Cache-Control": "public, max-age=0, s-maxage=120, stale-while-revalidate=60" };
 }
 
 const BADGES: Record<HotEntryView["badges"][number], { label: string; tone: "hot" | "accent" | "amber"; hint: string }> = {
@@ -49,10 +49,10 @@ const RANK_COLOR = ["text-rank-1", "text-rank-2", "text-rank-3"];
 const rankColor = (rank: number) => RANK_COLOR[rank - 1] ?? "text-rank-rest";
 const pad = (rank: number) => String(rank).padStart(2, "0");
 
-/** "TechCrunch、The Verge 等 4 个来源 · 7 位参与者". */
+/** "某媒体、某账号 等 4 个来源 · 7 位参与者". */
 function Voices({ e }: { e: HotEntryView }) {
   const tx = useTranslate();
-  const names = e.sourceNames.slice(0, 2).map(shortSourceName);
+  const names = e.sourceNames.slice(0, 2);
   return (
     <span className="min-w-0 text-[12.5px] leading-snug text-ink-4">
       {/* Lines break between the phrases, never inside one; a phrase wider than the card is cut short. */}
@@ -78,9 +78,9 @@ function Badges({ e }: { e: HotEntryView }) {
 /** The whole card opens the event; the title carries the link and stretches over the card. */
 function StoryLink({ e, className }: { e: HotEntryView; className: string }) {
   return (
-    <Link to={`/story/${e.story.publicId}`} prefetch="intent" className={`transition-colors after:absolute after:inset-0 after:content-[''] ${className}`}>
+    <IntentLink viewTransition to={`/story/${e.story.publicId}`} className={`transition-colors after:absolute after:inset-0 after:content-[''] ${className}`}>
       {e.story.title}
-    </Link>
+    </IntentLink>
   );
 }
 
@@ -145,7 +145,8 @@ function Lead({ e }: { e: HotEntryView }) {
               {e.latest}
             </p>
           )}
-          <div className="flex items-center gap-3">
+          {/* The voices drop under the faces when the card is too narrow for both (small phones). */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <Faces participants={e.participants} total={e.participantCount} size={24} />
             <Voices e={e} />
           </div>
@@ -264,12 +265,12 @@ export default function HotPage() {
         </div>
       ) : (
         <>
-          <section aria-label={tx("热度前三")} className="grid gap-3 lg:grid-cols-12 lg:gap-4">
-            <div data-hot-id={lead.story.publicId} className="grid lg:col-span-7 lg:row-span-2 xl:col-span-8">
+          <section aria-label={tx("热度前三")} className="grid grid-cols-1 gap-3 lg:grid-cols-12 lg:gap-4">
+            <div data-hot-id={lead.story.publicId} className="grid grid-cols-1 lg:col-span-7 lg:row-span-2 xl:col-span-8">
               <Lead e={lead} />
             </div>
             {runners.map((e) => (
-              <div key={e.story.publicId} data-hot-id={e.story.publicId} className="grid lg:col-span-5 xl:col-span-4">
+              <div key={e.story.publicId} data-hot-id={e.story.publicId} className="grid grid-cols-1 lg:col-span-5 xl:col-span-4">
                 <Runner e={e} />
               </div>
             ))}
@@ -292,7 +293,7 @@ export default function HotPage() {
         </>
       )}
 
-      <details className="disclosure group/method mt-8 text-[12px] text-ink-4">
+      <details id="hot-method" className="disclosure group/method mt-8 scroll-mt-[calc(var(--bar-h)+16px)] text-[12px] text-ink-4">
         <summary className="flex items-center gap-1.5 py-1 transition-colors hover:text-ink-2">
           <IconInfo size={15} /><Text value="热度是怎么算的？" /><span className="ml-auto inline-flex items-center gap-0.5">
             <span className="group-open/method:hidden"><Text value="了解榜单" /></span>

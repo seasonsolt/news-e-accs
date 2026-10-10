@@ -1,7 +1,7 @@
 // The newsletter's two letters: the subscription confirmation and the daily issue. Mail clients ignore
 // stylesheets and web fonts, so this is inline-styled table markup in the site's parchment palette.
 // Every letter has a plain-text twin.
-import { SITE } from "@aihot/industry/site";
+import { SITE } from "@aihot/site";
 import type { ReportCitation, ReportDetail } from "@aihot/contracts/site";
 import { editionPath, type DistributionLanguage } from "../publication/distribution.ts";
 import { dailyUrl, siteUrl } from "../publication/links.ts";

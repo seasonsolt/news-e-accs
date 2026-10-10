@@ -1,21 +1,25 @@
 import { hasAlternateEdition } from "../lib/edition-meta.server";
+import { contentHtmlLanguage } from "../lib/content-language";
 import { localeFromMatches, translate } from "../lib/i18n";
-import { SITE, withSubject } from "@aihot/industry/site";
+import { SITE, withSubject } from "@aihot/site";
 import { data, useLoaderData, useRouteLoaderData } from "react-router";
 import type { Route } from "./+types/report-detail";
-import type { ReportDetail, ReportNavigationEntry, ReportKind } from "@aihot/contracts/site";
+import type { ReportDetail, ReportNavigationResponse, ReportKind } from "@aihot/contracts/site";
 import { requestAt } from "../features/chrono/at";
-import { apiGet, loadOr404 } from "../lib/api.server";
-import { pageMeta, titled } from "../lib/seo";
+import { apiGet, cachedPage, loadOr404 } from "../lib/api.server";
+import { pageReuse } from "../lib/page-reuse";
+import { newsArticleLd, pageMeta, titled } from "../lib/seo";
 import { zonedDate } from "@aihot/contracts/time";
 import { ReportLayout } from "../features/report/ReportLayout";
 import { ReportDeck, ReportPaper } from "../features/report/ReportPaper";
 import { FEATURES } from "@aihot/industry/features";
 import type { loader as rootLoader } from "../root";
-import { Deck } from "../components/shell/Deck";
 import { TimeDial } from "../features/chrono/TimeMachine";
 
-import { KIND_LABEL, kindFromPath } from "../features/report/format";
+import { KIND_LABEL, feedLink, kindFromPath } from "../features/report/format";
+
+export { pageHeaders as headers } from "../lib/api.server";
+export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 
 const PATTERN: Record<ReportKind, RegExp> = {
   daily: /^\d{4}-\d{2}-\d{2}$/,
@@ -29,30 +33,34 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   if (!PATTERN[kind].test(key)) throw data({ message: "not_found" }, { status: 404 });
   const [report, { items: index }] = await Promise.all([
     loadOr404<ReportDetail>(`/api/site/reports/${kind}/${key}`, { request, signal: request.signal }),
-    apiGet<{ items: ReportNavigationEntry[] }>(`/api/site/reports/${kind}/navigation/${key}`, { request, signal: request.signal }),
+    apiGet<ReportNavigationResponse>(`/api/site/reports/${kind}/navigation/${key}`, { request, signal: request.signal }),
   ]);
   const at = requestAt(request);
-  return { report, index, alternateEdition: await hasAlternateEdition(`/api/site/reports/${kind}/${key}`, report, request), today: at ?? zonedDate(Date.now(), report.reportTimeZone ?? "Asia/Shanghai"), at };
+  return cachedPage(3600, { report, index, alternateEdition: await hasAlternateEdition(`/api/site/reports/${kind}/${key}`, report, request), today: at ?? zonedDate(Date.now(), report.reportTimeZone ?? "Asia/Shanghai"), at });
 }
 
 export function meta({ matches, loaderData }: Route.MetaArgs) {
   if (!loaderData) return [{ title: titled(translate(localeFromMatches(matches ?? []), "报告不存在")) }, { name: "robots", content: "noindex" }];
   const r = loaderData.report;
   const locale = localeFromMatches(matches ?? []);
-  return pageMeta({
+  // The issue's date and its visible editorial lead (a still-public highlight when it has none).
+  const lead = r.lead?.title.trim() || r.highlights.find((item) => item.available)?.title.trim();
+  const name = `${translate(locale, withSubject(KIND_LABEL[r.kind]))} ${r.key}`;
+  const title = lead ? `${name}${locale === "en" ? ": " : "："}${lead}` : name;
+  const description = r.lead?.leadParagraph ?? r.overview?.slice(0, 150) ?? (locale === "en" ? `${SITE.name} ${translate(locale, KIND_LABEL[r.kind])} for ${r.key}.` : `${SITE.name} ${r.key} 的${withSubject(KIND_LABEL[r.kind])}。`);
+  const path = `/${r.kind}/${r.key}`;
+  const image = `/og/reports/${r.kind}/${r.key}.png`;
+  return [...pageMeta({
     content: r,
     alternates: loaderData.alternateEdition,
-    title: r.kind === "daily" ? `${SITE.subject} ${translate(locale, "日报")} ${r.key}` : r.title.replace(`${SITE.name} `, `${SITE.subject} `),
-    description: r.lead?.leadParagraph ?? r.overview?.slice(0, 150) ?? (locale === "en" ? `${SITE.name} ${translate(locale, KIND_LABEL[r.kind])} for ${r.key}.` : `${SITE.name} ${r.key} 的${withSubject(KIND_LABEL[r.kind])}。`),
-    path: `/${r.kind}/${r.key}`,
-    image: `/og/reports/${r.kind}/${r.key}.png`,
+    title,
+    description,
+    path,
+    image,
     type: "article",
     noindex: !!loaderData.at,
-  }, localeFromMatches(matches ?? []));
-}
-
-export function headers() {
-  return { "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate=600" };
+    jsonLd: loaderData.at ? undefined : newsArticleLd({ path, headline: title, description, image, datePublished: r.generatedAt, inLanguage: contentHtmlLanguage(r, locale) }),
+  }, locale), feedLink(r.kind)];
 }
 
 export default function ReportDetailPage() {

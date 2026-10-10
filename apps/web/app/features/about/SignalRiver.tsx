@@ -7,10 +7,10 @@ import { useTranslate } from "../../lib/i18n";
 // the canvas, and `focus` lights one of them. On first sight the river flows in from the left once.
 // Theme-aware, paused off screen; reduced motion draws it still. The canvas only illustrates: what it
 // says is also written in the page.
-import { SITE, withSubject } from "@aihot/industry/site";
+import { withSubject } from "@aihot/site";
 import { useEffect, useRef, type ReactNode } from "react";
 import { useMotionAllowed } from "../motion/preferences";
-import { shortSourceName } from "../../lib/format";
+import { EDITION } from "../report/format";
 
 export interface RiverSource {
   name: string;
@@ -486,7 +486,7 @@ export function SignalRiver({
       const p = L.paper;
       if (x >= p.x - 8 && x <= p.x + p.w + 8 && y >= p.y - 8 && y <= p.y + p.h + 8) {
         hover = { s: null, bundle: null, paper: true };
-        place(x, y, withSubject(tx("日报")), tx("每天 08:00 出刊"));
+        place(x, y, withSubject(tx("日报")), tx(EDITION.daily));
         redraw();
         return;
       }
@@ -510,7 +510,7 @@ export function SignalRiver({
       if (x < L.x2) {
         hover = { s: best, bundle: null, paper: false };
         const kind = s.source ? (KIND[s.source.kind] ?? tx("信源")) : tx("信源");
-        place(x, y, s.source ? shortSourceName(s.source.name) : tx("一个信源"), s.source?.heatOnly ? tx("{0} · 只计入热度", kind) : kind);
+        place(x, y, s.source ? s.source.name : tx("一个信源"), s.source?.heatOnly ? tx("{0} · 只计入热度", kind) : kind);
       } else {
         hover = { s: null, bundle: s.bundle, paper: false };
         if (x < L.gate) place(x, y, tx("同一件事"), tx("{0} 个来源的报道合成一条", b.n));

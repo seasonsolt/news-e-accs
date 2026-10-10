@@ -1,54 +1,57 @@
-import { publicPath } from "../lib/locale";
+import { localePath, publicPath, requestLocale } from "../lib/locale";
 import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
-import { SITE, withSubject } from "@aihot/industry/site";
-import { useLoaderData, useNavigation, useSearchParams } from "react-router";
+import { SITE, subjectAfter } from "@aihot/site";
+import { redirect, useLoaderData, useNavigation, useSearchParams } from "react-router";
 import type { Route } from "./+types/all";
 import type { PoolResponse } from "@aihot/contracts/site";
-import { isCategoryKey, isChannelKey } from "@aihot/contracts/taxonomy";
-import { loadOr404, queryString } from "../lib/api.server";
-import { listPath, pageMeta } from "../lib/seo";
+import { beijingTime } from "@aihot/contracts/time";
+import { cachedPage, loadOr404 } from "../lib/api.server";
+import { pageReuse } from "../lib/page-reuse";
+import { filterParams, hasFeedFilters, itemListLd, listPath, pageMeta, readFilters } from "../lib/seo";
 import { CategoryTabs, SearchField } from "../features/feed/Filters";
 import { AmbientBackdrop } from "../features/art/AmbientBackdrop";
 import { CategoryBanner } from "../features/art/CategoryBanner";
 import { PillTabs } from "../components/ui/Tabs";
 import { DayList, Pagination } from "../features/feed/DayList";
 import { EmptyState } from "../components/ui/Page";
-import { RingMark } from "../components/Logo";
 import { Deck } from "../components/shell/Deck";
+
+export { pageHeaders as headers } from "../lib/api.server";
+export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
+
+const ALL_TITLE = subjectAfter("全部", "动态");
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
-  const channelParam = url.searchParams.get("channel") ?? "all";
-  const categoryParam = url.searchParams.get("category");
-  const channel = isChannelKey(channelParam) ? channelParam : "all";
-  const category = categoryParam && isCategoryKey(categoryParam) ? categoryParam : null;
-  const tag = url.searchParams.get("tag")?.trim() || null;
   const q = url.searchParams.get("q")?.trim().slice(0, 200) || null;
   const tab = url.searchParams.get("tab") === "relevance" ? "relevance" : null;
-  // Legacy deep-paging parameters (deep, anchorAt) still open a normal page.
+  // Older deep-paging parameters (deep, anchorAt) still open a normal page.
   const page = Math.min(Math.max(Number.parseInt(url.searchParams.get("page") ?? "1", 10) || 1, 1), 50);
   const data = await loadOr404<PoolResponse>(
-    `/api/site/pool${queryString({ channel: channel === "all" ? null : channel, category, tag, q, tab, page: page > 1 ? page : null })}`,
-    { request, signal: request.signal, busyRedirect: "/all/search-busy" },
+    listPath("/api/site/pool", { ...filterParams(readFilters(url.searchParams)), q, tab, page: page > 1 ? page : null }),
+    // The busy page keeps the search, so it can be tried again as it was.
+    { request, signal: request.signal, busyRedirect: `/all/search-busy${url.search}` },
   );
-  return { data };
+  // Past the last page of what there is: the last page, with the same search and filters.
+  if (data.total > 0 && data.page > data.pageCount) throw redirect(localePath(pageHref(url.searchParams, data.pageCount), requestLocale(request)));
+  return cachedPage(60, { data });
 }
 
 export function meta({ matches, loaderData }: Route.MetaArgs) {
   const f = loaderData?.data.filters;
   const q = f?.q;
   const page = loaderData?.data.page ?? 1;
+  const path = listPath("/all", { ...(f && filterParams(f)), q, tab: q && f?.tab === "relevance" ? "relevance" : null, page: page > 1 ? page : null });
+  const title = `${q ? `搜索：${q}` : ALL_TITLE}${page > 1 ? ` · 第 ${page} 页` : ""}`;
+  const noindex = !!q || hasFeedFilters(f);
   return pageMeta({
-    title: q ? `搜索：${q}` : `全部${withSubject("动态")}`,
-    description: `${SITE.name} 收录的全部${withSubject("动态")}，可按类别与标签筛选，支持中英文搜索。`,
-    path: listPath("/all", { channel: f && f.channel !== "all" ? f.channel : null, category: f?.category, tag: f?.tag, q, tab: f?.tab === "relevance" ? "relevance" : null, page: page > 1 ? page : null }),
-    noindex: !!q,
+    title,
+    description: `${SITE.name} 收录的${subjectAfter("全部", "相关动态")}，可按频道、类别与标签筛选，支持中英文搜索。`,
+    path,
+    noindex,
+    jsonLd: noindex ? undefined : itemListLd(path, title, loaderData?.data.items.map((i) => i.title) ?? []),
   }, localeFromMatches(matches ?? []));
-}
-
-export function headers() {
-  return { "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=30" };
 }
 
 function pageHref(params: URLSearchParams, page: number) {
@@ -69,7 +72,8 @@ export default function AllPage() {
   const navigation = useNavigation();
   const f = data.filters;
   const busy = navigation.state === "loading" && navigation.location && publicPath(navigation.location.pathname) === "/all";
-  const keep = { channel: f.channel === "all" ? null : f.channel, category: f.category };
+  const { channel, category } = filterParams(f);
+  const keep = { channel, category };
   const searchTabHref = (tab: "time" | "relevance") => {
     const sp = new URLSearchParams(params);
     sp.delete("page");
@@ -78,7 +82,7 @@ export default function AllPage() {
     return `/all?${sp}`;
   };
   const title = f.q ? tx("搜索“{0}”", f.q) : f.tag ? `#${tx(f.tag)}` : null;
-  const updated = new Date(data.freshness).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Shanghai" });
+  const updated = beijingTime(data.freshness);
 
   return (
     <div className="pb-6">
@@ -137,25 +141,11 @@ export default function AllPage() {
             </EmptyState>
           </div>
         ) : (
-          <DayList items={data.items} todayCount={f.q ? null : data.todayCount} showTags />
+          <DayList items={data.items} todayCount={f.q ? null : data.todayCount} />
         )}
       </div>
       <Pagination page={data.page} pageCount={data.pageCount} href={(p) => pageHref(params, p)} />
       {data.page >= 50 && <p className="mt-4 text-center text-[12px] text-ink-4"><Text value="最多提供 50 页，更早的内容请使用搜索或主题页。" /></p>}
-    </div>
-  );
-}
-
-export function SearchBusy() {
-  return (
-    <div className="mx-auto max-w-sm py-24 text-center">
-      <RingMark className="mx-auto mb-5 size-10 text-accent" spinning />
-      <h1 className="text-[20px] font-bold text-ink"><Text value="搜索有点忙" /></h1>
-      <p className="mt-2 text-[14px] leading-relaxed text-ink-3"><Text value="现在搜索的人比较多，请稍等几秒再试。列表浏览不受影响。" /></p>
-      <div className="mt-6 flex justify-center gap-2.5">
-        <Link to="/all" className="inline-flex h-9 items-center rounded-full bg-accent px-4 text-[13.5px] font-medium text-accent-contrast hover:bg-accent-ink"><Text value="浏览全部动态" /></Link>
-        <Link to="/" className="inline-flex h-9 items-center rounded-full border border-line-strong bg-surface px-4 text-[13.5px] text-ink-2 hover:border-ink-4"><Text value="回到精选" /></Link>
-      </div>
     </div>
   );
 }

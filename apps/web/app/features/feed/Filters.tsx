@@ -33,7 +33,7 @@ export function CategoryTabs({ base, category, channel = "all", layoutId, size =
     { key: "all", label: tx("全部"), to: hrefWith(base, params, { category: null, channel: null }) },
     { key: "firstParty", label: CHANNEL_LABELS.firstParty, to: hrefWith(base, params, { category: null, channel: "firstParty" }) },
     ...CATEGORY_KEYS.map((k) => ({ key: k, label: CATEGORY_LABELS[k], to: hrefWith(base, params, { category: k, channel: null }) })),
-  ];
+  ].map((o) => ({ ...o, prefetch: "intent" as const }));
   const active = channel === "firstParty" ? "firstParty" : (category ?? "all");
   return <PillTabs items={items} active={active} layoutId={layoutId} label={tx("筛选")} size={size} className={className} />;
 }

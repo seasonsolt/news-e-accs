@@ -1,11 +1,14 @@
 import { publicPath } from "../../lib/locale.ts";
 // Site navigation, one place for the desktop sidebar, the mobile tab bar and the mobile "更多" page.
-import { withSubject } from "@aihot/industry/site";
+import { NAV, withSubject } from "@aihot/site";
 import { FEATURES } from "@aihot/industry/features";
 import type { ReactNode } from "react";
 import {
   IconApps, IconBolt, IconBookmark, IconChart, IconDoc, IconFlame, IconGrid, IconHeart, IconHistory, IconHourglass, IconInfo, IconList, IconMail, IconMessage, IconPlug,
 } from "../icons";
+
+/** Whether an engine page is a way in from the navigation (site.ts NAV.hidden); a hidden page still opens. */
+export const inNav = (to: string) => !(NAV.hidden as readonly string[]).includes(to);
 
 export interface NavItem {
   to: string;
@@ -36,9 +39,8 @@ export const TOPNAV: NavItem[] = [
   // The acceleration (the chronicle) is the site's signature view: right after the picks.
   ...(FEATURES.timeMachine ? [{ to: "/chronicle", label: "加速史", icon: IconHourglass }] : []),
   { to: "/all", label: "全部", icon: IconList },
-  { to: "/hot", label: "热点", icon: IconFlame },
+  ...(inNav("/hot") ? [{ to: "/hot", label: "热点", icon: IconFlame }] : []),
   { to: "/daily", label: withSubject("日报"), icon: IconDoc },
-  ...(FEATURES.leaderboard ? [{ to: "/leaderboard", label: "模型前沿", icon: IconChart }] : []),
   { to: "/products", label: "产品目录", icon: IconApps },
 ];
 
@@ -49,9 +51,8 @@ export const MORE_MENU: Array<{ title: string; items: NavItem[] }> = [
     items: [
       { to: "/products", label: "产品目录", icon: IconApps },
       { to: "/subscribe", label: "订阅日报", icon: IconMail },
-      { to: "/topics", label: "主题", icon: IconGrid },
+      ...(inNav("/topics") ? [{ to: "/topics", label: "主题", icon: IconGrid }] : []),
       { to: "/starred", label: "收藏", icon: IconBookmark },
-      ...(FEATURES.codexResetMonitor ? [{ to: "/codex-reset", label: "Tibo重置监控", icon: IconHistory }] : []),
     ],
   },
   { title: "工具", items: TOOLS },
@@ -75,7 +76,7 @@ export const TABBAR: NavItem[] = [
 ];
 
 /** Pages reached from the mobile "更多" tab keep that tab highlighted. */
-export const MORE_PATHS = ["/products", "/more", ...(FEATURES.timeMachine ? [] : ["/chronicle"]), "/hot", "/topics", "/starred", "/leaderboard", "/codex-reset", "/agent", "/about", "/changelog", "/feedback", "/terms", "/privacy"];
+export const MORE_PATHS = ["/products", "/more", ...(FEATURES.timeMachine ? [] : ["/chronicle"]), "/hot", "/topics", "/starred", "/agent", "/about", "/changelog", "/feedback", "/terms", "/privacy"];
 
 export function tabIsActive(item: NavItem, pathname: string): boolean {
   pathname = publicPath(pathname);
@@ -83,4 +84,34 @@ export function tabIsActive(item: NavItem, pathname: string): boolean {
   if (item.to === "/more") return MORE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   if (item.to === "/daily") return /^\/(daily|weekly|monthly)(\/|$)/.test(pathname);
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
+}
+
+/**
+ * The phone shell's tabs (TabBar.tsx, screens.ts and the modules' `tabs`). The pages here are reached
+ * through MobileTabBar and TOPNAV above; these types keep the modules' contract (modules.ts) whole.
+ */
+export type TabKey =
+  | "featured"
+  | "hot"
+  | "daily"
+  | "me"
+  // A module's tab.
+  | (string & {});
+
+export interface Tab {
+  key: TabKey;
+  to: string;
+  label: string;
+  icon: (p: { size?: number }) => ReactNode;
+  changelog?: boolean;
+}
+
+/** The phone shell's tab bar: the engine's tabs, the modules' before 我的. */
+export function tabs(): Tab[] {
+  const engine: Tab[] = [
+    { key: "featured", to: "/", label: "精选", icon: IconBolt },
+    ...(inNav("/hot") ? [{ key: "hot", to: "/hot", label: "热点", icon: IconFlame }] : []),
+    { key: "daily", to: "/daily", label: "日报", icon: IconDoc },
+  ];
+  return [...engine, { key: "me", to: "/more", label: "我的", icon: IconApps, changelog: true }];
 }

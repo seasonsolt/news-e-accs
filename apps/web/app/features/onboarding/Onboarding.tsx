@@ -8,7 +8,7 @@ import { Text, useLocale, useTranslate } from "../../lib/i18n";
 // the link do not run it), with the button kept for a retry. Everything moving here is decoration and
 // stops under prefers-reduced-motion.
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { SITE } from "@aihot/industry/site";
+import { SITE } from "@aihot/site";
 
 import { markOnboarded } from "../../lib/local-state";
 import { useMotionAllowed } from "../motion/preferences";

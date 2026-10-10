@@ -52,27 +52,3 @@ test('invalid calendar dates and nonexistent midnight are rejected', () => {
   assert.throws(() => assertTimeZone('America/Nowhere'), RangeError);
   assert.throws(() => calendarMidnight('2011-12-30', 'Pacific/Apia'), /does not exist/);
 });
-
-
-test('scheduled report callbacks use the configured local date for issue keys', { skip: !process.execArgv.includes('--experimental-test-module-mocks') }, async () => {
-  const { config } = await import('@aihot/backend/config');
-  const oldZone = config.reportTimeZone;
-  const seen: string[] = [];
-  const moduleMock = mock.module(new URL('../packages/backend/src/reports/compose.ts', import.meta.url).href, { namedExports: {
-    composeDaily: async (key: string) => seen.push(`daily:${key}`),
-    composeWeekly: async (key: string) => seen.push(`weekly:${key}`),
-    composeMonthly: async (key: string) => seen.push(`monthly:${key}`),
-    catchUpReports: async () => {},
-  } });
-  const clock = mock.method(Date, 'now', () => Date.parse('2026-03-01T03:30:00Z'));
-  try {
-    config.reportTimeZone = 'America/New_York';
-    const { SCHEDULES } = await import('../apps/worker/src/schedules.ts');
-    for (const name of ['reports.daily', 'reports.weekly', 'reports.monthly']) {
-      const schedule = SCHEDULES.find(schedule => schedule.name === name)!;
-      assert.equal(schedule.timeZone, 'America/New_York'); await schedule.run();
-    }
-    assert.deepEqual(seen, ['daily:2026-02-28', 'weekly:2026-W08', 'monthly:2026-01']);
-    assert.equal(config.modelCallsEnabled, false);
-  } finally { clock.mock.restore(); moduleMock.restore(); config.reportTimeZone = oldZone; }
-});

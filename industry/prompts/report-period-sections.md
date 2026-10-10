@@ -1,0 +1,1 @@
+sections is the section lead-in, written only for {{columns}} (the keys are the section names): one sentence each, at most 30 words, naming what the section has in common or an important point the overview leaves out. Do not repeat the overview's events and numbers or restate entry titles.

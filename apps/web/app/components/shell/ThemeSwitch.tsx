@@ -1,7 +1,7 @@
 import { useTranslate } from "../../lib/i18n";
 import { useEffect, useState, type ReactNode } from "react";
 import { IconMonitor, IconMoon, IconSun } from "../icons";
-import { resolvedTheme, setThemePreference, useThemePreference, type ThemePreference } from "../../lib/local-state";
+import { applyTheme, resolvedTheme, setThemePreference, useThemePreference, type ThemePreference } from "../../lib/local-state";
 
 import { useMotionAllowed } from "../../features/motion/preferences";
 
@@ -27,7 +27,7 @@ export function ThemeSwitch({ className = "" }: { className?: string }) {
     const nextPref: ThemePreference = key === "system" ? null : key;
     const apply = () => {
       setThemePreference(nextPref);
-      document.documentElement.setAttribute("data-theme", resolvedTheme(nextPref));
+      applyTheme(resolvedTheme(nextPref), nextPref === null);
     };
     const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
     if (doc.startViewTransition && motionAllowed) doc.startViewTransition(apply);

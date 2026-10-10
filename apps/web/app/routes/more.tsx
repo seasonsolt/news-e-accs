@@ -1,12 +1,16 @@
 import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useLocale, useTranslate } from "../lib/i18n";
-import { SITE } from "@aihot/industry/site";
+import { POLICY, SITE } from "@aihot/site";
 import { FEATURES } from "@aihot/industry/features";
 import type { ReactNode } from "react";
 import { useRouteLoaderData } from "react-router";
 import type { loader as rootLoader } from "../root";
 import { useChangelogDot } from "../components/shell/changelog";
+import { edgeTtl } from "../lib/api.server";
+import { webModules } from "../site-modules";
 import { pageMeta } from "../lib/seo";
+import { setFontPreference, useFontPreference } from "../lib/local-state";
+import { Select } from "../components/ui/Controls";
 import { ThemeSwitch } from "../components/shell/ThemeSwitch";
 import { MotionSwitch } from "../features/motion/MotionSwitch";
 import { TOOLS } from "../components/shell/nav";
@@ -15,9 +19,8 @@ import { TimeDial } from "../features/chrono/TimeMachine";
 import { useAt, withAt } from "../features/chrono/at";
 import { Deck } from "../components/shell/Deck";
 
-/** Shared caches may keep this page for five minutes. */
 export function headers() {
-  return { "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=600" };
+  return edgeTtl(300);
 }
 
 export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
@@ -33,8 +36,6 @@ const GROUPS: Array<{ title: string; rows: Row[] }> = [
       ...(FEATURES.timeMachine ? [{ to: "/chronicle", label: "加速史", icon: <IconHourglass size={18} /> }] : []),
       { to: "/products", label: "产品目录", icon: <IconGrid size={18} /> },
       { to: "/topics", label: "主题索引", icon: <IconGrid size={18} /> },
-      ...(FEATURES.leaderboard ? [{ to: "/leaderboard", label: "模型榜", icon: <IconChart size={18} /> }] : []),
-      ...(FEATURES.codexResetMonitor ? [{ to: "/codex-reset", label: "Tibo重置监控", icon: <IconHistory size={18} /> }] : []),
       { to: "/agent", label: "Agent 接入", icon: <IconPlug size={18} /> },
     ],
   },
@@ -45,7 +46,14 @@ const GROUPS: Array<{ title: string; rows: Row[] }> = [
       { to: "/starred", label: "收藏", icon: <IconBookmark size={18} /> },
     ],
   },
-  { title: "e-acc.ai 工具", rows: TOOLS.map((t) => ({ to: t.to, label: t.label, icon: <t.icon size={18} />, document: true })) },
+  {
+    title: "e-acc.ai 工具",
+    rows: [
+      // The modules' tools first, then the site's own tool pages.
+      ...webModules().flatMap((m) => m.tools ?? []).map((t) => ({ to: t.to, label: t.label, icon: t.icon })),
+      ...TOOLS.map((t) => ({ to: t.to, label: t.label, icon: <t.icon size={18} />, document: t.document })),
+    ],
+  },
   {
     title: "关于",
     rows: [
@@ -69,6 +77,7 @@ export default function MorePage() {
   const tx = useTranslate();
   const locale = useLocale();
   const at = useAt();
+  const font = useFontPreference();
   const root = useRouteLoaderData<typeof rootLoader>("root");
   const changelogDot = useChangelogDot(root?.changelogVersion ?? null);
   return (
@@ -102,6 +111,14 @@ export default function MorePage() {
                   <span className="flex-1"><Text value="动效" /></span>
                   <MotionSwitch className="w-[124px]" />
                 </li>
+                <li className="flex min-h-[58px] items-center gap-3 px-4 text-[15px] font-medium text-ink">
+                  <span className="w-[18px] text-center text-ink-3" aria-hidden="true">Aa</span>
+                  <span className="flex-1"><Text value="字体" /></span>
+                  <Select aria-label={tx("字体")} value={font ?? "system"} onChange={(e) => setFontPreference(e.target.value === "browser" ? "browser" : null)}>
+                    <option value="system">{tx("默认字体")}</option>
+                    <option value="browser">{tx("浏览器默认字体")}</option>
+                  </Select>
+                </li>
                 {FEATURES.timeMachine && (
                   <li className="px-3 py-3">
                     <TimeDial bounds={root?.timeBounds ?? null} />
@@ -113,9 +130,10 @@ export default function MorePage() {
         ))}
       </div>
       <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[12px] text-ink-4">
-        <Link to="/terms" className="hover:text-ink-2"><Text value="使用规则" /></Link>
+        <Link to="/terms" className="hover:text-ink-2"><Text value={POLICY.terms.name} /></Link>
         <Link to="/privacy" className="hover:text-ink-2"><Text value="隐私说明" /></Link>
         <a href={`/feed/v2${locale === "zh" ? "/zh" : ""}/picks.xml`} className="hover:text-ink-2">RSS</a>
+        {SITE.github && <a href={SITE.github} target="_blank" rel="noopener noreferrer" className="hover:text-ink-2">GitHub</a>}
         {SITE.icp && <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-ink-2">{SITE.icp}</a>}
       </div>
     </div>

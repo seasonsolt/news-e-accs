@@ -1,4 +1,9 @@
 @import "tailwindcss";
+/* Classes also live in the site's logo and changelog drawings (site/brand, site/changelog) and in the
+   modules' web code (their other files are not scanned: words in backend code and data would become classes). */
+@source "../../../site/brand";
+@source "../../../site/changelog";
+@source "../../../modules/*/{web.tsx,web/**}";
 
 /* ---------------------------------------------------------------------------
    e/acc design tokens — steampunk: parchment and sepia ink by day, soot and
@@ -26,18 +31,16 @@
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+/* The initial family is the reader's standard browser font, unlike system-ui or sans-serif. */
+:root[data-font="browser"] { font-family: initial; }
+[data-font="browser"] body, [data-font="browser"] .font-sans { font-family: inherit; }
+/* Touch screens (no hover): pressed states for rows and cards. */
+@custom-variant touch (@media (hover: none));
+
 @theme {
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "HarmonyOS Sans SC", "Microsoft YaHei", sans-serif;
   --font-display: "Instrument Serif", "Songti SC", "STSong", "Noto Serif SC", Georgia, serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-
-  /* Brand (VI), fixed across themes. */
-  --color-brand-teal: #176b75;
-  --color-brand-cyan-0: #5deef0;
-  --color-brand-cyan-20: #2ce2e8;
-  --color-brand-cyan-54: #12ccd8;
-  --color-brand-cyan-82: #08abc2;
-  --color-brand-cyan-100: #078ea9;
 
   /* Semantic colours. */
   --color-bg: var(--bg);
@@ -70,12 +73,6 @@
   --color-ok: var(--ok);
   --color-ok-soft: var(--ok-soft);
   --color-ok-ink: var(--ok-ink);
-  --color-cal-plain: var(--cal-plain);
-  --color-cal-confirmed: var(--cal-confirmed);
-  --color-cal-announced: var(--cal-announced);
-  --color-cal-key-confirmed: var(--cal-key-confirmed);
-  --color-cal-key-announced: var(--cal-key-announced);
-  --color-panel-quiet: var(--panel-quiet);
   --color-rank-1: var(--rank-1);
   --color-rank-2: var(--rank-2);
   --color-rank-3: var(--rank-3);
@@ -93,7 +90,7 @@
 
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 
-  /* The original site's breakpoints: phones ≤ 640, the mobile shell up to 960, desktop above. */
+  /* Breakpoints: phones ≤ 640, the mobile shell up to 960, desktop above. */
   --breakpoint-sm: 641px;
   --breakpoint-md: 768px;
   --breakpoint-lg: 961px;
@@ -108,6 +105,12 @@
      and a 21:9 screen one of about 2.7:1. 64px is the main area's padding. */
   --page-max-wide: max(1200px, calc(270dvh - 64px));
   --page-max-reading: max(1100px, calc(200dvh - 64px));
+  /* Below lg upstream's shell has a sticky top bar of this height; this site has none (the deck scrolls
+     with the page, the tab bar sits at the bottom), so pages that offset by it get zero. Gutters keep
+     bands clear of the notch in landscape. */
+  --bar-h: 0px;
+  --gutter-l: max(16px, env(safe-area-inset-left));
+  --gutter-r: max(16px, env(safe-area-inset-right));
   color-scheme: light;
   --bg: #f4ecdc;
   --bg-sunk: #ece2cd;
@@ -157,7 +160,19 @@
   --shadow-pop: 0 12px 32px rgba(60, 38, 16, 0.16);
   --prose-ink: #2e2319;
   --code-bg: #efe6d3;
+  --code-keyword: #8a3b12;
+  --code-string: #3f6b3a;
+  --code-number: #7d5200;
+  --code-title: #5a3d7a;
+  --code-variable: #8f4515;
+  --code-meta: #a3321c;
   --selection: rgba(149, 84, 24, 0.18);
+}
+
+@media (min-width: 961px) {
+  :root {
+    --bar-h: 0px;
+  }
 }
 
 [data-theme="dark"] {
@@ -204,6 +219,12 @@
   --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.45);
   --prose-ink: #e3d8c2;
   --code-bg: #120e0a;
+  --code-keyword: #e8b85a;
+  --code-string: #a8c97a;
+  --code-number: #d9a441;
+  --code-title: #c4a8e0;
+  --code-variable: #e0956a;
+  --code-meta: #e0707a;
   --selection: rgba(217, 164, 65, 0.24);
 }
 
@@ -312,6 +333,12 @@
   }
 }
 
+/* Phone shell: a band that runs out to the screen's edges through the gutters (bars, day headers). */
+@utility bleed {
+  margin-inline: calc(-1 * var(--gutter-l)) calc(-1 * var(--gutter-r));
+  padding-inline: var(--gutter-l) var(--gutter-r);
+}
+
 /* Cards are utilities so they take variants (lg:card: a card on desktop, a plain row on phones). */
 @utility card {
   background: var(--surface);
@@ -367,11 +394,10 @@
 @keyframes aihot-zoom-out { to { transform: scale(0.98); } }
 @keyframes aihot-sheet-in { from { transform: translateY(100%); } }
 @keyframes aihot-sheet-out { to { transform: translateY(100%); } }
-@keyframes aihot-slide-in-x { from { opacity: 0; transform: translateX(10px); } }
 @keyframes aihot-swap-in { from { opacity: 0; transform: scale(0.7); } }
 @keyframes aihot-bump { from { transform: scale(0.7); } 55% { transform: scale(1.08); } to { transform: scale(1); } }
 @keyframes aihot-pop-in { from { opacity: 0; transform: scale(0.6); } 60% { opacity: 1; transform: scale(1.05); } to { transform: scale(1); } }
-@keyframes aihot-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes aihot-reveal { from { clip-path: inset(-12px 100% -12px -12px); } to { clip-path: inset(-12px -12px -12px -12px); } }
 .anim-collapse-in { animation: aihot-collapse-in var(--anim-ms, 240ms) var(--ease-out-quart) both; }
 .anim-collapse-out { animation: aihot-collapse-out var(--anim-ms, 240ms) var(--ease-out-quart) both; }
 .anim-fade-in { animation: aihot-fade-in var(--anim-ms, 160ms) ease-out both; }
@@ -382,14 +408,13 @@
 .anim-zoom-in { animation: aihot-zoom-in 180ms var(--ease-out-quart) both; }
 .anim-zoom-out, .anim-fade-out > .lightbox-img { animation: aihot-zoom-out 160ms ease-in both; }
 .anim-sheet-in { animation: aihot-sheet-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.anim-sheet-out, .anim-fade-out > .poster-sheet { animation: aihot-sheet-out 220ms cubic-bezier(0.4, 0, 1, 1) both; }
-.anim-slide-in-x { animation: aihot-slide-in-x 160ms var(--ease-out-quart) both; }
+.anim-sheet-out, .anim-fade-out > .sheet-panel { animation: aihot-sheet-out 220ms cubic-bezier(0.4, 0, 1, 1) both; }
 .anim-swap-in { animation: aihot-swap-in 120ms var(--ease-out-quart) both; }
 .anim-bump { animation: aihot-bump 320ms var(--ease-out-quart) both; }
 .anim-pop-in { animation: aihot-pop-in 460ms var(--ease-out-quart) both; }
-.anim-draw { stroke-dasharray: 1; animation: aihot-draw 900ms var(--ease-out-quart) both; }
+.anim-reveal { animation: aihot-reveal 900ms var(--ease-out-quart) both; }
 
-/* Cross-fade between pages; the theme switch fades the whole document. */
+/* The theme switch cross-fades the whole document. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: 200ms;
@@ -430,7 +455,8 @@
    Long-form reading (article bodies, reports, legal pages)
    --------------------------------------------------------------------------- */
 /*
- * Article text as Chinese long-form reading sites usually set it (16–17px at 1.63–1.88 in 680–730px): 17px on phones, 18px from xl in the 760px column, about 42 characters a
+ * Article text as Chinese magazines and news sites set it (16–17px
+ * at 1.63–1.88 in 680–730px): 17px on phones, 18px from xl in the 760px column, about 42 characters a
  * line, at 1.8 with a little tracking; paragraphs a good breath apart.
  */
 .prose {
@@ -504,14 +530,33 @@
   overflow-x: auto;
 }
 .prose pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+/* Code blocks in article bodies get a head with the language and a copy button (features/item/ArticleBody). */
+.prose .code-block { margin-top: 1.2em; border: 1px solid var(--line); border-radius: var(--radius-tile); overflow: hidden; background: var(--code-bg); }
+.prose .code-block pre { margin: 0; border: 0; border-radius: 0; }
+.prose .code-block-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 8px 6px 14px; border-bottom: 1px solid var(--line-soft); font-size: 12px; line-height: 1.4; color: var(--ink-4); letter-spacing: 0; }
+.prose .code-block-copy { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-mark); background: var(--surface); color: var(--ink-3); font-size: 12px; transition: color 120ms, border-color 120ms; }
+.prose .code-block-copy:hover { color: var(--ink); border-color: var(--line-strong); }
+.prose .code-block-copy[data-status="copied"] { color: var(--ok-ink); }
+.prose .hljs-comment, .prose .hljs-quote { color: var(--ink-4); font-style: italic; }
+.prose .hljs-keyword, .prose .hljs-selector-tag, .prose .hljs-doctag, .prose .hljs-name { color: var(--code-keyword); }
+.prose .hljs-string, .prose .hljs-regexp, .prose .hljs-link, .prose .hljs-attribute, .prose .hljs-addition { color: var(--code-string); }
+.prose .hljs-number, .prose .hljs-literal, .prose .hljs-symbol, .prose .hljs-bullet { color: var(--code-number); }
+.prose .hljs-title, .prose .hljs-section, .prose .hljs-type, .prose .hljs-built_in { color: var(--code-title); }
+.prose .hljs-variable, .prose .hljs-template-variable, .prose .hljs-params, .prose .hljs-attr { color: var(--code-variable); }
+.prose .hljs-meta, .prose .hljs-deletion { color: var(--code-meta); }
+.prose img.zoomable { cursor: zoom-in; }
+/* Wide tables scroll sideways instead of squeezing their cells to a character a line (body text may
+   break anywhere; cells break between words, and keep room for a short word or number). */
 .prose table {
   display: block;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  overflow-wrap: normal;
   border-collapse: collapse;
   font-size: 14px;
   line-height: 1.55;
 }
-.prose th, .prose td { border: 1px solid var(--line); padding: 0.5em 0.75em; text-align: left; }
+.prose th, .prose td { border: 1px solid var(--line); padding: 0.5em 0.75em; text-align: left; min-width: 4.5em; overflow-wrap: break-word; }
 .prose th { background: var(--bg-sunk); font-weight: 600; }
 .prose hr { border: 0; border-top: 1px solid var(--line); margin: 2em 0; }
 
@@ -544,28 +589,10 @@
   white-space: nowrap;
 }
 
-/* Report pages read on white paper in the light theme (F10); the archive column is halfway between the site sidebar and the paper. */
+/* Report pages read on a faintly toned paper in the light theme, lighter than the site's page ground;
+   the archive column is halfway between the site sidebar and white. */
 :root:not([data-theme="dark"]) body:has(.report-shell) {
-  background: var(--surface);
-}
-/* Reset monitor status card: a 135° wash of the state's tone (amber pending, green landed, rose alert). */
-.cr-wash {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--tone, var(--ink-4)) 7%, var(--surface)), var(--surface) 60%);
-}
-/* The state dot carries a soft halo that breathes while something is pending. */
-.cr-dot {
-  width: 8px;
-  height: 8px;
-  flex: none;
-  border-radius: 9999px;
-  background: currentColor;
-  box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 18%, transparent);
-}
-.cr-dot-live {
-  animation: cr-pulse 2s ease-in-out infinite;
-}
-@keyframes cr-pulse {
-  50% { box-shadow: 0 0 0 7px color-mix(in srgb, currentColor 6%, transparent); }
+  background: color-mix(in srgb, var(--bg) 60%, var(--surface));
 }
 
 /* ---------------------------------------------------------------------------

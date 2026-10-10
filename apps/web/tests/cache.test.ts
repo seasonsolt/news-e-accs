@@ -9,7 +9,6 @@ import { after, before, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { CATEGORY_KEYS } from "@aihot/contracts/taxonomy";
 import { parseHTML } from "linkedom";
-import { releaseBoundCache } from "../app/lib/api.server.ts";
 
 const seoSource = { id: "src", name: "示例媒体", kind: "rss", firstParty: false, iconUrl: null };
 const seoItem = {
@@ -17,13 +16,13 @@ const seoItem = {
   links: { aihot: "/items/seo-sample", original: "https://example.com/report" }, publishedAt: "2026-10-09T01:00:00.000Z",
   discoveredAt: "2026-10-09T01:05:00.000Z", timelineAt: "2026-10-09T01:05:00.000Z", category: null, tags: ["开源"], score: null,
   selected: true, channel: "news", story: null, x: null, readingMode: "summary-only", author: null, language: "zh", body: null,
-  outline: [], relatedStories: [], indexable: true, markdownAvailable: false, group: null, hasTranslation: false, bodyLanguage: "zh",
+  outline: [], relatedStories: [], topics: [], sameEvent: null, indexable: true, markdownAvailable: false, group: null, hasTranslation: false, bodyLanguage: "zh",
 };
 const seoStory = {
   publicId: "seo-story", title: "示例事件", status: "active", reportCount: 2, sourceCount: 2, firstReportAt: "2026-10-08T00:00:00.000Z",
   latestAt: "2026-10-09T00:00:00.000Z", digest: "事件综述", digestUpdatedAt: null, summary: null, excerpt: null, latest: null,
   whyHot: { participants48h: 0, newParticipants6h: 0, recentReports24h: 0, observationComplete: true, rank: null, heat: null },
-  developments: [], officialReports: [], timeline: [], heat: [], related: [],
+  developments: [], officialReports: [], timeline: [], heat: [], related: [], topics: [], latestReport: null,
 };
 
 /** The JSON-LD entries of a rendered page. */
@@ -65,6 +64,11 @@ const api = createServer((req, res) => {
   }
   if (url.pathname === "/api/site/cache-example") { res.setHeader("Cache-Control", "public, max-age=30, s-maxage=60"); return res.end("{}"); }
   if (url.pathname === "/feed/picks.xml") { res.setHeader("Content-Type", "application/rss+xml"); res.setHeader("Cache-Control", "public, max-age=60"); return res.end("<rss/>"); }
+  if (url.pathname === "/api/site/download") {
+    res.setHeader("Content-Type", "text/markdown; charset=utf-8");
+    res.setHeader("Content-Disposition", 'attachment; filename="article.md"');
+    return res.end("# Article");
+  }
   if (url.pathname === "/api/site/echo-client") return res.end(JSON.stringify({ forwarded: req.headers["x-forwarded-for"], real: req.headers["x-real-ip"] }));
   if (/^\/api\/site\/items\/(native-en|legacy-zh|bilingual|actual-en|foreign-body|unknown-body)(?:\/original)?$/.test(url.pathname)) {
     const id = url.pathname.split("/")[4]!;
@@ -78,9 +82,9 @@ const api = createServer((req, res) => {
       bodyContentLanguage: { requested: zh ? "zh" : "en", status: id === "foreign-body" || id === "unknown-body" ? "original" : "original-english", sourceLanguage: id === "foreign-body" ? "fr" : "en", language: id === "foreign-body" ? "fr" : id === "unknown-body" ? "unknown" : "en" },
     }));
   }
-  if (url.pathname === "/api/site/pool") return res.end(JSON.stringify({ filters: { channel: "all", category: null, tag: null, q: url.searchParams.get("q"), tab: "latest" }, items: [], page: 1, pageCount: 1, total: 0 }));
-  if (url.pathname === "/api/site/topics") return res.end(JSON.stringify({ topics: [{ slug: "robots", name: "Robots", definition: "Robotics news", group: "field", total: 40, recent: 0, indexable: true, latestAt: null }] }));
-  if (url.pathname === "/api/site/topics/robots") return res.end(JSON.stringify({ topic: { slug: "robots", name: "Robots", definition: "Robotics news", group: "field", total: 40, indexable: true, related: [{ slug: "agents", name: "Agents" }] }, items: [], page: Number(url.searchParams.get("page") ?? 1), pageCount: 2 }));
+  if (url.pathname === "/api/site/pool") return res.end(JSON.stringify({ filters: { channel: "all", category: null, tag: null, q: url.searchParams.get("q"), tab: "latest" }, items: [], page: 1, pageCount: 1, total: 0, freshness: "2026-09-28T00:00:00Z", todayCount: 0 }));
+  if (url.pathname === "/api/site/topics") return res.end(JSON.stringify({ groups: [{ key: "field", name: "Fields", blurb: "By field" }], topics: [{ slug: "robots", name: "Robots", definition: "Robotics news", group: "field", brand: null, total: 40, recent: 0, indexable: true, latest: null }] }));
+  if (url.pathname === "/api/site/topics/robots") return res.end(JSON.stringify({ topic: { slug: "robots", name: "Robots", definition: "Robotics news", group: "field", groupName: "Fields", brand: null, total: 40, recent: 0, poolTotal: 40, latest: null, indexable: true }, modules: {}, items: [], page: Number(url.searchParams.get("page") ?? 1), pageCount: 2, pageSize: 20 }));
   const report = /^\/api\/site\/reports\/(daily|weekly|monthly)\/(latest-page|navigation\/[^/]+|[^/]+)$/.exec(url.pathname);
   if (report) {
     const kind = report[1]!;
@@ -228,8 +232,10 @@ test("news pages carry NewsArticle data matching their visible dates and source"
   assert.ok(itemLd.some((e) => e["@type"] === "BreadcrumbList"));
   const story = await fetch(`${origin}/story/seo-story`, { headers: { "Accept-Language": "zh-CN" } });
   assert.equal(story.status, 200);
-  const event = jsonLd(await story.text()).find((e) => e["@type"] === "NewsArticle")!;
-  assert.equal(event.datePublished, "2026-10-08T00:00:00.000Z");
+  // An event page is a collection of public reports: it is dated modified, never "published".
+  const event = jsonLd(await story.text()).find((e) => e["@type"] === "CollectionPage")!;
+  assert.ok(event, "event CollectionPage");
+  assert.equal("datePublished" in event, false);
   assert.equal(event.dateModified, "2026-10-09T00:00:00.000Z");
   assert.equal(event.description, "事件综述");
 });
@@ -271,6 +277,31 @@ test("the e/acc concept pages keep their English titles, text language and struc
   assert.equal((await fetch(`${origin}/eacc-unknown.data`)).status, 404);
 });
 
+test("navigation streams are plain text for download managers, including errors", async () => {
+  for (const [pathname, status] of [["/_.data?_routes=root", 200], ["/items/missing.data", 404]] as const) {
+    const res = await fetch(origin + pathname);
+    assert.equal(res.status, status, pathname);
+    assert.equal(res.headers.get("Content-Type"), "text/plain; charset=utf-8", pathname);
+    assert.equal(res.headers.get("Content-Disposition"), null, pathname);
+    assert.ok((await res.text()).length > 0, pathname);
+  }
+  const download = await fetch(origin + "/api/site/download");
+  assert.equal(download.headers.get("Content-Type"), "text/markdown; charset=utf-8");
+  assert.equal(download.headers.get("Content-Disposition"), 'attachment; filename="article.md"');
+  assert.equal(await download.text(), "# Article");
+});
+
+// A tab opened before a page lost its loader still asks for that page's result, and its router rejects
+// a missing one before React's release recovery can run.
+test("a page without a loader still answers navigation with an empty result", async () => {
+  const res = await fetch(`${origin}/terms.data?_routes=routes%2Fterms`);
+  assert.equal(res.status, 200);
+  const { value } = await UNSAFE_decodeViaTurboStream(res.body!, globalThis);
+  const result = value as Record<string, { data: unknown }>;
+  assert.ok("routes/terms" in result, "an already open router must be able to unwrap its requested route");
+  assert.equal(result["routes/terms"]!.data, null);
+});
+
 test("missing routes cannot be hidden by a root-only request; errors and redirects stay uncached", async () => {
   for (const pathname of ["/items/missing.data?_routes=root", "/does-not-exist.data?_routes=root", "/items/missing"]) {
     const res = await fetch(origin + pathname);
@@ -292,33 +323,12 @@ test("admin data and actions never become public cache entries", async () => {
   assert.equal(admin.status, 202);
   assert.equal(admin.headers.get("Cache-Control"), "private, no-store");
   assert.equal(admin.headers.get("X-Accel-Expires"), "0");
-  assert.match(await admin.text(), /admin\/login/);
+  assert.match(await admin.text(), /api\/auth\/login/);
   const action = await fetch(`${origin}/hot.data`, { method: "POST" });
   assert.equal(action.status, 405);
   assert.equal(action.headers.get("Cache-Control"), "private, no-store");
   assert.equal(action.headers.get("X-Accel-Expires"), "0");
   await action.text();
-});
-
-test("an elapsed release deadline cannot be extended by a fresh page/data response", async () => {
-  const saved = refreshAt;
-  refreshAt = new Date(Date.now() - 1000).toISOString();
-  try {
-    for (const pathname of ["/", "/_.data?_routes=routes%2Fhome"]) {
-      const res = await fetch(origin + pathname);
-      assert.equal(res.status, 200);
-      assert.equal(res.headers.get("Cache-Control"), "private, no-store");
-      assert.equal(res.headers.get("X-Accel-Expires"), "0");
-      await res.text();
-    }
-  } finally {
-    refreshAt = saved;
-  }
-  const now = Date.parse("2026-09-28T00:00:00Z");
-  const upstream = new Headers({ "X-Accel-Expires": `@${now / 1000 + 7}` });
-  const headers = releaseBoundCache(new Date(now + 20_000).toISOString(), 30, now + 2_000, upstream);
-  assert.equal(headers["Cache-Control"], "public, max-age=0, s-maxage=5");
-  assert.equal(headers["X-Accel-Expires"], upstream.get("X-Accel-Expires"));
 });
 
 test("slow sibling loaders and long-lived pages cannot enable language-dependent shared caches", async () => {
@@ -426,9 +436,8 @@ test("report kind, topic pagination and redirects retain Chinese paths in HTML a
   }
   const topic = parseHTML(await (await fetch(origin + "/zh/topics/robots/page/2")).text()).document;
   assert.ok(topic.querySelector('a[href="/zh/topics/robots"]'));
-  assert.ok(topic.querySelector('a[href="/zh/topics/agents"]'));
   assert.match(topic.querySelector('link[rel="canonical"]')!.getAttribute("href")!, /\/zh\/topics\/robots\/page\/2$/);
-  for (const [path, target, status] of [["/zh/topics/robots/page/1?q=robot", "/zh/topics/robots?q=robot", 308], ["/zh?q=robot", "/zh/all?q=robot", 302], ["/zh/story/merged", "/zh/story/surviving-story", 308], ["/zh/leaderboard/methodology", "/zh/leaderboard/sources", 308], ["/zh/all/?q=robot", "/zh/all?q=robot", 301]] as const) {
+  for (const [path, target, status] of [["/zh/topics/robots/page/1?q=robot", "/zh/topics/robots?q=robot", 308], ["/zh?q=robot", "/zh/all?q=robot", 302], ["/zh/story/merged", "/zh/story/surviving-story", 308], ["/zh/all/?q=robot", "/zh/all?q=robot", 301]] as const) {
     const response = await fetch(origin + path, { redirect: "manual" });
     assert.equal(response.status, status, path);
     assert.equal(response.headers.get("location"), target, path);

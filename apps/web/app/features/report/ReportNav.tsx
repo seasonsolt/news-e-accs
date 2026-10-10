@@ -1,10 +1,11 @@
 import { Link } from "../../lib/navigation";
+import { IntentLink } from "../../components/ui/IntentLink";
 import { contentFetch } from "../../lib/content-fetch";
 import { Text, useTranslate } from "../../lib/i18n";
 // Moving between reports: the archive card beside the issue on desktop, a tab row and recent-issue chips on phones.
 import { useEffect, useState } from "react";
 
-import type { ReportNavigationEntry, ReportKind } from "@aihot/contracts/site";
+import type { ReportNavigationEntry, ReportNavigationResponse, ReportKind } from "@aihot/contracts/site";
 import { useAt, withAt } from "../chrono/at";
 import { PillTabs } from "../../components/ui/Tabs";
 import { IconChevronRight } from "../../components/icons";
@@ -14,7 +15,7 @@ import { KINDS, KIND_LABEL, KIND_PATH, archiveGroups, archiveMark, chipLabel, re
 function KindSwitch({ kind }: { kind: ReportKind }) {
   const tx = useTranslate();
   const at = useAt();
-  return <PillTabs fill layoutId="report-kind" label={tx("切换日报、周报、月报")} active={kind} items={KINDS.map((k) => ({ key: k, label: tx(KIND_LABEL[k]), to: withAt(KIND_PATH[k], at) }))} />;
+  return <PillTabs fill layoutId="report-kind" label={tx("切换日报、周报、月报")} active={kind} items={KINDS.map((k) => ({ key: k, label: tx(KIND_LABEL[k]), to: withAt(KIND_PATH[k], at), prefetch: "intent" as const }))} />;
 }
 
 /** Desktop archive column: every issue of this kind, grouped, the current one highlighted. */
@@ -35,8 +36,8 @@ export function ReportArchive({ kind, index, current }: { kind: ReportKind; inde
         ))}
       </nav>
       {kind === "daily" && (
-        <Link to={withAt("/daily/archive", at)} className="flex h-12 shrink-0 items-center justify-between border-t border-line pl-1 pr-1.5 text-[12.5px] font-medium text-ink-2 transition-colors hover:text-accent"><Text value="日报合订本" /><IconChevronRight size={14} />
-        </Link>
+        <IntentLink to={withAt("/daily/archive", at)} className="flex h-12 shrink-0 items-center justify-between border-t border-line pl-1 pr-1.5 text-[12.5px] font-medium text-ink-2 transition-colors hover:text-accent"><Text value="日报合订本" /><IconChevronRight size={14} />
+        </IntentLink>
       )}
     </aside>
   );
@@ -56,7 +57,7 @@ function ArchiveGroup({ g, kind, current, initiallyOpen }: {
     const controller = new AbortController();
     contentFetch(`/api/site/reports/daily/months/${g.id}`, { signal: controller.signal })
       .then((r) => r.ok ? r.json() : null)
-      .then((data: { items: ReportNavigationEntry[] } | null) => { if (data && !controller.signal.aborted) setLoaded(data.items); })
+      .then((data: ReportNavigationResponse | null) => { if (data && !controller.signal.aborted) setLoaded(data.items); })
       .catch(() => {});
     return () => controller.abort();
   }, [open, kind, g.id, loaded]);
@@ -74,11 +75,11 @@ function ArchiveGroup({ g, kind, current, initiallyOpen }: {
           const on = e.key === current;
           return (
             <li key={e.key}>
-              <Link
+              <IntentLink
                 to={withAt(reportPath(kind, e.key), at)}
                 aria-current={on ? "page" : undefined}
                 title={e.title ?? undefined}
-                prefetch="intent"
+
                 className={`group flex gap-3 rounded-tile py-2.5 pl-2.5 pr-2 transition-colors ${on ? "bg-accent-soft" : "hover:bg-bg-sunk"}`}
               >
                 <span className="flex w-8 shrink-0 flex-col items-center">
@@ -86,7 +87,7 @@ function ArchiveGroup({ g, kind, current, initiallyOpen }: {
                   {mark(e.key).small && <span className="mt-1 whitespace-nowrap text-[10px] leading-none text-ink-4">{tx(mark(e.key).small ?? "")}</span>}
                 </span>
                 <span className={`line-clamp-2 min-w-0 text-[12.5px] leading-[18px] transition-colors ${on ? "font-semibold text-ink" : "text-ink-2 group-hover:text-ink"}`}>{e.title ?? `${tx(KIND_LABEL[kind])} ${e.key}`}</span>
-              </Link>
+              </IntentLink>
             </li>
           );
         })}
@@ -96,28 +97,29 @@ function ArchiveGroup({ g, kind, current, initiallyOpen }: {
   );
 }
 
-/** Phone header: kind tabs, then the three latest issues and a way further back. */
+/** Phones, under the bar: the three latest issues and a way further back. */
 export function ReportPhoneNav({ kind, index, current, today }: { kind: ReportKind; index: ReportNavigationEntry[]; current: string | null; today: string }) {
   const tx = useTranslate();
   const at = useAt();
   const recent = index.slice(0, 3);
   const earlier = kind === "daily" ? "/daily/archive" : "#report-history";
-  const chip = "inline-flex h-9 shrink-0 items-center rounded-full border px-4 text-[13px] transition-colors";
+  const chip = "inline-flex h-11 shrink-0 items-center rounded-full border px-4 text-[13px] transition-colors";
+  if (recent.length === 0) return null;
   return (
     <div className="pt-3 lg:hidden">
-      <PillTabs fill layoutId="report-kind-phone" label={tx("切换日报、周报、月报")} active={kind} items={KINDS.map((k) => ({ key: k, label: tx(KIND_LABEL[k]), to: withAt(KIND_PATH[k], at) }))} />
+      <PillTabs fill layoutId="report-kind-phone" label={tx("切换日报、周报、月报")} active={kind} items={KINDS.map((k) => ({ key: k, label: tx(KIND_LABEL[k]), to: withAt(KIND_PATH[k], at), prefetch: "intent" as const }))} />
       {recent.length > 0 && (
         <div className="scrollbar-none -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
           {recent.map((e) => {
             const on = e.key === current;
             return (
-              <Link key={e.key} to={withAt(reportPath(kind, e.key), at)} aria-current={on ? "page" : undefined} className={`${chip} ${on ? "border-ink bg-ink font-semibold text-bg" : "border-line-strong bg-surface text-ink-2 active:bg-bg-sunk"}`}>
+              <IntentLink key={e.key} to={withAt(reportPath(kind, e.key), at)} aria-current={on ? "page" : undefined} className={`${chip} ${on ? "border-ink bg-ink font-semibold text-bg" : "border-line-strong bg-surface text-ink-2 active:bg-bg-sunk"}`}>
                 {tx(chipLabel(kind, e.key, index, today))}
-              </Link>
+              </IntentLink>
             );
           })}
           {index.length > 3 && (
-            <Link to={earlier.startsWith("#") ? earlier : withAt(earlier, at)} className={`${chip} border-line-strong bg-surface text-ink-2 active:bg-bg-sunk`}><Text value="更早" /></Link>
+            <IntentLink to={earlier.startsWith("#") ? earlier : withAt(earlier, at)} className={`${chip} border-line-strong bg-surface text-ink-2 active:bg-bg-sunk`}><Text value="更早" /></IntentLink>
           )}
         </div>
       )}

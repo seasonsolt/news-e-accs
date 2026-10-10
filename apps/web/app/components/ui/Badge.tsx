@@ -28,3 +28,8 @@ export function SelectedBadge() {
     <Badge tone="selected" dot><Text value="精选" /></Badge>
   );
 }
+
+/** A selected report whose fact is shown by another report (the one holding its selected seat). */
+export function SameEventBadge() {
+  return <Badge title="同一新闻已有精选代表">同新闻</Badge>;
+}

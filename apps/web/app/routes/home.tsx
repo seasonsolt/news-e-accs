@@ -1,13 +1,14 @@
 import { localePath, requestLocale } from "../lib/locale";
 import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
-import { SITE, withSubject } from "@aihot/industry/site";
-import { data as withHeaders, redirect, useLoaderData, useRouteLoaderData } from "react-router";
+import { SITE } from "@aihot/site";
+import { redirect, useLoaderData, useRouteLoaderData } from "react-router";
 import type { Route } from "./+types/home";
 import type { TimelineResponse } from "@aihot/contracts/site";
-import { isCategoryKey, isChannelKey } from "@aihot/contracts/taxonomy";
-import { loadOr404, queryString, releaseBoundCache } from "../lib/api.server";
-import { listPath, organizationLd, pageMeta, websiteLd } from "../lib/seo";
+import { cachedPage, loadOr404 } from "../lib/api.server";
+import { pageReuse } from "../lib/page-reuse";
+import { filterParams, hasFeedFilters, listPath, organizationLd, pageMeta, readFilters, websiteLd } from "../lib/seo";
+import { inNav } from "../components/shell/nav";
 import { Deck } from "../components/shell/Deck";
 import { KardashevMeter } from "../features/chrono/KardashevMeter";
 import type { loader as rootLoader } from "../root";
@@ -16,34 +17,30 @@ import { CategoryBanner } from "../features/art/CategoryBanner";
 import { Timeline } from "../features/feed/Timeline";
 import { HotTopics } from "../features/feed/HotTopics";
 import { CategoryTabs, SearchField, SearchIconLink } from "../features/feed/Filters";
-import { beijingDate, beijingWeekday } from "../lib/format";
+import { beijingDate } from "@aihot/contracts/time";
+import { weekdayShort } from "../lib/format";
 import { requestAt } from "../features/chrono/at";
+
+export { pageHeaders as headers } from "../lib/api.server";
+export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const q = url.searchParams.get("q");
   // Search lives on /all; keep the parameters so old links still land on results.
   if (q && q.trim()) throw redirect(localePath(`/all${url.search}`, requestLocale(request)));
-  const channelParam = url.searchParams.get("channel") ?? "all";
-  const categoryParam = url.searchParams.get("category");
-  const channel = isChannelKey(channelParam) ? channelParam : "all";
-  const category = categoryParam && isCategoryKey(categoryParam) ? categoryParam : null;
-  const tag = url.searchParams.get("tag")?.trim() || null;
   const at = requestAt(request);
+  const filters = { ...readFilters(url.searchParams), topic: null, at };
   const upstream = new Headers();
-  const data = await loadOr404<TimelineResponse>(`/api/site/timeline${queryString({ channel: channel === "all" ? null : channel, category, tag, at })}`, { responseHeaders: upstream, request, signal: request.signal });
-  return withHeaders({ data, filters: { channel, category, tag, topic: null, at } }, { headers: releaseBoundCache(data.refreshAt, 60, Date.now(), upstream) });
+  const data = await loadOr404<TimelineResponse>(listPath("/api/site/timeline", { ...filterParams(filters), at }), { responseHeaders: upstream, request, signal: request.signal });
+  return cachedPage(60, { data, filters }, upstream);
 }
 
 export function meta({ matches, loaderData }: Route.MetaArgs) {
   const f = loaderData?.filters;
   // A time-machine slice stands for the live page, which is the one to index.
-  const path = listPath("/", { channel: f && f.channel !== "all" ? f.channel : null, category: f?.category, tag: f?.tag });
-  return pageMeta({ path, jsonLd: path === "/" && !f?.at ? [websiteLd(localeFromMatches(matches ?? [])), organizationLd()] : undefined, noindex: !!f?.at }, localeFromMatches(matches ?? []));
-}
-
-export function headers({ loaderHeaders }: Route.HeadersArgs) {
-  return loaderHeaders;
+  const path = listPath("/", loaderData ? filterParams(loaderData.filters) : {});
+  return pageMeta({ path, jsonLd: path === "/" && !f?.at ? [websiteLd(localeFromMatches(matches ?? [])), organizationLd()] : undefined, noindex: !!f?.at || hasFeedFilters(f) }, localeFromMatches(matches ?? []));
 }
 
 /** The day the page shows (the time machine's, else today), in the deck's kicker. */
@@ -53,7 +50,7 @@ function TodayLabel({ at }: { at?: string | null }) {
   const [y, m, d] = day.split("-").map(Number) as [number, number, number];
   return (
     <span suppressHydrationWarning>
-      {y}.{String(m).padStart(2, "0")}.{String(d).padStart(2, "0")} · {tx(beijingWeekday(day)).replace("星期", "周")}
+      {y}.{String(m).padStart(2, "0")}.{String(d).padStart(2, "0")} · {tx(weekdayShort(day))}
     </span>
   );
 }
@@ -94,7 +91,7 @@ export default function Home() {
         <SearchField variant="track" keep={{ category: filters.category }} />
       </div>
 
-      <div className="mt-6">{data.hot && <HotTopics entries={data.hot} />}</div>
+      <div className="mt-6">{data.hot && inNav("/hot") && <HotTopics entries={data.hot} />}</div>
 
       <h2 className="mt-6 font-display text-[28px] italic text-ink lg:hidden">{filters.tag ? `#${filters.tag}` : tx("最新精选")}</h2>
       <div className="-mx-4 mt-3 flex items-center gap-2 pl-4 pr-2 lg:hidden">

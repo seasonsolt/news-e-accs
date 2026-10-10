@@ -1,4 +1,5 @@
 import { tag } from './setup.ts';
+import { digestInputsHash, digestReports } from '@aihot/backend/publication/story-evidence';
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { sql, closeDb } from '@aihot/backend/db';
@@ -79,6 +80,9 @@ test('story overview, development titles and nested reports are localized; edits
   const [fact]=await sql<{id:number}[]>`INSERT INTO facts(public_id,story_id,title) VALUES(${`fact-${T}`},${story!.id},'进展标题') RETURNING id`;
   await sql`INSERT INTO fact_articles(fact_id,article_id,role) VALUES(${fact!.id},${id},'primary')`;
   await sql`UPDATE publications SET story_id=${story!.id},fact_id=${fact!.id} WHERE article_id=${id}`;
+  // A digest is public only with its saved evidence (events/digest.ts): the saved row carries the reports it was written from.
+  const evidence=await digestReports(sql,[story!.id]);
+  await sql`INSERT INTO story_digests(story_id,version,digest,latest,article_ids,inputs_hash) VALUES(${story!.id},1,'事件综述','最新进展',${evidence.map(r=>r.id)},${digestInputsHash(evidence)})`;
   const source=await currentContent('story',publicId);assert.ok(source);
   const translations=Object.fromEntries(source.segments.map(s=>[s.key,`English ${s.key}`]));
   await saveTranslation({...source,translations},'offline-agent','gpt-6-luna',[],true);
@@ -98,7 +102,7 @@ test('story overview, development titles and nested reports are localized; edits
   const fallback=await localizePublication({hot:[itemStrip]},'en');assert.equal(fallback.hot[0]!.title,'Orbital accelerator released');
   await sql`UPDATE stories SET digest='修改的综述' WHERE id=${story!.id}`;
   const stale=await app.inject({method:'GET',url:`/api/site/stories/${publicId}?lang=en`});
-  assert.equal(stale.json().digest,'修改的综述');assert.equal(stale.json().contentLanguage.status,'original');
+  assert.equal(stale.json().digest,null,'an edited digest is no longer the saved one: it is hidden, not served in either edition');assert.equal(stale.json().contentLanguage.status,'original');
   const staleStrip=await localizePublication({hot:[strip]},'en');assert.equal(staleStrip.hot[0]!.title,'事件标题');assert.equal((staleStrip.hot[0] as any).contentLanguage.status,'original');
 });
 test('report prose, index headline and republication use the same English edition',async()=>{
@@ -108,12 +112,16 @@ test('report prose, index headline and republication use the same English editio
   const translations=Object.fromEntries(source.segments.map(s=>[s.key,s.key==='lead.title'?'Today’s major announcement':s.key==='sections.0.label'?'Product releases':`English ${s.key}`]));
   await saveTranslation({...source,translations},'offline-agent','gpt-6-luna',[],true);
   const detail=await app.inject({method:'GET',url:'/api/site/reports/daily/2099-12-31?lang=en'});
-  assert.equal(detail.statusCode,200);assert.equal(detail.json().lead.title,'Today’s major announcement');assert.equal(detail.json().sections[0].items[0].summary,'English sections.0.items.0.summary');
+  assert.equal(detail.statusCode,200);assert.equal(detail.json().lead.title,'Today’s major announcement');assert.equal(detail.json().sections[0].items[0].summary,'English highlights.0.summary');
   const index=await app.inject({method:'GET',url:'/api/site/reports/daily?lang=en'});
   assert.equal(index.json().items.find((i:any)=>i.key==='2099-12-31').title,'Today’s major announcement');
   await sql`UPDATE reports SET revision=revision+1 WHERE kind='daily' AND key='2099-12-31'`;
   const republished=await app.inject({method:'GET',url:'/api/site/reports/daily/2099-12-31?lang=en'});
-  assert.equal(republished.json().lead.title,'今天的重要发布');assert.equal(republished.json().contentLanguage.status,'original');
+  assert.equal(republished.json().lead.title,'Today’s major announcement','a republication with the same text keeps its edition');
+  assert.equal(republished.json().contentLanguage.status,'translated');
+  await sql`UPDATE reports SET content=jsonb_set(content,'{lead,title}','"今天的重要发布（更正）"') WHERE kind='daily' AND key='2099-12-31'`;
+  const edited=await app.inject({method:'GET',url:'/api/site/reports/daily/2099-12-31?lang=en'});
+  assert.equal(edited.json().lead.title,'今天的重要发布（更正）','edited text is no longer the translated source');assert.equal(edited.json().contentLanguage.status,'original');
 });
 test('licensed Chinese body has an independent fallback, English outline and unchanged original URL',async()=>{
   const bodySourceId=`${SOURCE}-full`;

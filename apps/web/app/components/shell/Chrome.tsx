@@ -31,7 +31,7 @@ export function NavigationProgress({ active }: { active: boolean }) {
   );
 }
 
-/** Round "back to top" button once the reader has scrolled a screen or so. */
+/** Round "back to top" button once the reader has scrolled a screen or so (desktop; on phones the tab bar does it). */
 export function BackToTop() {
   const tx = useTranslate();
   const motionAllowed = useMotionAllowed();

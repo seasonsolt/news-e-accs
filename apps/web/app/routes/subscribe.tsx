@@ -1,5 +1,5 @@
 import { localeFromMatches } from "../lib/i18n";
-import { SITE } from "@aihot/industry/site";
+import { SITE } from "@aihot/site";
 import { useSearchParams } from "react-router";
 import { Onboarding } from "../features/onboarding/Onboarding";
 import { pageMeta } from "../lib/seo";

@@ -1,4 +1,4 @@
-import { beijingWeekday } from "../../lib/format";
+import { weekdayShort } from "../../lib/format";
 import type { Locale } from "../../lib/locale";
 
 /** Release notes carry a little Markdown: **bold** runs. */
@@ -15,7 +15,7 @@ export function dateHeading(date: string, locale: Locale = "zh"): { label: strin
     };
   }
   const [y, m, d] = date.split("-").map(Number) as [number, number, number];
-  return { label: `${y} 年 ${m} 月 ${d} 日`, weekday: beijingWeekday(date).replace("星期", "周") };
+  return { label: `${y} 年 ${m} 月 ${d} 日`, weekday: weekdayShort(date) };
 }
 
 export function monthHeading(month: string, locale: Locale): string {

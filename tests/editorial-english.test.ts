@@ -55,7 +55,7 @@ test('long English copy is compacted at sentence boundaries without clipping a v
 test('new normalized analysis has neutral English fields and retains the exact scoring rule', () => {
   const run: AnalysisRun = { prefilter: { label: 'PASS', reason: '', model: 'fixture', receiptId: 1, reused: true },
     scores: { model: 'fixture', threshold: 60, values: [59, 61], receiptIds: [2, 3], reused: true },
-    writing: { kind: 'understand', model: 'fixture', title: original.title, summary: original.bodyText!, reason: 'The source provides access terms.', tags: null, receiptIds: [4], reused: true }, structure: null };
+    writing: { kind: 'understand', model: 'fixture', title: original.title, summary: original.bodyText!, reason: 'The source provides access terms.', receiptIds: [4], reused: true }, structure: null };
   const result = normalizeAnalysis(run);
   assert.equal(result.editorialLanguage, 'en'); assert.equal(result.selected, true); assert.equal(result.score, 60);
   assert.equal(result.title, original.title); assert.ok(!('titleZh' in result));

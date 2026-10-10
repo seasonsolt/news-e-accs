@@ -2,7 +2,6 @@
 // (industry/chronicle/) and where the site's own record of each part begins.
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { FEATURES } from "@aihot/industry/features";
 import { decimalYear, interpolateMetric, kardashev, type ChronicleEra, type ChronicleMetric, type ChronicleMilestone, type ChronicleResponse, type TimeMachineBounds } from "@aihot/contracts/chronicle";
 import { beijingDate } from "@aihot/contracts/time";
 import { REPO_ROOT } from "../config.ts";
@@ -41,14 +40,13 @@ function kardashevNow(): number | null {
 }
 
 async function queryBounds(): Promise<Omit<TimeMachineBounds, "today" | "kardashev">> {
-  const [row] = await sql<{ feed: Date | null; hot: Date | null; leaderboard: Date | null; daily: string | null }[]>`
+  const [row] = await sql<{ feed: Date | null; hot: Date | null; daily: string | null }[]>`
     SELECT
       (SELECT min(visible_after) FROM publications WHERE visibility = 'public' AND selected) AS feed,
       (SELECT min(computed_at) FROM hot_rankings WHERE published) AS hot,
-      ${FEATURES.leaderboard ? sql`(SELECT min(generated_at) FROM lb_runs WHERE status = 'published')` : sql`NULL::timestamptz`} AS leaderboard,
       (SELECT min(key) FROM reports WHERE kind = 'daily') AS daily`;
   const day = (d: Date | null | undefined) => (d ? beijingDate(d) : null);
-  const parts = { feed: day(row?.feed), hot: day(row?.hot), leaderboard: day(row?.leaderboard), daily: row?.daily ?? null };
+  const parts = { feed: day(row?.feed), hot: day(row?.hot), daily: row?.daily ?? null };
   const known = Object.values(parts).filter((d): d is string => !!d).sort();
   return { earliest: known[0] ?? null, ...parts };
 }

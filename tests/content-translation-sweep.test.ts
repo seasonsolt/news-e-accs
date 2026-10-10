@@ -104,9 +104,9 @@ test('the real public priority projection finds new and edited headlines but exc
   for (let index = 0; index < 3; index++) {
     const material = await upsertMaterial({ sourceId: source, url: `https://example.com/continuous-${T}-${index}`, title: `Original ${index}`, language: 'en', bodyText: 'Summary only.', bodyStatus: 'none', via: 'fetch', discoveredAt: new Date(Date.now() + index * 1000) });
     ids.push(material.articleId);
-    await sql`INSERT INTO analyses(article_id,input_revision,origin,relevance,category,title_zh,summary_zh,reason_zh,score,selected)
-      VALUES(${material.articleId},1,'rule','pass','ai-products',${`新公开标题${index}`},'中文摘要',null,65,false)`;
-    await publishArticle(material.articleId);
+    await sql`INSERT INTO analyses(article_id,input_revision,origin,relevance,category,editorial_language,title_zh,summary_zh,reason_zh,score,selected)
+      VALUES(${material.articleId},1,'rule','pass','ai-products','zh',${`新公开标题${index}`},'中文摘要',null,65,false)`;
+    await publishArticle(material.articleId, { releasedAt: new Date(Date.now() - 60_000) });
   }
   const complete = await currentContent('item', ids[0]!); assert.ok(complete);
   await saveTranslation({ ...complete, translations: Object.fromEntries(complete.segments.map(s => [s.key, 'Previously translated text'])) }, 'offline-agent', 'test-fixture', [], true);
@@ -127,9 +127,9 @@ test('provider editions complete receipts atomically; stale sources, dry runs an
     await sql`INSERT INTO sources(id,name,kind,tier,participation_mode,site_fulltext,next_fetch_at) VALUES(${sourceId},'Receipt fixture','rss','T1','editorial',false,'2100-01-01')`;
     const material = await upsertMaterial({ sourceId, url: `https://example.com/receipt-save-${T}`, title: 'Original headline', language: 'en', bodyText: 'Summary only.', bodyStatus: 'none', via: 'fetch' });
     const id = material.articleId;
-    await sql`INSERT INTO analyses(article_id,input_revision,origin,relevance,category,title_zh,summary_zh,score,selected)
-      VALUES(${id},1,'rule','pass','ai-products','公开标题','公开摘要',65,false)`;
-    await publishArticle(id);
+    await sql`INSERT INTO analyses(article_id,input_revision,origin,relevance,category,editorial_language,title_zh,summary_zh,score,selected)
+      VALUES(${id},1,'rule','pass','ai-products','zh','公开标题','公开摘要',65,false)`;
+    await publishArticle(id, { releasedAt: new Date(Date.now() - 60_000) });
     const source = await currentContent('item', id); assert.ok(source);
     const answer = await paidRequest({ service: 'deepseek', model: 'local-test', purpose: 'translate_content',
       subject: `item:${id}@${source.sourceHash}#0`, identity: { id, sourceHash: source.sourceHash, segments: source.segments } },
