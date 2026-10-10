@@ -34,6 +34,8 @@ function alternate(document: ReturnType<typeof parseHTML>["document"], language:
   return [...document.querySelectorAll('link[rel="alternate"]')].find((link) => (link.getAttribute("hrefLang") ?? link.getAttribute("hreflang")) === language);
 }
 
+/** Absolute links the web process renders for crawlers (SITE_URL, as the server reads it). */
+const site = (process.env.SITE_URL || "https://e-acc.ai").replace(/\/+$/, "");
 let web: ChildProcess;
 let origin: string;
 let logs = "";
@@ -346,9 +348,9 @@ test("the Chinese concept pages are Chinese editions that name the English ones 
       assert.ok(main, `${page.slug} ${page.type}`);
       assert.equal(main.inLanguage, "zh-CN");
       assert.equal(((main.mainEntity ?? main.hasDefinedTerm) as unknown[]).length, page.count, page.slug);
-      assert.equal(alternate(document, "en")?.getAttribute("href"), `https://e-acc.ai/${page.slug}`);
-      assert.equal(alternate(document, "zh-CN")?.getAttribute("href"), `https://e-acc.ai/zh/${page.slug}`);
-      assert.equal(alternate(document, "x-default")?.getAttribute("href"), `https://e-acc.ai/${page.slug}`);
+      assert.equal(alternate(document, "en")?.getAttribute("href"), `${site}/${page.slug}`);
+      assert.equal(alternate(document, "zh-CN")?.getAttribute("href"), `${site}/zh/${page.slug}`);
+      assert.equal(alternate(document, "x-default")?.getAttribute("href"), `${site}/${page.slug}`);
       assert.equal(document.querySelector("article > p > a")?.getAttribute("href"), `/${page.slug}`, "links to the English edition");
     }
     // The English edition keeps its address, title, canonical and language, whatever the reader prefers, and names the Chinese one.
@@ -358,8 +360,8 @@ test("the Chinese concept pages are Chinese editions that name the English ones 
     assert.ok(en.includes(`<title>${page.enTitle}</title>`), page.slug);
     assert.match(en, new RegExp(`<link rel="canonical" href="[^"]*/${page.slug}"/>`));
     assert.equal(enDocument.querySelector("article.pb-14")?.getAttribute("lang"), "en");
-    assert.equal(alternate(enDocument, "zh-CN")?.getAttribute("href"), `https://e-acc.ai/zh/${page.slug}`);
-    assert.equal(alternate(enDocument, "x-default")?.getAttribute("href"), `https://e-acc.ai/${page.slug}`);
+    assert.equal(alternate(enDocument, "zh-CN")?.getAttribute("href"), `${site}/zh/${page.slug}`);
+    assert.equal(alternate(enDocument, "x-default")?.getAttribute("href"), `${site}/${page.slug}`);
     assert.equal(enDocument.querySelector("article > p > a")?.getAttribute("href"), `/zh/${page.slug}`, "links to the Chinese edition");
     // Client-side navigation asks for the data.
     for (const query of ["", `?_routes=zh-concept-${page.slug}`]) {
@@ -570,7 +572,7 @@ test("concepts name their Chinese mirrors and legal pages disclose the preserved
   for (const path of ["/what-is-eacc", "/eacc-vs-dacc", "/eacc-glossary"]) {
     const response = await fetch(origin + path);
     const document = parseHTML(await response.text()).document;
-    assert.equal(alternate(document, "zh-CN")?.getAttribute("href"), `https://e-acc.ai/zh${path}`);
+    assert.equal(alternate(document, "zh-CN")?.getAttribute("href"), `${site}/zh${path}`);
     assert.equal(document.querySelector('option[value="zh"]')?.hasAttribute("disabled"), false);
     assert.equal((await fetch(origin + "/zh" + path)).status, 200);
     assert.equal((await fetch(origin + "/zh" + path + ".data?_routes=root")).status, 200);
