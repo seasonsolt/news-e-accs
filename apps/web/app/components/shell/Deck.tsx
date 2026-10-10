@@ -4,6 +4,14 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMotionAllowed } from "../../features/motion/preferences";
 
+/**
+ * The page's width (the window's, less any scrollbar) as --page-width on <html>, for the deck's full-bleed
+ * margins. 100vw would include the scrollbar in some browsers and not in others (with
+ * `scrollbar-gutter: stable`), leaving the band and its text half a scrollbar off the top bar; clientWidth
+ * never counts it. Runs at the start of <body> and follows every change of width.
+ */
+export const DECK_BLEED_SCRIPT = `(function(){var d=document.documentElement;function s(){d.style.setProperty('--page-width',d.clientWidth+'px')}s();if(window.ResizeObserver)new ResizeObserver(s).observe(d);else window.addEventListener('resize',s)})();`;
+
 /** An illustration under /media/art/ (at 800 and 1600), fading in; a missing one leaves the dark band. */
 export function Plate({ src, alt = "", className }: { src: string; alt?: string; className: string }) {
   const image = useRef<HTMLImageElement>(null);
@@ -27,7 +35,7 @@ export function Plate({ src, alt = "", className }: { src: string; alt?: string;
   );
 }
 
-export function Deck({ art, label, heading, kicker, title, titleId, description, aside, children, compact = false }: {
+export function Deck({ art, label, heading, kicker, title, titleId, description, aside, children, compact = false, night = false }: {
   /** Path under /media/art/ without the width suffix: "hot", "epochs/agents". */
   art?: string;
   /** The band's accessible name (the page's name). */
@@ -43,9 +51,11 @@ export function Deck({ art, label, heading, kicker, title, titleId, description,
   children?: ReactNode;
   /** A slim band for reading pages and small pages. */
   compact?: boolean;
+  /** A dark plate (a night sky): a lighter shade from the side instead of from below, so it still shows. */
+  night?: boolean;
 }) {
   return (
-    <section className={`deck ${compact ? "is-compact" : ""}`} aria-label={label}>
+    <section className={`deck ${compact ? "is-compact" : ""} ${night ? "is-night" : ""}`} aria-label={label}>
       {art && <Plate key={art} src={`/media/art/${art}`} className="deck-plate" />}
       <div className="deck-shade" aria-hidden="true" />
       <div className="deck-inner">

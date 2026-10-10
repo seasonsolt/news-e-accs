@@ -1,5 +1,6 @@
 import { Link } from "../../lib/navigation";
 import { Text, useLocale, useTranslate } from "../../lib/i18n";
+import { localePath } from "../../lib/locale";
 // Newsletter onboarding: a full-bleed, rounded film of the acceleration (public/media, rendered by
 // tools/make-media.sh from ascent.ts, captioned with the era on screen) behind the site name, the sign-up, the manifesto and a way to skip straight to
 // the news. On a first visit to the front page it covers the screen (html[data-onboarding], set before
@@ -302,8 +303,8 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
               </li>
             ))}
           </ol>
-          <p className="mt-6 border-t border-line pt-4 text-[13px] text-ink-4"><Text value="什么是 e/acc：" /><a href="/what-is-eacc" className="text-accent underline decoration-accent/35 underline-offset-[3px] hover:decoration-accent">
-              e-acc.ai/what-is-eacc
+          <p className="mt-6 border-t border-line pt-4 text-[13px] text-ink-4"><Text value="什么是 e/acc：" /><a href={localePath("/what-is-eacc", locale)} className="text-accent underline decoration-accent/35 underline-offset-[3px] hover:decoration-accent">
+              {`e-acc.ai${localePath("/what-is-eacc", locale)}`}
             </a>
           </p>
         </div>

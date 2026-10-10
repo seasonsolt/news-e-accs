@@ -946,12 +946,18 @@ html[data-onboarding] .ambient-backdrop-image { background-image: none; }
 .site-more-link { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 8px; border-radius: 8px; font-size: 13.5px; color: var(--deck-dim); white-space: nowrap; }
 .site-more-link:hover { background: rgb(244 236 220 / .07); color: var(--deck-ink); }
 
-/* A page's deck: spans the window from inside the centred column. */
-.deck { position: relative; isolation: isolate; overflow: hidden; margin-inline: calc(50% - 50vw); margin-top: -16px; padding: 56px 0 40px; background: var(--deck); color: var(--deck-ink); }
+/* A page's deck: spans the page from inside the centred column, to the page's width (--page-width, set by
+   Deck.tsx) rather than 100vw, which counts the scrollbar in some browsers. The gutter is reserved so the
+   width does not change as pages grow long enough to scroll. */
+html { scrollbar-gutter: stable; }
+.deck { position: relative; isolation: isolate; overflow: hidden; margin-inline: calc(50% - var(--page-width, 100vw) / 2); margin-top: -16px; padding: 56px 0 40px; background: var(--deck); color: var(--deck-ink); }
 .deck.is-compact { padding: 28px 0 30px; }
 @media (min-width: 961px) { .deck { padding: 88px 0 48px; } .deck.is-compact { padding: 40px 0 36px; } }
 .deck-plate { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: 50% 42%; }
 .deck-plate.is-empty { background: none; }
+/* A night plate is dark already: shade the title's side only, and frame the plate's horizon. */
+.deck.is-night .deck-plate { object-position: 50% 64%; }
+.deck.is-night .deck-shade { background: linear-gradient(to bottom, var(--deck) 0, rgb(18 14 10 / 0) 60px), linear-gradient(to right, rgb(10 8 6 / .7) 0%, rgb(10 8 6 / .25) 55%, rgb(10 8 6 / 0) 100%); }
 .deck-shade {
   position: absolute; inset: 0; z-index: -1;
   background:

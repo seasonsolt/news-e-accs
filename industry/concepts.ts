@@ -15,6 +15,11 @@ export const EACC_ENTITY = {
   ],
 };
 
+/** The anchor of a section: its English heading, "Where they split" → "where-they-split". */
+export function anchorOf(heading: string): string {
+  return heading.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
 export interface ConceptFaq {
   q: string;
   a: string;
@@ -33,12 +38,15 @@ export interface ConceptLink {
   label: string;
 }
 
-/** A page's body in reading order: prose sections, the FAQ, the glossary's terms and link lists. */
+/**
+ * A page's body in reading order: prose sections, the FAQ, the glossary's terms and link lists. A section's
+ * anchor is made from its English heading; translations give the same `id` so links work in both.
+ */
 export type ConceptBlock =
-  | { kind: "section"; heading: string; html: string }
+  | { kind: "section"; heading: string; html: string; id?: string }
   | { kind: "faq" }
   | { kind: "terms" }
-  | { kind: "links"; heading: string; links: ConceptLink[] };
+  | { kind: "links"; heading: string; links: ConceptLink[]; id?: string };
 
 export interface ConceptPage {
   slug: "what-is-eacc" | "eacc-vs-dacc" | "eacc-glossary";
