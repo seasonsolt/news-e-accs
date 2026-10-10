@@ -927,7 +927,7 @@ html[data-onboarding] .ambient-backdrop-image { background-image: none; }
 .site-nav { position: relative; z-index: 45; background: var(--deck); color: var(--deck-ink); }
 .site-nav-inner { display: flex; align-items: center; gap: 16px; max-width: var(--page-max-wide); min-height: 60px; margin: 0 auto; padding: 0 16px; }
 @media (min-width: 961px) { .site-nav-inner { min-height: 72px; padding: 0 32px; } }
-.site-nav-brand { display: flex; align-items: center; color: var(--deck-ink); }
+.site-nav-brand { display: flex; flex: none; align-items: center; color: var(--deck-ink); }
 .site-nav-brand .text-accent { color: var(--brass); }
 .site-nav-links { display: none; flex: 1; align-items: center; justify-content: center; gap: 2px; }
 @media (min-width: 961px) { .site-nav-links { display: flex; } }

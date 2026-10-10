@@ -124,8 +124,8 @@
 
 ## 7. 品牌：`site/brand/`
 
-- `logo.svg`、`icon.png`（512）、`icon-192.png`、`apple-icon.png`（180）、`favicon.ico`：站点图标。
-- `Logo.tsx`：网页左上角的站名标志，默认用站名文字排出来；有自己的 Logo，把 `Wordmark` 换成你的 SVG，参数保持不变。
+- `logo.svg`：站点标志，导航栏的站名前和后台也用它；`icon.png`（512）、`icon-192.png`、`apple-icon.png`（180）、`favicon.ico`：站点图标。换了 `logo.svg` 以后，用 `node scripts/brand-icons.ts` 重新生成这四个位图。
+- `Logo.tsx`：网页左上角的站名标志（`SiteMark` 加站名文字）；`RingMark` 是加载动画的齿轮。
 - `wordmark.svg`、`wordmark-dark.svg`（可选）：分享图和海报上的字标，深色版用在深色的分享图上；没有就用站名文字。
 - `nameplates/`：日报、周报、月报页顶部的报头字（比如“AI日报”）。换了行业词以后重新生成：
   ```bash

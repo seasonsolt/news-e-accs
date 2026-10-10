@@ -1,16 +1,22 @@
-// 站点的字标和圆环标记：页面用 Wordmark 画站名（size 是高度，单位像素），RingMark 是小标记，转起来就是加载动画。
-// 这里用站名（site.ts，用斜体衬线体排）加一枚黄铜齿轮；有自己的 Logo 时，把 Wordmark 换成你的 SVG（保持同样的参数）。
+// 站点的字标和标记：页面用 Wordmark 画站名（size 是高度，单位像素），SiteMark 是站点标志（同目录的 logo.svg），
+// RingMark 是一枚小齿轮，转起来就是加载动画。换 Logo 时替换 logo.svg，再用 node scripts/brand-icons.ts 重新生成位图图标。
 import { SITE } from "../site.ts";
+import logo from "./logo.svg?url&no-inline";
 
 export function Wordmark({ size = 24, className = "", title = SITE.name }: { size?: number; className?: string; title?: string }) {
   return (
     <span className={`inline-flex items-center leading-none ${className}`} style={{ fontSize: size }} aria-label={title} role="img">
-      <RingMark className="mr-[0.3em] size-[0.8em] text-accent" />
+      <SiteMark className="mr-[0.3em] size-[1.05em] shrink-0" />
       <span aria-hidden="true" className="font-display text-[1.3em] italic tracking-[-0.01em]">
         {SITE.name}
       </span>
     </span>
   );
+}
+
+/** The site mark: the icon, which carries its own dark rounded square. */
+export function SiteMark({ className = "" }: { className?: string }) {
+  return <img src={logo} alt="" width={32} height={32} decoding="async" className={className} />;
 }
 
 /** A ten-tooth gear (teeth are a dashed thick ring round the hub); spinning, it is the loader. */
