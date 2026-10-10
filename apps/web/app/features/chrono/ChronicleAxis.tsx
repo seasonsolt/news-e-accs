@@ -1,12 +1,13 @@
 import { Text, useLocale, useTranslate } from "../../lib/i18n";
-// The four-dimensional axis: the Big Bang at the left, the far future at the right, every power of ten
-// of distance from now the same width. Eras are bands, milestones are ticks (dashed when forecast);
-// drag, click, wheel or the arrow keys move the needle. A click lands on the nearest milestone.
-import { useRef, useState, type KeyboardEvent, type PointerEvent, type WheelEvent } from "react";
+// The four-dimensional log axis: eras are bands, milestones are ticks (dashed when forecast).
+// Wheel or pinch zooms around the pointer; horizontal or shift+wheel pans the visible window.
+// Drag or click positions the needle, with clicks snapping to nearby milestones. Arrow keys step
+// through every era plate and illustrated milestone; PageUp/PageDown jump between eras.
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { axisTicks, fromAxis, timeLabel, toAxis, type ChronicleEra, type ChronicleMilestone } from "@aihot/contracts/chronicle";
 
 import { useMotionAllowed } from "../motion/preferences";
-import { compactTick, stepEra } from "./format";
+import { compactTick, keepAxisInView, panAxisWindow, projectAxis, stepEra, stepPicture, zoomAxisWindow, type AxisWindow } from "./format";
 
 const SNAP_PX = 8;
 
@@ -17,21 +18,50 @@ export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit }: {
   t: number;
   /** While dragging: the needle follows. */
   onMove: (t: number) => void;
-  /** On release (or a key, a click, the wheel): the moment is settled and goes into the address. */
+  /** On release (or a key, a click): the moment is settled and goes into the address. */
   onCommit: (t: number) => void;
 }) {
   const tx = useTranslate();
   const locale = useLocale();
   const allowed = useMotionAllowed();
   const [dragging, setDragging] = useState(false);
+  const [view, setView] = useState<AxisWindow>({ lo: 0, hi: 1 });
   const track = useRef<HTMLDivElement>(null);
   const drag = useRef<{ startX: number; moved: boolean } | null>(null);
   const u = toAxis(t, now);
   const nowU = toAxis(now, now);
+  const span = view.hi - view.lo;
+  const zoomed = span < 1;
 
+  // Follow changes of moment, but let wheel gestures explore away from the needle.
+  useEffect(() => { setView((current) => keepAxisInView(current, u)); }, [u]);
+  useEffect(() => {
+    const element = track.current!;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const box = element.getBoundingClientRect();
+      const units = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? box.width : 1;
+      const dx = e.deltaX * units;
+      const dy = e.deltaY * units;
+      const position = Math.min(1, Math.max(0, (e.clientX - box.left) / box.width));
+      setView((current) => {
+        if (!e.ctrlKey && (e.shiftKey || Math.abs(dx) > Math.abs(dy))) {
+          const delta = e.shiftKey && Math.abs(dy) > Math.abs(dx) ? dy : dx;
+          return panAxisWindow(current, delta / box.width * (current.hi - current.lo));
+        }
+        const anchor = current.lo + position * (current.hi - current.lo);
+        return zoomAxisWindow(current, anchor, Math.exp(-dy / 400));
+      });
+    };
+    element.addEventListener("wheel", onWheel, { passive: false });
+    return () => element.removeEventListener("wheel", onWheel);
+  }, []);
+
+  const resetZoom = () => setView({ lo: 0, hi: 1 });
   const at = (clientX: number) => {
     const box = track.current!.getBoundingClientRect();
-    return { u: (clientX - box.left) / box.width, width: box.width };
+    const position = Math.min(1, Math.max(0, (clientX - box.left) / box.width));
+    return { u: view.lo + position * span, width: box.width };
   };
 
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
@@ -57,7 +87,9 @@ export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit }: {
       // A click means "this one": the nearest milestone within a few pixels.
       let best: { m: ChronicleMilestone; d: number } | null = null;
       for (const m of milestones) {
-        const d = Math.abs(toAxis(m.t, now) - pos.u) * pos.width;
+        const mu = toAxis(m.t, now);
+        if (mu < view.lo || mu > view.hi) continue;
+        const d = Math.abs(mu - pos.u) / span * pos.width;
         if (d <= SNAP_PX && (!best || d < best.d)) best = { m, d };
       }
       if (best) next = best.m.t;
@@ -65,18 +97,15 @@ export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit }: {
     onCommit(next);
   };
 
-  const nudge = (du: number) => onCommit(fromAxis(Math.min(1, Math.max(0, u + du)), now));
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "ArrowLeft" || e.key === "ArrowDown") onCommit(stepEra(eras, t, -1));
-    else if (e.key === "ArrowRight" || e.key === "ArrowUp") onCommit(stepEra(eras, t, 1));
+    if (e.key === "ArrowLeft" || e.key === "ArrowDown") onCommit(stepPicture(eras, milestones, t, -1));
+    else if (e.key === "ArrowRight" || e.key === "ArrowUp") onCommit(stepPicture(eras, milestones, t, 1));
+    else if (e.key === "PageUp") onCommit(stepEra(eras, t, -1));
+    else if (e.key === "PageDown") onCommit(stepEra(eras, t, 1));
     else if (e.key === "Home") onCommit(fromAxis(0, now));
     else if (e.key === "End") onCommit(now);
     else return;
     e.preventDefault();
-  };
-  const onWheel = (e: WheelEvent<HTMLDivElement>) => {
-    const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : 0;
-    if (d) nudge(d / 4000);
   };
 
   return (
@@ -97,43 +126,59 @@ export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit }: {
         onPointerUp={onPointerUp}
         onPointerCancel={() => { drag.current = null; setDragging(false); }}
         onKeyDown={onKeyDown}
-        onWheel={onWheel}
+        onDoubleClick={resetZoom}
       >
         {eras.map((era, i) => {
-          const from = toAxis(era.from, now);
-          const to = i + 1 < eras.length ? toAxis(eras[i + 1]!.from, now) : 1;
+          const from = Math.max(view.lo, toAxis(era.from, now));
+          const to = Math.min(view.hi, i + 1 < eras.length ? toAxis(eras[i + 1]!.from, now) : 1);
+          if (to <= from) return null;
           return (
             <span
               key={era.id}
               className={`chronicle-band ${i % 2 ? "is-odd" : ""} ${era.forecast ? "is-forecast" : ""} ${era.from <= t && t < (eras[i + 1]?.from ?? Infinity) ? "is-current" : ""}`}
-              style={{ left: `${from * 100}%`, width: `${Math.max(0, to - from) * 100}%` }}
+              style={{ left: `${projectAxis(from, view) * 100}%`, width: `${(to - from) / span * 100}%` }}
               title={era.title}
             >
-              {/* Named where the band is wide enough to carry it; the rest keep their title tooltip. */}
-              {to - from > 0.05 && <span className="chronicle-band-label">{era.title}</span>}
+              {/* Named where the visible band is wide enough to carry it; the rest keep their title tooltip. */}
+              {(to - from) / span > 0.05 && <span className="chronicle-band-label">{era.title}</span>}
             </span>
           );
         })}
-        {milestones.map((m) => (
-          <span
-            key={m.id}
-            className={`chronicle-tick cat-${m.category} ${m.forecast ? "is-forecast" : ""}`}
-            style={{ left: `${toAxis(m.t, now) * 100}%` }}
-          />
-        ))}
-        <span className="chronicle-now" style={{ left: `${nowU * 100}%` }} aria-hidden="true">
-          <span><Text value="现在" /></span>
-        </span>
-        <span className="chronicle-needle" style={{ left: `${u * 100}%` }} aria-hidden="true" />
-      </div>
-      <div className="chronicle-scale" aria-hidden="true">
-        {axisTicks(now).map(([tt, label], i) => (
-          // Every other label on phones, where they would collide.
-          <span key={label} className={i % 2 ? "max-sm:hidden" : undefined} style={{ left: `${toAxis(tt, now) * 100}%` }}>
-            {locale === "en" ? compactTick(label) : label}
+        {milestones.map((m) => {
+          const mu = toAxis(m.t, now);
+          if (mu < view.lo || mu > view.hi) return null;
+          return (
+            <span
+              key={m.id}
+              className={`chronicle-tick cat-${m.category} ${m.forecast ? "is-forecast" : ""}`}
+              style={{ left: `${projectAxis(mu, view) * 100}%` }}
+            />
+          );
+        })}
+        {nowU >= view.lo && nowU <= view.hi && (
+          <span className="chronicle-now" style={{ left: `${projectAxis(nowU, view) * 100}%` }} aria-hidden="true">
+            <span><Text value="现在" /></span>
           </span>
-        ))}
+        )}
+        {u >= view.lo && u <= view.hi && <span className="chronicle-needle" style={{ left: `${projectAxis(u, view) * 100}%` }} aria-hidden="true" />}
       </div>
+      <div className="chronicle-scale" data-zoomed={zoomed || undefined} aria-hidden="true">
+        {axisTicks(now).map(([tt, label], i) => {
+          const tickU = toAxis(tt, now);
+          return (
+            // Every other label on phones at full width, where they would collide.
+            <span key={label} hidden={tickU < view.lo || tickU > view.hi} className={!zoomed && i % 2 ? "max-sm:hidden" : undefined} style={{ left: `${projectAxis(tickU, view) * 100}%` }}>
+              {locale === "en" ? compactTick(label) : label}
+            </span>
+          );
+        })}
+      </div>
+      {zoomed && (
+        <div className="chronicle-zoom">
+          <span>×{Number((1 / span).toFixed(1))}</span>
+          <button type="button" onClick={resetZoom}><Text value="重置缩放" /></button>
+        </div>
+      )}
     </div>
   );
 }

@@ -77,7 +77,7 @@ export default function ChroniclePage() {
         <ChronicleAxis eras={chronicle.eras} milestones={chronicle.milestones} now={now} t={t} onMove={setT} onCommit={commit} />
         <div className="chronometer-controls">
           <button type="button" disabled={!previous} onClick={() => previous && commit(previous.t)} title={previous?.title}><Text value="‹ 上一个里程碑" /></button>
-          <span className="chronometer-hint"><Text value="方向键逐幅切换时代 · 拖动或点击定位时间 · 每格是十倍的时间" /></span>
+          <span className="chronometer-hint"><Text value="方向键逐幅切换画面 · 滚轮缩放 · 拖动或点击定位时间" /></span>
           <button type="button" onClick={() => commit(now)}><Text value="回到现在" /></button>
           <button type="button" disabled={!following} onClick={() => following && commit(following.t)} title={following?.title}><Text value="下一个里程碑 ›" /></button>
         </div>

@@ -1,5 +1,5 @@
-// Reader-facing numbers for the four-dimensional view: 79.6 亿人, 1.9×10¹³ 瓦, 3 天, 39,897 千米/时.
-import type { ChronicleEra, ChronicleMetric } from "@aihot/contracts/chronicle";
+// Reader-facing numbers and axis windows for the four-dimensional view: 79.6 亿人, 1.9×10¹³ 瓦, 3 天.
+import type { ChronicleEra, ChronicleMetric, ChronicleMilestone } from "@aihot/contracts/chronicle";
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
 
@@ -56,11 +56,52 @@ export function timeParam(t: number, now: number): string {
   return Number(t.toPrecision(15)).toString().replace("e+", "e");
 }
 
-/** Keyboard navigation follows adjacent era plates, regardless of their distance on the log axis. */
+export type AxisWindow = { lo: number; hi: number };
+// About ×667 zoom separates dense milestone pictures by several pixels even on a phone.
+export const MIN_AXIS_SPAN = 0.0015;
+
+/** Position within the visible window; values outside 0..1 are off the track. */
+export function projectAxis(u: number, view: AxisWindow): number {
+  return (u - view.lo) / (view.hi - view.lo);
+}
+
+/** A factor above 1 zooms in, keeping the anchor under the same point of the track. */
+export function zoomAxisWindow(view: AxisWindow, anchor: number, factor: number): AxisWindow {
+  const span = Math.min(1, Math.max(MIN_AXIS_SPAN, (view.hi - view.lo) / factor));
+  const lo = Math.min(1 - span, Math.max(0, anchor - projectAxis(anchor, view) * span));
+  return { lo, hi: lo + span };
+}
+
+/** Pan in axis units, preserving the span when either end reaches the boundary. */
+export function panAxisWindow(view: AxisWindow, du: number): AxisWindow {
+  const span = view.hi - view.lo;
+  const lo = Math.min(1 - span, Math.max(0, view.lo + du));
+  return { lo, hi: lo + span };
+}
+
+/** Follow a new moment without changing the zoom level. */
+export function keepAxisInView(view: AxisWindow, u: number): AxisWindow {
+  const span = view.hi - view.lo;
+  const target = Math.min(1, Math.max(0, u));
+  if (target < view.lo) return { lo: target, hi: target + span };
+  if (target > view.hi) return { lo: target - span, hi: target };
+  return view;
+}
+
+/** PageUp/PageDown navigation follows adjacent era plates, regardless of their distance on the log axis. */
 export function stepEra(eras: ChronicleEra[], t: number, direction: -1 | 1): number {
   const current = eras.findLastIndex((era) => era.from <= t);
   const next = eras[Math.min(eras.length - 1, Math.max(0, current + direction))];
   return next?.from ?? t;
+}
+
+/** Arrow keys visit era plates and illustrated milestones in chronological order. */
+export function stepPicture(eras: ChronicleEra[], milestones: ChronicleMilestone[], t: number, direction: -1 | 1): number {
+  const pictures = [...new Set([
+    ...eras.map((era) => era.from + 1e-9),
+    ...milestones.filter((m) => m.art).map((m) => m.t),
+  ])].sort((a, b) => a - b);
+  return (direction === 1 ? pictures.find((moment) => moment > t + 1e-6) : pictures.findLast((moment) => moment < t - 1e-6)) ?? t;
 }
 
 /** The next capability's distance, using the same units as the moment label. */

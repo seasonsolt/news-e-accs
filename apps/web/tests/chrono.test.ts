@@ -1,12 +1,93 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
-import { eraAt, type ChronicleEra } from "@aihot/contracts/chronicle";
+import { eraAt, type ChronicleEra, type ChronicleMilestone } from "@aihot/contracts/chronicle";
 import { parseAt, stepAt, withAt } from "../app/features/chrono/at.ts";
-import { distanceLabel, stepEra, timeParam, untilLabel } from "../app/features/chrono/format.ts";
+import { distanceLabel, keepAxisInView, MIN_AXIS_SPAN, panAxisWindow, projectAxis, stepEra, stepPicture, timeParam, untilLabel, zoomAxisWindow } from "../app/features/chrono/format.ts";
 import { ApiError, apiErrorResponse, loadOr404 } from "../app/lib/api.server.ts";
 
 const today = "2026-10-04";
+function near(actual: number, expected: number) {
+  assert.ok(Math.abs(actual - expected) < 1e-12, `${actual} != ${expected}`);
+}
+
+test("axis projection maps the visible window to the track and leaves off-screen points outside", () => {
+  const view = { lo: 0.25, hi: 0.5 };
+  assert.equal(projectAxis(0.25, view), 0);
+  assert.equal(projectAxis(0.375, view), 0.5);
+  assert.equal(projectAxis(0.5, view), 1);
+  assert.equal(projectAxis(0, view), -1);
+  assert.equal(projectAxis(0.75, view), 2);
+  for (const u of [0, 0.1, 0.5, 1]) assert.equal(projectAxis(u, { lo: 0, hi: 1 }), u);
+});
+
+test("axis zoom preserves the pointer's position until clamped, with a minimum span", () => {
+  const view = { lo: 0.2, hi: 0.8 };
+  for (const anchor of [view.lo, 0.35, view.hi]) {
+    const zoomed = zoomAxisWindow(view, anchor, 2);
+    near(zoomed.hi - zoomed.lo, 0.3);
+    near(projectAxis(anchor, zoomed), projectAxis(anchor, view));
+    const restored = zoomAxisWindow(zoomed, anchor, 0.5);
+    near(restored.lo, view.lo);
+    near(restored.hi, view.hi);
+  }
+  const left = zoomAxisWindow({ lo: 0, hi: 0.2 }, 0.2, 0.5);
+  assert.equal(left.lo, 0);
+  near(left.hi, 0.4);
+  const right = zoomAxisWindow({ lo: 0.8, hi: 0.9 }, 0.8, 0.5);
+  near(right.lo, 0.8);
+  assert.equal(right.hi, 1);
+  assert.deepEqual(zoomAxisWindow(view, 0.3, 0.01), { lo: 0, hi: 1 });
+  const narrow = zoomAxisWindow(view, 0.35, 1e6);
+  near(narrow.hi - narrow.lo, MIN_AXIS_SPAN);
+  near(projectAxis(0.35, narrow), projectAxis(0.35, view));
+  const limited = zoomAxisWindow(narrow, 0.35, 2);
+  near(limited.hi - limited.lo, MIN_AXIS_SPAN);
+});
+
+test("axis panning and following the needle preserve zoom at both boundaries", () => {
+  const view = { lo: 0.25, hi: 0.5 };
+  assert.deepEqual(panAxisWindow(view, 0.125), { lo: 0.375, hi: 0.625 });
+  assert.deepEqual(panAxisWindow(view, -1), { lo: 0, hi: 0.25 });
+  assert.deepEqual(panAxisWindow(view, 1), { lo: 0.75, hi: 1 });
+  assert.deepEqual(panAxisWindow({ lo: 0, hi: 1 }, 0.5), { lo: 0, hi: 1 });
+  for (const u of [view.lo, 0.375, view.hi]) assert.equal(keepAxisInView(view, u), view);
+  for (const current of [view, { lo: 0.625, hi: 0.6265 }, { lo: 0.75, hi: 0.9 }]) {
+    for (const u of [0, 0.001, 0.002, 0.003, 0.1, 0.8, 1]) {
+      const followed = keepAxisInView(current, u);
+      near(followed.hi - followed.lo, current.hi - current.lo);
+      assert.ok(followed.lo >= 0 && followed.hi <= 1);
+      assert.ok(u >= followed.lo && u <= followed.hi);
+    }
+  }
+  assert.deepEqual(keepAxisInView(view, 0), { lo: 0, hi: 0.25 });
+  assert.deepEqual(keepAxisInView(view, 1), { lo: 0.75, hi: 1 });
+});
+
+test("picture navigation visits illustrated milestones inside eras, skips bare ticks and stays put at the ends", () => {
+  const eras: ChronicleEra[] = [20, 0, 10].map((from) => ({ id: `era-${from}`, from, title: "Era", summary: "", art: "era", artStyle: "" }));
+  const milestones: ChronicleMilestone[] = [
+    { t: 8, art: "eight" }, { t: 4 }, { t: 2, art: "two" }, { t: 8, art: "duplicate" },
+  ].map((m, i) => ({ id: `moment-${i}`, precision: "year", title: "Moment", detail: "", category: "human", source: "https://example.com", ...m }));
+  assert.equal(stepPicture(eras, milestones, 1, 1), 2);
+  assert.equal(stepPicture(eras, milestones, 2, 1), 8);
+  assert.equal(stepPicture(eras, milestones, 5, 1), 8);
+  assert.equal(stepPicture(eras, milestones, 5, -1), 2);
+  assert.equal(stepPicture(eras, milestones, 8, 1), 10 + 1e-9);
+  assert.equal(stepPicture(eras, milestones, 10 + 1e-9, -1), 8);
+  assert.equal(stepPicture(eras, milestones, 2, -1), 1e-9);
+  assert.equal(stepPicture(eras, milestones, 1e-9, -1), 1e-9);
+  assert.equal(stepPicture(eras, milestones, 20 + 1e-9, 1), 20 + 1e-9);
+  assert.equal(stepPicture(eras, milestones, -1, -1), -1);
+  assert.equal(stepPicture(eras, milestones, 21, 1), 21);
+  assert.equal(stepPicture(eras, milestones, 2 - 1e-7, 1), 8);
+  assert.equal(stepPicture(eras, milestones, 8 + 1e-7, -1), 2);
+  assert.equal(stepPicture([], [], 5, 1), 5);
+  assert.equal(stepPicture([], [], 5, -1), 5);
+  assert.equal(stepPicture([], milestones, 5, 1), 8);
+  assert.equal(stepPicture(eras, [], 5, 1), 10 + 1e-9);
+});
+
 test("era navigation visits every plate even across densely packed recent breakthroughs", () => {
   const eras = JSON.parse(readFileSync(new URL("../../../industry/chronicle/eras.json", import.meta.url), "utf8")).eras as ChronicleEra[];
   for (let i = 0; i < eras.length; i++) {
