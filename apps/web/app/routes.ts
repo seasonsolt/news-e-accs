@@ -46,7 +46,7 @@ const publicRoutes: RouteConfig = [
 ];
 
 function chineseRoutes(entries: Awaited<RouteConfig>): Awaited<RouteConfig> {
-  return entries.filter((entry) => !["what-is-eacc", "eacc-vs-dacc", "eacc-glossary"].includes(entry.path ?? "")).map((entry) => ({
+  return entries.map((entry) => ({
     ...entry,
     id: `zh-${entry.id ?? entry.file}`,
     ...(entry.children ? { children: chineseRoutes(entry.children) } : {}),

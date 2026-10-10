@@ -271,6 +271,60 @@ test("the e/acc concept pages keep their English titles, text language and struc
   assert.equal((await fetch(`${origin}/eacc-unknown.data`)).status, 404);
 });
 
+test("the Chinese concept pages are Chinese editions that name the English ones as alternates", async () => {
+  const pages = [
+    { slug: "what-is-eacc", title: "什么是 e/acc？有效加速主义详解 | e-acc.ai", enTitle: "What is e/acc? Effective Accelerationism, Explained | e-acc.ai", type: "FAQPage", count: 6 },
+    { slug: "eacc-vs-dacc", title: "e/acc 与 d/acc：加速主义的两大阵营 | e-acc.ai", enTitle: "e/acc vs d/acc: Accelerationism&#x27;s Two Camps | e-acc.ai", type: "FAQPage", count: 5 },
+    { slug: "eacc-glossary", title: "e/acc 术语表：加速主义术语释义 | e-acc.ai", enTitle: "e/acc Glossary: Accelerationism Terms, Defined | e-acc.ai", type: "DefinedTermSet", count: 16 },
+  ];
+  for (const page of pages) {
+    // The address decides the language: a crawler (no preference), an English reader or a stale cookie
+    // change neither the Chinese page's body nor its frame.
+    for (const headers of [{} as Record<string, string>, { "Accept-Language": "en-US,en;q=0.9" }, { Cookie: "eacc_language=en" }]) {
+      const res = await fetch(`${origin}/zh/${page.slug}`, { headers });
+      assert.equal(res.status, 200, page.slug);
+      const html = await res.text();
+      const document = parseHTML(html).document;
+      assert.equal(document.documentElement.lang, "zh-CN");
+      assert.ok(html.includes(`<title>${page.title}</title>`), page.slug);
+      assert.match(html, new RegExp(`<link rel="canonical" href="[^"]*/zh/${page.slug}"/>`));
+      assert.equal(document.querySelector("article.pb-14")?.getAttribute("lang"), "zh-CN");
+      assert.match(document.querySelector("article.pb-14 h2")!.textContent!, /\p{Script=Han}/u, "headings are Chinese");
+      const main = jsonLd(html).find((e) => e["@type"] === page.type)!;
+      assert.ok(main, `${page.slug} ${page.type}`);
+      assert.equal(main.inLanguage, "zh-CN");
+      assert.equal(((main.mainEntity ?? main.hasDefinedTerm) as unknown[]).length, page.count, page.slug);
+      assert.equal(alternate(document, "en")?.getAttribute("href"), `https://e-acc.ai/${page.slug}`);
+      assert.equal(alternate(document, "zh-CN")?.getAttribute("href"), `https://e-acc.ai/zh/${page.slug}`);
+      assert.equal(alternate(document, "x-default")?.getAttribute("href"), `https://e-acc.ai/${page.slug}`);
+      assert.equal(document.querySelector("article > p > a")?.getAttribute("href"), `/${page.slug}`, "links to the English edition");
+    }
+    // The English edition keeps its address, title, canonical and language, whatever the reader prefers, and names the Chinese one.
+    const en = await (await fetch(`${origin}/${page.slug}`, { headers: { "Accept-Language": "zh-CN", Cookie: "eacc_language=zh" } })).text();
+    const enDocument = parseHTML(en).document;
+    assert.equal(enDocument.documentElement.lang, "en");
+    assert.ok(en.includes(`<title>${page.enTitle}</title>`), page.slug);
+    assert.match(en, new RegExp(`<link rel="canonical" href="[^"]*/${page.slug}"/>`));
+    assert.equal(enDocument.querySelector("article.pb-14")?.getAttribute("lang"), "en");
+    assert.equal(alternate(enDocument, "zh-CN")?.getAttribute("href"), `https://e-acc.ai/zh/${page.slug}`);
+    assert.equal(alternate(enDocument, "x-default")?.getAttribute("href"), `https://e-acc.ai/${page.slug}`);
+    assert.equal(enDocument.querySelector("article > p > a")?.getAttribute("href"), `/zh/${page.slug}`, "links to the Chinese edition");
+    // Client-side navigation asks for the data.
+    for (const query of ["", `?_routes=zh-concept-${page.slug}`]) assert.equal((await fetch(`${origin}/zh/${page.slug}.data${query}`)).status, 200, `${page.slug}.data${query}`);
+  }
+  assert.equal((await fetch(`${origin}/zh/eacc-unknown`)).status, 404);
+  assert.equal((await fetch(`${origin}/zh/eacc-unknown.data`)).status, 404);
+  // The Chinese glossary keeps the English page's term ids, so a link to #decel works in both.
+  const glossary = await (await fetch(`${origin}/zh/eacc-glossary`)).text();
+  for (const id of ["decel", "doomer", "pdoom", "uacc"]) assert.match(glossary, new RegExp(`<li id="${id}">`));
+  // The site's menu and the onboarding link follow the language of the address.
+  const zhHome = await (await fetch(`${origin}/zh`)).text();
+  const enHome = await (await fetch(`${origin}/`, { headers: { "Accept-Language": "zh-CN" } })).text();
+  assert.match(zhHome, /href="\/zh\/what-is-eacc"/);
+  assert.match(enHome, /href="\/what-is-eacc"/);
+  assert.doesNotMatch(enHome, /href="\/zh\/what-is-eacc"/);
+});
+
 test("missing routes cannot be hidden by a root-only request; errors and redirects stay uncached", async () => {
   for (const pathname of ["/items/missing.data?_routes=root", "/does-not-exist.data?_routes=root", "/items/missing"]) {
     const res = await fetch(origin + pathname);
@@ -396,13 +450,13 @@ test("Chinese menu links request working data routes with distinct IDs and expli
   const response = await fetch(origin + "/zh", { headers: { Cookie: "eacc_language=en", "Accept-Language": "en-US" } });
   const document = parseHTML(await response.text()).document;
   assert.equal(document.documentElement.lang, "zh-CN");
-  for (const path of ["/zh/all", "/zh/topics", "/zh/subscribe", "/zh/about", "/zh/changelog", "/what-is-eacc"]) {
+  for (const path of ["/zh/all", "/zh/topics", "/zh/subscribe", "/zh/about", "/zh/changelog", "/zh/what-is-eacc"]) {
     assert.ok(document.querySelector(`a[href="${path}"]`), path);
     const before = apiRequests.length;
     const data = await fetch(origin + path + ".data?_routes=root");
     assert.equal(data.status, 200, path);
     const body = await data.text();
-    if (path !== "/zh/subscribe") assert.match(body, path.startsWith("/zh/") ? /zh-routes|zh-concept/ : /concept-what-is-eacc/);
+    if (path !== "/zh/subscribe") assert.match(body, /zh-routes|zh-concept/);
     const publicReads = apiRequests.slice(before).filter((url) => url.startsWith("/api/site/"));
     assert.ok(publicReads.every((url) => new URL(url, origin).searchParams.get("lang") === (path.startsWith("/zh/") ? "zh" : "en")), path);
   }
@@ -471,14 +525,14 @@ test("existing editions have reciprocal hreflang, self canonicals and localized 
   }
 });
 
-test("concepts have no Chinese mirrors and legal pages disclose the preserved Chinese template", async () => {
+test("concepts name their Chinese mirrors and legal pages disclose the preserved Chinese template", async () => {
   for (const path of ["/what-is-eacc", "/eacc-vs-dacc", "/eacc-glossary"]) {
     const response = await fetch(origin + path);
     const document = parseHTML(await response.text()).document;
-    assert.equal(alternate(document, "zh-CN"), undefined);
-    assert.equal(document.querySelector('option[value="zh"]')?.hasAttribute("disabled"), true);
-    assert.equal((await fetch(origin + "/zh" + path)).status, 404);
-    assert.equal((await fetch(origin + "/zh" + path + ".data?_routes=root")).status, 404);
+    assert.equal(alternate(document, "zh-CN")?.getAttribute("href"), `https://e-acc.ai/zh${path}`);
+    assert.equal(document.querySelector('option[value="zh"]')?.hasAttribute("disabled"), false);
+    assert.equal((await fetch(origin + "/zh" + path)).status, 200);
+    assert.equal((await fetch(origin + "/zh" + path + ".data?_routes=root")).status, 200);
   }
   for (const path of ["/terms", "/privacy"]) {
     const english = parseHTML(await (await fetch(origin + path)).text()).document;
