@@ -101,7 +101,7 @@ export function CivilizationGauges({ metrics, t, now }: { metrics: ChronicleMetr
                 {formatted?.unit && <span className="chronicle-gauge-unit"><Text value={formatted.unit} /></span>}
               </p>
               <p className="chronicle-gauge-note">
-                {v === null ? tx("尚无可靠数据{0}", first !== undefined && t < first ? ` · 数据始于${tx(timeLabel(first, now, first < 0 ? "ka" : "year"))}` : "") : tx(versusToday(metric, v, today) ?? " ")}
+                {v === null ? tx("尚无可靠数据{0}", first !== undefined && t < first ? ` · ${tx("数据始于{0}", tx(timeLabel(first, now, first < 0 ? "ka" : "year")))}` : "") : tx(versusToday(metric, v, today) ?? " ")}
               </p>
               <Trace metric={metric} t={t} now={now} />
             </article>

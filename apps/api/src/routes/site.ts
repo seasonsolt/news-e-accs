@@ -198,7 +198,7 @@ export function registerSite(app: FastifyInstance) {
 
   if (FEATURES.timeMachine) {
     app.get("/api/site/chronicle", siteHandler(async (req, reply) => {
-      return sendJsonWithEtag(req, reply, loadChronicle(), { etagPrefix: "chronicle", cacheControl: "public, max-age=600, s-maxage=3600" });
+      return sendJsonWithEtag(req, reply, loadChronicle(looseQuery(req).lang === "en" ? "en" : "zh"), { etagPrefix: "chronicle", cacheControl: "public, max-age=600, s-maxage=3600" });
     }));
     app.get("/api/site/chronicle/bounds", siteHandler(async (req, reply) => {
       return sendJsonWithEtag(req, reply, await timeMachineBounds(), { etagPrefix: "chronicle-bounds", cacheControl: "public, max-age=300, s-maxage=600" });

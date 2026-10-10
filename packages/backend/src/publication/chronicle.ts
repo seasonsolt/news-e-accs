@@ -1,6 +1,6 @@
 // The time machine's read side: the curated civilization timeline from the industry pack
 // (industry/chronicle/) and where the site's own record of each part begins.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { decimalYear, interpolateMetric, kardashev, type ChronicleEra, type ChronicleMetric, type ChronicleMilestone, type ChronicleResponse, type TimeMachineBounds } from "@aihot/contracts/chronicle";
 import { beijingDate } from "@aihot/contracts/time";
@@ -8,20 +8,48 @@ import { REPO_ROOT } from "../config.ts";
 import { sql } from "../db.ts";
 import { cached } from "../lib/cache.ts";
 
-let chronicleCache: ChronicleResponse | null = null;
+/** en.json: the English reader text, by era and milestone id and metric key; a missing field keeps the Chinese. */
+interface ChronicleEnglish {
+  eras?: Record<string, Partial<Pick<ChronicleEra, "title" | "summary" | "artStyle">>>;
+  milestones?: Record<string, Partial<Pick<ChronicleMilestone, "title" | "detail" | "capability" | "artStyle">> & { forecastBy?: string }>;
+  metrics?: Record<string, Partial<Pick<ChronicleMetric, "label" | "unit" | "note">> & { sourceName?: string }>;
+}
 
-/** The three data files, read once per process (they change only with a deploy). */
-export function loadChronicle(): ChronicleResponse {
-  if (!chronicleCache) {
-    const dir = process.env.AIHOT_CHRONICLE_DIR || path.join(REPO_ROOT, "industry/chronicle");
-    const read = <T>(file: string): T => JSON.parse(readFileSync(path.join(dir, file), "utf8")) as T;
-    chronicleCache = {
-      eras: read<{ eras: ChronicleEra[] }>("eras.json").eras,
-      milestones: read<{ milestones: ChronicleMilestone[] }>("milestones.json").milestones,
-      metrics: read<{ series: ChronicleMetric[] }>("metrics.json").series,
-    };
+const chronicleCache = new Map<"zh" | "en", ChronicleResponse>();
+
+function chronicleDir() {
+  return process.env.AIHOT_CHRONICLE_DIR || path.join(REPO_ROOT, "industry/chronicle");
+}
+
+/** The data files, read once per process and edition (they change only with a deploy). */
+export function loadChronicle(lang: "zh" | "en" = "zh"): ChronicleResponse {
+  let chronicle = chronicleCache.get(lang);
+  if (!chronicle) {
+    const read = <T>(file: string): T => JSON.parse(readFileSync(path.join(chronicleDir(), file), "utf8")) as T;
+    if (lang === "zh") {
+      chronicle = {
+        eras: read<{ eras: ChronicleEra[] }>("eras.json").eras,
+        milestones: read<{ milestones: ChronicleMilestone[] }>("milestones.json").milestones,
+        metrics: read<{ series: ChronicleMetric[] }>("metrics.json").series,
+      };
+    } else {
+      const zh = loadChronicle("zh");
+      const en = existsSync(path.join(chronicleDir(), "en.json")) ? read<ChronicleEnglish>("en.json") : {};
+      chronicle = {
+        eras: zh.eras.map((era) => ({ ...era, ...en.eras?.[era.id] })),
+        milestones: zh.milestones.map((m) => {
+          const { forecastBy, ...text } = en.milestones?.[m.id] ?? {};
+          return { ...m, ...text, ...(m.forecast && forecastBy ? { forecast: { ...m.forecast, by: forecastBy } } : {}) };
+        }),
+        metrics: zh.metrics.map((metric) => {
+          const { sourceName, ...text } = en.metrics?.[metric.key] ?? {};
+          return { ...metric, ...text, ...(sourceName ? { source: { ...metric.source, name: sourceName } } : {}) };
+        }),
+      };
+    }
+    chronicleCache.set(lang, chronicle);
   }
-  return chronicleCache;
+  return chronicle;
 }
 
 const bounds = cached(queryBounds, { freshMs: 10 * 60_000, maxStaleMs: 24 * 3600_000 });

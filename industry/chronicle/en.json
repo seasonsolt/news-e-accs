@@ -1,0 +1,1544 @@
+{
+  "_readme": "英文版：按 id（指标按 key）对照 eras.json、milestones.json、metrics.json 里给读者看的文字；没写的字段沿用中文。forecastBy 对应 forecast.by，sourceName 对应 source.name。改中文时同步改这里。",
+  "eras": {
+    "big-bang": {
+      "title": "The Big Bang",
+      "summary": "The universe expands from an extremely hot, dense state, and the first atoms form as it cools. There are no stars yet, and no observers.",
+      "artStyle": "Deep-space astrophotography"
+    },
+    "first-stars-galaxies": {
+      "title": "First Stars and Galaxies",
+      "summary": "The first stars ignite and forge heavy elements; galaxies gradually assemble, and the Milky Way begins to take shape.",
+      "artStyle": "Hubble Deep Field astrophotography"
+    },
+    "solar-system": {
+      "title": "Formation of the Solar System",
+      "summary": "The Sun and planets are born from a molecular cloud; Earth and the Moon form in turn, their primordial surfaces scorching and barren.",
+      "artStyle": "18th-century copperplate star chart"
+    },
+    "origin-of-life": {
+      "title": "Origin of Life on Earth",
+      "summary": "Single-celled life persists for about 3 billion years; photosynthesis brings oxygen to the atmosphere, and eukaryotic cells appear.",
+      "artStyle": "Hand-drawn microscope scientific illustration"
+    },
+    "cambrian-explosion": {
+      "title": "The Cambrian Explosion",
+      "summary": "Complex animals proliferate, plants and animals move onto land in turn, and life begins to reshape the entire planet.",
+      "artStyle": "19th-century natural history lithograph"
+    },
+    "dinosaurs-mammals": {
+      "title": "Dinosaurs and Mammals",
+      "summary": "Dinosaurs rule the land for more than 100 million years; after an asteroid impact, mammals rise and primates appear.",
+      "artStyle": "Paleontological reconstruction oil painting"
+    },
+    "homo-stone-tools": {
+      "title": "Homo and Stone Tools",
+      "summary": "Hominins walk upright and knap stone tools, and Homo erectus leaves Africa. Tools begin to extend the body, but there is still no reliable energy source.",
+      "artStyle": "Archaeological line drawing"
+    },
+    "taming-fire": {
+      "title": "Taming Fire",
+      "summary": "Fire lets people cook, keep warm, ward off animals and light the night: the first energy source humans mastered outside their own bodies.",
+      "artStyle": "Prehistoric rock-art silhouette"
+    },
+    "sapiens-language": {
+      "title": "Homo sapiens and Language",
+      "summary": "Homo sapiens emerges in Africa; language and social cooperation gradually develop, though people still live as small bands of hunter-gatherers.",
+      "artStyle": "African rock engraving patterns"
+    },
+    "cognitive-revolution": {
+      "title": "Cognitive Revolution and Cave Art",
+      "summary": "Modern humans leave Africa and spread across every continent, leaving murals and symbolic objects; imagination and stories begin to pass down the generations.",
+      "artStyle": "Paleolithic cave painting"
+    },
+    "agricultural-revolution": {
+      "title": "The Agricultural Revolution",
+      "summary": "With domesticated crops and livestock, people settle in villages and populations grow; food surpluses make specialization and cities possible.",
+      "artStyle": "Neolithic painted pottery"
+    },
+    "cities-writing": {
+      "title": "Cities and Writing",
+      "summary": "Cities, the wheel, bronze and writing appear in Mesopotamia, so accounts, laws and history can be recorded.",
+      "artStyle": "Sumerian clay tablet relief"
+    },
+    "iron-age": {
+      "title": "Iron, Alphabets and Coinage",
+      "summary": "Ironworking spreads and iron tools and weapons become common; alphabets and coinage appear in turn, and large states expand.",
+      "artStyle": "Shang–Zhou bronze motifs"
+    },
+    "axial-age": {
+      "title": "The Axial Age",
+      "summary": "Philosophy and science flourish in Greece, China, India and elsewhere, and geometry and law take shape, but power still comes from human, animal and water power.",
+      "artStyle": "Ancient Greek red-figure pottery"
+    },
+    "medieval-silk-road": {
+      "title": "The Middle Ages and the Silk Road",
+      "summary": "The Silk Road links Europe and Asia, and technologies such as paper, gunpowder, the compass and movable type spread between civilizations.",
+      "artStyle": "Illuminated manuscript"
+    },
+    "printing": {
+      "title": "The Printing Press",
+      "summary": "The printing press makes books cheap to mass-produce and knowledge spreads far faster; the Age of Discovery binds the continents together.",
+      "artStyle": "Renaissance woodcut"
+    },
+    "scientific-revolution": {
+      "title": "The Scientific Revolution",
+      "summary": "Heliocentrism, the telescope and Newtonian mechanics establish the method of experiment plus mathematics, and nature becomes predictable.",
+      "artStyle": "Copperplate engraving"
+    },
+    "steam-age": {
+      "title": "The Age of Steam",
+      "summary": "Coal and the steam engine bring the first large-scale use of fossil energy, and factories and railways transform production and distance.",
+      "artStyle": "Victorian engineering engraving"
+    },
+    "electric-age": {
+      "title": "The Electrical Age",
+      "summary": "Generators, power grids, electric light and the telephone spread, and energy and information can travel instantly along wires.",
+      "artStyle": "Art Nouveau poster"
+    },
+    "combustion-flight": {
+      "title": "Internal Combustion and Flight",
+      "summary": "Cars, airplanes and synthetic ammonia transform travel and the food supply, and oil becomes the main energy source.",
+      "artStyle": "Art Deco"
+    },
+    "atomic-age": {
+      "title": "The Atomic Age",
+      "summary": "Nuclear fission releases atomic energy; nuclear weapons and nuclear power arrive together, and humanity for the first time holds power enough to destroy civilization.",
+      "artStyle": "1950s Atomic Age illustration"
+    },
+    "transistor-computer": {
+      "title": "The Transistor and the Computer",
+      "summary": "Electronic computers and the transistor appear, information theory and artificial intelligence are proposed, and computation begins to be automated.",
+      "artStyle": "Swiss modernist print"
+    },
+    "space-age": {
+      "title": "The Space Age",
+      "summary": "Satellites, human spaceflight and the Moon landing take humanity off the ground; integrated circuits and computer networks grow behind the scenes.",
+      "artStyle": "1970s NASA concept art"
+    },
+    "personal-computer": {
+      "title": "The Personal Computer",
+      "summary": "The microprocessor brings computers into homes and offices, and ordinary people can program, write and process data.",
+      "artStyle": "1980s airbrush art"
+    },
+    "internet": {
+      "title": "The Internet",
+      "summary": "The World Wide Web and search engines connect the world's information, and the cost of accessing knowledge plummets.",
+      "artStyle": "1990s pixel art"
+    },
+    "social-web": {
+      "title": "Social Networks",
+      "summary": "Blogs, social networks, video sites and online shopping let ordinary people publish content and run shops, and the internet shifts from browsing to participation.",
+      "artStyle": "1990s pixel art"
+    },
+    "mobile-internet": {
+      "title": "The Mobile Internet",
+      "summary": "Smartphones and cloud computing keep billions of people online at all times, and data volumes grow explosively.",
+      "artStyle": "2010s flat design"
+    },
+    "deep-learning": {
+      "title": "Deep Learning",
+      "summary": "GPU-trained neural networks achieve breakthroughs in image and speech recognition, and residual networks then make much deeper models trainable.",
+      "artStyle": "2010s realistic lab illustration"
+    },
+    "deep-reinforcement-learning": {
+      "title": "Deep Reinforcement Learning and AlphaGo",
+      "summary": "Deep networks are combined with reinforcement learning, and AlphaGo defeats Lee Sedol at Go, bringing machines' ability to learn strategy into public view.",
+      "artStyle": "Contemporary realistic technology illustration"
+    },
+    "transformer": {
+      "title": "The Transformer",
+      "summary": "The attention architecture lets models process sequences more efficiently and becomes the technical foundation of later large language models; it is not yet a chat assistant for the general public.",
+      "artStyle": "Contemporary realistic technology illustration"
+    },
+    "pretraining": {
+      "title": "Language Pretraining",
+      "summary": "GPT and BERT first learn from large amounts of unlabeled text and are then adapted to specific tasks, turning language models from specialized tools into reusable foundations.",
+      "artStyle": "Contemporary realistic technology illustration"
+    },
+    "foundation-models": {
+      "title": "Scaling and Few-Shot Learning",
+      "summary": "GPT-3 handles many language tasks from a prompt and a few examples, and AlphaFold 2 shows deep learning's breakthrough potential in scientific research.",
+      "artStyle": "Contemporary realistic technology illustration"
+    },
+    "ai-copilots": {
+      "title": "AI Coding Assistants",
+      "summary": "Copilot brings code generation into the editor, moving AI from lab demos into everyday workflows as programmers get suggestions from natural language and context.",
+      "artStyle": "Contemporary realistic technology illustration"
+    },
+    "generative-ai": {
+      "title": "Generative Images",
+      "summary": "DALL·E 2, Midjourney and Stable Diffusion turn text into images, giving painting and design generative tools the general public can use.",
+      "artStyle": "Contemporary realistic technology illustration"
+    },
+    "large-models": {
+      "title": "Conversational Large Models",
+      "summary": "Instruction tuning and human feedback make language models better at following user intent, and ChatGPT brings writing, Q&A and programming into ordinary people's daily lives.",
+      "artStyle": "Diffusion-model 3D render"
+    },
+    "multimodal": {
+      "title": "Multimodal Large Models",
+      "summary": "GPT-4 demonstrates image understanding as language models begin to connect text and vision, and models such as Gemini push multimodal capabilities further.",
+      "artStyle": "Contemporary realistic technology illustration"
+    },
+    "tool-use": {
+      "title": "Tool Use",
+      "summary": "Function calling arrives in large-model APIs, letting models call external programs to look up information, run code and take actions, paving the way for agentic workflows.",
+      "artStyle": "Contemporary realistic technology illustration"
+    },
+    "generative-video": {
+      "title": "Generative Video",
+      "summary": "Sora shows progress in text-to-video generation as generated content moves from still frames to continuous shots; demo capabilities still fall short of practical usability.",
+      "artStyle": "Contemporary realistic technology illustration"
+    },
+    "realtime-multimodal": {
+      "title": "Real-Time Voice and Vision",
+      "summary": "GPT-4o demonstrates low-latency voice and vision interaction, and AI assistants begin moving from typing and waiting for answers toward more natural real-time conversation.",
+      "artStyle": "Contemporary realistic technology illustration"
+    },
+    "reasoning": {
+      "title": "Reasoning Models",
+      "summary": "o1 makes reasoning compute before answering a new scaling direction, improving math and coding ability; reasoning performance still needs case-by-case verification.",
+      "artStyle": "Contemporary realistic technology illustration"
+    },
+    "agents": {
+      "title": "AI Agents",
+      "summary": "AI begins operating computers autonomously, programming for hours on end and solving hard math problems, while frontier models iterate week by week.",
+      "artStyle": "Contemporary large-format night photography"
+    },
+    "agent-teams-speculative": {
+      "title": "Long-Horizon Agent Teams (speculative)",
+      "summary": "Scenario forecast (2027–2029): teams of agents may continuously divide up, check and deliver work in software development and research. This assumes mature permissions, verification and failure recovery; humans remain responsible for complex tasks.",
+      "artStyle": "Near-future realistic scenario illustration (speculative)"
+    },
+    "personal-ai-speculative": {
+      "title": "Personal AI and On-Device Coordination (speculative)",
+      "summary": "Scenario forecast (2027–2030): personal assistants may coordinate across phones and computers, with more everyday tasks done on-device. Adoption depends on power consumption, privacy permissions and reliable memory; complex tasks may still rely on the cloud.",
+      "artStyle": "Near-future realistic scenario illustration (speculative)"
+    },
+    "controlled-robotics-speculative": {
+      "title": "Robots in Controlled Settings (speculative)",
+      "summary": "Scenario forecast (2028–2031): robots in warehouses, factories and labs may take on more multi-step operations, expanding first in roles with controlled environments. Cost, safety and fault handling still limit adoption; a robot in every home is not the baseline scenario.",
+      "artStyle": "Near-future realistic scenario illustration (speculative)"
+    },
+    "science-loop-speculative": {
+      "title": "Closed-Loop AI Research (speculative)",
+      "summary": "Scenario forecast (2029–2031): in some materials and life-science projects, AI may link hypotheses, experimental design and result analysis, with automated equipment shortening iterations. Only reproducible experimental validation counts as a breakthrough, and it does not mean drugs will be approved right away.",
+      "artStyle": "Near-future realistic scenario illustration (speculative)"
+    },
+    "grid-compute-speculative": {
+      "title": "Coordinated Build-Out of Compute and Grid (speculative)",
+      "summary": "Scenario forecast (2028–2031): AI demand may drive a coordinated build-out of data centers, power grids, energy storage and cooling. The IEA's 2030 electricity demand projections ground the demand side; the build-out pace in this e-acc.ai scenario remains constrained by grid connection, financing and supply chains, and does not imply energy has become limitlessly cheap.",
+      "artStyle": "Near-future realistic scenario illustration (speculative)"
+    },
+    "interactive-worlds-speculative": {
+      "title": "Interactive Worlds and Simulation Training (speculative)",
+      "summary": "Scenario forecast (2029–2031): interactive generated worlds may be used for creative work, training and robot simulation. Long-term consistency, physical accuracy and cost will determine where they are usable; a playable scene is not a trustworthy simulation of reality.",
+      "artStyle": "Near-future realistic scenario illustration (speculative)"
+    },
+    "abundance-speculative": {
+      "title": "Energy and Compute Abundance (speculative)",
+      "summary": "Speculative: if fusion, solar and AI keep advancing, energy and compute could become extremely cheap; nothing is settled yet.",
+      "artStyle": "Solarpunk illustration (speculative)"
+    },
+    "kardashev-i-speculative": {
+      "title": "Toward Kardashev Type I (speculative)",
+      "summary": "Speculative: a Type I civilization needs about 10¹⁶ watts, roughly 500 times today's level; at historical growth rates that is still centuries away, so this only marks the direction.",
+      "artStyle": "Dyson structure concept art (speculative)"
+    }
+  },
+  "milestones": {
+    "big-bang": {
+      "title": "The Big Bang",
+      "detail": "The universe began expanding from an extremely hot, dense state about 13.787 billion years ago."
+    },
+    "cosmic-microwave-background": {
+      "title": "The Universe Becomes Transparent",
+      "detail": "About 380,000 years after the Big Bang, atoms formed and light began to travel freely, leaving behind the cosmic microwave background."
+    },
+    "first-stars": {
+      "title": "The First Stars Ignite",
+      "detail": "About 100 million years after the Big Bang, the first stars formed and forged heavier elements."
+    },
+    "milky-way-forms": {
+      "title": "The Milky Way Begins to Form",
+      "detail": "The seeds of the Milky Way appeared about 13.6 billion years ago, giving birth to its oldest stars."
+    },
+    "solar-system-forms": {
+      "title": "The Solar System Forms",
+      "detail": "About 4.568 billion years ago, a molecular cloud collapsed into the Sun and the disk of planets around it."
+    },
+    "earth-forms": {
+      "title": "Earth Forms",
+      "detail": "Earth accreted from material in the protoplanetary disk and is about 4.54 billion years old."
+    },
+    "moon-forms": {
+      "title": "The Moon Forms",
+      "detail": "The leading hypothesis holds that a Mars-sized body struck the early Earth, and the debris coalesced into the Moon."
+    },
+    "earliest-life": {
+      "title": "Earliest Evidence of Life",
+      "detail": "Stromatolites and other fossils show that life on Earth had appeared at least 3.5 billion years ago."
+    },
+    "great-oxidation-event": {
+      "title": "The Great Oxidation Event",
+      "detail": "Photosynthesis by cyanobacteria let free oxygen accumulate in the atmosphere for the first time."
+    },
+    "eukaryotes": {
+      "title": "Eukaryotic Cells Appear",
+      "detail": "Complex cells with a nucleus emerged; the earliest likely fossils date to about 1.8 to 1.6 billion years ago."
+    },
+    "ediacaran-biota": {
+      "title": "The Ediacaran Biota",
+      "detail": "About 575 million years ago, early large multicellular organisms diversified on the seafloor."
+    },
+    "cambrian-explosion": {
+      "title": "The Cambrian Explosion",
+      "detail": "Most modern animal phyla appeared within a geologically brief span of time."
+    },
+    "land-plants": {
+      "title": "Plants Colonize Land",
+      "detail": "Spore fossils of land plants appear in the Middle Ordovician, and the land begins to turn green."
+    },
+    "tiktaalik": {
+      "title": "Fish Move onto Land",
+      "detail": "Tiktaalik combined features of fish and tetrapods, showing vertebrates evolving toward life on land."
+    },
+    "permian-extinction": {
+      "title": "The End-Permian Extinction",
+      "detail": "The most severe mass extinction in Earth's history wiped out most marine species."
+    },
+    "first-dinosaurs": {
+      "title": "Dinosaurs Appear",
+      "detail": "Dinosaurs arose in the Late Triassic and went on to dominate the land for more than 100 million years."
+    },
+    "first-mammals": {
+      "title": "Mammals Appear",
+      "detail": "Mammals evolved from cynodonts, with origins tracing back to the Late Triassic."
+    },
+    "k-pg-extinction": {
+      "title": "The End-Cretaceous Extinction",
+      "detail": "After an asteroid impact, the non-avian dinosaurs died out and mammals went on to flourish."
+    },
+    "early-primates": {
+      "title": "Early Primates",
+      "detail": "One of the earliest known primate fossils comes from Africa, about 57 million years ago."
+    },
+    "sahelanthropus": {
+      "title": "Humans and Chimpanzees Diverge",
+      "detail": "Sahelanthropus tchadensis lived about 7 million years ago, near the start of the human lineage."
+    },
+    "lomekwi-tools": {
+      "title": "The Earliest Stone Tools",
+      "detail": "Knapped stone tools about 3.3 million years old were unearthed at Lomekwi, Kenya.",
+      "capability": "Stone tools",
+      "artStyle": "Archaeological line drawing"
+    },
+    "lucy": {
+      "title": "Lucy",
+      "detail": "The Australopithecus afarensis fossil known as \"Lucy\" shows that early hominins already walked upright."
+    },
+    "oldowan": {
+      "title": "Oldowan Tools",
+      "detail": "The earliest systematic stone-tool tradition, beginning about 2.9 million years ago."
+    },
+    "homo-erectus": {
+      "title": "Homo erectus",
+      "detail": "Homo erectus had body proportions close to modern humans and is generally regarded as the first hominin to leave Africa."
+    },
+    "acheulean": {
+      "title": "Acheulean Hand Axes",
+      "detail": "Symmetrical bifacial hand axes appeared about 1.76 million years ago, as toolmaking turned to deliberate design."
+    },
+    "control-of-fire": {
+      "title": "Control of Fire",
+      "detail": "Evidence from Wonderwerk Cave in South Africa shows that the genus Homo was using fire at least about 1 million years ago.",
+      "capability": "Fire",
+      "artStyle": "Paleolithic rock-art silhouettes"
+    },
+    "homo-sapiens": {
+      "title": "Homo sapiens Emerges",
+      "detail": "Early Homo sapiens fossils from Jebel Irhoud, Morocco, date to about 315,000 years ago."
+    },
+    "out-of-africa": {
+      "title": "Out of Africa",
+      "detail": "About 70,000 to 50,000 years ago, modern humans spread from Africa across the world."
+    },
+    "oldest-figurative-art": {
+      "title": "The Oldest Narrative Painting",
+      "detail": "A cave scene of humans and a wild pig in Sulawesi is at least 51,200 years old.",
+      "capability": "Painting",
+      "artStyle": "Paleolithic cave painting"
+    },
+    "chauvet-cave": {
+      "title": "Chauvet Cave Paintings",
+      "detail": "France's Chauvet Cave holds a wealth of animal paintings, most dating to about 37,000 to 33,500 years ago."
+    },
+    "agriculture": {
+      "title": "The Origins of Agriculture",
+      "detail": "Crops were domesticated in the Fertile Crescent around 10,000 to 8000 BC, and people gradually settled down.",
+      "capability": "Agriculture",
+      "artStyle": "Neolithic painted pottery"
+    },
+    "gobekli-tepe": {
+      "title": "Göbekli Tepe",
+      "detail": "A megalithic complex in present-day Turkey, built around 9500 BC."
+    },
+    "catalhoyuk": {
+      "title": "Çatalhöyük",
+      "detail": "From about 7100 BC, a large Neolithic settlement grew up in Anatolia."
+    },
+    "wheel": {
+      "title": "The Wheel",
+      "detail": "By around 3500 BC, wheels were recorded in use in Sumer.",
+      "capability": "The wheel",
+      "artStyle": "Sumerian clay-tablet relief"
+    },
+    "bronze-age": {
+      "title": "The Bronze Age",
+      "detail": "Around 3300 BC, the Near East entered the Bronze Age, bringing harder tools and weapons.",
+      "capability": "Bronze",
+      "artStyle": "Near Eastern Bronze Age relief"
+    },
+    "cuneiform": {
+      "title": "Cuneiform",
+      "detail": "Around 3300 BC, the Sumerians began keeping records on clay tablets, developing the earliest known writing.",
+      "capability": "Writing",
+      "artStyle": "Sumerian clay-tablet relief"
+    },
+    "great-pyramid": {
+      "title": "The Great Pyramid of Giza",
+      "detail": "Completed around 2560 BC, it remained the tallest human-made structure for more than 3,700 years."
+    },
+    "code-of-hammurabi": {
+      "title": "The Code of Hammurabi",
+      "detail": "A written Babylonian law code carved on a stone stele, around 1753 BC."
+    },
+    "iron-age": {
+      "title": "The Iron Age",
+      "detail": "From around 1200 BC, ironworking spread and iron gradually replaced bronze.",
+      "capability": "Ironworking",
+      "artStyle": "Shang–Zhou bronze vessel motifs"
+    },
+    "phoenician-alphabet": {
+      "title": "The Phoenician Alphabet",
+      "detail": "A handful of letters could record speech sounds; it later gave rise to the Greek, Latin and other alphabets.",
+      "capability": "The alphabet",
+      "artStyle": "Ancient Mediterranean fresco"
+    },
+    "coinage": {
+      "title": "Coinage",
+      "detail": "Around 600 BC, electrum coins appeared in Lydia, while China was already casting bronze spade money.",
+      "capability": "Money",
+      "artStyle": "Ancient Greek red-figure pottery"
+    },
+    "euclid-elements": {
+      "title": "Euclid's Elements",
+      "detail": "Euclid derived theorems from axioms, setting the model for deductive reasoning."
+    },
+    "watermill": {
+      "title": "The Waterwheel",
+      "detail": "Water-driven wheels appear in the writings of the Greek engineer Philo, around the 3rd century BC.",
+      "capability": "Water power",
+      "artStyle": "Ancient Greek red-figure pottery"
+    },
+    "antikythera-mechanism": {
+      "title": "The Antikythera Mechanism",
+      "detail": "A geared device from the 2nd century BC that predicted celestial events; it is the oldest known analog computer."
+    },
+    "papermaking": {
+      "title": "Cai Lun Improves Papermaking",
+      "detail": "In the Eastern Han, Cai Lun improved papermaking using tree bark, hemp scraps and rags, making writing material cheap.",
+      "capability": "Papermaking",
+      "artStyle": "Han dynasty ink on silk"
+    },
+    "zero": {
+      "title": "Rules for Computing with Zero",
+      "detail": "The Indian mathematician Brahmagupta set out rules for arithmetic involving zero."
+    },
+    "windmill": {
+      "title": "The Windmill",
+      "detail": "Around the 9th century, horizontal windmills appeared in Persia, used to grind grain and lift water.",
+      "capability": "Wind power",
+      "artStyle": "Persian gold-illuminated miniature"
+    },
+    "gunpowder-warfare": {
+      "title": "Gunpowder in Warfare",
+      "detail": "Invented by Chinese Taoist alchemists, gunpowder was first used in warfare around 904.",
+      "capability": "Gunpowder",
+      "artStyle": "Song dynasty fine-brush painting on silk"
+    },
+    "movable-type": {
+      "title": "Movable Type",
+      "detail": "Around 1040, Bi Sheng of the Northern Song invented movable type made of baked clay.",
+      "capability": "Movable-type printing",
+      "artStyle": "Song dynasty fine-brush painting on silk"
+    },
+    "magnetic-compass": {
+      "title": "The Magnetic Compass",
+      "detail": "Shen Kuo gave the first written description of the magnetic needle compass in his Dream Pool Essays.",
+      "capability": "The compass",
+      "artStyle": "Song dynasty fine-brush painting on silk"
+    },
+    "gutenberg-press": {
+      "title": "The Gutenberg Press",
+      "detail": "Around 1440, Gutenberg invented the printing press, and books began to be reproduced at scale.",
+      "capability": "Printing",
+      "artStyle": "Renaissance woodcut"
+    },
+    "columbus": {
+      "title": "Columbus Reaches the Americas",
+      "detail": "A transatlantic route opened, beginning sustained contact between the Old World and the New."
+    },
+    "circumnavigation": {
+      "title": "The First Circumnavigation",
+      "detail": "The remnants of Magellan's fleet, led by Elcano, returned to Spain, completing the first voyage around the world."
+    },
+    "copernicus": {
+      "title": "Heliocentrism",
+      "detail": "Copernicus published On the Revolutions of the Heavenly Spheres, placing the Sun rather than Earth at the center."
+    },
+    "sidereus-nuncius": {
+      "title": "Galileo Turns a Telescope to the Sky",
+      "detail": "Sidereus Nuncius was published, recording mountains on the Moon and the moons of Jupiter.",
+      "capability": "The telescope",
+      "artStyle": "17th-century copperplate engraving"
+    },
+    "newton-principia": {
+      "title": "Principia Mathematica",
+      "detail": "Newton set out the laws of motion and universal gravitation, describing heaven and Earth with the same mathematics."
+    },
+    "coke-smelting": {
+      "title": "Coke Smelting of Iron",
+      "detail": "Abraham Darby smelted iron in a coke-fired blast furnace, and coal began to replace charcoal.",
+      "capability": "Coal-based metallurgy",
+      "artStyle": "18th-century industrial copperplate engraving"
+    },
+    "newcomen-engine": {
+      "title": "The Newcomen Steam Engine",
+      "detail": "The first practical steam engine, used to pump water from mines.",
+      "capability": "The steam engine",
+      "artStyle": "18th-century industrial copperplate engraving"
+    },
+    "encyclopedie": {
+      "title": "The Encyclopédie",
+      "detail": "Diderot and his collaborators began publishing the Encyclopédie, a systematic compendium of the knowledge of the age."
+    },
+    "watt-engine": {
+      "title": "Watt's Separate Condenser",
+      "detail": "Watt received a patent that greatly improved steam-engine efficiency; the engine later came to power factories.",
+      "capability": "The efficient steam engine",
+      "artStyle": "Georgian engineering engraving"
+    },
+    "smallpox-vaccination": {
+      "title": "Cowpox Inoculation",
+      "detail": "Jenner inoculated an 8-year-old boy with cowpox to protect him against smallpox, giving rise to vaccines.",
+      "capability": "Vaccines",
+      "artStyle": "18th-century rural watercolor print"
+    },
+    "voltaic-pile": {
+      "title": "The Voltaic Pile",
+      "detail": "The first battery able to supply a continuous electric current.",
+      "capability": "The battery",
+      "artStyle": "Napoleonic-era copperplate engraving"
+    },
+    "first-locomotive": {
+      "title": "The First Locomotive-Hauled Train",
+      "detail": "Trevithick's steam locomotive pulled a train along a tramway in Wales."
+    },
+    "difference-engine": {
+      "title": "The Difference Engine",
+      "detail": "Babbage proposed a machine to compute mathematical tables automatically."
+    },
+    "liverpool-manchester-railway": {
+      "title": "The First Intercity Railway",
+      "detail": "The Liverpool and Manchester Railway opened, running entirely on steam locomotives to a timetable.",
+      "capability": "The railway",
+      "artStyle": "Victorian engineering engraving"
+    },
+    "electromagnetic-induction": {
+      "title": "Electromagnetic Induction",
+      "detail": "Faraday discovered that a changing magnetic field produces an electric current, the principle behind the generator.",
+      "capability": "Electric power generation",
+      "artStyle": "Victorian laboratory copperplate engraving"
+    },
+    "daguerreotype": {
+      "title": "Photography Unveiled",
+      "detail": "The French Academy of Sciences announced Daguerre's daguerreotype process.",
+      "capability": "Photography",
+      "artStyle": "1839 daguerreotype"
+    },
+    "ada-lovelace-program": {
+      "title": "The First Computer Program",
+      "detail": "Lovelace wrote an algorithm for the Analytical Engine to compute Bernoulli numbers."
+    },
+    "morse-telegraph": {
+      "title": "The Telegraph Line Opens",
+      "detail": "Morse sent a message from Washington to Baltimore: \"What hath God wrought!\"",
+      "capability": "The telegraph",
+      "artStyle": "1840s lithograph"
+    },
+    "boolean-logic": {
+      "title": "Boolean Algebra",
+      "detail": "Boole published The Laws of Thought, showing that logical reasoning can be carried out with algebra."
+    },
+    "drake-well": {
+      "title": "The Drake Well",
+      "detail": "A well drilled in Pennsylvania struck oil, launching the modern petroleum industry.",
+      "capability": "Petroleum",
+      "artStyle": "1860s black-and-white wet-plate photograph"
+    },
+    "origin-of-species": {
+      "title": "On the Origin of Species",
+      "detail": "Darwin proposed natural selection to explain the evolution of species."
+    },
+    "maxwell-equations": {
+      "title": "Electromagnetic Field Theory",
+      "detail": "Maxwell unified electricity, magnetism and light, and predicted electromagnetic waves."
+    },
+    "transatlantic-cable": {
+      "title": "Transatlantic Telegraph",
+      "detail": "A permanent undersea cable entered service, under the slogan \"From two weeks to two minutes.\""
+    },
+    "periodic-table": {
+      "title": "The Periodic Table",
+      "detail": "Mendeleev presented his periodic table to the Russian Chemical Society and predicted undiscovered elements."
+    },
+    "telephone": {
+      "title": "The Telephone",
+      "detail": "Bell transmitted speech by telephone for the first time.",
+      "capability": "The telephone",
+      "artStyle": "1870s wood engraving"
+    },
+    "light-bulb": {
+      "title": "The Practical Light Bulb",
+      "detail": "Edison's team developed a long-lasting carbon-filament incandescent lamp.",
+      "capability": "Electric light",
+      "artStyle": "1880s gaslight-era engraving"
+    },
+    "koch-tuberculosis": {
+      "title": "The Tuberculosis Bacillus Discovered",
+      "detail": "Koch announced that tuberculosis is caused by a bacterium, establishing the germ theory of disease."
+    },
+    "pearl-street-station": {
+      "title": "The First Commercial Power Station",
+      "detail": "Edison's Pearl Street Station began supplying electricity to customers in Manhattan.",
+      "capability": "The power grid",
+      "artStyle": "1880s cityscape engraving"
+    },
+    "benz-motorwagen": {
+      "title": "The Automobile",
+      "detail": "Karl Benz patented a three-wheeled car powered by an internal combustion engine.",
+      "capability": "The automobile",
+      "artStyle": "1880s engineering engraving"
+    },
+    "hollerith-tabulator": {
+      "title": "The Punched-Card Tabulator",
+      "detail": "The US Census processed its data with Hollerith's tabulating machines."
+    },
+    "x-rays": {
+      "title": "X-Rays",
+      "detail": "Röntgen discovered X-rays, letting doctors see inside the human body for the first time."
+    },
+    "marconi-transatlantic": {
+      "title": "Transatlantic Radio",
+      "detail": "Marconi received in Newfoundland a radio signal sent from England.",
+      "capability": "Radio",
+      "artStyle": "Edwardian postcard"
+    },
+    "wright-flyer": {
+      "title": "Powered Flight",
+      "detail": "The Wright brothers achieved the first powered, controlled, crewed flight.",
+      "capability": "Flight",
+      "artStyle": "1900s sepia photograph"
+    },
+    "special-relativity": {
+      "title": "Special Relativity",
+      "detail": "Einstein proposed special relativity and mass–energy equivalence."
+    },
+    "haber-bosch": {
+      "title": "Industrial Ammonia Synthesis",
+      "detail": "The Haber process went into production at BASF's Oppau plant, making large-scale nitrogen fertilizer possible.",
+      "capability": "Ammonia synthesis",
+      "artStyle": "1910s industrial lithograph"
+    },
+    "assembly-line": {
+      "title": "The Moving Assembly Line",
+      "detail": "Ford adopted the moving assembly line, turning the car into a mass-market product.",
+      "capability": "The assembly line",
+      "artStyle": "1910s Ford factory photograph"
+    },
+    "kdka-broadcast": {
+      "title": "Commercial Broadcasting",
+      "detail": "Pittsburgh's KDKA broadcast the results of the US presidential election.",
+      "capability": "Broadcasting",
+      "artStyle": "1920s Art Deco print"
+    },
+    "television": {
+      "title": "Television",
+      "detail": "Baird demonstrated the world's first mechanical television system in London.",
+      "capability": "Television",
+      "artStyle": "1920s Art Deco"
+    },
+    "penicillin": {
+      "title": "Penicillin",
+      "detail": "Fleming discovered penicillin, ushering in the age of antibiotics.",
+      "capability": "Antibiotics",
+      "artStyle": "1920s microbiology lab illustration"
+    },
+    "hubble-law": {
+      "title": "The Expanding Universe",
+      "detail": "Hubble publishes observations showing that galaxies recede at speeds proportional to their distance."
+    },
+    "turing-machine": {
+      "title": "The Turing Machine",
+      "detail": "Turing proposes a mathematical model of computability, laying the foundation of computer science."
+    },
+    "nuclear-fission": {
+      "title": "Nuclear Fission Discovered",
+      "detail": "Hahn and Strassmann discover that uranium nuclei can split."
+    },
+    "chicago-pile-1": {
+      "title": "First Nuclear Reactor",
+      "detail": "Chicago Pile-1 achieves the first man-made self-sustaining chain reaction.",
+      "capability": "Nuclear energy",
+      "artStyle": "1940s black-and-white news photography"
+    },
+    "trinity-test": {
+      "title": "First Nuclear Test",
+      "detail": "The Trinity test detonates the first atomic bomb in New Mexico."
+    },
+    "eniac": {
+      "title": "ENIAC Unveiled",
+      "detail": "ENIAC, a general-purpose electronic computer, is publicly unveiled at the University of Pennsylvania.",
+      "capability": "Electronic computers",
+      "artStyle": "1940s black-and-white news photography"
+    },
+    "transistor": {
+      "title": "The Transistor",
+      "detail": "Bardeen and Brattain at Bell Labs build the point-contact transistor.",
+      "capability": "Transistors",
+      "artStyle": "1940s laboratory photography"
+    },
+    "information-theory": {
+      "title": "Information Theory",
+      "detail": "Shannon publishes \"A Mathematical Theory of Communication\": information becomes measurable."
+    },
+    "turing-test": {
+      "title": "The Turing Test",
+      "detail": "Turing publishes \"Computing Machinery and Intelligence\", proposing the \"imitation game\"."
+    },
+    "dna-double-helix": {
+      "title": "The DNA Double Helix",
+      "detail": "Watson and Crick publish the molecular structure of DNA in Nature."
+    },
+    "silicon-solar-cell": {
+      "title": "Practical Solar Cell",
+      "detail": "Bell Labs publicly demonstrates the first practical photovoltaic cell.",
+      "capability": "Solar cells",
+      "artStyle": "1950s color print advertising"
+    },
+    "obninsk": {
+      "title": "Nuclear Power Plant Online",
+      "detail": "The Soviet Obninsk plant goes online, the first to feed nuclear power into an electricity grid.",
+      "capability": "Nuclear power",
+      "artStyle": "1950s Soviet propaganda art"
+    },
+    "dartmouth-workshop": {
+      "title": "\"Artificial Intelligence\" Is Born",
+      "detail": "The Dartmouth Summer Research Project convenes, and artificial intelligence becomes a field of research."
+    },
+    "sputnik": {
+      "title": "First Artificial Satellite",
+      "detail": "The Soviet Union launches Sputnik 1.",
+      "capability": "Artificial satellites",
+      "artStyle": "1950s Space Age poster"
+    },
+    "perceptron": {
+      "title": "The Perceptron",
+      "detail": "Rosenblatt proposes the perceptron, a machine that learns from data."
+    },
+    "integrated-circuit": {
+      "title": "The Integrated Circuit",
+      "detail": "Kilby demonstrates the first integrated circuit prototype.",
+      "capability": "Integrated circuits",
+      "artStyle": "1950s laboratory color photography"
+    },
+    "laser": {
+      "title": "The Laser",
+      "detail": "Maiman builds the first laser at Hughes Research Laboratories.",
+      "capability": "Lasers",
+      "artStyle": "1960s science-fiction illustration"
+    },
+    "gagarin": {
+      "title": "First Human in Space",
+      "detail": "Gagarin orbits the Earth once aboard Vostok 1.",
+      "capability": "Human spaceflight",
+      "artStyle": "1960s Soviet propaganda poster"
+    },
+    "moores-law": {
+      "title": "Moore's Law",
+      "detail": "Moore predicts that the number of components on a chip will double at a regular interval."
+    },
+    "eliza": {
+      "title": "ELIZA",
+      "detail": "Weizenbaum releases ELIZA, an early chatbot."
+    },
+    "green-revolution": {
+      "title": "The \"Green Revolution\"",
+      "detail": "High-yield crop varieties, fertilizers and irrigation spread; the term \"Green Revolution\" is coined this year."
+    },
+    "apollo-11": {
+      "title": "Moon Landing",
+      "detail": "Apollo 11 astronauts Armstrong and Aldrin walk on the lunar surface.",
+      "capability": "Lunar landing",
+      "artStyle": "1960s film-stock magazine photography"
+    },
+    "arpanet-first-message": {
+      "title": "First ARPANET Message",
+      "detail": "UCLA sends the first network message to the Stanford Research Institute.",
+      "capability": "Computer networking",
+      "artStyle": "1960s computer-room photography"
+    },
+    "intel-4004": {
+      "title": "The Microprocessor",
+      "detail": "The Intel 4004 puts a central processing unit on a single chip.",
+      "capability": "Microprocessors",
+      "artStyle": "1970s advertising illustration"
+    },
+    "first-mobile-call": {
+      "title": "First Mobile Phone Call",
+      "detail": "Motorola's Martin Cooper makes the first public call on a handheld mobile phone.",
+      "capability": "Mobile phones",
+      "artStyle": "1970s color street photography"
+    },
+    "apple-ii": {
+      "title": "Apple II Goes on Sale",
+      "detail": "Ready-made personal computers for the general public begin to spread.",
+      "capability": "Personal computers",
+      "artStyle": "1970s advertising illustration"
+    },
+    "smallpox-eradicated": {
+      "title": "Smallpox Eradicated",
+      "detail": "The World Health Organization certifies the global eradication of smallpox."
+    },
+    "xcon": {
+      "title": "Expert Systems Enter Industry",
+      "detail": "DEC begins using the XCON configuration system in its plants, bringing rule-based AI into commercial use."
+    },
+    "ibm-pc": {
+      "title": "IBM PC",
+      "detail": "IBM launches its Personal Computer, and its compatibles become the de facto standard."
+    },
+    "tcp-ip": {
+      "title": "TCP/IP Switch-On",
+      "detail": "ARPANET officially switches to TCP/IP, and the internet protocol suite takes shape.",
+      "capability": "The internet",
+      "artStyle": "1980s computer-terminal illustration"
+    },
+    "backpropagation": {
+      "title": "Backpropagation",
+      "detail": "Rumelhart, Hinton and Williams publish a method for training multilayer networks in Nature."
+    },
+    "hubble-launch": {
+      "title": "Hubble Space Telescope Launched",
+      "detail": "Orbiting above the atmosphere, the telescope delivers sharp images of deep space and measures the expansion rate of the universe.",
+      "capability": "Space-based optical astronomy"
+    },
+    "lithium-ion-battery": {
+      "title": "Lithium-Ion Batteries Commercialized",
+      "detail": "Sony introduces the commercial lithium-ion battery, giving phones, laptops and electric cars a lightweight power source.",
+      "capability": "Rechargeable lithium batteries"
+    },
+    "world-wide-web": {
+      "title": "The World Wide Web Goes Public",
+      "detail": "Berners-Lee publicly releases the World Wide Web project.",
+      "capability": "The World Wide Web",
+      "artStyle": "1990s CRT pixel art"
+    },
+    "linux": {
+      "title": "Linux Is Born",
+      "detail": "Torvalds announces his kernel project, which becomes the open-source foundation of servers and Android.",
+      "capability": "Open-source operating systems"
+    },
+    "china-internet": {
+      "title": "China Connects to the Internet",
+      "detail": "China gains full-function access to the global internet via a 64K leased line.",
+      "capability": "Full-function internet access"
+    },
+    "dolly": {
+      "title": "Dolly the Sheep",
+      "detail": "The first mammal cloned from an adult somatic cell is born."
+    },
+    "lstm": {
+      "title": "LSTM",
+      "detail": "Long short-term memory networks let recurrent neural networks remember much longer sequences."
+    },
+    "deep-blue": {
+      "title": "Deep Blue Beats Kasparov",
+      "detail": "IBM's Deep Blue defeats the world chess champion in a regulation match."
+    },
+    "prius": {
+      "title": "Prius Hybrid",
+      "detail": "Toyota launches the first mass-produced hybrid car in Japan, sharply cutting fuel consumption.",
+      "capability": "Mass-produced hybrid cars"
+    },
+    "google": {
+      "title": "Google Founded",
+      "detail": "The PageRank algorithm makes the vast web efficiently searchable.",
+      "capability": "Search engines",
+      "artStyle": "Late-1990s web-era pixel art"
+    },
+    "oicq": {
+      "title": "OICQ Released",
+      "detail": "Tencent releases its instant messenger (later renamed QQ), giving Chinese internet users an online chat tool.",
+      "capability": "Instant messaging"
+    },
+    "wifi-80211b": {
+      "title": "Wi-Fi Standard Established",
+      "detail": "IEEE 802.11b is approved, and wireless LANs begin to enter homes and offices.",
+      "capability": "Wireless LAN"
+    },
+    "gps-sa-off": {
+      "title": "Full GPS Accuracy for Civilians",
+      "detail": "The US turns off Selective Availability, improving civilian positioning accuracy to about ten meters.",
+      "capability": "High-precision civilian positioning"
+    },
+    "iss-crew": {
+      "title": "Permanent Crew in Space",
+      "detail": "The first crew moves into the International Space Station; humans have been continuously present in low Earth orbit ever since.",
+      "capability": "Long-duration life in space"
+    },
+    "wikipedia": {
+      "title": "Wikipedia Launches",
+      "detail": "An encyclopedia that anyone can edit."
+    },
+    "human-genome": {
+      "title": "Human Genome Project Completed",
+      "detail": "The sequence of the human genome is essentially complete."
+    },
+    "taobao": {
+      "title": "Taobao Launches",
+      "detail": "Individuals can open online shops and shop online, bringing e-commerce to ordinary Chinese households.",
+      "capability": "Online shopping"
+    },
+    "shenzhou-5": {
+      "title": "Shenzhou 5 Crewed Flight",
+      "detail": "Yang Liwei goes to space, making China the third country to achieve independent human spaceflight.",
+      "capability": "Human spaceflight"
+    },
+    "alipay": {
+      "title": "Alipay Launches",
+      "detail": "Escrow payments arrive on Taobao, solving the problem of trust in online shopping.",
+      "capability": "Online payments"
+    },
+    "facebook": {
+      "title": "Facebook Launches",
+      "detail": "A real-name social network lets people maintain their relationships online.",
+      "capability": "Social networking"
+    },
+    "youtube": {
+      "title": "First YouTube Video",
+      "detail": "Anyone can upload videos and watch them online.",
+      "capability": "Online video sharing"
+    },
+    "amazon-s3": {
+      "title": "Cloud Computing",
+      "detail": "Amazon launches the S3 storage service; storage and compute can be rented on demand.",
+      "capability": "Cloud computing",
+      "artStyle": "2000s glossy product imagery"
+    },
+    "deep-autoencoder": {
+      "title": "Deep Learning Revival",
+      "detail": "Hinton and Salakhutdinov publish a method for training deep networks in Science."
+    },
+    "ipsc": {
+      "title": "Induced Pluripotent Stem Cells",
+      "detail": "Shinya Yamanaka uses four genes to reprogram adult cells into pluripotent stem cells.",
+      "capability": "Cell reprogramming"
+    },
+    "iphone": {
+      "title": "iPhone Unveiled",
+      "detail": "The touchscreen smartphone puts the internet in your pocket.",
+      "capability": "Smartphones",
+      "artStyle": "2000s product rendering"
+    },
+    "cuda": {
+      "title": "CUDA",
+      "detail": "NVIDIA releases CUDA, opening GPUs to general-purpose computing.",
+      "capability": "General-purpose GPU computing",
+      "artStyle": "2000s hardware promotional art"
+    },
+    "kindle": {
+      "title": "Kindle Released",
+      "detail": "An e-ink reader with wireless downloads holds hundreds or thousands of books at once.",
+      "capability": "E-book reading"
+    },
+    "app-store": {
+      "title": "App Store Opens",
+      "detail": "Third-party apps install on phones with a single tap, and the mobile app ecosystem takes shape.",
+      "capability": "Mobile app distribution"
+    },
+    "beijing-tianjin-hsr": {
+      "title": "Beijing–Tianjin Intercity Railway Opens",
+      "detail": "China's first 350 km/h high-speed line links Beijing and Tianjin in half an hour.",
+      "capability": "High-speed rail"
+    },
+    "android": {
+      "title": "First Android Phone",
+      "detail": "The HTC Dream, the first Android phone, is released; an open-source system brings smartphones to mass-market prices.",
+      "capability": "Open smartphone platform"
+    },
+    "imagenet": {
+      "title": "ImageNet",
+      "detail": "Fei-Fei Li's team releases a large-scale labeled image dataset."
+    },
+    "bitcoin": {
+      "title": "Bitcoin Genesis Block",
+      "detail": "The first decentralized cryptocurrency network goes live."
+    },
+    "china-3g": {
+      "title": "China Issues 3G Licenses",
+      "detail": "The three major carriers receive 3G licenses, and mobile internet use begins to spread.",
+      "capability": "Mobile broadband"
+    },
+    "wechat": {
+      "title": "WeChat Launches",
+      "detail": "Free mobile instant messaging, later expanded into a platform for social networking, payments and mini programs.",
+      "capability": "Mobile social networking"
+    },
+    "watson-jeopardy": {
+      "title": "Watson Wins Jeopardy!",
+      "detail": "IBM's Watson defeats human champions on the TV quiz show."
+    },
+    "crispr": {
+      "title": "CRISPR Gene Editing",
+      "detail": "Doudna and Charpentier show that CRISPR-Cas9 can cut DNA at chosen sites.",
+      "capability": "Gene editing",
+      "artStyle": "2010s data visualization"
+    },
+    "tesla-model-s": {
+      "title": "Model S Deliveries",
+      "detail": "An all-electric sedan with a range of about 400 km begins reaching customers.",
+      "capability": "Long-range electric cars"
+    },
+    "higgs-boson": {
+      "title": "The Higgs Boson",
+      "detail": "CERN announces the discovery of the Higgs boson."
+    },
+    "three-gorges": {
+      "title": "Three Gorges Dam Fully Operational",
+      "detail": "The last main generating unit comes online, and the world's largest hydropower station reaches full output.",
+      "capability": "Giant-scale hydropower"
+    },
+    "alexnet": {
+      "title": "AlexNet",
+      "detail": "A deep convolutional network trained on GPUs wins the ImageNet competition, slashing the error rate.",
+      "capability": "Deep learning",
+      "artStyle": "2010s realistic laboratory illustration"
+    },
+    "china-4g": {
+      "title": "China Issues 4G Licenses",
+      "detail": "The three major carriers receive TD-LTE licenses, and mobile video and live streaming become part of daily life.",
+      "capability": "High-speed mobile networks"
+    },
+    "wechat-hongbao": {
+      "title": "WeChat Red Envelopes",
+      "detail": "Grabbing red envelopes over Chinese New Year leads huge numbers of users to link bank cards and adopt mobile payments.",
+      "capability": "Mobile payments"
+    },
+    "gan": {
+      "title": "Generative Adversarial Networks",
+      "detail": "Goodfellow and colleagues propose GANs, and machines begin generating realistic images."
+    },
+    "gravitational-waves": {
+      "title": "Gravitational Waves Detected",
+      "detail": "LIGO makes the first direct detection of gravitational waves, produced by a binary black hole merger."
+    },
+    "resnet": {
+      "title": "ResNet: Residual Networks",
+      "detail": "Residual connections make very deep neural networks easier to train; a 152-layer model achieves leading results on ImageNet.",
+      "capability": "Training deeper networks"
+    },
+    "falcon9-landing": {
+      "title": "First Rocket Booster Recovery",
+      "detail": "A Falcon 9 first stage lands vertically after an orbital launch, making reusable rockets a reality.",
+      "capability": "Reusable rockets"
+    },
+    "alphago": {
+      "title": "AlphaGo Beats Lee Sedol",
+      "detail": "AlphaGo defeats one of the world's top Go players 4–1."
+    },
+    "mobike": {
+      "title": "Bike Sharing Launches",
+      "detail": "Mobike launches in Shanghai: scan a code to unlock and return a bike, no docking station needed.",
+      "capability": "Shared mobility"
+    },
+    "micius": {
+      "title": "Micius Quantum Satellite",
+      "detail": "The world's first quantum science satellite launches and achieves satellite-to-ground quantum key distribution.",
+      "capability": "Satellite-to-ground quantum communication"
+    },
+    "douyin": {
+      "title": "Douyin Launches",
+      "detail": "A short-video app lets ordinary people shoot, share and scroll through videos.",
+      "capability": "Short video"
+    },
+    "fast": {
+      "title": "FAST Telescope Completed",
+      "detail": "The Five-hundred-meter Aperture Spherical Telescope is completed, the world's largest single-dish radio telescope.",
+      "capability": "Large-aperture radio astronomy"
+    },
+    "transformer": {
+      "title": "Transformer",
+      "detail": "The paper \"Attention Is All You Need\" introduces the Transformer architecture."
+    },
+    "falcon-heavy": {
+      "title": "Falcon Heavy Maiden Flight",
+      "detail": "The most powerful operational rocket makes its first flight, and its two side boosters land in sync.",
+      "capability": "Heavy-lift launch"
+    },
+    "gpt-1": {
+      "title": "GPT-1",
+      "detail": "OpenAI pretrains a language model on unlabeled text, then fine-tunes it for specific tasks."
+    },
+    "bert": {
+      "title": "BERT",
+      "detail": "Google's bidirectional pretrained model sets new records on many language understanding tasks."
+    },
+    "change-4": {
+      "title": "Chang'e 4 Lands on the Far Side of the Moon",
+      "detail": "A spacecraft makes the first soft landing on the far side of the Moon.",
+      "capability": "Lunar far-side exploration"
+    },
+    "gpt-2": {
+      "title": "GPT-2",
+      "detail": "A 1.5-billion-parameter model writes coherent long-form text; OpenAI releases it in stages."
+    },
+    "black-hole-image": {
+      "title": "First Image of a Black Hole",
+      "detail": "The Event Horizon Telescope releases an image of the shadow of the M87 black hole.",
+      "capability": "Black hole imaging"
+    },
+    "quantum-supremacy": {
+      "title": "Quantum Supremacy",
+      "detail": "Google's Sycamore processor outperforms classical supercomputers on a specific sampling task."
+    },
+    "china-5g": {
+      "title": "5G goes commercial in China",
+      "detail": "China's three major carriers launch 5G plans, beginning commercial 5G service.",
+      "capability": "5G networks"
+    },
+    "rag": {
+      "title": "RAG: retrieval-augmented generation",
+      "detail": "Language models retrieve external documents before answering, so knowledge can come from an updatable library rather than only from what was memorized in training.",
+      "capability": "Retrieval-augmented generation"
+    },
+    "gpt-3": {
+      "title": "GPT-3",
+      "detail": "A 175-billion-parameter model demonstrates few-shot learning."
+    },
+    "ddpm": {
+      "title": "A breakthrough for diffusion models",
+      "detail": "DDPM generates high-quality images by gradually removing noise, laying key groundwork for later diffusion-based image tools.",
+      "capability": "Diffusion image generation"
+    },
+    "beidou-3": {
+      "title": "BeiDou-3 goes global",
+      "detail": "The BeiDou satellite navigation system begins providing worldwide service.",
+      "capability": "Global satellite navigation"
+    },
+    "alphafold-2": {
+      "title": "AlphaFold 2",
+      "detail": "Predicts protein structures with near-experimental accuracy at CASP14."
+    },
+    "mrna-vaccine": {
+      "title": "mRNA vaccine approved",
+      "detail": "The UK authorizes the Pfizer-BioNTech COVID-19 vaccine, the first mRNA vaccine approved for use.",
+      "capability": "mRNA vaccines",
+      "artStyle": "2020s news photography"
+    },
+    "change-5": {
+      "title": "Chang'e 5 returns lunar soil",
+      "detail": "China's first lunar sample-return mission brings back 1,731 grams of lunar soil.",
+      "capability": "Extraterrestrial sample return"
+    },
+    "zhurong": {
+      "title": "Zhurong lands on Mars",
+      "detail": "The Tianwen-1 lander soft-lands on Mars carrying the Zhurong rover.",
+      "capability": "Mars landing and roving"
+    },
+    "github-copilot": {
+      "title": "Copilot preview",
+      "detail": "AI completes code in the editor from context, giving programmers a coding assistant.",
+      "capability": "AI coding assistants"
+    },
+    "jwst-launch": {
+      "title": "James Webb Space Telescope launches",
+      "detail": "An infrared space telescope lifts off to observe the early universe."
+    },
+    "instructgpt-paper": {
+      "title": "InstructGPT: training on human feedback",
+      "detail": "A paper describes training language models on human demonstrations and preference rankings so answers better follow user instructions; the approach was later used for ChatGPT.",
+      "capability": "Instruction following via human feedback"
+    },
+    "dall-e-2": {
+      "title": "DALL·E 2",
+      "detail": "Text-to-image generation reaches the mainstream."
+    },
+    "eacc-born": {
+      "title": "e/acc is born",
+      "detail": "Anonymous authors publish a case for effective accelerationism: build, accelerate, climb the Kardashev scale."
+    },
+    "midjourney": {
+      "title": "Midjourney open beta",
+      "detail": "Striking images from a text prompt, now open to the public.",
+      "capability": "Text-to-image"
+    },
+    "stable-diffusion": {
+      "title": "Stable Diffusion",
+      "detail": "An image generation model released with open weights that runs on personal computers."
+    },
+    "react": {
+      "title": "ReAct: reasoning and acting",
+      "detail": "Models interleave reasoning with external actions and adjust their next step based on what comes back, becoming a key research path for tool-using agents.",
+      "capability": "Combined reasoning and action"
+    },
+    "tiangong-t": {
+      "title": "Tiangong space station takes shape",
+      "detail": "With the Mengtian module repositioned, China's space station completes its basic T-shaped configuration in orbit.",
+      "capability": "Self-built space station"
+    },
+    "chatgpt": {
+      "title": "ChatGPT launches",
+      "detail": "OpenAI releases a conversational language model, bringing large language models to the public.",
+      "capability": "Large language models",
+      "artStyle": "2020s generative AI aesthetic"
+    },
+    "fusion-ignition": {
+      "title": "Fusion ignition",
+      "detail": "The US National Ignition Facility produces more fusion energy than the laser energy delivered, for the first time.",
+      "capability": "Fusion ignition",
+      "artStyle": "2020s scientific photo rendering"
+    },
+    "llama": {
+      "title": "LLaMA",
+      "detail": "Meta releases LLaMA to researchers, sparking the open-weight model ecosystem."
+    },
+    "gpt-4": {
+      "title": "GPT-4",
+      "detail": "A multimodal model with a leap in capability, priced at launch at $30 per million input tokens."
+    },
+    "claude-1": {
+      "title": "Claude released",
+      "detail": "Anthropic releases Claude, initially with limited access for partners.",
+      "capability": "Conversational AI"
+    },
+    "starship-ift1": {
+      "title": "Starship's first integrated flight test",
+      "detail": "The largest rocket ever built launches as a full stack for the first time.",
+      "capability": "Super-heavy reusable rockets"
+    },
+    "function-calling": {
+      "title": "Function calling comes to LLM APIs",
+      "detail": "OpenAI introduces structured function calling, letting developers connect models to lookups, calculations and other software tools.",
+      "capability": "Structured tool calling"
+    },
+    "techno-optimist-manifesto": {
+      "title": "The Techno-Optimist Manifesto",
+      "detail": "Marc Andreessen publishes a manifesto calling for technology and markets to accelerate progress."
+    },
+    "casgevy": {
+      "title": "First gene-editing therapy approved",
+      "detail": "The UK approves the CRISPR therapy Casgevy for sickle cell disease and thalassemia.",
+      "capability": "Gene-editing therapy"
+    },
+    "gemini": {
+      "title": "Gemini released",
+      "detail": "Google launches Gemini, a natively multimodal large model.",
+      "capability": "Natively multimodal models"
+    },
+    "neuralink-human": {
+      "title": "Neuralink's first human implant",
+      "detail": "Neuralink announces its first participant has received a wireless brain-computer interface implant, later showing cursor control by thought; other BCIs had already been studied in humans.",
+      "capability": "Brain-computer interfaces"
+    },
+    "sora": {
+      "title": "Sora first shown",
+      "detail": "OpenAI previews a text-to-video model that generates minute-long HD video.",
+      "capability": "Text-to-video"
+    },
+    "claude-3": {
+      "title": "Claude 3",
+      "detail": "Claude 3 Opus matches GPT-4; for the first time several labs share the frontier."
+    },
+    "gpt-4o": {
+      "title": "GPT-4o",
+      "detail": "Natively handles voice, images and text, at half the API price of GPT-4 Turbo."
+    },
+    "change-6": {
+      "title": "Chang'e 6 samples the far side",
+      "detail": "Humanity's first samples returned from the far side of the Moon.",
+      "capability": "Far-side lunar sample return"
+    },
+    "eu-ai-act": {
+      "title": "EU AI Act takes effect",
+      "detail": "The first comprehensive AI law enters into force, with provisions applying in phases."
+    },
+    "openai-o1": {
+      "title": "o1: reasoning models",
+      "detail": "Models think before answering, making test-time compute a new scaling dimension.",
+      "capability": "Reasoning models",
+      "artStyle": "2020s generative AI aesthetic"
+    },
+    "nobel-physics-2024": {
+      "title": "Physics Nobel for neural networks",
+      "detail": "Hopfield and Hinton are honored for foundational work on machine learning with artificial neural networks."
+    },
+    "nobel-chemistry-2024": {
+      "title": "Chemistry Nobel for AlphaFold",
+      "detail": "Hassabis and Jumper win for protein structure prediction, sharing the prize with Baker."
+    },
+    "starship-catch": {
+      "title": "Launch tower catches a booster",
+      "detail": "On Starship's fifth flight test, the Super Heavy booster returns to the launch tower and is caught by its mechanical arms.",
+      "capability": "Tower-caught rocket recovery"
+    },
+    "computer-use": {
+      "title": "AI learns to use a computer",
+      "detail": "Anthropic introduces \"computer use\": the model can see the screen, move the cursor, click and type.",
+      "capability": "AI agents",
+      "artStyle": "2020s generative AI aesthetic"
+    },
+    "deepseek-v3": {
+      "title": "DeepSeek-V3",
+      "detail": "An open-source large model reaching the frontier at low training cost.",
+      "capability": "Low-cost frontier models"
+    },
+    "deepseek-r1": {
+      "title": "DeepSeek-R1 open-sourced",
+      "detail": "A frontier-level reasoning model released with open weights under the MIT license.",
+      "artStyle": "Ink-wash scroll with digital light"
+    },
+    "stargate": {
+      "title": "Stargate: $500 billion",
+      "detail": "SoftBank, OpenAI, Oracle and MGX pledge $500 billion over four years to build AI data centers in the US.",
+      "artStyle": "2020s documentary photography"
+    },
+    "claude-4": {
+      "title": "Claude 4",
+      "detail": "Opus 4 and Sonnet 4 launch, bringing long-running autonomous coding into production use.",
+      "artStyle": "Long-exposure interior night photography"
+    },
+    "imo-gold": {
+      "title": "AI reaches IMO gold level",
+      "detail": "Gemini Deep Think solves 5 of 6 problems at the International Mathematical Olympiad, scoring 35 points.",
+      "artStyle": "Chalkboard and stage light"
+    },
+    "gpt-5": {
+      "title": "GPT-5",
+      "detail": "OpenAI unifies a reasoning model and a fast model behind a single router.",
+      "artStyle": "Minimalist editorial illustration"
+    },
+    "gpt-5-1": {
+      "title": "GPT-5.1",
+      "detail": "An iteration of the GPT-5 series that adapts its reasoning effort to a problem's difficulty."
+    },
+    "gemini-3": {
+      "title": "Gemini 3",
+      "detail": "Google's frontier model takes another step, with stronger agentic coding and long-task abilities."
+    },
+    "claude-opus-4-5": {
+      "title": "Claude Opus 4.5",
+      "detail": "Released right after Gemini 3; the gap between frontier releases shrinks to weeks."
+    },
+    "artemis-ii-record": {
+      "title": "Artemis II sets a record",
+      "detail": "Four astronauts fly around the Moon, breaking Apollo 13's record for the farthest humans have traveled.",
+      "artStyle": "Through-the-window spaceflight photography"
+    },
+    "gpt-5-5": {
+      "title": "GPT-5.5",
+      "detail": "OpenAI's flagship update arrives in ChatGPT and Codex, with the API following the next day."
+    },
+    "claude-fable-5": {
+      "title": "Claude Fable 5",
+      "detail": "The Claude 5 series begins; the less restricted Mythos 5 is available only to safety and research partners."
+    },
+    "gpt-5-6-preview": {
+      "title": "GPT-5.6 limited preview",
+      "detail": "Sol, Terra and Luna open first to about 20 partners vetted by the US government."
+    },
+    "claude-sonnet-5": {
+      "title": "Claude Sonnet 5",
+      "detail": "Near-Opus capability at a Sonnet price, aimed at running agents cheaply."
+    },
+    "grok-4-5": {
+      "title": "Grok 4.5",
+      "detail": "xAI releases a 1.5-trillion-parameter model priced at $2 per million input tokens and $6 per million output tokens."
+    },
+    "gpt-5-6-ga": {
+      "title": "GPT-5.6 general availability",
+      "detail": "Opens to all users after a two-week federal review, alongside the launch of ChatGPT Work."
+    },
+    "kimi-k3": {
+      "title": "Kimi K3",
+      "detail": "Moonshot AI releases a 2.8-trillion-parameter open-weight model with a 1-million-token context window."
+    },
+    "gemini-3-6-flash": {
+      "title": "Gemini 3.6 Flash",
+      "detail": "Google releases three Flash models and says pretraining of Gemini 4 has begun."
+    },
+    "openai-astra-math": {
+      "title": "Astra solves ten hard problems",
+      "detail": "A new OpenAI model solves ten problems in mathematics and theoretical computer science that had stood open for more than a decade.",
+      "artStyle": "Star-chart mathematical fantasy"
+    },
+    "qwen-3-8-max": {
+      "title": "Qwen3.8-Max",
+      "detail": "Alibaba releases a 2.4-trillion-parameter mixture-of-experts model with 95 billion active parameters and pledges to open its weights."
+    },
+    "gpt-5-6-cyber": {
+      "title": "GPT-5.6 Cyber",
+      "detail": "A cybersecurity-specific model offered only to vetted partners."
+    },
+    "grok-4-6": {
+      "title": "Grok 4.6",
+      "detail": "Ties GPT-5.6 Sol on the Artificial Analysis Intelligence Index."
+    },
+    "nvidia-openai-ohio": {
+      "title": "Nvidia backs OpenAI financing",
+      "detail": "Up to $105 billion supports the first 4.25 gigawatts of compute at the Ohio campus, coming online from 2028.",
+      "artStyle": "Midwestern winter documentary photography"
+    },
+    "claude-fable-5-1": {
+      "title": "Claude Fable 5.1",
+      "detail": "Base pricing is unchanged; cache-read prices drop by 75%."
+    },
+    "gpt-6-astra": {
+      "title": "GPT-6 Astra",
+      "detail": "OpenAI rolls out GPT-6 Astra in stages, with cybersecurity program participants first."
+    },
+    "claude-opus-5-5": {
+      "title": "Claude Opus 5.5",
+      "detail": "Approaches Fable 5.1 on most tasks at 40% lower running cost than Opus 5."
+    },
+    "gpt-6-sol-luna": {
+      "title": "GPT-6 Sol and Luna",
+      "detail": "OpenAI launches GPT-6's flagship and lightweight models at half the API price of the 5.6 series.",
+      "artStyle": "Surreal circuit-lightscape"
+    },
+    "gemini-4-argon": {
+      "title": "Gemini 4 Argon",
+      "detail": "Google unveils a new frontier model with the per-response output limit raised to 1 million tokens."
+    },
+    "forecast-agent-teams-speculative": {
+      "title": "Agent teams on long tasks (speculative)",
+      "detail": "Scenario forecast (2027–2029): teams of AI agents may divide work, check each other and deliver continuously in software development and research. This assumes mature permissions, verification and failure recovery; humans remain accountable for complex tasks. Confidence in direction: medium. Year is a browsing anchor.",
+      "artStyle": "Near-future scenario realist illustration (speculative)",
+      "forecastBy": "e-acc.ai scenario (2026-10-08)"
+    },
+    "forecast-personal-ai-speculative": {
+      "title": "Personal AI and on-device coordination (speculative)",
+      "detail": "Scenario forecast (2027–2030): personal assistants may work across phones and computers, with more everyday tasks handled on-device. Adoption depends on power use, privacy permissions and reliable memory; complex tasks may still rely on the cloud. Confidence in direction: medium. Year is a browsing anchor.",
+      "artStyle": "Near-future scenario realist illustration (speculative)",
+      "forecastBy": "e-acc.ai scenario (2026-10-08)"
+    },
+    "forecast-controlled-robotics-speculative": {
+      "title": "Robots enter controlled settings (speculative)",
+      "detail": "Scenario forecast (2028–2031): robots in warehouses, factories and labs may take on more multi-step operations, expanding first in jobs with controlled environments. Cost, safety and fault handling still limit adoption; a robot in every home is not the baseline scenario. Confidence in direction: medium to low. Year is a browsing anchor.",
+      "artStyle": "Near-future scenario realist illustration (speculative)",
+      "forecastBy": "e-acc.ai scenario (2026-10-08)"
+    },
+    "forecast-kurzweil-2029": {
+      "title": "Forecast: AI reaches human-level intelligence",
+      "detail": "In The Singularity Is Nearer, Kurzweil reaffirms that AI will reach human-level intelligence by 2029.",
+      "forecastBy": "Ray Kurzweil"
+    },
+    "forecast-science-loop-speculative": {
+      "title": "Closed-loop AI science (speculative)",
+      "detail": "Scenario forecast (2029–2031): in some materials and life-science problems, AI may link hypotheses, experimental design and analysis, with automated equipment shortening iterations. Only reproducible experimental validation counts as a breakthrough, and it does not mean drugs will be approved right away. Confidence in direction: medium to low. Year is a browsing anchor.",
+      "artStyle": "Near-future scenario realist illustration (speculative)",
+      "forecastBy": "e-acc.ai scenario (2026-10-08)"
+    },
+    "forecast-epoch-2e29": {
+      "title": "Forecast: 2e29 FLOP training runs",
+      "detail": "Epoch AI estimates that training runs of about 2×10²⁹ floating-point operations will likely be feasible by 2030.",
+      "forecastBy": "Epoch AI"
+    },
+    "forecast-iea-datacentre": {
+      "title": "Forecast: data center electricity doubles",
+      "detail": "The International Energy Agency projects global data center electricity use of about 945 TWh in 2030, more than double the 2024 level.",
+      "forecastBy": "International Energy Agency (IEA)"
+    },
+    "forecast-grid-compute-speculative": {
+      "title": "Compute and grid build out together (speculative)",
+      "detail": "Scenario forecast (2028–2031): AI demand may drive coordinated expansion of data centers, power grids, energy storage and cooling. The IEA's 2030 electricity projection grounds the demand; the build-out pace in this scenario remains constrained by grid connection, financing and supply chains, and does not imply energy has become limitlessly cheap. Confidence in direction: fairly high on demand, medium on build-out pace. Year is a browsing anchor.",
+      "artStyle": "Near-future scenario realist illustration (speculative)",
+      "forecastBy": "e-acc.ai scenario (2026-10-08)"
+    },
+    "forecast-interactive-worlds-speculative": {
+      "title": "Interactive worlds and simulation training (speculative)",
+      "detail": "Scenario forecast (2029–2031): interactive generated worlds may be used for creative work, training and robot simulation. Long-run consistency, physical accuracy and cost will determine where they are usable; a playable scene is not a trustworthy simulation of reality. Confidence in direction: medium to low. Year is a browsing anchor.",
+      "artStyle": "Near-future scenario realist illustration (speculative)",
+      "forecastBy": "e-acc.ai scenario (2026-10-08)"
+    },
+    "forecast-metaculus-agi": {
+      "title": "Forecast: artificial general intelligence arrives",
+      "detail": "The Metaculus community's median forecast for the public announcement of the first general AI system is around 2032 (subject to change).",
+      "forecastBy": "Metaculus community forecast"
+    },
+    "forecast-iter-dt": {
+      "title": "Forecast: ITER deuterium-tritium operation",
+      "detail": "Under its 2024 baseline, ITER plans to begin research operation in 2034 and deuterium-tritium operation in 2039.",
+      "forecastBy": "ITER Organization"
+    },
+    "forecast-kurzweil-2045": {
+      "title": "Forecast: the Singularity",
+      "detail": "Kurzweil predicts humans will merge with machines by 2045, an event he calls \"the Singularity.\"",
+      "forecastBy": "Ray Kurzweil"
+    },
+    "forecast-population-2050": {
+      "title": "Forecast: world population about 9.7 billion",
+      "detail": "The medium scenario of the UN's World Population Prospects 2024 projects a world population of about 9.7 billion in 2050.",
+      "forecastBy": "UN Population Division (WPP 2024)"
+    },
+    "forecast-population-peak": {
+      "title": "Forecast: world population peaks",
+      "detail": "The UN projects world population will peak at about 10.3 billion in the mid-2080s and then decline.",
+      "forecastBy": "UN Population Division (WPP 2024)"
+    }
+  },
+  "metrics": {
+    "population": {
+      "label": "World population",
+      "unit": "people",
+      "note": "Before 1950, figures are historical reconstructions such as HYDE, with errors of up to several tens of percent; from 2025 on, they are UN medium-variant projections.",
+      "sourceName": "Our World in Data (HYDE 3.3, Gapminder, UN World Population Prospects 2024 medium variant)"
+    },
+    "energy": {
+      "label": "Total human primary energy power",
+      "unit": "watts (W, annual average power)",
+      "note": "Average power = annual energy use (joules) ÷ seconds in a year. Before 1800, per-capita estimates are multiplied by population, with large errors; the substitution method inflates the share of renewables.",
+      "sourceName": "Our World in Data global primary energy (Smil 2017 + Energy Institute, substitution method); before 1800: Syvitski et al. 2020 per-capita energy use × HYDE population"
+    },
+    "compute": {
+      "label": "Compute per dollar",
+      "unit": "floating-point operations per second per dollar (FLOP/s per $, nominal dollars)",
+      "note": "Calculated as 1e9 ÷ cost in dollars per GFLOPS. Precision varies across points (mostly double precision for 1945–2000, mostly GPU single precision afterwards); shows orders of magnitude only.",
+      "sourceName": "Wikipedia: Floating point operations per second — Cost of computing (hardware cost per GFLOPS, not adjusted for inflation)"
+    },
+    "messaging": {
+      "label": "Fastest delivery time for a message from London to New York",
+      "unit": "seconds",
+      "note": "Sailing ships and steamships use typical England–North America voyages; the 1927 radiotelephone figure is estimated from a 5,570 km light path, and the 2015 figure is half of a 59 ms fiber round trip.",
+      "sourceName": "Wikipedia: Mayflower, Black Ball Line (transatlantic packet), SS Great Western, Transatlantic telegraph cable, Transatlantic communications cable, Hibernia Networks"
+    },
+    "travel": {
+      "label": "Fastest speed reached by humans",
+      "unit": "km/h",
+      "note": "The highest speed humans could reach at the time: walking, galloping on horseback, rail, aircraft, rockets and human spaceflight. The start date for horseback riding (domestication) is disputed.",
+      "sourceName": "Wikipedia: Preferred walking speed, Horse gait, Land speed record for rail vehicles, Flight airspeed record, Apollo 10; NASA (Vostok 1)"
+    }
+  }
+}

@@ -24,6 +24,8 @@ export function translate(locale: Locale, message: string, ...values: Array<unkn
       if (year) return year[1]!;
       const count = /^([\d.]+)\s*(万|亿)$/.exec(message);
       if (count) return new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 2 }).format(Number(count[1]) * (count[2] === "亿" ? 1e8 : 1e4));
+      const chrono = chronicleTime(message);
+      if (chrono) return chrono;
       for (const { pattern, value, captures } of patterns) {
         const match = pattern.exec(message);
         if (!match) continue;
@@ -36,4 +38,29 @@ export function translate(locale: Locale, message: string, ...values: Array<unkn
     }
   }
   return template.replace(/\{(\d+)\}/g, (match, index: string) => String(values[Number(index)] ?? match));
+}
+
+const SPAN = String.raw`(\d+(?:\.\d+)?) ?(亿年|万年|年|个月|天)`;
+/** "1.2 亿年" → "120 million years": the time machine's spans, whose numbers carry Chinese units. */
+function englishSpan(amount: string, unit: string): string {
+  const n = Number(amount) * (unit === "亿年" ? 1e8 : unit === "万年" ? 1e4 : 1);
+  const short = (v: number) => String(Math.round(v * 100) / 100);
+  const value = n >= 1e9 ? `${short(n / 1e9)} billion` : n >= 1e6 ? `${short(n / 1e6)} million` : n.toLocaleString("en-US");
+  return `${value} ${unit === "个月" ? "month" : unit === "天" ? "day" : "year"}${n === 1 ? "" : "s"}`;
+}
+/** Time machine labels (contracts/chronicle timeLabel and axisTicks, chrono/format distanceLabel and untilLabel). */
+function chronicleTime(message: string): string | null {
+  let m = new RegExp(`^(约)?${SPAN}前$`).exec(message);
+  if (m) return `${m[1] ? "about " : ""}${englishSpan(m[2]!, m[3]!)} ago`;
+  m = new RegExp(`^距今 ${SPAN}$`).exec(message);
+  if (m) return `${englishSpan(m[1]!, m[2]!)} ago`;
+  m = new RegExp(`^${SPAN}后(出现)?$`).exec(message);
+  if (m) return `${m[3] ? "Available " : ""}in ${englishSpan(m[1]!, m[2]!)}`;
+  m = /^公元前(\d+)年$/.exec(message);
+  if (m) return `${m[1]} BCE`;
+  m = /^(\d{1,4})年$/.exec(message);
+  if (m) return m[1]!;
+  m = /^(\d{4})年(\d{1,2})月$/.exec(message);
+  if (m) return `${m[1]}-${m[2]!.padStart(2, "0")}`;
+  return null;
 }

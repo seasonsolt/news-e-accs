@@ -129,7 +129,7 @@ export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit }: {
         {axisTicks(now).map(([tt, label], i) => (
           // Every other label on phones, where they would collide.
           <span key={label} className={i % 2 ? "max-sm:hidden" : undefined} style={{ left: `${toAxis(tt, now) * 100}%` }}>
-            {label}
+            {tx(label)}
           </span>
         ))}
       </div>

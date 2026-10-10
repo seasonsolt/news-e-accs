@@ -23,7 +23,7 @@ export function MomentList({ milestones, t, now, onCommit }: { milestones: Chron
             {m.art && <img className="chronicle-rail-thumb" src={`/media/art/moments/${m.art}-800.webp`} alt="" loading="lazy" decoding="async" width={96} height={64} title={m.artStyle} />}
             <div className="chronicle-rail-meta">
               <span className="num">{tx(timeLabel(m.t, now, m.precision, m.date))}</span>
-              <span>{CATEGORY[m.category]}</span>
+              <span>{tx(CATEGORY[m.category])}</span>
               {m.forecast && <span className="chronicle-gauge-badge"><Text value="预测" /></span>}
             </div>
             <button type="button" onClick={() => onCommit(m.t)} className="chronicle-rail-title">{m.title}</button>

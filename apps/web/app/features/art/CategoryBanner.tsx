@@ -49,7 +49,7 @@ export const CATEGORY_ART: Record<CategoryKey, string> = {
 export function CategoryBanner({ category, channel }: { category: CategoryKey | null; channel: ChannelKey }) {
   const tx = useTranslate();
   const meta = category ? CATEGORIES.find((c) => c.key === category) : null;
-  if (meta) return <ArtBanner art={CATEGORY_ART[meta.key as CategoryKey]} title={meta.label} note={meta.guide} label={tx("{0}分类", meta.label)} />;
+  if (meta) return <ArtBanner art={CATEGORY_ART[meta.key as CategoryKey]} title={tx(meta.label)} note={tx(meta.note)} label={tx("{0}分类", tx(meta.label))} />;
   if (channel === "firstParty") {
     return <ArtBanner art="first-party" title={tx("一手")} note={tx("模型厂商、公司和研究机构自己发布的消息：官网、官方博客和官方账号。")} label={tx("一手消息")} />;
   }
