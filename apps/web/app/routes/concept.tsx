@@ -14,7 +14,8 @@ import { ArticleLayout, RailSection } from "../components/ui/Page";
 type Slug = keyof typeof CONCEPT_PAGES;
 
 export function loader({ request }: Route.LoaderArgs) {
-  const slug = new URL(request.url).pathname.replace(/^\/+|\/+$/g, "") as Slug;
+  // A client-side navigation asks for /<slug>.data; the page's own address is that without the suffix.
+  const slug = new URL(request.url).pathname.replace(/\.data$/, "").replace(/^\/+|\/+$/g, "") as Slug;
   if (!FEATURES.eaccConcepts || !(slug in CONCEPT_PAGES)) throw data({ message: "not_found" }, { status: 404 });
   return { slug };
 }

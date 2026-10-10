@@ -220,6 +220,15 @@ test("the e/acc concept pages keep their English titles, text language and struc
   const glossary = await (await fetch(`${origin}/eacc-glossary`)).text();
   for (const id of ["decel", "doomer", "pdoom", "uacc"]) assert.match(glossary, new RegExp(`<li id="${id}">`));
   assert.equal((await fetch(`${origin}/eacc-unknown`)).status, 404);
+  // Opening a concept page from the site's menu is a client-side navigation: it asks for the page's data.
+  for (const path of ["/what-is-eacc", "/eacc-vs-dacc", "/eacc-glossary"]) {
+    for (const query of ["", "?_routes=concept-" + path.slice(1)]) {
+      const res = await fetch(`${origin}${path}.data${query}`);
+      assert.equal(res.status, 200, `${path}.data${query}`);
+      assert.match(await res.text(), new RegExp(`"slug".*"${path.slice(1)}"|${path.slice(1)}`), path);
+    }
+  }
+  assert.equal((await fetch(`${origin}/eacc-unknown.data`)).status, 404);
 });
 
 test("missing routes cannot be hidden by a root-only request; errors and redirects stay uncached", async () => {
