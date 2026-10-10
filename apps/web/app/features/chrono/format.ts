@@ -76,3 +76,12 @@ export function distanceLabel(t: number, now: number): string {
   if (abs < 1 / 365) return "就是现在";
   return d > 0 ? `距今 ${words}` : `${words}后`;
 }
+
+/** An axis tick in English ("1000万年前" → "10M yr", "10年后" → "+10 yr"): the full phrases are wider than the ticks' spacing. */
+export function compactTick(label: string): string {
+  const m = /^(\d+(?:\.\d+)?)(亿年|万年|年|个月)(前|后)$/.exec(label);
+  if (!m) return label === "现在" ? "Now" : label;
+  const n = Number(m[1]) * (m[2] === "亿年" ? 1e8 : m[2] === "万年" ? 1e4 : 1);
+  const value = new Intl.NumberFormat("en", { notation: "compact" }).format(n);
+  return `${m[3] === "后" ? "+" : ""}${value} ${m[2] === "个月" ? "mo" : "yr"}`;
+}

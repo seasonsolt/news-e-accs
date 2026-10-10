@@ -74,3 +74,9 @@ test("time machine labels read in English, Chinese spans included", () => {
   for (const [zh, en] of cases) assert.equal(translate("en", zh), en, zh);
   assert.equal(translate("zh", "100亿年前"), "100亿年前");
 });
+test("axis ticks shorten in English to fit their spacing", async () => {
+  const { axisTicks } = await import("@aihot/contracts/chronicle");
+  const { compactTick } = await import("../app/features/chrono/format.ts");
+  assert.deepEqual(axisTicks(2026.5).map(([, label]) => compactTick(label)),
+    ["10B yr", "1B yr", "100M yr", "10M yr", "1M yr", "100K yr", "10K yr", "1K yr", "100 yr", "10 yr", "1 yr", "1 mo", "Now", "+1 yr", "+10 yr", "+100 yr"]);
+});

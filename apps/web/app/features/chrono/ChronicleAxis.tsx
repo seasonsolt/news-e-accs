@@ -1,4 +1,4 @@
-import { Text, useTranslate } from "../../lib/i18n";
+import { Text, useLocale, useTranslate } from "../../lib/i18n";
 // The four-dimensional axis: the Big Bang at the left, the far future at the right, every power of ten
 // of distance from now the same width. Eras are bands, milestones are ticks (dashed when forecast);
 // drag, click, wheel or the arrow keys move the needle. A click lands on the nearest milestone.
@@ -6,7 +6,7 @@ import { useRef, useState, type KeyboardEvent, type PointerEvent, type WheelEven
 import { axisTicks, fromAxis, timeLabel, toAxis, type ChronicleEra, type ChronicleMilestone } from "@aihot/contracts/chronicle";
 
 import { useMotionAllowed } from "../motion/preferences";
-import { stepEra } from "./format";
+import { compactTick, stepEra } from "./format";
 
 const SNAP_PX = 8;
 
@@ -21,6 +21,7 @@ export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit }: {
   onCommit: (t: number) => void;
 }) {
   const tx = useTranslate();
+  const locale = useLocale();
   const allowed = useMotionAllowed();
   const [dragging, setDragging] = useState(false);
   const track = useRef<HTMLDivElement>(null);
@@ -129,7 +130,7 @@ export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit }: {
         {axisTicks(now).map(([tt, label], i) => (
           // Every other label on phones, where they would collide.
           <span key={label} className={i % 2 ? "max-sm:hidden" : undefined} style={{ left: `${toAxis(tt, now) * 100}%` }}>
-            {tx(label)}
+            {locale === "en" ? compactTick(label) : label}
           </span>
         ))}
       </div>
