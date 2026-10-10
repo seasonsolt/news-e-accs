@@ -115,6 +115,18 @@ const modules = () => (existsSync(path.join(ROOT, "modules")) ? sources("modules
 const production = () => [...PRODUCTION.flatMap((dir) => sources(dir)), { file: "apps/web/server.ts", text: readFileSync(path.join(ROOT, "apps/web/server.ts"), "utf8") }, ...modules()];
 const words = (text: string) => new Set(text.match(/[A-Za-z_][A-Za-z0-9_]*/g));
 
+/**
+ * e-acc.ai keeps what upstream 4.0.0 dropped (its migrations 0084-0106 are left out of this fork): the
+ * model leaderboard's tables come back with its site module, and the rest keeps a rollback to the
+ * pre-merge release working. See deploy/releases/2026-10-10-upstream-4.0.md.
+ */
+const RETAINED = new Set([
+  ...["lb_models", "lb_aliases", "lb_runs", "lb_snapshots", "lb_scores", "lb_rankings", "lb_prices", "fx_rates"].map((t) => `table ${t}`),
+  ...["monitor_posts", "monitor_events", "monitor_event_posts", "monitor_state", "stored_files", "regroup_pending"].map((t) => `table ${t}`),
+  "topics.grp", "topics.entity_id", "admin_users.role", "sources.imported_from", "translations.receipt_id",
+  "service_prices.note", "service_prices.verified_on", "service_prices.per_request", "service_prices.source_url",
+]);
+
 test("every table and column is used by the code that reads and writes the database", async () => {
   const files = [...["packages/backend/src", "apps/api/src", "apps/worker/src"].flatMap((dir) => sources(dir)), ...modules()].map(({ text }) => words(text));
   const columns = await sql<{ table_name: string; column_name: string }[]>`
@@ -126,7 +138,9 @@ test("every table and column is used by the code that reads and writes the datab
     // created_at is the row's own timestamp, kept on every table for operations.
     else if (column !== "created_at" && !users.some((names) => names.has(column))) unused.add(`${table}.${column}`);
   }
-  assert.deepEqual([...unused], [], "drop it with a migration in the same change");
+  assert.deepEqual([...unused].filter((name) => !RETAINED.has(name)), [], "drop it with a migration in the same change");
+  // A retained name that is in use again (the leaderboard module) leaves the list.
+  assert.deepEqual([...RETAINED].filter((name) => !unused.has(name) && columns.some((c) => name === `table ${c.table_name}` || name === `${c.table_name}.${c.column_name}`)), [], "remove it from RETAINED");
 });
 
 // import.meta.env.DEV and the like are the web build's own flags, not environment variables.
