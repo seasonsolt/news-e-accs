@@ -133,6 +133,6 @@ test("the post a selected X post quotes is translated once and shown with the it
   const item = JSON.parse(res.body) as { x: { quoted: { text: string; translation: string | null } } };
   assert.deepEqual([item.x.quoted.text, item.x.quoted.translation], [`Introducing Claude Sonnet 5.5 ${T}`, "隆重推出 Sonnet 5.5。"]);
   await translatePending({ limit: 1 });
-  const receipts = await sql`SELECT 1 FROM receipts WHERE purpose = 'translate_quoted' AND subject = ${`quote:${tweetId}`}`;
+  const receipts = await sql`SELECT 1 FROM receipts WHERE purpose = 'translate_quoted' AND subject LIKE ${`quote:${tweetId}@%:original->zh`}`;
   assert.equal(receipts.length, 1, "translated once");
 });
