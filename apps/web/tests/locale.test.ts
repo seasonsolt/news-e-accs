@@ -18,14 +18,18 @@ test("URL language is stable across browser languages and preference cookies, in
   assert.equal(htmlLanguage("en"), "en");
   assert.equal(htmlLanguage("zh"), "zh-CN");
 });
-test("edition navigation preserves filters and keeps APIs, admin, assets and English concepts unprefixed", () => {
+test("edition navigation preserves filters and keeps APIs, admin and assets unprefixed", () => {
   assert.equal(localePath("/all?q=robot&category=model#results", "zh"), "/zh/all?q=robot&category=model#results");
   assert.equal(localePath("/zh/all?q=robot", "en"), "/all?q=robot");
   assert.equal(localePath("/", "zh"), "/zh");
-  for (const path of ["/admin", "/api/site/items", "/feed/picks.xml", "/og/items/123.png", "/assets/file.js", "/items/123/markdown", "/what-is-eacc", "/eacc-vs-dacc", "/eacc-glossary", "//external.example/all"]) {
+  for (const path of ["/admin", "/api/site/items", "/feed/picks.xml", "/og/items/123.png", "/assets/file.js", "/items/123/markdown", "//external.example/all"]) {
     assert.equal(localePath(path, "zh"), path);
   }
-  assert.equal(hasChineseRoute("/what-is-eacc"), false);
+  for (const slug of ["what-is-eacc", "eacc-vs-dacc", "eacc-glossary"]) {
+    assert.equal(hasChineseRoute(`/${slug}`), true);
+    assert.equal(localePath(`/${slug}`, "zh"), `/zh/${slug}`);
+    assert.equal(localePath(`/zh/${slug}`, "en"), `/${slug}`);
+  }
   assert.equal(publicPath("/zh/weekly/2026-W39.data"), "/weekly/2026-W39");
   assert.equal(publicPath("/zh/_.data"), "/");
   assert.equal(languageSwitchPath("/zh/all", "?q=robot&page=2&cursor=old&_routes=root&lang=zh", "#results", "en"), "/all?q=robot&page=2#results");

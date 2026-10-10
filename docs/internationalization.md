@@ -8,7 +8,7 @@
 
 SSR、浏览器分页/展开/搜索及 React Router `.data` 导航按 URL 显式传 `lang=en|zh` 到 `/api/site`。站点 API 省略 `lang` 保持中文目标；非法及重复语言参数返回 400。新闻字段按实际返回语言标记，不按网页外壳猜测。
 
-`/what-is-eacc`、`/eacc-vs-dacc`、`/eacc-glossary` 是已有英文概念页，不提供虚构中文镜像。`/coding-plan`、`/pricing`、`/calculator` 属于入口站工具。API、静态资源、OG、RSS、Markdown 下载及后台保持无 `/zh` 前缀，各自通过参数或版本化地址选语言。使用规则与隐私说明保留运营者模板；英文页明确披露现有中文正文，没有自行生成英文法律条款。信源、分类身份、选稿评分与全文许可规则未调整。
+`/what-is-eacc`、`/eacc-vs-dacc`、`/eacc-glossary` 是英文概念页（`industry/concepts.ts`），另有对应的中文版 `/zh/<同名>`（`industry/concepts-zh.ts`，与英文页同样的结构、章节锚点和术语 id，中文版内部链接指向中文版）。两个版本互为 hreflang，语言由地址决定；sitemap 仍只列无前缀地址。上线前入口 Worker 需把这三个 `/zh/` 地址及其 `.data` 发往新闻源站。`/coding-plan`、`/pricing`、`/calculator` 属于入口站工具。API、静态资源、OG、RSS、Markdown 下载及后台保持无 `/zh` 前缀，各自通过参数或版本化地址选语言。使用规则与隐私说明保留运营者模板；英文页明确披露现有中文正文，没有自行生成英文法律条款。信源、分类身份、选稿评分与全文许可规则未调整。
 
 站点配置的公开介绍、首页与关于页以英文写作，web 字典为这些明确的 UI 文案提供中文对应项；不通过字典翻译数据库新闻。来源名、专名、文明历史材料等仍可保留原文。
 
