@@ -74,6 +74,8 @@ flowchart LR
 
 写好以后在 `site/modules/` 的三份清单里列上它：`index.ts` 列地址，`server.ts` 列后端，`web.ts` 列网页，没有的那份不列；再在 `site/package.json` 的 `dependencies` 里写上它。用 Docker 部署的，在 `Dockerfile` 里照着其他包加一行 `COPY modules/<名字>/package.json modules/<名字>/`。框架的代码不导入任何模块，只读这三份清单，所以合并本仓库以后的更新时，不容易和你自己的功能冲突。插口不够用时，在框架里加一个通用的插口，而不是把这个功能写进框架。
 
+模块可在 `server.ts` 的 `workerStarted` 插口中安排首次任务；worker 在队列和定时任务注册完毕、心跳启动前调用它。网页的 `sidebar` 项由本站顶部导航展示；`module.ts` 的 `localizedPaths` 声明模块自己注册的 `/zh` 镜像，`timePaths` 声明跟随时间机器日期的页面。
+
 模块通过 `agent.abilities` 提供 MCP 工具。`scripts/mcp-check.ts` 始终检查完整工具集合；模块可在 `mcp.checkArgs` 中提供能在空数据库上成功的检查参数。未提供时，只有入参 schema 接受 `{}` 的工具会用 `{}` 实际调用；其余工具只检查发现，不猜参数。模块工具的业务行为由模块自己的测试验证。
 
 ## 数据库迁移

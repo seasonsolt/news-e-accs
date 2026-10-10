@@ -116,7 +116,7 @@ export interface TopicPagePart {
 export interface WebModule {
   /** Its folder under modules/. */
   name: string;
-  /** Desktop sidebar: entries in a section between the engine's 内容 and 更多; modules naming the same section share it. */
+  /** Desktop navigation: entries in a section between the engine's 内容 and 更多; the deck draws them in its top bar. */
   sidebar?: { section: string; items: NavItem[] };
   /** Phone tab bar: tabs before 我的. */
   tabs?: Tab[];

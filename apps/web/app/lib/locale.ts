@@ -1,3 +1,5 @@
+import { MODULES } from "@aihot/site/modules";
+
 /** UI language is part of the public URL; preferences never change a URL's response. */
 export type Locale = "en" | "zh";
 export const LANGUAGE_COOKIE = "eacc_language";
@@ -33,7 +35,7 @@ export function prefersChinese(languages: readonly string[]): boolean {
 /** Only public HTML routes have an edition prefix. API, downloads, admin and assets do not. */
 export function hasChineseRoute(pathname: string): boolean {
   const path = publicPath(pathname);
-  return /^\/(?:$|all(?:\/search-busy)?$|search-busy$|items\/[^/]+(?:\/original)?$|hot$|story\/[^/]+$|daily(?:\/[^/]+)?$|weekly(?:\/[^/]+)?$|monthly(?:\/[^/]+)?$|topics(?:\/[^/]+(?:\/page\/\d+)?)?$|chronicle$|what-is-eacc$|eacc-vs-dacc$|eacc-glossary$|products$|about$|terms$|privacy$|changelog$|feedback$|subscribe$|more$|starred$|agent$)/.test(path);
+  return MODULES.some((m) => m.localizedPaths?.some((pattern) => pattern.test(path))) || /^\/(?:$|all(?:\/search-busy)?$|search-busy$|items\/[^/]+(?:\/original)?$|hot$|story\/[^/]+$|daily(?:\/[^/]+)?$|weekly(?:\/[^/]+)?$|monthly(?:\/[^/]+)?$|topics(?:\/[^/]+(?:\/page\/\d+)?)?$|chronicle$|what-is-eacc$|eacc-vs-dacc$|eacc-glossary$|products$|about$|terms$|privacy$|changelog$|feedback$|subscribe$|more$|starred$|agent$)/.test(path);
 }
 export function localePath(to: string, locale: Locale): string {
   if (!to.startsWith("/") || to.startsWith("//")) return to;

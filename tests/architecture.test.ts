@@ -117,14 +117,16 @@ const words = (text: string) => new Set(text.match(/[A-Za-z_][A-Za-z0-9_]*/g));
 
 /**
  * e-acc.ai keeps what upstream 4.0.0 dropped (its migrations 0084-0106 are left out of this fork): the
- * model leaderboard's tables come back with its site module, and the rest keeps a rollback to the
+ * model leaderboard's tables are used by its site module, and the rest keeps a rollback to the
  * pre-merge release working. See deploy/releases/2026-10-10-upstream-4.0.md.
  */
 const RETAINED = new Set([
-  ...["lb_models", "lb_aliases", "lb_runs", "lb_snapshots", "lb_scores", "lb_rankings", "lb_prices", "fx_rates"].map((t) => `table ${t}`),
   ...["monitor_posts", "monitor_events", "monitor_event_posts", "monitor_state", "stored_files", "regroup_pending"].map((t) => `table ${t}`),
   "topics.grp", "topics.entity_id", "admin_users.role", "sources.imported_from", "translations.receipt_id",
   "service_prices.note", "service_prices.verified_on", "service_prices.per_request", "service_prices.source_url",
+  // Pre-v16 fields are unused by dfa187f too; preserve their rows for the pre-merge rollback.
+  "lb_models.input_price_usd", "lb_models.output_price_usd", "lb_models.metadata_updated_at",
+  "lb_rankings.uncertainty", "lb_rankings.component_scores",
 ]);
 
 test("every table and column is used by the code that reads and writes the database", async () => {

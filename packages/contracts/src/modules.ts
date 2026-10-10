@@ -30,6 +30,10 @@ export interface ModuleDeclaration {
   redirects?: RedirectRule[];
   /** Paths the api process answers; the web server and the internal router send them there. */
   apiPaths?: RegExp[];
+  /** Pages with a /zh mirror (apps/web/app/lib/locale.ts); the module declares both sets of routes itself. */
+  localizedPaths?: RegExp[];
+  /** Pages whose content follows ?at=YYYY-MM-DD (apps/web/app/features/chrono/at.ts). */
+  timePaths?: RegExp[];
 }
 
 export function defineModule(module: ModuleDeclaration): ModuleDeclaration {

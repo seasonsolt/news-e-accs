@@ -3,7 +3,7 @@
 // never imports a module, so it runs the same with none installed: the open-source edition, and the
 // engine's own tests. Each socket names the engine file that reads it.
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import type { WorkOptions } from "pg-boss";
+import type { PgBoss, WorkOptions } from "pg-boss";
 import type { z } from "zod";
 import type { Brand } from "@aihot/contracts/site";
 import type { Db } from "./db.ts";
@@ -228,6 +228,8 @@ export interface ServerModule {
   models?: Record<string, ModelStep>;
   /** Cron schedules (the worker). */
   schedules?: Scheduled[];
+  /** After the worker installs queues and schedules, before its heartbeat starts (apps/worker/src/main.ts). */
+  workerStarted?: (boss: PgBoss) => Promise<void>;
   /** What is wrong now, for the owner's alerts (operations/alerts.ts), after the engine's problems. */
   alerts?: (now: number) => Promise<Finding[]>;
   /**

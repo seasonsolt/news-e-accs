@@ -3,6 +3,7 @@ import { publicPath } from "../../lib/locale.ts";
 // day. It lives in the address, never in a cookie, so a slice is server-rendered, shareable and
 // cached as its own page (tests/cache.test.ts keeps public pages cookie-free).
 import { FEATURES } from "@aihot/industry/features";
+import { MODULES } from "@aihot/site/modules";
 import { useLocation } from "react-router";
 import { addDays, beijingDate, isValidDate } from "@aihot/contracts/time";
 
@@ -26,7 +27,7 @@ export function useAt(): string | null {
 /** Pages whose content follows the time machine; the rest show the present beneath its bar. */
 export function followsTime(pathname: string): boolean {
   pathname = publicPath(pathname);
-  return pathname === "/" || pathname === "/hot" || /^\/(daily|weekly|monthly)(\/|$)/.test(pathname);
+  return MODULES.some((m) => m.timePaths?.some((pattern) => pattern.test(pathname))) || pathname === "/" || pathname === "/hot" || /^\/(daily|weekly|monthly)(\/|$)/.test(pathname);
 }
 
 /** `to` with `at` set (or removed when null), keeping its other parameters and hash. */

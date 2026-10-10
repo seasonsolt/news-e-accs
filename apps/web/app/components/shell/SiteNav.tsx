@@ -13,6 +13,7 @@ import { Wordmark } from "@aihot/site/brand/Logo.tsx";
 import { chronicleHref } from "../../features/chrono/TimeMachine";
 import { useAt, withAt } from "../../features/chrono/at";
 import { MORE_MENU, TOPNAV, tabIsActive, type NavItem } from "./nav";
+import { webModules } from "../../site-modules";
 import { useChangelogDot } from "./changelog";
 
 function itemHref(item: NavItem, at: string | null) {
@@ -73,7 +74,7 @@ export function SiteNav({ changelogVersion, kardashev }: { changelogVersion: str
           <Wordmark size={24} />
         </Link>
         <nav aria-label={tx("主导航")} className="site-nav-links">
-          {TOPNAV.map((item) => (
+          {[...TOPNAV, ...webModules().flatMap((m) => m.sidebar?.items ?? [])].map((item) => (
             <Link
               key={item.to}
               to={itemHref(item, at)}

@@ -2,6 +2,7 @@ import { publicPath } from "../../lib/locale.ts";
 // Site navigation, one place for the desktop sidebar, the mobile tab bar and the mobile "更多" page.
 import { NAV, withSubject } from "@aihot/site";
 import { FEATURES } from "@aihot/industry/features";
+import { webModules } from "../../site-modules";
 import type { ReactNode } from "react";
 import {
   IconApps, IconBolt, IconBookmark, IconChart, IconDoc, IconFlame, IconGrid, IconHeart, IconHistory, IconHourglass, IconInfo, IconList, IconMail, IconMessage, IconPlug,
@@ -81,7 +82,7 @@ export const MORE_PATHS = ["/products", "/more", ...(FEATURES.timeMachine ? [] :
 export function tabIsActive(item: NavItem, pathname: string): boolean {
   pathname = publicPath(pathname);
   if (item.end) return pathname === item.to;
-  if (item.to === "/more") return MORE_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  if (item.to === "/more") return [...MORE_PATHS, ...webModules().flatMap((m) => (m.tools ?? []).map((t) => t.to))].some((p) => pathname === p || pathname.startsWith(`${p}/`));
   if (item.to === "/daily") return /^\/(daily|weekly|monthly)(\/|$)/.test(pathname);
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
 }
