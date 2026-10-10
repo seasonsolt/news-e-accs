@@ -17,6 +17,19 @@ export function requestLocale(request: Request): Locale {
 }
 export function htmlLanguage(locale: Locale): string { return locale === "zh" ? "zh-CN" : "en"; }
 
+/** The edition a reader chose with the switch or the language hint, if any. */
+export function languagePreference(cookie: string): Locale | null {
+  return (cookie.match(new RegExp(`(?:^|;\\s*)${LANGUAGE_COOKIE}=(en|zh)(?:;|$)`))?.[1] as Locale | undefined) ?? null;
+}
+/** Browser only. */
+export function rememberLanguage(value: Locale) {
+  document.cookie = `${LANGUAGE_COOKIE}=${value}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
+}
+/** Only a browser whose first language is Chinese is offered the Chinese edition. */
+export function prefersChinese(languages: readonly string[]): boolean {
+  return /^zh(?:-|$)/i.test(languages[0] ?? "");
+}
+
 /** Only public HTML routes have an edition prefix. API, downloads, admin and assets do not. */
 export function hasChineseRoute(pathname: string): boolean {
   const path = publicPath(pathname);

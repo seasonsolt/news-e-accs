@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router";
 import { useLocale } from "../../lib/i18n";
-import { hasChineseRoute, languageSwitchPath, LANGUAGE_COOKIE, type Locale } from "../../lib/locale";
+import { hasChineseRoute, languageSwitchPath, rememberLanguage, type Locale } from "../../lib/locale";
 
 /** Store a navigation preference, then navigate to the requested edition's stable URL. */
 export function LanguageSwitch() {
@@ -10,7 +10,7 @@ export function LanguageSwitch() {
   // Explicit language switching uses the raw router, bypassing same-edition navigation.
   const chineseAvailable = hasChineseRoute(pathname);
   function choose(value: Locale) {
-    document.cookie = `${LANGUAGE_COOKIE}=${value}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
+    rememberLanguage(value);
     void navigate(languageSwitchPath(pathname, search, hash, value));
   }
   return (

@@ -602,6 +602,7 @@
    marked <html> (ONBOARDING_BOOT_SCRIPT): no flash of the news, and crawlers never see it. */
 .onboarding-overlay { display: none; }
 html[data-onboarding] .onboarding-overlay { display: block; }
+html[data-onboarding] .language-hint { display: none; }
 html[data-onboarding] body { overflow: hidden; }
 /* A pre-paint poster under the source-less film, using the same cover crop as its first frame. Only
    the active overlay or /subscribe can fetch it; hidden overlays never acquire a background URL. */

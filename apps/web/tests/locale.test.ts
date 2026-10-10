@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { htmlLanguage, requestLocale, publicPath, localePath, languageSwitchPath, hasChineseRoute } from "../app/lib/locale.ts";
+import { htmlLanguage, requestLocale, publicPath, localePath, languageSwitchPath, hasChineseRoute, languagePreference, prefersChinese } from "../app/lib/locale.ts";
 import { translate } from "../app/lib/translate.ts";
 
 test("URL language is stable across browser languages and preference cookies, including data requests", () => {
@@ -53,4 +53,24 @@ test("native English site copy keeps explicit Chinese counterparts and news rema
   assert.equal(translate("zh", "Today’s AI news: editorial picks and emerging stories"), "今日 AI 新闻：精选与新兴事件");
   assert.equal(translate("zh", "Built on open-source software"), "基于开源软件构建");
   assert.equal(translate("zh", "Native English news headline"), "Native English news headline");
+});
+test("the Chinese-edition hint reads only an explicit choice and the browser's first language", () => {
+  assert.equal(languagePreference(""), null);
+  assert.equal(languagePreference("eacc_language=zh"), "zh");
+  assert.equal(languagePreference("theme=dark; eacc_language=en"), "en");
+  assert.equal(languagePreference("not_eacc_language=zh"), null);
+  assert.equal(languagePreference("eacc_language=fr"), null);
+  for (const languages of [["zh-CN"], ["zh"], ["zh-Hant-TW", "en"], ["ZH-hk"]]) assert.equal(prefersChinese(languages), true);
+  for (const languages of [[], ["en-US", "zh-CN"], ["zhx"], ["ja"]]) assert.equal(prefersChinese(languages), false);
+});
+test("time machine labels read in English, Chinese spans included", () => {
+  const cases: Array<[string, string]> = [
+    ["100亿年前", "10 billion years ago"], ["1000万年前", "10 million years ago"], ["1万年前", "10,000 years ago"],
+    ["1个月前", "1 month ago"], ["1年后", "in 1 year"], ["约5000年前", "about 5,000 years ago"],
+    ["距今 1.2 亿年", "120 million years ago"], ["距今 300 年", "300 years ago"], ["5 年后", "in 5 years"],
+    ["3 个月后出现", "Available in 3 months"], ["公元前500年", "500 BCE"], ["1769年", "1769"], ["2024年3月", "2024-03"],
+    ["数据始于{0}", "data begins {0}"],
+  ];
+  for (const [zh, en] of cases) assert.equal(translate("en", zh), en, zh);
+  assert.equal(translate("zh", "100亿年前"), "100亿年前");
 });

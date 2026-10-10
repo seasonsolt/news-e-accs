@@ -15,6 +15,7 @@ import { SiteNav } from "./components/shell/SiteNav";
 import { SiteFooter } from "./components/shell/SiteFooter";
 import { MobileTabBar } from "./components/shell/MobileTabBar";
 import { BackToTop, NavigationProgress } from "./components/shell/Chrome";
+import { LanguageHint } from "./components/shell/LanguageHint";
 import { buttonClass } from "./components/ui/Controls";
 import { DECK_BLEED_SCRIPT } from "./components/shell/Deck";
 import { rememberPage, APPEARANCE_BOOT_SCRIPT, MOTION_BOOT_SCRIPT, ONBOARDING_BOOT_SCRIPT, useAppearanceSync } from "./lib/local-state";
@@ -124,6 +125,7 @@ function SiteShell({ changelogVersion, timeBounds, children }: { changelogVersio
       <SiteFooter />
       <MobileTabBar changelogVersion={changelogVersion} />
       <BackToTop />
+      <LanguageHint />
     </div>
   );
 }
