@@ -13,6 +13,7 @@ import type { FeedItemSummary, ReportCitation, ReportDetail, ReportKind, SiteIte
 import { SITE } from "@aihot/site";
 import { articleLd, readFilters, reportLd } from "../apps/web/app/lib/seo.ts";
 import { startWebServer, type WebServer } from "../apps/web/tests/web-server.ts";
+import { chronicle } from "../apps/web/tests/chrono-fixture.ts";
 
 const at = "2026-10-04T08:00:00.000Z";
 const item: FeedItemSummary = { id: "metadata-fixture", title: "可核实的测试报道", summary: "报道摘要", reason: null, source: { name: "Fixture" }, publishedAt: at, timelineAt: at, category: "ai-models", tags: [], score: 80, selected: true, channel: "news", x: null };
@@ -27,6 +28,7 @@ const api = createServer((req, res) => {
   res.setHeader("Content-Type", "application/json");
   const send = (value: unknown) => res.end(JSON.stringify(value));
   if (path === "/api/site/meta") return send({ changelogVersion: "fixture" });
+  if (path === "/api/site/chronicle") return send(chronicle);
   if (path === "/api/site/timeline") return send({ filters: readFilters(url.searchParams), cards: [{ key: item.id, anchorAt: at, item, group: null }], nextCursor: null, hot: null, dayCounts: { "2026-10-04": 1 } });
   if (path === "/api/site/pool") return send({ filters: { ...readFilters(url.searchParams), q: url.searchParams.get("q"), tab: url.searchParams.get("tab") ?? "time" }, items: [item], page: Number(url.searchParams.get("page") ?? 1), pageCount: 3, total: 100, todayCount: 1, freshness: at });
   if (path === `/api/site/items/${item.id}`) return send(detail);
