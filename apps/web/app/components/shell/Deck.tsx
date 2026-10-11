@@ -28,6 +28,7 @@ export function Plate({ src, alt = "", className }: { src: string; alt?: string;
       srcSet={`${src}-800.webp 800w, ${src}-1600.webp 1600w`}
       sizes="100vw"
       alt={alt}
+      fetchPriority="high"
       decoding="async"
       onError={() => setBroken(true)}
       className={`${className} ${allowed ? "motion-allowed" : ""}`}

@@ -3,6 +3,7 @@ import { UNSAFE_decodeViaTurboStream } from "react-router";
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
+import { readdir, rm, stat, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { after, before, test } from "node:test";
@@ -36,6 +37,8 @@ function alternate(document: ReturnType<typeof parseHTML>["document"], language:
 
 /** Absolute links the web process renders for crawlers (SITE_URL, as the server reads it). */
 const site = (process.env.SITE_URL || "https://e-acc.ai").replace(/\/+$/, "");
+const mediaPath = "/media/art/epochs/sapiens-language-800.webp";
+const mediaCacheControl = "public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000";
 let web: ChildProcess;
 let origin: string;
 let logs = "";
@@ -451,14 +454,106 @@ test("a visitor cannot name its own address to the api without a trusted proxy i
   assert.deepEqual(await res.json(), { forwarded: "127.0.0.1", real: "127.0.0.1" });
 });
 
- test("API, feeds and static assets keep their own cache policy", async () => {
+test("API, feeds and static assets keep their own cache policy", async () => {
   const apiResponse = await fetch(origin + "/api/site/cache-example", { headers: { cookie: "eacc_language=zh" } });
   assert.equal(apiResponse.headers.get("Cache-Control"), "public, max-age=30, s-maxage=60");
   const feed = await fetch(origin + "/feed/picks.xml");
   assert.equal(feed.headers.get("Cache-Control"), "public, max-age=60");
   assert.equal(await feed.text(), "<rss/>");
-  const icon = await fetch(origin + "/media/art/epochs/sapiens-language-800.webp");
-  assert.equal(icon.headers.get("Cache-Control"), "public, max-age=3600");
+  const asset = (await readdir(new URL("../build/client/assets/", import.meta.url))).find((name) => name.endsWith(".css"));
+  assert.ok(asset);
+  const otherPath = `/cache-test-${process.pid}.txt`;
+  const otherFile = new URL(`../build/client${otherPath}`, import.meta.url);
+  await writeFile(otherFile, "static cache test");
+  try {
+    for (const [pathname, cacheControl] of [
+      [mediaPath, mediaCacheControl],
+      [`/assets/${asset}`, "public, max-age=31536000, immutable"],
+      [otherPath, "public, max-age=3600"],
+    ]) {
+      const res = await fetch(origin + pathname, { headers: { cookie: "eacc_language=zh" } });
+      const info = await stat(new URL(`../build/client${pathname}`, import.meta.url));
+      assert.equal(res.status, 200, pathname);
+      assert.equal(res.headers.get("Cache-Control"), cacheControl, pathname);
+      assert.equal(res.headers.get("Last-Modified"), info.mtime.toUTCString(), pathname);
+      assert.match(res.headers.get("ETag")!, /^W\/"\d+-[a-z0-9.]+"$/, pathname);
+      assert.equal((await res.arrayBuffer()).byteLength, info.size, pathname);
+    }
+  } finally {
+    await rm(otherFile);
+  }
+});
+
+test("static validators return bodyless 304s for GET and HEAD with cache headers", async () => {
+  const initial = await fetch(origin + mediaPath, { method: "HEAD" });
+  assert.equal(initial.status, 200);
+  const etag = initial.headers.get("ETag")!;
+  const modified = initial.headers.get("Last-Modified")!;
+  const validators: Record<string, string>[] = [
+    { "If-None-Match": etag },
+    { "If-None-Match": etag.slice(2) },
+    { "If-None-Match": `"old", ${etag}`, "If-Modified-Since": new Date(0).toUTCString() },
+    { "If-None-Match": "*" },
+    { "If-Modified-Since": modified },
+  ];
+  for (const method of ["GET", "HEAD"]) {
+    for (const headers of validators) {
+      const res = await fetch(origin + mediaPath, { method, headers });
+      assert.equal(res.status, 304);
+      assert.equal(res.headers.get("Cache-Control"), mediaCacheControl);
+      assert.equal(res.headers.get("ETag"), etag);
+      assert.equal(res.headers.get("Last-Modified"), modified);
+      assert.equal(res.headers.get("Content-Length"), null);
+      assert.equal(await res.text(), "");
+    }
+  }
+});
+
+test("nonmatching entity tags take precedence over dates; stale and invalid dates send the file", async () => {
+  const initial = await fetch(origin + mediaPath);
+  const body = Buffer.from(await initial.arrayBuffer());
+  const modified = initial.headers.get("Last-Modified")!;
+  const validators: Record<string, string>[] = [
+    { "If-None-Match": 'W/"old"', "If-Modified-Since": modified },
+    { "If-Modified-Since": new Date(Date.parse(modified) - 1000).toUTCString() },
+    { "If-Modified-Since": "invalid date" },
+  ];
+  for (const method of ["GET", "HEAD"]) {
+    for (const headers of validators) {
+      const res = await fetch(origin + mediaPath, { method, headers });
+      assert.equal(res.status, 200);
+      assert.equal(res.headers.get("Content-Length"), String(body.length));
+      assert.deepEqual(Buffer.from(await res.arrayBuffer()), method === "HEAD" ? Buffer.alloc(0) : body);
+    }
+  }
+});
+
+test("static byte ranges keep working with matching validators", async () => {
+  const initial = await fetch(origin + mediaPath);
+  const body = Buffer.from(await initial.arrayBuffer());
+  const etag = initial.headers.get("ETag")!;
+  for (const method of ["GET", "HEAD"]) {
+    for (const [range, start, end] of [
+      ["bytes=0-7", 0, 7],
+      ["bytes=8-", 8, body.length - 1],
+      ["bytes=-8", body.length - 8, body.length - 1],
+    ] as const) {
+      const res = await fetch(origin + mediaPath, { method, headers: { Range: range, "If-None-Match": etag } });
+      assert.equal(res.status, 206);
+      assert.equal(res.headers.get("Content-Range"), `bytes ${start}-${end}/${body.length}`);
+      assert.equal(res.headers.get("Content-Length"), String(end - start + 1));
+      assert.equal(res.headers.get("Cache-Control"), mediaCacheControl);
+      assert.equal(res.headers.get("Accept-Ranges"), "bytes");
+      assert.equal(res.headers.get("ETag"), etag);
+      assert.equal(res.headers.get("Last-Modified"), initial.headers.get("Last-Modified"));
+      assert.deepEqual(Buffer.from(await res.arrayBuffer()), method === "HEAD" ? Buffer.alloc(0) : body.subarray(start, end + 1));
+    }
+  }
+  const invalid = await fetch(origin + mediaPath, { headers: { Range: `bytes=${body.length}-` } });
+  assert.equal(invalid.status, 416);
+  assert.equal(invalid.headers.get("Content-Range"), `bytes */${body.length}`);
+  assert.equal(invalid.headers.get("ETag"), etag);
+  assert.equal(await invalid.text(), "");
 });
 
  test("product directory lists upcoming products with logos and no product links", async () => {

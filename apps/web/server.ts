@@ -71,10 +71,10 @@ const ssr = createRequestListener({ build: { ...build, routes }, mode: "producti
 class BadRequest extends Error {}
 
 /**
- * Hashed build assets are immutable; anything else from the client build gets a short cache.
+ * Hashed build assets are immutable; media gets a long cache with revalidation, other files a short one.
  * A single byte range is honoured: Safari will not play a video whose server ignores Range.
  */
-async function serveStatic(pathname: string, res: import("node:http").ServerResponse, range?: string): Promise<boolean> {
+async function serveStatic(pathname: string, req: import("node:http").IncomingMessage, res: import("node:http").ServerResponse): Promise<boolean> {
   if (pathname.includes("..") || pathname.endsWith("/")) return false;
   let decoded: string;
   try {
@@ -87,13 +87,17 @@ async function serveStatic(pathname: string, res: import("node:http").ServerResp
   const info = await stat(file).catch(() => null);
   if (!info?.isFile()) return false;
   const immutable = pathname.startsWith("/assets/");
+  const etag = `W/"${info.size}-${info.mtimeMs.toString(36)}"`;
   const headers = {
     "Content-Type": TYPES[path.extname(file)] ?? "application/octet-stream",
-    "Cache-Control": immutable ? "public, max-age=31536000, immutable" : "public, max-age=3600",
+    "Cache-Control": immutable ? "public, max-age=31536000, immutable"
+      : pathname.startsWith("/media/") ? "public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000" : "public, max-age=3600",
+    "Last-Modified": info.mtime.toUTCString(),
+    "ETag": etag,
     "Accept-Ranges": "bytes",
     "X-Content-Type-Options": "nosniff",
   };
-  const m = range?.match(/^bytes=(\d*)-(\d*)$/);
+  const m = req.headers.range?.match(/^bytes=(\d*)-(\d*)$/);
   if (m && (m[1] || m[2])) {
     // "bytes=a-b", "bytes=a-" or the suffix form "bytes=-n" (the last n bytes).
     const start = m[1] ? Number(m[1]) : Math.max(0, info.size - Number(m[2]));
@@ -104,11 +108,23 @@ async function serveStatic(pathname: string, res: import("node:http").ServerResp
       return true;
     }
     res.writeHead(206, { ...headers, "Content-Length": end - start + 1, "Content-Range": `bytes ${start}-${end}/${info.size}` });
-    createReadStream(file, { start, end }).pipe(res);
+    if (req.method === "HEAD") res.end();
+    else createReadStream(file, { start, end }).pipe(res);
+    return true;
+  }
+  const ifNoneMatch = req.headers["if-none-match"];
+  const ifModifiedSince = req.headers["if-modified-since"];
+  const notModified = ifNoneMatch !== undefined
+    ? ifNoneMatch.split(",").some((tag) => tag.trim() === "*" || tag.trim().replace(/^W\//, "") === etag.slice(2))
+    : ifModifiedSince !== undefined && Math.floor(info.mtimeMs / 1000) * 1000 <= Date.parse(ifModifiedSince);
+  if (notModified) {
+    res.writeHead(304, headers);
+    res.end();
     return true;
   }
   res.writeHead(200, { ...headers, "Content-Length": info.size });
-  createReadStream(file).pipe(res);
+  if (req.method === "HEAD") res.end();
+  else createReadStream(file).pipe(res);
   return true;
 }
 
@@ -217,7 +233,7 @@ async function handle(req: import("node:http").IncomingMessage, res: import("nod
     return proxyToApi(req, res, { "x-forwarded-for": client, "x-real-ip": client });
   }
 
-  if ((req.method === "GET" || req.method === "HEAD") && pathname.includes(".") && (await serveStatic(pathname, res, req.headers.range))) return;
+  if ((req.method === "GET" || req.method === "HEAD") && pathname.includes(".") && (await serveStatic(pathname, req, res))) return;
   pageResponse(req, res);
   return ssr(req, res);
 }
