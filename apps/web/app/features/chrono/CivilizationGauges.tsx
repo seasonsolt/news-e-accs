@@ -6,14 +6,14 @@ import { interpolateMetric, kardashev, timeLabel, toAxis, type ChronicleMetric }
 import { IconArrowUpRight } from "../../components/icons";
 import { chineseCount, metricValue } from "./format";
 
-/** How the moment compares with today: "今天的 1/620", "比今天慢 1.7 亿倍", "今天的 1.4 倍". */
-function versusToday(metric: ChronicleMetric, v: number, today: number | null): string | null {
+/** How the moment compares with today: a message template and separate count to localize Chinese units. */
+function versusToday(metric: ChronicleMetric, v: number, today: number | null): { message: string; count?: string } | null {
   if (today === null || v <= 0 || today <= 0) return null;
   const ratio = v / today;
-  if (ratio > 0.95 && ratio < 1.05) return "与今天相当";
+  if (ratio > 0.95 && ratio < 1.05) return { message: "与今天相当" };
   // A message's delivery time: more is slower.
-  if (metric.key === "messaging") return ratio > 1 ? `比今天慢 ${chineseCount(ratio)} 倍` : `比今天快 ${chineseCount(1 / ratio)} 倍`;
-  return ratio < 1 ? `今天的 1/${chineseCount(1 / ratio)}` : `今天的 ${chineseCount(ratio)} 倍`;
+  if (metric.key === "messaging") return { message: ratio > 1 ? "比今天慢 {0} 倍" : "比今天快 {0} 倍", count: chineseCount(ratio > 1 ? ratio : 1 / ratio) };
+  return { message: ratio < 1 ? "今天的 1/{0}" : "今天的 {0} 倍", count: chineseCount(ratio < 1 ? 1 / ratio : ratio) };
 }
 
 /** The metric's sourced history over its own span of the axis, log-scaled, with the moment marked. */
@@ -86,6 +86,7 @@ export function CivilizationGauges({ metrics, t, now }: { metrics: ChronicleMetr
           const formatted = v === null ? null : metricValue(metric, v);
           const forecast = metric.forecastFrom !== undefined && t > metric.forecastFrom && v !== null;
           const today = interpolateMetric(metric.points, now, now, metric.forecastFrom);
+          const comparison = v === null ? null : versusToday(metric, v, today);
           const first = metric.points[0]?.[0];
           return (
             <article key={metric.key} title={metric.note} className={`chronicle-gauge ${forecast ? "is-forecast" : ""}`}>
@@ -101,7 +102,7 @@ export function CivilizationGauges({ metrics, t, now }: { metrics: ChronicleMetr
                 {formatted?.unit && <span className="chronicle-gauge-unit"><Text value={formatted.unit} /></span>}
               </p>
               <p className="chronicle-gauge-note">
-                {v === null ? tx("尚无可靠数据{0}", first !== undefined && t < first ? ` · ${tx("数据始于{0}", tx(timeLabel(first, now, first < 0 ? "ka" : "year")))}` : "") : tx(versusToday(metric, v, today) ?? " ")}
+                {v === null ? tx("尚无可靠数据{0}", first !== undefined && t < first ? ` · ${tx("数据始于{0}", tx(timeLabel(first, now, first < 0 ? "ka" : "year")))}` : "") : comparison ? tx(comparison.message, tx(comparison.count ?? "")) : " "}
               </p>
               <Trace metric={metric} t={t} now={now} />
             </article>

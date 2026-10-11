@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { before, after, test } from "node:test";
+import { createElement, type ComponentType } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { MemoryRouter } from "react-router";
+import { createServer } from "vite";
 import { parseHTML } from "linkedom";
+import type { ChronicleMetric } from "@aihot/contracts/chronicle";
 import { startChronoFixture } from "./chrono-fixture.ts";
 
 let fixture: Awaited<ReturnType<typeof startChronoFixture>>;
@@ -65,6 +70,31 @@ test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era
   assert.match(document.querySelector("main")!.textContent!, /卡尔达肖夫指数/);
   assert.equal(document.querySelector('meta[name="robots"]'), null);
   assert.ok(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith("/zh/chronicle"));
+});
+
+test("civilization comparison notes localize large counts and preserve Chinese output", async () => {
+  const server = await createServer({ configFile: false, root: new URL("../", import.meta.url).pathname, server: { middlewareMode: true, ws: false }, appType: "custom" });
+  try {
+    const { CivilizationGauges } = await server.ssrLoadModule("/app/features/chrono/CivilizationGauges.tsx") as { CivilizationGauges: ComponentType<{ metrics: ChronicleMetric[]; t: number; now: number }> };
+    const cases: Array<[ChronicleMetric["key"], number, number, string, string]> = [
+      ["compute", 1, 49.21e9, "今天的 1/492.1 亿", "1/49.21B of today"],
+      ["population", 1, 1e4, "今天的 1/1 万", "1/10K of today"],
+      ["compute", 49.21e9, 1, "今天的 492.1 亿 倍", "49.21B times today"],
+      ["population", 1e4, 1, "今天的 1 万 倍", "10K times today"],
+      ["messaging", 1.7e8, 1, "比今天慢 1.7 亿 倍", "170M times slower than today"],
+      ["messaging", 1, 1e4, "比今天快 1 万 倍", "10K times faster than today"],
+      ["compute", 1, 620, "今天的 1/620", "1/620 of today"],
+      ["compute", 1, 1, "与今天相当", "Comparable to today"],
+    ];
+    for (const [key, v, today, zh, en] of cases) {
+      const metric: ChronicleMetric = { key, label: key, unit: "", points: [[1969, v], [2026, today]], source: { name: "Test", url: "https://example.com" }, note: "" };
+      const render = (path: string) => parseHTML(renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] }, createElement(CivilizationGauges, { metrics: [metric], t: 1969, now: 2026 })))).document.querySelector(".chronicle-gauge:not(.is-dial) .chronicle-gauge-note")!.textContent!;
+      const english = render("/chronicle");
+      assert.equal(english, en, zh);
+      assert.doesNotMatch(english, /[\u3400-\u9fff]/u);
+      assert.equal(render("/zh/chronicle"), zh);
+    }
+  } finally { await server.close(); }
 });
 
 test("unknown and out-of-range moments are bounded; future energy is unknown", async () => {
