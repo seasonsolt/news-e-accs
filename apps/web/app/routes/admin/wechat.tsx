@@ -48,6 +48,7 @@ type WechatExport =
   | {
       date: string; status: "ready"; minimum: number; revision: number; edits: WechatEdits; article: WechatArticle;
       limits: { title: number; digest: number }; themes: Array<{ key: string; label: string }>;
+      coverUrl: string;
     };
 
 type Ready = Extract<WechatExport, { status: "ready" }>;
@@ -304,6 +305,13 @@ function Workbench({ d }: { d: Ready }) {
           <p className="mt-2 text-center text-[12px] text-ink-4">
             共 {d.article.counts.daily + d.article.counts.added} 条（日报 {d.article.counts.daily}，补充 {d.article.counts.added}），点评 {d.article.counts.commented} 条
           </p>
+        </Card>
+        <Card
+          title="封面"
+          right={<a href={d.coverUrl} download={`AI早报-${d.date}.png`} className="text-accent hover:underline">下载</a>}
+        >
+          <img src={d.coverUrl} alt="本期封面" width={1175} height={500} className="h-auto w-full rounded-[6px] ring-1 ring-line" />
+          <p className="mt-2 text-[12px] text-ink-4">随主题和第一条的标题自动生成；左侧方块是 1:1 的裁切区域。</p>
         </Card>
         <Card title="填写项">
           <CopyRow label="标题" value={d.article.title} />

@@ -6,7 +6,7 @@ import type { AdminSourceUpdate } from "@aihot/contracts/admin";
 import { actorOf } from "@aihot/backend/admin/auth";
 import { siteAnalyticsOverview } from "@aihot/backend/admin/analytics";
 import { newsletterOverview } from "@aihot/backend/admin/newsletter";
-import { saveWechatEdits, wechatExport, wechatIssues } from "@aihot/backend/admin/wechat";
+import { saveWechatEdits, wechatCoverPng, wechatExport, wechatIssues } from "@aihot/backend/admin/wechat";
 import { navCounts } from "@aihot/backend/admin/navigation";
 import { listAudit } from "@aihot/backend/audit";
 import { importSelectBenchRun, listSelectBenchRuns, selectBenchRun } from "@aihot/backend/admin/selectbench";
@@ -118,6 +118,11 @@ export function registerAdmin(app: FastifyInstance) {
   }));
   app.get("/api/admin/wechat", adminHandler(async (req) => wechatExport(q(req).date)));
   app.get("/api/admin/wechat/issues", adminHandler(async () => wechatIssues()));
+  app.get("/api/admin/wechat/:date/cover.png", adminHandler(async (req, reply) => {
+    const png = await wechatCoverPng(param(req, "date"));
+    // The address carries the cover's content hash, so a cached copy is never stale.
+    return png ? reply.type("image/png").header("cache-control", "private, max-age=31536000, immutable").send(png) : notFound(req, reply);
+  }));
   app.put("/api/admin/wechat/:date", adminHandler(async (req, _reply, admin) => saveWechatEdits(param(req, "date"), body(req), actorOf(admin))));
   app.get("/api/admin/analytics", adminHandler(async (req) => siteAnalyticsOverview(Number(q(req).days) || 30)));
 

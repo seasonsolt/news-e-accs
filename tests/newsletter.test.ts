@@ -18,7 +18,8 @@ import { upsertMaterial } from "@aihot/backend/content/materials";
 import { currentContent, saveTranslation } from "@aihot/backend/publication/content-language";
 import { sendDailyIssue } from "@aihot/backend/newsletter/issue";
 import { wechatArticle } from "@aihot/backend/newsletter/wechat";
-import { saveWechatEdits, wechatExport, wechatIssues } from "@aihot/backend/admin/wechat";
+import { saveWechatEdits, wechatCoverPng, wechatExport, wechatIssues } from "@aihot/backend/admin/wechat";
+import sharp from "sharp";
 import { commentWechatColumn } from "@aihot/backend/newsletter/wechat-comments";
 
 const T = tag();
@@ -335,6 +336,12 @@ test("the workbench's edits reorder, hide and rewrite entries over the generated
   assert.ok(!hidden.article.text.includes("产品 B 上线"), "a hidden entry is not printed");
   assert.ok(hidden.article.entries.some((e) => e.key === second.key && e.hidden), "but the workbench still lists it");
   assert.equal(hidden.article.counts.daily, 1);
+
+  const cover = await wechatCoverPng(TODAY);
+  assert.ok(cover);
+  assert.deepEqual(await sharp(cover).metadata().then((m) => [m.format, m.width, m.height]), ["png", 1175, 500], "a 2.35:1 cover");
+  assert.notEqual(edited.coverUrl, generated.coverUrl, "the cover's address follows its content (theme, first entry)");
+  assert.equal(await wechatCoverPng("2000-01-01"), null);
 
   const row = (await wechatIssues()).rows.find((r) => r.date === TODAY);
   assert.ok(row?.edited && row.updatedBy === "editor@example.org");

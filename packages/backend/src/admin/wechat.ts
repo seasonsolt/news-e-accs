@@ -4,6 +4,7 @@ import { calendarDate } from "@aihot/contracts/time";
 import { audit, Conflict } from "../audit.ts";
 import { config } from "../config.ts";
 import { sql } from "../db.ts";
+import { renderWechatCover, wechatCoverEtag, type WechatCover } from "../media/wechat-cover.ts";
 import { WECHAT_MIN_ENTRIES, wechatColumn } from "../newsletter/wechat-column.ts";
 import { wechatComments } from "../newsletter/wechat-comments.ts";
 import { isWechatTheme, wechatArticle, WECHAT_DIGEST_MAX, WECHAT_THEMES, WECHAT_TITLE_MAX, type WechatArticle, type WechatEdits } from "../newsletter/wechat.ts";
@@ -14,6 +15,8 @@ export type WechatExport =
   | {
       date: string; status: "ready"; minimum: number; revision: number; edits: WechatEdits; article: WechatArticle;
       limits: { title: number; digest: number }; themes: Array<{ key: string; label: string }>;
+      /** The cover's address; it changes with the cover's content. */
+      coverUrl: string;
     };
 
 export interface WechatIssueRow { date: string; issueNumber: number; edited: boolean; updatedAt: string | null; updatedBy: string | null; comments: number }
@@ -33,17 +36,32 @@ async function stored(key: string): Promise<{ edits: WechatEdits; revision: numb
   return row ?? { edits: {}, revision: 0 };
 }
 
-export async function wechatExport(date?: string): Promise<WechatExport> {
-  const key = dateKey(date);
+async function issue(key: string) {
   const column = await wechatColumn(key);
-  if (column.status === "not_ready") return { date: key, status: "not_ready", reason: column.reason };
-  if (column.status !== "ready") return { date: key, status: column.status };
+  if (column.status !== "ready") return column;
   const { edits, revision } = await stored(key);
   const article = wechatArticle(column.report, column.extra, await wechatComments(key), edits);
+  // The cover leads with the first entry printed, so reordering the issue changes it.
+  const cover: WechatCover = { date: key, issueNumber: column.report.issueNumber, headline: article.entries.find((e) => !e.hidden)?.title ?? "", theme: article.theme };
+  return { status: "ready" as const, edits, revision, article, cover };
+}
+
+export async function wechatExport(date?: string): Promise<WechatExport> {
+  const key = dateKey(date);
+  const found = await issue(key);
+  if (found.status === "not_ready") return { date: key, status: "not_ready", reason: found.reason };
+  if (found.status !== "ready") return { date: key, status: found.status };
   return {
-    date: key, status: "ready", minimum: WECHAT_MIN_ENTRIES, revision, edits, article,
+    date: key, status: "ready", minimum: WECHAT_MIN_ENTRIES, revision: found.revision, edits: found.edits, article: found.article,
     limits: { title: WECHAT_TITLE_MAX, digest: WECHAT_DIGEST_MAX }, themes: THEMES,
+    coverUrl: `/api/admin/wechat/${key}/cover.png?v=${wechatCoverEtag(found.cover)}`,
   };
+}
+
+/** The issue's cover as PNG bytes; null when the day has no column to cover. */
+export async function wechatCoverPng(date: string): Promise<Buffer | null> {
+  const found = await issue(dateKey(date));
+  return found.status === "ready" ? (await renderWechatCover(found.cover)).png : null;
 }
 
 const bad = (message: string) => Object.assign(new Error(message), { statusCode: 400 });
