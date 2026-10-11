@@ -14,7 +14,9 @@ import { chatJson } from "../providers/llm.ts";
 import { completeReceipt } from "../providers/receipts.ts";
 import { grounded } from "../reports/compose.ts";
 import { wechatColumn } from "./wechat-column.ts";
-import { wechatEntries, type ColumnEntry } from "./wechat.ts";
+import { wechatEntries } from "./wechat.ts";
+
+type Entry = ReturnType<typeof wechatEntries>[number];
 
 const VERSION = promptVersion("wechat-comment");
 /** The prompt asks for 15–40 characters; anything past this is not a one-liner. */
@@ -26,7 +28,7 @@ export async function wechatComments(key: string): Promise<Map<string, string>> 
   return new Map(rows.map((r) => [r.item_id, r.comment]));
 }
 
-function usable(comment: string, entry: ColumnEntry): string | null {
+function usable(comment: string, entry: Entry): string | null {
   const text = comment.trim();
   if (!text || Array.from(text).length > COMMENT_MAX || /[!！]/.test(text)) return null;
   return grounded(text, `${entry.title}\n${entry.body ?? ""}`) ? text : null;
@@ -40,7 +42,7 @@ export async function commentWechatColumn(date?: string): Promise<{ status: stri
   if (column.status !== "ready") return { status: column.status };
   const have = await wechatComments(key);
   const missing = wechatEntries(column.report, column.extra)
-    .filter((e): e is ColumnEntry & { itemId: string } => e.itemId !== null && !have.has(e.itemId));
+    .filter((e): e is Entry & { itemId: string } => e.itemId !== null && !have.has(e.itemId));
   if (!missing.length) return { status: "done", written: 0 };
   const model = await modelFor("wechat");
   const res = await chatJson({

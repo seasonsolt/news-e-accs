@@ -18,7 +18,7 @@ import { upsertMaterial } from "@aihot/backend/content/materials";
 import { currentContent, saveTranslation } from "@aihot/backend/publication/content-language";
 import { sendDailyIssue } from "@aihot/backend/newsletter/issue";
 import { wechatArticle } from "@aihot/backend/newsletter/wechat";
-import { wechatExport } from "@aihot/backend/admin/wechat";
+import { saveWechatEdits, wechatExport, wechatIssues } from "@aihot/backend/admin/wechat";
 import { commentWechatColumn } from "@aihot/backend/newsletter/wechat-comments";
 
 const T = tag();
@@ -83,6 +83,7 @@ after(async () => {
   await sql`DELETE FROM newsletter_subscribers WHERE email LIKE ${`%${T.toLowerCase()}%`}`;
   await sql`DELETE FROM content_translations WHERE kind = 'report' AND content_id = ${`daily:${TODAY}`}`;
   await sql`DELETE FROM wechat_comments WHERE report_key = ${TODAY}`;
+  await sql`DELETE FROM wechat_issues WHERE report_key = ${TODAY}`;
   await resend.close();
   await stopBoss();
   await closeDb();
@@ -201,7 +202,7 @@ test("the 公众号 export is the Chinese edition as 「AI 早报」, without li
 
   const report = await localizePublication((await loadReport("daily", TODAY))!, "zh");
   const long = wechatArticle({ ...report, lead: { title: "长".repeat(80), leadParagraph: "段".repeat(200) } });
-  assert.equal(Array.from(long.title).length, 64);
+  assert.equal(Array.from(long.title).length, 32, "the draft API takes titles of at most 32 characters");
   assert.equal(Array.from(long.digest).length, 120);
   assert.ok(long.title.endsWith("…"));
 
@@ -245,12 +246,12 @@ test("a short daily is filled to ten from the window's best scored reports, one 
     const exported = await wechatExport(TODAY);
     assert.equal(exported.status, "ready");
     const { article } = exported as Extract<typeof exported, { status: "ready" }>;
-    assert.equal(article.entries.daily, 3);
-    assert.ok(article.entries.daily + article.entries.added <= 10, "no more than ten when enough qualify");
+    assert.equal(article.counts.daily, 3);
+    assert.ok(article.counts.daily + article.counts.added <= 10, "no more than ten when enough qualify");
     const added = article.text.split("【今日速览】\n")[1]!.split("\n\n")[0]!.split("\n").slice(3);
     const ours = added.filter((line) => line.endsWith(` ${T}`)).map((line) => line.slice(3));
     assert.deepEqual(ours, [`补充 top ${T}`, `补充 pair-best ${T}`], "best scored first, one per event; the carried event, its other reports and those under the floor stay out");
-    assert.equal(added.length, article.entries.added);
+    assert.equal(added.length, article.counts.added);
     assert.match(article.text, new RegExp(`补充 top ${T}\n补充摘要 top\n模型 · 来源：补充信源`), "an added report is labelled with its category");
   } finally {
     await sql`UPDATE reports SET content=${sql.json(saved!.content as any)},window_end=${saved!.window_end},revision=revision+1 WHERE kind='daily' AND key=${TODAY}`;
@@ -282,7 +283,7 @@ test("the worker comments the column's entries, keeping only comments grounded i
     const exported = await wechatExport(TODAY);
     const { article } = exported as Extract<typeof exported, { status: "ready" }>;
     assert.equal(first.written, 1);
-    assert.equal(article.entries.commented, 1);
+    assert.equal(article.counts.commented, 1);
     assert.doesNotMatch(article.text, /Nova-9|太关键/, "a name or figure its entry lacks, or shouting, is not printed");
     const second = article.text.split("\n\n").find((block) => block.startsWith("02 产品 B 上线\n"));
     assert.equal(second, "02 产品 B 上线\ne/acc 点评：上线只是起点，落地速度比发布会更重要\n产品 · 来源：媒体", "the comment follows its entry");
@@ -297,6 +298,48 @@ test("the worker comments the column's entries, keeping only comments grounded i
   } finally {
     await model.close();
   }
+});
+
+test("the workbench's edits reorder, hide and rewrite entries over the generated column, one revision at a time", async () => {
+  await sql`DELETE FROM wechat_issues WHERE report_key = ${TODAY}`;
+  const ready = async () => {
+    const exported = await wechatExport(TODAY);
+    assert.equal(exported.status, "ready");
+    return exported as Extract<typeof exported, { status: "ready" }>;
+  };
+  const generated = await ready();
+  assert.equal(generated.revision, 0);
+  const [lead, second] = generated.article.entries as [typeof generated.article.entries[0], typeof generated.article.entries[0]];
+  assert.equal(lead.key, `nl-${T}-1`);
+
+  const saved = await saveWechatEdits(TODAY, {
+    revision: 0,
+    edits: { title: "AI 早报｜改过的标题", theme: "ink", order: [second.key, lead.key], hidden: [], entries: { [lead.key]: { title: "改写的头条", comment: "编辑写的点评" }, [second.key]: { comment: "" } }, stray: 1 },
+  }, "editor@example.org");
+  assert.deepEqual(saved, { revision: 1 });
+  const edited = await ready();
+  assert.equal(edited.revision, 1);
+  assert.equal(edited.article.title, "AI 早报｜改过的标题");
+  assert.equal(edited.article.theme, "ink");
+  assert.deepEqual(edited.article.entries.slice(0, 2).map((e) => e.key), [second.key, lead.key], "the editor's order");
+  assert.match(edited.article.text, /【今日速览】\n01 产品 B 上线\n02 改写的头条/);
+  assert.match(edited.article.text, /02 改写的头条\n导语 <b>不<\/b>是 HTML。\ne\/acc 点评：编辑写的点评/);
+  assert.doesNotMatch(edited.article.text, /上线只是起点/, "an emptied comment removes the generated one");
+  assert.equal(edited.article.entries[1]!.generated.title, `头条 ${T}`, "the generated text stays at hand");
+  assert.match(edited.article.html, /color:#1f2328/, "the theme's colours");
+
+  await assert.rejects(saveWechatEdits(TODAY, { revision: 0, edits: {} }, "other@example.org"), (e: { code?: string }) => e.code === "conflict", "a stale window cannot overwrite");
+  await assert.rejects(saveWechatEdits(TODAY, { revision: 1, edits: { theme: "neon" } }, "editor@example.org"), (e: { statusCode?: number }) => e.statusCode === 400);
+  assert.deepEqual(await saveWechatEdits(TODAY, { revision: 1, edits: { hidden: [second.key] } }, "editor@example.org"), { revision: 2 });
+  const hidden = await ready();
+  assert.ok(!hidden.article.text.includes("产品 B 上线"), "a hidden entry is not printed");
+  assert.ok(hidden.article.entries.some((e) => e.key === second.key && e.hidden), "but the workbench still lists it");
+  assert.equal(hidden.article.counts.daily, 1);
+
+  const row = (await wechatIssues()).rows.find((r) => r.date === TODAY);
+  assert.ok(row?.edited && row.updatedBy === "editor@example.org");
+  const [logged] = await sql`SELECT action FROM audit_log WHERE subject = ${`wechat:${TODAY}`} ORDER BY id DESC LIMIT 1`;
+  assert.equal(logged!.action, "wechat.edit");
 });
 
 test("a broadcast in doubt is left unknown and not sent again", async () => {
