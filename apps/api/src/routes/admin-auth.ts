@@ -5,6 +5,8 @@ import type { AdminMe } from "@aihot/contracts/admin";
 import { DEPLOYMENT, SITE } from "@aihot/site";
 import { config } from "@aihot/backend/config";
 import {
+  accessLogin,
+  accessLoginConfigured,
   completeLogin,
   cookie,
   endSession,
@@ -81,19 +83,20 @@ function feishuRedirect(reply: FastifyReply, returnTo: string) {
 
 export function registerAdminAuth(app: FastifyInstance) {
   // The web admin sends a signed-out visitor here with ?return=, a reverse proxy with the site's header.
-  // With Feishu as the only way in, sign-in starts there at once; otherwise the sign-in page (in the web
-  // app) offers the ways in.
+  // With Cloudflare Access configured, or Feishu as the only way in, sign-in starts there at once;
+  // otherwise the sign-in page (in the web app) offers the ways in.
   app.get("/api/auth/login", async (req, reply) => {
     const returnTo = String(
       (req.query as Record<string, string>).return
       ?? (DEPLOYMENT.loginReturnHeader ? req.headers[DEPLOYMENT.loginReturnHeader.toLowerCase()] : undefined)
       ?? "/admin",
     );
+    if (accessLoginConfigured()) return reply.header("Cache-Control", "no-store").redirect(`/api/auth/access?${new URLSearchParams({ return: safeReturn(returnTo) })}`, 302);
     if (feishuLoginConfigured() && !config.adminPassword) return feishuRedirect(reply, returnTo);
     return reply.header("Cache-Control", "no-store").redirect(loginPage(returnTo), 302);
   });
 
-  app.get("/api/auth/options", async (_req, reply) => reply.header("Cache-Control", "no-store").send({ password: !!config.adminPassword, feishu: feishuLoginConfigured() }));
+  app.get("/api/auth/options", async (_req, reply) => reply.header("Cache-Control", "no-store").send({ password: !!config.adminPassword, feishu: feishuLoginConfigured(), access: accessLoginConfigured() }));
 
   // The sign-in form posts as a plain HTML form; only this route reads that format.
   app.register(async (form) => {
@@ -123,6 +126,25 @@ export function registerAdminAuth(app: FastifyInstance) {
     return feishuRedirect(reply, returnTo);
   });
 
+  // Cloudflare Access sign-in. The Access application guards this path, so a visitor without an Access
+  // session signs in at Cloudflare first and comes back here with the application token.
+  app.get("/api/auth/access", async (req, reply) => {
+    const returnTo = String((req.query as Record<string, string>).return ?? "/admin");
+    reply.header("Cache-Control", "no-store");
+    if (!accessLoginConfigured()) return reply.redirect(loginPage(returnTo), 302);
+    const assertion = req.headers["cf-access-jwt-assertion"];
+    const token = (typeof assertion === "string" ? assertion : undefined) ?? parseCookies(req.headers.cookie).CF_Authorization;
+    try {
+      const login = await accessLogin(token, returnTo, req.headers["user-agent"]);
+      reply.header("Set-Cookie", cookie(SESSION_COOKIE, login.token, login.maxAgeSeconds, secure()));
+      return reply.redirect(login.returnTo, 302);
+    } catch (error) {
+      const message = error instanceof LoginRejected ? error.message : "登录失败，请稍后再试";
+      if (!(error instanceof LoginRejected)) req.log.error({ err: error }, "admin login failed");
+      return reply.code(403).type("text/html; charset=utf-8").send(`<!doctype html><meta charset="utf-8"><title>登录失败 · ${SITE.name}</title><p style="font:16px system-ui;padding:40px">${message}。<a href="/cdn-cgi/access/logout">换个账号登录</a></p>`);
+    }
+  });
+
   // The callback registered in the Feishu open platform: the state cookie comes back here.
   app.get("/api/auth/callback", async (req, reply) => {
     const q = req.query as Record<string, string>;
@@ -146,10 +168,11 @@ export function registerAdminAuth(app: FastifyInstance) {
     return reply.code(admin && !admin.dev ? 204 : 401).send();
   });
 
+  // With Cloudflare Access, its own sign-out follows, or the next visit would sign straight back in.
   app.post("/api/auth/logout", async (req, reply) => {
     await endSession(req.headers.cookie);
     reply.header("Set-Cookie", cookie(SESSION_COOKIE, "", 0, secure())).header("Cache-Control", "no-store");
-    return reply.redirect("/", 303);
+    return reply.redirect(accessLoginConfigured() ? "/cdn-cgi/access/logout" : "/", 303);
   });
 
   app.get("/api/admin/me", adminHandler(async (_req, _reply, admin): Promise<AdminMe> => ({ name: admin.name, csrf: admin.csrf, dev: admin.dev })));

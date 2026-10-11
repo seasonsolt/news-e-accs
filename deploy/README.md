@@ -85,7 +85,8 @@ ssh dmit systemctl status eacc-api eacc-worker eacc-web cloudflared-news
 
 没有模型 key 时 `MODEL_CALLS_ENABLED=false`：只抓取不精选，首页是空的。在 `/srv/eacc/.env` 里填
 `LLM_API_KEY`（需要时改 `LLM_BASE_URL`、`LLM_MODEL`），把 `MODEL_CALLS_ENABLED` 改成 `true`，然后重启 api 和 worker。
-后台 `/admin` 的管理员密码在同一个文件的 `ADMIN_PASSWORD`。
+后台 `/admin` 用 Cloudflare Access 登录（Zero Trust 里保护 `e-acc.ai/api/auth/access` 的应用，只允许 `seasonsolt@gmail.com`），
+同一个文件里的 `CF_ACCESS_TEAM_DOMAIN`、`CF_ACCESS_AUD`、`ADMIN_EMAILS` 是它的配置，`ADMIN_PASSWORD` 留空。步骤见 `docs/deploy.md` 的“用 Cloudflare Access 登录后台”。
 
 ### 邮件订阅（Resend）
 

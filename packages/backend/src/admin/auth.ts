@@ -1,7 +1,8 @@
 // Admin identity: the admin password (ADMIN_PASSWORD), or optionally Feishu OAuth with an allowlist of
-// union_ids / emails; opaque sessions stored hashed, and an audit trail for every manual change.
+// union_ids / emails, or Cloudflare Access with the same email allowlist; opaque sessions stored hashed,
+// and an audit trail for every manual change.
 // Development may impersonate an admin with DEV_AUTH_ROLE=admin; production refuses to start with it.
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHmac, createPublicKey, randomBytes, timingSafeEqual, verify, type JsonWebKeyInput, type KeyObject } from "node:crypto";
 import { audit } from "../audit.ts";
 import { config, credential } from "../config.ts";
 import { sql } from "../db.ts";
@@ -16,6 +17,11 @@ export const CALLBACK_URL = `${config.siteUrl}/api/auth/callback`;
 /** Feishu sign-in is offered only when its app is configured. */
 export function feishuLoginConfigured(): boolean {
   return !!credential("integrations", "FEISHU_LOGIN_APP_ID") && !!credential("integrations", "FEISHU_LOGIN_APP_SECRET");
+}
+
+/** Cloudflare Access sign-in is offered only when its team domain and application AUD tag are configured. */
+export function accessLoginConfigured(): boolean {
+  return !!config.accessTeamDomain && !!config.accessAud;
 }
 
 export interface AdminPrincipal {
@@ -37,10 +43,16 @@ interface FeishuClaims {
   email: string | null;
 }
 
+interface AccessClaims {
+  team: string;
+  aud: string;
+  email: string;
+}
+
 interface SessionAuth {
-  method: "password" | "feishu";
+  method: "password" | "feishu" | "access";
   binding: string;
-  claims: FeishuClaims | null;
+  claims: FeishuClaims | AccessClaims | null;
 }
 
 function sessionBinding(method: SessionAuth["method"], identity: unknown, key: string): string {
@@ -53,6 +65,13 @@ function validClaims(value: unknown): value is FeishuClaims {
   return Object.keys(c).length === 3 && typeof c.appId === "string" && c.appId.length > 0 &&
     (c.unionId === null || (typeof c.unionId === "string" && c.unionId.length > 0)) &&
     (c.email === null || (typeof c.email === "string" && c.email.length > 0 && c.email === c.email.toLowerCase()));
+}
+
+function validAccessClaims(value: unknown): value is AccessClaims {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const c = value as Record<string, unknown>;
+  return Object.keys(c).length === 3 && typeof c.team === "string" && typeof c.aud === "string" &&
+    typeof c.email === "string" && c.email.length > 0 && c.email === c.email.toLowerCase();
 }
 
 function sessionAuthorized(row: { auth_method: string | null; auth_binding: string | null; auth_claims: unknown }): boolean {
@@ -68,6 +87,10 @@ function sessionAuthorized(row: { auth_method: string | null; auth_binding: stri
     if (!(c.unionId && config.adminUnionIds.includes(c.unionId)) && !(c.email && config.adminEmails.includes(c.email))) return false;
     // jsonb does not keep key order: rebuild the claims in their sign-in order, never from mutable profile data.
     binding = sessionBinding("feishu", { appId: c.appId, unionId: c.unionId, email: c.email }, key);
+  } else if (row.auth_method === "access") {
+    const c = row.auth_claims;
+    if (!validAccessClaims(c) || !accessLoginConfigured() || c.team !== config.accessTeamDomain || c.aud !== config.accessAud || !config.adminEmails.includes(c.email)) return false;
+    binding = sessionBinding("access", { team: c.team, aud: c.aud, email: c.email }, key);
   } else return false;
   return timingSafeEqual(Buffer.from(binding, "hex"), Buffer.from(row.auth_binding, "hex"));
 }
@@ -165,10 +188,10 @@ async function feishuUser(code: string): Promise<{ user: FeishuUser; appId: stri
 
 export class LoginRejected extends Error {}
 
-async function createSession(userId: number, userAgent: string | undefined, auth: SessionAuth): Promise<string> {
+async function createSession(userId: number, userAgent: string | undefined, auth: SessionAuth, expiresAt = new Date(Date.now() + SESSION_DAYS * 86400_000)): Promise<string> {
   const token = randomBytes(32).toString("base64url");
   await sql`INSERT INTO admin_sessions (id_hash, user_id, csrf_token, expires_at, user_agent, auth_method, auth_binding, auth_claims)
-            VALUES (${sha256(token)}, ${userId}, ${randomBytes(18).toString("base64url")}, ${new Date(Date.now() + SESSION_DAYS * 86400_000)}, ${userAgent?.slice(0, 300) ?? null},
+            VALUES (${sha256(token)}, ${userId}, ${randomBytes(18).toString("base64url")}, ${expiresAt}, ${userAgent?.slice(0, 300) ?? null},
                     ${auth.method}, ${auth.binding}, ${auth.claims ? sql.json(auth.claims as never) : null})`;
   return token;
 }
@@ -196,6 +219,71 @@ export async function completeLogin(code: string, state: string, stateCookie: st
   const token = await createSession(user!.id, userAgent, auth);
   await audit(`admin:${user!.id}`, "auth.login", null, null, null, { union_id: unionId });
   return { token, returnTo, userId: user!.id };
+}
+
+/** Access signs with the team's rotating keys: kept an hour, fetched again early for a key not seen yet. */
+let accessKeys: { team: string; at: number; keys: Map<string, KeyObject> } | null = null;
+
+async function accessKey(kid: string): Promise<KeyObject | null> {
+  const team = config.accessTeamDomain!;
+  const age = accessKeys && accessKeys.team === team ? Date.now() - accessKeys.at : Infinity;
+  if (age > 3600_000 || (!accessKeys!.keys.has(kid) && age > 60_000)) {
+    const res = await fetch(`https://${team}/cdn-cgi/access/certs`, { signal: AbortSignal.timeout(15_000) });
+    if (!res.ok) throw new Error(`Cloudflare Access certs request failed (HTTP ${res.status})`);
+    const body = await res.json() as { keys?: (JsonWebKeyInput["key"] & { kid?: string })[] };
+    const keys = new Map<string, KeyObject>();
+    for (const jwk of body.keys ?? []) if (jwk.kid && jwk.kty === "RSA") keys.set(jwk.kid, createPublicKey({ key: jwk, format: "jwk" }));
+    accessKeys = { team, at: Date.now(), keys };
+  }
+  return accessKeys!.keys.get(kid) ?? null;
+}
+
+/** An Access application token: RS256 by the team's key, issued by the team, for this application, not expired. */
+async function verifyAccessToken(token: string): Promise<{ claims: AccessClaims; exp: number }> {
+  const parts = token.split(".");
+  if (parts.length !== 3) throw new LoginRejected("Cloudflare Access 的登录凭证无效");
+  let header: { alg?: unknown; kid?: unknown };
+  let payload: { iss?: unknown; aud?: unknown; exp?: unknown; nbf?: unknown; email?: unknown };
+  try {
+    header = JSON.parse(Buffer.from(parts[0]!, "base64url").toString("utf8"));
+    payload = JSON.parse(Buffer.from(parts[1]!, "base64url").toString("utf8"));
+  } catch {
+    throw new LoginRejected("Cloudflare Access 的登录凭证无效");
+  }
+  if (!header || header.alg !== "RS256" || typeof header.kid !== "string" || !payload) throw new LoginRejected("Cloudflare Access 的登录凭证无效");
+  const key = await accessKey(header.kid);
+  if (!key || !verify("RSA-SHA256", Buffer.from(`${parts[0]}.${parts[1]}`), key, Buffer.from(parts[2]!, "base64url"))) {
+    throw new LoginRejected("Cloudflare Access 的登录凭证无效");
+  }
+  const team = config.accessTeamDomain!;
+  const aud = config.accessAud!;
+  const now = Date.now() / 1000;
+  const audiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+  if (payload.iss !== `https://${team}` || !audiences.includes(aud)) throw new LoginRejected("Cloudflare Access 的登录凭证不属于这个站");
+  if (typeof payload.exp !== "number" || payload.exp <= now || (typeof payload.nbf === "number" && payload.nbf > now + 60)) {
+    throw new LoginRejected("Cloudflare Access 的登录已过期，请重新登录");
+  }
+  if (typeof payload.email !== "string" || !payload.email) throw new LoginRejected("Cloudflare Access 没有给出邮箱");
+  return { claims: { team, aud, email: payload.email.toLowerCase() }, exp: payload.exp };
+}
+
+/**
+ * Cloudflare Access sign-in: the application token Access attaches (the Cf-Access-Jwt-Assertion header,
+ * else its CF_Authorization cookie), for an allowlisted email. The session ends when the token would.
+ */
+export async function accessLogin(token: string | undefined, returnTo: string, userAgent: string | undefined) {
+  if (!accessLoginConfigured()) throw new LoginRejected("还没有配置 Cloudflare Access（CF_ACCESS_TEAM_DOMAIN、CF_ACCESS_AUD）");
+  if (!token) throw new LoginRejected("没有收到 Cloudflare Access 的登录凭证");
+  const { claims, exp } = await verifyAccessToken(token);
+  if (!config.adminEmails.includes(claims.email)) throw new LoginRejected("这个账号没有后台权限");
+  const auth: SessionAuth = { method: "access", claims, binding: sessionBinding("access", claims, secret()) };
+  const [user] = await sql<{ id: number }[]>`
+    INSERT INTO admin_users (email, display_name, last_login_at) VALUES (${claims.email}, ${claims.email}, now())
+    ON CONFLICT (email) DO UPDATE SET last_login_at = now() RETURNING id`;
+  const expiresAt = new Date(Math.min(exp * 1000, Date.now() + SESSION_DAYS * 86400_000));
+  const sessionToken = await createSession(user!.id, userAgent, auth, expiresAt);
+  await audit(`admin:${user!.id}`, "auth.login", null, null, null, { method: "access" });
+  return { token: sessionToken, returnTo: safeReturn(returnTo), userId: user!.id, maxAgeSeconds: Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000)) };
 }
 
 /** The single password admin: one row, found by its reserved address. */

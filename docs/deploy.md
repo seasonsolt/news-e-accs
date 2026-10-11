@@ -226,11 +226,21 @@ docker compose logs -f --tail 100 api worker web
 
 ### 管理员会话与配置变更
 
-会话绑定登录方式、登录时的管理员凭据或飞书身份。修改管理员密码、飞书管理员名单或会话密钥后，应重启所有 API 进程，使它们加载相同的新配置；只编辑配置文件不代表正在运行的进程已生效，混用旧代码或旧配置的进程不能提供统一撤权。
+会话绑定登录方式、登录时的管理员凭据、飞书身份或 Cloudflare Access 邮箱。修改管理员密码、飞书或邮箱管理员名单、Access 配置或会话密钥后，应重启所有 API 进程，使它们加载相同的新配置；只编辑配置文件不代表正在运行的进程已生效，混用旧代码或旧配置的进程不能提供统一撤权。
 
-有效配置改变后，密码会话不再接受旧密码的授权，飞书会话按登录时实际取得的 union ID 或邮箱检查当前名单（两者任一仍获授权即可）。停用飞书登录应用或更换应用 ID 会使飞书会话失效；只轮换同一应用的 secret 不会使仍获授权的飞书会话退出。轮换或移除 `SESSION_SECRET` 会使两种会话都失效。
+有效配置改变后，密码会话不再接受旧密码的授权，飞书会话按登录时实际取得的 union ID 或邮箱检查当前名单（两者任一仍获授权即可）。停用飞书登录应用或更换应用 ID 会使飞书会话失效；只轮换同一应用的 secret 不会使仍获授权的飞书会话退出。Access 会话在 Access 凭证到期时结束（不超过 30 天），邮箱移出 `ADMIN_EMAILS`、更换 `CF_ACCESS_TEAM_DOMAIN` 或 `CF_ACCESS_AUD` 会使它失效。轮换或移除 `SESSION_SECRET` 会使所有会话都失效。
 
 鉴权时确认失效的会话会被删除，恢复旧配置也不会让它复活。系统不记录全局凭据变更历史：某次配置变化若从未被进程加载，或在恢复前从未被会话检查观察到，不能据此追溯撤销会话。
+
+### 用 Cloudflare Access 登录后台
+
+站点在 Cloudflare 后面时，可以让 Cloudflare Access 负责后台登录，不再用密码：
+
+1. Cloudflare Zero Trust → Access → Applications 新建一个 Self-hosted 应用，域名填站点域名，路径填 `api/auth/access`；策略 Allow，Include → Emails 填管理员邮箱。登录方式可以用一次性验证码（One-time PIN）或 Google 等身份提供方。
+2. 在应用的 Overview 里复制 Application Audience (AUD) Tag；团队域名在 Zero Trust → Settings → Custom Pages（形如 `<team>.cloudflareaccess.com`）。
+3. `.env` 里设置 `CF_ACCESS_TEAM_DOMAIN`、`CF_ACCESS_AUD`，`ADMIN_EMAILS` 填同样的管理员邮箱；不再要密码登录就清空 `ADMIN_PASSWORD`（已有的密码会话随之失效）。重启 API。
+
+之后打开 `/admin` 会先跳到 Cloudflare 登录，回来时 API 用团队公钥校验 Access 签发的凭证（签名、签发方、AUD、有效期），邮箱在 `ADMIN_EMAILS` 里才建立后台会话。退出后台时也会退出 Access。
 
 ## 花多少钱
 
