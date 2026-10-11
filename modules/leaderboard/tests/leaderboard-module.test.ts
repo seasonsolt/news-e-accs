@@ -116,12 +116,13 @@ test("empty site reports unavailable, kicks its first round and computes without
 });
 
 test("existing imported rows remain readable with their original run summary", async () => {
+  // Timestamps carry the site's offset, so the baselines below hold whatever the server's TimeZone is.
   for (const [i, id] of ids.entries()) {
     await sql`INSERT INTO lb_models (id, slug, name, provider, provider_slug, released_at, context_window_tokens)
-      VALUES (${id}, ${slugs[i]}, ${`Stored model ${i}`}, 'OpenAI', 'openai', '1999-01-01', 128000)`;
+      VALUES (${id}, ${slugs[i]}, ${`Stored model ${i}`}, 'OpenAI', 'openai', '1999-01-01T00:00+08:00', 128000)`;
   }
   await sql`INSERT INTO lb_snapshots (id, source_key, source_name, fetched_at, published_at, record_count, metadata)
-    VALUES (${snapshot}, 'livebench-coding', 'LiveBench coding', '1999-01-02', '1999-01-01', 31, ${sql.json({ lastSeenAt: "1999-01-03T00:00:00.000Z" })})`;
+    VALUES (${snapshot}, 'livebench-coding', 'LiveBench coding', '1999-01-02T00:00+08:00', '1999-01-01T00:00+08:00', 31, ${sql.json({ lastSeenAt: "1999-01-03T00:00:00.000Z" })})`;
   for (const [i, id] of ids.entries()) {
     await sql`INSERT INTO lb_scores (id, snapshot_id, model_id, configuration_key, configuration_label, selected_for_product, metric_key, raw_score, source_rank, source_model_name, metadata)
       VALUES (${createId()}, ${snapshot}, ${id}, 'stored-config', '来源默认配置', true, 'livebench-coding', 81.25, ${i + 1}, ${`upstream-${i}`}, ${sql.json({ configurationIdentity: "stored-config", categories: "Coding + Agentic Coding", "livebenchCategoryScore:Coding": 80, "livebenchCategoryScore:Agentic Coding": 82.5 })})`;
