@@ -129,7 +129,17 @@ test('front-page needle previews locally, commits a recorded day and preserves t
       await page.getByRole('slider').focus();await page.keyboard.press('End');
       await expect(page).toHaveURL(origin+(prefix||'/'));
       await page.getByRole('slider').focus();await page.keyboard.press('Home');
-      await expect(page).toHaveURL(new RegExp(prefix+'/chronicle\\?t=-'));
+      // Deep time stays on the front page: the band keeps its place and the feed gives way to the moment's readouts.
+      await expect(page).toHaveURL(new RegExp('^'+origin+(prefix||'/')+'\\?t=-'));
+      await expect(page.locator('#nearby-moments')).toBeVisible();
+      await expect(page.locator('.observatory')).toHaveCount(0);
+      await expect(page.locator('.time-strip')).toBeVisible();
+      // An era link moves the needle without leaving the page.
+      await page.locator('.chronicle-strip a').nth(1).click();
+      await expect(page).toHaveURL(new RegExp('^'+origin+(prefix||'/')+'\\?t=1769'));
+      await expect.poll(async()=>Number(new URL((await page.locator('.time-strip-controls a').getAttribute('href'))!,origin).searchParams.get('t'))).toBeGreaterThan(1768);
+      await page.locator('.time-strip-controls a').click();
+      await expect(page).toHaveURL(new RegExp(prefix+'/chronicle\\?t=1769'));
       await expect(page.locator('.observatory')).toBeVisible();
       await page.goto(origin+(prefix||'/'));
       await page.setViewportSize({width:390,height:844});
@@ -137,6 +147,10 @@ test('front-page needle previews locally, commits a recorded day and preserves t
       await expect(page.locator('.time-strip-meter')).not.toBeVisible();
       for(const link of await page.locator(`main nav[aria-label="${prefix?'阅读':'Read'}"]:visible a`).all())assert.ok((await link.boundingBox())!.height>=44);
       await expect(page.getByRole('navigation',{name:prefix?'底部导航':'Mobile navigation'}).getByRole('link')).toHaveCount(4);
+      // The top bar fits a phone, and the category row's first pill is not a second "All" beside the feed switch.
+      for(const width of [320,375]){await page.setViewportSize({width,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`overflow at ${width}px`);}
+      await expect(page.locator('.site-nav-k')).toBeInViewport({ratio:1});
+      await expect(page.getByRole('link',{name:prefix?'全部分类':'All categories',exact:true}).first()).toBeVisible();
     }finally{showFrontHot=false;await context.close();}
   }
 });

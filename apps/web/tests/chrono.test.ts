@@ -121,12 +121,12 @@ test("front-page needle routes recorded days to picks, today to live and deep ti
   const bounds = { today, earliest: "2026-09-01" };
   for (const t of [now, decimalYear("2026-10-04T01:00:00Z"), decimalYear("2026-10-04T23:00:00Z")]) assert.equal(frontPageTarget(t, now, bounds), "/");
   for (const date of [bounds.earliest, "2026-09-20", "2026-10-03"]) assert.equal(frontPageTarget(dateToYear(date), now, bounds), `/?at=${date}`);
-  for (const t of [dateToYear("2026-08-31"), 1769, -13.787e9, dateToYear("2026-10-05"), now + 100]) assert.equal(frontPageTarget(t, now, bounds), `/chronicle?t=${timeParam(t, now)}`);
-  assert.equal(frontPageTarget(dateToYear("2026-09-01"), now, { today, earliest: null }), `/chronicle?t=${timeParam(dateToYear("2026-09-01"), now)}`);
+  for (const t of [dateToYear("2026-08-31"), 1769, -13.787e9, dateToYear("2026-10-05"), now + 100]) assert.equal(frontPageTarget(t, now, bounds), `/?t=${timeParam(t, now)}`);
+  assert.equal(frontPageTarget(dateToYear("2026-09-01"), now, { today, earliest: null }), `/?t=${timeParam(dateToYear("2026-09-01"), now)}`);
   assert.equal(frontPageTarget(now, now, { today: "2026-10-05", earliest: "2026-09-01" }), "/", "the live needle stays live even when the Beijing day is ahead of UTC");
   for (const bounds of [undefined, null]) {
     assert.equal(frontPageTarget(now, now, bounds), "/");
-    for (const t of [1769, now - 1, now - 0.001, now + 0.001, now + 100]) assert.equal(frontPageTarget(t, now, bounds), `/chronicle?t=${timeParam(t, now)}`);
+    for (const t of [1769, now - 1, now - 0.001, now + 0.001, now + 100]) assert.equal(frontPageTarget(t, now, bounds), `/?t=${timeParam(t, now)}`);
   }
 });
 

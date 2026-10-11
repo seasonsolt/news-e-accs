@@ -1,27 +1,19 @@
-import { Link, useNavigate } from "../lib/navigation";
+import { useNavigate } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { useEffect, useState } from "react";
-import { data, useLoaderData, useLocation, useRouteLoaderData, type ShouldRevalidateFunction } from "react-router";
+import { data, useLoaderData, useLocation, type ShouldRevalidateFunction } from "react-router";
 import { FEATURES } from "@aihot/industry/features";
-import { AXIS_FUTURE_YEARS, BIG_BANG, decimalYear, eraAt, timeLabel, toAxis, yearToDate, type ChronicleMilestone, type ChronicleResponse } from "@aihot/contracts/chronicle";
+import { AXIS_FUTURE_YEARS, BIG_BANG, decimalYear, eraAt, timeLabel, toAxis, type ChronicleMilestone, type ChronicleResponse } from "@aihot/contracts/chronicle";
 import type { Route } from "./+types/chronicle";
-import type { loader as rootLoader } from "../root";
 import { loadOr404 } from "../lib/api.server";
 import { pageMeta } from "../lib/seo";
-import { IconArrowRight, IconHourglass } from "../components/icons";
-import { Capabilities } from "../features/chrono/Capabilities";
 import { ChronicleAxis } from "../features/chrono/ChronicleAxis";
-import { CivilizationGauges } from "../features/chrono/CivilizationGauges";
-import { EraStrip } from "../features/chrono/EraStrip";
-import { MomentList } from "../features/chrono/MomentList";
 import { Observatory } from "../features/chrono/Observatory";
-import { distanceLabel, timeParam } from "../features/chrono/format";
-import { atLabel, withAt } from "../features/chrono/at";
+import { distanceLabel, momentParam, timeParam } from "../features/chrono/format";
+import { ChronicleReadouts } from "../features/chrono/ChronicleReadouts";
 
 function moment(search: string, now: number) {
-  const raw = new URLSearchParams(search).get("t");
-  const t = raw === null ? now : Number(raw);
-  return Number.isFinite(t) ? Math.min(now + AXIS_FUTURE_YEARS, Math.max(BIG_BANG, t)) : now;
+  return momentParam(new URLSearchParams(search).get("t"), now) ?? now;
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -48,7 +40,6 @@ export default function ChroniclePage() {
   const [t, setT] = useState(initialT);
   const location = useLocation();
   const navigate = useNavigate();
-  const bounds = useRouteLoaderData<typeof rootLoader>("root")?.timeBounds;
   useEffect(() => { setT(moment(location.search, now)); }, [location.search, now]);
   const commit = (next: number) => {
     const clamped = Math.min(now + AXIS_FUTURE_YEARS, Math.max(BIG_BANG, next));
@@ -65,10 +56,6 @@ export default function ChroniclePage() {
   }, null);
   const previous = chronicle.milestones.filter((m) => m.t < t - 1e-6).at(-1);
   const following = chronicle.milestones.find((m) => m.t > t + 1e-6);
-  const date = yearToDate(t);
-  const present = !!date && !!bounds && date >= bounds.today;
-  const recorded = !!date && !!bounds?.earliest && date >= bounds.earliest && date < bounds.today;
-  const links = [{ to: "/", label: tx("精选") }, { to: "/hot", label: tx("热点榜") }, { to: "/daily", label: tx("日报") }];
   return (
     <div className="chronicle-page pb-8 pt-3 lg:pt-0">
       <Observatory era={era} focus={focus} label={focus ? tx(timeLabel(focus.t, now, focus.precision, focus.date)) : tx(timeLabel(t, now))} distance={tx(distanceLabel(t, now))} />
@@ -83,34 +70,7 @@ export default function ChroniclePage() {
         </div>
       </section>
 
-      <div className="mt-8 space-y-10">
-        <CivilizationGauges metrics={chronicle.metrics} t={t} now={now} />
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-8">
-          <MomentList milestones={chronicle.milestones} t={t} now={now} onCommit={commit} />
-          <div className="space-y-8">
-            <Capabilities milestones={chronicle.milestones} t={t} now={now} onCommit={commit} />
-            {(recorded || present) && (
-              <section className="chronicle-slice">
-                <h2>
-                  <IconHourglass size={16} />
-                  {present ? tx("此刻的本站") : tx("这一天在本站")}
-                </h2>
-                <p>{present ? tx("时光机落在此刻：这就是现在的站点。") : tx("回到 {0}，看本站当天的样子。", atLabel(date!))}</p>
-                <div className="chronicle-slice-links">
-                  {links.map((link) => (
-                    <Link key={link.to} to={withAt(link.to, recorded ? date : null)}>
-                      {link.label}
-                      <IconArrowRight size={13} />
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            )}
-          </div>
-        </div>
-        <EraStrip eras={chronicle.eras} current={era.id} now={now} />
-        <p className="text-[11.5px] leading-relaxed text-ink-4"><Text value="数据在 industry/chronicle/，每条都附出处；指标在两个有来源的数据点之间按对数插值；预测包含机构、社区观点与注明提出者的本站情景推演，年份不是确定的实现日期。配图由 AI 按各时代的画风绘制。" /></p>
-      </div>
+      <ChronicleReadouts chronicle={chronicle} t={t} now={now} onCommit={commit} className="mt-8" />
     </div>
   );
 }

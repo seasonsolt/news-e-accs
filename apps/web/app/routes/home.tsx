@@ -4,7 +4,7 @@ import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE } from "@aihot/site";
 import { FEATURES } from "@aihot/industry/features";
 import { decimalYear, type ChronicleResponse } from "@aihot/contracts/chronicle";
-import { redirect, useLoaderData, useRouteLoaderData } from "react-router";
+import { redirect, useLoaderData, useRouteLoaderData, type ShouldRevalidateFunction } from "react-router";
 import type { Route } from "./+types/home";
 import type { TimelineResponse } from "@aihot/contracts/site";
 import { cachedPage, loadOr404 } from "../lib/api.server";
@@ -13,7 +13,9 @@ import { filterParams, hasFeedFilters, listPath, organizationLd, pageMeta, readF
 import { inNav } from "../components/shell/nav";
 import { Deck } from "../components/shell/Deck";
 import { KardashevMeter } from "../features/chrono/KardashevMeter";
-import { TimeStrip, type TimeStripData } from "../features/chrono/TimeStrip";
+import { TimeStrip, useFrontPageTime, type TimeStripData } from "../features/chrono/TimeStrip";
+import { ChronicleReadouts } from "../features/chrono/ChronicleReadouts";
+import { distanceLabel, momentParam } from "../features/chrono/format";
 import type { loader as rootLoader } from "../root";
 import { Onboarding } from "../features/onboarding/Onboarding";
 import { CategoryBanner } from "../features/art/CategoryBanner";
@@ -25,7 +27,21 @@ import { weekdayShort } from "../lib/format";
 import { requestAt } from "../features/chrono/at";
 
 export { pageHeaders as headers } from "../lib/api.server";
-export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
+const reuse = pageReuse<typeof loader>();
+export const clientLoader = reuse.clientLoader;
+/** Deep time on the front page: only the needle (`t`) moves, so its readouts keep their data. */
+const deepAddress = (url: URL) => url.searchParams.has("t") && !url.searchParams.has("at");
+export const shouldRevalidate: ShouldRevalidateFunction = (args) =>
+  args.currentUrl.pathname === args.nextUrl.pathname && deepAddress(args.currentUrl) && deepAddress(args.nextUrl) ? false : reuse.shouldRevalidate(args);
+
+/** The band's share of the chronicle: what the axis and the readout line need, not the gauges or sources. */
+function stripOf(chronicle: ChronicleResponse, now: number): TimeStripData {
+  return {
+    eras: chronicle.eras.map(({ id, from, title, summary, art, forecast }) => ({ id, from, title, summary: summary.slice(0, 160), art, forecast })),
+    milestones: chronicle.milestones.map(({ id, t, title, detail, category, art, forecast }) => ({ id, t, title, category, art, forecast: !!forecast, ...(art && { summary: detail.slice(0, 160) }) })),
+    now,
+  };
+}
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
@@ -34,24 +50,28 @@ export async function loader({ request }: Route.LoaderArgs) {
   if (q && q.trim()) throw redirect(localePath(`/all${url.search}`, requestLocale(request)));
   const at = requestAt(request);
   const filters = { ...readFilters(url.searchParams), topic: null, at };
+  const now = decimalYear(Date.now());
+  const filtered = !!(filters.tag || filters.category || filters.channel !== "all");
+  // A needle before the site's records (or on the forecast side) keeps the front page and reads that moment out.
+  const deepT = FEATURES.timeMachine && !at && !filtered ? momentParam(url.searchParams.get("t"), now) : null;
   const upstream = new Headers();
+  if (deepT !== null) {
+    const chronicle = await loadOr404<ChronicleResponse>("/api/site/chronicle", { responseHeaders: upstream, request, signal: request.signal });
+    return cachedPage(60, { data: null, filters, strip: stripOf(chronicle, now), deep: { chronicle, t: deepT } }, upstream);
+  }
   const [data, chronicle] = await Promise.all([
     loadOr404<TimelineResponse>(listPath("/api/site/timeline", { ...filterParams(filters), at }), { responseHeaders: upstream, request, signal: request.signal }),
     FEATURES.timeMachine ? loadOr404<ChronicleResponse>("/api/site/chronicle", { request, signal: request.signal }) : null,
   ]);
-  const strip: TimeStripData | null = chronicle ? {
-    eras: chronicle.eras.map(({ id, from, title, summary, art, forecast }) => ({ id, from, title, summary: summary.slice(0, 160), art, forecast })),
-    milestones: chronicle.milestones.map(({ id, t, title, detail, category, art, forecast }) => ({ id, t, title, category, art, forecast: !!forecast, ...(art && { summary: detail.slice(0, 160) }) })),
-    now: decimalYear(Date.now()),
-  } : null;
-  return cachedPage(60, { data, filters, strip }, upstream);
+  return cachedPage(60, { data, filters, strip: chronicle ? stripOf(chronicle, now) : null, deep: null }, upstream);
 }
 
 export function meta({ matches, loaderData }: Route.MetaArgs) {
   const f = loaderData?.filters;
   // A time-machine slice stands for the live page, which is the one to index.
   const path = listPath("/", loaderData ? filterParams(loaderData.filters) : {});
-  return pageMeta({ path, jsonLd: path === "/" && !f?.at ? [websiteLd(localeFromMatches(matches ?? [])), organizationLd()] : undefined, noindex: !!f?.at || hasFeedFilters(f) }, localeFromMatches(matches ?? []));
+  const deep = !!loaderData?.deep;
+  return pageMeta({ path, jsonLd: path === "/" && !f?.at && !deep ? [websiteLd(localeFromMatches(matches ?? [])), organizationLd()] : undefined, noindex: !!f?.at || deep || hasFeedFilters(f) }, localeFromMatches(matches ?? []));
 }
 
 /** The day the page shows (the time machine's, else today), in the page's kicker. */
@@ -68,9 +88,31 @@ function TodayLabel({ at }: { at?: string | null }) {
 
 export default function Home() {
   const tx = useTranslate();
-  const { data, filters, strip } = useLoaderData<typeof loader>();
+  const { data, filters, strip, deep } = useLoaderData<typeof loader>();
   const root = useRouteLoaderData<typeof rootLoader>("root");
   const k = root?.timeBounds?.kardashev ?? null;
+  const bounds = root?.timeBounds ?? null;
+  const time = useFrontPageTime(strip?.now ?? 0, filters.at, deep?.t ?? null, bounds);
+  if (deep && strip) {
+    return (
+      <div className="pb-6">
+        <TimeStrip chronicle={strip} at={null} bounds={bounds} t={time.t} onMove={time.move} onCommit={time.commit}>
+          {({ label, title }) => (
+            <>
+              <p className="font-mono text-[11.5px] tracking-[0.08em] text-ink-4">{label} · {tx(distanceLabel(time.t, strip.now))}</p>
+              <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+                <h2 className="font-display text-[28px] italic leading-tight text-ink">{title}</h2>
+                <Link to="/" className="inline-flex h-10 items-center rounded-full border border-line px-4 text-[13px] text-ink transition-colors hover:border-ink"><Text value="回到现在" /></Link>
+              </div>
+            </>
+          )}
+        </TimeStrip>
+        <ChronicleReadouts chronicle={deep.chronicle} t={time.t} now={strip.now} onCommit={time.commit} className="mt-6" />
+      </div>
+    );
+  }
+  // Only deep time comes without a feed, and it returned above.
+  if (!data) return null;
   // A first visit to the unfiltered front page opens on the newsletter onboarding (shown before paint
   // by the boot script); everyone else, crawlers included, reads the news below.
   const front = filters.channel === "all" && !filters.category && !filters.tag && !filters.at;
@@ -81,7 +123,7 @@ export default function Home() {
       {filtered ? (
         <Deck compact art="epochs/agents" label={tx("精选")} kicker={<TodayLabel at={filters.at} />} title={filters.tag ? `#${filters.tag}` : tx("精选")} />
       ) : strip ? (
-        <TimeStrip chronicle={strip} at={filters.at} bounds={root?.timeBounds ?? null}>
+        <TimeStrip chronicle={strip} at={filters.at} bounds={bounds} t={time.t} onMove={time.move} onCommit={time.commit}>
           <p className="font-mono text-[11.5px] tracking-[0.08em] text-ink-4"><TodayLabel at={filters.at} /></p>
           <h2 className="mt-1 font-display text-[28px] italic leading-tight text-ink">{tx("最新精选")}</h2>
         </TimeStrip>

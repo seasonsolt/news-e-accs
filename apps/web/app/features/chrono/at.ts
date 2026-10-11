@@ -45,7 +45,7 @@ export function withAt(to: string, at: string | null): string {
   return `${path}${qs ? `?${qs}` : ""}${hash}`;
 }
 
-/** A front-page needle lands on recorded days; deep history and forecasts open the full view. */
+/** A front-page needle lands on recorded days; deep history and forecasts stay on the front page's readouts. */
 export function frontPageTarget(t: number, now: number, bounds?: Pick<TimeMachineBounds, "today" | "earliest"> | null): string {
   if (t === now) return withAt("/", null);
   const date = yearToDate(t);
@@ -53,7 +53,7 @@ export function frontPageTarget(t: number, now: number, bounds?: Pick<TimeMachin
     if (date === bounds.today) return withAt("/", null);
     if (bounds.earliest && date >= bounds.earliest && date < bounds.today) return withAt("/", date);
   }
-  return `/chronicle?t=${timeParam(t, now)}`;
+  return `/?t=${timeParam(t, now)}`;
 }
 
 /** The day `days` away from `at` (or from today), or null once that reaches today: back to the present. */

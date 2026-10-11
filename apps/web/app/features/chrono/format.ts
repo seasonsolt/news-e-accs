@@ -1,5 +1,5 @@
 // Reader-facing numbers and axis windows for the four-dimensional view: 79.6 亿人, 1.9×10¹³ 瓦, 3 天.
-import type { ChronicleEra, ChronicleMetric, ChronicleMilestone } from "@aihot/contracts/chronicle";
+import { AXIS_FUTURE_YEARS, BIG_BANG, type ChronicleEra, type ChronicleMetric, type ChronicleMilestone } from "@aihot/contracts/chronicle";
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
 
@@ -49,6 +49,12 @@ export function metricValue(metric: ChronicleMetric, v: number): { value: string
     default:
       return { value: scientific(v), unit: metric.unit };
   }
+}
+
+/** The moment a `?t=` names, held within the axis; null when absent or not a number. */
+export function momentParam(raw: string | null, now: number): number | null {
+  const t = raw === null || raw.trim() === "" ? NaN : Number(raw);
+  return Number.isFinite(t) ? Math.min(now + AXIS_FUTURE_YEARS, Math.max(BIG_BANG, t)) : null;
 }
 
 /** A time for the URL: short, and exact enough to land on the same point of the axis. */
