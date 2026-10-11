@@ -6,7 +6,10 @@ import type { AdminSourceUpdate } from "@aihot/contracts/admin";
 import { actorOf } from "@aihot/backend/admin/auth";
 import { siteAnalyticsOverview } from "@aihot/backend/admin/analytics";
 import { newsletterOverview } from "@aihot/backend/admin/newsletter";
-import { pushWechatDraft, saveWechatEdits, wechatCoverPng, wechatExport, wechatIssues } from "@aihot/backend/admin/wechat";
+import {
+  pushWechatDraft, removeWechatIllustration, requestWechatIllustration, saveWechatEdits, uploadWechatIllustration, wechatCoverPng, wechatExport,
+  wechatIllustrationJpeg, wechatIssues,
+} from "@aihot/backend/admin/wechat";
 import { navCounts } from "@aihot/backend/admin/navigation";
 import { listAudit } from "@aihot/backend/audit";
 import { importSelectBenchRun, listSelectBenchRuns, selectBenchRun } from "@aihot/backend/admin/selectbench";
@@ -123,6 +126,17 @@ export function registerAdmin(app: FastifyInstance) {
     // The address carries the cover's content hash, so a cached copy is never stale.
     return png ? reply.type("image/png").header("cache-control", "private, max-age=31536000, immutable").send(png) : notFound(req, reply);
   }));
+  app.get("/api/admin/wechat/:date/illustration.jpg", adminHandler(async (req, reply) => {
+    const jpeg = await wechatIllustrationJpeg(param(req, "date"), String(q(req).entry ?? ""));
+    // The address carries the picture's file name, so a cached copy is never stale.
+    return jpeg ? reply.type("image/jpeg").header("cache-control", "private, max-age=31536000, immutable").send(jpeg) : notFound(req, reply);
+  }));
+  app.post("/api/admin/wechat/:date/illustration", adminHandler(async (req, _reply, admin) => requestWechatIllustration(param(req, "date"), body(req), actorOf(admin))));
+  app.post("/api/admin/wechat/:date/illustration/upload", adminHandler(async (req, _reply, admin) => {
+    const b = body<{ entry: string; image: string }>(req);
+    return uploadWechatIllustration(param(req, "date"), { entry: b.entry, image: decodeImage(b.image) }, actorOf(admin));
+  }));
+  app.delete("/api/admin/wechat/:date/illustration", adminHandler(async (req, _reply, admin) => removeWechatIllustration(param(req, "date"), body<{ entry: string }>(req).entry, actorOf(admin))));
   app.post("/api/admin/wechat/:date/draft", adminHandler(async (req, _reply, admin) => pushWechatDraft(param(req, "date"), actorOf(admin))));
   app.put("/api/admin/wechat/:date", adminHandler(async (req, _reply, admin) => saveWechatEdits(param(req, "date"), body(req), actorOf(admin))));
   app.get("/api/admin/analytics", adminHandler(async (req) => siteAnalyticsOverview(Number(q(req).days) || 30)));

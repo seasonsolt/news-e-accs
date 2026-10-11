@@ -1,14 +1,21 @@
 // The 公众号 workbench: a day's column 「AI 早报」 (newsletter/wechat-column.ts) with the comments the worker
-// has written for it and the editor's changes (wechat_issues), the changes themselves, its cover, putting
-// it into the 公众号's draft box (providers/wechat-mp.ts), and the recent issues.
+// has written for it and the editor's changes (wechat_issues), the changes themselves, its cover, the
+// entries' illustrations (newsletter/wechat-illustrations.ts), putting it into the 公众号's draft box
+// (providers/wechat-mp.ts), and the recent issues.
+import { createHash, randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { calendarDate } from "@aihot/contracts/time";
 import { audit, Conflict } from "../audit.ts";
 import { config } from "../config.ts";
 import { sql } from "../db.ts";
+import { enqueue, QUEUES } from "../jobs/queue.ts";
 import { renderWechatCover, WECHAT_COVER_SQUARE, WECHAT_COVER_WIDE, wechatCoverEtag, type WechatCover } from "../media/wechat-cover.ts";
 import { WECHAT_MIN_ENTRIES, wechatColumn } from "../newsletter/wechat-column.ts";
 import { wechatComments } from "../newsletter/wechat-comments.ts";
-import { addWechatDraft, updateWechatDraft, uploadWechatImage, WechatApiError, wechatConfigured, type WechatDraftArticle } from "../providers/wechat-mp.ts";
+import { drawingUnavailable, illustrationDir, illustrationSubject, wechatIllustrations, type IllustrationRow } from "../newsletter/wechat-illustrations.ts";
+import { saveJpeg } from "../providers/codex.ts";
+import { addWechatDraft, updateWechatDraft, uploadWechatArticleImage, uploadWechatImage, WechatApiError, wechatConfigured, type WechatDraftArticle } from "../providers/wechat-mp.ts";
 import { SITE } from "@aihot/site";
 import { isWechatTheme, wechatArticle, WECHAT_DIGEST_MAX, WECHAT_THEMES, WECHAT_TITLE_MAX, type WechatArticle, type WechatEdits } from "../newsletter/wechat.ts";
 
@@ -20,9 +27,23 @@ export type WechatExport =
       limits: { title: number; digest: number }; themes: Array<{ key: string; label: string }>;
       /** The cover's address; it changes with the cover's content. */
       coverUrl: string;
-      /** Whether drafts can be pushed from here, and the last push of this issue. */
-      push: { enabled: boolean; configured: boolean; pushedAt: string | null; pushedRevision: number | null; pushedBy: string | null };
+      /** Whether drafts can be pushed from here, and the last push of this issue; `imagesChanged`: an illustration changed since. */
+      push: { enabled: boolean; configured: boolean; pushedAt: string | null; pushedRevision: number | null; pushedBy: string | null; imagesChanged: boolean };
+      /** The entries' illustrations by entry key, and why the worker cannot draw here (null when it can). */
+      illustrations: Record<string, WechatIllustration>;
+      drawingUnavailable: string | null;
     };
+
+export interface WechatIllustration {
+  status: IllustrationRow["status"];
+  origin: IllustrationRow["origin"];
+  prompt: string | null;
+  error: string | null;
+  /** The picture the article prints now (kept while a new one is drawn); null before the first. */
+  url: string | null;
+  requestedBy: string | null;
+  updatedAt: string;
+}
 
 export interface WechatIssueRow {
   date: string; issueNumber: number; edited: boolean; updatedAt: string | null; updatedBy: string | null; comments: number; pushedAt: string | null;
@@ -34,12 +55,14 @@ interface Stored {
   push: Pushed | null;
 }
 
-/** The issue's last push into the draft box. */
-interface Pushed { draftMediaId: string; coverMediaId: string; coverEtag: string; at: string; revision: number; by: string }
+/** The issue's last push into the draft box; `images`, the fingerprint of the illustrations it carried. */
+interface Pushed { draftMediaId: string; coverMediaId: string; coverEtag: string; at: string; revision: number; by: string; images?: string }
 
 const THEMES = Object.entries(WECHAT_THEMES).map(([key, t]) => ({ key, label: t.label }));
 /** Longest text an editor may keep in one field; the column is a digest, not an essay. */
 const FIELD_MAX = 2000;
+/** Longest description of what to draw. */
+const PROMPT_MAX = 500;
 
 function dateKey(date: string | undefined): string {
   const key = date || calendarDate(Date.now(), config.reportTimeZone);
@@ -55,15 +78,24 @@ async function stored(key: string): Promise<Stored> {
   return row ?? NONE;
 }
 
+/** Where the workbench loads an illustration from; the file name in it changes with the picture. */
+const illustrationUrl = (key: string, entry: string, file: string) =>
+  `/api/admin/wechat/${key}/illustration.jpg?entry=${encodeURIComponent(entry)}&v=${file.slice(0, 12)}`;
+
 async function issue(key: string) {
   const column = await wechatColumn(key);
   if (column.status !== "ready") return column;
-  const row = await stored(key);
+  const [row, comments, illustrations] = await Promise.all([stored(key), wechatComments(key), wechatIllustrations(key)]);
   const { edits, revision } = row;
-  const article = wechatArticle(column.report, column.extra, await wechatComments(key), edits);
+  /** The article with the illustrations printed from `images` (entry key to address). */
+  const render = (images: ReadonlyMap<string, string>) => wechatArticle(column.report, column.extra, comments, edits, images);
+  const files = new Map([...illustrations].flatMap(([entry, r]) => (r.file ? [[entry, r.file] as const] : [])));
+  const article = render(new Map([...files].map(([entry, file]) => [entry, illustrationUrl(key, entry, file)])));
   // The cover leads with the first entry printed, so reordering the issue changes it.
   const cover: WechatCover = { date: key, issueNumber: column.report.issueNumber, headline: article.entries.find((e) => !e.hidden)?.title ?? "", theme: article.theme };
-  return { status: "ready" as const, edits, revision, article, cover, row };
+  const shown = article.entries.filter((e) => !e.hidden && files.has(e.key)).map((e) => `${e.key}=${files.get(e.key)}`);
+  const imagesEtag = createHash("sha256").update(shown.join("\n")).digest("hex").slice(0, 16);
+  return { status: "ready" as const, edits, revision, article, cover, row, illustrations, render, imagesEtag };
 }
 
 export async function wechatExport(date?: string): Promise<WechatExport> {
@@ -78,9 +110,18 @@ export async function wechatExport(date?: string): Promise<WechatExport> {
     push: {
       enabled: config.wechatDraftEnabled, configured: wechatConfigured(),
       pushedAt: found.row.push?.at ?? null, pushedRevision: found.row.push?.revision ?? null, pushedBy: found.row.push?.by ?? null,
+      imagesChanged: !!found.row.push && (found.row.push.images ?? EMPTY_IMAGES) !== found.imagesEtag,
     },
+    illustrations: Object.fromEntries([...found.illustrations].map(([entry, r]) => [entry, {
+      status: r.status, origin: r.origin, prompt: r.prompt, error: r.error, url: r.file ? illustrationUrl(key, entry, r.file) : null,
+      requestedBy: r.requestedBy, updatedAt: r.updatedAt,
+    }])),
+    drawingUnavailable: drawingUnavailable(),
   };
 }
+
+/** The fingerprint of an issue printed without illustrations (and of pushes made before they existed). */
+const EMPTY_IMAGES = createHash("sha256").update("").digest("hex").slice(0, 16);
 
 /** The issue's cover as PNG bytes; null when the day has no column to cover. */
 export async function wechatCoverPng(date: string): Promise<Buffer | null> {
@@ -141,6 +182,90 @@ export async function saveWechatEdits(date: string, input: { revision?: unknown;
   });
 }
 
+/** The printed or hidden entry `entry` of the day's column; 404 when there is none. */
+async function columnEntry(key: string, entry: unknown) {
+  if (typeof entry !== "string" || !entry) throw bad("entry is required");
+  const found = await issue(key);
+  if (found.status !== "ready") throw new Conflict("这一天没有可以配图的早报。");
+  const one = found.article.entries.find((e) => e.key === entry);
+  if (!one) throw Object.assign(new Error("no such entry in this issue"), { statusCode: 404 });
+  return { found, entry: one };
+}
+
+/** A drawing still under way; one that has not moved for this long was lost with its worker. */
+const DRAWING_STALE_MS = 15 * 60_000;
+
+/**
+ * Asks the worker to draw the entry's illustration, of `prompt` or else of the entry itself. The picture
+ * already there stays until the new one is ready. One drawing per entry at a time.
+ */
+export async function requestWechatIllustration(date: string, input: { entry?: unknown; prompt?: unknown }, actor: string): Promise<{ request: string }> {
+  const key = dateKey(date);
+  const unavailable = drawingUnavailable();
+  if (unavailable) throw new Conflict(unavailable);
+  const { entry } = await columnEntry(key, input.entry);
+  const raw = input.prompt === undefined || input.prompt === null ? "" : input.prompt;
+  if (typeof raw !== "string" || Array.from(raw).length > PROMPT_MAX) throw bad(`prompt must be text of at most ${PROMPT_MAX} characters`);
+  const prompt = raw.trim() || null;
+  const request = randomUUID();
+  await sql.begin(async (tx) => {
+    const [before] = await tx<{ status: string; prompt: string | null; updated_at: Date }[]>`
+      SELECT status, prompt, updated_at FROM wechat_illustrations WHERE report_key = ${key} AND entry_key = ${entry.key} FOR UPDATE`;
+    if (before && (before.status === "queued" || before.status === "drawing") && Date.now() - before.updated_at.getTime() < DRAWING_STALE_MS) {
+      throw new Conflict("这一条正在画，等它画完再重画。");
+    }
+    await tx`
+      INSERT INTO wechat_illustrations (report_key, entry_key, status, origin, prompt, request, requested_by)
+      VALUES (${key}, ${entry.key}, 'queued', 'drawn', ${prompt}, ${request}, ${actor})
+      ON CONFLICT (report_key, entry_key) DO UPDATE SET status = 'queued', prompt = EXCLUDED.prompt, request = EXCLUDED.request,
+        error = NULL, requested_by = EXCLUDED.requested_by, updated_at = now()`;
+    await enqueue(QUEUES.illustrate, { date: key, entry: entry.key, request, subject: illustrationSubject(entry, prompt) }, {}, tx);
+    await audit(actor, "wechat.illustrate", `wechat:${key}`, null, before ? { entry: entry.key, prompt: before.prompt } : null, { entry: entry.key, prompt }, { db: tx });
+  });
+  return { request };
+}
+
+/** Puts the editor's own picture under the entry, in place of any drawn one (a drawing under way is dropped). */
+export async function uploadWechatIllustration(date: string, input: { entry?: unknown; image: Buffer }, actor: string): Promise<{ ok: true }> {
+  const key = dateKey(date);
+  const { entry } = await columnEntry(key, input.entry);
+  let saved;
+  try {
+    saved = await saveJpeg(input.image, illustrationDir());
+  } catch {
+    throw bad("这张图片读不出来，换一张 PNG、JPEG 或 WebP。");
+  }
+  await sql.begin(async (tx) => {
+    await tx`
+      INSERT INTO wechat_illustrations (report_key, entry_key, status, origin, request, file, requested_by)
+      VALUES (${key}, ${entry.key}, 'done', 'uploaded', ${randomUUID()}, ${saved.file}, ${actor})
+      ON CONFLICT (report_key, entry_key) DO UPDATE SET status = 'done', origin = 'uploaded', prompt = NULL, request = EXCLUDED.request,
+        file = EXCLUDED.file, error = NULL, receipt_id = NULL, wechat_url = NULL, requested_by = EXCLUDED.requested_by, updated_at = now()`;
+    await audit(actor, "wechat.illustration.upload", `wechat:${key}`, null, null, { entry: entry.key, file: saved.file }, { db: tx });
+  });
+  return { ok: true };
+}
+
+/** Takes the entry's illustration out of the article; a drawing under way is dropped. */
+export async function removeWechatIllustration(date: string, entry: unknown, actor: string): Promise<{ removed: boolean }> {
+  const key = dateKey(date);
+  if (typeof entry !== "string" || !entry) throw bad("entry is required");
+  return sql.begin(async (tx) => {
+    const [gone] = await tx<{ file: string | null; origin: string }[]>`
+      DELETE FROM wechat_illustrations WHERE report_key = ${key} AND entry_key = ${entry} RETURNING file, origin`;
+    if (gone) await audit(actor, "wechat.illustration.remove", `wechat:${key}`, null, { entry, ...gone }, null, { db: tx });
+    return { removed: !!gone };
+  });
+}
+
+/** The entry's illustration as JPEG bytes; null without one. */
+export async function wechatIllustrationJpeg(date: string, entry: string): Promise<Buffer | null> {
+  const [row] = await sql<{ file: string | null }[]>`SELECT file FROM wechat_illustrations WHERE report_key = ${dateKey(date)} AND entry_key = ${entry}`;
+  // Names are written here as <hash>.jpg; anything else is not read from disk.
+  if (!row?.file || !/^[0-9a-f]{32}\.jpg$/.test(row.file)) return null;
+  return readFile(path.join(illustrationDir(), row.file)).catch(() => null);
+}
+
 /** The latest dailies, newest first, with whether the workbench changed them and how many comments they have. */
 export async function wechatIssues(limit = 30): Promise<{ rows: WechatIssueRow[] }> {
   const rows = await sql<WechatIssueRow[]>`
@@ -166,10 +291,9 @@ export async function pushWechatDraft(date: string, actor: string): Promise<{ ac
   if (!wechatConfigured()) throw new Conflict("没有配置公众号的 WECHAT_APPID 和 WECHAT_APPSECRET。");
   const found = await issue(key);
   if (found.status !== "ready") throw new Conflict("这一天没有可以推送的早报。");
-  const { article, cover, row, revision } = found;
-  if (Array.from(article.title).length > WECHAT_TITLE_MAX) throw bad(`标题超过 ${WECHAT_TITLE_MAX} 字，公众号不收，请先改短。`);
-  if (Array.from(article.digest).length > WECHAT_DIGEST_MAX) throw bad(`摘要超过 ${WECHAT_DIGEST_MAX} 字，请先改短。`);
-  if (Array.from(article.html).length > CONTENT_MAX) throw bad("正文太长，公众号不收；隐藏几条再推。");
+  const { cover, row, revision, illustrations } = found;
+  if (Array.from(found.article.title).length > WECHAT_TITLE_MAX) throw bad(`标题超过 ${WECHAT_TITLE_MAX} 字，公众号不收，请先改短。`);
+  if (Array.from(found.article.digest).length > WECHAT_DIGEST_MAX) throw bad(`摘要超过 ${WECHAT_DIGEST_MAX} 字，请先改短。`);
   const etag = wechatCoverEtag(cover);
   let coverId: string;
   let mediaId = row.push?.draftMediaId ?? null;
@@ -178,6 +302,22 @@ export async function pushWechatDraft(date: string, actor: string): Promise<{ ac
     coverId = row.push?.coverEtag === etag
       ? row.push.coverMediaId
       : await uploadWechatImage((await renderWechatCover(cover)).png, `ai-zaobao-${key}.png`);
+    // The body prints its pictures from the 公众号's own addresses; each picture is uploaded once.
+    const images = new Map<string, string>();
+    for (const e of found.article.entries) {
+      const picture = illustrations.get(e.key);
+      if (e.hidden || !picture?.file) continue;
+      let url = picture.wechatUrl;
+      if (!url) {
+        const jpeg = await wechatIllustrationJpeg(key, e.key);
+        if (!jpeg) continue;
+        url = await uploadWechatArticleImage(jpeg, picture.file);
+        await sql`UPDATE wechat_illustrations SET wechat_url = ${url} WHERE report_key = ${key} AND entry_key = ${e.key} AND file = ${picture.file}`;
+      }
+      images.set(e.key, url);
+    }
+    const article = found.render(images);
+    if (Array.from(article.html).length > CONTENT_MAX) throw bad("正文太长，公众号不收；隐藏几条再推。");
     const draft: WechatDraftArticle = {
       title: article.title, author: SITE.name.slice(0, 16), digest: article.digest, content: article.html,
       content_source_url: article.readMoreUrl, thumb_media_id: coverId, need_open_comment: 1, only_fans_can_comment: 0,
@@ -190,7 +330,7 @@ export async function pushWechatDraft(date: string, actor: string): Promise<{ ac
     if (error instanceof WechatApiError) throw new Conflict(error.message);
     throw error;
   }
-  const push: Pushed = { draftMediaId: mediaId!, coverMediaId: coverId, coverEtag: etag, at: new Date().toISOString(), revision, by: actor };
+  const push: Pushed = { draftMediaId: mediaId!, coverMediaId: coverId, coverEtag: etag, at: new Date().toISOString(), revision, by: actor, images: found.imagesEtag };
   await sql.begin(async (tx) => {
     await tx`
       INSERT INTO wechat_issues (report_key, push) VALUES (${key}, ${tx.json(push as never)})

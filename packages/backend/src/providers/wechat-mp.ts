@@ -74,18 +74,27 @@ export function resetWechatToken() {
   token = null;
 }
 
-/** A permanent image (the draft API takes covers only as permanent material); its media_id. */
-export async function uploadWechatImage(png: Buffer, filename: string): Promise<string> {
+/** One file as the `media` field of a multipart form, as both upload endpoints take it. */
+function media(bytes: Buffer, filename: string, type: string) {
   const boundary = `----aihot${Date.now().toString(16)}`;
   const body = Buffer.concat([
-    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="media"; filename="${filename}"\r\nContent-Type: image/png\r\n\r\n`),
-    png,
+    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="media"; filename="${filename}"\r\nContent-Type: ${type}\r\n\r\n`),
+    bytes,
     Buffer.from(`\r\n--${boundary}--\r\n`),
   ]);
-  const res = await call(`/cgi-bin/material/add_material?access_token=${await accessToken()}&type=image`, {
-    body, headers: { "content-type": `multipart/form-data; boundary=${boundary}` },
-  });
+  return { body, headers: { "content-type": `multipart/form-data; boundary=${boundary}` } };
+}
+
+/** A permanent image (the draft API takes covers only as permanent material); its media_id. */
+export async function uploadWechatImage(png: Buffer, filename: string): Promise<string> {
+  const res = await call(`/cgi-bin/material/add_material?access_token=${await accessToken()}&type=image`, media(png, filename, "image/png"));
   return String(res.media_id);
+}
+
+/** A picture for an article's body (JPEG or PNG, at most 1 MB); the address the body prints it from. */
+export async function uploadWechatArticleImage(jpeg: Buffer, filename: string): Promise<string> {
+  const res = await call(`/cgi-bin/media/uploadimg?access_token=${await accessToken()}`, media(jpeg, filename, "image/jpeg"));
+  return String(res.url);
 }
 
 export interface WechatDraftArticle {

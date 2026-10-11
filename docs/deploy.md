@@ -81,6 +81,10 @@ docker compose run --rm setup && docker compose up -d
 
 日报缺期告警按北京时间的具体日期跟踪，跨午夜不会自动恢复；只有对应日报存在才发恢复通知。新缺期检查最近 7 个日历日（含今天），不早于最早的日报或 reports.compose 运行记录；没有历史记录时只检查今天。已告警的日期即使超出 7 天仍保留，关闭采集/模型或 worker 启动宽限期也不会把缺期当成恢复。旧的 report.daily 状态自动按首次告警时间迁移，保留提醒间隔。出刊后两小时告警、每小时提醒及飞书开关保持不变；无需数据库迁移。自定义 responder 若按旧 `report.daily` 精确匹配，需改为识别 `report.daily:YYYY-MM-DD` 日期键。
 
+#### 公众号配图与工作台改版（2026 年 10 月 11 日）
+
+迁移 `0113` 新建表 `wechat_illustrations`，只加不删。后台“公众号”工作台改了布局，每条可以配一张图：上传，或在选填的 `CODEX_BIN` 配好后由 worker 用那台机器上的 Codex CLI 画（见下方 [公众号配图](#公众号配图)）。不配就只能上传，其余照旧。种子数据会给后台预算加一行 `codex`（每分钟 2、每小时 20、每天 60 张），已有的不覆盖。图片存在 `AIHOT_DATA_DIR/uploads/wechat-illustrations/`，备份时随 `uploads/` 一起打包。
+
 #### 读者文字的改用词（2026 年 10 月 9 日）
 
 没有迁移，没有必填的新环境变量。行业包多了 `industry/wording.ts`（读者文字里不用的词，模板里是空的）和提示词 `mend-wording.md`；合并时这两个文件随更新带进来，自己的行业包没有冲突。词表空着就不查、不多调用模型；写了词以后，用了这些词的标题、摘要、推荐理由会多一次模型调用（模型步骤“改用词”，可用选填的 `WORDING_MODEL` 单独选模型）。说明见 [把它改成你的行业](customize.md)。
@@ -328,3 +332,9 @@ v1 默认目标语言仍为中文；英文主稿缺少有效中文 edition 时�
 3. `.env` 里设 `WECHAT_APPID`、`WECHAT_APPSECRET` 和 `WECHAT_DRAFT_ENABLED=true`，重启 api。
 
 同一期再推送会更新同一篇草稿；那篇草稿已经发表或删掉时，会新建一篇。
+
+### 公众号配图
+
+工作台里每条可以配一张图，印在这条标题下方；推送时图片先传到公众号（`media/uploadimg`），正文里用公众号给的地址，每张只传一次。「复制正文」不带配图，手动发时要在公众号编辑器里另外插入。
+
+图可以上传（PNG、JPEG、WebP），也可以让 worker 画：worker 所在的机器装好 Codex CLI，用运行 worker 的系统用户 `codex login`，然后在 `.env` 里设 `CODEX_BIN=<codex 的绝对路径>`（配置目录不在这个用户的主目录时，再设 `CODEX_HOME`），重启 api 和 worker。还要 `MODEL_CALLS_ENABLED=true`。每张图跑一次 `codex exec`（用它的图片生成，一到四分钟），消耗 Codex 登录账号的额度；每次都记回执，受后台预算里 `codex` 一行限制，填 0 就停。画的要求在 `industry/prompts/wechat-illustration.md`。

@@ -1,5 +1,7 @@
 // Seeds a fresh site from the industry pack: the demo sources (industry/sources.json, only the ones not
 // there yet, so admin edits are never undone). Topics need no seeding: they are read from industry/topics.json.
+// Also the budget rows of paid services added since release migrations stopped writing rows, again only
+// where none is there, so the admin's limits stay.
 // Re-runnable:  node --env-file=.env scripts/seed.ts
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -37,4 +39,10 @@ for (const s of sources) {
   added += inserted.length;
 }
 console.log(`sources: ${added} added, ${sources.length - added} already there`);
+
+const budgets = await sql`
+  INSERT INTO budgets (service, per_minute, per_hour, per_day, note) VALUES
+    ('codex', 2, 20, 60, '公众号配图（服务器上的 codex，按次消耗账号额度）')
+  ON CONFLICT (service) DO NOTHING RETURNING service`;
+if (budgets.length) console.log(`budgets: ${budgets.map((b) => b.service).join(", ")} added`);
 await closeDb();

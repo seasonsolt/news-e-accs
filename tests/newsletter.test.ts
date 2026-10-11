@@ -18,9 +18,16 @@ import { upsertMaterial } from "@aihot/backend/content/materials";
 import { currentContent, saveTranslation } from "@aihot/backend/publication/content-language";
 import { sendDailyIssue } from "@aihot/backend/newsletter/issue";
 import { wechatArticle } from "@aihot/backend/newsletter/wechat";
-import { pushWechatDraft, saveWechatEdits, wechatCoverPng, wechatExport, wechatIssues } from "@aihot/backend/admin/wechat";
+import {
+  pushWechatDraft, removeWechatIllustration, requestWechatIllustration, saveWechatEdits, uploadWechatIllustration, wechatCoverPng, wechatExport,
+  wechatIllustrationJpeg, wechatIssues,
+} from "@aihot/backend/admin/wechat";
+import { drawWechatIllustration } from "@aihot/backend/newsletter/wechat-illustrations";
 import { resetWechatToken } from "@aihot/backend/providers/wechat-mp";
 import sharp from "sharp";
+import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { commentWechatColumn } from "@aihot/backend/newsletter/wechat-comments";
 
 const T = tag();
@@ -86,6 +93,7 @@ after(async () => {
   await sql`DELETE FROM content_translations WHERE kind = 'report' AND content_id = ${`daily:${TODAY}`}`;
   await sql`DELETE FROM wechat_comments WHERE report_key = ${TODAY}`;
   await sql`DELETE FROM wechat_issues WHERE report_key = ${TODAY}`;
+  await sql`DELETE FROM wechat_illustrations WHERE report_key = ${TODAY}`;
   await resend.close();
   await stopBoss();
   await closeDb();
@@ -417,6 +425,135 @@ test("pushing puts the issue into the 公众号's draft box, then updates that d
     delete process.env.WECHAT_API_BASE_URL;
     resetWechatToken();
     await mp.close();
+  }
+});
+
+/** A stand-in for the Codex CLI: copies a fixed picture into its working directory, or fails like a signed-out CLI. */
+async function fakeCodex(dir: string) {
+  const picture = path.join(dir, "drawn.png");
+  await writeFile(picture, await sharp({ create: { width: 1600, height: 900, channels: 3, background: "#c08040" } }).png().toBuffer());
+  const bin = path.join(dir, "codex");
+  await writeFile(bin, `#!/bin/sh\nif [ -n "$FAKE_CODEX_FAIL" ]; then echo "not logged in" >&2; exit 1; fi\ncp "${picture}" ./illustration.png\n`);
+  await chmod(bin, 0o755);
+  return bin;
+}
+
+const ready = async () => {
+  const exported = await wechatExport(TODAY);
+  assert.equal(exported.status, "ready");
+  return exported as Extract<typeof exported, { status: "ready" }>;
+};
+
+test("an entry's illustration is drawn by the worker's codex, kept until a new one is ready, uploaded instead or removed", async () => {
+  await sql`DELETE FROM wechat_illustrations WHERE report_key = ${TODAY}`;
+  const dataDir = config.dataDir;
+  config.dataDir = await mkdtemp(path.join(tmpdir(), "wechat-illustrations-"));
+  try {
+    const entry = (await ready()).article.entries[0]!.key;
+    assert.ok((await ready()).drawingUnavailable, "without CODEX_BIN nothing is drawn");
+    await assert.rejects(requestWechatIllustration(TODAY, { entry }, "editor@example.org"), (e: { code?: string }) => e.code === "conflict");
+    config.codexBin = await fakeCodex(config.dataDir);
+    await assert.rejects(requestWechatIllustration(TODAY, { entry: "no-such-entry" }, "editor@example.org"), (e: { statusCode?: number }) => e.statusCode === 404);
+
+    const asked = await requestWechatIllustration(TODAY, { entry, prompt: "  一座灯塔  " }, "editor@example.org");
+    const queued = await ready();
+    assert.equal(queued.drawingUnavailable, null);
+    assert.deepEqual([queued.illustrations[entry]?.status, queued.illustrations[entry]?.prompt, queued.illustrations[entry]?.url], ["queued", "一座灯塔", null]);
+    await assert.rejects(requestWechatIllustration(TODAY, { entry }, "editor@example.org"), /正在画/, "one drawing per entry at a time");
+
+    assert.deepEqual(await drawWechatIllustration({ date: TODAY, entry, request: asked.request, subject: "一座灯塔" }), { status: "done" });
+    const drawn = await ready();
+    const url = drawn.illustrations[entry]!.url!;
+    assert.match(url, new RegExp(`^/api/admin/wechat/${TODAY}/illustration\\.jpg\\?entry=`));
+    assert.ok(drawn.article.html.includes(`<img src="${url.replaceAll("&", "&amp;")}"`), "the preview prints it under the entry's title");
+    const jpeg = await wechatIllustrationJpeg(TODAY, entry);
+    assert.deepEqual(await sharp(jpeg!).metadata().then((m) => [m.format, m.width, m.height]), ["jpeg", 1280, 720], "scaled for a phone, as JPEG");
+    const [receipt] = await sql`SELECT r.status, r.purpose FROM receipts r JOIN wechat_illustrations w ON w.receipt_id = r.id WHERE w.report_key = ${TODAY} AND w.entry_key = ${entry}`;
+    assert.deepEqual([receipt!.status, receipt!.purpose], ["completed", "wechat_illustration"], "a drawing is receipted");
+
+    process.env.FAKE_CODEX_FAIL = "1";
+    const again = await requestWechatIllustration(TODAY, { entry }, "editor@example.org");
+    assert.deepEqual(await drawWechatIllustration({ date: TODAY, entry, request: again.request, subject: "头条" }), { status: "failed" });
+    delete process.env.FAKE_CODEX_FAIL;
+    const failed = (await ready()).illustrations[entry]!;
+    assert.equal(failed.status, "failed");
+    assert.match(failed.error!, /not logged in/, "the CLI's own words");
+    assert.equal(failed.url, url, "the picture already there stays");
+
+    const late = await requestWechatIllustration(TODAY, { entry }, "editor@example.org");
+    const png = await sharp({ create: { width: 800, height: 450, channels: 3, background: "#204060" } }).png().toBuffer();
+    assert.deepEqual(await uploadWechatIllustration(TODAY, { entry, image: png }, "editor@example.org"), { ok: true });
+    assert.deepEqual(await drawWechatIllustration({ date: TODAY, entry, request: late.request, subject: "头条" }), { status: "superseded" }, "an upload replaces the drawing asked before it");
+    const uploaded = (await ready()).illustrations[entry]!;
+    assert.deepEqual([uploaded.status, uploaded.origin], ["done", "uploaded"]);
+    assert.notEqual(uploaded.url, url);
+    await assert.rejects(uploadWechatIllustration(TODAY, { entry, image: Buffer.from("not a picture") }, "editor@example.org"), (e: { statusCode?: number }) => e.statusCode === 400);
+
+    assert.deepEqual(await removeWechatIllustration(TODAY, entry, "editor@example.org"), { removed: true });
+    const removed = await ready();
+    assert.equal(removed.illustrations[entry], undefined);
+    assert.doesNotMatch(removed.article.html, /<img/);
+    assert.equal(await wechatIllustrationJpeg(TODAY, entry), null);
+    const [logged] = await sql`SELECT action FROM audit_log WHERE subject = ${`wechat:${TODAY}`} ORDER BY id DESC LIMIT 1`;
+    assert.equal(logged!.action, "wechat.illustration.remove");
+  } finally {
+    delete process.env.FAKE_CODEX_FAIL;
+    await rm(config.dataDir, { recursive: true, force: true });
+    config.dataDir = dataDir;
+    config.codexBin = null;
+  }
+});
+
+test("a push uploads each illustration to the 公众号 once and prints it from there", async () => {
+  await sql`DELETE FROM wechat_illustrations WHERE report_key = ${TODAY}`;
+  const dataDir = config.dataDir;
+  config.dataDir = await mkdtemp(path.join(tmpdir(), "wechat-illustrations-"));
+  const calls: Array<{ path: string; body: string }> = [];
+  let pictures = 0;
+  const mp = await stub((_hit, req) => {
+    const at = req.url.split("?")[0]!;
+    calls.push({ path: at, body: req.body });
+    if (at === "/cgi-bin/stable_token") return { access_token: "tok", expires_in: 7200 };
+    if (at === "/cgi-bin/material/add_material") return { media_id: "cover-1" };
+    if (at === "/cgi-bin/media/uploadimg") return { url: `http://mmbiz.qpic.cn/pic-${++pictures}` };
+    if (at === "/cgi-bin/draft/add") return { media_id: "draft-1" };
+    if (at === "/cgi-bin/draft/update") return { errcode: 0, errmsg: "ok" };
+    return new Reply(404, {});
+  });
+  config.wechatDraftEnabled = true;
+  process.env.WECHAT_APPID = "wx-test";
+  process.env.WECHAT_APPSECRET = "secret-test";
+  process.env.WECHAT_API_BASE_URL = mp.url;
+  resetWechatToken();
+  try {
+    const entry = (await ready()).article.entries[0]!.key;
+    const png = (color: string) => sharp({ create: { width: 640, height: 360, channels: 3, background: color } }).png().toBuffer();
+    await uploadWechatIllustration(TODAY, { entry, image: await png("#806040") }, "editor@example.org");
+    await pushWechatDraft(TODAY, "editor@example.org");
+    assert.equal(calls.filter((c) => c.path === "/cgi-bin/media/uploadimg").length, 1);
+    assert.match(calls.find((c) => c.path === "/cgi-bin/media/uploadimg")!.body, /Content-Type: image\/jpeg/);
+    const content = (body: string) => { const parsed = JSON.parse(body); return (parsed.articles[0] ?? parsed.articles).content as string; };
+    const sent = content(calls.findLast((c) => c.path.startsWith("/cgi-bin/draft/"))!.body);
+    assert.match(sent, /<img src="http:\/\/mmbiz\.qpic\.cn\/pic-1"/, "the body prints the 公众号's own address");
+    assert.doesNotMatch(sent, /\/api\/admin\//, "never the workbench's");
+    assert.equal((await ready()).push.imagesChanged, false);
+
+    calls.length = 0;
+    await pushWechatDraft(TODAY, "editor@example.org");
+    assert.equal(calls.filter((c) => c.path === "/cgi-bin/media/uploadimg").length, 0, "an uploaded picture is not uploaded again");
+
+    await uploadWechatIllustration(TODAY, { entry, image: await png("#204080") }, "editor@example.org");
+    assert.equal((await ready()).push.imagesChanged, true, "a new picture makes the draft box stale");
+  } finally {
+    config.wechatDraftEnabled = false;
+    delete process.env.WECHAT_APPID;
+    delete process.env.WECHAT_APPSECRET;
+    delete process.env.WECHAT_API_BASE_URL;
+    resetWechatToken();
+    await mp.close();
+    await sql`DELETE FROM wechat_illustrations WHERE report_key = ${TODAY}`;
+    await rm(config.dataDir, { recursive: true, force: true });
+    config.dataDir = dataDir;
   }
 });
 

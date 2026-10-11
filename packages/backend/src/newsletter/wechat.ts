@@ -4,7 +4,8 @@
 // to its source. Laid out like the digest accounts readers know: headlines in the title, a greeting and
 // an at-a-glance list, then numbered entries, each with the site's one-line comment once the worker has
 // written it (wechat-comments.ts), and a closing that invites comments. An editor's changes in the
-// workbench (WechatEdits: order, hidden entries, rewritten text, theme) apply over the generated column.
+// workbench (WechatEdits: order, hidden entries, rewritten text, theme) apply over the generated column,
+// and an entry with an illustration (wechat-illustrations.ts) prints it under its title.
 import type { ReportCitation, ReportDetail } from "@aihot/contracts/site";
 import { SITE } from "@aihot/site";
 import { editionPath } from "../publication/distribution.ts";
@@ -58,6 +59,8 @@ export interface ColumnEntry {
   title: string;
   body: string | null;
   comment: string | null;
+  /** The address the article prints the entry's illustration from; null without one. */
+  image: string | null;
   generated: { title: string; body: string | null; comment: string | null };
 }
 
@@ -129,7 +132,9 @@ export function wechatEntries(report: ReportDetail, extra: WechatEntry[]): Array
 }
 
 /** The generated entries with the comments and the editor's changes applied, in the editor's order. */
-function columnEntries(report: ReportDetail, extra: WechatEntry[], comments: ReadonlyMap<string, string>, edits: WechatEdits): ColumnEntry[] {
+function columnEntries(
+  report: ReportDetail, extra: WechatEntry[], comments: ReadonlyMap<string, string>, edits: WechatEdits, images: ReadonlyMap<string, string>,
+): ColumnEntry[] {
   const hidden = new Set(edits.hidden ?? []);
   const entries = wechatEntries(report, extra).map((e): ColumnEntry => {
     const key = entryKey(e);
@@ -142,6 +147,7 @@ function columnEntries(report: ReportDetail, extra: WechatEntry[], comments: Rea
       title: edit.title?.trim() || generated.title,
       body: edit.body === undefined ? generated.body : edit.body.trim() || null,
       comment: edit.comment === undefined ? generated.comment : edit.comment.trim() || null,
+      image: images.get(key) ?? null,
     };
   });
   const rank = new Map((edits.order ?? []).map((key, i) => [key, i]));
@@ -160,11 +166,12 @@ function note(e: ColumnEntry): string {
   ].join(" · ");
 }
 
-/** `comments` by item id; `edits` from the workbench. */
+/** `comments` by item id; `edits` from the workbench; `images`, the illustrations' addresses by entry key. */
 export function wechatArticle(
   report: ReportDetail, extra: WechatEntry[] = [], comments: ReadonlyMap<string, string> = new Map(), edits: WechatEdits = {},
+  images: ReadonlyMap<string, string> = new Map(),
 ): WechatArticle {
-  const all = columnEntries(report, extra, comments, edits);
+  const all = columnEntries(report, extra, comments, edits, images);
   const entries = all.filter((e) => !e.hidden);
   const theme = edits.theme ?? "amber";
   const C = WECHAT_THEMES[theme].palette;
@@ -183,6 +190,7 @@ export function wechatArticle(
     `<section style="margin:${k ? 32 : 0}px 0 0;">`,
     `<p style="margin:0;font-size:26px;font-weight:bold;line-height:1.2;color:${C.accent};">${two(k + 1)}</p>`,
     `<p style="margin:6px 0 0;font-size:17px;font-weight:bold;line-height:1.55;color:${C.ink};">${esc(e.title)}</p>`,
+    ...(e.image ? [`<p style="margin:12px 0 0;"><img src="${esc(e.image)}" alt="" style="display:block;width:100%;height:auto;border-radius:4px;"></p>`] : []),
     ...(e.body ? [`<p style="margin:10px 0 0;font-size:15px;line-height:1.8;color:${C.ink3};">${esc(e.body)}</p>`] : []),
     ...(e.related.length ? [`<p style="margin:8px 0 0;font-size:14px;line-height:1.7;color:${C.ink3};">相关：${esc(e.related.join("；"))}</p>`] : []),
     ...(e.comment ? [`<p style="margin:12px 0 0;padding:8px 12px;background:${C.tint};border-left:3px solid ${C.accent};font-size:14px;line-height:1.7;color:${C.ink};"><span style="font-weight:bold;color:${C.accent};">${esc(COMMENT_LABEL)}</span>　${esc(e.comment)}</p>`] : []),

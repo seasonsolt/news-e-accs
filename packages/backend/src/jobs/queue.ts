@@ -24,6 +24,7 @@ export interface JobData {
   "notify.selected": { articleId: string; attempt?: number };
   "publication.republish-source": { sourceId: string };
   "media.prepare": { articleId: string } | { url: string; mode: string };
+  "wechat.illustrate": { date: string; entry: string; request: string; subject: string };
 }
 export type QueueName = keyof JobData;
 
@@ -38,6 +39,7 @@ export const QUEUES = {
   notifySelected: "notify.selected",
   republishSource: "publication.republish-source",
   prepareMedia: "media.prepare",
+  illustrate: "wechat.illustrate",
 } as const satisfies Record<string, QueueName>;
 
 export type QueueOptions = NonNullable<Parameters<PgBoss["createQueue"]>[1]>;
@@ -54,6 +56,8 @@ const QUEUE_OPTIONS: Record<QueueName, QueueOptions> = {
   [QUEUES.notifySelected]: { policy: "short", retryLimit: 0, expireInSeconds: 300 },
   [QUEUES.republishSource]: { policy: "short", retryLimit: 2, retryDelay: 60, expireInSeconds: 3600 },
   [QUEUES.prepareMedia]: { policy: "short", retryLimit: 1, retryDelay: 120, expireInSeconds: 600 },
+  // A drawing is paid for and takes minutes: never retried by the queue; the editor asks again.
+  [QUEUES.illustrate]: { policy: "short", retryLimit: 0, expireInSeconds: 900 },
 };
 
 const ensured = new Set<string>();
