@@ -10,6 +10,16 @@ const STATIC_PATHS = new Set([
 /** Keep analytics at route level: dynamic IDs, query strings and unknown paths never enter the table. */
 export function normalizePagePath(raw: unknown): string | null {
   if (typeof raw !== "string" || raw.length > 240 || !raw.startsWith("/") || raw.startsWith("//") || /[?#\\]/.test(raw)) return null;
+  // The Chinese edition mirrors every public route under /zh; it is counted as its own path.
+  if (raw === "/zh") return "/zh";
+  if (raw.startsWith("/zh/")) {
+    const route = englishPagePath(raw.slice(3));
+    return route && route !== "/" ? `/zh${route}` : null;
+  }
+  return englishPagePath(raw);
+}
+
+function englishPagePath(raw: string): string | null {
   if (STATIC_PATHS.has(raw)) return raw;
   if (/^\/items\/[^/]+\/original$/.test(raw)) return "/items/:id/original";
   if (/^\/items\/[^/]+$/.test(raw)) return "/items/:id";

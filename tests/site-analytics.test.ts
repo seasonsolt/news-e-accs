@@ -23,6 +23,17 @@ test("page views are reduced to known route patterns", () => {
   assert.equal(normalizePagePath("/unregistered"), null);
 });
 
+test("the Chinese edition is counted under its own /zh routes", () => {
+  assert.equal(normalizePagePath("/zh"), "/zh");
+  assert.equal(normalizePagePath("/zh/hot"), "/zh/hot");
+  assert.equal(normalizePagePath("/zh/items/abc123"), "/zh/items/:id");
+  assert.equal(normalizePagePath("/zh/leaderboard/gpt-5-4"), "/zh/leaderboard/:model");
+  assert.equal(normalizePagePath("/zh/"), null);
+  assert.equal(normalizePagePath("/zh/zh/hot"), null);
+  assert.equal(normalizePagePath("/zh/admin/settings"), null);
+  assert.equal(normalizePagePath("/zh/unregistered"), null);
+});
+
 test("daily page views are counted anonymously and appear in the admin summary", async () => {
   await sql`DELETE FROM site_pageviews_daily WHERE day = (now() AT TIME ZONE 'Asia/Taipei')::date AND path = '/about'`;
   const accepted = await app.inject({ method: "POST", url: "/api/site/analytics", payload: { event: "page_view", path: "/about" } });
