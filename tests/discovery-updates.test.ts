@@ -65,6 +65,13 @@ test('discovery dates follow page content and publication scope', async () => {
   assert.ok(!entries.some(e => e.loc === '/items/dates-signal'));
 });
 
+test('the Chinese edition is discovered only where the web always offers it as an alternate', async () => {
+  const locs = new Set((await loadDiscoveryEntries(new Date('2026-10-09'))).map(e => e.loc));
+  for (const loc of ['/zh', '/zh/all', '/zh/hot', '/zh/topics', '/zh/about']) assert.ok(locs.has(loc), loc);
+  for (const loc of ['/zh/', '/zh/daily', '/zh/terms', '/zh/privacy', '/zh/daily/archive']) assert.ok(!locs.has(loc), `${loc} has no unconditional Chinese alternate`);
+  assert.ok(![...locs].some(loc => /^\/zh\/(items|story|daily|weekly|monthly)\//.test(loc)), 'content pages wait for both editions');
+});
+
 test('dry runs leave changes pending, corrections and disappeared URLs are submitted again', async () => {
   await material('changed-story-item');
   const publicId = randomUUID();

@@ -4,6 +4,7 @@ import { mkdir, readFile, stat, utimes, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { FEATURES } from "@aihot/industry/features";
 import { ABOUT, ACCESS, AGENT, POLICY, SITE } from "@aihot/site";
+import { MODULES } from "@aihot/site/modules";
 import { config, REPO_ROOT } from "../config.ts";
 import { sha256, stableJson } from "../lib/ids.ts";
 import { loadChangelog } from "../site/meta.ts";
@@ -26,6 +27,17 @@ interface SitemapDocument { xml: string; expiresAt: number }
 let lastGood: SitemapDocument | null = null;
 
 type Entry = SitemapEntry;
+
+/**
+ * Pages whose Chinese edition the web always offers as an alternate (apps/web/app/lib/seo.ts). Items,
+ * stories and reports, including the latest-report pages, offer it only once both editions are ready,
+ * so the page's own hreflang leads to them instead.
+ */
+const CHINESE_PAGES = new Set(["/", "/all", "/hot", "/topics", "/agent", "/about", "/changelog", "/chronicle"]);
+function hasChineseMirror(loc: string): boolean {
+  return CHINESE_PAGES.has(loc) || /^\/topics\/[^/]+(?:\/page\/\d+)?$/.test(loc)
+    || MODULES.some((m) => m.localizedPaths?.some((pattern) => pattern.test(loc)));
+}
 
 /**
  * One inventory for XML discovery and change notifications. A sitemap bounds its advertised history;
@@ -95,6 +107,7 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
     ORDER BY st.latest_at DESC NULLS LAST, st.id DESC ${limits ? sql`LIMIT ${limits.stories}` : sql``}`;
   for (const s of stories) entries.push({ loc: `/story/${s.public_id}`, revision: s.revision, changefreq: "daily", priority: 0.5 });
   for (const m of serverModules()) if (m.sitemap?.entries) entries.push(...(await m.sitemap.entries()));
+  entries.push(...entries.filter((e) => hasChineseMirror(e.loc)).map((e) => ({ ...e, loc: e.loc === "/" ? "/zh" : `/zh${e.loc}` })));
   // Material/translation timestamps can also record a retry or a state repair. Hash the content;
   // without a dedicated public modification clock, omitting lastmod is more accurate than guessing.
   const items = await sql<{ id: string; revision: string }[]>`
