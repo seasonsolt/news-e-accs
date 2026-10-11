@@ -1,12 +1,15 @@
 // The 公众号 workbench: a day's column 「AI 早报」 (newsletter/wechat-column.ts) with the comments the worker
-// has written for it and the editor's changes (wechat_issues), the changes themselves, and the recent issues.
+// has written for it and the editor's changes (wechat_issues), the changes themselves, its cover, putting
+// it into the 公众号's draft box (providers/wechat-mp.ts), and the recent issues.
 import { calendarDate } from "@aihot/contracts/time";
 import { audit, Conflict } from "../audit.ts";
 import { config } from "../config.ts";
 import { sql } from "../db.ts";
-import { renderWechatCover, wechatCoverEtag, type WechatCover } from "../media/wechat-cover.ts";
+import { renderWechatCover, WECHAT_COVER_SQUARE, WECHAT_COVER_WIDE, wechatCoverEtag, type WechatCover } from "../media/wechat-cover.ts";
 import { WECHAT_MIN_ENTRIES, wechatColumn } from "../newsletter/wechat-column.ts";
 import { wechatComments } from "../newsletter/wechat-comments.ts";
+import { addWechatDraft, updateWechatDraft, uploadWechatImage, WechatApiError, wechatConfigured, type WechatDraftArticle } from "../providers/wechat-mp.ts";
+import { SITE } from "@aihot/site";
 import { isWechatTheme, wechatArticle, WECHAT_DIGEST_MAX, WECHAT_THEMES, WECHAT_TITLE_MAX, type WechatArticle, type WechatEdits } from "../newsletter/wechat.ts";
 
 export type WechatExport =
@@ -17,9 +20,22 @@ export type WechatExport =
       limits: { title: number; digest: number }; themes: Array<{ key: string; label: string }>;
       /** The cover's address; it changes with the cover's content. */
       coverUrl: string;
+      /** Whether drafts can be pushed from here, and the last push of this issue. */
+      push: { enabled: boolean; configured: boolean; pushedAt: string | null; pushedRevision: number | null; pushedBy: string | null };
     };
 
-export interface WechatIssueRow { date: string; issueNumber: number; edited: boolean; updatedAt: string | null; updatedBy: string | null; comments: number }
+export interface WechatIssueRow {
+  date: string; issueNumber: number; edited: boolean; updatedAt: string | null; updatedBy: string | null; comments: number; pushedAt: string | null;
+}
+
+interface Stored {
+  edits: WechatEdits;
+  revision: number;
+  push: Pushed | null;
+}
+
+/** The issue's last push into the draft box. */
+interface Pushed { draftMediaId: string; coverMediaId: string; coverEtag: string; at: string; revision: number; by: string }
 
 const THEMES = Object.entries(WECHAT_THEMES).map(([key, t]) => ({ key, label: t.label }));
 /** Longest text an editor may keep in one field; the column is a digest, not an essay. */
@@ -31,19 +47,23 @@ function dateKey(date: string | undefined): string {
   return key;
 }
 
-async function stored(key: string): Promise<{ edits: WechatEdits; revision: number }> {
-  const [row] = await sql<{ edits: WechatEdits; revision: number }[]>`SELECT edits, revision FROM wechat_issues WHERE report_key = ${key}`;
-  return row ?? { edits: {}, revision: 0 };
+const NONE: Stored = { edits: {}, revision: 0, push: null };
+
+async function stored(key: string): Promise<Stored> {
+  const [row] = await sql<Stored[]>`
+    SELECT edits, revision, push FROM wechat_issues WHERE report_key = ${key}`;
+  return row ?? NONE;
 }
 
 async function issue(key: string) {
   const column = await wechatColumn(key);
   if (column.status !== "ready") return column;
-  const { edits, revision } = await stored(key);
+  const row = await stored(key);
+  const { edits, revision } = row;
   const article = wechatArticle(column.report, column.extra, await wechatComments(key), edits);
   // The cover leads with the first entry printed, so reordering the issue changes it.
   const cover: WechatCover = { date: key, issueNumber: column.report.issueNumber, headline: article.entries.find((e) => !e.hidden)?.title ?? "", theme: article.theme };
-  return { status: "ready" as const, edits, revision, article, cover };
+  return { status: "ready" as const, edits, revision, article, cover, row };
 }
 
 export async function wechatExport(date?: string): Promise<WechatExport> {
@@ -55,6 +75,10 @@ export async function wechatExport(date?: string): Promise<WechatExport> {
     date: key, status: "ready", minimum: WECHAT_MIN_ENTRIES, revision: found.revision, edits: found.edits, article: found.article,
     limits: { title: WECHAT_TITLE_MAX, digest: WECHAT_DIGEST_MAX }, themes: THEMES,
     coverUrl: `/api/admin/wechat/${key}/cover.png?v=${wechatCoverEtag(found.cover)}`,
+    push: {
+      enabled: config.wechatDraftEnabled, configured: wechatConfigured(),
+      pushedAt: found.row.push?.at ?? null, pushedRevision: found.row.push?.revision ?? null, pushedBy: found.row.push?.by ?? null,
+    },
   };
 }
 
@@ -122,8 +146,56 @@ export async function wechatIssues(limit = 30): Promise<{ rows: WechatIssueRow[]
   const rows = await sql<WechatIssueRow[]>`
     SELECT r.key AS date, (row_number() OVER (ORDER BY r.key))::int AS "issueNumber", (w.report_key IS NOT NULL AND w.edits <> '{}'::jsonb) AS edited,
            w.updated_at AS "updatedAt", w.updated_by AS "updatedBy",
-           (SELECT count(*)::int FROM wechat_comments c WHERE c.report_key = r.key) AS comments
+           (SELECT count(*)::int FROM wechat_comments c WHERE c.report_key = r.key) AS comments, w.push->>'at' AS "pushedAt"
     FROM reports r LEFT JOIN wechat_issues w ON w.report_key = r.key
     WHERE r.kind = 'daily' ORDER BY r.key DESC LIMIT ${Math.min(Math.max(limit, 1), 100)}`;
   return { rows };
+}
+
+/** The draft API's own limit on an article's body, in characters. */
+const CONTENT_MAX = 20_000;
+
+/**
+ * Puts the issue as it stands into the 公众号's draft box: a new draft the first time, the same draft
+ * afterwards, and a new one again once that draft is gone (published or deleted in the backend). The
+ * cover is uploaded again only when it changed.
+ */
+export async function pushWechatDraft(date: string, actor: string): Promise<{ action: "created" | "updated" | "recreated"; revision: number }> {
+  const key = dateKey(date);
+  if (!config.wechatDraftEnabled) throw new Conflict("推送草稿没有打开（WECHAT_DRAFT_ENABLED）。");
+  if (!wechatConfigured()) throw new Conflict("没有配置公众号的 WECHAT_APPID 和 WECHAT_APPSECRET。");
+  const found = await issue(key);
+  if (found.status !== "ready") throw new Conflict("这一天没有可以推送的早报。");
+  const { article, cover, row, revision } = found;
+  if (Array.from(article.title).length > WECHAT_TITLE_MAX) throw bad(`标题超过 ${WECHAT_TITLE_MAX} 字，公众号不收，请先改短。`);
+  if (Array.from(article.digest).length > WECHAT_DIGEST_MAX) throw bad(`摘要超过 ${WECHAT_DIGEST_MAX} 字，请先改短。`);
+  if (Array.from(article.html).length > CONTENT_MAX) throw bad("正文太长，公众号不收；隐藏几条再推。");
+  const etag = wechatCoverEtag(cover);
+  let coverId: string;
+  let mediaId = row.push?.draftMediaId ?? null;
+  let action: "created" | "updated" | "recreated" = "created";
+  try {
+    coverId = row.push?.coverEtag === etag
+      ? row.push.coverMediaId
+      : await uploadWechatImage((await renderWechatCover(cover)).png, `ai-zaobao-${key}.png`);
+    const draft: WechatDraftArticle = {
+      title: article.title, author: SITE.name.slice(0, 16), digest: article.digest, content: article.html,
+      content_source_url: article.readMoreUrl, thumb_media_id: coverId, need_open_comment: 1, only_fans_can_comment: 0,
+      pic_crop_235_1: WECHAT_COVER_WIDE, pic_crop_1_1: WECHAT_COVER_SQUARE,
+    };
+    if (mediaId) action = (await updateWechatDraft(mediaId, draft)) ? "updated" : "recreated";
+    if (action !== "updated") mediaId = await addWechatDraft(draft);
+  } catch (error) {
+    // The account's refusals are the editor's to fix (allowlist, permissions), shown as they are.
+    if (error instanceof WechatApiError) throw new Conflict(error.message);
+    throw error;
+  }
+  const push: Pushed = { draftMediaId: mediaId!, coverMediaId: coverId, coverEtag: etag, at: new Date().toISOString(), revision, by: actor };
+  await sql.begin(async (tx) => {
+    await tx`
+      INSERT INTO wechat_issues (report_key, push) VALUES (${key}, ${tx.json(push as never)})
+      ON CONFLICT (report_key) DO UPDATE SET push = EXCLUDED.push`;
+    await audit(actor, "wechat.push", `wechat:${key}`, null, row.push, push, { db: tx });
+  });
+  return { action, revision };
 }

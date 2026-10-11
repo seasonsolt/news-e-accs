@@ -53,7 +53,7 @@ function dispatcherFor(viaProxy: boolean): Dispatcher | undefined {
 export interface GuardedFetchOptions {
   method?: string;
   headers?: Record<string, string>;
-  body?: string;
+  body?: string | Uint8Array;
   timeoutMs?: number;
   maxBytes?: number;
   /** Follow redirects manually so every hop passes the SSRF guard. */

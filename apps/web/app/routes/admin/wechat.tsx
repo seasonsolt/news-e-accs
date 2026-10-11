@@ -49,11 +49,14 @@ type WechatExport =
       date: string; status: "ready"; minimum: number; revision: number; edits: WechatEdits; article: WechatArticle;
       limits: { title: number; digest: number }; themes: Array<{ key: string; label: string }>;
       coverUrl: string;
+      push: { enabled: boolean; configured: boolean; pushedAt: string | null; pushedRevision: number | null; pushedBy: string | null };
     };
 
 type Ready = Extract<WechatExport, { status: "ready" }>;
 
-interface IssueRow { date: string; issueNumber: number; edited: boolean; updatedAt: string | null; updatedBy: string | null; comments: number }
+interface IssueRow {
+  date: string; issueNumber: number; edited: boolean; updatedAt: string | null; updatedBy: string | null; comments: number; pushedAt: string | null;
+}
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [issue, issues] = await Promise.all([
@@ -113,6 +116,7 @@ function Issues({ rows, current }: { rows: IssueRow[]; current: string }) {
             >
               <span className="num">{r.date.slice(5)}<span className="ml-1.5 text-[11.5px] text-ink-4">第 {r.issueNumber} 期</span></span>
               <span className="flex gap-1">
+                {r.pushedAt && <Badge tone="ok">已推送</Badge>}
                 {r.edited && <Badge tone="accent">已编辑</Badge>}
                 {r.comments > 0 && <Badge>点评 {r.comments}</Badge>}
               </span>
@@ -120,6 +124,59 @@ function Issues({ rows, current }: { rows: IssueRow[]; current: string }) {
           </li>
         ))}
       </ul>
+    </Card>
+  );
+}
+
+/** The server's address on the 公众号's IP allowlist; the draft API answers no other. */
+const SERVER_IP = "154.17.4.14";
+const PUSHED: Record<string, string> = {
+  created: "已放进公众号草稿箱",
+  updated: "已更新草稿箱里的这篇",
+  recreated: "原来的草稿已不在草稿箱，已重新放进去",
+};
+
+function Push({ d, revision, saving }: { d: Ready; revision: number; saving: boolean }) {
+  const { run, pending } = useAdminAction();
+  const { push } = d;
+  if (!push.enabled || !push.configured) {
+    return (
+      <Card title="推送到草稿箱">
+        <ol className="list-decimal space-y-1.5 pl-5 text-[12.5px] leading-relaxed text-ink-2">
+          <li>在公众号后台「设置与开发 → 开发接口管理」拿到 AppID 和 AppSecret。</li>
+          <li>把服务器 IP <code className="num rounded bg-bg-sunk px-1">{SERVER_IP}</code> 加进同一页的「IP 白名单」。</li>
+          <li>在服务器的 .env 里设 <code>WECHAT_APPID</code>、<code>WECHAT_APPSECRET</code> 和 <code>WECHAT_DRAFT_ENABLED=true</code>，重启。</li>
+        </ol>
+        <p className="mt-2 text-[12px] text-ink-4">
+          {!push.enabled ? "推送还没打开。" : "还没配置 AppID 和 AppSecret。"}配好之前，用上面的「复制正文」和下载的封面手动发。
+        </p>
+      </Card>
+    );
+  }
+  const stale = push.pushedRevision !== null && push.pushedRevision !== revision;
+  return (
+    <Card
+      title="推送到草稿箱"
+      right={
+        <Button
+          tone="primary"
+          size="sm"
+          disabled={saving || pending === "push"}
+          onClick={async () => {
+            const res = await run<{ action: string }>("POST", `/api/admin/wechat/${d.date}/draft`, {}, { label: "push" });
+            if (res) toast(PUSHED[res.action] ?? "已推送", "ok");
+          }}
+        >
+          {pending === "push" ? "推送中…" : push.pushedAt ? "更新草稿" : "推送到草稿箱"}
+        </Button>
+      }
+    >
+      <p className="text-[12.5px] leading-relaxed text-ink-2">
+        {push.pushedAt
+          ? <>上次推送：{new Date(push.pushedAt).toLocaleString("zh-CN", { hour12: false })}{push.pushedBy ? `（${push.pushedBy}）` : ""}{stale && <span className="text-hot">，之后又改过，记得更新草稿</span>}</>
+          : "还没推送过这一期。"}
+      </p>
+      <p className="mt-1.5 text-[12px] text-ink-4">标题、摘要、正文、封面和阅读原文一起放进草稿箱；发表仍在公众号后台点。再次推送会更新同一篇草稿。</p>
     </Card>
   );
 }
@@ -172,6 +229,7 @@ function Workbench({ d }: { d: Ready }) {
   const [draft, setDraft] = useState(() => draftOf(d));
   const [saving, setSaving] = useState<"idle" | "pending" | "saving" | "error">("idle");
   const revision = useRef(d.revision);
+  const [saved, setSaved] = useState(d.revision);
   const queue = useRef(Promise.resolve());
   const dragged = useRef<number | null>(null);
   const first = useRef(true);
@@ -188,7 +246,10 @@ function Workbench({ d }: { d: Ready }) {
       queue.current = queue.current.then(async () => {
         setSaving("saving");
         const res = await runRef.current<{ revision: number }>("PUT", `/api/admin/wechat/${d.date}`, { revision: revision.current, edits }, { label: "save" });
-        if (res) revision.current = res.revision;
+        if (res) {
+          revision.current = res.revision;
+          setSaved(res.revision);
+        }
         setSaving(res ? "idle" : "error");
       });
     }, SAVE_AFTER_MS);
@@ -313,6 +374,7 @@ function Workbench({ d }: { d: Ready }) {
           <img src={d.coverUrl} alt="本期封面" width={1175} height={500} className="h-auto w-full rounded-[6px] ring-1 ring-line" />
           <p className="mt-2 text-[12px] text-ink-4">随主题和第一条的标题自动生成；左侧方块是 1:1 的裁切区域。</p>
         </Card>
+        <Push d={d} revision={saved} saving={saving !== "idle"} />
         <Card title="填写项">
           <CopyRow label="标题" value={d.article.title} />
           <CopyRow label="摘要" value={d.article.digest} />

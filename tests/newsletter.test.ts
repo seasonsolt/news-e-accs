@@ -18,7 +18,8 @@ import { upsertMaterial } from "@aihot/backend/content/materials";
 import { currentContent, saveTranslation } from "@aihot/backend/publication/content-language";
 import { sendDailyIssue } from "@aihot/backend/newsletter/issue";
 import { wechatArticle } from "@aihot/backend/newsletter/wechat";
-import { saveWechatEdits, wechatCoverPng, wechatExport, wechatIssues } from "@aihot/backend/admin/wechat";
+import { pushWechatDraft, saveWechatEdits, wechatCoverPng, wechatExport, wechatIssues } from "@aihot/backend/admin/wechat";
+import { resetWechatToken } from "@aihot/backend/providers/wechat-mp";
 import sharp from "sharp";
 import { commentWechatColumn } from "@aihot/backend/newsletter/wechat-comments";
 
@@ -347,6 +348,76 @@ test("the workbench's edits reorder, hide and rewrite entries over the generated
   assert.ok(row?.edited && row.updatedBy === "editor@example.org");
   const [logged] = await sql`SELECT action FROM audit_log WHERE subject = ${`wechat:${TODAY}`} ORDER BY id DESC LIMIT 1`;
   assert.equal(logged!.action, "wechat.edit");
+});
+
+test("pushing puts the issue into the 公众号's draft box, then updates that draft, and starts over once it is gone", async () => {
+  const calls: Array<{ path: string; body: string }> = [];
+  let drafts = 0;
+  let gone = false;
+  let refuse = false;
+  const mp = await stub((_hit, req) => {
+    const path = req.url.split("?")[0]!;
+    calls.push({ path, body: req.body });
+    if (refuse) return { errcode: 40164, errmsg: "invalid ip" };
+    if (path === "/cgi-bin/stable_token") return { access_token: "tok", expires_in: 7200 };
+    if (path === "/cgi-bin/material/add_material") return { media_id: "cover-1", url: "http://mmbiz/x" };
+    if (path === "/cgi-bin/draft/add") return { media_id: `draft-${++drafts}` };
+    if (path === "/cgi-bin/draft/update") return gone ? { errcode: 40007, errmsg: "invalid media_id" } : { errcode: 0, errmsg: "ok" };
+    return new Reply(404, {});
+  });
+  await assert.rejects(pushWechatDraft(TODAY, "editor@example.org"), (e: { code?: string }) => e.code === "conflict", "the valve is closed by default");
+  config.wechatDraftEnabled = true;
+  await assert.rejects(pushWechatDraft(TODAY, "editor@example.org"), /WECHAT_APPID/, "and without the account's credentials");
+  process.env.WECHAT_APPID = "wx-test";
+  process.env.WECHAT_APPSECRET = "secret-test";
+  process.env.WECHAT_API_BASE_URL = mp.url;
+  resetWechatToken();
+  try {
+    const exported = await wechatExport(TODAY);
+    assert.ok(exported.status === "ready" && exported.push.enabled && exported.push.configured && exported.push.pushedAt === null);
+
+    assert.deepEqual(await pushWechatDraft(TODAY, "editor@example.org"), { action: "created", revision: exported.revision });
+    assert.deepEqual(calls.map((c) => c.path), ["/cgi-bin/stable_token", "/cgi-bin/material/add_material", "/cgi-bin/draft/add"]);
+    assert.match(calls[1]!.body, /Content-Type: image\/png/);
+    const [article] = JSON.parse(calls[2]!.body).articles;
+    assert.equal(article.title, exported.article.title);
+    assert.equal(article.digest, exported.article.digest);
+    assert.equal(article.content, exported.article.html);
+    assert.equal(article.thumb_media_id, "cover-1");
+    assert.equal(article.content_source_url, exported.article.readMoreUrl);
+    assert.match(article.pic_crop_1_1, /^0_0_0\.\d+_1$/);
+
+    calls.length = 0;
+    assert.equal((await pushWechatDraft(TODAY, "editor@example.org")).action, "updated");
+    assert.deepEqual(calls.map((c) => c.path), ["/cgi-bin/draft/update"], "the same cover and token, the same draft");
+    assert.equal(JSON.parse(calls[0]!.body).media_id, "draft-1");
+
+    gone = true;
+    calls.length = 0;
+    assert.equal((await pushWechatDraft(TODAY, "editor@example.org")).action, "recreated");
+    assert.deepEqual(calls.map((c) => c.path), ["/cgi-bin/draft/update", "/cgi-bin/draft/add"]);
+    const [row] = await sql`SELECT push FROM wechat_issues WHERE report_key = ${TODAY}`;
+    assert.equal(row!.push.draftMediaId, "draft-2");
+    assert.equal(row!.push.by, "editor@example.org");
+    const pushed = await wechatExport(TODAY);
+    assert.ok(pushed.status === "ready" && pushed.push.pushedAt && pushed.push.pushedRevision === exported.revision);
+    assert.ok((await wechatIssues()).rows.find((r) => r.date === TODAY)?.pushedAt);
+    const [logged] = await sql`SELECT action FROM audit_log WHERE subject = ${`wechat:${TODAY}`} ORDER BY id DESC LIMIT 1`;
+    assert.equal(logged!.action, "wechat.push");
+
+    refuse = true;
+    resetWechatToken();
+    await assert.rejects(pushWechatDraft(TODAY, "editor@example.org"), /IP 白名单/, "the account's refusal reads as its setup");
+    const [kept] = await sql`SELECT push FROM wechat_issues WHERE report_key = ${TODAY}`;
+    assert.equal(kept!.push.draftMediaId, "draft-2", "a failed push changes nothing");
+  } finally {
+    config.wechatDraftEnabled = false;
+    delete process.env.WECHAT_APPID;
+    delete process.env.WECHAT_APPSECRET;
+    delete process.env.WECHAT_API_BASE_URL;
+    resetWechatToken();
+    await mp.close();
+  }
 });
 
 test("a broadcast in doubt is left unknown and not sent again", async () => {
