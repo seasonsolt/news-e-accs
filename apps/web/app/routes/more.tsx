@@ -13,8 +13,8 @@ import { setFontPreference, useFontPreference } from "../lib/local-state";
 import { Select } from "../components/ui/Controls";
 import { ThemeSwitch } from "../components/shell/ThemeSwitch";
 import { MotionSwitch } from "../features/motion/MotionSwitch";
-import { TOOLS } from "../components/shell/nav";
-import { IconBolt, IconBookmark, IconChart, IconChevronRight, IconFlame, IconGrid, IconHeart, IconHistory, IconHourglass, IconMessage, IconMoon, IconPlug } from "../components/icons";
+import { TOOLS, inNav, TABBAR } from "../components/shell/nav";
+import { IconBolt, IconBookmark, IconChevronRight, IconFlame, IconGrid, IconHeart, IconHistory, IconList, IconMail, IconMessage, IconMoon, IconPlug } from "../components/icons";
 import { TimeDial } from "../features/chrono/TimeMachine";
 import { useAt, withAt } from "../features/chrono/at";
 import { Deck } from "../components/shell/Deck";
@@ -31,18 +31,19 @@ type Row = { to: string; label: string; icon: ReactNode; document?: boolean };
 
 const GROUPS: Array<{ title: string; rows: Row[] }> = [
   {
-    title: "内容",
+    title: "阅读",
     rows: [
-      ...(FEATURES.timeMachine ? [{ to: "/chronicle", label: "加速史", icon: <IconHourglass size={18} /> }] : []),
+      { to: "/all", label: "全部动态", icon: <IconList size={18} /> },
       { to: "/products", label: "产品目录", icon: <IconGrid size={18} /> },
-      { to: "/topics", label: "主题索引", icon: <IconGrid size={18} /> },
+      { to: "/subscribe", label: "订阅日报", icon: <IconMail size={18} /> },
+      ...(inNav("/topics") ? [{ to: "/topics", label: "主题索引", icon: <IconGrid size={18} /> }] : []),
       { to: "/agent", label: "Agent 接入", icon: <IconPlug size={18} /> },
     ],
   },
   {
     title: "偏好",
     rows: [
-      { to: "/hot", label: "热点榜", icon: <IconFlame size={18} /> },
+      ...(inNav("/hot") && !TABBAR.some((item) => item.to === "/hot") ? [{ to: "/hot", label: "热点榜", icon: <IconFlame size={18} /> }] : []),
       { to: "/starred", label: "收藏", icon: <IconBookmark size={18} /> },
     ],
   },

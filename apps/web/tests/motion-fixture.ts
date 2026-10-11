@@ -6,6 +6,7 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { fileURLToPath } from "node:url";
 import type { HotResponse, TimelineCard, TimelineResponse } from "@aihot/contracts/site";
+import { chronicle } from "./chrono-fixture.ts";
 
 const run = { generatedAt: "2026-09-28T00:00:00Z" };
 
@@ -35,6 +36,7 @@ export async function startMotionFixture() {
     const path = url.pathname;
     res.setHeader("Content-Type", "application/json");
     if (path === "/api/site/meta") return res.end(JSON.stringify({ changelogVersion: null }));
+    if (path === "/api/site/chronicle") return res.end(JSON.stringify(chronicle));
     // Confirmation QA stays on this synthetic API; no subscriber or mailer exists here.
     if (path === "/api/site/newsletter/confirm" && req.method === "POST") {
       let body = "";

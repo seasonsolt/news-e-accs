@@ -2,6 +2,8 @@ import { localePath, requestLocale } from "../lib/locale";
 import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE } from "@aihot/site";
+import { FEATURES } from "@aihot/industry/features";
+import { decimalYear, type ChronicleResponse } from "@aihot/contracts/chronicle";
 import { redirect, useLoaderData, useRouteLoaderData } from "react-router";
 import type { Route } from "./+types/home";
 import type { TimelineResponse } from "@aihot/contracts/site";
@@ -11,12 +13,13 @@ import { filterParams, hasFeedFilters, listPath, organizationLd, pageMeta, readF
 import { inNav } from "../components/shell/nav";
 import { Deck } from "../components/shell/Deck";
 import { KardashevMeter } from "../features/chrono/KardashevMeter";
+import { TimeStrip, type TimeStripData } from "../features/chrono/TimeStrip";
 import type { loader as rootLoader } from "../root";
 import { Onboarding } from "../features/onboarding/Onboarding";
 import { CategoryBanner } from "../features/art/CategoryBanner";
 import { Timeline } from "../features/feed/Timeline";
 import { HotTopics } from "../features/feed/HotTopics";
-import { CategoryTabs, SearchField, SearchIconLink } from "../features/feed/Filters";
+import { CategoryTabs, FeedSwitch, SearchField, SearchIconLink } from "../features/feed/Filters";
 import { beijingDate } from "@aihot/contracts/time";
 import { weekdayShort } from "../lib/format";
 import { requestAt } from "../features/chrono/at";
@@ -32,8 +35,16 @@ export async function loader({ request }: Route.LoaderArgs) {
   const at = requestAt(request);
   const filters = { ...readFilters(url.searchParams), topic: null, at };
   const upstream = new Headers();
-  const data = await loadOr404<TimelineResponse>(listPath("/api/site/timeline", { ...filterParams(filters), at }), { responseHeaders: upstream, request, signal: request.signal });
-  return cachedPage(60, { data, filters }, upstream);
+  const [data, chronicle] = await Promise.all([
+    loadOr404<TimelineResponse>(listPath("/api/site/timeline", { ...filterParams(filters), at }), { responseHeaders: upstream, request, signal: request.signal }),
+    FEATURES.timeMachine ? loadOr404<ChronicleResponse>("/api/site/chronicle", { request, signal: request.signal }) : null,
+  ]);
+  const strip: TimeStripData | null = chronicle ? {
+    eras: chronicle.eras.map(({ id, from, title, summary, art, forecast }) => ({ id, from, title, summary: summary.slice(0, 160), art, forecast })),
+    milestones: chronicle.milestones.map(({ id, t, title, detail, category, art, forecast }) => ({ id, t, title, category, art, forecast: !!forecast, ...(art && { summary: detail.slice(0, 160) }) })),
+    now: decimalYear(Date.now()),
+  } : null;
+  return cachedPage(60, { data, filters, strip }, upstream);
 }
 
 export function meta({ matches, loaderData }: Route.MetaArgs) {
@@ -43,7 +54,7 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
   return pageMeta({ path, jsonLd: path === "/" && !f?.at ? [websiteLd(localeFromMatches(matches ?? [])), organizationLd()] : undefined, noindex: !!f?.at || hasFeedFilters(f) }, localeFromMatches(matches ?? []));
 }
 
-/** The day the page shows (the time machine's, else today), in the deck's kicker. */
+/** The day the page shows (the time machine's, else today), in the page's kicker. */
 function TodayLabel({ at }: { at?: string | null }) {
   const tx = useTranslate();
   const day = at ?? beijingDate(Date.now());
@@ -57,7 +68,7 @@ function TodayLabel({ at }: { at?: string | null }) {
 
 export default function Home() {
   const tx = useTranslate();
-  const { data, filters } = useLoaderData<typeof loader>();
+  const { data, filters, strip } = useLoaderData<typeof loader>();
   const root = useRouteLoaderData<typeof rootLoader>("root");
   const k = root?.timeBounds?.kardashev ?? null;
   // A first visit to the unfiltered front page opens on the newsletter onboarding (shown before paint
@@ -69,6 +80,11 @@ export default function Home() {
       {front && <Onboarding mode="overlay" />}
       {filtered ? (
         <Deck compact art="epochs/agents" label={tx("精选")} kicker={<TodayLabel at={filters.at} />} title={filters.tag ? `#${filters.tag}` : tx("精选")} />
+      ) : strip ? (
+        <TimeStrip chronicle={strip} at={filters.at} bounds={root?.timeBounds ?? null}>
+          <p className="font-mono text-[11.5px] tracking-[0.08em] text-ink-4"><TodayLabel at={filters.at} /></p>
+          <h2 className="mt-1 font-display text-[28px] italic leading-tight text-ink">{tx("最新精选")}</h2>
+        </TimeStrip>
       ) : (
         <Deck
           art="epochs/agents"
@@ -86,15 +102,19 @@ export default function Home() {
         </Deck>
       )}
 
-      <div className="mt-6 hidden items-center justify-between gap-4 lg:mt-8 lg:flex">
-        <CategoryTabs base="/" category={filters.category} channel={filters.channel} layoutId="home-cat-desk" className="min-w-0" />
+      <div className={`${strip && !filtered ? "mt-2" : "mt-6 lg:mt-8"} hidden items-center justify-between gap-4 lg:flex`}>
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <FeedSwitch base="/" layoutId="home-feed-desk" />
+          <CategoryTabs base="/" category={filters.category} channel={filters.channel} layoutId="home-cat-desk" className="min-w-0" />
+        </div>
         <SearchField variant="track" keep={{ category: filters.category }} />
       </div>
 
-      <div className="mt-6">{data.hot && inNav("/hot") && <HotTopics entries={data.hot} />}</div>
+      <div className={strip && !filtered ? "mt-4 lg:mt-2 lg:[&>.hot-gauge]:mb-4" : "mt-6"}>{data.hot && inNav("/hot") && <HotTopics entries={data.hot} />}</div>
 
-      <h2 className="mt-6 font-display text-[28px] italic text-ink lg:hidden">{filters.tag ? `#${filters.tag}` : tx("最新精选")}</h2>
+      {(!strip || filtered) && <h2 className="mt-6 font-display text-[28px] italic text-ink lg:hidden">{filters.tag ? `#${filters.tag}` : tx("最新精选")}</h2>}
       <div className="-mx-4 mt-3 flex items-center gap-2 pl-4 pr-2 lg:hidden">
+        <FeedSwitch base="/" layoutId="home-feed-mobile" />
         <CategoryTabs base="/" category={filters.category} channel={filters.channel} layoutId="home-cat-mobile" size="sm" className="min-w-0 flex-1" />
         <SearchIconLink />
       </div>

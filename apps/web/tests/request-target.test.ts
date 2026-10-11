@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { createServer, request } from "node:http";
 import { after, before, test } from "node:test";
 import { startWebServer, type WebServer } from "./web-server.ts";
+import { chronicle } from "./chrono-fixture.ts";
 
 let web: WebServer;
 const upstreamPaths: string[] = [];
@@ -11,6 +12,7 @@ const api = createServer((req, res) => {
   upstreamPaths.push(req.url ?? "");
   res.setHeader("Content-Type", "application/json");
   if (req.url === "/api/site/meta") return res.end(JSON.stringify({ changelogVersion: null }));
+  if (req.url?.startsWith("/api/site/chronicle?")) return res.end(JSON.stringify(chronicle));
   if (req.url?.startsWith("/api/site/timeline")) return res.end(JSON.stringify({
     cards: [], nextCursor: null, dayCounts: {}, hot: [], filters: { category: null, channel: null, tag: null },
   }));

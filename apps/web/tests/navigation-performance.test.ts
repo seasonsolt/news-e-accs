@@ -15,6 +15,9 @@ import { before, after, test } from "node:test";
 import { chromium, webkit, expect, type Browser, type BrowserContextOptions } from "@playwright/test";
 import type { FeedItemSummary, SiteItemDetail, ReportDetail } from "@aihot/contracts/site";
 import { startWebServer, type WebServer } from "./web-server.ts";
+import { chronicle } from "./chrono-fixture.ts";
+import { dateToYear, toAxis } from "@aihot/contracts/chronicle";
+import { beijingDate } from "@aihot/contracts/time";
 import { KEYS } from "../app/lib/local-state.ts";
 
 const at = '2026-10-04T08:00:00.000Z';
@@ -35,6 +38,7 @@ async function readerContext(browser:Browser,options:BrowserContextOptions={}) {
 }
 let failing='';
 let ttl=60;
+let showFrontHot=false;
 let web:WebServer;
 let origin:string;
 let chrome:Browser;
@@ -44,6 +48,8 @@ const api=createServer((req,res)=>{
   const p=url.pathname;
   res.setHeader('Content-Type','application/json');
   if(p==='/api/site/meta') return res.end(JSON.stringify({changelogVersion:'fixture'}));
+  if(p==='/api/site/chronicle')return res.end(JSON.stringify(chronicle));
+  if(p==='/api/site/chronicle/bounds')return res.end(JSON.stringify({earliest:'2026-09-01',feed:'2026-09-01',hot:'2026-09-01',daily:'2026-09-01',today:beijingDate(Date.now()),kardashev:0.73}));
   if(p==='/api/site/track'){res.statusCode=204;return res.end();}
   hits.push(req.url!);
   if(p===failing){res.statusCode=503;return res.end(JSON.stringify({code:'unavailable'}));}
@@ -53,12 +59,14 @@ const api=createServer((req,res)=>{
   if(p==='/api/site/timeline'){
     res.setHeader('X-Accel-Expires','@'+(Math.floor(Date.now()/1000)+ttl));
     const category=url.searchParams.get('category');
-    const shown={...item,title:category?'分类 '+category:'性能检查文章'};
+    const day=url.searchParams.get('at');
+    const shown={...item,title:day?'历史精选 '+day:category?'分类 '+category:'性能检查文章'};
     if(url.searchParams.get('tag')==='long-reading'){
       const cards=Array.from({length:180},(_,i)=>({key:'long-'+i,anchorAt:i<60?at:'2026-10-03T08:00:00.000Z',item:{...item,id:'long-'+i,title:'长列表文章 '+i,summary:'用于核实深处阅读返回的固定摘要。'.repeat(3)},group:null}));
       return res.end(JSON.stringify({filters:{channel:'all',category:null,tag:'long-reading'},cards,nextCursor:null,hot:null,dayCounts:{'2026-10-04':60,'2026-10-03':120}}));
     }
-    return res.end(JSON.stringify({filters:{channel:'all',category,tag:null},cards:[{key:shown.id,anchorAt:at,item:shown,group:null}],nextCursor:null,hot:null,dayCounts:{'2026-10-04':1}}));
+    const hot=showFrontHot?Array.from({length:5},(_,i)=>({rank:i+1,title:'精选页热点 '+i,heat:42,trend:'flat',storyPublicId:'fixture',itemId:null,participants:[],participantCount:0})):null;
+    return res.end(JSON.stringify({filters:{channel:'all',category,tag:null,at:day},cards:[{key:shown.id,anchorAt:at,item:shown,group:null}],nextCursor:null,hot,dayCounts:{'2026-10-04':1}}));
   }
   if(p==='/api/site/pool'){
     const page=Number(url.searchParams.get('page')||1);
@@ -92,6 +100,47 @@ after(async()=>{
 
 // One engine per behaviour: WebKit for what phone readers do (iPhone Safari), Chromium for desktop-only
 // intent such as hover. The router and caches are the same code in both.
+test('front-page needle previews locally, commits a recorded day and preserves the locale on expansion',async()=>{
+  for(const prefix of ['', '/zh']){
+    const context=await readerContext(chrome,{viewport:{width:1440,height:900},reducedMotion:'reduce'});
+    const page=await context.newPage();
+    try{
+      showFrontHot=true;
+      await page.goto(origin+(prefix||'/'));
+      await expect(page.locator('.time-strip')).toBeVisible();
+      assert.ok((await page.locator('.time-strip').boundingBox())!.height<=280);
+      const firstPick=await page.getByRole('link',{name:'性能检查文章',exact:true}).boundingBox();
+      assert.ok(firstPick!.y+firstPick!.height<=900,JSON.stringify({firstPick,band:await page.locator('.time-strip').boundingBox(),hot:await page.locator('.hot-gauge').boundingBox()}));
+      for(const link of await page.locator(`main nav[aria-label="${prefix?'阅读':'Read'}"]:visible a`).all())assert.ok((await link.boundingBox())!.height>=36);
+      const initialLink=await page.locator('.time-strip-controls a').getAttribute('href');
+      const now=Number(new URL(initialLink!,origin).searchParams.get('t'));
+      const track=await page.getByRole('slider').boundingBox();
+      const x=track!.x+toAxis(dateToYear('2026-09-01'),now)*track!.width;
+      await page.mouse.move(x,track!.y+track!.height/2);
+      await page.mouse.down();
+      await expect(page).toHaveURL(origin+(prefix||'/'));
+      await page.mouse.up();
+      await expect(page).toHaveURL(origin+(prefix||'/')+'?at=2026-09-01');
+      await expect(page.getByRole('link',{name:'历史精选 2026-09-01',exact:true})).toBeVisible();
+      await expect(page.locator('.time-strip-kicker')).toContainText(prefix?'2026年9月1日':'2026-09-01');
+      await expect(page.locator('.time-bar')).toBeVisible();
+      const settled=Number(new URL((await page.locator('.time-strip-controls a').getAttribute('href'))!,origin).searchParams.get('t'));
+      assert.ok(Math.abs(settled-dateToYear('2026-09-01'))<1e-10);
+      await page.getByRole('slider').focus();await page.keyboard.press('End');
+      await expect(page).toHaveURL(origin+(prefix||'/'));
+      await page.getByRole('slider').focus();await page.keyboard.press('Home');
+      await expect(page).toHaveURL(new RegExp(prefix+'/chronicle\\?t=-'));
+      await expect(page.locator('.observatory')).toBeVisible();
+      await page.goto(origin+(prefix||'/'));
+      await page.setViewportSize({width:390,height:844});
+      assert.ok((await page.locator('.time-strip').boundingBox())!.height<=260);
+      await expect(page.locator('.time-strip-meter')).not.toBeVisible();
+      for(const link of await page.locator(`main nav[aria-label="${prefix?'阅读':'Read'}"]:visible a`).all())assert.ok((await link.boundingBox())!.height>=44);
+      await expect(page.getByRole('navigation',{name:prefix?'底部导航':'Mobile navigation'}).getByRole('link')).toHaveCount(4);
+    }finally{showFrontHot=false;await context.close();}
+  }
+});
+
 test('SSR list and visited query variants return offline without another read',async()=>{
   const context=await readerContext(safari,{viewport:{width:390,height:844}});
   const page=await context.newPage();

@@ -7,6 +7,7 @@ import { useNavigation, useSearchParams } from "react-router";
 import { CATEGORY_KEYS, CATEGORY_LABELS, CHANNEL_LABELS, type CategoryKey, type ChannelKey } from "@aihot/contracts/taxonomy";
 import { IconClose, IconSearch } from "../../components/icons";
 import { PillTabs } from "../../components/ui/Tabs";
+import { useAt, withAt } from "../chrono/at";
 
 /** Same page with some query parameters changed (paging state dropped). */
 export function hrefWith(base: string, params: URLSearchParams, patch: Record<string, string | null>) {
@@ -19,6 +20,21 @@ export function hrefWith(base: string, params: URLSearchParams, patch: Record<st
   sp.delete("cursor");
   const s = sp.toString();
   return s ? `${base}?${s}` : base;
+}
+
+/** The two feeds share their filters and historical day, but not search or paging state. */
+export function FeedSwitch({ base, layoutId }: { base: "/" | "/all"; layoutId: string }) {
+  const tx = useTranslate();
+  const [params] = useSearchParams();
+  const at = useAt();
+  const keep = new URLSearchParams();
+  for (const key of ["category", "channel", "tag"]) {
+    const value = params.get(key);
+    if (value) keep.set(key, value);
+  }
+  const items = [{ key: "/", label: tx("精选") }, { key: "/all", label: tx("全部") }]
+    .map((item) => ({ ...item, to: withAt(hrefWith(item.key, keep, {}), at), prefetch: "intent" as const }));
+  return <PillTabs items={items} active={base} layoutId={layoutId} label={tx("阅读")} className="shrink-0" />;
 }
 
 /**

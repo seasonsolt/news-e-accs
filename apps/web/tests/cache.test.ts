@@ -81,7 +81,12 @@ function apiResponse(req: IncomingMessage, res: ServerResponse) {
     res.setHeader("Cache-Control", "public, max-age=30, s-maxage=30");
     return res.end(JSON.stringify({ filters, cards: [], nextCursor: null, refreshAt, dayCounts: [], hot: null, generatedAt: "2026-09-28T00:00:00Z" }));
   }
-  if (url.pathname === "/api/site/chronicle") return res.end(JSON.stringify(chronicle));
+  if (url.pathname === "/api/site/chronicle") {
+    res.setHeader("X-Accel-Expires", `@${deadline + 3600}`);
+    res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=3600");
+    const eras = url.searchParams.get("lang") === "en" ? chronicle.eras.map((era) => ({ ...era, title: era.id, summary: "A fixture era summary" })) : chronicle.eras;
+    return res.end(JSON.stringify({ ...chronicle, eras }));
+  }
   if (url.pathname === "/api/site/chronicle/bounds") return res.end(JSON.stringify({ earliest: "2026-09-01", feed: "2026-09-01", hot: "2026-09-01", daily: "2026-09-01", today: "2026-10-09", kardashev: null }));
   if (url.pathname === "/api/site/leaderboard/boards/overall") {
     const board: LbBoardResponse = {
@@ -279,21 +284,29 @@ test("cookies, private policies and missing policies keep successful pages uncac
 });
 
 test("public route subsets produce the same complete navigation data; filters still differ", async () => {
-  const answers = await Promise.all(["", "?_routes=root", "?_routes=routes%2Fhome", "?_routes=unknown"].map(async (query) => {
-    const res = await fetch(`${origin}/_.data${query}`);
-    assert.equal(res.status, 200);
-    sharedCache(res, 20);
-    assert.equal(res.headers.get("X-Accel-Expires"), `@${deadline}`);
-    const body = await res.text();
-    assert.ok(body.includes("root") && body.includes("routes/home"));
-    return body;
-  }));
-  assert.ok(answers.every((body) => body === answers[0]));
-  const category = CATEGORY_KEYS.at(-1)!;
-  const filtered = await fetch(`${origin}/_.data?category=${category}&_routes=root`);
-  const body = await filtered.text();
-  assert.ok(body.includes(category));
-  assert.notEqual(body, answers[0]);
+  const clock = `import { mock } from "node:test"; mock.timers.enable({ apis: ["Date"], now: ${Date.now()} });`;
+  const fixture = await startWebServer(createServer(apiResponse), {
+    NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --import=data:text/javascript,${encodeURIComponent(clock)}`,
+  });
+  try {
+    const answers = await Promise.all(["", "?_routes=root", "?_routes=routes%2Fhome", "?_routes=unknown"].map(async (query) => {
+      const res = await fetch(`${fixture.origin}/_.data${query}`);
+      assert.equal(res.status, 200);
+      sharedCache(res, 20);
+      assert.equal(res.headers.get("X-Accel-Expires"), `@${deadline}`);
+      const body = await res.text();
+      assert.ok(body.includes("root") && body.includes("routes/home"));
+      return body;
+    }));
+    assert.ok(answers.every((body) => body === answers[0]));
+    const category = CATEGORY_KEYS.at(-1)!;
+    const filtered = await fetch(`${fixture.origin}/_.data?category=${category}&_routes=root`);
+    const body = await filtered.text();
+    assert.ok(body.includes(category));
+    assert.notEqual(body, answers[0]);
+  } finally {
+    await fixture.stop();
+  }
 });
 
 test("URL editions isolate HTML and Router data while preferences cannot change a URL", async () => {
@@ -301,20 +314,24 @@ test("URL editions isolate HTML and Router data while preferences cannot change 
   const englishHtml = await english.text();
   assert.equal(english.status, 200);
   assert.match(englishHtml, /<html lang="en"/);
-  assert.match(englishHtml, /The universe is cooling/);
+  assert.match(englishHtml, /Expand time machine/);
   assert.doesNotMatch(englishHtml, /English editions appear when available/);
   const chinese = await fetch(`${origin}/zh`, { headers: { "Accept-Language": "zh-TW,en;q=0.8" } });
   const chineseHtml = await chinese.text();
   assert.match(chineseHtml, /<html lang="zh-CN"/);
-  assert.match(chineseHtml, /宇宙在降温/);
-  // The front page's h1 is what readers search for; the line under it is display copy.
-  assert.match(chineseHtml, /<h1 class="deck-heading">今日 AI 新闻：精选与新兴事件<\/h1>/);
-  assert.match(chineseHtml, /<p class="deck-title">宇宙在降温/);
-  assert.match(englishHtml, /<h1 class="deck-heading">Today’s AI news: editorial picks and emerging stories<\/h1>/);
+  assert.match(chineseHtml, /展开时光机/);
+  // The compact band keeps the searchable page name as its h1.
+  assert.match(chineseHtml, /<h1 class="sr-only">今日 AI 新闻：精选与新兴事件<\/h1>/);
+  assert.match(englishHtml, /<h1 class="sr-only">Today’s AI news: editorial picks and emerging stories<\/h1>/);
   assert.match(chineseHtml, /"@type":"WebSite"/);
-  // The acceleration (/chronicle) is the signature view: second in the top bar and a tab on phones.
-  assert.match(chineseHtml, /aria-label="底部导航"[\s\S]*?href="\/zh\/chronicle"[^>]*>[\s\S]*?<span>加速史<\/span>/);
-  assert.match(englishHtml, /Explore the acceleration/);
+  const chineseDocument = parseHTML(chineseHtml).document;
+  const mobile = chineseDocument.querySelector('nav[aria-label="底部导航"]')!;
+  assert.equal(mobile.querySelectorAll("a").length, 4);
+  assert.equal(mobile.querySelector('a[href="/zh"]')?.textContent, "加速");
+  assert.equal(mobile.querySelector('a[href="/zh/chronicle"]'), null);
+  assert.equal(mobile.querySelector('a[href="/zh/all"]'), null);
+  assert.ok(chineseDocument.querySelector('.site-more-panel a[href="/zh/all"]'));
+  assert.match(englishHtml, /Acceleration/);
   assert.notEqual(chineseHtml, englishHtml);
   const manual = await fetch(`${origin}/`, { headers: { "Accept-Language": "zh-CN", Cookie: "eacc_language=zh; admin_session=private" } });
   assert.match(await manual.text(), /<html lang="en"/);
@@ -339,6 +356,51 @@ test("URL editions isolate HTML and Router data while preferences cannot change 
   const chineseData = await fetch(`${origin}/zh/about.data`, { headers: { cookie: "eacc_language=en" } });
   assert.match(await chineseData.text(), /"locale".*"zh"/);
   assert.ok(apiCookies.every((cookie) => !cookie));
+});
+
+test("the front-page band sends only its readouts and axis data without renewing the timeline deadline", async () => {
+  const response = await fetch(`${origin}/_.data`);
+  sharedCache(response, 20);
+  assert.equal(response.headers.get("X-Accel-Expires"), `@${deadline}`);
+  const { value } = await UNSAFE_decodeViaTurboStream(response.body!, globalThis);
+  const home = (value as Record<string, { data: { strip: { eras: Array<Record<string, unknown>>; milestones: Array<Record<string, unknown>>; now: number } } }>)["routes/home"]!.data;
+  assert.deepEqual(Object.keys(home.strip).sort(), ["eras", "milestones", "now"]);
+  assert.ok(Number.isFinite(home.strip.now));
+  assert.ok(home.strip.eras.every((era) => Object.keys(era).every((key) => ["id", "from", "title", "summary", "art", "forecast"].includes(key))));
+  assert.ok(home.strip.milestones.every((m) => Object.keys(m).every((key) => ["id", "t", "title", "category", "art", "forecast", "summary"].includes(key))));
+  assert.ok(home.strip.milestones.every((m) => typeof m.forecast === "boolean"));
+});
+
+test("both feed switches preserve filters and historical dates, dropping search and paging state", async () => {
+  const query = "category=ai-models&channel=firstParty&tag=OpenAI&at=2026-09-01";
+  for (const prefix of ["", "/zh"]) {
+    for (const base of ["/", "/all"]) {
+      const path = prefix && base === "/" ? prefix : prefix + base;
+      const response = await fetch(`${origin}${path}?${query}${base === "/all" ? "&q=robot&page=2&tab=relevance" : ""}`);
+      assert.equal(response.status, 200, path);
+      const document = parseHTML(await response.text()).document;
+      const switches = document.querySelectorAll(`main nav[aria-label="${prefix ? "阅读" : "Read"}"]`);
+      assert.equal(switches.length, 2, path);
+      for (const control of switches) {
+        const links = [...control.querySelectorAll("a")];
+        assert.equal(links.length, 2);
+        for (const [index, to] of ["/", "/all"].entries()) {
+          const target = new URL(links[index]!.getAttribute("href")!, origin);
+          assert.equal(target.pathname, prefix && to === "/" ? prefix : prefix + to);
+          assert.deepEqual([...target.searchParams], [...new URLSearchParams(query)]);
+          assert.equal(links[index]!.getAttribute("aria-current"), to === base ? "page" : null);
+        }
+      }
+      if (base === "/") {
+        assert.equal(document.querySelector(".time-strip"), null, "filtered picks retain their compact Deck");
+        assert.ok(document.querySelector(".deck.is-compact"));
+      }
+    }
+  }
+  const past = parseHTML(await (await fetch(`${origin}/zh?at=2026-09-01`)).text()).document;
+  assert.ok(past.querySelector(".time-strip"));
+  assert.match(past.querySelector(".time-strip-kicker")!.textContent!, /2026年9月1日/);
+  assert.ok(past.querySelector(".time-bar"));
 });
 
 test("changelog renders English prose, kind filters and calendar labels; Chinese remains available",async()=>{

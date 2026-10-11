@@ -89,14 +89,14 @@ export function keepAxisInView(view: AxisWindow, u: number): AxisWindow {
 }
 
 /** PageUp/PageDown navigation follows adjacent era plates, regardless of their distance on the log axis. */
-export function stepEra(eras: ChronicleEra[], t: number, direction: -1 | 1): number {
+export function stepEra(eras: ReadonlyArray<Pick<ChronicleEra, "from">>, t: number, direction: -1 | 1): number {
   const current = eras.findLastIndex((era) => era.from <= t);
   const next = eras[Math.min(eras.length - 1, Math.max(0, current + direction))];
   return next?.from ?? t;
 }
 
 /** Arrow keys visit era plates and illustrated milestones in chronological order. */
-export function stepPicture(eras: ChronicleEra[], milestones: ChronicleMilestone[], t: number, direction: -1 | 1): number {
+export function stepPicture(eras: ReadonlyArray<Pick<ChronicleEra, "from">>, milestones: ReadonlyArray<Pick<ChronicleMilestone, "t" | "art">>, t: number, direction: -1 | 1): number {
   const pictures = [...new Set([
     ...eras.map((era) => era.from + 1e-9),
     ...milestones.filter((m) => m.art).map((m) => m.t),

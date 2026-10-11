@@ -96,7 +96,7 @@ flowchart LR
 
 | 地址 | 内容 |
 |---|---|
-| `/` `/all` `/hot` `/topics` `/daily` `/weekly` `/monthly` | 精选、全部动态、热门事件、主题、日报周报月报 |
+| `/` `/all` `/hot` `/topics` `/daily` `/weekly` `/monthly` | 加速首页（精选与紧凑时光机；关闭时光机时为精选）、全部动态、热门事件、主题、日报周报月报 |
 | `/chronicle`、`/api/site/chronicle`、`/api/site/chronicle/bounds` | 文明时间轴数据和本站历史范围（`FEATURES.timeMachine`） |
 | `/api/site/reports/:kind/at/:date` | 不晚于指定北京日的最新报告 key |
 | `/feed.xml` `/feed/full.xml` `/feed/all.xml` `/feed/daily.xml` `/feed/weekly.xml` `/feed/monthly.xml` | RSS：精选、精选全文、全部、日报、周报、月报；另有按分类的 `/feed/category/<key>.xml` 和分类全文版 `/feed/full/category/<key>.xml` |
@@ -104,6 +104,8 @@ flowchart LR
 | `/api/mcp` | MCP 服务：最新、搜索、热点、事件、日报、周报、月报各一个工具，工具名前缀是 `site/site.ts` 的 `mcpPrefix` |
 | `/llms.txt` `/sitemap.xml` `/robots.txt` | 给大模型和搜索引擎的说明（`robots.txt` 等根目录文件在 `site/public/`） |
 | `/admin` | 后台 |
+
+首页的紧凑时光机复用 `/chronicle` 的时间轴。拖动只在本地预览，松手后跳到有记录日期的精选；更早的历史和未来预测打开完整 `/chronicle?t=…` 视图。首页只向客户端传时代与里程碑的必要字段，不传指标、出处或长详情，缓存期限仍由精选流的上游响应决定。「全部动态」从顶栏和底栏移到信息流的「精选 / 全部」切换与「更多」，切换保留类别、频道、标签和历史日期。
 
 精选、热点榜、模型榜与报告支持 `?at=YYYY-MM-DD`：截至该北京日 23:59:59.999，只通过公开读取层读取已发布记录；今天等同实时，未来和非法日期由接口返回 400。历史精选不走实时缓存，游标绑定日期，热点与模型榜的历史缓存不覆盖实时缓存。30 天以前的热点榜只保留每个北京日最后一份已发布记录；已删历史不恢复，模型价格仍为当前价。公开资讯内容仍匿名读取；界面语言只由 URL 决定，语言偏好 cookie 和 onboarding 状态只在浏览器读取，不触发模型。公开 HTML/data 使用路由声明的缓存期限；服务端输出不能依赖 cookie、`Accept-Language` 或用户代理（仅 bot 流式发送时机除外），见 [界面国际化](internationalization.md)；历史页 noindex，canonical 不带 `at`。MCP 和 API v1 暂不提供历史切片。
 

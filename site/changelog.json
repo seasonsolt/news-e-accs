@@ -1,6 +1,21 @@
 {
-  "latestVersion": "2026-10-01T08:00",
+  "latestVersion": "2026-10-11T08:00",
   "releases": [
+    {
+      "date": "2026-10-11",
+      "time": "08:00",
+      "kind": "更新",
+      "title": "首页合并为加速",
+      "body": [
+        "首页合并为\"加速\"：上方是可拖动的时光机，下方是精选，拖回过去就看那天；\"全部\"改为信息流上的\"精选 / 全部\"切换。"
+      ],
+      "en": {
+        "title": "An Acceleration front page",
+        "body": [
+          "The front page is now Acceleration: a draggable time machine above the picks. Drag into the past to read that day’s picks. All moves into a Picks / All switch on the feed."
+        ]
+      }
+    },
     {
       "date": "2026-10-01",
       "time": "08:00",

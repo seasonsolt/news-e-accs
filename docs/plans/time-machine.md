@@ -110,13 +110,13 @@
   - `root.tsx`：根 loader 并行读取 `/api/site/meta` 和 `/api/site/chronicle/bounds`，返回 `timeBounds`；`SiteShell` 里放了 `TimeBar`。
   - `Sidebar.tsx`：放了 `TimeDial`；`SideLink` 和 `MobileTabBar.tsx` 的链接都会保留 `at`。
   - `nav.ts`：
-    - "内容"区新增"四维视角 → `/chronicle`"。
+    - 功能开启时首页「加速」同时代表 `/` 和 `/chronicle`；手机底栏为「加速、热点（隐藏时换产品目录）、日报、更多」。
     - 功能开启时隐藏原来的"加速时间线"外链（`/timeline`）。
-    - `/chronicle` 加入 `MORE_PATHS`。
-  - `more.tsx`：新增"四维视角"入口，"偏好"组里放了 `TimeDial`。
+    - `/chronicle` 跟随「加速」高亮；有独立底栏入口的路径不加入 `MORE_PATHS`。「全部动态」移入「更多」的「阅读」组与信息流切换。
+  - `more.tsx`：「阅读」组提供全部动态、产品目录与订阅，「偏好」组里放了 `TimeDial`，可由拨盘展开加速史。
   - `icons.tsx`：新增 `IconHourglass`。
 - **路由：**
-  - `home.tsx`：读取 `at` 并传给接口；带 `at` 时不显示 onboarding 弹层，页面设为 `noindex`。
+  - `home.tsx`：读取 `at` 并传给接口；时光机开启时未筛选首页由 `TimeStrip.tsx` 展示紧凑观察舱与复用的时间轴，`frontPageTarget` 在本站历史日期与完整 `/chronicle` 之间选择目的地；客户端只收到必要的时代与里程碑字段，保留精选流的缓存期限。带 `at` 时不显示 onboarding 弹层，页面设为 `noindex`。
   - `hot.tsx`：读取 `at`；文案改为"截至 X，过去 48 小时"；没有存档时显示专门的空状态；带 `at` 时 `noindex`。
   - `leaderboard.tsx`：loader 返回 `{ at, board }`。`board` 为 null 时显示"这一天还没有模型榜"。原来的页面主体拆成了 `Board` 组件。
   - `leaderboard-model.tsx`：读取 `at`，带 `at` 时 `noindex`。

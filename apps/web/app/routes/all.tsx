@@ -9,7 +9,7 @@ import { beijingTime } from "@aihot/contracts/time";
 import { cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { filterParams, hasFeedFilters, itemListLd, listPath, pageMeta, readFilters } from "../lib/seo";
-import { CategoryTabs, SearchField } from "../features/feed/Filters";
+import { CategoryTabs, FeedSwitch, SearchField } from "../features/feed/Filters";
 import { AmbientBackdrop } from "../features/art/AmbientBackdrop";
 import { CategoryBanner } from "../features/art/CategoryBanner";
 import { PillTabs } from "../components/ui/Tabs";
@@ -97,7 +97,10 @@ export default function AllPage() {
       {/* Desktop, as on 精选: one filter row with the search field aligned on the right. */}
       <div className="hidden lg:block">
         <div className="mb-5 mt-6 flex items-center justify-between gap-4">
-          <CategoryTabs base="/all" category={f.category} channel={f.channel} layoutId="all-cat-desk" className="min-w-0" />
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <FeedSwitch base="/all" layoutId="all-feed-desk" />
+            <CategoryTabs base="/all" category={f.category} channel={f.channel} layoutId="all-cat-desk" className="min-w-0" />
+          </div>
           <SearchField variant="track" defaultValue={f.q ?? ""} keep={keep} />
         </div>
       </div>
@@ -106,8 +109,9 @@ export default function AllPage() {
       <div className="lg:hidden">
         <div className="h-4" />
         <SearchField variant="bar" defaultValue={f.q ?? ""} keep={keep} autoFocus={params.get("search") === "1"} />
-        <div className="-mx-4 mt-3 border-b border-line-soft px-4 pb-3">
-          <CategoryTabs base="/all" category={f.category} channel={f.channel} layoutId="all-cat-mobile" size="sm" className="min-w-0" />
+        <div className="-mx-4 mt-3 flex items-center gap-2 border-b border-line-soft px-4 pb-3">
+          <FeedSwitch base="/all" layoutId="all-feed-mobile" />
+          <CategoryTabs base="/all" category={f.category} channel={f.channel} layoutId="all-cat-mobile" size="sm" className="min-w-0 flex-1" />
         </div>
       </div>
 

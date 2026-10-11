@@ -6,6 +6,8 @@ import { FEATURES } from "@aihot/industry/features";
 import { MODULES } from "@aihot/site/modules";
 import { useLocation } from "react-router";
 import { addDays, beijingDate, isValidDate } from "@aihot/contracts/time";
+import { yearToDate, type TimeMachineBounds } from "@aihot/contracts/chronicle";
+import { timeParam } from "./format.ts";
 
 /** `at` from a query string: null for the live site (absent, invalid, today or later, feature off). */
 export function parseAt(search: string | URLSearchParams, today = beijingDate(Date.now())): string | null {
@@ -41,6 +43,17 @@ export function withAt(to: string, at: string | null): string {
   else sp.delete("at");
   const qs = sp.toString();
   return `${path}${qs ? `?${qs}` : ""}${hash}`;
+}
+
+/** A front-page needle lands on recorded days; deep history and forecasts open the full view. */
+export function frontPageTarget(t: number, now: number, bounds?: Pick<TimeMachineBounds, "today" | "earliest"> | null): string {
+  if (t === now) return withAt("/", null);
+  const date = yearToDate(t);
+  if (bounds && date) {
+    if (date === bounds.today) return withAt("/", null);
+    if (bounds.earliest && date >= bounds.earliest && date < bounds.today) return withAt("/", date);
+  }
+  return `/chronicle?t=${timeParam(t, now)}`;
 }
 
 /** The day `days` away from `at` (or from today), or null once that reaches today: back to the present. */
