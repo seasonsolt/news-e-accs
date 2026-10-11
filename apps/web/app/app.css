@@ -1131,14 +1131,21 @@ html { scrollbar-gutter: stable; }
 .chronicle-tick.cat-culture { color: #cbb99c; }
 .chronicle-tick.is-forecast { background: transparent; box-shadow: none; border-left: 1.5px dashed currentColor; }
 .chronicle-now { position: absolute; inset-block: -4px 0; border-left: 1px solid var(--brass-hi); }
-.chronicle-now span { position: absolute; top: -16px; transform: translateX(-50%); font: 600 10.5px var(--font-mono); color: var(--brass-hi); white-space: nowrap; }
+.chronicle-now span { position: absolute; top: -12px; transform: translateX(-50%); font: 600 10.5px var(--font-mono); color: var(--brass-hi); white-space: nowrap; }
 .chronicle-needle { position: absolute; top: -6px; bottom: -2px; width: 2px; transform: translateX(-50%); background: var(--deck-ink); box-shadow: 0 0 10px rgb(240 210 138 / .85); pointer-events: none; }
 .chronicle-needle::before { content: ""; position: absolute; top: -7px; left: -7px; width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--brass-hi), #a8731f); border: 2px solid var(--deck); box-shadow: 0 0 0 1px var(--brass), 0 2px 6px rgb(0 0 0 / .5); }
 .chronicle-scale { position: relative; height: 16px; margin-top: 6px; }
 .chronicle-scale span { position: absolute; transform: translateX(-50%); font: 11px var(--font-mono); color: var(--deck-faint); white-space: nowrap; }
-/* 100亿年前 sits almost on the Big Bang edge and would collide with 10亿年前. */
-.chronicle-scale:not([data-zoomed]) span:first-child { display: none; }
+.chronicle-scale span:first-child { transform: translateX(0); }
 .chronicle-scale span:last-child { transform: translateX(-100%); }
+@media (max-width: 640px) {
+  .chronicle-scale:not([data-zoomed]) span { display: none; }
+  .chronicle-scale:not([data-zoomed]) span[data-tick-index="0"],
+  .chronicle-scale:not([data-zoomed]) span[data-tick-index="6"],
+  .chronicle-scale:not([data-zoomed]) span[data-tick-index="9"],
+  .chronicle-scale:not([data-zoomed]) span[data-tick-index="12"],
+  .chronicle-scale:not([data-zoomed]) span[data-tick-index="15"] { display: block; }
+}
 .chronicle-zoom { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 .chronicle-zoom > span { font: 11px var(--font-mono); color: var(--deck-faint); }
 .chronometer-controls { display: flex; align-items: center; gap: 6px; margin-top: 10px; }

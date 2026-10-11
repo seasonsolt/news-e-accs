@@ -57,6 +57,13 @@ test("dated reports redirect to the right issue, retain at and stay noindex", as
   assert.ok(document.querySelector('.time-bar a[href="/zh/daily"]'));
 });
 
+test("home time strip uses the request locale for era titles", async () => {
+  const english = parseHTML(await (await fetch(fixture.origin + "/")).text()).document;
+  const chinese = parseHTML(await (await fetch(fixture.origin + "/zh")).text()).document;
+  assert.equal(english.querySelector(".time-strip-title")?.textContent, "Steam Age");
+  assert.equal(chinese.querySelector(".time-strip-title")?.textContent, "蒸汽时代");
+});
+
 test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era links", async () => {
   const document = await page("/chronicle?t=1769");
   assert.equal(document.querySelector("h1")!.textContent, "1769年");

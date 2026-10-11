@@ -170,8 +170,8 @@ export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit, comp
         {axisTicks(now).map(([tt, label], i) => {
           const tickU = toAxis(tt, now);
           return (
-            // Every other label on phones at full width, where they would collide.
-            <span key={label} hidden={tickU < view.lo || tickU > view.hi} className={!zoomed && i % 2 ? "max-sm:hidden" : undefined} style={{ left: `${projectAxis(tickU, view) * 100}%` }}>
+            // Narrow tracks keep the edges and present moment, with enough room between the labels.
+            <span key={label} hidden={tickU < view.lo || tickU > view.hi} data-tick-index={i} style={{ left: `${projectAxis(tickU, view) * 100}%` }}>
               {locale === "en" ? compactTick(label) : label}
             </span>
           );
