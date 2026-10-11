@@ -12,7 +12,7 @@ interface WechatArticle {
   readMoreUrl: string;
   html: string;
   text: string;
-  entries: { daily: number; added: number };
+  entries: { daily: number; added: number; commented: number };
 }
 
 type WechatExport =
@@ -33,7 +33,8 @@ export const meta: Route.MetaFunction = () => [{ title: `公众号 · ${SITE.nam
 function entriesNote({ entries }: WechatArticle, minimum: number): string {
   const total = entries.daily + entries.added;
   const base = entries.added ? `共 ${total} 条：日报 ${entries.daily} 条，另按评分补充 ${entries.added} 条` : `共 ${total} 条，都来自日报`;
-  return total < minimum ? `${base}。这段时间够格的消息不足 ${minimum} 条。` : `${base}。`;
+  const comments = entries.commented === total ? "每条都有点评。" : `点评 ${entries.commented}/${total} 条，其余还在写或没写成。`;
+  return `${total < minimum ? `${base}。这段时间够格的消息不足 ${minimum} 条。` : `${base}。`}${comments}`;
 }
 
 const UNAVAILABLE: Record<string, string> = {
@@ -69,7 +70,7 @@ export default function WechatAdmin({ loaderData: d }: Route.ComponentProps) {
   return (
     <AdminPage
       title="公众号"
-      subtitle="把一天的中文日报整理成「AI 早报」：复制正文粘贴到公众号编辑器，再把标题、摘要和「阅读原文」链接填进对应位置。日报不足 10 条时，按评分补充同一时段的其他公开消息，不重复近一周日报报道过的事件。"
+      subtitle="把一天的中文日报整理成「AI 早报」：复制正文粘贴到公众号编辑器，再把标题、摘要和「阅读原文」链接填进对应位置。日报不足 10 条时，按评分补充同一时段的其他公开消息，不重复近一周日报报道过的事件。中文日报就绪后，worker 每 10 分钟为还没点评的条目写一句点评。"
       actions={
         <Form method="get" className="flex items-center gap-2">
           <Input type="date" name="date" defaultValue={d.date} className="w-40" />

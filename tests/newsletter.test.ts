@@ -2,7 +2,7 @@
 // per cooldown; confirming makes the address a subscribed contact in the segment, also after an
 // unsubscribe; today's daily report is mailed as one broadcast, at most once a day, and a send in doubt
 // is never repeated. Resend is a local stub; the NEWSLETTER_ENABLED valve is opened only here.
-import { Reply, stub, tag } from "./setup.ts";
+import { pointModels, Reply, stub, tag } from "./setup.ts";
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { beijingDate, addDays } from "@aihot/contracts/time";
@@ -19,6 +19,7 @@ import { currentContent, saveTranslation } from "@aihot/backend/publication/cont
 import { sendDailyIssue } from "@aihot/backend/newsletter/issue";
 import { wechatArticle } from "@aihot/backend/newsletter/wechat";
 import { wechatExport } from "@aihot/backend/admin/wechat";
+import { commentWechatColumn } from "@aihot/backend/newsletter/wechat-comments";
 
 const T = tag();
 const EMAIL = `Reader.${T}@Example.org`;
@@ -81,6 +82,7 @@ after(async () => {
   await sql`DELETE FROM reports WHERE kind = 'daily' AND key = ${TODAY}`;
   await sql`DELETE FROM newsletter_subscribers WHERE email LIKE ${`%${T.toLowerCase()}%`}`;
   await sql`DELETE FROM content_translations WHERE kind = 'report' AND content_id = ${`daily:${TODAY}`}`;
+  await sql`DELETE FROM wechat_comments WHERE report_key = ${TODAY}`;
   await resend.close();
   await stopBoss();
   await closeDb();
@@ -255,6 +257,45 @@ test("a short daily is filled to ten from the window's best scored reports, one 
     await sql`DELETE FROM articles WHERE source_id=${source}`;
     for (const id of stories) { await sql`DELETE FROM facts WHERE story_id=${id}`; await sql`DELETE FROM stories WHERE id=${id}`; }
     await sql`DELETE FROM sources WHERE id=${source}`;
+  }
+});
+
+test("the worker comments the column's entries, keeping only comments grounded in their entry, and pays once per question", async () => {
+  await sql`DELETE FROM wechat_comments WHERE report_key = ${TODAY}`;
+  const asked: string[] = [];
+  const model = await stub((_hit, req) => {
+    const user = (JSON.parse(req.body) as { messages: Array<{ role: string; content: string }> }).messages.find((m) => m.role === "user")!.content;
+    asked.push(user);
+    const count = user.match(/^\d+\. /gm)!.length;
+    const comments = Array.from({ length: count }, (_, k) => ({
+      n: k + 1,
+      comment: k === 0 ? "Nova-9 会把成本打到 99% 以下" : k === 1 ? "上线只是起点，落地速度比发布会更重要" : "这一步太关键了！",
+    }));
+    return { id: `wc-${T}`, choices: [{ message: { content: JSON.stringify({ comments }) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } };
+  });
+  pointModels(model.url, ["deepseek-flash"]);
+  try {
+    const first = await commentWechatColumn(TODAY);
+    assert.equal(first.status, "done");
+    assert.equal(asked.length, 1);
+    assert.match(asked[0]!, new RegExp(`^1\\. 头条 ${T}\n导语`), "the lead is commented as the column prints it");
+    const exported = await wechatExport(TODAY);
+    const { article } = exported as Extract<typeof exported, { status: "ready" }>;
+    assert.equal(first.written, 1);
+    assert.equal(article.entries.commented, 1);
+    assert.doesNotMatch(article.text, /Nova-9|太关键/, "a name or figure its entry lacks, or shouting, is not printed");
+    const second = article.text.split("\n\n").find((block) => block.startsWith("02 产品 B 上线\n"));
+    assert.equal(second, "02 产品 B 上线\ne/acc 点评：上线只是起点，落地速度比发布会更重要\n产品 · 来源：媒体", "the comment follows its entry");
+    assert.match(article.html, /e\/acc 点评<\/span>　上线只是起点/);
+
+    assert.deepEqual(await commentWechatColumn(TODAY), { status: "done", written: 0 });
+    assert.equal(asked.length, 2);
+    assert.equal(asked[1], `1. 头条 ${T}\n导语 <b>不</b>是 HTML。`, "an entry whose comment was not kept is asked once more on its own");
+    assert.deepEqual(await commentWechatColumn(TODAY), { status: "done", written: 0 });
+    assert.equal(asked.length, 2, "the same question is not paid for twice");
+    assert.equal((await commentWechatColumn("2000-01-01")).status, "no_report");
+  } finally {
+    await model.close();
   }
 });
 

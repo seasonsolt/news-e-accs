@@ -24,6 +24,7 @@ import { forwardPendingFeedback } from "@aihot/backend/operations/feedback";
 import { backupConfigured, runBackup } from "@aihot/backend/operations/backup";
 import { sourceHealthWeekly } from "@aihot/backend/operations/reports";
 import { sendDailyIssues } from "@aihot/backend/newsletter/issue";
+import { commentWechatColumn } from "@aihot/backend/newsletter/wechat-comments";
 
 /** A schedule, optionally on its own calendar (the report calendar); the default is Asia/Shanghai. */
 type EngineScheduled = Scheduled & { timeZone?: string };
@@ -46,6 +47,8 @@ export const ENGINE_SCHEDULES: EngineScheduled[] = [
   { name: "reports.compose", timeZone: config.reportTimeZone, cron: "0,30 * * * *", missed: "once", run: () => composeDueReports() },
   // Mails today's daily report as soon as it exists (claimed once per day; off unless NEWSLETTER_ENABLED).
   { name: "newsletter.daily", timeZone: config.reportTimeZone, cron: `*/10 ${dailyHour}-${Math.min(23, dailyHour + 4)} * * *`, run: () => sendDailyIssues() },
+  // The site's comment on each entry of today's 公众号 column, once its Chinese edition is ready (model calls).
+  { name: "wechat.comment", timeZone: config.reportTimeZone, cron: `5-55/10 ${dailyHour}-${Math.min(23, dailyHour + 4)} * * *`, run: () => commentWechatColumn() },
   // The deletions the privacy notice promises, once their retention periods are over.
   { name: "ops.retention", cron: "30 3 * * *", missed: "once", run: () => dailyRetention() },
   // IndexNow for added, changed and removed discovery URLs (off unless INDEXNOW_SUBMIT_ENABLED).
