@@ -17,8 +17,6 @@ export interface NavItem {
   icon: (p: { size?: number }) => ReactNode;
   /** Match the path exactly (the home page). */
   end?: boolean;
-  /** Other sections represented by this entry. */
-  also?: string[];
   /** Shows the unread dot while the changelog has news. */
   changelog?: boolean;
   /** One of e-acc.ai's own pages (served beside this site, not by it): a full page load. */
@@ -38,7 +36,9 @@ export const TOOLS: NavItem[] = [
 
 /** The deck's top navigation: the reading sections, in the order a reader moves through them. */
 export const TOPNAV: NavItem[] = [
-  { to: "/", label: FEATURES.timeMachine ? "加速" : "精选", icon: IconBolt, end: true, also: FEATURES.timeMachine ? ["/chronicle"] : undefined },
+  { to: "/", label: "精选", icon: IconBolt, end: true },
+  // The acceleration (the chronicle) is the site's signature view: right after the picks.
+  ...(FEATURES.timeMachine ? [{ to: "/chronicle", label: "加速史", icon: IconHourglass }] : []),
   ...(inNav("/hot") ? [{ to: "/hot", label: "热点", icon: IconFlame }] : []),
   { to: "/daily", label: withSubject("日报"), icon: IconDoc },
   { to: "/products", label: "产品目录", icon: IconApps },
@@ -69,8 +69,9 @@ export const MORE_MENU: Array<{ title: string; items: NavItem[] }> = [
 ];
 
 export const TABBAR: NavItem[] = [
-  TOPNAV[0]!,
-  FEATURES.timeMachine && inNav("/hot") ? { to: "/hot", label: "热点", icon: IconFlame } : { to: "/products", label: "产品目录", icon: IconApps },
+  { to: "/", label: "精选", icon: IconBolt, end: true },
+  ...(FEATURES.timeMachine ? [{ to: "/chronicle", label: "加速史", icon: IconHourglass }] : [{ to: "/products", label: "产品目录", icon: IconApps }]),
+  ...(inNav("/hot") ? [{ to: "/hot", label: "热点", icon: IconFlame }] : []),
   { to: "/daily", label: "日报", icon: IconDoc },
   { to: "/more", label: "更多", icon: IconApps, changelog: true },
 ];
@@ -81,7 +82,6 @@ export const MORE_PATHS = ["/all", "/products", "/more", ...(FEATURES.timeMachin
 
 export function tabIsActive(item: NavItem, pathname: string): boolean {
   pathname = publicPath(pathname);
-  if (item.also?.some((path) => pathname === path || pathname.startsWith(`${path}/`))) return true;
   if (item.end) return pathname === item.to;
   if (item.to === "/more") return [...MORE_PATHS, ...webModules().flatMap((m) => (m.tools ?? []).map((t) => t.to))].some((p) => pathname === p || pathname.startsWith(`${p}/`));
   if (item.to === "/daily") return /^\/(daily|weekly|monthly)(\/|$)/.test(pathname);

@@ -1,5 +1,5 @@
 > **news.e-accs.com** — e/acc 加速日报，基于 [AIHOT](https://github.com/KKKKhazix/AIHOT) 开源框架（`upstream` 远程），换成了蒸汽朋克外观：
-> 首页「加速」上方是紧凑时光机（`apps/web/app/features/chrono/TimeStrip.tsx`），下方是精选；拖到有记录的过去日期就看那天，更远的历史与预测打开 `/chronicle` 完整视图。「全部」通过信息流上的「精选 / 全部」切换和「更多」进入。
+> 首页是精选，信息流上的「精选 / 全部」切换进入全部动态；「加速史」（`/chronicle`）是独立的完整时光机。
 > 配色在 `apps/web/app/app.css` 的主题变量里，
 > 站名等在 `site/site.ts`。部署见 [`deploy/README.md`](deploy/README.md)（DMIT + Cloudflare Tunnel）。同步上游：`git fetch upstream && git merge upstream/main`。
 > 以下是 AIHOT 原文档。

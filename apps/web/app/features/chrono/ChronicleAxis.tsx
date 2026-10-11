@@ -9,15 +9,11 @@ import { axisTicks, fromAxis, timeLabel, toAxis, type ChronicleEra, type Chronic
 import { useMotionAllowed } from "../motion/preferences";
 import { compactTick, keepAxisInView, panAxisWindow, projectAxis, stepEra, stepPicture, zoomAxisWindow, type AxisWindow } from "./format";
 
-export type AxisEra = Pick<ChronicleEra, "id" | "from" | "title" | "art" | "forecast">;
-export type AxisMilestone = Pick<ChronicleMilestone, "id" | "t" | "category" | "art"> & { forecast?: boolean | ChronicleMilestone["forecast"] };
-
 const SNAP_PX = 8;
 
-export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit, compact = false }: {
-  eras: AxisEra[];
-  milestones: AxisMilestone[];
-  compact?: boolean;
+export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit }: {
+  eras: ChronicleEra[];
+  milestones: ChronicleMilestone[];
   now: number;
   t: number;
   /** While dragging: the needle follows. */
@@ -89,7 +85,7 @@ export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit, comp
     let next = fromAxis(pos.u, now);
     if (!moved) {
       // A click means "this one": the nearest milestone within a few pixels.
-      let best: { m: AxisMilestone; d: number } | null = null;
+      let best: { m: ChronicleMilestone; d: number } | null = null;
       for (const m of milestones) {
         const mu = toAxis(m.t, now);
         if (mu < view.lo || mu > view.hi) continue;
@@ -113,7 +109,7 @@ export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit, comp
   };
 
   return (
-    <div className={`chronicle-axis select-none ${compact ? "is-compact" : ""}`}>
+    <div className="chronicle-axis select-none">
       <div
         ref={track}
         role="slider"

@@ -28,8 +28,6 @@ export const chronicle: ChronicleResponse = {
   ],
 };
 
-const englishEraTitles: Record<string, string> = { cosmos: "Cosmic Era", steam: "Steam Age", forecast: "Future (forecast)" };
-
 export async function startChronoFixture() {
   const hits = new Map<string, number>();
   const api = createServer((req, res) => {
@@ -40,12 +38,7 @@ export async function startChronoFixture() {
     res.setHeader("Content-Type", "application/json");
     const send = (body: unknown) => res.end(JSON.stringify(body));
     if (path === "/api/site/meta") return send({ changelogVersion: null });
-    if (path === "/api/site/chronicle") {
-      const body = url.searchParams.get("lang") === "en"
-        ? { ...chronicle, eras: chronicle.eras.map((era) => ({ ...era, title: englishEraTitles[era.id] ?? era.title })) }
-        : chronicle;
-      return send(body);
-    }
+    if (path === "/api/site/chronicle") return send(chronicle);
     if (path === "/api/site/chronicle/bounds") return send({ earliest: "2026-08-01", feed: "2026-08-01", hot: "2026-08-01", daily: "2026-08-01", today: beijingDate(Date.now()) });
     if (path === "/api/site/hot") {
       const computedAt = `${at ?? "2026-10-01"}T15:00:00.000Z`;

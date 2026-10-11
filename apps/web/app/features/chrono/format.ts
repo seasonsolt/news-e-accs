@@ -1,5 +1,5 @@
 // Reader-facing numbers and axis windows for the four-dimensional view: 79.6 亿人, 1.9×10¹³ 瓦, 3 天.
-import { AXIS_FUTURE_YEARS, BIG_BANG, type ChronicleEra, type ChronicleMetric, type ChronicleMilestone } from "@aihot/contracts/chronicle";
+import type { ChronicleEra, ChronicleMetric, ChronicleMilestone } from "@aihot/contracts/chronicle";
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
 
@@ -51,12 +51,6 @@ export function metricValue(metric: ChronicleMetric, v: number): { value: string
   }
 }
 
-/** The moment a `?t=` names, held within the axis; null when absent or not a number. */
-export function momentParam(raw: string | null, now: number): number | null {
-  const t = raw === null || raw.trim() === "" ? NaN : Number(raw);
-  return Number.isFinite(t) ? Math.min(now + AXIS_FUTURE_YEARS, Math.max(BIG_BANG, t)) : null;
-}
-
 /** A time for the URL: short, and exact enough to land on the same point of the axis. */
 export function timeParam(t: number, now: number): string {
   return Number(t.toPrecision(15)).toString().replace("e+", "e");
@@ -95,14 +89,14 @@ export function keepAxisInView(view: AxisWindow, u: number): AxisWindow {
 }
 
 /** PageUp/PageDown navigation follows adjacent era plates, regardless of their distance on the log axis. */
-export function stepEra(eras: ReadonlyArray<Pick<ChronicleEra, "from">>, t: number, direction: -1 | 1): number {
+export function stepEra(eras: ChronicleEra[], t: number, direction: -1 | 1): number {
   const current = eras.findLastIndex((era) => era.from <= t);
   const next = eras[Math.min(eras.length - 1, Math.max(0, current + direction))];
   return next?.from ?? t;
 }
 
 /** Arrow keys visit era plates and illustrated milestones in chronological order. */
-export function stepPicture(eras: ReadonlyArray<Pick<ChronicleEra, "from">>, milestones: ReadonlyArray<Pick<ChronicleMilestone, "t" | "art">>, t: number, direction: -1 | 1): number {
+export function stepPicture(eras: ChronicleEra[], milestones: ChronicleMilestone[], t: number, direction: -1 | 1): number {
   const pictures = [...new Set([
     ...eras.map((era) => era.from + 1e-9),
     ...milestones.filter((m) => m.art).map((m) => m.t),
