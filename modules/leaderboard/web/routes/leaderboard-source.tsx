@@ -1,11 +1,11 @@
 import { Link } from "@aihot/web/lib/navigation";
-import { localeFromMatches, Text, useTranslate } from "@aihot/web/lib/i18n";
+import { localeFromMatches, Text, translate, useTranslate } from "@aihot/web/lib/i18n";
 import { SITE } from "@aihot/site";
 import { useLoaderData } from "react-router";
 import type { LoaderFunctionArgs, MetaArgs } from "react-router";
 import type { LbSourceDetail } from "@aihot/leaderboard/contracts";
 import { loadOr404 } from "@aihot/web/lib/api.server";
-import { breadcrumbLd, pageMeta, siteUrl, titled } from "@aihot/web/lib/seo";
+import { breadcrumbLd, pageMeta, siteUrl } from "@aihot/web/lib/seo";
 import { BrandMark } from "@aihot/web/components/BrandMark";
 import { Deck } from "@aihot/web/components/shell/Deck";
 import { SaturatedChip, StatusChip } from "../features/StatusChip";
@@ -17,11 +17,13 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 }
 
 export function meta({ matches, loaderData }: MetaArgs<typeof loader>) {
-  if (!loaderData) return [{ title: titled("页面不存在") }];
+  const locale = localeFromMatches(matches ?? []);
+  const tx = (message: string, ...values: unknown[]) => translate(locale, message, ...values);
+  if (!loaderData) return pageMeta({ title: "页面不存在", path: "/leaderboard/sources", noindex: true }, locale);
   const { source } = loaderData;
   const path = `/leaderboard/sources/${source.key}`;
   return pageMeta({
-    title: `${source.name} · 评测来源`,
+    title: tx("{0} · 评测来源", source.name),
     description: source.description,
     path,
     jsonLd: [
@@ -35,12 +37,12 @@ export function meta({ matches, loaderData }: MetaArgs<typeof loader>) {
         ...(source.officialUrl ? { sameAs: source.officialUrl } : {}),
       },
       breadcrumbLd([
-        { name: "模型榜", path: "/leaderboard" },
-        { name: "评测来源", path: "/leaderboard/sources" },
+        { name: tx("模型榜"), path: "/leaderboard" },
+        { name: tx("评测来源"), path: "/leaderboard/sources" },
         { name: source.name, path },
       ]),
     ],
-  }, localeFromMatches(matches ?? []));
+  }, locale);
 }
 
 export function headers() {
@@ -91,15 +93,15 @@ export default function LeaderboardSourcePage() {
           ) : source.saturated ? (
             <>
               {pct(source.effectiveBudget ?? source.budget)}
-              <span className="ml-1.5 font-sans text-[12px] font-normal text-ink-4"><Text value="（接近饱和，原" />{pct(source.budget)}）</span>
+              <span className="ml-1.5 font-sans text-[12px] font-normal text-ink-4"><Text value="（接近饱和，原" />{pct(source.budget)}<Text value="）" /></span>
             </>
           ) : (
             pct(source.budget)
           )}
         </Stat>
-        <Stat label={tx("上游数据时间")}>{d.collected ? shortStamp(d.upstreamAt) : <span className="font-sans text-[14px] font-normal text-ink-3"><Text value="待核实" /></span>}</Stat>
+        <Stat label={tx("上游数据时间")}>{d.collected ? tx(shortStamp(d.upstreamAt)) : <span className="font-sans text-[14px] font-normal text-ink-3"><Text value="待核实" /></span>}</Stat>
         <Stat label={tx("最近成功同步")}>
-          {d.collected ? shortStamp(d.syncedAt) : <span className="font-sans text-[14px] font-normal text-ink-3">{source.status === "awaiting" ? tx("等待可比成绩") : tx("尚未开始采集")}</span>}
+          {d.collected ? tx(shortStamp(d.syncedAt)) : <span className="font-sans text-[14px] font-normal text-ink-3">{source.status === "awaiting" ? tx("等待可比成绩") : tx("尚未开始采集")}</span>}
         </Stat>
       </section>
 

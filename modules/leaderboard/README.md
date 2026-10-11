@@ -9,7 +9,16 @@
 - `/leaderboard/:slug`：公开前 30 名模型的排名、价格、稳定性与原始证据。
 - `/leaderboard/category/:key`：四类专项榜。`overall` 返回 404，`aesthetics`、`writing` 临时跳转总榜；`/leaderboard/methodology` 永久跳转来源页。
 
-保留 `/zh/leaderboard…` 镜像、英文界面的既有翻译、`?at=YYYY-MM-DD` 的北京日边界、历史榜与实时榜的独立缓存。价格仍为当前官方价格，美元报价按所读计算轮次的汇率折算。页面只读已发布结果，不发起采集或模型调用。
+保留 `/zh/leaderboard…` 镜像、`?at=YYYY-MM-DD` 的北京日边界、历史榜与实时榜的独立缓存。价格仍为当前官方价格，美元报价按所读计算轮次的汇率折算。页面只读已发布结果，不发起采集或模型调用。
+
+## 中英文版本
+
+五类 `/api/site/leaderboard/*` 读取接口接受 `lang=en|zh`，省略时仍返回原有中文。英文数据在 `i18n/en.json`，按榜单、来源、分组、证据预算、状态和配置等稳定 id 覆盖中文文案；署名等动态句子在读取代码中保留双语模板。已存轮次的预算名、汇率来源、配置标签和选择说明只在读取时翻译，模型、机构和上游型号专名保留，不改数据库记录。
+
+网页文案在 `i18n/messages.ts`，通过通用 `WebModule.messages` 插口注册中英文字典。评测状态使用模块自己的 message key，不覆盖引擎事件的同名状态。标题、描述和结构化数据使用同一套翻译，canonical 与 alternate 由引擎 `pageMeta` 生成。
+
+运行缓存只存未翻译的轮次，每次响应独立选择文案；API 的 URL 查询参数和 ETag 均区分语言。网页与 Router data 继续遵守引擎的 `private, no-store`。测试检查全部英文条目、存储文案、双语缓存与页面，并用改动前捕获的 77 个响应 SHA-256 核对中文原始 JSON 字节（仅归一化测试生成的轮次 id）。
+
 
 ## 更新与配置
 
@@ -27,6 +36,7 @@ modules/leaderboard/
 ├── web.tsx
 ├── contracts.ts
 ├── taxonomy.ts
+├── i18n/                     # 英文数据覆盖、网页文案与存储文案的读取翻译
 ├── backend/
 │   ├── admin.ts
 │   ├── directory.ts

@@ -40,7 +40,7 @@ export function EvidenceBadge({ confidence, stability, rank }: { confidence: LbC
     const r = e.currentTarget.getBoundingClientRect();
     setAt(position(r));
   };
-  const label = LB_CONFIDENCE_LABELS[confidence];
+  const label = tx(LB_CONFIDENCE_LABELS[confidence]);
   const chip = (
     <small className="inline-flex items-center gap-1.5 text-[11px] leading-[17px] text-ink-4">
       <span className={`size-[5px] shrink-0 rounded-full ${DOT[confidence]}`} aria-hidden="true" />
@@ -60,7 +60,7 @@ export function EvidenceBadge({ confidence, stability, rank }: { confidence: LbC
           className="pointer-events-none fixed z-[60] w-56 rounded-tile border border-line bg-raised p-3 text-left text-[12px] leading-relaxed text-ink-2 shadow-[var(--shadow-pop)]"
         >
           <span className="block text-[11px] text-ink-4"><Text value="名次浮动范围" /></span>
-          <span className="num block text-[15px] font-semibold text-ink">{rangeText(stability)}</span>
+          <span className="num block text-[15px] font-semibold text-ink">{tx(rangeText(stability))}</span>
           <span className="mt-1.5 block text-ink-3"><Text value="在" />{stability.scenarios}<Text value="个对照情景中重新检查资格后的名次。" />{stability.unavailable > 0 && tx(" {0} 个情景下参评证据不足。", stability.unavailable)}<Text value="不是置信区间。" /></span>
         </span>, document.body
       )}

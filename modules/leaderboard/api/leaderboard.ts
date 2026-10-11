@@ -31,30 +31,37 @@ export function registerLeaderboard(app: FastifyInstance) {
   app.get("/api/site/leaderboard/boards/:key", guarded(async (req, reply) => {
     const key = (req.params as { key: string }).key;
     if (!(LEADERBOARD_PUBLIC_BOARDS as readonly string[]).includes(key)) return notFound(req, reply);
-    const at = parseAt(looseQuery(req).at);
-    const body = await loadBoard(key as LeaderboardBoardKey, at ? beijingDayEnd(at) : null);
+    const query = looseQuery(req);
+    const lang = query.lang === "en" ? "en" : "zh";
+    const at = parseAt(query.at);
+    const body = await loadBoard(key as LeaderboardBoardKey, at ? beijingDayEnd(at) : null, lang);
     if (!body) return notFound(req, reply);
-    return sendJsonWithEtag(req, reply, body, { etagPrefix: `lb-${key}`, cacheControl: at ? PAST_SLICE_CACHE : CACHE });
+    return sendJsonWithEtag(req, reply, body, { etagPrefix: `lb-${key}-${lang}`, cacheControl: at ? PAST_SLICE_CACHE : CACHE });
   }));
 
   app.get("/api/site/leaderboard/models/:slug", guarded(async (req, reply) => {
-    const at = parseAt(looseQuery(req).at);
-    const body = await loadModel((req.params as { slug: string }).slug, at ? beijingDayEnd(at) : null);
+    const query = looseQuery(req);
+    const lang = query.lang === "en" ? "en" : "zh";
+    const at = parseAt(query.at);
+    const body = await loadModel((req.params as { slug: string }).slug, at ? beijingDayEnd(at) : null, lang);
     if (!body) return notFound(req, reply);
-    return sendJsonWithEtag(req, reply, body, { etagPrefix: "lb-model", cacheControl: at ? PAST_SLICE_CACHE : CACHE });
+    return sendJsonWithEtag(req, reply, body, { etagPrefix: `lb-model-${lang}`, cacheControl: at ? PAST_SLICE_CACHE : CACHE });
   }));
 
   app.get("/api/site/leaderboard/sources", guarded(async (req, reply) => {
-    return sendJsonWithEtag(req, reply, await loadSources(), { etagPrefix: "lb-sources", cacheControl: CACHE });
+    const lang = looseQuery(req).lang === "en" ? "en" : "zh";
+    return sendJsonWithEtag(req, reply, await loadSources(lang), { etagPrefix: `lb-sources-${lang}`, cacheControl: CACHE });
   }));
 
   app.get("/api/site/leaderboard/sources/:key", guarded(async (req, reply) => {
-    const body = await loadSource((req.params as { key: string }).key);
+    const lang = looseQuery(req).lang === "en" ? "en" : "zh";
+    const body = await loadSource((req.params as { key: string }).key, lang);
     if (!body) return notFound(req, reply);
-    return sendJsonWithEtag(req, reply, body, { etagPrefix: "lb-source", cacheControl: CACHE });
+    return sendJsonWithEtag(req, reply, body, { etagPrefix: `lb-source-${lang}`, cacheControl: CACHE });
   }));
 
   app.get("/api/site/leaderboard/rules", guarded(async (req, reply) => {
-    return sendJsonWithEtag(req, reply, await loadRulesData(), { etagPrefix: "lb-rules", cacheControl: CACHE });
+    const lang = looseQuery(req).lang === "en" ? "en" : "zh";
+    return sendJsonWithEtag(req, reply, await loadRulesData(lang), { etagPrefix: `lb-rules-${lang}`, cacheControl: CACHE });
   }));
 }

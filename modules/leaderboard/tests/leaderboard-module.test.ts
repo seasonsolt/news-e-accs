@@ -1,5 +1,6 @@
 import "../../../tests/setup.ts";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { createServer } from "node:http";
 import { after, before, test } from "node:test";
 import { createId } from "@paralleldrive/cuid2";
@@ -13,6 +14,9 @@ import { buildApp } from "../../../apps/api/src/app.ts";
 import { startWebServer } from "../../../apps/web/tests/web-server.ts";
 import { invalidateLeaderboard } from "../backend/read.ts";
 import { SOURCE_GROUPS } from "../backend/registry.ts";
+import chineseResponses from "./fixtures/leaderboard-zh.json" with { type: "json" };
+import { REASONS } from "../backend/fetch/configuration.ts";
+import { BUDGETS } from "../backend/method/v16.ts";
 
 process.env.COLLECT_ENABLED = "false";
 process.env.MODEL_CALLS_ENABLED = "false";
@@ -191,6 +195,92 @@ test("existing imported rows remain readable with their original run summary", a
   assert.equal(stored.summary.sources[0].saturated, undefined, "pre-v16 summaries stay unchanged");
 });
 
+// These fields contain proper nouns from lb_models or the upstream model name stored in lb_scores.
+const PROPER_NOUN_FIELDS = new Set([
+  "entries[].model.name", "entries[].model.provider", "entries[].model.brand.monogram",
+  "model.name", "model.provider", "model.brand.monogram",
+  "comparisons[].model.name", "comparisons[].model.provider", "comparisons[].model.brand.monogram",
+  "evidence[].items[].sourceModelName", "rows[].sourceModelName", "rows[].provider",
+]);
+
+function assertEnglish(value: unknown, path = "") {
+  if (typeof value === "string") {
+    if (!PROPER_NOUN_FIELDS.has(path.replace(/\[\d+\]/g, "[]"))) assert.doesNotMatch(value, /[㐀-鿿＀-￯]/, path);
+  } else if (Array.isArray(value)) {
+    value.forEach((entry, i) => assertEnglish(entry, `${path}[${i}]`));
+  } else if (value && typeof value === "object") {
+    for (const [key, entry] of Object.entries(value)) assertEnglish(entry, path ? `${path}.${key}` : key);
+  }
+}
+
+function withoutText(value: unknown): unknown {
+  if (typeof value === "string") return "";
+  if (Array.isArray(value)) return value.map(withoutText);
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, withoutText(entry)]));
+  return value;
+}
+
+test("all API editions keep Chinese bytes and isolate English text and validators", async () => {
+  for (const [path, hash] of Object.entries(chineseResponses)) {
+    const url = `/api/site/leaderboard${path}`;
+    const en = await app.inject(`${url}?lang=en`);
+    const zh = await app.inject(`${url}?lang=zh`);
+    const original = await app.inject(url);
+    assert.equal(en.statusCode, 200, path);
+    assert.equal(zh.statusCode, 200, path);
+    assert.equal(original.body, zh.body, `${path}: default remains Chinese`);
+    assert.equal(createHash("sha256").update(zh.body.replaceAll(liveRun, "live-run")).digest("hex"), hash, `${path}: bytes captured before localization changed`);
+    assertEnglish(en.json());
+    assert.deepEqual(withoutText(en.json()), withoutText(zh.json()), `${path}: only text changes`);
+    assert.equal(en.headers["cache-control"], zh.headers["cache-control"], path);
+    assert.notEqual(en.headers.etag, zh.headers.etag, path);
+    assert.equal((await app.inject({ url: `${url}?lang=en`, headers: { "if-none-match": en.headers.etag } })).statusCode, 304, path);
+    assert.equal((await app.inject({ url: `${url}?lang=zh`, headers: { "if-none-match": en.headers.etag } })).statusCode, 200, path);
+    assert.equal((await app.inject({ url: `${url}?lang=en`, headers: { "if-none-match": zh.headers.etag } })).statusCode, 200, path);
+  }
+  for (const path of ["/boards/overall", `/models/${slugs[0]}`, "/sources", "/sources/livebench-coding", "/rules"]) {
+    for (const query of ["lang=fr", "lang=en&lang=zh", "lang=en&lang=en"]) {
+      assert.equal((await app.inject(`/api/site/leaderboard${path}?${query}`)).statusCode, 400, `${path}?${query}`);
+    }
+  }
+  const past = await app.inject("/api/site/leaderboard/boards/overall?lang=en&at=1999-01-02");
+  assertEnglish(past.json());
+  assert.equal(past.json().run.id, oldRun);
+  assert.equal(past.json().entries[0].score, 70);
+  assert.equal((await app.inject("/api/site/leaderboard/boards/overall?lang=zh")).json().run.fx.sourceName, "欧洲央行", "English historical reads do not mutate the shared run cache");
+});
+
+test("stored prose translates on reads while model names and persisted rows stay unchanged", async () => {
+  const [run] = await sql<{ summary: any }[]>`SELECT summary FROM lb_runs WHERE id = ${liveRun}`;
+  try {
+    await sql`UPDATE lb_models SET name = '存储模型', provider = '模型机构' WHERE id = ${ids[0]}`;
+    await sql`UPDATE lb_scores SET configuration_label = 'High 推理 · 自适应 · 64k · Codex 1.2', selection_reason = ${REASONS.firstParty}, source_model_name = '上游模型' WHERE snapshot_id = ${snapshot} AND model_id = ${ids[0]}`;
+    await sql`UPDATE lb_runs SET summary = ${sql.json({ ...run.summary, budgets: BUDGETS })} WHERE id = ${liveRun}`;
+    invalidateLeaderboard();
+    const model = (await app.inject(`/api/site/leaderboard/models/${slugs[0]}?lang=en`)).json();
+    assertEnglish(model);
+    assert.deepEqual([model.model.name, model.model.provider, model.evidence[0].items[0].sourceModelName], ["存储模型", "模型机构", "上游模型"]);
+    assert.equal(model.evidence[0].items[0].configurationLabel, "High reasoning · Adaptive · 64k · Codex 1.2");
+    const zh = (await app.inject(`/api/site/leaderboard/models/${slugs[0]}?lang=zh`)).json();
+    assert.equal(zh.evidence[0].items[0].configurationLabel, "High 推理 · 自适应 · 64k · Codex 1.2");
+    assert.equal(zh.evidence[0].items[0].selectionReason, REASONS.firstParty);
+    const source = (await app.inject("/api/site/leaderboard/sources/livebench-coding?lang=en")).json();
+    assertEnglish(source);
+    assert.deepEqual([source.rows[0].sourceModelName, source.rows[0].provider], ["上游模型", "模型机构"]);
+    assertEnglish((await app.inject("/api/site/leaderboard/rules?lang=en")).json());
+    const [score] = await sql<{ configuration_label: string; selection_reason: string }[]>`SELECT configuration_label, selection_reason FROM lb_scores WHERE snapshot_id = ${snapshot} AND model_id = ${ids[0]}`;
+    assert.deepEqual(score, { configuration_label: "High 推理 · 自适应 · 64k · Codex 1.2", selection_reason: REASONS.firstParty });
+    const [stored] = await sql<{ summary: any }[]>`SELECT summary FROM lb_runs WHERE id = ${liveRun}`;
+    assert.equal(stored.summary.fxQuote.sourceName, "欧洲央行");
+    assert.equal(stored.summary.budgets[0].name, "综合评测");
+  } finally {
+    await sql`UPDATE lb_models SET name = 'Stored model 0', provider = 'OpenAI' WHERE id = ${ids[0]}`;
+    await sql`UPDATE lb_scores SET configuration_label = '来源默认配置', selection_reason = NULL, source_model_name = 'upstream-0' WHERE snapshot_id = ${snapshot} AND model_id = ${ids[0]}`;
+    await sql`UPDATE lb_runs SET summary = ${sql.json(run.summary)} WHERE id = ${liveRun}`;
+    invalidateLeaderboard();
+  }
+});
+
 test("every restored logo is served with its bytes, type and legacy cache lifetime", async () => {
   const { readdir, readFile } = await import("node:fs/promises");
   for (const dir of ["model-providers", "leaderboard-sources"]) {
@@ -243,6 +333,17 @@ test("built pages keep both language URLs, layout, history and the default share
         assert.ok(html.includes(`href="${prefix}/leaderboard"`), prefix + path);
         assert.equal(html.includes("${SITE.name}"), false);
         assert.equal(html.includes("AIHOT"), false);
+        assert.equal(response.headers.get("cache-control"), "private, no-store");
+        assert.ok(html.includes(`rel="canonical" href="${web.origin}${prefix}${path}"`), prefix + path);
+        assert.ok(html.includes(`hrefLang="en" href="${web.origin}${path}"`), prefix + path);
+        assert.ok(html.includes(`hrefLang="zh-CN" href="${web.origin}/zh${path}"`), prefix + path);
+        assert.match(html, prefix ? /property="og:locale" content="zh_CN"/ : /property="og:locale" content="en"/);
+        if (!prefix) {
+          const remaining = [...new Set(html.replaceAll("中文", "").match(/[㐀-鿿＀-￯]+/g) ?? [])];
+          assert.deepEqual(remaining, [], `${path}: English HTML has untranslated text`);
+          assert.match(html, /property="og:title" content="[^"㐀-鿿＀-￯]+"/);
+          assert.match(html, /name="twitter:title" content="[^"㐀-鿿＀-￯]+"/);
+        }
       }
     }
     const history = await fetch(`${web.origin}/zh/leaderboard?at=1999-01-02`);

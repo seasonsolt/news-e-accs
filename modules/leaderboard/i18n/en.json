@@ -1,0 +1,842 @@
+{
+  "boards": {
+    "overall": {
+      "name": "Overall",
+      "title": "{{siteName}} Model Leaderboard",
+      "description": "Real benchmarks across capabilities help identify models with stronger overall performance.",
+      "howToRead": "Combines multiple public benchmarks; evaluation coverage varies by model."
+    },
+    "coding": {
+      "name": "Coding",
+      "title": "Coding Model Leaderboard · {{siteName}}",
+      "description": "From writing code to changing repositories: can the model build working software?",
+      "howToRead": "Combines multiple public benchmarks; evaluation coverage varies by model."
+    },
+    "reasoning": {
+      "name": "Reasoning",
+      "title": "Reasoning Model Leaderboard · {{siteName}}",
+      "description": "Mathematics, logic and unfamiliar rules: can the model reason through new problems?",
+      "howToRead": "Combines multiple public benchmarks; evaluation coverage varies by model."
+    },
+    "knowledge": {
+      "name": "Knowledge",
+      "title": "Knowledge Model Leaderboard · {{siteName}}",
+      "description": "Factual questions and graduate-level science test knowledge and answer accuracy.",
+      "howToRead": "The current knowledge board uses two Epoch benchmarks from the same organization."
+    },
+    "professional": {
+      "name": "Professional work",
+      "title": "Professional Work Model Leaderboard · {{siteName}}",
+      "description": "Financial analysis, legal advice and banking test whether professional tasks can be completed.",
+      "howToRead": "Currently covers financial analysis, professional consulting and banking. It does not yet represent all document, spreadsheet and presentation tasks."
+    }
+  },
+  "groups": {
+    "general": {
+      "name": "Broad benchmarks and experience",
+      "blurb": "Cross-capability tests and human blind preference."
+    },
+    "coding": {
+      "name": "Coding",
+      "blurb": "From writing code to changing repositories: can the model build working software?",
+      "lineage": {
+        "SWE-bench Verified": {
+          "name": "SWE-bench Verified",
+          "period": "2024–2025",
+          "note": "Fixes bugs from GitHub issues and runs unit tests. Leading scores have converged, and many tasks have entered training data."
+        },
+        "DeepSWE": {
+          "name": "DeepSWE",
+          "period": "2025–2026",
+          "note": "A fixed controlled system with harder, longer tasks. Retained as a cross-reference from v16."
+        },
+        "FrontierCode": {
+          "name": "FrontierCode",
+          "period": "From 2026",
+          "note": "Open-source maintainers write tasks and judge whether they would merge the PR. The primary coding benchmark from v16."
+        }
+      }
+    },
+    "reasoning": {
+      "name": "Reasoning",
+      "blurb": "Mathematics, logic and unfamiliar rules: can the model reason through new problems?"
+    },
+    "knowledge": {
+      "name": "Knowledge",
+      "blurb": "Factual questions and graduate-level science test knowledge and answer accuracy."
+    },
+    "professional": {
+      "name": "Professional work",
+      "blurb": "Financial analysis, legal advice and banking test whether professional tasks can be completed."
+    },
+    "vision": {
+      "name": "Visual understanding",
+      "blurb": "Image-comprehension evidence remains in the overall board. Understanding images and designing attractive work are different abilities."
+    },
+    "multilingual": {
+      "name": "Chinese and multilingual",
+      "blurb": "Complementary language evidence. English writing performance does not establish Chinese capability."
+    }
+  },
+  "sources": {
+    "artificial-analysis": {
+      "name": "AA Index",
+      "fullName": "Artificial Analysis Intelligence Index",
+      "operator": "Artificial Analysis",
+      "description": "Reruns multiple current benchmarks in one environment to produce an overall capability score. Prices are reference information and do not affect the score.",
+      "what": "Use only the official Artificial Analysis Intelligence Index. Performance and price fields from the API do not count toward ranking.",
+      "usage": "Broad task evidence receives 30%. The 10 underlying benchmarks in v4.3 have been checked for duplicate votes with active specialized benchmarks. Keep the index intact; do not present an aggregate as an individual result.",
+      "limits": "Without an API key, this entire source is excluded for the round; no 50-point substitute is assigned. Web scraping must not replace the API. Display requires attribution and the index version.",
+      "license": "API data displayed or shared must carry prominent attribution. Redistribution rights and custom terms require separate agreement and compliance with the Terms of Use."
+    },
+    "livebench-general": {
+      "name": "LiveBench",
+      "fullName": "LiveBench Global Average",
+      "operator": "LiveBench",
+      "description": "Continuously refreshed tasks with automatically verifiable answers test whether models hold up when the questions change.",
+      "what": "Keep the official Global Average as an overall cross-reference. Ranking uses nonoverlapping specialized tasks.",
+      "usage": "The raw Global Average remains a cross-reference. Ranking votes come from nonoverlapping specialized tasks.",
+      "limits": "An overall average can dilute changes in specific capabilities. It is a cross-reference and adds no duplicate votes. Participating organization Abacus.AI also develops Smaug; results exclusive to its models need support from other independent sources.",
+      "license": "Apache 2.0"
+    },
+    "arena-text": {
+      "name": "Arena Text",
+      "fullName": "Arena Text Style-Controlled",
+      "operator": "LMArena",
+      "description": "People compare anonymous pairs of answers and choose which they prefer to read, adding overall experience that multiple-choice tests miss.",
+      "what": "Use only the Text Overall style-controlled main board in official published snapshots. Do not scrape the live arena.ai page.",
+      "usage": "The 10% human-preference budget is split into 5% overall text and 5% creative writing. Arena coding and vision tasks still share the same evidence family. Freshness follows the official score data timestamp.",
+      "limits": "Human preference depends on style, user demographics and prompt distribution. Overall and creative categories have overlapping votes and share the original human-preference budget. They do not count as two independent organizations.",
+      "license": "CC BY 4.0"
+    },
+    "arena-webdev": {
+      "name": "Arena WebDev",
+      "operator": "LMArena",
+      "description": "Human blind preference tests whether websites are usable and ready to deliver.",
+      "what": "Use only the WebDev overall board in official published snapshots. Do not scrape the live arena.ai page. Together with Text, it forms one Arena family vote.",
+      "usage": "Receives 2.4% from the coding and design budget. In the aesthetics category it measures preference for websites, not code accuracy. It still shares the evidence family with other Arena tasks.",
+      "limits": "Its preference construct is correlated with Text.",
+      "license": "CC BY 4.0"
+    },
+    "livebench-writing": {
+      "name": "LiveBench · Language and instruction following",
+      "operator": "LiveBench",
+      "description": "Average of Language + IF, weighted 50% each.",
+      "what": "Compute Language and IF category scores separately, average them with 50% weight each, then round to one decimal. This two-category average differs from selecting a single category on the official site. Language measures language comprehension; IF measures instruction and format constraints. Neither establishes fiction writing quality.",
+      "usage": "Retains 3% of the overall writing and expression budget. Excluded from the literary creative-writing category.",
+      "limits": "The two-category average measures combined performance, not Language alone. Switching categories or including fine-tuned models on the official page changes scores and ranks. Participating organization Abacus.AI also develops Smaug; results exclusive to its models need support from other independent sources.",
+      "license": "Apache 2.0",
+      "attribution": "LiveBench publishes the component scores. {{siteName}} averages the two categories above with equal weight and ranks the results. The two-category average and the {{siteName}} consensus index use different scales and cannot be added directly.",
+      "components": {
+        "note": "Language + IF are weighted 50% each, using unrounded component scores for the average.",
+        "label": "Two-category average"
+      }
+    },
+    "arena-creative-writing": {
+      "name": "Arena · Creative writing blind preference",
+      "fullName": "Arena Creative Writing",
+      "operator": "LMArena",
+      "description": "People choose between anonymous stories, poems and other creative writing to assess whether the work engages readers.",
+      "what": "Read the creative_writing category in the official text_style_control dataset, using style-controlled Bradley–Terry scores and confidence intervals. Do not substitute overall text or professional-writing scores.",
+      "usage": "Counts toward ranking. Receives 5% from the original 10% human-preference budget; overall text keeps 5%, with no increase in total budget. Shares the evidence family with other Arena tasks.",
+      "limits": "Open user prompts are classified automatically; they are not all long-form fiction or Chinese creative writing. Votes include personal preferences. Overlap with Arena overall text and professional writing prevents it from counting as another independent organization.",
+      "license": "CC BY 4.0 · Official Arena Hugging Face leaderboard-dataset; retain attribution and source links and disclose aggregation changes."
+    },
+    "design-arena-design": {
+      "name": "Design Arena · Visual design",
+      "operator": "Design Arena / Intelligence",
+      "description": "Human blind preference for website, interface, chart and slide designs.",
+      "what": "Compare only base models in Models Arena. Design tasks share a family budget. Subcategories are not independent sources and must not duplicate votes from the codecategories total.",
+      "usage": "Under observation: the formal API protocol and display terms are clear. Approved access and verification of individual raw results are pending. No collection or ranking yet.",
+      "limits": "The public website does not replace API authorization. Models, Agents and Builders must not be ranked together.",
+      "license": "Formal API data permits personal and commercial display with attribution and a visible official link. API access requires an approved application."
+    },
+    "eq-emotional-v4": {
+      "name": "EQ-Bench 4 · Emotional and interpersonal understanding",
+      "operator": "EQ-Bench",
+      "description": "Understanding emotions, implicit needs and different communication preferences in multi-turn conversations.",
+      "what": "120 simulated characters, 16 role-play turns and rotating blind judgments by three model judges. Use only Elo; behavioral traits are not capabilities where higher is always better. The older v3 adds no duplicate votes.",
+      "usage": "Under observation: public data and licensing are available, but a new evaluation round is pending. Validity windows are not extended to meet category source counts.",
+      "limits": "Simulated English conversations have not been validated by human experts. Results do not equal real user satisfaction or Chinese emotional intelligence. Current results exceed the 45-day window.",
+      "license": "MIT · Metadata declaration in the EQ-bench-site README"
+    },
+    "lechmazur-short-story": {
+      "name": "Short-Story · Short fiction",
+      "operator": "Lech Mazur",
+      "description": "Naturally incorporates specified characters, plot and style into a complete short story.",
+      "what": "600–800-word stories with 10 creative requirements, identical prompts, three judges and bidirectional comparisons. Use the main Thurstone score; BT is diagnostic only and adds no votes. Multiple tiers follow fixed selection rules.",
+      "usage": "Under observation: integration awaits clear formal data reuse terms and resolution of differences between the README and machine-readable results.",
+      "limits": "Model judges have literary preferences; some models have not completed every story. Short-story performance does not establish long-form fiction or Chinese writing quality.",
+      "license": "No explicit leaderboard data reuse license found. A public GitHub repository does not imply open authorization."
+    },
+    "tonebench-scripts": {
+      "name": "ToneBench · Style and scripts",
+      "operator": "Towards AI",
+      "description": "Writes video scripts in a specified author’s style, assessing openings, structure, expression and spoken pacing.",
+      "what": "10 real script tasks, repeated generations and three judges. Compare only identical tasks, rubrics, judges and run fingerprints. Exclude rows with fallback to other models; do not choose configurations by each column’s highest score.",
+      "usage": "Under observation: data protocol and current coverage are good. Display terms and pure-model configurations still need verification.",
+      "limits": "Favors the style of one Towards AI channel; exact tasks and reference scripts are not public. The current first-place result includes Fable 5 + Opus 4.8 fallback and cannot represent a single model.",
+      "license": "Public JSON is readable, but explicit data aggregation and display terms have not been found."
+    },
+    "tubelab-scriptwriting": {
+      "name": "TubeLab · Video scripts",
+      "operator": "TubeLab",
+      "description": "Writes scripts for different video channels, comparing story organization, style, pacing and clarity.",
+      "what": "A common TubeLab Scriptwriter, 12 tasks and 6 writing-quality criteria. Three model judges do not judge their own organization’s models; failed tasks retain penalties. Cost and speed do not affect capability scores.",
+      "usage": "Under observation: stable raw data, accurate evaluation dates and reuse terms are pending. Display pages do not replace verifiable results.",
+      "limits": "The Scriptwriter workflow affects models. OpenAI uses the lowest reasoning tier, so results cannot be generalized to other tiers. Spoken video scripts are not screenplays.",
+      "license": "Stable result exports and public aggregation permission have not been confirmed."
+    },
+    "ncbench-author-workflow": {
+      "name": "NC Bench · Author workflow",
+      "operator": "Novelcrafter",
+      "description": "Helps authors rewrite, continue, summarize, translate and organize creative ideas.",
+      "what": "Consider only pure quality scores for independent writing and text editing. Rank Score includes price, speed and reliability and is explicitly excluded.",
+      "usage": "Under observation: comparable raw task-level quality scores, actual update dates and display terms need verification.",
+      "limits": "The aggregate Rank Score mixes factors other than capability. Uneven task coverage prevents direct use of the homepage aggregate rank.",
+      "license": "Machine-readable results and data reuse terms have not been confirmed."
+    },
+    "openvibeeval-design": {
+      "name": "OpenVibeEval · Web designs",
+      "operator": "OpenVibeEval",
+      "description": "Compares websites, accessibility and blind preferences to assess design performance with different tools.",
+      "what": "Store model and harness separately. Accessibility scores are not aesthetics scores; independent blind preferences and identical run conditions must be verified before adoption.",
+      "usage": "Under observation: raw preference data from sufficient blind tests under matching conditions and publication dates are still needed.",
+      "limits": "Models use different tools. The main table measures accessibility and task outcomes, not a common aesthetics vote.",
+      "license": "Stable result exports and public aggregation permission have not been confirmed."
+    },
+    "svgbench-arena": {
+      "name": "SVGBench · Vector graphics blind preference",
+      "operator": "SVGBench",
+      "description": "Blind choices between SVGs from identical prompts assess visual clarity and graphical expression.",
+      "what": "Require complete blind-test scores meeting prompt-coverage thresholds. Registered model counts are not valid ranked model counts. Share a related task family with other SVG benchmarks.",
+      "usage": "Under observation: stable raw results, verifiable update times and display terms are pending.",
+      "limits": "Website statistics do not prove that every new model has enough evaluations. Without raw tables and timestamps, coverage is not claimed.",
+      "license": "No explicit result reuse license found."
+    },
+    "rapidata-svg": {
+      "name": "Rapidata SVG",
+      "fullName": "Rapidata SVG · Human Preference",
+      "operator": "Rapidata",
+      "description": "People compare model-generated vector graphics to evaluate visual preferences directly.",
+      "what": "Use only Preference Elo for the same static SVG task. Alignment, Coherence and Overall add no duplicate votes. Use public score tables from a fixed official dataset version, traceable to original human comparisons.",
+      "usage": "Under observation: official data and licensing are available, but three rolling DeepSeek aliases lack fixed-version evidence, so the entire score table is withheld. Awaiting run versions from the organization; active sources’ budgets have not been reduced.",
+      "limits": "SVG drawing does not represent all interface design. Public raw data lacks model versions, generation dates and API fingerprints, so rolling API version changes cannot be established. A leaderboard update date cannot establish a model version.",
+      "license": "CC BY 4.0 · Rapidata/svg-benchmark; retain official attribution and data links."
+    },
+    "eq-creative": {
+      "name": "Creative Writing v3",
+      "operator": "EQ-Bench",
+      "description": "Short-form creative writing and expression",
+      "what": "The official CSV is embedded in a data script. Use Elo; Sonnet 4.6 judges wins. Style, repetition rate and rubric scores add no duplicate votes.",
+      "usage": "Counts toward ranking; the two writing benchmarks share 6% in total. More tasks or models do not increase their weight.",
+      "limits": "Primarily English writing, judged by models. The same judge and related tasks share a budget. Results do not represent Chinese writing quality.",
+      "license": "MIT · Metadata declaration in the EQ-bench-site README"
+    },
+    "eq-longform": {
+      "name": "Longform Writing",
+      "operator": "EQ-Bench",
+      "description": "Coherence and completeness of long-form stories",
+      "what": "Use overall_score_100, assessing plot and expression across eight chapters. Judge preferences are disclosed as a limitation.",
+      "usage": "Counts toward ranking; the two writing benchmarks share 6% in total. More tasks or models do not increase their weight.",
+      "limits": "Primarily English writing, judged by models. The same judge and related tasks share a budget. Results do not represent Chinese writing quality.",
+      "license": "MIT · Metadata declaration in the EQ-bench-site README"
+    },
+    "frontiercode": {
+      "name": "FrontierCode",
+      "operator": "Cognition",
+      "area": "Coding",
+      "description": "Quality, tests and scope of changes in real repository tasks",
+      "what": "Open-source maintainers write tasks asking whether they would merge the PR. Tests, rubrics and validators jointly score results; runs accessing sources containing answers receive zero. Uses the fixed v1.1 main set of 100 tasks.",
+      "usage": "Receives 4.8% from the coding and design budget and is the primary coding benchmark from v16. Each model runs in its organization’s Agent (Codex, Claude Code, Devin, etc.), represented by its highest reasoning tier.",
+      "limits": "Compares model + its own Agent systems, rather than bare models. Agent tools and prompts differ. With 100 tasks, differences between nearby ranks may fall within noise.",
+      "license": "Cites structured results publicly released by Cognition, with attribution and a link to the original page. Results are withdrawn at the rights holder’s request."
+    },
+    "deepswe-v1-1": {
+      "name": "DeepSWE v1.1",
+      "operator": "DataCurve",
+      "area": "Coding",
+      "description": "Edits repositories and fixes defects in a common coding-assistant environment to compare the coding models themselves.",
+      "what": "Use only pass@1. Select a representative configuration within a common harness by predetermined reasoning-tier priority.",
+      "usage": "Receives 1.2% from the coding and design budget. From v16, FrontierCode leads coding evidence; DeepSWE remains a cross-reference. Uses a fixed controlled system and version.",
+      "limits": "Still measures a model + mini-swe-agent system. Major version changes require separate snapshots.",
+      "license": "Official public structured results; private administrator observation only, with licensing reviewed before public display"
+    },
+    "taptap-maker": {
+      "name": "TapTap Maker",
+      "fullName": "TapTap Maker Benchmark",
+      "operator": "TapTap Maker",
+      "area": "Coding",
+      "description": "Builds working features in Lua inside a real game engine. Scores come from engine execution, rather than another model’s judgment.",
+      "what": "Use only the official main_board L2 pass rate. Cost, speed, Held-out and category scores add no votes. Select one representative row per base model using fixed reasoning-tier priority, without considering scores.",
+      "usage": "Receives 2.4% from the coding and design budget, using a fixed engine and L2 metric.",
+      "limits": "One engine and one language do not generalize to other stacks. Models may use different agent drivers. The closed-source harness prevents task-by-task replication.",
+      "license": "Official public results; public display retains official attribution. Full redistribution authorization remains subject to Yiwan / TapTap terms."
+    },
+    "livebench-coding": {
+      "name": "LiveBench · Coding average",
+      "operator": "LiveBench",
+      "area": "Coding",
+      "description": "Average of Coding + Agentic Coding, weighted 50% each.",
+      "what": "Compute Coding and Agentic Coding category scores separately, average them with 50% weight each, then round to one decimal. This two-category average differs from selecting a single category on the official site.",
+      "usage": "The two-category average counts as one piece of ranking evidence. All specialized tasks share the LiveBench evidence family. Global Average is a cross-reference and adds no duplicate votes.",
+      "limits": "The two-category average measures combined performance, not Coding alone. Switching categories or including fine-tuned models on the official page changes scores and ranks. Participating organization Abacus.AI also develops Smaug; results exclusive to its models need support from other independent sources.",
+      "license": "Apache 2.0",
+      "attribution": "LiveBench publishes the component scores. {{siteName}} averages the two categories above with equal weight and ranks the results. The two-category average and the {{siteName}} consensus index use different scales and cannot be added directly.",
+      "components": {
+        "note": "Coding + Agentic Coding are weighted 50% each, using unrounded component scores for the average.",
+        "label": "Two-category average"
+      }
+    },
+    "hyper-tau": {
+      "name": "Hyper-τ-bench",
+      "operator": "Sierra",
+      "area": "Coding",
+      "description": "Builds and tests working customer-service agents from business documentation.",
+      "what": "Measures agent development and debugging, separately from direct customer service in τ³-Banking. Development tools, run duration and acceptance environment are fixed; do not choose the highest result across systems.",
+      "usage": "Under observation: could add coding and business-system development evidence. Raw results, licensing and fixed run conditions must be reviewed first. A new release does not automatically count toward ranking.",
+      "limits": "Under observation: could add coding and business-system development evidence. Raw results, licensing and fixed run conditions must be reviewed first. A new release does not automatically count toward ranking.",
+      "license": "Leaderboard data usage terms remain to be confirmed."
+    },
+    "swe-rebench": {
+      "name": "SWE-rebench",
+      "operator": "Nebius",
+      "area": "Coding",
+      "description": "Continuously collects real repository issues to compare software repair across programming languages.",
+      "what": "Fix the task window, ReAct environment and text/tools protocol. Use average resolution rates and standard errors from repeated runs. Complete Agent products are not treated as base models.",
+      "usage": "Candidate under observation: real repository tasks could add useful evidence. Verifiable run dates, a stable score protocol and display terms are pending. Automated collection and ranking are not enabled.",
+      "limits": "Rolling tasks, runtime environment and task windows affect comparability. Recent website maintenance does not mean all models were retested.",
+      "license": "The official Hugging Face CC BY 4.0 dataset contains tasks. Stable exports and display terms for final website scores remain unconfirmed."
+    },
+    "lhtb": {
+      "name": "LHTB",
+      "fullName": "Long-Horizon Terminal-Bench",
+      "operator": "Tencent HY / Lehigh et al.",
+      "area": "Coding",
+      "description": "Sustained terminal use to complete complex engineering and tool tasks over longer periods.",
+      "what": "Compare 90-minute, 2-hour and 3-hour budgets separately. Judging protocols before and after fixes cannot be ranked together. The best results from different Agents are not common model scores.",
+      "usage": "Candidate under observation: awaiting new batches explicitly identifying the fixed protocol. Existing old scores are not automatically collected into public boards or ranked. This does not claim every old result exploited a flaw.",
+      "limits": "The organization disclosed judging-information leakage. Current evidence does not establish that existing scores use the same isolated judging protocol. Task-source overlap with other professional benchmarks needs review.",
+      "license": "Apache 2.0 · Official IntelligenceLab/LHTB-leaderboard results dataset; retain attribution and change notes."
+    },
+    "terminal-bench-4": {
+      "name": "Terminal-Bench 4",
+      "fullName": "Terminal-Bench 4 · System reference",
+      "operator": "Harbor / Terminal-Bench",
+      "area": "Coding",
+      "description": "Retains raw terminal-task scores for models paired with different Agents for cross-checking.",
+      "what": "Fix Terminal-Bench 4.0 and retain model, Agent version, reasoning tier and run count separately. Different tool systems do not represent common model conditions.",
+      "usage": "Raw results for reference: automatically collected after locking the official submission list and data version. Retain each system configuration without selecting a representative model score. Cross-checks only; excluded from overall and coding ranks.",
+      "limits": "Models use different tools such as Claude Code, Codex, GrokBuild and mini-SWE. AA v4.3 already includes Terminal-Bench v4, so it must not add overall vote weight again.",
+      "license": "Apache 2.0 · Official result submissions in harbor-framework/terminal-bench; retain attribution, protocol and change notes."
+    },
+    "epoch-mirrorcode": {
+      "name": "MirrorCode",
+      "operator": "Epoch AI",
+      "area": "Coding",
+      "description": "Long-running software reproduction",
+      "what": "Published data covers few models and very long runs. Samples and run conditions are insufficient for category consensus.",
+      "usage": "For reference only; excluded from overall and category scores.",
+      "limits": "For reference only; excluded from overall and category scores.",
+      "license": "CC BY 4.0 · Data evaluated by Epoch AI itself"
+    },
+    "vals-migration": {
+      "name": "Code Migration",
+      "operator": "Vals AI",
+      "area": "Coding",
+      "description": "Software migration and interface changes",
+      "what": "Use Overall from the specialized page, separately from the aggregate Vals Index. Results with fallback to other models are not attributed to a single model.",
+      "usage": "Under observation: public usage terms for the specialized data remain unresolved. Reusing the same website parser does not automatically make results count.",
+      "limits": "Under observation: public usage terms for the specialized data remain unresolved. Reusing the same website parser does not automatically make results count.",
+      "license": "Leaderboard data usage terms remain to be confirmed."
+    },
+    "vals-program": {
+      "name": "ProgramBench",
+      "operator": "Vals AI",
+      "area": "Coding",
+      "description": "Implementing and delivering complete programs",
+      "what": "Use Overall from the specialized page, separately from the aggregate Vals Index. Results with fallback to other models are not attributed to a single model.",
+      "usage": "Under observation: public usage terms for the specialized data remain unresolved. Reusing the same website parser does not automatically make results count.",
+      "limits": "Under observation: public usage terms for the specialized data remain unresolved. Reusing the same website parser does not automatically make results count.",
+      "license": "Leaderboard data usage terms remain to be confirmed."
+    },
+    "frontierswe-v2": {
+      "name": "FrontierSWE v2",
+      "operator": "Proximal Labs",
+      "area": "Coding",
+      "description": "Long-running engineering implementation and research tasks",
+      "what": "Compare only the common Proximus harness in v2. Do not mix older versions or best-of results under different conditions.",
+      "usage": "Under observation: long-task coverage of new models is still limited. Stable raw data access and run configurations are still needed.",
+      "limits": "Under observation: long-task coverage of new models is still limited. Stable raw data access and run configurations are still needed.",
+      "license": "Leaderboard data usage terms remain to be confirmed."
+    },
+    "weirdml": {
+      "name": "WeirdML",
+      "operator": "WeirdML",
+      "area": "Coding",
+      "description": "Implementing machine-learning solutions on unfamiliar data",
+      "what": "Compare using actual task lists and a fixed GPU time budget, retaining the five-iteration scoring protocol.",
+      "usage": "Under observation: the official CSV is readable, but score licensing and run times for individual models are not fully verified.",
+      "limits": "Under observation: the official CSV is readable, but score licensing and run times for individual models are not fully verified.",
+      "license": "Leaderboard data usage terms remain to be confirmed."
+    },
+    "livebench-reasoning": {
+      "name": "LiveBench · Reasoning and mathematics",
+      "operator": "LiveBench",
+      "area": "Reasoning",
+      "description": "Average of Reasoning + Mathematics, weighted 50% each.",
+      "what": "Compute Reasoning and Mathematics category scores separately, average them with 50% weight each, then round to one decimal. This two-category average differs from selecting a single category on the official site.",
+      "usage": "The two-category average counts as one piece of ranking evidence. All specialized tasks share the LiveBench evidence family. Global Average is a cross-reference and adds no duplicate votes.",
+      "limits": "The two-category average measures combined performance, not Reasoning alone. Switching categories or including fine-tuned models on the official page changes scores and ranks. Participating organization Abacus.AI also develops Smaug; results exclusive to its models need support from other independent sources.",
+      "license": "Apache 2.0",
+      "attribution": "LiveBench publishes the component scores. {{siteName}} averages the two categories above with equal weight and ranks the results. The two-category average and the {{siteName}} consensus index use different scales and cannot be added directly.",
+      "components": {
+        "note": "Reasoning + Mathematics are weighted 50% each, using unrounded component scores for the average.",
+        "label": "Two-category average"
+      }
+    },
+    "simplebench": {
+      "name": "SimpleBench",
+      "operator": "SimpleBench",
+      "area": "Reasoning",
+      "description": "Everyday common-sense and logic questions test whether models identify practical constraints.",
+      "what": "Distinguish multiple-choice and open responses, fixing AVG@5, temperature and prompt protocol. A model’s leaderboard entry date is not its task evaluation date.",
+      "usage": "Candidate under observation: new-model coverage is timely. Official score reuse terms and a description of reproducible data versions are pending. Code licensing is not substituted; no automated collection or ranking yet.",
+      "limits": "Everyday common-sense tasks offer complementary evidence, but task representativeness and multiple-choice versus open-response conditions affect interpretation.",
+      "license": "Sample tasks and evaluation code are MIT. Display terms for the latest score script published separately on the official site remain unconfirmed."
+    },
+    "epoch-frontiermath": {
+      "name": "FrontierMath v2 · Tiers 1–3",
+      "operator": "Epoch AI",
+      "area": "Reasoning",
+      "description": "Research-level mathematical reasoning",
+      "what": "Use only v2 Tiers 1–3. Do not mix older tasks or Tier 4 into this metric.",
+      "usage": "Counts toward ranking; benchmarks in the same task family share a fixed budget.",
+      "limits": "Counts toward ranking; benchmarks in the same task family share a fixed budget.",
+      "license": "CC BY 4.0 · Data evaluated by Epoch AI itself"
+    },
+    "epoch-frontiermath-tier4": {
+      "name": "FrontierMath v2 · Tier 4",
+      "operator": "Epoch AI",
+      "area": "Reasoning",
+      "description": "More difficult mathematical research problems",
+      "what": "Store Tier 4 separately, sharing the mathematical evidence budget with Tiers 1–3. Retain sampling uncertainty.",
+      "usage": "Counts toward ranking; benchmarks in the same task family share a fixed budget.",
+      "limits": "Counts toward ranking; benchmarks in the same task family share a fixed budget.",
+      "license": "CC BY 4.0 · Data evaluated by Epoch AI itself"
+    },
+    "epoch-chess": {
+      "name": "Chess Puzzles",
+      "operator": "Epoch AI",
+      "area": "Reasoning",
+      "description": "Finding correct moves from text descriptions of chess positions",
+      "what": "Generated positions are scored against Stockfish answers. Input is position text, so it is not classified as visual understanding.",
+      "usage": "Counts toward ranking; benchmarks in the same task family share a fixed budget.",
+      "limits": "Counts toward ranking; benchmarks in the same task family share a fixed budget.",
+      "license": "CC BY 4.0 · Data evaluated by Epoch AI itself"
+    },
+    "epoch-mystery": {
+      "name": "Mystery Game Puzzles",
+      "operator": "Epoch AI",
+      "area": "Reasoning",
+      "description": "Deriving correct actions from unfamiliar rules",
+      "what": "Use only mean_score under Epoch’s standard protocol. The limitation that tasks are not public is explicitly retained.",
+      "usage": "Counts toward ranking; benchmarks in the same task family share a fixed budget.",
+      "limits": "Counts toward ranking; benchmarks in the same task family share a fixed budget.",
+      "license": "CC BY 4.0 · Data evaluated by Epoch AI itself"
+    },
+    "matharena-lean": {
+      "name": "MathArena · ArXivLean",
+      "operator": "MathArena / ETH Zurich",
+      "area": "Reasoning",
+      "description": "Verifying mathematical proofs in Lean",
+      "what": "Read raw results for each task set and version separately. Do not use the aggregate Expected performance score fitted across task sets.",
+      "usage": "Under observation: terms for displaying leaderboard results remain unclear. Results are not collected for ranking yet.",
+      "limits": "Under observation: terms for displaying leaderboard results remain unclear. Results are not collected for ranking yet.",
+      "license": "Code is MIT. Data includes CC BY-NC-SA 4.0 restrictions; distinguish task datasets from leaderboard results."
+    },
+    "matharena-broken": {
+      "name": "MathArena · BrokenArXiv",
+      "operator": "MathArena / ETH Zurich",
+      "area": "Reasoning",
+      "description": "Finding and fixing errors in mathematical proofs",
+      "what": "Read raw results for each task set and version separately. Do not use the aggregate Expected performance score fitted across task sets.",
+      "usage": "Under observation: terms for displaying leaderboard results remain unclear. Results are not collected for ranking yet.",
+      "limits": "Under observation: terms for displaying leaderboard results remain unclear. Results are not collected for ranking yet.",
+      "license": "Code is MIT. Data includes CC BY-NC-SA 4.0 restrictions; distinguish task datasets from leaderboard results."
+    },
+    "matharena-math": {
+      "name": "MathArena · ArXivMath",
+      "operator": "MathArena / ETH Zurich",
+      "area": "Reasoning",
+      "description": "New problems drawn from recent mathematics papers",
+      "what": "Read raw results for each task set and version separately. Do not use the aggregate Expected performance score fitted across task sets.",
+      "usage": "Under observation: terms for displaying leaderboard results remain unclear. Results are not collected for ranking yet.",
+      "limits": "Under observation: terms for displaying leaderboard results remain unclear. Results are not collected for ranking yet.",
+      "license": "Code is MIT. Data includes CC BY-NC-SA 4.0 restrictions; distinguish task datasets from leaderboard results."
+    },
+    "arc-agi-2": {
+      "name": "ARC-AGI-2",
+      "operator": "ARC Prize",
+      "area": "Reasoning",
+      "description": "Learning and generalizing from unfamiliar rules",
+      "what": "Use a fixed standard harness, separately from results using adapters optimized by providers.",
+      "usage": "Under observation: the official Terms require written permission for systematic collection and aggregation. Aggregation terms for current official results remain unresolved. Standard harness and Provider Adapter results stay separate; the best specialized adapter score does not represent a general model.",
+      "limits": "Under observation: the official Terms require written permission for systematic collection and aggregation. Aggregation terms for current official results remain unresolved. Standard harness and Provider Adapter results stay separate; the best specialized adapter score does not represent a general model.",
+      "license": "Leaderboard data usage terms remain to be confirmed."
+    },
+    "arc-agi-3": {
+      "name": "ARC-AGI-3",
+      "operator": "ARC Prize",
+      "area": "Reasoning",
+      "description": "Learning and generalizing from unfamiliar rules",
+      "what": "Use a fixed standard harness, separately from results using adapters optimized by providers.",
+      "usage": "Under observation: the official Terms require written permission for systematic collection and aggregation. Aggregation terms for current official results remain unresolved. Standard harness and Provider Adapter results stay separate; the best specialized adapter score does not represent a general model.",
+      "limits": "Under observation: the official Terms require written permission for systematic collection and aggregation. Aggregation terms for current official results remain unresolved. Standard harness and Provider Adapter results stay separate; the best specialized adapter score does not represent a general model.",
+      "license": "Leaderboard data usage terms remain to be confirmed."
+    },
+    "facts-parametric": {
+      "name": "FACTS Parametric",
+      "operator": "Google DeepMind / Kaggle",
+      "area": "Knowledge",
+      "description": "Answers factual questions about the world without search tools to test the accuracy of a model’s own knowledge.",
+      "what": "Consider only Score from a fixed task version. Retain public-set, private-set and confidence-interval data for review; three correlated scores must not add duplicate votes. FACTS is not among the 10 underlying AA v4.3 benchmarks.",
+      "usage": "Under observation: official protocol and licensing are confirmed, but completed task counts or completeness flags are absent. Some rows have very wide intervals; aggregation of total, public-set and private-set scores also needs clarification. Awaiting the organization’s explanation; unusual rows are not deleted to force integration, and no scoring budget is used.",
+      "limits": "Judges and the initiating organization are Google, so other organizations’ evidence is needed. Exports do not state whether some results completed the same task set; partial results are not full evaluations. Sample sizes inferred from intervals are not officially confirmed facts.",
+      "license": "Apache 2.0 · Explicitly declared on the official benchmark and Score task pages. Kaggle documentation provides public leaderboard JSON downloads without sign-in."
+    },
+    "hle": {
+      "name": "Humanity’s Last Exam",
+      "operator": "CAIS / Scale AI",
+      "area": "Knowledge",
+      "description": "Difficult academic knowledge and reasoning across disciplines.",
+      "what": "Fix tasks, tool conditions and judges. Compare HLE, HLE-Rolling and tool-assisted results separately. AA v4.3 already includes HLE; any usable specialized results would serve categories only, without duplicate overall votes.",
+      "usage": "Under observation: the organization has added some new models, but raw scores still lack verifiable evaluation dates. Epoch’s self-evaluation license is not substituted, and existing AA aggregate evidence is not counted again.",
+      "limits": "Under observation: the organization has added some new models, but raw scores still lack verifiable evaluation dates. Epoch’s self-evaluation license is not substituted, and existing AA aggregate evidence is not counted again.",
+      "license": "Evaluation code is MIT. Display terms for official leaderboard results remain unconfirmed."
+    },
+    "bullshitbench-v2": {
+      "name": "BullshitBench · False premises",
+      "fullName": "BullshitBench v2",
+      "operator": "Peter Gostev / BullshitBench",
+      "area": "Knowledge",
+      "description": "Detects false premises in questions and checks whether models continue inventing answers from them.",
+      "what": "Use the official default explicit-detection rate across all attempts and retain the average score of answered responses. Refusal rates remain for audit. Neither raw metric enters current overall or category vote budgets.",
+      "usage": "Raw results for reference: automatically collected after aggregates, tasks, configurations and run dates are checked against one public data version. Anonymous models stay private. Rolling APIs without confirmed fixed versions do not represent models. Excluded from current overall and category scores.",
+      "limits": "All questions have false premises, so results do not represent general knowledge breadth. Model judges and refusal treatment affect scores; rolling aliases and anonymous models require identity verification first.",
+      "license": "MIT · Copyright (c) 2026 Peter Gostev. Official scores ship with the repository, with no separate data-license exception."
+    },
+    "epoch-simpleqa": {
+      "name": "SimpleQA Verified",
+      "operator": "Epoch AI",
+      "area": "Knowledge",
+      "description": "Factual accuracy on short questions",
+      "what": "Use only mean_score from Epoch’s own reruns at a fixed reasoning tier. Do not read ECI or aggregate Best score columns.",
+      "usage": "Counts toward ranking; benchmarks in the same task family share a fixed budget.",
+      "limits": "Counts toward ranking; benchmarks in the same task family share a fixed budget.",
+      "license": "CC BY 4.0 · Data evaluated by Epoch AI itself"
+    },
+    "epoch-gpqa": {
+      "name": "GPQA Diamond",
+      "operator": "Epoch AI",
+      "area": "Knowledge",
+      "description": "Graduate-level physics, chemistry and biology knowledge",
+      "what": "Use only mean_score from Epoch’s own reruns, retaining reasoning tier and standard error. The 198 science questions require reasoning but do not represent all world knowledge.",
+      "usage": "Counts toward ranking; benchmarks in the same task family share a fixed budget.",
+      "limits": "Counts toward ranking; benchmarks in the same task family share a fixed budget.",
+      "license": "CC BY 4.0 · Data evaluated by Epoch AI itself"
+    },
+    "mercor-apex-agents": {
+      "name": "APEX-Agents 1.1",
+      "fullName": "Mercor APEX-Agents 1.1",
+      "operator": "Mercor",
+      "area": "Professional work",
+      "description": "Long tasks in investment banking, consulting and law test whether a model assistant can complete an entire job.",
+      "what": "Fix the 1.1 dataset and official Loop environment. Use Pass@1 and its corresponding uncertainty, selecting configurations by predetermined reasoning tier. Mean Score is average rubric completion, not task completion rate.",
+      "usage": "Uses Pass@1 in the official version 1.1 Loop, receiving 4% of the tools and office budget exclusively. Another 2% goes to banking tasks in a common environment.",
+      "limits": "Limited to investment banking, consulting and legal tasks. The original page does not provide evaluation dates per model, and reasons for a few missing runs are not public. This score does not establish reliability across all office work.",
+      "license": "Official public results; dataset and code licenses do not imply permission to redistribute leaderboard data"
+    },
+    "vals-finance-agent": {
+      "name": "Vals Finance Agent",
+      "operator": "Vals AI",
+      "area": "Professional work",
+      "description": "Everyday financial-analyst tasks assess work such as research reports and modeling.",
+      "what": "Use only the official Finance Agent v2 Overall accuracy.",
+      "usage": "Receives the 3% industry-specific tasks budget. Currently measures finance directly, without claiming coverage of every industry.",
+      "limits": "Private tasks prevent task-by-task replication. Like APEX, these are office tasks and must share a budget group.",
+      "license": "Official public results; public display retains official attribution. Full redistribution authorization remains subject to Vals terms."
+    },
+    "officeqa-pro": {
+      "name": "OfficeQA Pro",
+      "operator": "Databricks",
+      "area": "Professional work",
+      "description": "Retrieves information, calculates and answers questions from large collections of real financial documents.",
+      "what": "Fix Pro’s 133 tasks, separately from Full’s 246 and Pro V2’s 90. End-to-end retrieval and directly supplied answer pages are different conditions. Claude Agent SDK, Codex SDK and Antigravity CLI results belong to their runtime systems, not a common base-model benchmark. This measures document comprehension, not office-document output quality.",
+      "usage": "Under observation: the organization continues updates, but current results mainly compare different product runtime systems and the raw aggregation protocol needs verification. Retained as a document-comprehension reference; scores from different tools are not directly attributed to base models.",
+      "limits": "Code and task licenses do not automatically cover every external result. Old and new task sets, end-to-end retrieval and directly supplied answer pages cannot be ranked together. Scores are not automatically collected.",
+      "license": "Code is Apache 2.0. Task data is CC BY-SA 4.0 and has moved to a Hugging Face dataset requiring approved access."
+    },
+    "vals-harvey-lab": {
+      "name": "Harvey Legal Agent Benchmark",
+      "operator": "Vals AI / Harvey",
+      "area": "Professional work",
+      "description": "Processes legal material and delivers reviewable Word, Excel and slide files.",
+      "what": "Fix Harvey’s private test set, six file tools and docx, xlsx and pptx skills, with internet access disabled. Use the mean whole-task pass rate from two judges, rather than individual-condition pass rates. Fable 5’s 11.25% with Opus 4.8 fallback cannot represent one model. The official 10.42% without fallback requires review under the common configuration policy.",
+      "usage": "Under observation: complete legal-work evidence is a priority. Stable score exports, configurations and display terms remain unresolved. Only the source is listed; no automated collection or ranking yet.",
+      "limits": "Model fallback and judging conditions affect comparability. Roughly 90% on individual conditions does not mean whole-task completion. Vals specialties are not independent organizations, and more boards do not increase total weight.",
+      "license": "Official public scores are available for review. Harvey’s open-source tasks and code licenses do not automatically cover Vals private test results. Leaderboard display terms remain unconfirmed."
+    },
+    "mcp-atlas": {
+      "name": "MCP Atlas",
+      "operator": "Scale AI",
+      "area": "Professional work",
+      "description": "Uses real MCP services to retrieve material and operate documents and databases, completing tasks across software.",
+      "what": "Fix the protocol revised in April 2026 and the 100-tool-call budget. Separate the full 1,000 tasks from the public 500. Use only task pass rate, without duplicate votes for answer-condition coverage. Judges, retries and tool versions must be locked to the score batch.",
+      "usage": "Under observation: could add evidence for tool execution across office software. Stable score exports, actual evaluation batches and display terms need confirmation. Only the source is listed; no automated collection or ranking yet.",
+      "limits": "Older website methodology and live scores may be out of sync. Public task code is not a live score export. Other Scale benchmarks belong to the same organization and do not increase the independent organization count.",
+      "license": "Official environment code is MIT. This does not automatically cover live website scores; leaderboard display terms remain unconfirmed."
+    },
+    "financebenchmark": {
+      "name": "FinanceBenchmark",
+      "operator": "FinanceBenchmark",
+      "area": "Professional work",
+      "description": "Completes financial pricing, capital calculations and risk-management tasks, verified by numerical and code execution results.",
+      "what": "Separate task sets v2 and v3 and runtime versions. Retain the condition of three attempts per task. The official Tasks passed means at least one success but is also called Pass@1; it cannot be mixed with average single-attempt accuracy. Finance Index is another aggregate metric.",
+      "usage": "Under observation: could add financial evidence with fixed answers and code verification. Metric definitions need review. The official Sol result JSON download returned 404 during this review. Only the source is listed; no automated collection or ranking yet.",
+      "limits": "At least one success in three attempts is not a single-attempt success rate. Intervals must match the correct metric, and rolling model aliases require version verification. Public tasks and download buttons do not establish that raw results are available.",
+      "license": "Official repository code is MIT; the website requires a FinanceBenchmark citation. Usage terms for complete live score exports remain unconfirmed. Code licensing is not substituted for leaderboard data licensing."
+    },
+    "prbench-legal": {
+      "name": "PRBench · Legal",
+      "operator": "Scale AI",
+      "area": "Professional work",
+      "description": "Answers complex questions from real legal work, assessing professional judgment and reasoning quality.",
+      "what": "Fix either all 500 Legal tasks or the 250 Hard tasks, with consistent search tools, reasoning tiers and judge versions. Use the task set’s aggregate rubric score. Do not double-count the full and hard sets or describe professional Q&A as complete file delivery.",
+      "usage": "Under observation: could add legal judgment evidence. Task sets, tool conditions and score batches need verification. Only the source is listed; no automated collection or ranking yet.",
+      "limits": "Model judging introduces preferences. Legal and financial specialties from one organization share influence limits, rather than counting as two independent evidence sources. It does not directly measure Word, Excel or slide creation.",
+      "license": "Official tasks and evaluation code are public. Their licenses do not automatically cover live leaderboard results. Stable exports and display terms for the latest results remain to be confirmed."
+    },
+    "prbench-finance": {
+      "name": "PRBench · Finance",
+      "operator": "Scale AI",
+      "area": "Professional work",
+      "description": "Answers real financial decision questions, assessing professional judgment, derivations and risk explanations.",
+      "what": "Fix either all 600 Finance tasks or the 300 Hard tasks, with consistent search tools, reasoning tiers and judge versions. Use the task set’s aggregate rubric score. Do not double-count full and hard sets or treat professional Q&A as end-to-end office work.",
+      "usage": "Under observation: could add financial judgment evidence. Task sets, tool conditions, stable exports and display terms need verification. Only the source is listed; no automated collection or ranking yet.",
+      "limits": "Model judgments do not establish completion of financial modeling or spreadsheet work. PRBench Legal and MCP Atlas also belong to Scale; additional boards do not increase the organization’s weight.",
+      "license": "Official tasks and evaluation code are public. Their licenses do not automatically cover live leaderboard results. Stable exports and display terms for the latest results remain to be confirmed."
+    },
+    "spreadsheetbench-2": {
+      "name": "SpreadsheetBench 2",
+      "operator": "SpreadsheetBench / Renmin University / AfterQuery",
+      "area": "Professional work",
+      "description": "Completes spreadsheet workflows including financial modeling, workbook repair and data visualization.",
+      "what": "Fix V2’s 321 tasks and common SWE-agent conditions. Standalone office products and other scaffolds do not represent base models. Correct spreadsheet visualization does not establish broad aesthetics.",
+      "usage": "Under observation: stable JSON and row-level dates exist, but base-model coverage under common conditions is insufficient. Integration awaits measurements of current models.",
+      "limits": "Under observation: stable JSON and row-level dates exist, but base-model coverage under common conditions is insufficient. Integration awaits measurements of current models.",
+      "license": "The official website footer declares MIT. Dataset and code access points are public."
+    },
+    "vending-bench-2": {
+      "name": "Vending-Bench 2",
+      "operator": "Andon Labs",
+      "area": "Professional work",
+      "description": "Runs a simulated store for a year, handling purchasing, negotiation, inventory and pricing.",
+      "what": "Compare closing balances in the same V2 single-agent task, retaining variance across repeated runs. Treat multiplayer Arena, different tools and reasoning configurations separately. Business outcomes are benchmark scores; API prices do not affect capability scores.",
+      "usage": "Under observation: clearly useful for long-term business and e-commerce evidence. Stable raw score protocols, run configurations and display permission remain pending. Profit may also come from exploiting the simulator and does not directly establish trustworthy business operation.",
+      "limits": "Under observation: clearly useful for long-term business and e-commerce evidence. Stable raw score protocols, run configurations and display permission remain pending. Profit may also come from exploiting the simulator and does not directly establish trustworthy business operation.",
+      "license": "Leaderboard data usage terms remain to be confirmed."
+    },
+    "tau-banking": {
+      "name": "τ³-Banking",
+      "operator": "Sierra",
+      "area": "Professional work",
+      "description": "Handles banking in a common tool environment, testing rule comprehension, customer communication and task completion.",
+      "what": "Compare only official standard banking, v1.0.1, alltools and the GPT-5.2 user simulator, using pass@1. Do not rank different tools, prompts, simulators, voice modes or custom systems together.",
+      "usage": "Counts toward ranking with 2% of the tools and office budget. The two environments sharing Mercor APEX’s allocation are adjusted to 4% in total. Banking does not establish coverage of law, e-commerce or every industry.",
+      "limits": "Results belong to a fixed banking-task system and depend on simulated users and tool protocols. They are not general accuracy across all professions.",
+      "license": "MIT · Official Sierra Research tau2-bench repository; retain source attribution."
+    },
+    "epoch-ebr": {
+      "name": "EBR-bench",
+      "operator": "Epoch AI",
+      "area": "Professional work",
+      "description": "Learning new rules and using memory in long tasks",
+      "what": "Public aggregates mix memory-compression configurations. For reference only until comparable results under fixed configurations are available.",
+      "usage": "For reference only; excluded from overall and category scores.",
+      "limits": "For reference only; excluded from overall and category scores.",
+      "license": "CC BY 4.0 · Data evaluated by Epoch AI itself"
+    },
+    "vals-excel": {
+      "name": "Excel · EMB",
+      "operator": "Vals AI",
+      "area": "Professional work",
+      "description": "Spreadsheet editing and office work in Excel",
+      "what": "Use Overall from the specialized page, separately from the aggregate Vals Index. Results with fallback to other models are not attributed to a single model.",
+      "usage": "Under observation: public usage terms for the specialized data remain unresolved. Reusing the same website parser does not automatically make results count.",
+      "limits": "Under observation: public usage terms for the specialized data remain unresolved. Reusing the same website parser does not automatically make results count.",
+      "license": "Leaderboard data usage terms remain to be confirmed."
+    },
+    "vals-legal": {
+      "name": "Legal Research",
+      "operator": "Vals AI",
+      "area": "Professional work",
+      "description": "Legal research and argumentation",
+      "what": "Use Overall from the specialized page, separately from the aggregate Vals Index. Results with fallback to other models are not attributed to a single model.",
+      "usage": "Under observation: public usage terms for the specialized data remain unresolved. Reusing the same website parser does not automatically make results count.",
+      "limits": "Under observation: public usage terms for the specialized data remain unresolved. Reusing the same website parser does not automatically make results count.",
+      "license": "Leaderboard data usage terms remain to be confirmed."
+    },
+    "vals-tax": {
+      "name": "TaxAgentBench",
+      "operator": "Vals AI",
+      "area": "Professional work",
+      "description": "Professional tax questions",
+      "what": "Use Overall from the specialized page, separately from the aggregate Vals Index. Results with fallback to other models are not attributed to a single model.",
+      "usage": "Under observation: public usage terms for the specialized data remain unresolved. Reusing the same website parser does not automatically make results count.",
+      "limits": "Under observation: public usage terms for the specialized data remain unresolved. Reusing the same website parser does not automatically make results count.",
+      "license": "Leaderboard data usage terms remain to be confirmed."
+    },
+    "vals-medscribe": {
+      "name": "MedScribe",
+      "operator": "Vals AI",
+      "area": "Professional work",
+      "description": "Organizing and writing clinical notes",
+      "what": "Use Overall from the specialized page, separately from the aggregate Vals Index. Results with fallback to other models are not attributed to a single model.",
+      "usage": "Under observation: public usage terms for the specialized data remain unresolved. Reusing the same website parser does not automatically make results count.",
+      "limits": "Under observation: public usage terms for the specialized data remain unresolved. Reusing the same website parser does not automatically make results count.",
+      "license": "Leaderboard data usage terms remain to be confirmed."
+    },
+    "vals-biomystery": {
+      "name": "BioMysteryBench",
+      "operator": "Vals AI",
+      "area": "Professional work",
+      "description": "Reasoning for biology research",
+      "what": "Use Overall from the specialized page, separately from the aggregate Vals Index. Results with fallback to other models are not attributed to a single model.",
+      "usage": "Under observation: public usage terms for the specialized data remain unresolved. Reusing the same website parser does not automatically make results count.",
+      "limits": "Under observation: public usage terms for the specialized data remain unresolved. Reusing the same website parser does not automatically make results count.",
+      "license": "Leaderboard data usage terms remain to be confirmed."
+    },
+    "zapier-automation": {
+      "name": "AutomationBench",
+      "operator": "Zapier",
+      "area": "Professional work",
+      "description": "Completing automated workflows across office software",
+      "what": "Compare only configurations on the same official private test set. Fable 5.1 rows with Opus 5 fallback must be excluded.",
+      "usage": "Under observation: public tasks are not official private leaderboard data. Stable exports and mixed-model flags need confirmation.",
+      "limits": "Under observation: public tasks are not official private leaderboard data. Stable exports and mixed-model flags need confirmation.",
+      "license": "Leaderboard data usage terms remain to be confirmed."
+    },
+    "terminal-science": {
+      "name": "Terminal-Bench Science",
+      "operator": "Harbor",
+      "area": "Professional work",
+      "description": "Completing scientific research tasks in a terminal",
+      "what": "Distinguish systems such as Claude Code, Codex and mini-SWE. Different system scores cannot directly represent model capability.",
+      "usage": "Under observation: 12 models with mixed runtime systems; coverage of new frontier models remains incomplete.",
+      "limits": "Under observation: 12 models with mixed runtime systems; coverage of new frontier models remains incomplete.",
+      "license": "Leaderboard data usage terms remain to be confirmed."
+    },
+    "arena-vision": {
+      "name": "Arena Vision",
+      "fullName": "Arena Vision Style-Controlled",
+      "operator": "LMArena",
+      "description": "People choose between anonymous image-based answers to assess the practical experience of visual understanding.",
+      "what": "Read only overall from the official vision_style_control dataset. Excludes image generation and editing.",
+      "usage": "Receives the 6% vision budget. This is still human-preference evidence, not strict image accuracy.",
+      "limits": "Human preference depends on style, user demographics and prompt distribution. Overall and creative categories have overlapping votes and share the original human-preference budget. They do not count as two independent organizations.",
+      "license": "CC BY 4.0"
+    },
+    "roboflow-vision": {
+      "name": "Roboflow Vision Evals",
+      "operator": "Roboflow",
+      "description": "Image comprehension, counting, OCR and image information extraction",
+      "what": "Six tasks share a budget. Distinguish strict accuracy from model-judge scores. Half-ranges from three runs are not 95% intervals.",
+      "usage": "Under observation: the new board’s data API is rate-limited. The older open-source repository lacks this round’s new models; old data is not presented as the new board.",
+      "limits": "Under observation: the new board’s data API is rate-limited. The older open-source repository lacks this round’s new models; old data is not presented as the new board.",
+      "license": "Leaderboard data usage terms remain to be confirmed."
+    },
+    "artificial-analysis-multilingual": {
+      "name": "AA · Chinese and multilingual",
+      "fullName": "Artificial Analysis Multilingual Index",
+      "operator": "Artificial Analysis",
+      "description": "Examines Chinese and multilingual performance separately, without counting overall English capability again.",
+      "what": "Use only the official multilingual index field. Individual language subscores do not add another vote.",
+      "usage": "Receives the 6% multilingual budget. If the API lacks a multilingual field, the share stays empty; overall English scores are not substituted.",
+      "limits": "If the Free API does not expose the field, it stays empty for the round. Web scraping must not replace the API.",
+      "license": "API data displayed or shared must carry prominent attribution. Redistribution rights and custom terms require separate agreement and compliance with the Terms of Use."
+    },
+    "rws-mgate": {
+      "name": "RWS M-GATE",
+      "operator": "RWS",
+      "description": "Grammar and translation across 30 languages, including Chinese",
+      "what": "Store grammar MCC and translation separately. Tokenization efficiency does not affect capability scores.",
+      "usage": "Under observation: the browser shows new models, but the machine API returns empty content. Verifiable score publication times and stable exports are missing.",
+      "limits": "Under observation: the browser shows new models, but the machine API returns empty content. Verifiable score publication times and stable exports are missing.",
+      "license": "Leaderboard data usage terms remain to be confirmed."
+    }
+  },
+  "budgets": {
+    "broad": "Broad benchmarks",
+    "preference": "Human blind preference",
+    "coding": "Coding and design",
+    "writing": "Writing and expression",
+    "reasoning": "Mathematics and reasoning",
+    "knowledge": "Knowledge and facts",
+    "vision": "Visual understanding",
+    "tools": "Tools and office work",
+    "multilingual": "Chinese and multilingual",
+    "professional": "Industry-specific tasks"
+  },
+  "statuses": {
+    "ranked": "Counts toward ranking",
+    "cross_reference": "Cross-reference",
+    "observing": "Under observation",
+    "reference_only": "For reference only",
+    "awaiting": "Awaiting results"
+  },
+  "confidence": {
+    "HIGH": "Fairly complete",
+    "MEDIUM": "Accumulating evidence",
+    "LOW": "Evidence-sensitive"
+  },
+  "usage": {
+    "ranked": "Counts toward overall ranking",
+    "cross_reference": "Cross-reference",
+    "reference_only": "For reference only"
+  },
+  "configurationLabels": {
+    "sourceDefault": "Source default configuration",
+    "max": "Max reasoning",
+    "xhigh": "xHigh reasoning",
+    "high": "High reasoning",
+    "medium": "Medium reasoning",
+    "low": "Low reasoning",
+    "minimal": "Minimal reasoning",
+    "nonReasoning": "Non-reasoning configuration",
+    "adaptiveReasoning": "Adaptive reasoning",
+    "adaptive": "Adaptive",
+    "fallback": "Includes source fallback",
+    "system": "Complete system",
+    "unreported": "Reasoning tier not reported by the source"
+  },
+  "selectionReasons": {
+    "firstParty": "Uses the highest available first-party reasoning tier at this source, following predetermined rules. Selection does not consider scores.",
+    "sourceDefault": "This source does not distinguish reasoning tiers, so its official default configuration is used.",
+    "lowerPriority": "This configuration is retained for verification, but its fixed priority is below the representative configuration for this metric.",
+    "scaffoldedSelected": "This source uses the same controlled system for all models. Selection follows predetermined reasoning-tier priority, retains configuration details and attributes the score to the base model.",
+    "scaffoldedLower": "This configuration is retained for verification, but its fixed priority is below the system configuration selected for this metric.",
+    "hybrid": "A mixed-model or fallback configuration cannot represent one model’s capability.",
+    "preRelease": "The source explicitly identifies a prerelease version, which cannot represent an available released model.",
+    "special": "A specialized system or unverified run configuration cannot be attributed to one public model.",
+    "tapTapContributor": "The source’s contributor alias does not match a verified public model.",
+    "terminalReferenceOnly": "Retains complete model + Agent system scores for reference, without contributing to overall or coding ranks."
+  },
+  "fx": {
+    "ecb": "European Central Bank"
+  },
+  "rowsNotes": {
+    "systems": "These are system scores for models paired with different Agents under different run conditions, for reference only. Up to 30 configurations are shown per benchmark. Anonymous test models are omitted.",
+    "models": "Fixed rules select one representative configuration per public model. Anonymous test models are omitted. Original source ranks are retained, with up to 30 models per benchmark."
+  }
+}

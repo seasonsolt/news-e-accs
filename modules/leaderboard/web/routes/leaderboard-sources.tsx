@@ -1,5 +1,5 @@
 import { Link } from "@aihot/web/lib/navigation";
-import { localeFromMatches, Text, useTranslate } from "@aihot/web/lib/i18n";
+import { localeFromMatches, Text, translate, useTranslate } from "@aihot/web/lib/i18n";
 import { SITE } from "@aihot/site";
 import { useLoaderData } from "react-router";
 import type { LbSourcesResponse } from "@aihot/leaderboard/contracts";
@@ -17,15 +17,17 @@ export async function loader({ request }: { request: Request }) {
 }
 
 export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
+  const locale = localeFromMatches(matches ?? []);
+  const tx = (message: string, ...values: unknown[]) => translate(locale, message, ...values);
   return pageMeta({
-    title: "评测来源",
-    description: `了解 ${SITE.name} 采用和观察中的评测来源、方法与数据进展。`,
+    title: tx("评测来源"),
+    description: tx("了解 {0} 采用和观察中的评测来源、方法与数据进展。", SITE.name),
     path: "/leaderboard/sources",
     jsonLd: breadcrumbLd([
-      { name: "模型榜", path: "/leaderboard" },
-      { name: "评测来源", path: "/leaderboard/sources" },
+      { name: tx("模型榜"), path: "/leaderboard" },
+      { name: tx("评测来源"), path: "/leaderboard/sources" },
     ]),
-  }, localeFromMatches(matches ?? []));
+  }, locale);
 }
 
 export function headers() {

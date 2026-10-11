@@ -21,16 +21,19 @@ import type {
 } from "@aihot/leaderboard/contracts";
 import { sql } from "@aihot/backend/db";
 import {
-  BOARD_COPY,
+  boardCopy,
   BOARD_LIMIT,
   formatScore,
   modelBrand,
   registrySource,
   scoreFormat,
+  sourceGroups,
   SOURCE_GROUPS,
   sourceBrand,
   sourceKeyOfUnit,
+  type LeaderboardLanguage,
 } from "./registry.ts";
+import { budgetName, configurationLabel, rowsNote, runInfo, selectionReason, usageLabel } from "../i18n/read.ts";
 
 interface ModelRow {
   id: string;
@@ -117,6 +120,7 @@ interface RunView {
 
 export class NoLeaderboardRun extends Error {}
 
+// Cached runs stay language-neutral; reader copy is applied to each response without mutating them.
 let cached: { view: RunView; checkedAt: number } | null = null;
 let loading: Promise<RunView> | null = null;
 
@@ -282,15 +286,15 @@ function modelRef(view: RunView, m: ModelRow): LbModelRef {
   };
 }
 
-function boardTabs() {
+function boardTabs(lang: LeaderboardLanguage) {
   return LEADERBOARD_PUBLIC_BOARDS.map((key) => ({
     key,
-    name: BOARD_COPY[key].name,
+    name: boardCopy(key, lang).name,
     href: key === "overall" ? "/leaderboard" : `/leaderboard/category/${key}`,
   }));
 }
 
-export async function loadBoard(key: LeaderboardBoardKey, asOf: Date | null = null): Promise<LbBoardResponse | null> {
+export async function loadBoard(key: LeaderboardBoardKey, asOf: Date | null = null, lang: LeaderboardLanguage = "zh"): Promise<LbBoardResponse | null> {
   const view = await runView(asOf);
   const board = view.boards.get(key);
   if (!board) return null;
@@ -309,11 +313,11 @@ export async function loadBoard(key: LeaderboardBoardKey, asOf: Date | null = nu
         price: view.prices.get(m.id) ?? null,
       };
     });
-  const copy = BOARD_COPY[key];
+  const copy = boardCopy(key, lang);
   return {
-    run: view.info,
+    run: runInfo(view.info, lang),
     board: { ...copy, sourceCount: board.sourceCount, operatorCount: board.operatorCount, modelCount: board.modelCount },
-    tabs: boardTabs(),
+    tabs: boardTabs(lang),
     entries,
   };
 }
@@ -333,13 +337,7 @@ interface ScoreDetailRow {
   metadata: Record<string, unknown>;
 }
 
-function usageLabel(status: string | undefined) {
-  if (status === "ranked") return "已计入综合排名";
-  if (status === "cross_reference") return "交叉参考";
-  return "仅供参考";
-}
-
-export async function loadModel(slug: string, asOf: Date | null = null): Promise<LbModelDetail | null> {
+export async function loadModel(slug: string, asOf: Date | null = null, lang: LeaderboardLanguage = "zh"): Promise<LbModelDetail | null> {
   const view = await runView(asOf);
   if (!view.pageSlugs.has(slug)) return null;
   const m = view.models.get(slug);
@@ -351,7 +349,7 @@ export async function loadModel(slug: string, asOf: Date | null = null): Promise
     const e = view.boards.get(key)?.bySlug.get(slug);
     return {
       key,
-      name: BOARD_COPY[key].name,
+      name: boardCopy(key, lang).name,
       rank: e?.rank ?? null,
       score: e?.score ?? null,
       sourceCount: e?.detail?.sourceCount ?? e?.metric_count ?? 0,
@@ -373,7 +371,7 @@ export async function loadModel(slug: string, asOf: Date | null = null): Promise
   const itemsBySource = new Map<string, LbEvidenceItem>();
   for (const [unit] of units) {
     const sourceKey = sourceKeyOfUnit(unit);
-    const reg = registrySource(sourceKey);
+    const reg = registrySource(sourceKey, lang);
     const signal = overall!.signals.get(unit)!.get(slug)!;
     const meta = view.evidence[`${unit}:${slug}`];
     const detail = detailFor(meta);
@@ -389,13 +387,13 @@ export async function loadModel(slug: string, asOf: Date | null = null): Promise
       sourceName: reg?.source.name ?? sourceKey,
       brand: reg ? sourceBrand(reg.source) : null,
       officialUrl: reg?.source.officialUrl ?? null,
-      usage: usageLabel(reg?.source.status),
+      usage: usageLabel(reg?.source.status, lang),
       display: formatScore(signal.score, format),
       displayNote: reg?.source.components?.label ?? null,
       sourceRank: detail?.source_rank ?? null,
       sourceModelName: detail?.source_model_name ?? null,
-      configurationLabel: detail?.configuration_label ?? null,
-      selectionReason: detail?.selection_reason ?? null,
+      configurationLabel: configurationLabel(detail?.configuration_label ?? null, lang),
+      selectionReason: selectionReason(detail?.selection_reason ?? null, lang),
       upstreamAt: meta?.publishedAt ?? null,
       verifiedAt: meta?.verifiedAt ?? null,
       measuredAt: meta?.evaluatedAt ?? null,
@@ -404,7 +402,7 @@ export async function loadModel(slug: string, asOf: Date | null = null): Promise
       componentsNote: components.length ? reg?.source.components?.note ?? null : null,
     });
   }
-  const evidence: LbEvidenceGroup[] = SOURCE_GROUPS.map((g) => ({
+  const evidence: LbEvidenceGroup[] = sourceGroups(lang).map((g) => ({
     key: g.key,
     name: g.name,
     items: g.sources.map((s) => itemsBySource.get(s.key)).filter((i): i is LbEvidenceItem => !!i),
@@ -412,10 +410,10 @@ export async function loadModel(slug: string, asOf: Date | null = null): Promise
   const scoredSources = new Set(overall ? Object.entries(overall.registry).filter(([, r]) => r.weight > 0).map(([u]) => sourceKeyOfUnit(u)) : []);
   const unmeasured = [...scoredSources]
     .filter((k) => !itemsBySource.has(k))
-    .map((k) => ({ key: k, name: registrySource(k)?.source.name ?? k }));
+    .map((k) => ({ key: k, name: registrySource(k, lang)?.source.name ?? k }));
 
   return {
-    run: view.info,
+    run: runInfo(view.info, lang),
     model: { ...modelRef(view, m), contextWindowTokens: m.context_window_tokens },
     price: view.prices.get(m.id) ?? null,
     overall: {
@@ -429,11 +427,11 @@ export async function loadModel(slug: string, asOf: Date | null = null): Promise
     metricCount: itemsBySource.size,
     evidence,
     unmeasured,
-    comparisons: overall && overallEntry ? nearbyComparisons(view, overall, slug, overallEntry.rank) : [],
+    comparisons: overall && overallEntry ? nearbyComparisons(view, overall, slug, overallEntry.rank, lang) : [],
   };
 }
 
-function nearbyComparisons(view: RunView, board: BoardView, slug: string, rank: number): LbComparison[] {
+function nearbyComparisons(view: RunView, board: BoardView, slug: string, rank: number, lang: LeaderboardLanguage): LbComparison[] {
   const raw = board.comparisons[slug] ?? [];
   const ranked = raw
     .map((c) => ({ c, other: board.bySlug.get(c.slug) }))
@@ -448,7 +446,7 @@ function nearbyComparisons(view: RunView, board: BoardView, slug: string, rank: 
         const rowsOf = board.signals.get(unit)!;
         const format = signalFormat(unit, board);
         const sourceKey = sourceKeyOfUnit(unit);
-        const reg = registrySource(sourceKey);
+        const reg = registrySource(sourceKey, lang);
         return {
           sourceKey,
           sourceName: reg?.source.name ?? sourceKey,
@@ -472,8 +470,8 @@ function nearbyComparisons(view: RunView, board: BoardView, slug: string, rank: 
   });
 }
 
-function sourceSummary(view: RunView, key: string): LbSourceSummary | null {
-  const reg = registrySource(key);
+function sourceSummary(view: RunView, key: string, lang: LeaderboardLanguage): LbSourceSummary | null {
+  const reg = registrySource(key, lang);
   if (!reg) return null;
   const s = reg.source;
   const counts = s.status === "ranked" || s.status === "awaiting";
@@ -491,26 +489,26 @@ function sourceSummary(view: RunView, key: string): LbSourceSummary | null {
   };
 }
 
-export async function loadSources(): Promise<LbSourcesResponse> {
+export async function loadSources(lang: LeaderboardLanguage = "zh"): Promise<LbSourcesResponse> {
   const view = await runView();
-  const groups = SOURCE_GROUPS.map((g) => ({
+  const groups = sourceGroups(lang).map((g) => ({
     key: g.key,
     name: g.name,
     blurb: g.blurb,
     lineage: g.lineage ?? [],
-    sources: g.sources.map((s) => sourceSummary(view, s.key)!),
+    sources: g.sources.map((s) => sourceSummary(view, s.key, lang)!),
   }));
   const all = groups.flatMap((g) => g.sources);
-  return { run: view.info, rankedCount: all.filter((s) => s.status === "ranked").length, totalCount: all.length, groups };
+  return { run: runInfo(view.info, lang), rankedCount: all.filter((s) => s.status === "ranked").length, totalCount: all.length, groups };
 }
 
 const PUBLIC_ROW_STATUSES = new Set(["ranked", "cross_reference", "reference_only"]);
 
-export async function loadSource(key: string): Promise<LbSourceDetail | null> {
-  const reg = registrySource(key);
+export async function loadSource(key: string, lang: LeaderboardLanguage = "zh"): Promise<LbSourceDetail | null> {
+  const reg = registrySource(key, lang);
   if (!reg) return null;
   const view = await runView();
-  const summary = sourceSummary(view, key)!;
+  const summary = sourceSummary(view, key, lang)!;
   const s = reg.source;
 
   const snapshots = await sql<{ id: string; published_at: Date | null; fetched_at: Date; metadata: Record<string, unknown> }[]>`
@@ -534,13 +532,13 @@ export async function loadSource(key: string): Promise<LbSourceDetail | null> {
       sourceModelName: r.source_model_name ?? r.name,
       provider: r.provider === "其他" ? null : r.provider,
       display: formatScore(r.raw_score, format),
-      configurationLabel: r.configuration_label,
+      configurationLabel: configurationLabel(r.configuration_label, lang),
       modelSlug: view.pageSlugs.has(r.slug) ? r.slug : null,
     }));
   }
   const lastSeen = typeof snapshot?.metadata.lastSeenAt === "string" ? snapshot.metadata.lastSeenAt : null;
   return {
-    run: view.info,
+    run: runInfo(view.info, lang),
     source: {
       ...summary,
       fullName: s.fullName ?? s.name,
@@ -551,18 +549,16 @@ export async function loadSource(key: string): Promise<LbSourceDetail | null> {
       usage: s.usage,
       limits: s.limits,
       license: s.license,
-      attribution: s.attribution?.replaceAll("{{siteName}}", SITE.name) ?? `成绩由 ${s.operator} 发布，原始分数与 ${SITE.name} 共识分使用不同尺度，不能直接相加。`,
+      attribution: s.attribution?.replaceAll("{{siteName}}", SITE.name) ?? (lang === "en"
+        ? `Results are published by ${s.operator}. Raw scores and the ${SITE.name} consensus index use different scales and cannot be added directly.`
+        : `成绩由 ${s.operator} 发布，原始分数与 ${SITE.name} 共识分使用不同尺度，不能直接相加。`),
     },
     upstreamAt: showRows ? snapshot.published_at?.toISOString() ?? null : null,
     syncedAt: showRows ? lastSeen ?? snapshot.fetched_at.toISOString() : null,
     collected: showRows,
     rows,
     systemRows: !!s.allRows,
-    rowsNote: showRows
-      ? s.allRows
-        ? "下列为模型搭配不同 Agent 的系统成绩，运行条件不同，仅供参考。每项最多展示 30 条配置，匿名测试型号不展示。"
-        : "按固定规则，每个公开模型采用一套代表配置。匿名测试型号不展示，保留原榜名次，每项最多 30 个。"
-      : null,
+    rowsNote: showRows ? rowsNote(!!s.allRows, lang) : null,
   };
 }
 
@@ -573,19 +569,20 @@ export interface LbRulesData {
 }
 
 /** Budget table and anchors for the rules page, straight from the run. */
-export async function loadRulesData(): Promise<LbRulesData> {
+export async function loadRulesData(lang: LeaderboardLanguage = "zh"): Promise<LbRulesData> {
   const view = await runView();
   const run = await sql<{ summary: any }[]>`SELECT summary FROM lb_runs WHERE id = ${view.info.id}`;
   const sources = (run[0]?.summary?.sources ?? []) as Array<{ key: string; evidenceBudgetKey: string }>;
   const order = SOURCE_GROUPS.flatMap((g) => g.sources.map((s) => s.key));
   const budgets = view.budgets.map((b) => ({
     ...b,
+    name: budgetName(b.key, b.name, lang),
     sources: sources
       .filter((s) => s.evidenceBudgetKey === b.key)
       .sort((a, c) => order.indexOf(a.key) - order.indexOf(c.key))
-      .map((s) => registrySource(s.key)?.source.name ?? s.key),
+      .map((s) => registrySource(s.key, lang)?.source.name ?? s.key),
   }));
-  return { run: view.info, budgets, anchors: view.anchors };
+  return { run: runInfo(view.info, lang), budgets, anchors: view.anchors };
 }
 
 /** Public leaderboard URLs for the sitemap. */

@@ -17,7 +17,7 @@ export function BoardTabs() {
       layoutId="lb-board"
       label={tx("榜单")}
       active={active}
-      items={LEADERBOARD_PUBLIC_BOARDS.map((k) => ({ key: k, label: LEADERBOARD_BOARD_LABELS[k], to: withAt(boardHref(k), at) }))}
+      items={LEADERBOARD_PUBLIC_BOARDS.map((k) => ({ key: k, label: tx(LEADERBOARD_BOARD_LABELS[k]), to: withAt(boardHref(k), at) }))}
     />
   );
 }

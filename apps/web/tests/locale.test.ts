@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { htmlLanguage, requestLocale, publicPath, localePath, languageSwitchPath, hasChineseRoute, languagePreference, prefersChinese } from "../app/lib/locale.ts";
 import { translate } from "../app/lib/translate.ts";
+import { defineWebModule } from "../app/modules.ts";
 
 test("URL language is stable across browser languages and preference cookies, including data requests", () => {
   for (const path of ["/", "/all", "/weekly.data", "/_.data", "/items/123"]) {
@@ -74,6 +75,19 @@ test("time machine labels read in English, Chinese spans included", () => {
   for (const [zh, en] of cases) assert.equal(translate("en", zh), en, zh);
   assert.equal(translate("zh", "100亿年前"), "100亿年前");
 });
+test("module messages translate in both editions, including formatted templates", () => {
+  defineWebModule({ name: "translation-test", messages: {
+    en: { "模块测试文案": "Module test copy", "模块测试 {0}": "Module test {0}", "module.test.label": "Module label" },
+    zh: { "module.test.label": "模块标签" },
+  } });
+  assert.equal(translate("en", "模块测试文案"), "Module test copy");
+  assert.equal(translate("zh", "模块测试文案"), "模块测试文案");
+  assert.equal(translate("en", "模块测试 {0}", 2), "Module test 2");
+  assert.equal(translate("en", "模块测试 3"), "Module test 3");
+  assert.equal(translate("en", "module.test.label"), "Module label");
+  assert.equal(translate("zh", "module.test.label"), "模块标签");
+});
+
 test("axis ticks shorten in English to fit their spacing", async () => {
   const { axisTicks } = await import("@aihot/contracts/chronicle");
   const { compactTick } = await import("../app/features/chrono/format.ts");

@@ -4,6 +4,9 @@ import type { LeaderboardBoardKey } from "@aihot/leaderboard/taxonomy";
 import type { LbBrand, LbLineageStep, LbScoreFormat, LbSourceStatus } from "@aihot/leaderboard/contracts";
 import registryData from "./source-registry.json" with { type: "json" };
 import { SITE } from "@aihot/site";
+import english from "../i18n/en.json" with { type: "json" };
+
+export type LeaderboardLanguage = "en" | "zh";
 
 export interface RegistrySource {
   key: string;
@@ -39,8 +42,25 @@ export const SOURCE_GROUPS = registryData.groups as RegistryGroup[];
 const byKey = new Map<string, { source: RegistrySource; group: RegistryGroup }>();
 for (const group of SOURCE_GROUPS) for (const source of group.sources) byKey.set(source.key, { source, group });
 
-export function registrySource(key: string) {
-  return byKey.get(key) ?? null;
+const englishGroups: RegistryGroup[] = SOURCE_GROUPS.map((group) => {
+  const copy = english.groups[group.key as keyof typeof english.groups];
+  const lineage = "lineage" in copy ? copy.lineage as Record<string, Omit<LbLineageStep, "current">> : {};
+  return {
+    ...group,
+    name: copy.name,
+    blurb: copy.blurb,
+    ...(group.lineage ? { lineage: group.lineage.map((step) => ({ ...step, ...lineage[step.name] })) } : {}),
+    sources: group.sources.map((source) => ({ ...source, ...english.sources[source.key as keyof typeof english.sources] })),
+  };
+});
+const englishByKey = new Map(englishGroups.flatMap((group) => group.sources.map((source) => [source.key, { source, group }] as const)));
+
+export function sourceGroups(lang: LeaderboardLanguage = "zh") {
+  return lang === "en" ? englishGroups : SOURCE_GROUPS;
+}
+
+export function registrySource(key: string, lang: LeaderboardLanguage = "zh") {
+  return (lang === "en" ? englishByKey : byKey).get(key) ?? null;
 }
 
 /** Signal units carry a metric suffix for multi-metric sources ("artificial-analysis:intelligence"). */
@@ -95,6 +115,12 @@ export const BOARD_COPY: Record<LeaderboardBoardKey, BoardCopy> = {
     howToRead: "当前覆盖金融分析、专业咨询与银行业务，尚不能代表所有文档、表格和演示文稿任务。",
   },
 };
+
+export function boardCopy(key: LeaderboardBoardKey, lang: LeaderboardLanguage = "zh"): BoardCopy {
+  if (lang === "zh") return BOARD_COPY[key];
+  const copy = english.boards[key];
+  return { key, ...copy, title: copy.title.replaceAll("{{siteName}}", SITE.name) };
+}
 
 export const BOARD_LIMIT = 30;
 

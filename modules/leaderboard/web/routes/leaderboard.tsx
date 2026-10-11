@@ -1,5 +1,5 @@
 import { Link } from "@aihot/web/lib/navigation";
-import { localeFromMatches, Text, useTranslate } from "@aihot/web/lib/i18n";
+import { localeFromMatches, Text, translate, useTranslate } from "@aihot/web/lib/i18n";
 import { SITE } from "@aihot/site";
 import { data, useLoaderData } from "react-router";
 import type { LoaderFunctionArgs, MetaArgs } from "react-router";
@@ -32,31 +32,33 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 }
 
 export function meta({ matches, loaderData }: MetaArgs<typeof loader>) {
-  if (!loaderData?.board) return pageMeta({ title: loaderData ? "模型榜" : "页面不存在", path: "/leaderboard", noindex: true }, localeFromMatches(matches ?? []));
+  const locale = localeFromMatches(matches ?? []);
+  const tx = (message: string, ...values: unknown[]) => translate(locale, message, ...values);
+  if (!loaderData?.board) return pageMeta({ title: loaderData ? "模型榜" : "页面不存在", path: "/leaderboard", noindex: true }, locale);
   const { board, entries } = loaderData.board;
   const path = board.key === "overall" ? "/leaderboard" : `/leaderboard/category/${board.key}`;
   return pageMeta({
     noindex: !!loaderData.at,
     title: board.title,
     rawTitle: true,
-    description: board.key === "overall" ? `汇总多家公开模型评测榜单，给出${SITE.name} 共识分、评测完整度、上线日期与 API 参考价格。` : board.description,
+    description: board.key === "overall" ? tx("汇总多家公开模型评测榜单，给出{0} 共识分、评测完整度、上线日期与 API 参考价格。", SITE.name) : board.description,
     path,
     jsonLd: [
       {
         "@context": "https://schema.org",
         "@type": "ItemList",
-        name: board.key === "overall" ? `${SITE.name} 大模型综合榜` : `${SITE.name} ${board.name}模型榜`,
+        name: board.key === "overall" ? tx("{0} 大模型综合榜", SITE.name) : tx("{0} {1}模型榜", SITE.name, board.name),
         itemListOrder: "https://schema.org/ItemListOrderAscending",
         numberOfItems: entries.length,
         itemListElement: entries.map((e) => ({ "@type": "ListItem", position: e.rank, name: e.model.name, url: `${siteUrl()}${modelHref(e.model.slug)}` })),
       },
       breadcrumbLd(
         board.key === "overall"
-          ? [{ name: "模型榜", path: "/leaderboard" }]
-          : [{ name: "模型榜", path: "/leaderboard" }, { name: `${board.name}榜`, path }],
+          ? [{ name: tx("模型榜"), path: "/leaderboard" }]
+          : [{ name: tx("模型榜"), path: "/leaderboard" }, { name: tx("{0}榜", board.name), path }],
       ),
     ],
-  }, localeFromMatches(matches ?? []));
+  }, locale);
 }
 
 export function headers() {
@@ -92,7 +94,7 @@ function Board({ data: { board, entries, run } }: { data: LbBoardResponse }) {
         <p className="num text-[12px] text-ink-4">
           {board.sourceCount}<Text value="项评测" /><span className="mx-2">·</span>
           {board.operatorCount}<Text value="家机构" /><span className="mx-2">·</span>
-          {shortStamp(run.generatedAt)}<Text value="更新" /></p>
+          {tx(shortStamp(run.generatedAt))}<Text value="更新" /></p>
       </div>
 
       <Podium entries={entries} board={board.key} />

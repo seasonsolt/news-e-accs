@@ -1,5 +1,5 @@
 import { Link } from "@aihot/web/lib/navigation";
-import { localeFromMatches, Text, useTranslate } from "@aihot/web/lib/i18n";
+import { localeFromMatches, Text, translate, useTranslate } from "@aihot/web/lib/i18n";
 import { SITE } from "@aihot/site";
 import { useEffect, useState, type ReactNode } from "react";
 import { useLoaderData, useSearchParams } from "react-router";
@@ -9,7 +9,7 @@ import type { LbComparison, LbEvidenceItem, LbModelDetail } from "@aihot/leaderb
 import { LEADERBOARD_BOARD_LABELS, LEADERBOARD_PUBLIC_BOARDS } from "@aihot/leaderboard/taxonomy";
 import { loadOr404, queryString } from "@aihot/web/lib/api.server";
 import { requestAt, withAt } from "@aihot/web/features/chrono/at";
-import { breadcrumbLd, pageMeta, siteUrl, titled } from "@aihot/web/lib/seo";
+import { breadcrumbLd, pageMeta, siteUrl } from "@aihot/web/lib/seo";
 import { BrandMark } from "@aihot/web/components/BrandMark";
 import { Deck } from "@aihot/web/components/shell/Deck";
 import { EvidenceBadge } from "../features/Evidence";
@@ -23,30 +23,32 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 }
 
 export function meta({ matches, loaderData }: MetaArgs<typeof loader>) {
-  if (!loaderData) return [{ title: titled("页面不存在") }];
+  const locale = localeFromMatches(matches ?? []);
+  const tx = (message: string, ...values: unknown[]) => translate(locale, message, ...values);
+  if (!loaderData) return pageMeta({ title: "页面不存在", path: "/leaderboard", noindex: true }, locale);
   const { model } = loaderData;
   const path = `/leaderboard/${model.slug}`;
   return pageMeta({
     noindex: !!loaderData.at,
-    title: `${model.name} 排名与各榜成绩`,
-    description: `查看 ${model.name} 的 ${SITE.name} 共识分、当前排名，以及它在各家公开评测榜单中的名次和原始分数。`,
+    title: tx("{0} 排名与各榜成绩", model.name),
+    description: tx("查看 {0} 的 {1} 共识分、当前排名，以及它在各家公开评测榜单中的名次和原始分数。", model.name, SITE.name),
     path,
     jsonLd: [
       {
         "@context": "https://schema.org",
         "@type": "Dataset",
-        name: `${model.name} 在 ${SITE.name} 模型榜的成绩`,
-        description: `${model.name} 的共识指数、分类名次与各项公开评测的原始成绩。`,
+        name: tx("{0} 在 {1} 模型榜的成绩", model.name, SITE.name),
+        description: tx("{0} 的共识指数、分类名次与各项公开评测的原始成绩。", model.name),
         url: `${siteUrl()}${path}`,
         creator: { "@type": "Organization", name: SITE.name, url: siteUrl() },
         isAccessibleForFree: true,
       },
       breadcrumbLd([
-        { name: "模型榜", path: "/leaderboard" },
+        { name: tx("模型榜"), path: "/leaderboard" },
         { name: model.name, path },
       ]),
     ],
-  }, localeFromMatches(matches ?? []));
+  }, locale);
 }
 
 export function headers() {
@@ -253,7 +255,7 @@ function EvidenceCard({ it }: { it: LbEvidenceItem }) {
           {it.selectionReason && <p className="text-ink-3 sm:col-span-2">{it.selectionReason}</p>}
           <div className="sm:col-span-2">
             <dt className="text-ink-4"><Text value="本轮采用记录" /></dt>
-            <dd className="num mt-0.5 text-ink-2"><Text value="来源数据" />{shortStamp(it.upstreamAt)}<Text value="· 核验" />{shortStamp(it.verifiedAt)} · {it.measuredAt ? tx("实测 {0}", shortStamp(it.measuredAt)) : tx("实测日期未公开")}
+            <dd className="num mt-0.5 text-ink-2"><Text value="来源数据" />{tx(shortStamp(it.upstreamAt))}<Text value="· 核验" />{tx(shortStamp(it.verifiedAt))} · {it.measuredAt ? tx("实测 {0}", tx(shortStamp(it.measuredAt))) : tx("实测日期未公开")}
               {it.carriedForward && tx(" · 沿用最近一次已核验记录")}
             </dd>
           </div>
@@ -299,9 +301,9 @@ export default function LeaderboardModelPage() {
         compact
         art="cat-models"
         label={model.name}
-        kicker={<Link to={withAt(boardHref(from), d.at)} className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /><Text value="返回" />{LEADERBOARD_BOARD_LABELS[from as keyof typeof LEADERBOARD_BOARD_LABELS]}<Text value="榜" /></Link>}
+        kicker={<Link to={withAt(boardHref(from), d.at)} className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /><Text value="返回" />{tx(LEADERBOARD_BOARD_LABELS[from as keyof typeof LEADERBOARD_BOARD_LABELS])}<Text value="榜" /></Link>}
         title={<span className="inline-flex items-center gap-4"><BrandMark brand={model.brand} size={48} />{model.name}</span>}
-        description={<span className="num">{model.provider ?? "—"} · {model.releasedAt ? tx("{0} 发布", model.releasedAt) : tx("发布日期待核实")} · {shortStamp(d.run.generatedAt)}<Text value="更新" /></span>}
+        description={<span className="num">{model.provider ?? "—"} · {model.releasedAt ? tx("{0} 发布", model.releasedAt) : tx("发布日期待核实")} · {tx(shortStamp(d.run.generatedAt))}<Text value="更新" /></span>}
         aside={
           <span className="flex flex-col items-end">
             <span className="font-mono text-[12px] text-[var(--deck-dim)]"><Text value="综合共识指数 ·" />{overall.rank === null ? tx("未进入综合榜") : overall.onBoard ? tx("综合榜第 {0} 名", overall.rank) : tx("综合榜前 30 名之外")}
@@ -321,7 +323,7 @@ export default function LeaderboardModelPage() {
           <small className="ml-1 font-sans text-[11px] font-normal text-ink-4"><Text value="项评测" /></small>
         </Stat>
         <Stat label={tx("上下文窗口")}>
-          {tokensWan(model.contextWindowTokens)}
+          {tx(tokensWan(model.contextWindowTokens))}
           <small className="ml-1 font-sans text-[11px] font-normal text-ink-4">Token</small>
         </Stat>
         <Stat

@@ -8,6 +8,8 @@
 import type { ComponentType, ReactNode } from "react";
 import type { TopicSummary } from "@aihot/contracts/site";
 import type { NavItem, Tab } from "./components/shell/nav";
+import { registerMessages } from "./lib/translate.ts";
+import type { Locale } from "./lib/locale.ts";
 
 export interface AdminNavEntry {
   to: string;
@@ -116,6 +118,8 @@ export interface TopicPagePart {
 export interface WebModule {
   /** Its folder under modules/. */
   name: string;
+  /** Interface translations owned by the module, merged when its web entry loads. */
+  messages?: Partial<Record<Locale, Readonly<Record<string, string>>>>;
   /** Desktop navigation: entries in a section between the engine's 内容 and 更多; the deck draws them in its top bar. */
   sidebar?: { section: string; items: NavItem[] };
   /** Phone tab bar: tabs before 我的. */
@@ -163,5 +167,6 @@ export interface WebModule {
 }
 
 export function defineWebModule(module: WebModule): WebModule {
+  if (module.messages) registerMessages(module.messages);
   return module;
 }

@@ -1,5 +1,5 @@
 import { Link } from "@aihot/web/lib/navigation";
-import { localeFromMatches, Text, useTranslate } from "@aihot/web/lib/i18n";
+import { localeFromMatches, Text, translate, useTranslate } from "@aihot/web/lib/i18n";
 // Public method statement for the leaderboard (method v16, modules/leaderboard/README.md).
 // The copy states how rankings are actually computed; it changes only together with the method.
 import { SITE } from "@aihot/site";
@@ -24,15 +24,17 @@ export async function loader({ request }: { request: Request }) {
 }
 
 export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
+  const locale = localeFromMatches(matches ?? []);
+  const tx = (message: string, ...values: unknown[]) => translate(locale, message, ...values);
   return pageMeta({
-    title: "共识指数计算方法",
-    description: `查看 ${SITE.name} 模型榜如何核验公开成绩、比较共同参评结果、处理缺失证据，并确定排名和 0—100 共识指数。`,
+    title: tx("共识指数计算方法"),
+    description: tx("查看 {0} 模型榜如何核验公开成绩、比较共同参评结果、处理缺失证据，并确定排名和 0—100 共识指数。", SITE.name),
     path: "/leaderboard/rules",
     jsonLd: breadcrumbLd([
-      { name: "模型榜", path: "/leaderboard" },
-      { name: "排名怎么算", path: "/leaderboard/rules" },
+      { name: tx("模型榜"), path: "/leaderboard" },
+      { name: tx("排名怎么算"), path: "/leaderboard/rules" },
     ]),
-  }, localeFromMatches(matches ?? []));
+  }, locale);
 }
 
 export function headers() {
@@ -81,7 +83,7 @@ const FAQ = [
   },
   {
     q: "新模型什么时候会出现？",
-    a: `${SITE.name} 每天检查四次上游结果。只有评测方实际发布了新模型的成绩，才能用于排名；网页刷新、价格更新或我们的抓取时间，都不算重新评测。`,
+    a: "{0} 每天检查四次上游结果。只有评测方实际发布了新模型的成绩，才能用于排名；网页刷新、价格更新或我们的抓取时间，都不算重新评测。",
   },
   {
     q: "某家榜单暂时打不开，会怎样？",
@@ -137,7 +139,7 @@ export default function LeaderboardRulesPage() {
         <nav aria-label={tx("本页内容")} className="-mx-2 -mb-1">
           {SECTIONS.map(([href, label]) => (
             <a key={href} href={href} className="block rounded-control px-2 py-2 text-[13.5px] text-ink-2 transition-colors hover:bg-bg-sunk hover:text-ink">
-              {label}
+              {tx(label)}
             </a>
           ))}
         </nav>
@@ -232,7 +234,7 @@ export default function LeaderboardRulesPage() {
         <div className="mt-3 border-t border-line">
           {FAQ.map((f) => (
             <Disclosure key={f.q} summary={tx(f.q)}>
-              <Text value={f.a} />
+              {tx(f.a, SITE.name)}
             </Disclosure>
           ))}
         </div>
@@ -244,7 +246,7 @@ export default function LeaderboardRulesPage() {
             <p><Text value="方法版本：" /><code className="mono rounded-mark bg-bg-sunk px-1.5 py-0.5 text-[12px] text-ink-2">{run.methodologyVersion}</code><Text value="。采用加权不完整 Kemeny 排序。每对共同参评模型汇总净支持 M；目标是最小化所有被排反的净支持之和。整数优化返回最优状态和目标上下界，只有完整通过验证的结果才用于正式发布。" /></p>
             <p><Text value="双方有明确标准误时，净支持取 2Φ(分差 / 合成标准误) − 1，默认零协方差；其他比较只取原始领先方向。未知误差并非零误差，小分差按序数处理仍是局限。票权针对潜在模型对，覆盖型号多的来源会使用更多比较位置，不能把名义预算解读为最终名次的精确贡献率。" /></p>
             <p><Text value="展示指数保留原排序：逐对反转相邻模型的先后，允许其余模型重排，计算最少增加的逆向净支持。沿原排名累加这些非负支持差，再相对固定参照组用 sigmoid 映射到 0—100。替代顺序同样最优时保留零间距，显示保留一位小数，不人为设置最低分差。指数不参与反向排序；入榜集合、参照型号与证据变化仍会影响指数，分差不等于真实能力距离。同代价求解固定型号 ID 次序；整数优化使用 HiGHS 求解器（highs 1.15.3），误差换算的正态分布函数与 SciPy norm.cdf 采用同一算法；来源、协议、参评资格和每轮计算输入均保存版本。未连接到共同证据网络时不发布跨分量的假精确顺序。" /></p>
-            <p><Text value="固定参照型号：" /><span className="mono text-[12px] text-ink-2">{anchors.join("、")}</span><Text value="。参照组用于指数尺度，不指定任何厂商应排第几；不同分类的指数不直接比较。" /></p>
+            <p><Text value="固定参照型号：" /><span className="mono text-[12px] text-ink-2">{anchors.join(tx("、"))}</span><Text value="。参照组用于指数尺度，不指定任何厂商应排第几；不同分类的指数不直接比较。" /></p>
           </div>
         </Disclosure>
       </section>

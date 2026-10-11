@@ -147,7 +147,7 @@ export function BoardTable({ entries, board, viewSwitch = false }: { entries: Lb
                 </span>
                 {/* Phones: the desktop columns as three short lines under the whole name block. */}
                 <span className="mt-1.5 block text-[12px] leading-[1.7] text-ink-3 lg:hidden">
-                  <span className="block"><Text value="上线" /><span className="num">{e.model.releasedAt ?? "—"}</span> · {LB_CONFIDENCE_LABELS[e.confidence]}
+                  <span className="block"><Text value="上线" /><span className="num">{e.model.releasedAt ?? "—"}</span> · {tx(LB_CONFIDENCE_LABELS[e.confidence])}
                   </span>
                   <span className="block"><Text value="缓存输入" /><span className="num">{e.price ? yuan(e.price.cachedCny) : "—"}</span>
                   </span>
