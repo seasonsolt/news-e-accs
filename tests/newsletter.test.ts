@@ -181,30 +181,81 @@ test("today's report goes out as one broadcast, once", async () => {
   assert.equal(hits.slice(before).filter((h) => h.path === "/broadcasts").length, 1, "the day is mailed once");
 });
 
-test("the 公众号 export is the Chinese edition without links, within the editor's limits", async () => {
+test("the 公众号 export is the Chinese edition as 「AI 早报」, without links, within the editor's limits", async () => {
   const exported = await wechatExport(TODAY);
   assert.equal(exported.status, "ready");
-  const article = (exported as Extract<typeof exported, { status: "ready" }>).article;
-  assert.equal(article.title, `头条 ${T}`);
+  const { article, minimum } = exported as Extract<typeof exported, { status: "ready" }>;
+  assert.equal(minimum, 10);
+  assert.ok(article.title.startsWith(`AI 早报｜头条 ${T}；产品 B 上线`), "the title packs the first headlines after the column name");
   assert.equal(article.digest, "导语 <b>不</b>是 HTML。", "the digest field is plain text");
   assert.ok(article.readMoreUrl.endsWith(`/zh/daily/${TODAY}`));
   assert.match(article.html, /导语 &lt;b&gt;不&lt;\/b&gt;是 HTML。/, "report text is escaped");
   assert.doesNotMatch(article.html, /<a\b|href=|class=|<style|<img/, "the editor drops links, classes, stylesheets and outside images");
   for (const attr of article.html.match(/style="[^"]*"/g) ?? []) assert.match(attr, /;"$|[a-z0-9)%]"$/, `style attribute cut short: ${attr.slice(0, 80)}`);
-  assert.match(article.text, /【模型】\n1\. 模型 A 发布\n摘要一\n来源：官方博客/);
-  assert.match(article.text, /【产品】\n2\. 产品 B 上线\n来源：媒体/, "numbering runs across sections");
+  assert.match(article.text, new RegExp(`【今日速览】\n01 头条 ${T}\n02 产品 B 上线`), "the at-a-glance list opens with the lead");
+  assert.match(article.text, new RegExp(`01 头条 ${T}\n导语 <b>不</b>是 HTML。\n模型 · 来源：官方博客`), "the lead takes the first entry's place with its paragraph");
+  assert.match(article.text, /02 产品 B 上线\n产品 · 来源：媒体/, "numbering runs across sections, each entry labelled with its own");
+  assert.equal(article.html.split("摘要一").length - 1, 0, "the lead paragraph stands in for the lead entry's summary");
 
   const report = await localizePublication((await loadReport("daily", TODAY))!, "zh");
   const long = wechatArticle({ ...report, lead: { title: "长".repeat(80), leadParagraph: "段".repeat(200) } });
   assert.equal(Array.from(long.title).length, 64);
   assert.equal(Array.from(long.digest).length, 120);
   assert.ok(long.title.endsWith("…"));
-  const leadIsFirst = wechatArticle({ ...report, lead: { title: "模型 A 发布", leadParagraph: "摘要一" } });
-  assert.equal(leadIsFirst.html.split("摘要一").length - 1, 1, "the lead's paragraph is not repeated under its own entry");
-  assert.match(leadIsFirst.text, /1\. 模型 A 发布\n来源：官方博客/);
 
   assert.deepEqual(await wechatExport("2000-01-01"), { date: "2000-01-01", status: "no_report" });
   await assert.rejects(wechatExport("10/11"), (error: { statusCode?: number }) => error.statusCode === 400);
+});
+
+test("a short daily is filled to ten from the window's best scored reports, one per event, none of a carried event", async () => {
+  const source = `newsletter-wechat-${T}`;
+  const stories: number[] = [];
+  const [saved] = await sql<{ content: unknown; window_end: Date }[]>`SELECT content, window_end FROM reports WHERE kind = 'daily' AND key = ${TODAY}`;
+  try {
+    await sql`INSERT INTO sources(id,name,kind,tier,next_fetch_at) VALUES(${source},'补充信源','rss','T1','2100-01-01')`;
+    const story = async () => {
+      const [row] = await sql<{ id: number }[]>`INSERT INTO stories(public_id,title,summary,editorial_language) VALUES(${crypto.randomUUID()},'事件','事件摘要','zh') RETURNING id`;
+      stories.push(row!.id);
+      return row!.id;
+    };
+    const report = async (key: string, score: number, storyId?: number) => {
+      const material = await upsertMaterial({ sourceId: source, url: `https://example.org/wechat-${T}-${key}`, title: key, language: 'zh', bodyText: '正文。', bodyStatus: 'ok', via: 'fetch', publishedAt: new Date(Date.now() - 3_600_000) });
+      await sql`INSERT INTO analyses(article_id,input_revision,origin,editorial_language,relevance,category,title,summary,score,selected)
+        VALUES(${material.articleId},1,'rule','zh','pass','ai-models',${`补充 ${key} ${T}`},${`补充摘要 ${key}`},${score},false)`;
+      if (storyId) {
+        const [fact] = await sql<{ id: number }[]>`INSERT INTO facts(public_id,story_id,title) VALUES(${`wechat-${T}-${key}`},${storyId},'事实') RETURNING id`;
+        await sql`INSERT INTO fact_articles(fact_id,article_id,role) VALUES(${fact!.id},${material.articleId},'report')`;
+      }
+      await publishArticle(material.articleId, { releasedAt: new Date(Date.now() - 60_000) });
+      return material.articleId;
+    };
+    const carriedStory = await story(), pairedStory = await story();
+    const carried = await report("carried", 99, carriedStory);
+    await report("same-event", 99, carriedStory);
+    await report("top", 99.5);
+    await report("pair-best", 99.4, pairedStory);
+    await report("pair-other", 99.3, pairedStory);
+    await report("low", 40);
+    const content = { ...(saved!.content as Record<string, any>) };
+    content.sections = [...content.sections, { label: "模型", items: [{ itemId: carried, title: "已报道的事件", summary: "日报里的条目", sourceName: "补充信源", sourceUrl: "https://example.org/carried" }] }];
+    await sql`UPDATE reports SET content=${sql.json(content)},window_end=now(),revision=revision+1 WHERE kind='daily' AND key=${TODAY}`;
+
+    const exported = await wechatExport(TODAY);
+    assert.equal(exported.status, "ready");
+    const { article } = exported as Extract<typeof exported, { status: "ready" }>;
+    assert.equal(article.entries.daily, 3);
+    assert.ok(article.entries.daily + article.entries.added <= 10, "no more than ten when enough qualify");
+    const added = article.text.split("【今日速览】\n")[1]!.split("\n\n")[0]!.split("\n").slice(3);
+    const ours = added.filter((line) => line.endsWith(` ${T}`)).map((line) => line.slice(3));
+    assert.deepEqual(ours, [`补充 top ${T}`, `补充 pair-best ${T}`], "best scored first, one per event; the carried event, its other reports and those under the floor stay out");
+    assert.equal(added.length, article.entries.added);
+    assert.match(article.text, new RegExp(`补充 top ${T}\n补充摘要 top\n模型 · 来源：补充信源`), "an added report is labelled with its category");
+  } finally {
+    await sql`UPDATE reports SET content=${sql.json(saved!.content as any)},window_end=${saved!.window_end},revision=revision+1 WHERE kind='daily' AND key=${TODAY}`;
+    await sql`DELETE FROM articles WHERE source_id=${source}`;
+    for (const id of stories) { await sql`DELETE FROM facts WHERE story_id=${id}`; await sql`DELETE FROM stories WHERE id=${id}`; }
+    await sql`DELETE FROM sources WHERE id=${source}`;
+  }
 });
 
 test("a broadcast in doubt is left unknown and not sent again", async () => {

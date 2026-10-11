@@ -12,12 +12,13 @@ interface WechatArticle {
   readMoreUrl: string;
   html: string;
   text: string;
+  entries: { daily: number; added: number };
 }
 
 type WechatExport =
   | { date: string; status: "no_report" | "empty" }
   | { date: string; status: "not_ready"; reason: string }
-  | { date: string; status: "ready"; article: WechatArticle };
+  | { date: string; status: "ready"; minimum: number; article: WechatArticle };
 
 /** The editor's limits (packages/backend/src/newsletter/wechat.ts). */
 const TITLE_MAX = 64;
@@ -28,6 +29,12 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export const meta: Route.MetaFunction = () => [{ title: `公众号 · ${SITE.name} 后台` }];
+
+function entriesNote({ entries }: WechatArticle, minimum: number): string {
+  const total = entries.daily + entries.added;
+  const base = entries.added ? `共 ${total} 条：日报 ${entries.daily} 条，另按评分补充 ${entries.added} 条` : `共 ${total} 条，都来自日报`;
+  return total < minimum ? `${base}。这段时间够格的消息不足 ${minimum} 条。` : `${base}。`;
+}
 
 const UNAVAILABLE: Record<string, string> = {
   no_report: "这一天还没有日报。",
@@ -62,7 +69,7 @@ export default function WechatAdmin({ loaderData: d }: Route.ComponentProps) {
   return (
     <AdminPage
       title="公众号"
-      subtitle="把一天的中文日报整理成公众号文章：复制正文粘贴到公众号编辑器，再把标题、摘要和「阅读原文」链接填进对应位置。正文不带链接，公众号只认文末的「阅读原文」。"
+      subtitle="把一天的中文日报整理成「AI 早报」：复制正文粘贴到公众号编辑器，再把标题、摘要和「阅读原文」链接填进对应位置。日报不足 10 条时，按评分补充同一时段的其他公开消息，不重复近一周日报报道过的事件。"
       actions={
         <Form method="get" className="flex items-center gap-2">
           <Input type="date" name="date" defaultValue={d.date} className="w-40" />
@@ -75,7 +82,7 @@ export default function WechatAdmin({ loaderData: d }: Route.ComponentProps) {
       ) : (
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_400px]">
           <div className="space-y-5">
-            <Card title="填写项">
+            <Card title="填写项" right={<span>{entriesNote(d.article, d.minimum)}</span>}>
               <CopyRow label="标题" value={d.article.title} max={TITLE_MAX} />
               <CopyRow label="摘要" value={d.article.digest} max={DIGEST_MAX} />
               <CopyRow label="阅读原文" value={d.article.readMoreUrl} />
