@@ -1,4 +1,4 @@
-import { localeFromMatches } from "../lib/i18n";
+import { localeFromMatches, Text } from "../lib/i18n";
 import { SITE } from "@aihot/site";
 import { useSearchParams } from "react-router";
 import { Onboarding } from "../features/onboarding/Onboarding";
@@ -19,6 +19,12 @@ export default function Subscribe() {
   return (
     <div className="pt-3 lg:pt-0">
       <Onboarding mode="page" token={token} />
+      {SITE.contactEmail && !token && (
+        <p className="text-center text-[13px] text-ink-4">
+          <Text value="赞助日报、商务合作：" />
+          <a href={`mailto:${SITE.contactEmail}`} className="text-accent hover:underline">{SITE.contactEmail}</a>
+        </p>
+      )}
     </div>
   );
 }

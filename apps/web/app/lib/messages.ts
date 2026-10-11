@@ -31,6 +31,8 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "订阅": "Subscribe",
   "反馈": "Feedback",
   "反馈页": "feedback page",
+  "商务合作、赞助与授权：": "Partnerships, sponsorship and licensing: ",
+  "赞助日报、商务合作：": "Sponsor the briefing or partner with us: ",
   "更新日志": "Changelog",
   "Agent 接入": "For agents",
   "Agent 接入页": "Agent access",
@@ -1144,5 +1146,7 @@ export const CHINESE: Record<string, string> = {
   "Coverage is stored and grouped by event. Sources that contribute only to trend signals also help shape the hot-topic ranking.": "收录报道并按事件归组；只计入热度的信源也参与热点榜计算。",
   "Models check relevance and substance, then produce English headlines, summaries, and editorial recommendations. Marketing filler and duplicate reposts are filtered out.": "模型检查相关性与实质信息，直接生成英文标题、摘要和推荐理由；过滤营销稿与重复转发，中文辅助版异步生成。",
   "Read a daily briefing, a weekly review on Mondays, and a monthly review on the first of each month. Selected stories can also be delivered to configured Feishu groups.": "每天读日报，周一读周报，每月 1 日读月报；精选也可推送到已配置的飞书群。",
-  "e/acc provides aggregated summaries and a reading index. Copyright remains with the original sources. If you represent a source and would like a correction, removal, or display change, please use our": "e/acc 提供聚合摘要与阅读索引，原文版权归各来源所有。如果你是来源方，希望更正、下架或调整展示方式，请使用我们的",
+  "e/acc provides aggregated summaries and a reading index. Copyright remains with the original sources. If you represent a source and would like a correction, removal, or display change, please use our ": "e/acc 提供聚合摘要与阅读索引，原文版权归各来源所有。如果你是来源方，希望更正、下架或调整展示方式，请使用我们的",
+  /** The full stop after the 反馈页 link in ABOUT.copyright. */
+  ".": "。",
 };

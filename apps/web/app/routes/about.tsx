@@ -272,6 +272,13 @@ export default function AboutPage() {
           <Text value="反馈页" />
         </Link>
         {tx(ABOUT.copyright[1])}
+        {SITE.contactEmail && (
+          <>
+            <br />
+            <Text value="商务合作、赞助与授权：" />
+            <a href={`mailto:${SITE.contactEmail}`} className="text-accent hover:underline">{SITE.contactEmail}</a>
+          </>
+        )}
       </p>
 
       <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5 text-[12.5px] text-ink-4">

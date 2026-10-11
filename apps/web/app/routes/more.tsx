@@ -134,6 +134,7 @@ export default function MorePage() {
         <Link to="/terms" className="hover:text-ink-2"><Text value={POLICY.terms.name} /></Link>
         <Link to="/privacy" className="hover:text-ink-2"><Text value="隐私说明" /></Link>
         <a href={`/feed/v2${locale === "zh" ? "/zh" : ""}/picks.xml`} className="hover:text-ink-2">RSS</a>
+        {SITE.contactEmail && <a href={`mailto:${SITE.contactEmail}`} className="hover:text-ink-2">{SITE.contactEmail}</a>}
         {SITE.github && <a href={SITE.github} target="_blank" rel="noopener noreferrer" className="hover:text-ink-2">GitHub</a>}
         {SITE.icp && <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-ink-2">{SITE.icp}</a>}
       </div>

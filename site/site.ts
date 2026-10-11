@@ -62,8 +62,8 @@ export const SITE = {
    * 改了接口里已有的字段或含义时升主版本，并在部署说明里写清。
    */
   interfaceVersion: "4.0.0",
-  /** 对外联系邮箱（选填）：llms.txt 和给 Agent 的使用说明里会写。 */
-  contactEmail: null as string | null,
+  /** 对外联系邮箱（选填）：页脚、关于页、订阅页、llms.txt 和给 Agent 的使用说明里会写。 */
+  contactEmail: "hi@e-acc.ai" as string | null,
   /** 关于页底部的一行小字（选填）。 */
   footerNote: "Built on open-source software",
   /** 中国大陆网站的 ICP 备案号（选填），填了就显示在侧栏底部和“我的”页底部，并链接到工信部备案系统。 */
@@ -169,7 +169,7 @@ export const ABOUT = {
     feishu?: ContactCard;
   },
   /** 页面底部的版权与下架说明，中间接“反馈页”的链接。 */
-  copyright: `${SITE.name} provides aggregated summaries and a reading index. Copyright remains with the original sources. If you represent a source and would like a correction, removal, or display change, please use our`,
+  copyright: [`${SITE.name} provides aggregated summaries and a reading index. Copyright remains with the original sources. If you represent a source and would like a correction, removal, or display change, please use our `, "."] as [string, string],
   /** 页面底部“使用规则”链接的锚点 id（选填）：外部文档写死过这个锚点就填上，以后不要改。 */
   termsAnchor: null as string | null,
 } as const;
