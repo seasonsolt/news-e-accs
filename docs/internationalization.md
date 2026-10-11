@@ -72,9 +72,11 @@ web RSS discovery、页脚、More 与 Agent RSS 地址使用真实 versioned end
 
 canonical 对应当前 edition URL；存在真实有效双语版本时提供 reciprocal en/zh-CN 与英文 x-default。item/story/report loader 最多用一次带 1 秒超时的匿名对侧 edition 读取验证 alternate；失败只抑制 alternate。正文回退的 lang/OG/NewsArticle 描述实际内容，不随 UI 偏好冒充英文。英文概念与中文法律正文不虚构对侧版本。
 
-公开 HTML 和 Router `.data` 保持 `private,no-store`、`X-Accel-Expires:0`；没有恢复共享 HTML 缓存。API、RSS、图片、资源保留各自策略。先验证匿名输出、onboarding、错误/redirect/action、管理员与 cookie 隔离，再另做安全的缓存优化。
+公开 HTML 和 Router `.data` 由 `apps/web/server.ts` 的 `pageResponse` 统一写缓存头：成功的匿名 GET/HEAD 使用路由 `cachedPage`/`edgeTtl` 声明的期限，返回 `public, max-age=min(ttl,300), s-maxage=ttl, must-revalidate` 和 `X-Accel-Expires`，不按 Cookie 或 `Accept-Language` 设置 Vary。上游绝对截止时间不能重新起算。后台、非 GET/HEAD、非 200、带 `Set-Cookie`、未声明缓存策略及明确 `private`/`no-store` 的页面仍为 `private, no-store`、`X-Accel-Expires: 0`。
 
-入口仓库 `seasonsolt/e-acc.ai` 本次不可用，**未编辑/发布其 `edge/src/route.mjs`**，是上线前置依赖。分类匹配须识别 `/zh` 与全部公开中文路由，以及对应 `.data`，转发原 path/query/method/body 不变。用于分类时可剥去末尾 `.data`、把 `/_` 映射为 `/`、`/zh/_` 映射为 `/zh`；覆盖 `/_.data`、`/zh.data`、`/zh/_.data`、`/zh/all.data`、中文 item/original/story/report/topic 分页与所有菜单 data 地址。无前缀英文菜单与三个英文概念 `.data` 也须通往新闻源站。API/assets/media/OG/feed/admin 与入口工具继续原策略；不要创造中文 API/资源前缀或让另一 origin 去剥 `_routes`。中文概念镜像按设计 404。代理必须尊重 HTML/data no-store。
+共享缓存的前提是服务端渲染只按 URL 选择语言和筛选，不读取 cookie、`Accept-Language` 或用户代理来改变输出；用户代理只决定 bot 的 `onAllReady` 与普通请求的 `onShellReady` 发送时机。语言提示、外观、onboarding、收藏和反馈草稿在浏览器应用；`/starred` 的空壳、`/feedback` 的空白表单与 `/subscribe` 的初始表单按同一 URL 渲染相同内容，保留 300 秒期限。搜索繁忙页明确 `no-store`，`/products` 未声明策略，仍不缓存。`apps/web/tests/cache.test.ts` 冻结服务端时间，检查代表性 HTML/`.data` 在无偏好、cookie、中文 Accept-Language 和 Googlebot 请求下字节一致。API、RSS、图片、资源保留各自策略。
+
+入口仓库 `seasonsolt/e-acc.ai` 本次不可用，**未编辑/发布其 `edge/src/route.mjs`**，是上线前置依赖。分类匹配须识别 `/zh` 与全部公开中文路由，以及对应 `.data`，转发原 path/query/method/body 不变。用于分类时可剥去末尾 `.data`、把 `/_` 映射为 `/`、`/zh/_` 映射为 `/zh`；覆盖 `/_.data`、`/zh.data`、`/zh/_.data`、`/zh/all.data`、中文 item/original/story/report/topic 分页与所有菜单 data 地址。无前缀英文菜单与三个英文概念 `.data` 也须通往新闻源站。API/assets/media/OG/feed/admin 与入口工具继续原策略；不要创造中文 API/资源前缀或让另一 origin 去剥 `_routes`。中文概念镜像按设计 404。代理必须尊重 HTML/data 响应的缓存期限及 no-store。
 
 ## 离线导出与 worker
 

@@ -1,7 +1,7 @@
 // Failure modes, fixed before changing public loaders or prefetch:
 // - returning to a page that was already open still needs the network;
 // - query variants mix content/SEO, or restores lose their anchor;
-// - intent downloads no-store data, scroll-through touches preload resources, or failed resources break the current page;
+// - intent downloads page data before a visit, scroll-through touches preload resources, or failed resources break the current page;
 // - visits renew deadlines, expired/errors stay cached, or refresh stops working;
 // - Agent tabs choose an invalid panel or leave canonical/history behind;
 // - phone search fails to open /all, focus its field, submit a query, or retry a failed read;
@@ -131,7 +131,7 @@ test('hover preloads modules without data, moving touches do not, and an unavail
     await link.hover();
     await expect(modules.first()).toBeAttached();
     await page.waitForTimeout(250);
-    assert.deepEqual(requests,[],'hover must not request no-store Router data');
+    assert.deepEqual(requests,[],'hover must not request Router data');
     assert.equal(hits.slice(start).filter(x=>x.startsWith('/api/site/items/')).length,0);
     await link.click();await expect(page.getByText('固定正文',{exact:true})).toBeVisible();
     assert.equal(hits.slice(start).filter(x=>x.startsWith('/api/site/items/')).length,1,'only the actual click reads the article');

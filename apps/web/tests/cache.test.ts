@@ -4,12 +4,15 @@ import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
 import { readdir, rm, stat, writeFile } from "node:fs/promises";
-import { createServer } from "node:http";
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
-import { after, before, test } from "node:test";
+import { after, before, beforeEach, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { CATEGORY_KEYS } from "@aihot/contracts/taxonomy";
 import { parseHTML } from "linkedom";
+import type { LbBoardResponse } from "@aihot/leaderboard/contracts";
+import { chronicle } from "./chrono-fixture.ts";
+import { startWebServer } from "./web-server.ts";
 
 const seoSource = { id: "src", name: "示例媒体", kind: "rss", firstParty: false, iconUrl: null };
 const seoItem = {
@@ -35,6 +38,22 @@ function alternate(document: ReturnType<typeof parseHTML>["document"], language:
   return [...document.querySelectorAll('link[rel="alternate"]')].find((link) => (link.getAttribute("hrefLang") ?? link.getAttribute("hreflang")) === language);
 }
 
+/** The shared deadline and capped browser lifetime of a successful page or Router response. */
+function sharedCache(response: Response, maxSeconds: number) {
+  const cc = response.headers.get("Cache-Control") ?? "";
+  const match = /^public, max-age=(\d+), s-maxage=(\d+), must-revalidate$/.exec(cc);
+  assert.ok(match, cc);
+  const seconds = Number(match[2]);
+  assert.ok(seconds > 0 && seconds <= maxSeconds, cc);
+  assert.equal(Number(match[1]), Math.min(seconds, 300));
+  const expires = response.headers.get("X-Accel-Expires") ?? "";
+  assert.match(expires, /^@\d+$/);
+  const date = Date.parse(response.headers.get("Date")!) / 1000;
+  assert.ok(Number(expires.slice(1)) >= date + seconds && Number(expires.slice(1)) <= date + maxSeconds, expires);
+  assert.doesNotMatch(response.headers.get("Vary") ?? "", /(?:^|,)\s*(?:Cookie|Accept-Language)\s*(?:,|$)/i);
+  assert.equal(response.headers.get("Set-Cookie"), null);
+}
+
 /** Absolute links the web process renders for crawlers (SITE_URL, as the server reads it). */
 const site = (process.env.SITE_URL || "https://e-acc.ai").replace(/\/+$/, "");
 const mediaPath = "/media/art/epochs/sapiens-language-800.webp";
@@ -47,7 +66,7 @@ let refreshAt: string;
 let metaDelayMs = 0;
 const apiCookies: Array<string | undefined> = [];
 const apiRequests: string[] = [];
-const api = createServer((req, res) => {
+function apiResponse(req: IncomingMessage, res: ServerResponse) {
   const url = new URL(req.url!, "http://api.local");
   apiCookies.push(req.headers.cookie);
   apiRequests.push(url.pathname + url.search);
@@ -62,7 +81,19 @@ const api = createServer((req, res) => {
     res.setHeader("Cache-Control", "public, max-age=30, s-maxage=30");
     return res.end(JSON.stringify({ filters, cards: [], nextCursor: null, refreshAt, dayCounts: [], hot: null, generatedAt: "2026-09-28T00:00:00Z" }));
   }
-  if (url.pathname === "/api/site/hot") return res.end(JSON.stringify({ entries: [] }));
+  if (url.pathname === "/api/site/chronicle") return res.end(JSON.stringify(chronicle));
+  if (url.pathname === "/api/site/chronicle/bounds") return res.end(JSON.stringify({ earliest: "2026-09-01", feed: "2026-09-01", hot: "2026-09-01", daily: "2026-09-01", today: "2026-10-09", kardashev: null }));
+  if (url.pathname === "/api/site/leaderboard/boards/overall") {
+    const board: LbBoardResponse = {
+      run: { id: "cache-run", methodologyVersion: "v16", generatedAt: "2026-10-09T00:00:00Z", fx: null },
+      board: { key: "overall", name: "Overall", title: "Model leaderboard", description: "Public evaluations", howToRead: "Shared evidence", sourceCount: 3, operatorCount: 3, modelCount: 3 },
+      tabs: [], entries: [1, 2, 3].map((rank) => ({ rank, score: 90 - rank, sourceCount: 3, coverage: 1, confidence: "HIGH", stability: null, price: null,
+        model: { slug: `model-${rank}`, name: `Model ${rank}`, provider: "Fixture", releasedAt: "2026-09-01", brand: { src: null, monogram: "M", raster: false } },
+      })),
+    };
+    return res.end(JSON.stringify(board));
+  }
+  if (url.pathname === "/api/site/hot") return res.end(JSON.stringify({ computedAt: "2026-10-09T00:00:00Z", windowHours: 48, entries: [] }));
   if (url.pathname === "/api/site/changelog") {
     const english=url.searchParams.get("lang")==="en";
     return res.end(JSON.stringify({latestVersion:"2026-10-01T08:00",releases:[{date:"2026-10-01",time:"08:00",kind:"公告",title:english?"Website launch":"网站上线",body:[english?"A **daily briefing** every morning.":"每天早上出一份**日报**。"]}]}));
@@ -90,6 +121,7 @@ const api = createServer((req, res) => {
   if (url.pathname === "/api/site/pool") return res.end(JSON.stringify({ filters: { channel: "all", category: null, tag: null, q: url.searchParams.get("q"), tab: "latest" }, items: [], page: 1, pageCount: 1, total: 0, freshness: "2026-09-28T00:00:00Z", todayCount: 0 }));
   if (url.pathname === "/api/site/topics") return res.end(JSON.stringify({ groups: [{ key: "field", name: "Fields", blurb: "By field" }], topics: [{ slug: "robots", name: "Robots", definition: "Robotics news", group: "field", brand: null, total: 40, recent: 0, indexable: true, latest: null }] }));
   if (url.pathname === "/api/site/topics/robots") return res.end(JSON.stringify({ topic: { slug: "robots", name: "Robots", definition: "Robotics news", group: "field", groupName: "Fields", brand: null, total: 40, recent: 0, poolTotal: 40, latest: null, indexable: true }, modules: {}, items: [], page: Number(url.searchParams.get("page") ?? 1), pageCount: 2, pageSize: 20 }));
+  if (url.pathname === "/api/site/reports/daily") return res.end(JSON.stringify({ items: [{ key: "2026-09-01", title: "English briefing" }] }));
   const report = /^\/api\/site\/reports\/(daily|weekly|monthly)\/(latest-page|navigation\/[^/]+|[^/]+)$/.exec(url.pathname);
   if (report) {
     const kind = report[1]!;
@@ -114,11 +146,15 @@ const api = createServer((req, res) => {
   }
   res.statusCode = url.pathname.startsWith("/api/admin/") ? 401 : 404;
   res.end(JSON.stringify({ code: "not_found" }));
+}
+const api = createServer(apiResponse);
+
+beforeEach(() => {
+  deadline = Math.floor(Date.now() / 1000) + 20;
+  refreshAt = new Date((deadline + 5) * 1000).toISOString();
 });
 
 before(async () => {
-  deadline = Math.floor(Date.now() / 1000) + 20;
-  refreshAt = new Date((deadline + 5) * 1000).toISOString();
   api.listen(0, "127.0.0.1");
   await once(api, "listening");
   web = spawn(process.execPath, [fileURLToPath(new URL("../server.ts", import.meta.url))], {
@@ -150,13 +186,104 @@ after(async () => {
   await new Promise<void>((resolve) => api.close(() => resolve()));
 });
 
+// Server rendering must stay anonymous so HTML and Router data can share each route's cache entry.
+test("shared public HTML and Router data are byte-identical across cookies, languages and bot user agents", async () => {
+  const now = Date.parse("2026-10-09T12:00:00Z");
+  deadline = now / 1000 + 20;
+  refreshAt = new Date((deadline + 5) * 1000).toISOString();
+  const clock = `import { mock } from "node:test"; mock.timers.enable({ apis: ["Date"], now: ${now} });`;
+  const fixture = await startWebServer(createServer(apiResponse), {
+    NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --import=data:text/javascript,${encodeURIComponent(clock)}`,
+  });
+  const preferences: Record<string, string>[] = [
+    {},
+    { Cookie: "eacc_language=zh; session=x" },
+    { "Accept-Language": "zh-CN,zh;q=0.9" },
+    { "User-Agent": "Googlebot" },
+  ];
+  try {
+    for (const [path, seconds] of [
+      ["/", 20], ["/hot", 120], ["/all", 60], ["/all?q=robot", 60], ["/daily", 600], ["/daily/2026-09-01", 3600],
+      ["/zh/hot", 120], ["/chronicle", 3600], ["/leaderboard", 600], ["/items/seo-sample", 600], ["/story/seo-story", 300],
+      ["/topics/robots", 60], ["/starred", 300], ["/zh/starred", 300], ["/feedback", 300], ["/zh/feedback", 300],
+      ["/feedback?from=%2Fitems%2Fseo-sample", 300], ["/subscribe", 300], ["/zh/subscribe", 300], ["/subscribe?token=cache-contract", 300],
+    ] as const) {
+      for (const data of [false, true]) {
+        const url = new URL(path, fixture.origin);
+        if (data) url.pathname = url.pathname === "/" ? "/_.data" : `${url.pathname}.data`;
+        const bodies = await Promise.all(preferences.map(async (headers) => {
+          const response = await fetch(url, { headers });
+          assert.equal(response.status, 200, url.pathname);
+          sharedCache(response, seconds);
+          assert.equal(response.headers.get("Cache-Control"), `public, max-age=${Math.min(seconds, 300)}, s-maxage=${seconds}, must-revalidate`);
+          assert.equal(response.headers.get("X-Accel-Expires"), `@${now / 1000 + seconds}`);
+          return Buffer.from(await response.arrayBuffer());
+        }));
+        for (let index = 1; index < bodies.length; index++) assert.deepEqual(bodies[index], bodies[0], `${url.pathname}${url.search}, ${JSON.stringify(preferences[index])}`);
+      }
+    }
+  } finally {
+    await fixture.stop();
+  }
+});
+
+test("cookies, private policies and missing policies keep successful pages uncached", async () => {
+  const preload = `
+    const build = await import(${JSON.stringify(new URL("../build/server/index.js", import.meta.url).href)});
+    const route = build.routes["routes/hot"];
+    const loader = route.module.loader;
+    route.module = { ...route.module, loader: async (args) => {
+      const result = await loader(args);
+      const policy = new URL(args.request.url).searchParams.get("policy");
+      const headers = new Headers(result.init.headers);
+      headers.set("Expires", "Fri, 09 Oct 2026 12:00:00 GMT");
+      if (policy === "cookie") headers.set("Set-Cookie", "cache_test=x; Path=/; HttpOnly");
+      if (policy === "private") headers.set("Cache-Control", "private, s-maxage=120");
+      if (policy === "no-store") headers.set("Cache-Control", "public, no-store, s-maxage=120");
+      if (policy === "missing") headers.delete("Cache-Control");
+      result.init.headers = headers;
+      return result;
+    } };
+  `;
+  const fixture = await startWebServer(createServer(apiResponse), {
+    NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --import=data:text/javascript,${encodeURIComponent(preload)}`,
+  });
+  try {
+    for (const policy of ["cookie", "private", "no-store", "missing"]) {
+      for (const suffix of ["", ".data"]) {
+        for (const method of ["GET", "HEAD"]) {
+          const response = await fetch(`${fixture.origin}/hot${suffix}?policy=${policy}`, { method });
+          assert.equal(response.status, 200, `${method} ${suffix} ${policy}`);
+          assert.equal(response.headers.get("Cache-Control"), "private, no-store");
+          assert.equal(response.headers.get("X-Accel-Expires"), "0");
+          assert.equal(response.headers.get("Expires"), null);
+          assert.equal(response.headers.get("Set-Cookie"), policy === "cookie" ? "cache_test=x; Path=/; HttpOnly" : null);
+          await response.text();
+        }
+      }
+    }
+    for (const path of ["/products", "/search-busy?q=robot", "/all/search-busy?q=robot"]) {
+      for (const data of [false, true]) {
+        const url = new URL(path, fixture.origin);
+        if (data) url.pathname += ".data";
+        const response = await fetch(url);
+        assert.equal(response.status, 200, url.pathname);
+        assert.equal(response.headers.get("Cache-Control"), "private, no-store");
+        assert.equal(response.headers.get("X-Accel-Expires"), "0");
+        await response.text();
+      }
+    }
+  } finally {
+    await fixture.stop();
+  }
+});
+
 test("public route subsets produce the same complete navigation data; filters still differ", async () => {
   const answers = await Promise.all(["", "?_routes=root", "?_routes=routes%2Fhome", "?_routes=unknown"].map(async (query) => {
     const res = await fetch(`${origin}/_.data${query}`);
     assert.equal(res.status, 200);
-    assert.equal(res.headers.get("Cache-Control"), "private, no-store");
-    assert.equal(res.headers.get("X-Accel-Expires"), "0");
-    assert.doesNotMatch(res.headers.get("Cache-Control")!, /stale/);
+    sharedCache(res, 20);
+    assert.equal(res.headers.get("X-Accel-Expires"), `@${deadline}`);
     const body = await res.text();
     assert.ok(body.includes("root") && body.includes("routes/home"));
     return body;
@@ -191,18 +318,12 @@ test("URL editions isolate HTML and Router data while preferences cannot change 
   assert.notEqual(chineseHtml, englishHtml);
   const manual = await fetch(`${origin}/`, { headers: { "Accept-Language": "zh-CN", Cookie: "eacc_language=zh; admin_session=private" } });
   assert.match(await manual.text(), /<html lang="en"/);
-  for (const res of [english, chinese, manual]) {
-    assert.equal(res.headers.get("Cache-Control"), "private, no-store");
-    assert.equal(res.headers.get("X-Accel-Expires"), "0");
-    assert.match(res.headers.get("Vary")!, /Accept-Language/);
-    assert.match(res.headers.get("Vary")!, /Cookie/);
-    assert.equal(res.headers.get("Set-Cookie"), null);
-  }
+  for (const res of [english, chinese, manual]) sharedCache(res, 20);
   const started = Date.now();
   const plain = await fetch(`${origin}/about.data`);
   const signedIn = await fetch(`${origin}/about.data?_routes=root`, { headers: { cookie: "admin_session=private; aihot_vid=reader" } });
-  assert.equal(plain.headers.get("Cache-Control"), "private, no-store");
-  assert.equal(signedIn.headers.get("Set-Cookie"), null);
+  sharedCache(plain, 300);
+  sharedCache(signedIn, 300);
   const decoded = await Promise.all([plain, signedIn].map(async (response) => {
     const { value } = await UNSAFE_decodeViaTurboStream(response.body!, globalThis);
     const result = value as { root: { data: { locale: string } }; "routes/about": { data: { expiresAt: number } } };
@@ -222,7 +343,7 @@ test("URL editions isolate HTML and Router data while preferences cannot change 
 
 test("changelog renders English prose, kind filters and calendar labels; Chinese remains available",async()=>{
   const en=await fetch(`${origin}/changelog`,{headers:{"Accept-Language":"en"}});
-  assert.equal(en.status,200);assert.equal(en.headers.get("Cache-Control"),"private, no-store");
+  assert.equal(en.status,200);sharedCache(en,300);
   const english=parseHTML(await en.text()).document.querySelector("main")!;
   assert.match(english.textContent!,/Website launch/);assert.match(english.textContent!,/Announcement/);
   assert.match(english.textContent!,/Oct 1, 2026/);assert.match(english.textContent!,/Thursday/);assert.match(english.textContent!,/October 2026/);
@@ -265,8 +386,7 @@ test("the e/acc concept pages keep their English titles, text language and struc
     // A Chinese interface still gets the English page: the body, title and og:locale describe the text.
     const res = await fetch(`${origin}${page.path}`, { headers: { "Accept-Language": "zh-CN" } });
     assert.equal(res.status, 200, page.path);
-    assert.equal(res.headers.get("Cache-Control"), "private, no-store");
-    assert.equal(res.headers.get("X-Accel-Expires"), "0");
+    sharedCache(res, 300);
     const html = await res.text();
     assert.ok(html.includes(`<title>${page.title}</title>`), page.path);
     assert.match(html, new RegExp(`<link rel="canonical" href="[^"]*${page.path}"/>`));
@@ -288,8 +408,7 @@ test("the e/acc concept pages keep their English titles, text language and struc
     for (const query of ["", "?_routes=concept-" + path.slice(1)]) {
       const res = await fetch(`${origin}${path}.data${query}`);
       assert.equal(res.status, 200, `${path}.data${query}`);
-      assert.equal(res.headers.get("Cache-Control"), "private, no-store");
-      assert.equal(res.headers.get("X-Accel-Expires"), "0");
+      sharedCache(res, 300);
       const { value } = await UNSAFE_decodeViaTurboStream(res.body!, globalThis);
       const result = value as Record<string, { data: { slug: string; lang: string; expiresAt: number } }>;
       const concept = result[`concept-${path.slice(1)}`]!.data;
@@ -338,8 +457,7 @@ test("the Chinese concept pages are Chinese editions that name the English ones 
     for (const headers of [{} as Record<string, string>, { "Accept-Language": "en-US,en;q=0.9" }, { Cookie: "eacc_language=en" }]) {
       const res = await fetch(`${origin}/zh/${page.slug}`, { headers });
       assert.equal(res.status, 200, page.slug);
-      assert.equal(res.headers.get("Cache-Control"), "private, no-store");
-      assert.equal(res.headers.get("X-Accel-Expires"), "0");
+      sharedCache(res, 300);
       const html = await res.text();
       const document = parseHTML(html).document;
       assert.equal(document.documentElement.lang, "zh-CN");
@@ -370,8 +488,7 @@ test("the Chinese concept pages are Chinese editions that name the English ones 
     for (const query of ["", `?_routes=zh-concept-${page.slug}`]) {
       const res = await fetch(`${origin}/zh/${page.slug}.data${query}`);
       assert.equal(res.status, 200, `${page.slug}.data${query}`);
-      assert.equal(res.headers.get("Cache-Control"), "private, no-store");
-      assert.equal(res.headers.get("X-Accel-Expires"), "0");
+      sharedCache(res, 300);
       const { value } = await UNSAFE_decodeViaTurboStream(res.body!, globalThis);
       const result = value as Record<string, { data: { slug: string; lang: string; expiresAt: number } }>;
       const concept = result[`zh-concept-${page.slug}`]!.data;
@@ -422,13 +539,22 @@ test("admin data and actions never become public cache entries", async () => {
   await action.text();
 });
 
-test("slow sibling loaders and long-lived pages cannot enable language-dependent shared caches", async () => {
+test("slow sibling loaders preserve upstream deadlines and long-lived pages cap browser reuse", async () => {
   metaDelayMs = 100;
   try {
     for (const pathname of ["/", "/_.data?_routes=routes%2Fhome", "/items/long-lived.data"]) {
       const res = await fetch(origin + pathname);
       assert.equal(res.status, 200);
-      assert.equal(res.headers.get("Cache-Control"), "private, no-store");
+      sharedCache(res, pathname.startsWith("/items/") ? 600 : 20);
+      if (!pathname.startsWith("/items/")) assert.equal(res.headers.get("X-Accel-Expires"), `@${deadline}`);
+      await res.text();
+    }
+    for (const pathname of ["/", "/_.data"]) {
+      deadline = Math.floor(Date.now() / 1000) + 2;
+      metaDelayMs = 2100;
+      const res = await fetch(origin + pathname);
+      assert.equal(res.status, 200);
+      assert.equal(res.headers.get("Cache-Control"), "no-cache");
       assert.equal(res.headers.get("X-Accel-Expires"), "0");
       await res.text();
     }
@@ -437,11 +563,22 @@ test("slow sibling loaders and long-lived pages cannot enable language-dependent
   }
 });
 
-test("language cache isolation preserves noindex and private sign-in responses", async () => {
+test("a deadline spent in the upstream cache cannot be renewed by HTML or Router data", async () => {
+  deadline = Math.floor(Date.now() / 1000) - 1;
+  for (const pathname of ["/", "/_.data"]) {
+    const res = await fetch(origin + pathname);
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get("Cache-Control"), "no-cache");
+    assert.equal(res.headers.get("X-Accel-Expires"), "0");
+    await res.text();
+  }
+});
+
+test("identical feedback forms keep noindex while sign-in stays private", async () => {
   const feedback = await fetch(origin + "/feedback");
   assert.equal(feedback.status, 200);
   assert.match(await feedback.text(), /name="robots" content="noindex/);
-  assert.equal(feedback.headers.get("Cache-Control"), "private, no-store");
+  sharedCache(feedback, 300);
   const login = await fetch(origin + "/admin/login");
   assert.equal(login.status, 200);
   assert.equal(login.headers.get("Cache-Control"), "private, no-store");
@@ -570,7 +707,7 @@ test("static byte ranges keep working with matching validators", async () => {
 });
 
 test("public URLs and Router data stay English despite Chinese cookies and browser language", async () => {
-  for (const path of ["/", "/all", "/items/native-en", "/weekly", "/monthly", "/topics/robots", "/about"]) {
+  for (const [path, seconds] of [["/", 20], ["/all", 60], ["/items/native-en", 600], ["/weekly", 600], ["/monthly", 600], ["/topics/robots", 60], ["/about", 300]] as const) {
     const headers = { Cookie: "eacc_language=zh; admin_session=private", "Accept-Language": "zh-CN" };
     const htmlResponse = await fetch(origin + path, { headers });
     assert.equal(htmlResponse.status, 200, path);
@@ -579,7 +716,7 @@ test("public URLs and Router data stay English despite Chinese cookies and brows
     const dataPath = path === "/" ? "/_.data" : `${path}.data`;
     const response = await fetch(origin + dataPath + "?_routes=root", { headers });
     assert.equal(response.status, 200, dataPath);
-    assert.equal(response.headers.get("cache-control"), "private, no-store");
+    sharedCache(response, seconds);
     const decoded = (await UNSAFE_decodeViaTurboStream(response.body!, globalThis)).value as { root: { data: { locale: string } } };
     assert.equal(decoded.root.data.locale, "en", dataPath);
   }

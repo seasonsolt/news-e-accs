@@ -334,7 +334,9 @@ test("built pages keep both language URLs, layout, history and the default share
         assert.ok(html.includes(`href="${prefix}/leaderboard"`), prefix + path);
         assert.equal(html.includes("${SITE.name}"), false);
         assert.equal(html.includes("AIHOT"), false);
-        assert.equal(response.headers.get("cache-control"), "private, no-store");
+        assert.equal(response.headers.get("cache-control"), `public, max-age=300, s-maxage=${path === "/leaderboard/sources" || path.startsWith("/leaderboard/sources/") ? 300 : 600}, must-revalidate`);
+        assert.match(response.headers.get("x-accel-expires")!, /^@\d+$/);
+        assert.doesNotMatch(response.headers.get("vary") ?? "", /(?:Cookie|Accept-Language)/i);
         assert.ok(html.includes(`rel="canonical" href="${web.origin}${prefix}${path}"`), prefix + path);
         assert.ok(html.includes(`hrefLang="en" href="${web.origin}${path}"`), prefix + path);
         assert.ok(html.includes(`hrefLang="zh-CN" href="${web.origin}/zh${path}"`), prefix + path);

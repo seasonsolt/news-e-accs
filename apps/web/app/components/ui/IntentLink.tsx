@@ -5,7 +5,7 @@ import { useLocale } from "../../lib/i18n";
 import { localePath } from "../../lib/locale";
 import { hasFreshPage } from "../../lib/page-reuse";
 
-/** Intent preloads route modules/resources, not no-store page data; scrolling over a card does not. */
+/** Intent preloads route modules/resources; scrolling over a card does not. */
 export function IntentLink({ onFocus, onBlur, onMouseEnter, onMouseLeave, onTouchStart, onTouchMove, onTouchEnd, onTouchCancel, ...props }: Omit<LinkProps, "prefetch">) {
   const [ready, setReady] = useState(false);
   // The prefetched address is the one the localized Link will navigate to.
@@ -13,7 +13,7 @@ export function IntentLink({ onFocus, onBlur, onMouseEnter, onMouseLeave, onTouc
   const href = useHref(typeof props.to === "string" ? localePath(props.to, locale) : props.to);
   const location = useLocation();
   // Router prefetch opts our clientLoader pages out of data reads and keeps module/resource
-  // preloads. Do not add HTTP data prefetch: private, no-store responses cannot be reused.
+  // preloads. Page data is read on navigation, within its own cache deadline.
   const target = new URL(href, 'http://page.local');
   const differentPage = target.pathname + target.search !== location.pathname + location.search;
   // Router prefetch also asks shouldRevalidate. A selected/remembered page needs neither its

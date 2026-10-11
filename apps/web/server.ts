@@ -165,12 +165,9 @@ function pageResponse(req: import("node:http").IncomingMessage, res: import("nod
     if (url.pathname.endsWith(".data") && res.getHeader("Content-Type") === "text/x-script") {
       res.setHeader("Content-Type", "text/plain; charset=utf-8");
     }
-    // URL fixes the edition, but onboarding and other personalized responses have not been
-    // proven safe for shared caching. Keep HTML and Router data no-store for both editions.
-    if (publicRead) {
-      res.setHeader("Vary", [...new Set(String(res.getHeader("Vary") ?? "").split(",").map((value) => value.trim()).filter(Boolean).concat(["Cookie", "Accept-Language"]))].join(", "));
-      res.setHeader("Cache-Control", "private, no-store");
-    }
+    // URL fixes the edition; language preferences and onboarding are applied only in the browser.
+    // Shared HTML and Router data must stay independent of cookies, Accept-Language and the user
+    // agent, except for choosing the bot streaming mode (onAllReady vs onShellReady).
     const cc = String(res.getHeader("Cache-Control") ?? "");
     if (!publicRead || status !== 200 || res.hasHeader("Set-Cookie") || !cc || /(?:private|no-store)/i.test(cc)) {
       res.removeHeader("Expires");
