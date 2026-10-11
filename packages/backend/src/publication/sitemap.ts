@@ -33,7 +33,7 @@ type Entry = SitemapEntry;
  * stories and reports, including the latest-report pages, offer it only once both editions are ready,
  * so the page's own hreflang leads to them instead.
  */
-const CHINESE_PAGES = new Set(["/", "/all", "/hot", "/topics", "/agent", "/about", "/changelog", "/chronicle"]);
+const CHINESE_PAGES = new Set(["/", "/all", "/hot", "/topics", "/agent", "/about", "/changelog", "/chronicle", "/what-is-eacc", "/eacc-vs-dacc", "/eacc-glossary"]);
 function hasChineseMirror(loc: string): boolean {
   return CHINESE_PAGES.has(loc) || /^\/topics\/[^/]+(?:\/page\/\d+)?$/.test(loc)
     || MODULES.some((m) => m.localizedPaths?.some((pattern) => pattern.test(loc)));
