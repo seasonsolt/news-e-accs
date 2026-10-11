@@ -8,6 +8,7 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "{0}月第{1}周": "Month {0} · Week {1}",
   "精选": "Picks",
   "全部": "All",
+  "全部分类": "All categories",
   "热点": "Trending",
   "日报": "Daily",
   "AI 日报": "AI Daily",

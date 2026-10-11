@@ -938,6 +938,7 @@ html[data-onboarding] .ambient-backdrop-image { background-image: none; }
 .site-nav-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--heat); }
 .site-nav-k { display: inline-flex; flex: none; align-items: center; gap: 9px; min-height: 36px; margin-left: auto; padding: 0 14px; border: 1px solid rgb(217 164 65 / .45); border-radius: 999px; font: 500 13px var(--font-mono); color: var(--deck-ink); }
 @media (min-width: 961px) { .site-nav-k { margin-left: 0; } }
+@media (max-width: 420px) { .site-nav-k { gap: 6px; padding: 0 10px; font-size: 12px; } }
 .site-nav-k:hover { border-color: var(--brass); }
 .site-nav-k-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--heat); box-shadow: 0 0 10px var(--heat); }
 .site-more { position: relative; }

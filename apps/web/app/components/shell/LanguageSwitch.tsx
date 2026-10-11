@@ -15,7 +15,8 @@ export function LanguageSwitch() {
   }
   return (
     <label className="inline-flex items-center gap-1.5 text-[12px] text-ink-3">
-      <span>{locale === "en" ? "Language" : "语言"}</span>
+      {/* Phones have no room for the word; the select keeps its own accessible name. */}
+      <span className="hidden lg:inline">{locale === "en" ? "Language" : "语言"}</span>
       <select aria-label={locale === "en" ? "Edition language" : "版本语言"} value={locale}
         onChange={(event) => choose(event.target.value as Locale)}
         className="h-[34px] rounded-full border border-line bg-bg-sunk px-2 text-ink">

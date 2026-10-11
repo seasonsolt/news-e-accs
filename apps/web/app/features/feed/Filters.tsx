@@ -38,15 +38,15 @@ export function FeedSwitch({ base, layoutId }: { base: "/" | "/all"; layoutId: s
 }
 
 /**
- * The feed's one filter row (精选 and 全部动态 alike): 全部, 一手, then the categories. One choice at a
+ * The feed's one filter row (精选 and 全部动态 alike): 全部分类, 一手, then the categories. One choice at a
  * time: picking 一手 clears the category and picking a category clears 一手. Older 资讯 / X links
- * still filter; the row then shows 全部.
+ * still filter; the row then shows 全部分类.
  */
 export function CategoryTabs({ base, category, channel = "all", layoutId, size = "md", className = "" }: { base: string; category: CategoryKey | null; channel?: ChannelKey; layoutId: string; size?: "md" | "sm"; className?: string }) {
   const tx = useTranslate();
   const [params] = useSearchParams();
   const items = [
-    { key: "all", label: tx("全部"), to: hrefWith(base, params, { category: null, channel: null }) },
+    { key: "all", label: tx("全部分类"), to: hrefWith(base, params, { category: null, channel: null }) },
     { key: "firstParty", label: CHANNEL_LABELS.firstParty, to: hrefWith(base, params, { category: null, channel: "firstParty" }) },
     ...CATEGORY_KEYS.map((k) => ({ key: k, label: CATEGORY_LABELS[k], to: hrefWith(base, params, { category: k, channel: null }) })),
   ].map((o) => ({ ...o, prefetch: "intent" as const }));
