@@ -6,6 +6,7 @@ import type { AdminSourceUpdate } from "@aihot/contracts/admin";
 import { actorOf } from "@aihot/backend/admin/auth";
 import { siteAnalyticsOverview } from "@aihot/backend/admin/analytics";
 import { newsletterOverview } from "@aihot/backend/admin/newsletter";
+import { wechatExport } from "@aihot/backend/admin/wechat";
 import { navCounts } from "@aihot/backend/admin/navigation";
 import { listAudit } from "@aihot/backend/audit";
 import { importSelectBenchRun, listSelectBenchRuns, selectBenchRun } from "@aihot/backend/admin/selectbench";
@@ -115,6 +116,7 @@ export function registerAdmin(app: FastifyInstance) {
     const f = q(req);
     return newsletterOverview(Number(f.days) || 30, page(req));
   }));
+  app.get("/api/admin/wechat", adminHandler(async (req) => wechatExport(q(req).date)));
   app.get("/api/admin/analytics", adminHandler(async (req) => siteAnalyticsOverview(Number(q(req).days) || 30)));
 
   // Models and evaluation

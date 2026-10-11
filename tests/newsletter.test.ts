@@ -17,6 +17,8 @@ import { publishArticle } from "@aihot/backend/publication/publish";
 import { upsertMaterial } from "@aihot/backend/content/materials";
 import { currentContent, saveTranslation } from "@aihot/backend/publication/content-language";
 import { sendDailyIssue } from "@aihot/backend/newsletter/issue";
+import { wechatArticle } from "@aihot/backend/newsletter/wechat";
+import { wechatExport } from "@aihot/backend/admin/wechat";
 
 const T = tag();
 const EMAIL = `Reader.${T}@Example.org`;
@@ -179,6 +181,32 @@ test("today's report goes out as one broadcast, once", async () => {
   assert.equal(hits.slice(before).filter((h) => h.path === "/broadcasts").length, 1, "the day is mailed once");
 });
 
+test("the 公众号 export is the Chinese edition without links, within the editor's limits", async () => {
+  const exported = await wechatExport(TODAY);
+  assert.equal(exported.status, "ready");
+  const article = (exported as Extract<typeof exported, { status: "ready" }>).article;
+  assert.equal(article.title, `头条 ${T}`);
+  assert.equal(article.digest, "导语 <b>不</b>是 HTML。", "the digest field is plain text");
+  assert.ok(article.readMoreUrl.endsWith(`/zh/daily/${TODAY}`));
+  assert.match(article.html, /导语 &lt;b&gt;不&lt;\/b&gt;是 HTML。/, "report text is escaped");
+  assert.doesNotMatch(article.html, /<a\b|href=|class=|<style|<img/, "the editor drops links, classes, stylesheets and outside images");
+  for (const attr of article.html.match(/style="[^"]*"/g) ?? []) assert.match(attr, /;"$|[a-z0-9)%]"$/, `style attribute cut short: ${attr.slice(0, 80)}`);
+  assert.match(article.text, /【模型】\n1\. 模型 A 发布\n摘要一\n来源：官方博客/);
+  assert.match(article.text, /【产品】\n2\. 产品 B 上线\n来源：媒体/, "numbering runs across sections");
+
+  const report = await localizePublication((await loadReport("daily", TODAY))!, "zh");
+  const long = wechatArticle({ ...report, lead: { title: "长".repeat(80), leadParagraph: "段".repeat(200) } });
+  assert.equal(Array.from(long.title).length, 64);
+  assert.equal(Array.from(long.digest).length, 120);
+  assert.ok(long.title.endsWith("…"));
+  const leadIsFirst = wechatArticle({ ...report, lead: { title: "模型 A 发布", leadParagraph: "摘要一" } });
+  assert.equal(leadIsFirst.html.split("摘要一").length - 1, 1, "the lead's paragraph is not repeated under its own entry");
+  assert.match(leadIsFirst.text, /1\. 模型 A 发布\n来源：官方博客/);
+
+  assert.deepEqual(await wechatExport("2000-01-01"), { date: "2000-01-01", status: "no_report" });
+  await assert.rejects(wechatExport("10/11"), (error: { statusCode?: number }) => error.statusCode === 400);
+});
+
 test("a broadcast in doubt is left unknown and not sent again", async () => {
   await sql`DELETE FROM newsletter_sends WHERE report_key = ${TODAY}`;
   await sql`DELETE FROM newsletter_language_sends WHERE report_key = ${TODAY}`;
@@ -282,6 +310,7 @@ test("native English report sends immediately and Chinese waits for its matching
   assert.equal((await sendDailyIssue(TODAY, 'en')).status, 'sent');
   assert.match(hits.slice(start).find(hit => hit.path === '/broadcasts')!.body.text, /Native model release/);
   assert.deepEqual(await sendDailyIssue(TODAY, 'zh'), { status: 'skipped', reason: 'edition not ready' });
+  assert.deepEqual(await wechatExport(TODAY), { date: TODAY, status: 'not_ready', reason: 'edition not ready' }, 'the 公众号 export waits for the Chinese edition too');
   assert.equal((await sql`SELECT 1 FROM newsletter_language_sends WHERE report_key=${TODAY} AND language='zh'`).length, 0);
   const entry = await currentContent('report', `daily:${TODAY}`, 'zh'); assert.ok(entry);
   await saveTranslation({ ...entry, translations: Object.fromEntries(entry.segments.map(segment => [segment.key, '匹配的中文日报'])) }, 'offline-agent', 'integration-fixture', [], true);

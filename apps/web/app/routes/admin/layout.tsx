@@ -36,6 +36,7 @@ const nav = (): Array<{ group: string; items: AdminNavEntry[] }> => [
       ...webModules().flatMap((m) => m.admin?.content ?? []),
       { to: "/admin/feedback", label: "反馈", count: "feedback", tone: "accent" },
       { to: "/admin/newsletter", label: "订阅" },
+      { to: "/admin/wechat", label: "公众号" },
     ],
   },
   {

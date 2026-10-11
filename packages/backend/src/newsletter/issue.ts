@@ -2,6 +2,7 @@
 // broadcast. A row in newsletter_sends is claimed before the provider is called, so retries, restarts
 // and regenerated reports never mail a day twice; a send that ends in doubt is left 'unknown' for a
 // person to check in Resend rather than resent.
+import type { ReportDetail } from "@aihot/contracts/site";
 import { calendarDate } from "@aihot/contracts/time";
 import { config } from "../config.ts";
 import { sql } from "../db.ts";
@@ -17,6 +18,14 @@ export type IssueOutcome =
   | { status: "sent"; broadcastId: string }
   | { status: "failed" | "unknown"; error: string };
 
+/** Why a localized report cannot be distributed in the language yet, or null once it and every shown citation are. */
+export function editionGap(report: ReportDetail, language: DistributionLanguage): string | null {
+  if (!editionReady(report, language, true)) return "edition not ready";
+  const citations = issueSections(report).flatMap(section => section.items);
+  if (citations.some(item => 'contentLanguage' in item && !editionReady(item, language, true))) return "citation edition not ready";
+  return null;
+}
+
 export async function sendDailyIssue(date = calendarDate(Date.now(), config.reportTimeZone), language: DistributionLanguage = "zh"): Promise<IssueOutcome> {
   if (!config.newsletterEnabled) return { status: "disabled" };
   if (!resendConfigured(language)) return { status: "not_configured" };
@@ -28,11 +37,8 @@ export async function sendDailyIssue(date = calendarDate(Date.now(), config.repo
   const [legacy] = await sql`SELECT 1 FROM newsletter_sends WHERE report_key = ${date}`;
   if (legacy) return { status: "already" };
   const report = await localizePublication(source, language);
-  if (!editionReady(report, language, true)) return { status: "skipped", reason: "edition not ready" };
-  const citations = issueSections(report).flatMap(section => section.items);
-  if (citations.some(item => 'contentLanguage' in item && !editionReady(item, language, true))) {
-    return { status: "skipped", reason: "citation edition not ready" };
-  }
+  const gap = editionGap(report, language);
+  if (gap) return { status: "skipped", reason: gap };
   // Nobody to mail yet: leave the day unclaimed, so a reader who confirms later this morning still gets it.
   const [{ n }] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM newsletter_subscribers WHERE status = 'confirmed' AND language = ${language}`;
   if (n === 0) return { status: "no_subscribers" };
