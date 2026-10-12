@@ -423,12 +423,13 @@ function EntryRow({ d, item, index, total, number, open, onToggle, move, setItem
 
 /**
  * The article as the 公众号 shows it, scrolled to and marking the entry open on the left. The entries are
- * the article's nested sections after the first (the at-a-glance list); see newsletter/wechat.ts.
+ * the sections of the list in the article's third section (after the deck and the at-a-glance list);
+ * see newsletter/wechat.ts.
  */
 function PhonePreview({ html, selected }: { html: string; selected: number | null }) {
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const sections = [...(box.current?.querySelectorAll<HTMLElement>(":scope > section > section") ?? [])].slice(1);
+    const sections = [...(box.current?.querySelectorAll<HTMLElement>(":scope > section > section:nth-of-type(3) > section > section") ?? [])];
     sections.forEach((s, k) => {
       s.style.outline = k === selected ? "2px solid rgba(149,84,24,.45)" : "";
       s.style.outlineOffset = "6px";

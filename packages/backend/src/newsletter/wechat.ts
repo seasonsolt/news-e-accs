@@ -3,11 +3,14 @@
 // carries no links: the article's one 「阅读原文」 link leads to the web edition, where every entry links
 // to its source. Laid out like the digest accounts readers know: headlines in the title, a greeting and
 // an at-a-glance list, then numbered entries, each with the site's one-line comment once the worker has
-// written it (wechat-comments.ts), and a closing that invites comments. An editor's changes in the
-// workbench (WechatEdits: order, hidden entries, rewritten text, theme) apply over the generated column,
-// and an entry with an illustration (wechat-illustrations.ts) prints it under its title.
+// written it (wechat-comments.ts), and a closing that invites comments. Dressed as the site: its deck
+// opens and closes the article, and the page between takes the site's ink, hairlines and labels. An
+// editor's changes in the workbench (WechatEdits: order, hidden entries, rewritten text, theme) apply
+// over the generated column, and an entry with an illustration (wechat-illustrations.ts) prints it under
+// its title.
 import type { ReportCitation, ReportDetail } from "@aihot/contracts/site";
-import { SITE } from "@aihot/site";
+import { REPORTS, SITE, subjectAfter } from "@aihot/site";
+import { beijingWeekday } from "@aihot/contracts/time";
 import { editionPath } from "../publication/distribution.ts";
 import { siteUrl } from "../publication/links.ts";
 import { esc, issueSections } from "./mail.ts";
@@ -20,12 +23,30 @@ export const WECHAT_DIGEST_MAX = 120;
 /** Chinese reading speed for the greeting's estimate, in characters a minute. */
 const CHARS_PER_MINUTE = 400;
 
-interface Palette { ink: string; ink3: string; ink4: string; tint: string; accent: string }
-/** The column's looks: the same layout in different colours, picked per issue in the workbench. */
+/**
+ * The page colours (ink to accent) and the deck's, the dark band that opens and closes the article as it
+ * opens every page of the site (deck: its ground, deckInk/deckDim: its text, heat: the kicker, heatHi:
+ * the figures, brass: its rule). deckDim and brass are the site's translucent ink and brass mixed over
+ * the ground, as solid colours.
+ */
+interface Palette {
+  ink: string; ink2: string; ink3: string; ink4: string; line: string; tint: string; accent: string;
+  deck: string; deckInk: string; deckDim: string; heat: string; heatHi: string; brass: string;
+}
+/** The column's looks: the same layout in different colours, picked per issue in the workbench. 琥珀 is the site's own. */
 export const WECHAT_THEMES = {
-  amber: { label: "琥珀", palette: { ink: "#2a1f16", ink3: "#62513f", ink4: "#8a7862", tint: "#f7f1e5", accent: "#955418" } },
-  ink: { label: "墨色", palette: { ink: "#1f2328", ink3: "#4b5058", ink4: "#868b93", tint: "#f4f4f5", accent: "#1f2328" } },
-  blue: { label: "深蓝", palette: { ink: "#17202e", ink3: "#435066", ink4: "#7d889a", tint: "#eef3fb", accent: "#1f5fbf" } },
+  amber: { label: "琥珀", palette: {
+    ink: "#2a1f16", ink2: "#3b2e22", ink3: "#62513f", ink4: "#8a7862", line: "#e7dcc5", tint: "#f8f2e5", accent: "#955418",
+    deck: "#120e0a", deckInk: "#f4ecdc", deckDim: "#a39a8b", heat: "#ff6a1a", heatHi: "#ffd9a0", brass: "#6b5123",
+  } },
+  ink: { label: "墨色", palette: {
+    ink: "#1f2328", ink2: "#33373d", ink3: "#4b5058", ink4: "#868b93", line: "#e4e5e7", tint: "#f4f4f5", accent: "#1f2328",
+    deck: "#16181b", deckInk: "#f2f3f4", deckDim: "#9a9ea5", heat: "#c7cbd1", heatHi: "#ffffff", brass: "#3d4148",
+  } },
+  blue: { label: "深蓝", palette: {
+    ink: "#17202e", ink2: "#2b3647", ink3: "#435066", ink4: "#7d889a", line: "#dfe6f0", tint: "#eef3fb", accent: "#1f5fbf",
+    deck: "#0d1522", deckInk: "#eef3fb", deckDim: "#93a0b4", heat: "#6ea8ff", heatHi: "#d9e8ff", brass: "#27406a",
+  } },
 } satisfies Record<string, { label: string; palette: Palette }>;
 export type WechatTheme = keyof typeof WECHAT_THEMES;
 export const isWechatTheme = (value: unknown): value is WechatTheme => typeof value === "string" && Object.hasOwn(WECHAT_THEMES, value);
@@ -50,6 +71,7 @@ export interface ColumnEntry {
   key: string;
   section: string;
   sourceName: string;
+  firstParty: boolean;
   otherSources?: number;
   followUp?: string;
   related: string[];
@@ -141,7 +163,7 @@ function columnEntries(
     const generated = { title: e.title, body: e.body, comment: (e.itemId && comments.get(e.itemId)) || null };
     const edit = edits.entries?.[key] ?? {};
     return {
-      key, section: e.section, sourceName: e.sourceName, otherSources: e.otherSources, followUp: e.followUp,
+      key, section: e.section, sourceName: e.sourceName, firstParty: e.firstParty, otherSources: e.otherSources, followUp: e.followUp,
       related: (e.related ?? []).filter((r) => r.available).map((r) => r.title),
       added: e.added, hidden: hidden.has(key), generated,
       title: edit.title?.trim() || generated.title,
@@ -176,42 +198,85 @@ export function wechatArticle(
   const theme = edits.theme ?? "amber";
   const C = WECHAT_THEMES[theme].palette;
   const host = new URL(siteUrl("/")).host;
-  const headerLine = `${WECHAT_COLUMN} · ${monthDay(report.key)} · 第 ${report.issueNumber} 期`;
+  const headerLine = `${WECHAT_COLUMN} · ${monthDay(report.key)} · ${beijingWeekday(report.key)} · 第 ${report.issueNumber} 期`;
   const readable = entries.reduce((n, e) => n + length(e.title) + length(e.body ?? "") + length(e.comment ?? ""), 0);
-  const greeting = `早上好，今天 ${entries.length} 条 AI 新闻，约 ${Math.max(1, Math.round(readable / CHARS_PER_MINUTE))} 分钟读完。`;
+  const minutes = Math.max(1, Math.round(readable / CHARS_PER_MINUTE));
+  const greeting = `早上好，今天 ${entries.length} 条 AI 新闻，约 ${minutes} 分钟读完。`;
   const invite = "你最关注今天哪一条？欢迎在评论区聊聊。";
   const closing = "点击文末「阅读原文」，查看网页版早报和每条消息的原文出处。";
   const signature = `${WECHAT_COLUMN}每天 08:00 更新 · ${host}`;
 
-  const divider = `<p style="margin:28px 0;text-align:center;font-size:12px;letter-spacing:6px;color:${C.ink4};">· · ·</p>`;
+  // The site's look in the editor's terms: the deck (a dark band with the issue's kicker, headline and
+  // figures) opens the article, hairlines part the entries, a short bar leads each spaced label, and a
+  // second band closes it with the site's name. The glow is a background image over the ground colour,
+  // so the band stays dark should the editor drop it.
+  const sources = new Set(entries.map((e) => e.sourceName)).size;
+  const firstParty = entries.filter((e) => e.firstParty).length;
+  const figures: Array<[number, string]> = [
+    [entries.length, `${REPORTS.entry.measure}${REPORTS.entry.noun}`],
+    [sources, REPORTS.metricUnits.sourcesCount],
+    ...(firstParty ? [[firstParty, REPORTS.metricUnits.firstPartyEvents] satisfies [number, string]] : []),
+  ];
+  const figure = ([value, unit]: [number, string]) =>
+    `<section style="display:inline-block;margin:0 28px 0 0;vertical-align:top;"><span style="display:block;margin:0 0 6px;font-size:34px;font-weight:bold;line-height:1;color:${C.heatHi};text-shadow:0 0 20px ${C.heat}80;">${value}</span>${esc(unit)}</section>`;
+  const wordmark = (size: number) => `<span style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:normal;font-size:${size}px;letter-spacing:0;color:${C.deckInk};">${esc(SITE.name)}</span>`;
+  const kicker = (label: string) =>
+    `<p style="margin:0;font-size:12px;font-weight:bold;line-height:1.6;letter-spacing:4px;color:${C.accent};"><span style="display:inline-block;width:22px;height:2px;margin:0 10px 0 0;vertical-align:middle;border-radius:2px;background-color:${C.accent};"></span>${esc(label)}</p>`;
+  const deck = (inner: string, glow: string) =>
+    `<section style="padding:22px 20px;border-radius:12px;background-color:${C.deck};background-image:radial-gradient(ellipse at ${glow},${C.heat}38,${C.heat}00 70%);color:${C.deckInk};">${inner}</section>`;
+
+  const masthead = deck([
+    `<p style="margin:0;font-size:14px;font-weight:bold;line-height:1.4;letter-spacing:2px;">${wordmark(20)}　${esc(WECHAT_COLUMN)}</p>`,
+    `<p style="margin:14px 0 0;font-family:Menlo,Consolas,monospace;font-size:12px;line-height:1.6;letter-spacing:1px;color:${C.heat};">${esc(`${monthDay(report.key)} · ${beijingWeekday(report.key)} · 第 ${report.issueNumber} 期`)}</p>`,
+    `<p style="margin:8px 0 0;font-size:26px;font-weight:900;line-height:1.3;color:${C.deckInk};">${esc(subjectAfter(`今天的 ${entries.length} ${REPORTS.entry.measure}`, REPORTS.entry.noun))}</p>`,
+    `<p style="margin:8px 0 0;font-size:14px;line-height:1.7;color:${C.deckDim};">早上好，约 ${minutes} 分钟读完。</p>`,
+    `<section style="margin:18px 0 0;padding:16px 0 0;border-top:1px solid ${C.brass};font-size:12px;line-height:1.5;color:${C.deckDim};">${figures.map(figure).join("")}</section>`,
+  ].join(""), "100% 0%");
+
+  // Each list sets its rows' type once, and the at-a-glance list its hanging numbers, for the rows to
+  // inherit (the editor keeps inline styles): an article holds at most 20,000 characters of markup.
   const glance = entries.map((e, k) =>
-    `<p style="margin:${k ? 6 : 0}px 0 0;font-size:15px;line-height:1.6;color:${C.ink};"><span style="color:${C.accent};font-weight:bold;">${two(k + 1)}</span>　${esc(e.title)}</p>`).join("\n");
+    `<p style="margin:${k ? 8 : 0}px 0 0;"><span style="display:inline-block;width:30px;text-indent:0;font-weight:bold;color:${C.accent};">${two(k + 1)}</span>${esc(e.title)}</p>`).join("");
+
+  const byline = (e: ColumnEntry) => `<span style="padding:1px 6px;border-radius:5px;background-color:${C.tint};color:${C.accent};">${esc(e.section)}</span>　` + [
+    esc(e.sourceName) + (e.firstParty ? " · 一手" : ""),
+    ...(e.otherSources ? [`另有 ${e.otherSources} 家信源报道`] : []),
+    ...(e.followUp ? [`跟进 ${esc(monthDay(e.followUp))}早报`] : []),
+  ].join(" · ");
   const body = entries.map((e, k) => [
-    `<section style="margin:${k ? 32 : 0}px 0 0;">`,
-    `<p style="margin:0;font-size:26px;font-weight:bold;line-height:1.2;color:${C.accent};">${two(k + 1)}</p>`,
-    `<p style="margin:6px 0 0;font-size:17px;font-weight:bold;line-height:1.55;color:${C.ink};">${esc(e.title)}</p>`,
-    ...(e.image ? [`<p style="margin:12px 0 0;"><img src="${esc(e.image)}" alt="" style="display:block;width:100%;height:auto;border-radius:4px;"></p>`] : []),
-    ...(e.body ? [`<p style="margin:10px 0 0;font-size:15px;line-height:1.8;color:${C.ink3};">${esc(e.body)}</p>`] : []),
-    ...(e.related.length ? [`<p style="margin:8px 0 0;font-size:14px;line-height:1.7;color:${C.ink3};">相关：${esc(e.related.join("；"))}</p>`] : []),
-    ...(e.comment ? [`<p style="margin:12px 0 0;padding:8px 12px;background:${C.tint};border-left:3px solid ${C.accent};font-size:14px;line-height:1.7;color:${C.ink};"><span style="font-weight:bold;color:${C.accent};">${esc(COMMENT_LABEL)}</span>　${esc(e.comment)}</p>`] : []),
-    `<p style="margin:8px 0 0;font-size:12px;line-height:1.6;color:${C.ink4};">${esc(note(e))}</p>`,
+    `<section style="padding:24px 0;border-top:1px solid ${C.line};">`,
+    `<p style="margin:0;font-size:12px;line-height:1.6;color:${C.ink3};"><span style="font-size:22px;font-weight:bold;color:${C.accent};">${two(k + 1)}</span>　${byline(e)}</p>`,
+    `<p style="margin:10px 0 0;font-size:18px;font-weight:bold;line-height:1.5;color:${C.ink};">${esc(e.title)}</p>`,
+    ...(e.image ? [`<p style="margin:14px 0 0;"><img src="${esc(e.image)}" alt="" style="display:block;width:100%;height:auto;border-radius:10px;"></p>`] : []),
+    ...(e.body ? [`<p style="margin:10px 0 0;text-align:justify;">${esc(e.body)}</p>`] : []),
+    ...(e.related.length ? [`<p style="margin:10px 0 0;font-size:13.5px;line-height:1.7;color:${C.ink3};">${e.related.map((r) => `<span style="color:${C.ink4};">·</span> ${esc(r)}`).join("<br>")}</p>`] : []),
+    ...(e.comment ? [`<p style="margin:14px 0 0;padding:12px 14px;border-radius:8px;background-color:${C.tint};color:${C.ink};"><span style="font-weight:bold;color:${C.accent};">${esc(COMMENT_LABEL)}</span>　${esc(e.comment)}</p>`] : []),
     `</section>`,
-  ].join("\n")).join("\n");
+  ].join("")).join("\n");
 
   const html = [
     `<section style="font-size:16px;line-height:1.75;color:${C.ink};letter-spacing:0.5px;">`,
-    `<p style="margin:0;font-size:13px;letter-spacing:2px;color:${C.accent};">${esc(headerLine)}</p>`,
-    `<p style="margin:12px 0 0;font-size:16px;line-height:1.75;color:${C.ink};">${esc(greeting)}</p>`,
-    `<section style="margin:16px 0 0;padding:16px;background:${C.tint};border-radius:8px;">`,
-    `<p style="margin:0 0 10px;font-size:14px;font-weight:bold;letter-spacing:2px;color:${C.accent};">今日速览</p>`,
+    masthead,
+    `<section style="margin:20px 0 0;padding:16px;border-radius:12px;background-color:${C.tint};">`,
+    kicker("今日速览"),
+    `<section style="margin:10px 0 0;padding:0 0 0 30px;text-indent:-30px;font-size:15px;line-height:1.6;">`,
     glance,
     `</section>`,
-    divider,
+    `</section>`,
+    `<section style="margin:32px 0 0;">`,
+    kicker("今日看点"),
+    `<section style="margin:12px 0 0;border-bottom:1px solid ${C.line};font-size:15px;line-height:1.85;color:${C.ink2};">`,
     body,
-    divider,
-    `<p style="margin:0;font-size:15px;line-height:1.75;color:${C.ink};text-align:center;">${esc(invite)}</p>`,
-    `<p style="margin:12px 0 0;font-size:13px;line-height:1.7;color:${C.ink4};text-align:center;">${esc(closing)}</p>`,
-    `<p style="margin:4px 0 0;font-size:13px;line-height:1.7;color:${C.ink4};text-align:center;">${esc(signature)}</p>`,
+    `</section>`,
+    `</section>`,
+    `<p style="margin:28px 0 0;font-size:15px;line-height:1.75;color:${C.ink};text-align:center;">${esc(invite)}</p>`,
+    `<p style="margin:8px 0 0;font-size:13px;line-height:1.7;color:${C.ink4};text-align:center;">${esc(closing)}</p>`,
+    `<section style="margin:24px 0 0;">`,
+    deck([
+      `<p style="margin:0;line-height:1.2;text-align:center;">${wordmark(22)}</p>`,
+      `<p style="margin:6px 0 0;font-size:12px;line-height:1.6;letter-spacing:1px;text-align:center;color:${C.deckDim};">${esc(signature)}</p>`,
+    ].join(""), "50% 120%"),
+    `</section>`,
     `</section>`,
   ].join("\n");
 
