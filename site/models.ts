@@ -2,7 +2,11 @@
 // 这里再列出具名的模型（每个用自己的地址和密钥环境变量），以及每一步默认用哪个；没写的步骤用 default。
 // 部署时还可以用环境变量（PREFILTER_MODEL、SCORE_MODEL……）或后台的“模型与评测”页逐步改选。
 
-export interface ModelPreset {
+export type ModelPreset = HttpPreset | CodexPreset;
+
+/** An OpenAI-compatible chat API. */
+export interface HttpPreset {
+  transport?: "http";
   service: string;
   model: string;
   baseUrlEnv: string;
@@ -17,8 +21,26 @@ export interface ModelPreset {
   vision?: boolean;
 }
 
+/**
+ * 服务器上用 ChatGPT 账号登录的官方 Codex CLI（CODEX_BIN），用订阅里的额度，不需要密钥。
+ * 不开任何工具，只看文字；每次调用另带约一万多 token 的 Codex 自身提示（大部分命中缓存）。
+ */
+export interface CodexPreset {
+  transport: "codex";
+  /** 预算熔断按这个名字计数（budgets 表）。 */
+  service: string;
+  model: string;
+  /** Codex 的 model_reasoning_effort：low、medium、high…… */
+  reasoningEffort?: string;
+  jsonMode: boolean;
+  vision?: false;
+}
+
 /** 具名的模型示例（每个要配自己的密钥）。用不上可以删掉。 */
 export const PRESETS: Record<string, ModelPreset> = {
+  // 订阅额度里的 Codex 模型：luna 快、省额度，适合大批量的判断和翻译；sol 用在写作。
+  "codex-luna": { transport: "codex", service: "codex-text", model: "gpt-6-luna", reasoningEffort: "low", jsonMode: true },
+  "codex-sol": { transport: "codex", service: "codex-text", model: "gpt-6.1-sol", reasoningEffort: "low", jsonMode: true },
   // GLM 5.3 Flash always reasons; the lowest effort keeps short structured tasks fast.
   "glm-5.3-flash": {
     service: "zhipu", model: "glm-5.3-flash", baseUrlEnv: "ZHIPU_BASE_URL", apiKeyEnv: "ZHIPU_API_KEY",

@@ -73,6 +73,15 @@ docker compose stop api worker web
 docker compose run --rm setup && docker compose up -d
 ```
 
+### 文字步骤用 Codex 模型
+
+配好上一节的 `CODEX_BIN`（`codex login` 用 ChatGPT 账号登录）以后，`site/models.ts` 里 `transport: "codex"` 的预设就能在后台“模型与评测”页选给任意文字步骤。这是 OpenAI 认可的用法：官方客户端、本人账号、本人额度；不要把订阅换成 API 网关（sub2api、CLIProxyAPI 这类）给别的程序用，那会被 OpenAI 的风控标记。
+
+- 每次调用跑一次 `codex exec`：提示从标准输入传入，在空的临时目录里只读运行，不留会话；Shell、代码执行、浏览器、多 Agent 等工具全部关掉，工具调用直接失败。读的是不可信的文章原文，有 Shell 时即使只读沙箱也能读到这台机器上的文件（包括 `.env`）。
+- 每次另带约一万多 token 的 Codex 自身提示（大部分命中缓存），比直接调接口多耗额度；一次几秒，比接口慢。
+- 每次都记回执，受后台预算里预设的 `service` 那一行限制（示例是 `codex-text`），填 0 就停。额度用完时 Codex 报错，回执记为失败，这一步等下一轮再试；需要时在“模型与评测”页把这一步切回 API 模型。
+- 不看图：需要看图的步骤不能选它。
+
 迁移成功后再启动服务；迁移失败时先查看错误，不要继续启动。使用 HTTPS 配置的站点继续保留 `--profile https`。旧的 API 和 worker 要在迁移前停下：迁移可能删表删列，旧代码还在跑会出错；正常关闭 worker 会等进行中的付费调用收尾（最长三分多钟）。非 Docker 部署也按“备份、构建、停止 API/worker/web、迁移（`scripts/migrate.ts`）、种子数据（`scripts/seed.ts`）、启动”的顺序更新。
 
 新迁移遇到长期占锁会报出文件名和等待超时，先处理占锁事务，再重跑 setup，不要跳过迁移或改写迁移账本。并发索引创建中断可能留下无效索引：核实报错中的对象后，用 `DROP INDEX CONCURRENTLY <索引名>` 清理该失败索引再重跑；有效但定义不同的同名索引须先核对差异。这些保护不改变上述 Docker 更新顺序，跨旧版本升级仍可能执行历史上的破坏性迁移。
@@ -80,6 +89,10 @@ docker compose run --rm setup && docker compose up -d
 下面按时间从新到旧列出每次更新要注意的事。
 
 日报缺期告警按北京时间的具体日期跟踪，跨午夜不会自动恢复；只有对应日报存在才发恢复通知。新缺期检查最近 7 个日历日（含今天），不早于最早的日报或 reports.compose 运行记录；没有历史记录时只检查今天。已告警的日期即使超出 7 天仍保留，关闭采集/模型或 worker 启动宽限期也不会把缺期当成恢复。旧的 report.daily 状态自动按首次告警时间迁移，保留提醒间隔。出刊后两小时告警、每小时提醒及飞书开关保持不变；无需数据库迁移。自定义 responder 若按旧 `report.daily` 精确匹配，需改为识别 `report.daily:YYYY-MM-DD` 日期键。
+
+#### 文字步骤可以用 Codex 模型（2026 年 10 月 12 日）
+
+没有迁移，没有必填的新环境变量。`site/models.ts` 的模型预设多了一种：`transport: "codex"`，由 worker 调用那台机器上用 ChatGPT 账号登录的官方 Codex CLI 来回答，用订阅里的额度，不需要 API 密钥（见下方 [文字步骤用 Codex 模型](#文字步骤用-codex-模型)）。示例站加了 `codex-luna` 和 `codex-sol` 两个预设，默认哪一步都不用；在后台“模型与评测”页逐步改选。种子数据会给后台预算加一行 `codex-text`（每分钟 20、每小时 300、每天 3000 次），已有的不覆盖。自己的 `site/models.ts` 里 `ModelPreset` 现在是两种预设的联合类型，原有的 HTTP 预设不用改。
 
 #### 公众号配图与工作台改版（2026 年 10 月 11 日）
 

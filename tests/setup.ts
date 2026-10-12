@@ -43,6 +43,7 @@ export function pointModels(url: string, models = ["qwen3.7-flash", "glm-5.3-fla
   for (const name of models) {
     const preset = PRESETS[name];
     if (!preset) throw new Error(`the site has no model preset ${name}`);
+    if (preset.transport === "codex") throw new Error(`model preset ${name} runs the Codex CLI, not an HTTP API`);
     env[preset.baseUrlEnv] = `${url}/v1`;
     env[preset.apiKeyEnv] = "test-key";
   }

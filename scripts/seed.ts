@@ -42,7 +42,8 @@ console.log(`sources: ${added} added, ${sources.length - added} already there`);
 
 const budgets = await sql`
   INSERT INTO budgets (service, per_minute, per_hour, per_day, note) VALUES
-    ('codex', 2, 20, 60, '公众号配图（服务器上的 codex，按次消耗账号额度）')
+    ('codex', 2, 20, 60, '公众号配图（服务器上的 codex，按次消耗账号额度）'),
+    ('codex-text', 20, 300, 3000, '文字步骤用 Codex 模型时（服务器上的 codex，按次消耗账号额度）')
   ON CONFLICT (service) DO NOTHING RETURNING service`;
 if (budgets.length) console.log(`budgets: ${budgets.map((b) => b.service).join(", ")} added`);
 await closeDb();

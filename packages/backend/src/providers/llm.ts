@@ -1,26 +1,16 @@
-// OpenAI-compatible chat calls, always through receipts. One model is enough: `default` is whatever the
+// Model calls, always through receipts: OpenAI-compatible chat APIs, or the Codex CLI signed in with
+// ChatGPT (providers/codex.ts) for a site's Codex presets. One model is enough: `default` is whatever the
 // deployment names in LLM_BASE_URL / LLM_API_KEY / LLM_MODEL, and every capability uses it unless the
 // site, an environment variable or the admin's model page picks one of the site's named presets
 // (site/models.ts).
 import type { z } from "zod";
-import { PRESETS } from "@aihot/site/models";
+import { PRESETS, type CodexPreset, type HttpPreset } from "@aihot/site/models";
 import { config, credential } from "../config.ts";
 import { sha256 } from "../lib/ids.ts";
-import { assertAccepted, paidRequest, ProviderRejectedError, rejectReceivedResponse } from "./receipts.ts";
+import { codexText } from "./codex.ts";
+import { assertAccepted, paidRequest, ProviderRejectedError, rejectReceivedResponse, type CallOutcome } from "./receipts.ts";
 
-export interface ModelSpec {
-  key: string;
-  service: string;
-  model: string;
-  baseUrlEnv: string;
-  apiKeyEnv: string;
-  /** Extra request fields, e.g. switching reasoning off for short structured tasks. */
-  extra?: Record<string, unknown>;
-  /** Output tokens added to every call's own limit for a reasoning model, which reasons before it answers. */
-  reasoningTokens?: number;
-  jsonMode: boolean;
-  vision?: boolean;
-}
+export type ModelSpec = (HttpPreset | CodexPreset) & { key: string };
 
 function extraFromEnv(value: string | undefined): Record<string, unknown> | undefined {
   if (!value) return undefined;
@@ -130,26 +120,15 @@ export async function chatJson<S extends z.ZodType>(opts: ChatJsonOptions<S>): P
   const spec = MODELS[opts.model];
   if (!spec) throw new Error(`Unknown model ${opts.model}`);
   if (!config.modelCallsEnabled) throw new Error("Model calls are disabled (MODEL_CALLS_ENABLED=false)");
-  const baseUrl = credential("models", spec.baseUrlEnv);
-  const apiKey = credential("models", spec.apiKeyEnv);
-  if (!baseUrl || !apiKey || !spec.model) throw new Error(`Model ${opts.model} is not configured (${spec.baseUrlEnv}, ${spec.apiKeyEnv}${spec.key === "default" ? ", LLM_MODEL" : ""})`);
+  if (spec.transport === "codex" && !config.codexBin) throw new Error(`Model ${opts.model} is not configured (CODEX_BIN)`);
+  if (spec.transport === "codex" && Array.isArray(opts.user) && opts.user.some((part) => part.type !== "text")) {
+    throw new Error(`Model ${opts.model} reads no images`);
+  }
 
   const temperature = opts.temperature ?? 0.2;
-  const maxTokens = Math.max(opts.maxTokens ?? 1500, 512) + (spec.reasoningTokens ?? 0);
+  const maxTokens = Math.max(opts.maxTokens ?? 1500, 512) + (spec.transport === "codex" ? 0 : spec.reasoningTokens ?? 0);
   const userText = typeof opts.user === "string" ? opts.user : JSON.stringify(opts.user);
-  const body: Record<string, unknown> = {
-    model: spec.model,
-    messages: [
-      // A prompt given as one user message (the title/summary prompts) has no system message.
-      ...(opts.system ? [{ role: "system", content: opts.system }] : []),
-      // Multimodal parts go through as parts; plain objects are sent as JSON text.
-      { role: "user", content: typeof opts.user === "string" || Array.isArray(opts.user) ? opts.user : userText },
-    ],
-    temperature,
-    max_tokens: maxTokens,
-    ...(spec.jsonMode && opts.json !== false ? { response_format: { type: "json_object" } } : {}),
-    ...(spec.extra ?? {}),
-  };
+  const call = spec.transport === "codex" ? codexCall(spec, opts) : httpCall(spec, opts, temperature, maxTokens, userText);
 
   const receipt = await paidRequest(
     {
@@ -157,41 +136,14 @@ export async function chatJson<S extends z.ZodType>(opts: ChatJsonOptions<S>): P
       model: spec.model,
       purpose: opts.purpose,
       subject: opts.subject,
-      identity: { model: spec.model, promptVersion: opts.promptVersion, system: sha256(opts.system), user: sha256(userText), temperature, maxTokens, extra: spec.extra ?? null },
+      identity: {
+        model: spec.model, promptVersion: opts.promptVersion, system: sha256(opts.system), user: sha256(userText), temperature, maxTokens,
+        extra: spec.transport === "codex" ? { reasoningEffort: spec.reasoningEffort ?? null } : spec.extra ?? null,
+      },
       requestSummary: { promptVersion: opts.promptVersion, systemHash: sha256(opts.system), userHash: sha256(userText), userChars: userText.length, temperature, maxTokens },
       attemptTag: opts.attemptTag,
     },
-    async () => {
-      const started = Date.now();
-      let res: Response;
-      try {
-        res = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
-          method: "POST",
-          headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(opts.timeoutMs ?? 120_000),
-        });
-      } catch (error) {
-        if (isConnectFailure(error)) throw new ProviderRejectedError(`connect failed: ${String(error)}`, null, true);
-        throw error;
-      }
-      const text = await res.text();
-      assertAccepted(spec.service, res.status, text);
-      let json: Record<string, unknown>;
-      try {
-        json = JSON.parse(text);
-        if (!json || typeof json !== "object" || Array.isArray(json)) throw new Error("Expected a response object");
-      } catch {
-        json = { unparsable: text.slice(0, 20000) };
-      }
-      const usage = (json.usage as Record<string, unknown> | undefined) ?? null;
-      return {
-        response: { ...json, _latencyMs: Date.now() - started },
-        requestId: (json.id as string | undefined) ?? res.headers.get("x-request-id"),
-        usage,
-        cost: null,
-      };
-    },
+    call,
   );
 
   const response = receipt.response as { choices?: Array<{ message?: { content?: string }; finish_reason?: string }>; usage?: Record<string, unknown> };
@@ -209,4 +161,84 @@ export async function chatJson<S extends z.ZodType>(opts: ChatJsonOptions<S>): P
     throw new ModelOutputError(`Model ${opts.model} returned unusable output for ${opts.subject}: ${detail.slice(0, 300)}`, receipt.receiptId);
   }
   return { data: parsed, receiptId: receipt.receiptId, reused: receipt.reused, model: spec.key, usage: response.usage ?? null };
+}
+
+function httpCall<S extends z.ZodType>(spec: HttpPreset & { key: string }, opts: ChatJsonOptions<S>, temperature: number, maxTokens: number, userText: string): () => Promise<CallOutcome> {
+  const baseUrl = credential("models", spec.baseUrlEnv);
+  const apiKey = credential("models", spec.apiKeyEnv);
+  if (!baseUrl || !apiKey || !spec.model) throw new Error(`Model ${opts.model} is not configured (${spec.baseUrlEnv}, ${spec.apiKeyEnv}${spec.key === "default" ? ", LLM_MODEL" : ""})`);
+  const body: Record<string, unknown> = {
+    model: spec.model,
+    messages: [
+      // A prompt given as one user message (the title/summary prompts) has no system message.
+      ...(opts.system ? [{ role: "system", content: opts.system }] : []),
+      // Multimodal parts go through as parts; plain objects are sent as JSON text.
+      { role: "user", content: typeof opts.user === "string" || Array.isArray(opts.user) ? opts.user : userText },
+    ],
+    temperature,
+    max_tokens: maxTokens,
+    ...(spec.jsonMode && opts.json !== false ? { response_format: { type: "json_object" } } : {}),
+    ...(spec.extra ?? {}),
+  };
+  return async () => {
+    const started = Date.now();
+    let res: Response;
+    try {
+      res = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(opts.timeoutMs ?? 120_000),
+      });
+    } catch (error) {
+      if (isConnectFailure(error)) throw new ProviderRejectedError(`connect failed: ${String(error)}`, null, true);
+      throw error;
+    }
+    const text = await res.text();
+    assertAccepted(spec.service, res.status, text);
+    let json: Record<string, unknown>;
+    try {
+      json = JSON.parse(text);
+      if (!json || typeof json !== "object" || Array.isArray(json)) throw new Error("Expected a response object");
+    } catch {
+      json = { unparsable: text.slice(0, 20000) };
+    }
+    const usage = (json.usage as Record<string, unknown> | undefined) ?? null;
+    return {
+      response: { ...json, _latencyMs: Date.now() - started },
+      requestId: (json.id as string | undefined) ?? res.headers.get("x-request-id"),
+      usage,
+      cost: null,
+    };
+  };
+}
+
+/**
+ * The Codex CLI answers one prompt: the system text first, then the input. Its answer is kept in the
+ * chat API's shape, and its usage under the same names, so parsing and the admin statistics are shared.
+ */
+function codexCall<S extends z.ZodType>(spec: CodexPreset & { key: string }, opts: ChatJsonOptions<S>): () => Promise<CallOutcome> {
+  const input = typeof opts.user === "string" ? opts.user : opts.user.map((part) => (part.type === "text" ? part.text : "")).join("\n\n");
+  const prompt = [
+    opts.system,
+    input,
+    spec.jsonMode && opts.json !== false ? "Reply with the JSON object only, nothing before or after it." : "",
+  ].filter(Boolean).join("\n\n");
+  return async () => {
+    const started = Date.now();
+    const answer = await codexText({ model: spec.model, reasoningEffort: spec.reasoningEffort, prompt, timeoutMs: opts.timeoutMs ?? 180_000 });
+    const raw = answer.usage ?? {};
+    const usage = {
+      ...raw,
+      prompt_tokens: raw.input_tokens ?? null,
+      completion_tokens: raw.output_tokens ?? null,
+      prompt_tokens_details: { cached_tokens: raw.cached_input_tokens ?? null },
+    };
+    return {
+      response: { choices: [{ message: { content: answer.text }, finish_reason: "stop" }], usage, threadId: answer.threadId, _latencyMs: Date.now() - started },
+      requestId: answer.threadId,
+      usage,
+      cost: null,
+    };
+  };
 }
