@@ -803,6 +803,1172 @@
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false
+    },
+    {
+      "id": "x-xai",
+      "name": "xAI · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:xai -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "xai",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-claudeai",
+      "name": "Claude · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:claudeai -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "anthropic",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-openaidevs",
+      "name": "OpenAI Developers · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:OpenAIDevs -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "openai",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-googleai",
+      "name": "Google AI · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:GoogleAI -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "google",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-geminiapp",
+      "name": "Gemini App · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:GeminiApp -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "google",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-nvidiaai",
+      "name": "NVIDIA AI · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:NVIDIAAI -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "nvidia",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-cursor-ai",
+      "name": "Cursor · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:cursor_ai -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "cursor",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-perplexity-ai",
+      "name": "Perplexity · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:perplexity_ai -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-minimax-ai",
+      "name": "MiniMax · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:MiniMax__AI -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "minimax",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-tencenthunyuan",
+      "name": "腾讯混元 · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:TencentHunyuan -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-thinkymachines",
+      "name": "Thinking Machines · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:thinkymachines -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "thinking-machines",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-runwayml",
+      "name": "Runway · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:runwayml -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-elevenlabsio",
+      "name": "ElevenLabs · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:elevenlabsio -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-openrouterai",
+      "name": "OpenRouter · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:OpenRouterAI -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "openrouter",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-vllm-project",
+      "name": "vLLM · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:vllm_project -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-ollama",
+      "name": "Ollama · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:ollama -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "官方"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-sundarpichai",
+      "name": "Sundar Pichai · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:sundarpichai -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "google",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-jeffdean",
+      "name": "Jeff Dean · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:JeffDean -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "google",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-oriolvinyalsml",
+      "name": "Oriol Vinyals · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:OriolVinyalsML -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "google",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-joshwoodward",
+      "name": "Josh Woodward · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:joshwoodward -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "google",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-satyanadella",
+      "name": "Satya Nadella · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:satyanadella -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "microsoft",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-mustafasuleyman",
+      "name": "Mustafa Suleyman · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:mustafasuleyman -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "microsoft",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-kevinweil",
+      "name": "Kevin Weil · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:kevinweil -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "openai",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-markchen90",
+      "name": "Mark Chen · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:markchen90 -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "openai",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-polynoamial",
+      "name": "Noam Brown · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:polynoamial -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "openai",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-nickaturley",
+      "name": "Nick Turley · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:nickaturley -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "openai",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-sebastienbubeck",
+      "name": "Sébastien Bubeck · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:SebastienBubeck -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "openai",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-mikeyk",
+      "name": "Mike Krieger · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:mikeyk -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "anthropic",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-alexalbert",
+      "name": "Alex Albert · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:alexalbert__ -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "anthropic",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-bcherny",
+      "name": "Boris Cherny · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:bcherny -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "anthropic",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-janleike",
+      "name": "Jan Leike · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:janleike -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "anthropic",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-aravsrinivas",
+      "name": "Aravind Srinivas · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:AravSrinivas -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-miramurati",
+      "name": "Mira Murati · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:miramurati -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "thinking-machines",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-johnschulman2",
+      "name": "John Schulman · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:johnschulman2 -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "thinking-machines",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-lilianweng",
+      "name": "Lilian Weng · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:lilianweng -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "thinking-machines",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-clementdelangue",
+      "name": "Clément Delangue · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:ClementDelangue -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "hugging-face",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-arthurmensch",
+      "name": "Arthur Mensch · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:arthurmensch -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-alexandr-wang",
+      "name": "Alexandr Wang · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:alexandr_wang -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "meta",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-drjimfan",
+      "name": "Jim Fan · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:DrJimFan -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "nvidia",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-drfeifei",
+      "name": "Fei-Fei Li · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:drfeifei -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T1_5",
+      "first_party": true,
+      "owner_entity_id": "world-labs",
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-emollick",
+      "name": "Ethan Mollick · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:emollick -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-natolambert",
+      "name": "Nathan Lambert · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:natolambert -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "研究"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-fchollet",
+      "name": "François Chollet · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:fchollet -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "研究"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-jeremyphoward",
+      "name": "Jeremy Howard · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:jeremyphoward -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "研究"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-teknium1",
+      "name": "Teknium · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:Teknium1 -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "研究"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-btibor91",
+      "name": "Tibor Blaho · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:btibor91 -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "资讯"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-artificialanlys",
+      "name": "Artificial Analysis · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:ArtificialAnlys -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "研究"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-lmarena-ai",
+      "name": "LMArena · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:lmarena_ai -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "研究"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-epochairesearch",
+      "name": "Epoch AI · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:EpochAIResearch -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "研究"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-dotey",
+      "name": "宝玉 · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:dotey -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-rowancheung",
+      "name": "Rowan Cheung · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:rowancheung -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "hot_signal",
+      "interval_minutes": 60,
+      "tags": [
+        "资讯"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-testingcatalog",
+      "name": "TestingCatalog · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:testingcatalog -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "hot_signal",
+      "interval_minutes": 60,
+      "tags": [
+        "资讯"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-op7418",
+      "name": "歸藏 · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:op7418 -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "hot_signal",
+      "interval_minutes": 60,
+      "tags": [
+        "资讯"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "x-elonmusk",
+      "name": "Elon Musk · X",
+      "kind": "x_search",
+      "config": {
+        "query": "from:elonmusk -filter:replies",
+        "searchType": "Latest",
+        "_aihot": {
+          "initialBackfillLimit": 5
+        }
+      },
+      "tier": "T2",
+      "first_party": false,
+      "participation_mode": "hot_signal",
+      "interval_minutes": 60,
+      "tags": [
+        "个人"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
     }
   ]
 }
