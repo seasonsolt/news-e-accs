@@ -3,6 +3,10 @@
 > 2026-10-12 起草。第二阶段的第一条加速指数，总计划见 [phase-two.md](phase-two.md)。
 > 只属于我们自己的生产站（e-acc.ai）。
 
+## 0. 进度
+
+2026-10-12 第一版完成（`modules/indices`，说明见模块 README）：页面、`/api/site/indices/cost-of-intelligence`、CSV 下载、sitemap、llms.txt 和 Dataset 结构化数据。还没做：API v1 和 MCP 出口；15 条待核验的价格。上线前要在入口仓库 `edge/src/route.mjs` 的 `NEWS_SECTIONS` 加上 `/index`。
+
 ## 1. 要回答的问题
 
 同样的能力，价格降得多快？对几个能力门槛，画出每个日期能买到的最便宜价格，并给出「首次达到时的价格是现在的几倍」「每几个月减半」。

@@ -1,0 +1,18 @@
+{
+  "name": "@aihot/indices",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./module.ts",
+    "./server": "./server.ts",
+    "./web": "./web.tsx",
+    "./contracts": "./contracts.ts"
+  },
+  "dependencies": {
+    "@aihot/backend": "*",
+    "@aihot/contracts": "*",
+    "@aihot/site": "*",
+    "@aihot/web": "*",
+    "fastify": "5.12.5"
+  }
+}
