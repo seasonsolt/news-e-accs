@@ -843,7 +843,8 @@
     "hubble-launch": {
       "title": "Hubble Space Telescope Launched",
       "detail": "Orbiting above the atmosphere, the telescope delivers sharp images of deep space and measures the expansion rate of the universe.",
-      "capability": "Space-based optical astronomy"
+      "capability": "Space-based optical astronomy",
+      "artStyle": "1990s space-agency film"
     },
     "lithium-ion-battery": {
       "title": "Lithium-Ion Batteries Commercialized",
@@ -859,7 +860,8 @@
     "linux": {
       "title": "Linux Is Born",
       "detail": "Torvalds announces his kernel project, which becomes the open-source foundation of servers and Android.",
-      "capability": "Open-source operating systems"
+      "capability": "Open-source operating systems",
+      "artStyle": "Early-1990s film photography"
     },
     "china-internet": {
       "title": "China Connects to the Internet",
@@ -897,7 +899,8 @@
     "wifi-80211b": {
       "title": "Wi-Fi Standard Established",
       "detail": "IEEE 802.11b is approved, and wireless LANs begin to enter homes and offices.",
-      "capability": "Wireless LAN"
+      "capability": "Wireless LAN",
+      "artStyle": "Y2K translucent candy colours"
     },
     "gps-sa-off": {
       "title": "Full GPS Accuracy for Civilians",
@@ -977,7 +980,8 @@
     "app-store": {
       "title": "App Store Opens",
       "detail": "Third-party apps install on phones with a single tap, and the mobile app ecosystem takes shape.",
-      "capability": "Mobile app distribution"
+      "capability": "Mobile app distribution",
+      "artStyle": "2000s skeuomorphism"
     },
     "beijing-tianjin-hsr": {
       "title": "Beijing–Tianjin Intercity Railway Opens",
@@ -1058,12 +1062,14 @@
     "resnet": {
       "title": "ResNet: Residual Networks",
       "detail": "Residual connections make very deep neural networks easier to train; a 152-layer model achieves leading results on ImageNet.",
-      "capability": "Training deeper networks"
+      "capability": "Training deeper networks",
+      "artStyle": "2010s material-design illustration"
     },
     "falcon9-landing": {
       "title": "First Rocket Booster Recovery",
       "detail": "A Falcon 9 first stage lands vertically after an orbital launch, making reusable rockets a reality.",
-      "capability": "Reusable rockets"
+      "capability": "Reusable rockets",
+      "artStyle": "2010s long-exposure night photography"
     },
     "alphago": {
       "title": "AlphaGo Beats Lee Sedol",
@@ -1109,7 +1115,8 @@
     "change-4": {
       "title": "Chang'e 4 Lands on the Far Side of the Moon",
       "detail": "A spacecraft makes the first soft landing on the far side of the Moon.",
-      "capability": "Lunar far-side exploration"
+      "capability": "Lunar far-side exploration",
+      "artStyle": "Lunar telemetry imagery"
     },
     "gpt-2": {
       "title": "GPT-2",
@@ -1118,7 +1125,8 @@
     "black-hole-image": {
       "title": "First Image of a Black Hole",
       "detail": "The Event Horizon Telescope releases an image of the shadow of the M87 black hole.",
-      "capability": "Black hole imaging"
+      "capability": "Black hole imaging",
+      "artStyle": "Radio-astronomy false colour"
     },
     "quantum-supremacy": {
       "title": "Quantum Supremacy",
@@ -1132,7 +1140,8 @@
     "rag": {
       "title": "RAG: retrieval-augmented generation",
       "detail": "Language models retrieve external documents before answering, so knowledge can come from an updatable library rather than only from what was memorized in training.",
-      "capability": "Retrieval-augmented generation"
+      "capability": "Retrieval-augmented generation",
+      "artStyle": "2020s isometric illustration"
     },
     "gpt-3": {
       "title": "GPT-3",
@@ -1141,7 +1150,8 @@
     "ddpm": {
       "title": "A breakthrough for diffusion models",
       "detail": "DDPM generates high-quality images by gradually removing noise, laying key groundwork for later diffusion-based image tools.",
-      "capability": "Diffusion image generation"
+      "capability": "Diffusion image generation",
+      "artStyle": "Generative-art print"
     },
     "beidou-3": {
       "title": "BeiDou-3 goes global",
@@ -1180,7 +1190,8 @@
     "instructgpt-paper": {
       "title": "InstructGPT: training on human feedback",
       "detail": "A paper describes training language models on human demonstrations and preference rankings so answers better follow user instructions; the approach was later used for ChatGPT.",
-      "capability": "Instruction following via human feedback"
+      "capability": "Instruction following via human feedback",
+      "artStyle": "2020s editorial painting"
     },
     "dall-e-2": {
       "title": "DALL·E 2",
@@ -1202,7 +1213,8 @@
     "react": {
       "title": "ReAct: reasoning and acting",
       "detail": "Models interleave reasoning with external actions and adjust their next step based on what comes back, becoming a key research path for tool-using agents.",
-      "capability": "Combined reasoning and action"
+      "capability": "Combined reasoning and action",
+      "artStyle": "2020s editorial painting"
     },
     "tiangong-t": {
       "title": "Tiangong space station takes shape",
@@ -1256,7 +1268,8 @@
     "gemini": {
       "title": "Gemini released",
       "detail": "Google launches Gemini, a natively multimodal large model.",
-      "capability": "Natively multimodal models"
+      "capability": "Natively multimodal models",
+      "artStyle": "Diffusion-era 3D render"
     },
     "neuralink-human": {
       "title": "Neuralink's first human implant",
@@ -1302,7 +1315,8 @@
     "starship-catch": {
       "title": "Launch tower catches a booster",
       "detail": "On Starship's fifth flight test, the Super Heavy booster returns to the launch tower and is caught by its mechanical arms.",
-      "capability": "Tower-caught rocket recovery"
+      "capability": "Tower-caught rocket recovery",
+      "artStyle": "2020s telephoto photography"
     },
     "computer-use": {
       "title": "AI learns to use a computer",
@@ -1313,7 +1327,8 @@
     "deepseek-v3": {
       "title": "DeepSeek-V3",
       "detail": "An open-source large model reaching the frontier at low training cost.",
-      "capability": "Low-cost frontier models"
+      "capability": "Low-cost frontier models",
+      "artStyle": "New Chinese ink wash with cool light"
     },
     "deepseek-r1": {
       "title": "DeepSeek-R1 open-sourced",

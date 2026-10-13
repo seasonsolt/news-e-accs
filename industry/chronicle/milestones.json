@@ -1338,7 +1338,9 @@
       "detail": "太空望远镜绕过大气层，给出深空清晰图像并测定宇宙膨胀速率。",
       "category": "cosmos",
       "capability": "太空光学观测",
-      "source": "https://en.wikipedia.org/wiki/Hubble_Space_Telescope"
+      "source": "https://en.wikipedia.org/wiki/Hubble_Space_Telescope",
+      "art": "hubble-launch",
+      "artStyle": "1990年代航天胶片"
     },
     {
       "id": "lithium-ion-battery",
@@ -1373,7 +1375,9 @@
       "detail": "托瓦兹公开发布内核计划，此后成为服务器和安卓的开源基础。",
       "category": "compute",
       "capability": "开源操作系统",
-      "source": "https://en.wikipedia.org/wiki/History_of_Linux"
+      "source": "https://en.wikipedia.org/wiki/History_of_Linux",
+      "art": "linux",
+      "artStyle": "1990年代初胶片摄影"
     },
     {
       "id": "china-internet",
@@ -1460,7 +1464,9 @@
       "detail": "IEEE 802.11b 获批，无线局域网开始进入家庭和办公室。",
       "category": "compute",
       "capability": "无线局域网",
-      "source": "https://en.wikipedia.org/wiki/IEEE_802.11b-1999"
+      "source": "https://en.wikipedia.org/wiki/IEEE_802.11b-1999",
+      "art": "wifi-80211b",
+      "artStyle": "千禧年半透明糖果色"
     },
     {
       "id": "gps-sa-off",
@@ -1639,7 +1645,9 @@
       "detail": "第三方应用可一键安装到手机，移动应用生态形成。",
       "category": "compute",
       "capability": "移动应用分发",
-      "source": "https://en.wikipedia.org/wiki/App_Store_(Apple)"
+      "source": "https://en.wikipedia.org/wiki/App_Store_(Apple)",
+      "art": "app-store",
+      "artStyle": "2000年代拟物化"
     },
     {
       "id": "beijing-tianjin-hsr",
@@ -1824,7 +1832,9 @@
       "detail": "残差连接让极深的神经网络更容易训练，152层模型在ImageNet上取得领先结果。",
       "category": "ai",
       "capability": "训练更深的网络",
-      "source": "https://arxiv.org/abs/1512.03385"
+      "source": "https://arxiv.org/abs/1512.03385",
+      "art": "resnet",
+      "artStyle": "2010年代扁平材质设计"
     },
     {
       "id": "falcon9-landing",
@@ -1835,7 +1845,9 @@
       "detail": "猎鹰9号一级火箭从轨道发射后垂直着陆，可回收火箭成为现实。",
       "category": "cosmos",
       "capability": "可回收火箭",
-      "source": "https://en.wikipedia.org/wiki/Falcon_9_flight_20"
+      "source": "https://en.wikipedia.org/wiki/Falcon_9_flight_20",
+      "art": "falcon9-landing",
+      "artStyle": "2010年代长曝光夜景摄影"
     },
     {
       "id": "alphago",
@@ -1941,7 +1953,9 @@
       "detail": "人类探测器首次在月球背面软着陆。",
       "category": "cosmos",
       "capability": "月背探测",
-      "source": "https://en.wikipedia.org/wiki/Chang%27e_4"
+      "source": "https://en.wikipedia.org/wiki/Chang%27e_4",
+      "art": "change-4",
+      "artStyle": "月面遥测影像"
     },
     {
       "id": "gpt-2",
@@ -1962,7 +1976,9 @@
       "detail": "事件视界望远镜公布 M87 黑洞阴影图像。",
       "category": "cosmos",
       "capability": "黑洞成像",
-      "source": "https://en.wikipedia.org/wiki/Event_Horizon_Telescope"
+      "source": "https://en.wikipedia.org/wiki/Event_Horizon_Telescope",
+      "art": "black-hole-image",
+      "artStyle": "射电天文伪彩"
     },
     {
       "id": "quantum-supremacy",
@@ -1994,7 +2010,9 @@
       "detail": "语言模型先检索外部文档再生成回答，让知识可以来自可更新的资料库，而不只依赖训练时记住的内容。",
       "category": "ai",
       "capability": "检索增强生成",
-      "source": "https://arxiv.org/abs/2005.11401"
+      "source": "https://arxiv.org/abs/2005.11401",
+      "art": "rag",
+      "artStyle": "2020年代等距插画"
     },
     {
       "id": "gpt-3",
@@ -2015,7 +2033,9 @@
       "detail": "DDPM通过逐步去噪生成高质量图像，为后来的扩散式图像生成工具奠定重要基础。",
       "category": "ai",
       "capability": "扩散式图像生成",
-      "source": "https://arxiv.org/abs/2006.11239"
+      "source": "https://arxiv.org/abs/2006.11239",
+      "art": "ddpm",
+      "artStyle": "生成艺术版画"
     },
     {
       "id": "beidou-3",
@@ -2103,7 +2123,9 @@
       "detail": "论文介绍用人类示范和偏好排序训练语言模型，让回答更符合用户指令；这一训练路线随后用于ChatGPT。",
       "category": "ai",
       "capability": "指令遵循与人类反馈",
-      "source": "https://arxiv.org/abs/2203.02155"
+      "source": "https://arxiv.org/abs/2203.02155",
+      "art": "instructgpt-paper",
+      "artStyle": "2020年代编辑油画"
     },
     {
       "id": "dall-e-2",
@@ -2155,7 +2177,9 @@
       "detail": "模型交替进行推理和外部操作，并根据返回的信息调整下一步，成为工具型智能体的重要研究路线。",
       "category": "ai",
       "capability": "推理与行动协作",
-      "source": "https://arxiv.org/abs/2210.03629"
+      "source": "https://arxiv.org/abs/2210.03629",
+      "art": "react",
+      "artStyle": "2020年代编辑油画"
     },
     {
       "id": "tiangong-t",
@@ -2277,7 +2301,9 @@
       "detail": "谷歌推出原生多模态大模型 Gemini。",
       "category": "ai",
       "capability": "原生多模态模型",
-      "source": "https://en.wikipedia.org/wiki/Gemini_(language_model)"
+      "source": "https://en.wikipedia.org/wiki/Gemini_(language_model)",
+      "art": "gemini",
+      "artStyle": "扩散时代三维渲染"
     },
     {
       "id": "neuralink-human",
@@ -2384,7 +2410,9 @@
       "detail": "星舰第五次试飞，超重助推器返回发射塔被机械臂夹住回收。",
       "category": "cosmos",
       "capability": "塔架回收火箭",
-      "source": "https://en.wikipedia.org/wiki/Starship_flight_test_5"
+      "source": "https://en.wikipedia.org/wiki/Starship_flight_test_5",
+      "art": "starship-catch",
+      "artStyle": "2020年代长焦摄影"
     },
     {
       "id": "computer-use",
@@ -2408,7 +2436,9 @@
       "detail": "以低训练成本达到前沿水平的开源大模型。",
       "category": "ai",
       "capability": "低成本前沿模型",
-      "source": "https://en.wikipedia.org/wiki/DeepSeek"
+      "source": "https://en.wikipedia.org/wiki/DeepSeek",
+      "art": "deepseek-v3",
+      "artStyle": "新中式水墨与冷光"
     },
     {
       "id": "deepseek-r1",
