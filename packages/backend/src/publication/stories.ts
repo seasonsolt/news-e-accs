@@ -14,7 +14,7 @@ import { compositeCondition, evidenceCondition, listedCondition, storyReportCond
 import { publicSourceName } from "./rules.ts";
 import { hotRankingAt, latestHotRanking, rankingExtras } from "./hot.ts";
 export { loadHotStrip } from "./hot.ts";
-import { storyTexts } from "./story-text.ts";
+import { storyTexts, type StoryText } from "./story-text.ts";
 import { topicsOfStory } from "./topics.ts";
 import { itemUrl, storyUrl, v1StoryApiUrl, v1StoryUrl } from "./links.ts";
 
@@ -75,17 +75,17 @@ interface ReportRow extends RepresentativeIdentity {
  * pool-eligible articles; imported hot stories also carry reports the pool leaves out. hot_signal
  * material only adds heat and is not listed.
  */
-async function storyReports(storyId: number, now: Date): Promise<ReportRow[]> {
-  return sql<ReportRow[]>`
-    SELECT DISTINCT ON (p.article_id) p.article_id AS id, p.title, p.summary, p.url, p.selected,
+async function storyReports(storyIds: number[], now: Date): Promise<Array<ReportRow & { story_id: number }>> {
+  return sql<Array<ReportRow & { story_id: number }>>`
+    SELECT DISTINCT ON (f.story_id, p.article_id) f.story_id, p.article_id AS id, p.title, p.summary, p.url, p.selected,
       coalesce(p.published_at, p.discovered_at) AS at, s.id AS source_id, s.name AS source_name,
       (s.tier = 'T1') AS first_party, f.id AS fact_id, ${HEADER_SOURCE_LANGUAGE} AS header_source_language,
       CASE WHEN ${compositeCondition()} THEN 'mention' ELSE fa.role END AS role, p.body_mode, p.score, p.timeline_at, ${REPRESENTATIVE_COLUMNS}
     FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id JOIN publications p ON p.article_id = fa.article_id
     JOIN sources s ON s.id = p.source_id
     JOIN articles a ON a.id = p.article_id LEFT JOIN analyses an ON an.id = p.analysis_id
-    WHERE f.story_id = ${storyId} AND ${storyReportCondition(now)}
-    ORDER BY p.article_id, (fa.role = 'primary') DESC, (fa.role <> 'mention') DESC, f.id`;
+    WHERE f.story_id = ANY(${storyIds}::bigint[]) AND ${storyReportCondition(now)}
+    ORDER BY f.story_id, p.article_id, (fa.role = 'primary') DESC, (fa.role <> 'mention') DESC, f.id`;
 }
 
 function reportView(r: ReportRow): StoryReportView {
@@ -101,18 +101,59 @@ function reportView(r: ReportRow): StoryReportView {
 
 /** The story's reports newest first, its developments, and its latest and first non-mention reports. */
 async function storyContent(storyId: number, now: Date) {
-  const [s] = await sql<{ editorial_language: "en" | "zh"; public_id: string; title: string; summary_language: string }[]>`
-    SELECT editorial_language, public_id::text, title, coalesce(frame->>'summaryLanguage', editorial_language) AS summary_language FROM stories WHERE id = ${storyId}`;
-  if (!s) return null;
-  const reports = await storyReports(storyId, now);
-  if (reports.length === 0) return null;
+  return (await storyContents([storyId], now)).get(storyId) ?? null;
+}
+
+/**
+ * storyContent for several stories with one read of each kind, so a page that names many stories
+ * (the hot list, a timeline) pays for its queries once rather than once per story. Stories without
+ * public reports are absent from the result.
+ */
+async function storyContents(storyIds: number[], now: Date) {
+  const contents = new Map<number, NonNullable<ReturnType<typeof contentOf>>>();
+  if (storyIds.length === 0) return contents;
+  const stories = await sql<{ id: number; editorial_language: "en" | "zh"; public_id: string; title: string; summary_language: string }[]>`
+    SELECT id, editorial_language, public_id::text, title, coalesce(frame->>'summaryLanguage', editorial_language) AS summary_language
+    FROM stories WHERE id = ANY(${storyIds}::bigint[])`;
+  if (stories.length === 0) return contents;
+  const ids = stories.map((s) => s.id);
+  const [reportRows, factRows] = await Promise.all([
+    storyReports(ids, now),
+    sql<{ id: number; story_id: number; public_id: string; title: string; editorial_language: "en" | "zh" }[]>`
+      SELECT id, story_id, public_id, title, editorial_language FROM facts WHERE story_id = ANY(${ids}::bigint[])`,
+  ]);
+  const reportsOf = groupBy(reportRows, (r) => r.story_id);
+  const factsOf = groupBy(factRows, (f) => f.story_id);
+  const withReports = stories.filter((s) => reportsOf.get(s.id)?.some((r) => r.role !== "mention"));
+  const texts = await storyTexts(withReports.map((s) => s.id), now);
+  for (const s of withReports) {
+    const content = contentOf(s, reportsOf.get(s.id)!, factsOf.get(s.id) ?? [], texts.get(s.id)!);
+    if (content) contents.set(s.id, content);
+  }
+  return contents;
+}
+
+function groupBy<T>(rows: readonly T[], key: (row: T) => number): Map<number, T[]> {
+  const groups = new Map<number, T[]>();
+  for (const row of rows) {
+    const group = groups.get(key(row));
+    if (group) group.push(row);
+    else groups.set(key(row), [row]);
+  }
+  return groups;
+}
+
+function contentOf(
+  s: { editorial_language: "en" | "zh"; public_id: string; title: string; summary_language: string },
+  reports: ReportRow[],
+  facts: Array<{ id: number; public_id: string; title: string; editorial_language: "en" | "zh" }>,
+  text: StoryText,
+) {
   reports.sort((a, b) => b.at.getTime() - a.at.getTime() || a.id.localeCompare(b.id));
 
   const primaryReports = reports.filter((r) => r.role !== "mention");
   const byFact = new Map<number, ReportRow[]>();
   for (const r of primaryReports) byFact.set(r.fact_id, [...(byFact.get(r.fact_id) ?? []), r]);
-  const facts = await sql<{ id: number; public_id: string; title: string; editorial_language: "en" | "zh" }[]>`
-    SELECT id, public_id, title, editorial_language FROM facts WHERE story_id = ${storyId}`;
   const developments = facts
     .filter((f) => byFact.has(f.id))
     .map((f) => {
@@ -127,7 +168,6 @@ async function storyContent(storyId: number, now: Date) {
   const latestReport = primaryReports[0];
   if (!latestReport) return null;
   const firstReportAt = primaryReports[primaryReports.length - 1]!.at;
-  const text = (await storyTexts([storyId], now)).get(storyId)!;
   // Historical stories without listed evidence retain their latest readable report.
   const latest = text.latest ?? latestReport;
   const origin = developments[developments.length - 1]?.representative;
@@ -148,8 +188,16 @@ async function storyContent(storyId: number, now: Date) {
 /** Only the prose that identifies an edition; uses the same reports, facts and evidence as story detail. */
 export async function loadStoryProse(storyId: number, now = new Date()) {
   const content = await storyContent(storyId, now);
-  if (!content) return null;
-  const { s, developments, text, latest, excerpt, sourceLanguage } = content;
+  return content ? proseOf(content) : null;
+}
+
+/** loadStoryProse for several stories at once; stories without public reports are absent. */
+export async function loadStoriesProse(storyIds: number[], now = new Date()) {
+  const contents = await storyContents(storyIds, now);
+  return new Map([...contents].map(([id, content]) => [id, proseOf(content)]));
+}
+
+function proseOf({ s, developments, text, latest, excerpt, sourceLanguage }: NonNullable<ReturnType<typeof contentOf>>) {
   return {
     publicId: s.public_id, editorialLanguage: s.editorial_language,
     contentLanguage: { requested: s.editorial_language, status: "original" as const, sourceLanguage, language: sourceLanguage },

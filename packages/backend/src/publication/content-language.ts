@@ -5,7 +5,7 @@ import { sql, type Db } from '../db.ts';
 import { completeReceipt } from '../providers/receipts.ts';
 import { fetchItemsByIds, toItemSummary } from './items.ts';
 import { loadItemDetail, withOutline } from './detail.ts';
-import { loadStoryProse, resolveStory, loadHotStrip, loadHot } from './stories.ts';
+import { loadStoryProse, loadStoriesProse, resolveStory, loadHotStrip, loadHot } from './stories.ts';
 import { loadReport } from './reports.ts';
 import { loadPool } from './pool.ts';
 import { contentSource, applyTranslations, validateTranslation, editionMatches, targetLanguageProse, type ContentKind, type TranslationEntry } from './content-source.ts';
@@ -183,13 +183,17 @@ export async function localizePublication<T>(input: T, lang: string, originalBod
   type Edition = { kind:ContentKind; content_id:string; source_hash:string; source_language:string; source_segments:TranslationEntry['segments']; translations:Record<string,string> };
   const editions=ids.length ? await sql<Edition[]>`SELECT kind,content_id,source_hash,source_language,source_segments,translations FROM content_translations WHERE content_id=ANY(${ids}::text[]) AND lang=${targetLanguage}` : [];
   const stored=new Map(editions.map(r=>[`${r.kind}:${r.content_id}`,r]));
+  // A page names many stories (the hot list, a timeline): resolve them together and read their prose in one batch.
+  const storyRecords=[...records.values()].filter(r=>r.kind==='story');
+  const found=new Map((await Promise.all(storyRecords.map(async r=>[r.id,await resolveStory(r.id)] as const))).flatMap(([id,f])=>f.kind==='found'?[[id,f.storyId] as const]:[]));
+  const prose=await loadStoriesProse([...new Set(found.values())]);
   for(const record of records.values()) {
     if(record.kind==='item') {
       const row=items.get(record.id);
       if(row?.visibility==='public' && row.source_mode==='editorial' && (!row.selected || (!!row.visible_after && row.visible_after<=new Date()))) record.dto=toItemSummary(row);
     } else if(record.kind==='story') {
-      const found=await resolveStory(record.id);
-      if(found.kind==='found') record.dto=await loadStoryProse(found.storyId);
+      const storyId=found.get(record.id);
+      if(storyId!==undefined) record.dto=prose.get(storyId) ?? null;
     } else {
       const [kind,key]=record.id.split(':');
       record.dto=await loadReport(kind as 'daily'|'weekly'|'monthly',key!);
