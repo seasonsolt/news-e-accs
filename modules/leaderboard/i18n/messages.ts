@@ -173,6 +173,7 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "价格为当前价，不是历史快照。": "Prices are current, not historical snapshots.",
   "美元报价按 {0} 汇率折算成人民币。": "USD prices are converted to CNY at {0}.",
   "缓存价格指命中后的输入价格，缓存写入、存储及订阅费用另计。": "Cached prices cover cache-hit input. Cache writes, storage and subscriptions are separate.",
+  "同等能力的价格降得多快：智能成本指数 →": "How fast the same capability gets cheaper: the cost of intelligence →",
   "{0} 模型前沿 · 汇总公开评测的共识排名": "{0} model frontier · Consensus rankings from public benchmarks",
   "统一各家榜单的名称和版本。同一模型的不同推理档位只选一个代表配置，选择规则预先确定，不挑最高分。匿名测试代号和混用其他模型完成任务的成绩排除；已正式公开的 Preview 版本可以参加。": "Names and versions are normalized across leaderboards. One representative reasoning configuration is selected by rules set in advance, rather than choosing the highest score. Anonymous codenames and results mixing other models are excluded. Publicly released Preview versions are eligible.",
   "只比较同一评测中的真实成绩。双方都有公开误差时，误差范围内的微小差异更接近平局，不当成确定胜负。没有测到，就没有这一场比较。": "Only real results within the same benchmark are compared. Where both models have public uncertainty estimates, small differences within that uncertainty are treated closer to ties. Missing measurements provide no comparison.",

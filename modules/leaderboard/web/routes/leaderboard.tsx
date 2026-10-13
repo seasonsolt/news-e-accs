@@ -124,6 +124,7 @@ function Board({ data: { board, entries, run } }: { data: LbBoardResponse }) {
         <section className="card p-5">
           <h2 className="text-[14px] font-semibold text-ink"><Text value="关于价格" /></h2>
           <p className="mt-2 text-[13px] leading-relaxed text-ink-3"><Text value="API 价格来自厂商官网，按每百万 Token 展示。" />{at && tx("价格为当前价，不是历史快照。")}{run.fx ? tx("美元报价按 {0} 汇率折算成人民币。", run.fx.asOf) : ""}<Text value="缓存价格指命中后的输入价格，缓存写入、存储及订阅费用另计。" /></p>
+          <Link to="/index/cost-of-intelligence" className="mt-2.5 inline-flex items-center gap-1 text-[12.5px] font-medium text-accent hover:text-accent-ink"><Text value="同等能力的价格降得多快：智能成本指数 →" /></Link>
         </section>
       </div>
     </div>

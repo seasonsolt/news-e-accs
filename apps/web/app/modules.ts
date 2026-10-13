@@ -126,6 +126,8 @@ export interface WebModule {
   tabs?: Tab[];
   /** The 我的 page: rows ahead of the engine's tools. */
   tools?: Array<{ to: string; label: string; icon: ReactNode }>;
+  /** The front page's opening: buttons after the engine's 订阅 and 加速史 (routes/home.tsx). */
+  home?: { links?: Array<{ to: string; label: string }> };
   admin?: {
     /** Navigation groups of its own, ahead of the engine's. */
     groups?: Array<{ group: string; items: AdminNavEntry[] }>;

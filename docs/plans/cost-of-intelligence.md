@@ -5,7 +5,7 @@
 
 ## 0. 进度
 
-2026-10-12 第一版完成（`modules/indices`，说明见模块 README）：页面、`/api/site/indices/cost-of-intelligence`、CSV 下载、sitemap、llms.txt 和 Dataset 结构化数据。已上线（入口仓库 `edge/src/route.mjs` 已加 `/index`）。2026-10-13 核验完剩下的 15 条价格。还没做：API v1 和 MCP 出口。
+2026-10-12 第一版完成（`modules/indices`，说明见模块 README）：页面、`/api/site/indices/cost-of-intelligence`、CSV 下载、sitemap、llms.txt 和 Dataset 结构化数据。已上线（入口仓库 `edge/src/route.mjs` 已加 `/index`）。2026-10-13 核验完剩下的 15 条价格；同日加了给 Agent 的出口（`/api/v1/agent/cost-of-intelligence` 和 MCP 工具 `get_cost_of_intelligence`），首页和模型榜的价格说明里有入口。
 
 ## 1. 要回答的问题
 

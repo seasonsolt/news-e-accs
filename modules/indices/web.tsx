@@ -6,4 +6,5 @@ export default defineWebModule({
   name: "indices",
   messages: { zh: CHINESE },
   tools: [{ to: "/index/cost-of-intelligence", label: "Cost of intelligence", icon: <IconTrendDown size={18} /> }],
+  home: { links: [{ to: "/index/cost-of-intelligence", label: "The cost of intelligence" }] },
 });

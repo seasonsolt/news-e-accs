@@ -20,6 +20,7 @@ import { CategoryTabs, FeedSwitch, SearchField, SearchIconLink } from "../featur
 import { beijingDate } from "@aihot/contracts/time";
 import { weekdayShort } from "../lib/format";
 import { requestAt } from "../features/chrono/at";
+import { webModules } from "../site-modules";
 
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
@@ -82,6 +83,7 @@ export default function Home() {
           <div className="flex flex-wrap gap-3">
             <Link to="/subscribe" className="deck-button is-primary"><Text value="订阅每日 08:00 日报" /></Link>
             <Link to="/chronicle" className="deck-button"><Text value="打开加速史" /></Link>
+            {webModules().flatMap((m) => m.home?.links ?? []).map((l) => <Link key={l.to} to={l.to} className="deck-button"><Text value={l.label} /></Link>)}
           </div>
         </Deck>
       )}

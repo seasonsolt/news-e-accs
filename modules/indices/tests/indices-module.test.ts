@@ -8,6 +8,8 @@ import { installModules } from "@aihot/backend/modules";
 import { loadDiscoveryEntries } from "@aihot/backend/publication/sitemap";
 import { loadLlmsAvailability, llmsTxt } from "@aihot/backend/publication/llms";
 import { isApiOwned } from "@aihot/contracts/http-policy";
+import { mcpToolName } from "@aihot/contracts/mcp";
+import { normalizePagePath } from "@aihot/backend/site/analytics";
 import { buildApp } from "../../../apps/api/src/app.ts";
 import { startWebServer } from "../../../apps/web/tests/web-server.ts";
 import type { CostOfIntelligence } from "../contracts.ts";
@@ -63,7 +65,32 @@ test("the index API steps from GPT-4's launch price to the cheaper CNY model, an
   assert.ok(lines.includes("gpqa-35,0.35,2024-05-01,0.1786,Test CNY model,Test,0.6200,CNY,1,2,true,https://example.org/cny"));
 });
 
+test("agents read the index as Markdown at its own address and as an MCP tool, and the guide names it", async () => {
+  const markdown = await app.inject("/api/v1/agent/cost-of-intelligence");
+  assert.equal(markdown.statusCode, 200);
+  assert.match(String(markdown.headers["content-type"]), /^text\/markdown/);
+  assert.match(markdown.body, /\| ≥ 35%（GPT-4） \| 2023-03-14 GPT-4 \(0314\) \$37\.50 \| 2024-05-01 Test CNY model \$0\.18 \| 210 倍 \|/);
+  assert.match(markdown.body, /## 回答提示/);
+  assert.match(markdown.body, /\/api\/site\/indices\/cost-of-intelligence\.csv/);
+  assert.match((await app.inject("/api/v1/agent")).body, /智能成本指数[\s\S]*\/api\/v1\/agent\/cost-of-intelligence/);
+
+  const rpc = async (method: string, params: object) => {
+    const response = await app.inject({ method: "POST", url: "/api/mcp", headers: { host: "localhost", "content-type": "application/json", accept: "application/json, text/event-stream" }, payload: { jsonrpc: "2.0", id: 1, method, params } });
+    assert.equal(response.statusCode, 200, response.body);
+    return JSON.parse(response.body.startsWith("{") ? response.body : response.body.split("\n").find((line) => line.startsWith("data:"))!.slice(5));
+  };
+  const name = mcpToolName("get_cost_of_intelligence");
+  assert.ok((await rpc("tools/list", {})).result.tools.some((tool: { name: string }) => tool.name === name));
+  const called = (await rpc("tools/call", { name, arguments: {} })).result;
+  assert.notEqual(called.isError, true, JSON.stringify(called));
+  assert.match(called.content[0].text, /智能成本指数/);
+  const low = called.structuredContent.tiers.find((t: { threshold: number }) => t.threshold === 0.35);
+  assert.deepEqual([low.first.model.slug, low.current.model.slug, Math.round(low.ratio)], ["gpt-4-0314", "coi-test-cny", 210]);
+});
+
 test("the index is routed to the api, listed in the sitemap and llms.txt, and rendered in both editions", async () => {
+  assert.equal(normalizePagePath("/index/cost-of-intelligence"), "/index/cost-of-intelligence", "its page views are counted");
+  assert.equal(normalizePagePath("/zh/index/cost-of-intelligence"), "/zh/index/cost-of-intelligence");
   assert.equal(isApiOwned("/api/site/indices/cost-of-intelligence.csv"), true);
   assert.equal(isApiOwned("/index/cost-of-intelligence"), false);
   assert.ok((await loadDiscoveryEntries()).some((e) => e.loc === "/index/cost-of-intelligence"));
@@ -85,6 +112,9 @@ test("the index is routed to the api, listed in the sitemap and llms.txt, and re
       assert.match(html, /<svg[^>]+role="img"/);
       assert.ok(html.includes("Test CNY model"), `${prefix}: the steps table names the model`);
       assert.ok(html.includes("/api/site/indices/cost-of-intelligence.csv"));
+    }
+    for (const prefix of ["", "/zh"]) {
+      assert.match(await (await fetch(`${web.origin}${prefix || "/"}`)).text(), new RegExp(`href="${prefix}/index/cost-of-intelligence"`), `${prefix || "/"}: the front page links the index`);
     }
     assert.equal(web.logs().includes("error"), false, web.logs());
   } finally {
