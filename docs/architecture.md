@@ -78,6 +78,8 @@ flowchart LR
 
 模块可在 `server.ts` 的 `workerStarted` 插口中安排首次任务；worker 在队列和定时任务注册完毕、心跳启动前调用它。网页的 `sidebar` 项由本站顶部导航展示；`module.ts` 的 `localizedPaths` 声明模块自己注册的 `/zh` 镜像，`timePaths` 声明跟随时间机器日期的页面。
 
+模块可通过后端 `storyPage` 插口提供已发布的事件页补充内容：引擎的 `publication/stories.ts` 在确认事件可公开读取后调用它，结果按模块名放在 `StoryDetail.modules`。网页的同名插口懒加载对应部件；模块自己的 `backend/publication.ts` 负责审定状态和来源撤回检查，网页仍只读 HTTP。本站 `modules/story-depth/` 用它提供英文深度区块，集中审稿入口在 `/admin/review`。
+
 模块通过 `agent.abilities` 提供 MCP 工具。`scripts/mcp-check.ts` 始终检查完整工具集合；模块可在 `mcp.checkArgs` 中提供能在空数据库上成功的检查参数。未提供时，只有入参 schema 接受 `{}` 的工具会用 `{}` 实际调用；其余工具只检查发现，不猜参数。模块工具的业务行为由模块自己的测试验证。
 
 ## 数据库迁移
