@@ -195,6 +195,9 @@ test('echoed English cannot become a ready Chinese item/report/body edition, inc
     assert.equal(targetLanguageProse('<code>const model = 1</code> ⟦0⟧','zh'),true);
     assert.equal(targetLanguageProse('发布模型，并引用 “The model is available.”','zh'),true);
     assert.equal(targetLanguageProse('The model is available.','zh'),false);
+    // Seen in the 13 October daily: a full Chinese summary naming llama.cpp and a token.
+    assert.equal(targetLanguageProse('AWS 介绍了如何在 Amazon SageMaker AI 上使用其 llama.cpp 深度学习容器部署 GGUF 模型，再添加 SemIf 适配器，使其能够针对声明的选项返回概率，而无需生成答案 token。该指南包含 CPU 和 GPU 部署代码。','zh'),true);
+    assert.equal(targetLanguageProse('发布了新模型，the weights are available for research use today','zh'),false);
     assert.equal(targetLanguageProse('发布了新模型。','en'),false);
     assert.equal(targetLanguageProse('The source says “发布模型”.','en'),true);
   } finally {

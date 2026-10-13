@@ -48,8 +48,13 @@ export function targetLanguageProse(text: string, target: "en" | "zh"): boolean 
     .replace(/<[^>]*>|https?:\/\/\S+|⟦\d+⟧|&[a-z0-9#]+;/gi, " ").trim();
   if (!/[\p{L}]/u.test(prose)) return true;
   if (target === "en") return /[A-Za-z]{2}/.test(prose) && !/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Cyrillic}]/u.test(prose);
-  if (/[\p{Script=Han}]/u.test(prose)) return !/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Cyrillic}]/u.test(prose)
-    && (prose.match(/\b[a-z][a-z'-]*\b/g)?.length ?? 0) < 3;
+  if (/[\p{Script=Han}]/u.test(prose)) {
+    // A few lowercase terms (llama.cpp, token) belong in Chinese tech prose; a left-over English
+    // sentence brings many words for little Chinese around them.
+    const english = prose.match(/\b[a-z][a-z'-]*\b/g)?.length ?? 0;
+    const han = prose.match(/\p{Script=Han}/gu)?.length ?? 0;
+    return !/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Cyrillic}]/u.test(prose) && (english < 3 || han >= english * 10);
+  }
   // Preserve short names/acronyms/version labels such as OpenAI, GPT-5 or Model 2.5.
   const words = prose.split(/\s+/);
   return words.length <= 4 && words.filter(word => /^[A-Z][a-z]+$/.test(word)).length <= 2 && words.every(word => /^(?:[A-Z][A-Za-z0-9.+/#_-]*|[0-9][0-9.,%+-]*)$/.test(word));
