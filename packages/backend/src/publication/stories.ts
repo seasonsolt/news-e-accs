@@ -3,6 +3,7 @@
 import type { HeatPoint, HotResponse, StoryDetail, StoryReportView } from "@aihot/contracts/site";
 import { SITE } from "@aihot/site";
 import { HEADER_SOURCE_LANGUAGE } from "./items.ts";
+import { serverModules } from "../modules.ts";
 import { sql } from "../db.ts";
 import { cachedByKey, SHARED_ONLY } from "../lib/cache.ts";
 import { proxiedImage, proxiedImageSet } from "../media/imgproxy.ts";
@@ -197,7 +198,9 @@ export async function loadStoryDetail(storyId: number, now = new Date()): Promis
     : [{ n: 0 }];
   const [related, topics] = await Promise.all([relatedStories(storyId, now), topicsOfStory(storyId, now)]);
   const latestAt = latest.at;
+  const modules = Object.fromEntries(await Promise.all(serverModules().filter((m) => m.storyPage).map(async (m) => [m.name, await m.storyPage!(storyId)])));
   return {
+    modules,
     editorialLanguage: s.editorial_language,
     contentLanguage: { requested: s.editorial_language, status: "original", sourceLanguage, language: sourceLanguage },
     publicId: s.public_id,

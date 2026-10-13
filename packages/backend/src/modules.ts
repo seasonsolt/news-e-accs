@@ -225,6 +225,8 @@ export interface ServerModule {
     /** Its part of the admin's runs page, under its name (admin/runs.ts); its web module draws it. */
     runs?: () => Promise<unknown>;
   };
+  /** Published additions to story detail (publication/stories.ts), keyed by the module name. */
+  storyPage?: (storyId: number) => Promise<unknown>;
   models?: Record<string, ModelStep>;
   /** Cron schedules (the worker). */
   schedules?: Scheduled[];

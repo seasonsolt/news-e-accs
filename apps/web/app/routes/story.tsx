@@ -24,6 +24,9 @@ import { Select } from "../components/ui/Controls";
 import { IconArrowLeft, IconChevronRight, IconClock, IconDoc, IconUsers } from "../components/icons";
 import { inNav } from "../components/shell/nav";
 import { Deck } from "../components/shell/Deck";
+import { loadParts } from "../site-modules";
+
+const STORY_PARTS = await loadParts((m) => m.storyPage);
 
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
@@ -326,6 +329,8 @@ export default function StoryPage() {
               </div>
             )}
           </Panel>
+
+          {STORY_PARTS.map(({ name, part: Block }) => story.modules?.[name] ? <div key={name} className="order-3"><Block data={story.modules[name]} /></div> : null)}
 
           {story.developments.length > 1 && (
             <Panel title={tx("事件进展")} sub={tx("{0} 个进展", story.developments.length)} className="order-3" right={

@@ -258,6 +258,8 @@ export interface StoryFactView {
 }
 
 export interface StoryDetail {
+  /** Approved public additions supplied by the site's modules. */
+  modules?: Record<string, unknown>;
   editorialLanguage?: EditorialLanguage;
   contentLanguage?: ContentLanguage;
   publicId: string;

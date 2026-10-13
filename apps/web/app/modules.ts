@@ -152,6 +152,7 @@ export interface WebModule {
     documentHeaders?: (request: Request) => Record<string, string>;
   };
   agent?: Part<AgentPart>;
+  storyPage?: Part<ComponentType<{ data: unknown }>>;
   topicPage?: Part<TopicPagePart>;
   /** Paths of the marks it serves that are drawn in white, for a dark tile (components/BrandMark.tsx). */
   darkMarks?: string[];
