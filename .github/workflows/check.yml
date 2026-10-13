@@ -16,10 +16,41 @@ concurrency:
   group: check-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+# Three jobs side by side: the web (typecheck, build, browser tests), the backend tests split in two
+# halves, and the Docker image. The run takes as long as the slowest of them, not their sum.
 jobs:
-  check:
+  web:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      SITE_URL: http://127.0.0.1:3000
+      API_BASE_URL: http://127.0.0.1:3001
+      SESSION_SECRET: ci-session-secret-0123456789abcdef
+      IMG_PROXY_SIGN_SECRET: ci-img-secret-0123456789abcdef
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build web
+        run: npm run build -w @aihot/web
+      - name: Browser test engines
+        run: npx playwright install --with-deps chromium webkit
+      - name: Web tests
+        run: node --test apps/web/tests/*.test.ts
+
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     services:
       postgres:
         image: postgres:17-alpine
@@ -47,6 +78,7 @@ jobs:
       - name: Install
         run: npm ci --no-audit --no-fund
       - name: Online migration safety
+        if: matrix.shard == 1
         # New migrations against the PR base: deployed ones unchanged, no whole-table rewrite or blocking index in a release.
         env:
           MIGRATION_BASE: ${{ github.event.pull_request.base.sha || github.sha }}
@@ -63,20 +95,19 @@ jobs:
           echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
           /usr/lib/postgresql/17/bin/pg_dump --version
           /usr/lib/postgresql/17/bin/pg_restore --version
-      - name: Typecheck
-        run: npm run typecheck
+
       - name: Build web
+        # Some backend tests read the built pages.
         run: npm run build -w @aihot/web
-      - name: Browser test engines
-        run: npx playwright install --with-deps chromium webkit
-      - name: Web tests
-        run: node --test apps/web/tests/*.test.ts
 
       # Each test file runs on its own copy of aihot_ci (tests/databases.ts), which the run migrates and
-      # leaves empty; the smoke check then reads that empty database.
-      - name: Backend tests
+      # leaves empty; the smoke check then reads that empty database. Each half gets every other file.
+      - name: Backend tests (half ${{ matrix.shard }})
+        env:
+          TEST_SHARD: ${{ matrix.shard }}/2
         run: npm test
       - name: Smoke check of the built site
+        if: matrix.shard == 1
         # The site itself runs with collection and model calls off (the tests above use local stubs).
         env:
           COLLECT_ENABLED: "false"
@@ -88,7 +119,7 @@ jobs:
           node scripts/smoke.ts --base http://127.0.0.1:3000
           node scripts/mcp-check.ts http://127.0.0.1:3000/api/mcp
       - name: Server logs
-        if: failure()
+        if: failure() && matrix.shard == 1
         run: tail -n 60 "$RUNNER_TEMP/api.log" "$RUNNER_TEMP/web.log" 2>/dev/null || true
 
   docker:
