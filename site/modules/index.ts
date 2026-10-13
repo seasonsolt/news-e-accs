@@ -4,5 +4,6 @@
 import type { ModuleDeclaration } from "@aihot/contracts/modules";
 import leaderboard from "@aihot/leaderboard";
 import indices from "@aihot/indices";
+import storyDepth from "@aihot/story-depth";
 
-export const MODULES: readonly ModuleDeclaration[] = [leaderboard, indices];
+export const MODULES: readonly ModuleDeclaration[] = [leaderboard, indices, storyDepth];

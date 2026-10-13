@@ -1,0 +1,7 @@
+{
+  "name": "@aihot/story-depth",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./module.ts", "./server": "./server.ts", "./web": "./web.tsx", "./contracts": "./contracts.ts" },
+  "dependencies": { "@aihot/api": "*", "@aihot/backend": "*", "@aihot/contracts": "*", "@aihot/site": "*", "@aihot/web": "*", "fastify": "5.12.5", "zod": "4.6.5" }
+}

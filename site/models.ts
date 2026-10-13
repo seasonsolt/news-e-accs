@@ -82,4 +82,4 @@ export const PRESETS: Record<string, ModelPreset> = {
  * 每一步默认用的模型（步骤见后台“模型与评测”页），值是上面的名字或 default。没写的步骤用 default。
  * 例：{ score: "glm-5.3-flash-selection", groupReview: "mimo-v2.6-flash" }
  */
-export const DEFAULTS: Record<string, string> = {};
+export const DEFAULTS: Record<string, string> = { storyDepth: "default" };

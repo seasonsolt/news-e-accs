@@ -2,5 +2,6 @@
 import type { WebModule } from "@aihot/web/modules";
 import leaderboard from "@aihot/leaderboard/web";
 import indices from "@aihot/indices/web";
+import storyDepth from "@aihot/story-depth/web";
 
-export const WEB_MODULES: readonly WebModule[] = [leaderboard, indices];
+export const WEB_MODULES: readonly WebModule[] = [leaderboard, indices, storyDepth];
