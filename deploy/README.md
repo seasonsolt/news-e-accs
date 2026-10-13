@@ -79,6 +79,10 @@ ssh dmit journalctl -u 'eacc-*' -f                 # 看日志
 ssh dmit systemctl status eacc-api eacc-worker eacc-web cloudflared-news
 ```
 
+看一个页面慢在哪：响应头 `Server-Timing` 里，网页的 `api` 是读 api 的耗时（几次读取相加）、`total` 是到发出响应头为止的总耗时，
+api 自己的响应带 `app`。`x-eacc-edge-cache: HIT` 时这些是缓存那一次渲染的数字。在服务器上绕开 Cloudflare 直接看：
+`ssh dmit 'curl -s -o /dev/null -D - http://127.0.0.1:3000/ | grep -i server-timing'`。
+
 改配置：编辑服务器上的 `/srv/eacc/.env`，然后 `ssh dmit systemctl restart eacc-api eacc-worker eacc-web`。
 
 ### 打开模型调用

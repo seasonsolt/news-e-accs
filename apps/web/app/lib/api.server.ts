@@ -5,6 +5,7 @@ import { data, redirect, type HeadersArgs } from "react-router";
 import { contentUrl } from "./content-fetch.ts";
 import { logError } from "./errors.server.ts";
 import { localePath, requestLocale, type Locale } from "./locale.ts";
+import { recordApiRead } from "./timing.server.ts";
 
 /** Where the api listens (API_BASE_URL, set by the deployment); development uses the default. */
 export const API_BASE_URL = process.env.API_BASE_URL || "http://127.0.0.1:3001";
@@ -27,6 +28,7 @@ export class ApiError extends Error {
 }
 
 export async function apiGet<T>(path: string, init?: { lang?: Locale; request?: Request; signal?: AbortSignal; headers?: Record<string, string>; responseHeaders?: Headers }): Promise<T> {
+  const started = performance.now();
   try {
     const res = await fetch(`${API_BASE_URL}${contentUrl(path, init?.request, init?.lang)}`, {
       headers: { accept: "application/json", "x-aihot-ssr": "1", ...init?.headers },
@@ -47,6 +49,8 @@ export async function apiGet<T>(path: string, init?: { lang?: Locale; request?: 
       });
     }
     throw error;
+  } finally {
+    recordApiRead(performance.now() - started);
   }
 }
 
