@@ -2,7 +2,7 @@
 // Reads through the same public read layer as v1; no cookies are read or set.
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { isCategoryKey, isChannelKey, type CategoryKey, type ChannelKey } from "@aihot/contracts/taxonomy";
-import type { ReportIndexResponse, ReportLatestPage, ReportNavigationResponse, SearchSuggestions, SiteContact } from "@aihot/contracts/site";
+import type { ReportIndexResponse, ReportLatestPage, ReportNavigationResponse, SearchSuggestions, SiteContact, TopicLink } from "@aihot/contracts/site";
 import { InvalidCursorError } from "@aihot/backend/lib/cursor";
 import { FEATURES } from "@aihot/industry/features";
 import { exportMarkdown, loadItemDetail } from "@aihot/backend/publication/detail";
@@ -18,7 +18,7 @@ import { loadChangelog, siteMeta } from "@aihot/backend/site/meta";
 import { loadContact, loadMakerAvatar } from "@aihot/backend/site/contact";
 import { loadSiteStats } from "@aihot/backend/site/stats";
 import { itemAvailability } from "@aihot/backend/publication/availability";
-import { listTopicSummaries, loadTopicPage, topicBrowseLinks } from "@aihot/backend/publication/topics";
+import { listTopicSummaries, loadTopicPage, topicBrowseLinks, topicLinks } from "@aihot/backend/publication/topics";
 import { registerFeedback } from "./feedback.ts";
 import { registerNewsletter } from "./newsletter.ts";
 import { loadHot, loadStoryDetail, resolveStory } from "@aihot/backend/publication/stories";
@@ -27,8 +27,14 @@ import { cached } from "@aihot/backend/lib/cache";
 import { looseQuery, sendJsonWithEtag as sendOriginalJson, sendProblem } from "../http/respond.ts";
 
 import { localizePublication } from "@aihot/backend/publication/content-language";
+const editionLang = (req: FastifyRequest) => (looseQuery(req).lang === "en" ? "en" : "zh");
+
+/** Topic chips are site vocabulary, named in the requested edition's language like the rest of the page. */
+const withTopicNames = <T extends { topics: TopicLink[] }>(req: FastifyRequest, detail: T): T =>
+  ({ ...detail, topics: topicLinks(detail.topics.map((t) => t.slug), editionLang(req)) });
+
 async function sendJsonWithEtag(req: FastifyRequest, reply: FastifyReply, payload: unknown, opts: Parameters<typeof sendOriginalJson>[3]) {
-  const lang = looseQuery(req).lang === "en" ? "en" : "zh";
+  const lang = editionLang(req);
   const localized = await localizePublication(payload, lang, opts.etagPrefix === "item-original");
   // The URL includes lang, and the ETag fingerprints that exact edition including fallback status.
   const content = opts.etagOf && typeof opts.etagOf === "object" && localized && typeof localized === "object"
@@ -128,7 +134,7 @@ export function registerSite(app: FastifyInstance) {
     // The English edition reads the original body (which is English for native items); Chinese the Chinese text.
     const result = await loadItemDetail(id, looseQuery(req).lang === "en" ? "original" : "zh");
     if (result.kind === "not_found") return sendProblem(req, reply, { status: 404, code: "not_found", detail: "item not found", cacheControl: "public, max-age=60" });
-    return sendJsonWithEtag(req, reply, result.item, { etagPrefix: "item", cacheControl: "public, max-age=60, s-maxage=60" });
+    return sendJsonWithEtag(req, reply, withTopicNames(req, result.item), { etagPrefix: "item", cacheControl: "public, max-age=60, s-maxage=60" });
   }));
 
   app.get("/api/site/items/:id/original", siteHandler(async (req, reply) => {
@@ -136,7 +142,7 @@ export function registerSite(app: FastifyInstance) {
     if (!/^[a-zA-Z0-9_-]{1,80}$/.test(id)) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "item not found" });
     const result = await loadItemDetail(id, "original");
     if (result.kind === "not_found") return sendProblem(req, reply, { status: 404, code: "not_found", detail: "item not found", cacheControl: "public, max-age=60" });
-    return sendJsonWithEtag(req, reply, result.item, { etagPrefix: "item-original", cacheControl: "public, max-age=60, s-maxage=60" });
+    return sendJsonWithEtag(req, reply, withTopicNames(req, result.item), { etagPrefix: "item-original", cacheControl: "public, max-age=60, s-maxage=60" });
   }));
 
   app.get("/api/site/stories/:publicId/followups", siteHandler(async (req, reply) => {
@@ -172,17 +178,17 @@ export function registerSite(app: FastifyInstance) {
   }));
 
   app.get("/api/site/topics", siteHandler(async (req, reply) => {
-    return sendJsonWithEtag(req, reply, await listTopicSummaries(), { etagPrefix: "topics", cacheControl: "public, max-age=300, s-maxage=300" });
+    return sendJsonWithEtag(req, reply, await listTopicSummaries(editionLang(req)), { etagPrefix: "topics", cacheControl: "public, max-age=300, s-maxage=300" });
   }));
 
   app.get('/api/site/search/suggestions', siteHandler(async (req, reply) => {
-    const body: SearchSuggestions = { topics: topicBrowseLinks(), hot: await hotSearchLinks() };
+    const body: SearchSuggestions = { topics: topicBrowseLinks(editionLang(req)), hot: await hotSearchLinks() };
     return sendJsonWithEtag(req, reply, body, { etagPrefix: 'suggestions', cacheControl: 'public, max-age=30, s-maxage=30, must-revalidate' });
   }));
 
   app.get("/api/site/topics/:slug", siteHandler(async (req, reply) => {
     const slug = (req.params as { slug: string }).slug;
-    const data = await loadTopicPage(slug, Number(looseQuery(req).page ?? 1));
+    const data = await loadTopicPage(slug, Number(looseQuery(req).page ?? 1), undefined, editionLang(req));
     if (!data) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "topic page not found", cacheControl: "public, max-age=60" });
     return sendJsonWithEtag(req, reply, data, { etagPrefix: "topic", cacheControl: "public, max-age=60, s-maxage=60" });
   }));
@@ -214,7 +220,7 @@ export function registerSite(app: FastifyInstance) {
     if (found.kind === "not_found") return sendProblem(req, reply, { status: 404, code: "not_found", detail: "story not found", cacheControl: "public, max-age=60" });
     const data = await loadStoryDetail(found.storyId);
     if (!data) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "story not public", cacheControl: "public, max-age=60" });
-    return sendJsonWithEtag(req, reply, data, { etagPrefix: "story", cacheControl: "public, max-age=60, s-maxage=60" });
+    return sendJsonWithEtag(req, reply, withTopicNames(req, data), { etagPrefix: "story", cacheControl: "public, max-age=60, s-maxage=60" });
   }));
 
   app.get("/api/site/reports/:kind", siteHandler(async (req, reply) => {

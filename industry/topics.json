@@ -3,17 +3,29 @@
     {
       "key": "company",
       "name": "公司与模型",
-      "blurb": "按厂商追踪模型、产品与公司动态"
+      "blurb": "按厂商追踪模型、产品与公司动态",
+      "en": {
+        "name": "Companies and models",
+        "blurb": "Models, products and company news, by maker"
+      }
     },
     {
       "key": "field",
       "name": "技术方向",
-      "blurb": "按技术领域深挖：Agent、多模态、具身智能……"
+      "blurb": "按技术领域深挖：Agent、多模态、具身智能……",
+      "en": {
+        "name": "Technology fields",
+        "blurb": "In depth by field: agents, multimodality, embodied AI…"
+      }
     },
     {
       "key": "genre",
       "name": "内容形态",
-      "blurb": "按内容类型浏览：论文、教程、观点、政策……"
+      "blurb": "按内容类型浏览：论文、教程、观点、政策……",
+      "en": {
+        "name": "Content types",
+        "blurb": "By kind of content: papers, tutorials, opinions, policy…"
+      }
     }
   ],
   "topics": [
@@ -22,14 +34,20 @@
       "name": "OpenAI / ChatGPT",
       "group": "company",
       "entityId": "openai",
-      "definition": "OpenAI 的全部动态：GPT 系列模型、ChatGPT 与 Sora 产品、公司战略与人事的持续追踪。"
+      "definition": "OpenAI 的全部动态：GPT 系列模型、ChatGPT 与 Sora 产品、公司战略与人事的持续追踪。",
+      "en": {
+        "definition": "Everything from OpenAI: the GPT models, ChatGPT and Sora, company strategy and people."
+      }
     },
     {
       "slug": "anthropic",
       "name": "Anthropic / Claude",
       "group": "company",
       "entityId": "anthropic",
-      "definition": "Anthropic 的全部动态：Claude 系列模型、Claude Code、安全研究路线与公司进展的持续追踪。"
+      "definition": "Anthropic 的全部动态：Claude 系列模型、Claude Code、安全研究路线与公司进展的持续追踪。",
+      "en": {
+        "definition": "Everything from Anthropic: the Claude models, Claude Code, its safety research and company news."
+      }
     },
     {
       "slug": "google",
@@ -39,91 +57,134 @@
       "aliases": [
         "DeepMind"
       ],
-      "definition": "Google 与 DeepMind 的 AI 动态：Gemini 系列、Veo 视频模型、研究成果与产品生态的持续追踪。"
+      "definition": "Google 与 DeepMind 的 AI 动态：Gemini 系列、Veo 视频模型、研究成果与产品生态的持续追踪。",
+      "en": {
+        "definition": "AI news from Google and DeepMind: the Gemini models, Veo video models, research results and the product ecosystem."
+      }
     },
     {
       "slug": "deepseek",
       "name": "DeepSeek",
       "group": "company",
       "entityId": "deepseek",
-      "definition": "DeepSeek（深度求索）的模型发布、开源权重、技术报告与 API 价格变化。"
+      "definition": "DeepSeek（深度求索）的模型发布、开源权重、技术报告与 API 价格变化。",
+      "en": {
+        "definition": "DeepSeek's model releases, open weights, technical reports and API price changes."
+      }
     },
     {
       "slug": "qwen",
       "name": "千问 Qwen",
       "group": "company",
       "entityId": "qwen",
-      "definition": "阿里千问 Qwen 系列的开源发布与迭代：从旗舰模型到端侧小模型的全谱系动态。"
+      "definition": "阿里千问 Qwen 系列的开源发布与迭代：从旗舰模型到端侧小模型的全谱系动态。",
+      "en": {
+        "name": "Qwen",
+        "definition": "Open releases and updates across Alibaba's Qwen family, from flagship models to small on-device ones."
+      }
     },
     {
       "slug": "kimi",
       "name": "Kimi / 月之暗面",
       "group": "company",
       "entityId": "kimi",
-      "definition": "月之暗面 Kimi 系列模型与产品动态：K 系列开源模型、长上下文技术与产品演进的追踪。"
+      "definition": "月之暗面 Kimi 系列模型与产品动态：K 系列开源模型、长上下文技术与产品演进的追踪。",
+      "en": {
+        "name": "Kimi / Moonshot AI",
+        "definition": "Moonshot AI's Kimi models and products: the open K series, long-context work and product changes."
+      }
     },
     {
       "slug": "minimax",
       "name": "MiniMax",
       "group": "company",
       "entityId": "minimax",
-      "definition": "MiniMax 的模型与产品动态：M 系列大模型、语音与多模态能力、开源与商业化进展。"
+      "definition": "MiniMax 的模型与产品动态：M 系列大模型、语音与多模态能力、开源与商业化进展。",
+      "en": {
+        "definition": "MiniMax's models and products: the M series, voice and multimodal capabilities, open releases and commercial progress."
+      }
     },
     {
       "slug": "zhipu",
       "name": "智谱 GLM",
       "group": "company",
       "entityId": "zhipu",
-      "definition": "智谱的 GLM 系列模型动态：旗舰开源发布、代码与推理能力迭代、商业化与生态进展的追踪。"
+      "definition": "智谱的 GLM 系列模型动态：旗舰开源发布、代码与推理能力迭代、商业化与生态进展的追踪。",
+      "en": {
+        "name": "Zhipu GLM",
+        "definition": "Zhipu's GLM models: flagship open releases, coding and reasoning gains, commercial and ecosystem progress."
+      }
     },
     {
       "slug": "xai",
       "name": "xAI / Grok",
       "group": "company",
       "entityId": "xai",
-      "definition": "马斯克 xAI 与 Grok 系列的全部动态：模型迭代、算力扩张与 X 平台整合的持续追踪。"
+      "definition": "马斯克 xAI 与 Grok 系列的全部动态：模型迭代、算力扩张与 X 平台整合的持续追踪。",
+      "en": {
+        "definition": "Everything from Elon Musk's xAI and the Grok models: model updates, compute build-out and integration with X."
+      }
     },
     {
       "slug": "meta",
       "name": "Meta / Llama",
       "group": "company",
       "entityId": "meta",
-      "definition": "Meta 的 AI 动态：Llama 与 Muse 系列模型、超级智能实验室与 Meta AI 产品。"
+      "definition": "Meta 的 AI 动态：Llama 与 Muse 系列模型、超级智能实验室与 Meta AI 产品。",
+      "en": {
+        "definition": "Meta's AI news: the Llama and Muse models, its superintelligence lab and Meta AI products."
+      }
     },
     {
       "slug": "microsoft",
       "name": "Microsoft / Copilot",
       "group": "company",
       "entityId": "microsoft",
-      "definition": "微软的 AI 布局：Copilot 全家桶、Azure AI 基础设施与 OpenAI 合作关系的持续追踪。"
+      "definition": "微软的 AI 布局：Copilot 全家桶、Azure AI 基础设施与 OpenAI 合作关系的持续追踪。",
+      "en": {
+        "definition": "Microsoft's AI moves: the Copilot family, Azure AI infrastructure and its partnership with OpenAI."
+      }
     },
     {
       "slug": "nvidia",
       "name": "NVIDIA 英伟达",
       "group": "company",
       "entityId": "nvidia",
-      "definition": "英伟达的 AI 芯片与生态动态：GPU 新品、CUDA 生态、机器人平台与 AI 算力市场的风向。"
+      "definition": "英伟达的 AI 芯片与生态动态：GPU 新品、CUDA 生态、机器人平台与 AI 算力市场的风向。",
+      "en": {
+        "name": "NVIDIA",
+        "definition": "NVIDIA's AI chips and ecosystem: new GPUs, CUDA, robotics platforms and where the AI compute market is heading."
+      }
     },
     {
       "slug": "hugging-face",
       "name": "Hugging Face",
       "group": "company",
       "entityId": "hugging-face",
-      "definition": "Hugging Face 开源社区动态：热门模型与数据集、排行榜变化与开源生态的晴雨表。"
+      "definition": "Hugging Face 开源社区动态：热门模型与数据集、排行榜变化与开源生态的晴雨表。",
+      "en": {
+        "definition": "The Hugging Face open-source community: trending models and datasets, leaderboard changes, a barometer of open AI."
+      }
     },
     {
       "slug": "cursor",
       "name": "Cursor",
       "group": "company",
       "entityId": "cursor",
-      "definition": "Cursor（Anysphere）的编辑器与编码 Agent 动态：产品迭代、自研模型与定价变化。"
+      "definition": "Cursor（Anysphere）的编辑器与编码 Agent 动态：产品迭代、自研模型与定价变化。",
+      "en": {
+        "definition": "Cursor (Anysphere): editor and coding-agent updates, its own models and pricing changes."
+      }
     },
     {
       "slug": "openrouter",
       "name": "OpenRouter",
       "group": "company",
       "entityId": "openrouter",
-      "definition": "OpenRouter 模型路由平台动态：新模型上架、用量排行与开发者选型的真实市场信号。"
+      "definition": "OpenRouter 模型路由平台动态：新模型上架、用量排行与开发者选型的真实市场信号。",
+      "en": {
+        "definition": "The OpenRouter model-routing platform: new models listed, usage rankings and real market signals of what developers pick."
+      }
     },
     {
       "slug": "agent",
@@ -132,7 +193,11 @@
       "tags": [
         "Agent"
       ],
-      "definition": "让模型自主规划、调用工具、完成多步任务的技术方向——从 Claude Code、Manus 到各家 Agent 框架与评测基准的全部动态。"
+      "definition": "让模型自主规划、调用工具、完成多步任务的技术方向——从 Claude Code、Manus 到各家 Agent 框架与评测基准的全部动态。",
+      "en": {
+        "name": "Agents",
+        "definition": "Models that plan, call tools and finish multi-step tasks on their own: from Claude Code and Manus to agent frameworks and benchmarks."
+      }
     },
     {
       "slug": "coding",
@@ -141,7 +206,11 @@
       "tags": [
         "编码"
       ],
-      "definition": "AI 写代码的一切：编码助手、Vibe Coding、代码模型评测与开发工作流变革。"
+      "definition": "AI 写代码的一切：编码助手、Vibe Coding、代码模型评测与开发工作流变革。",
+      "en": {
+        "name": "AI coding",
+        "definition": "Everything about AI writing code: coding assistants, vibe coding, code-model evaluations and changing developer workflows."
+      }
     },
     {
       "slug": "reasoning",
@@ -150,7 +219,11 @@
       "tags": [
         "推理"
       ],
-      "definition": "模型推理能力的进展：思维链、推理模型、数学与逻辑基准的突破与争议。"
+      "definition": "模型推理能力的进展：思维链、推理模型、数学与逻辑基准的突破与争议。",
+      "en": {
+        "name": "Reasoning",
+        "definition": "Progress in model reasoning: chain of thought, reasoning models, breakthroughs and disputes on math and logic benchmarks."
+      }
     },
     {
       "slug": "multimodal",
@@ -159,7 +232,11 @@
       "tags": [
         "多模态"
       ],
-      "definition": "文本之外的能力：视觉理解、图文混合、音视频输入输出的模型与产品进展。"
+      "definition": "文本之外的能力：视觉理解、图文混合、音视频输入输出的模型与产品进展。",
+      "en": {
+        "name": "Multimodal",
+        "definition": "Beyond text: models and products for visual understanding, mixed image and text, and audio and video in and out."
+      }
     },
     {
       "slug": "image-gen",
@@ -168,7 +245,11 @@
       "tags": [
         "图像生成"
       ],
-      "definition": "AI 画图的最前线：文生图模型迭代、图像编辑能力与创作工具生态的全部动态。"
+      "definition": "AI 画图的最前线：文生图模型迭代、图像编辑能力与创作工具生态的全部动态。",
+      "en": {
+        "name": "Image generation",
+        "definition": "The front line of AI image making: text-to-image models, image editing and the creative-tool ecosystem."
+      }
     },
     {
       "slug": "video",
@@ -177,7 +258,11 @@
       "tags": [
         "视频"
       ],
-      "definition": "AI 视频生成与理解：文生视频模型、视频编辑工具与影视创作变革的追踪。"
+      "definition": "AI 视频生成与理解：文生视频模型、视频编辑工具与影视创作变革的追踪。",
+      "en": {
+        "name": "AI video",
+        "definition": "AI video generation and understanding: text-to-video models, editing tools and how film and video making change."
+      }
     },
     {
       "slug": "voice",
@@ -186,7 +271,11 @@
       "tags": [
         "语音"
       ],
-      "definition": "AI 语音与音频的进展：语音合成、实时对话、音乐生成与音频理解的模型与产品。"
+      "definition": "AI 语音与音频的进展：语音合成、实时对话、音乐生成与音频理解的模型与产品。",
+      "en": {
+        "name": "Voice and audio",
+        "definition": "AI voice and audio: speech synthesis, real-time conversation, music generation and audio understanding."
+      }
     },
     {
       "slug": "embodied",
@@ -195,7 +284,11 @@
       "tags": [
         "具身智能"
       ],
-      "definition": "AI 走进物理世界：人形机器人、具身基础模型与真实环境操作能力的进展追踪。"
+      "definition": "AI 走进物理世界：人形机器人、具身基础模型与真实环境操作能力的进展追踪。",
+      "en": {
+        "name": "Embodied AI",
+        "definition": "AI in the physical world: humanoid robots, embodied foundation models and manipulation in real environments."
+      }
     },
     {
       "slug": "on-device",
@@ -204,7 +297,11 @@
       "tags": [
         "端侧"
       ],
-      "definition": "跑在手机、电脑与边缘设备上的 AI：小模型、本地推理与端侧芯片的进展。"
+      "definition": "跑在手机、电脑与边缘设备上的 AI：小模型、本地推理与端侧芯片的进展。",
+      "en": {
+        "name": "On-device AI",
+        "definition": "AI that runs on phones, laptops and edge devices: small models, local inference and on-device chips."
+      }
     },
     {
       "slug": "open-source",
@@ -214,7 +311,11 @@
         "开源生态",
         "开源/仓库"
       ],
-      "definition": "开源模型、框架与仓库动态：权重开放、社区项目爆火、开源与闭源的力量消长。"
+      "definition": "开源模型、框架与仓库动态：权重开放、社区项目爆火、开源与闭源的力量消长。",
+      "en": {
+        "name": "Open source",
+        "definition": "Open models, frameworks and repositories: weight releases, community projects that take off, and the balance between open and closed."
+      }
     },
     {
       "slug": "engineering",
@@ -223,7 +324,11 @@
       "tags": [
         "部署/工程"
       ],
-      "definition": "把模型跑起来的工程实践：推理优化、显存与成本、Serving 架构与基础设施选型。"
+      "definition": "把模型跑起来的工程实践：推理优化、显存与成本、Serving 架构与基础设施选型。",
+      "en": {
+        "name": "Deployment engineering",
+        "definition": "Running models in practice: inference optimization, memory and cost, serving architecture and infrastructure choices."
+      }
     },
     {
       "slug": "data-training",
@@ -232,7 +337,11 @@
       "tags": [
         "数据/训练"
       ],
-      "definition": "训练侧的门道：数据集构建、合成数据、预训练与后训练方法、算力与训练成本。"
+      "definition": "训练侧的门道：数据集构建、合成数据、预训练与后训练方法、算力与训练成本。",
+      "en": {
+        "name": "Data and training",
+        "definition": "The training side: building datasets, synthetic data, pre- and post-training methods, compute and training cost."
+      }
     },
     {
       "slug": "safety",
@@ -241,7 +350,11 @@
       "tags": [
         "安全/对齐"
       ],
-      "definition": "AI 安全与对齐：越狱与防御、模型行为研究、安全评测与治理框架的进展。"
+      "definition": "AI 安全与对齐：越狱与防御、模型行为研究、安全评测与治理框架的进展。",
+      "en": {
+        "name": "Safety and alignment",
+        "definition": "AI safety and alignment: jailbreaks and defenses, model behavior research, safety evaluations and governance frameworks."
+      }
     },
     {
       "slug": "mcp",
@@ -250,7 +363,11 @@
       "tags": [
         "MCP/工具调用"
       ],
-      "definition": "模型连接外部世界的协议与实践：MCP 生态、function calling、工具链集成的动态。"
+      "definition": "模型连接外部世界的协议与实践：MCP 生态、function calling、工具链集成的动态。",
+      "en": {
+        "name": "MCP and tool use",
+        "definition": "How models reach the outside world: the MCP ecosystem, function calling and tool-chain integration."
+      }
     },
     {
       "slug": "model-releases",
@@ -259,7 +376,11 @@
       "tags": [
         "模型发布"
       ],
-      "definition": "新模型的发布、开源与迭代：大模型厂商的旗舰更新、开源权重放出、性能与价格变化的第一时间记录。"
+      "definition": "新模型的发布、开源与迭代：大模型厂商的旗舰更新、开源权重放出、性能与价格变化的第一时间记录。",
+      "en": {
+        "name": "Model releases",
+        "definition": "New models released, opened and updated: flagship launches, open weights, and performance and price changes as they happen."
+      }
     },
     {
       "slug": "product-updates",
@@ -268,7 +389,11 @@
       "tags": [
         "产品更新"
       ],
-      "definition": "AI 产品与应用的功能上新、改版与商业化动态——谁家的产品变强了、变贵了、能用了。"
+      "definition": "AI 产品与应用的功能上新、改版与商业化动态——谁家的产品变强了、变贵了、能用了。",
+      "en": {
+        "name": "Product updates",
+        "definition": "New features, redesigns and commercial moves in AI products: which ones got better, pricier or newly available."
+      }
     },
     {
       "slug": "papers",
@@ -277,7 +402,11 @@
       "tags": [
         "论文/研究"
       ],
-      "definition": "值得读的 AI 论文与研究成果：架构创新、训练方法、能力测量与理论进展的精选解读。"
+      "definition": "值得读的 AI 论文与研究成果：架构创新、训练方法、能力测量与理论进展的精选解读。",
+      "en": {
+        "name": "Papers and research",
+        "definition": "AI papers and research worth reading: new architectures, training methods, capability measurement and theory, explained."
+      }
     },
     {
       "slug": "benchmarks",
@@ -286,7 +415,11 @@
       "tags": [
         "评测/基准"
       ],
-      "definition": "模型到底谁强：Benchmark 成绩、评测方法论争议与排行榜变化的持续记录。"
+      "definition": "模型到底谁强：Benchmark 成绩、评测方法论争议与排行榜变化的持续记录。",
+      "en": {
+        "name": "Benchmarks",
+        "definition": "Which model is actually stronger: benchmark results, disputes over evaluation methods and leaderboard changes."
+      }
     },
     {
       "slug": "tutorials",
@@ -295,7 +428,11 @@
       "tags": [
         "教程/实践"
       ],
-      "definition": "拿来就能用的实操内容：提示词技巧、工作流搭建、工具用法与踩坑经验。"
+      "definition": "拿来就能用的实操内容：提示词技巧、工作流搭建、工具用法与踩坑经验。",
+      "en": {
+        "name": "Tutorials",
+        "definition": "Hands-on material you can use right away: prompting techniques, workflows, tool usage and lessons learned."
+      }
     },
     {
       "slug": "opinions",
@@ -304,7 +441,11 @@
       "tags": [
         "大佬观点"
       ],
-      "definition": "行业关键人物在想什么：创始人访谈、研究者论战、投资人判断的观点集合。"
+      "definition": "行业关键人物在想什么：创始人访谈、研究者论战、投资人判断的观点集合。",
+      "en": {
+        "name": "Opinions",
+        "definition": "What the people who shape AI are thinking: founder interviews, researcher debates and investor views."
+      }
     },
     {
       "slug": "trends",
@@ -313,7 +454,11 @@
       "tags": [
         "现象/趋势"
       ],
-      "definition": "正在发生的行业级变化：使用习惯迁移、能力涌现、社会影响与市场格局的观察。"
+      "definition": "正在发生的行业级变化：使用习惯迁移、能力涌现、社会影响与市场格局的观察。",
+      "en": {
+        "name": "Trends",
+        "definition": "Industry-wide shifts as they happen: changing habits, emerging capabilities, social impact and market structure."
+      }
     },
     {
       "slug": "industry",
@@ -322,7 +467,11 @@
       "tags": [
         "行业动态"
       ],
-      "definition": "AI 行业的商业脉搏：融资并购、人事变动、合作与竞争、政策与市场信号。"
+      "definition": "AI 行业的商业脉搏：融资并购、人事变动、合作与竞争、政策与市场信号。",
+      "en": {
+        "name": "Industry news",
+        "definition": "The business pulse of AI: funding and acquisitions, people moves, partnerships and competition, policy and market signals."
+      }
     },
     {
       "slug": "policy",
@@ -331,7 +480,11 @@
       "tags": [
         "政策/监管"
       ],
-      "definition": "AI 相关政策法规与政府监管动态：立法进展、出口管制与全球治理框架的追踪。"
+      "definition": "AI 相关政策法规与政府监管动态：立法进展、出口管制与全球治理框架的追踪。",
+      "en": {
+        "name": "Policy and regulation",
+        "definition": "AI law and government oversight: legislation, export controls and global governance frameworks."
+      }
     }
   ]
 }

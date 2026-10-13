@@ -23,6 +23,8 @@ test("llms and sitemap build from current topic scope rather than a cached direc
       VALUES (${id},${source},'MiniMax 发布模型','Summary',${`https://example.org/${id}`},now(),now(),now(),true,true,now() - interval '1 minute',ARRAY['entity:minimax'],'news','ai-models')`;
   }
   assert.equal((await topicPageCounts()).find((topic) => topic.slug === "minimax")!.indexable, true);
+  const listed = (await loadLlmsAvailability()).topics.find((topic) => topic.slug === "minimax");
+  assert.ok(listed && !/\p{Script=Han}/u.test(listed.name + listed.definition), "llms.txt describes topics in English");
   await sql`UPDATE publications SET visibility = 'withdrawn' WHERE source_id = ${source}`;
   assert.ok(!(await loadLlmsAvailability()).topics.some((topic) => topic.slug === "minimax"));
   const sitemap = await app.inject("/sitemap.xml");

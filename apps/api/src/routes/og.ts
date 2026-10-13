@@ -6,7 +6,7 @@ import { localizePublication } from "@aihot/backend/publication/content-language
 import { distributionCategory, distributionLanguage, editionPath, editionReady, type DistributionLanguage } from "@aihot/backend/publication/distribution";
 import { loadItemOgCard, loadItemShare } from "@aihot/backend/publication/og";
 import { loadReport, type ReportKind } from "@aihot/backend/publication/reports";
-import { findTopic, TOPIC_GROUPS, TOPICS } from "@aihot/backend/publication/topics";
+import { findTopic, TOPIC_GROUPS, TOPICS, topicText } from "@aihot/backend/publication/topics";
 import { loadStoryDetail, resolveStory } from "@aihot/backend/publication/stories";
 import { ogEtag, renderOg, type OgCard } from "@aihot/backend/media/og";
 import { posterEtag, renderPoster, type Poster } from "@aihot/backend/media/poster";
@@ -127,7 +127,7 @@ export function registerOg(app: FastifyInstance) {
     const file = (req.params as { file: string }).file;
     const t = file.endsWith(".png") ? findTopic(file.slice(0, -4)) : null;
     if (!t) return notFound(reply);
-    if (lang === "en") return send(req, reply, { kicker: "Topic", title: t.name, subtitle: t.definition }, 86400);
+    if (lang === "en") return send(req, reply, { kicker: "Topic", title: topicText(t, "en").name, subtitle: topicText(t, "en").definition }, 86400);
     return send(req, reply, { kicker: `主题 · ${TOPIC_GROUPS.find((g) => g.key === t.group)?.name ?? ""}`, title: `${t.name} 最新动态`, subtitle: t.definition }, 86400);
   }));
 

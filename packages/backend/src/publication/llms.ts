@@ -8,7 +8,7 @@ import { ACCESS, EDITION_TIMES, POLICY, SITE } from "@aihot/site";
 import { siteUrl } from "./links.ts";
 import { sql } from "../db.ts";
 import { serverModules, type LlmsLines } from "../modules.ts";
-import { TOPIC_GROUPS, TOPICS, topicPageCounts } from "./topics.ts";
+import { topicGroups, TOPICS, topicPageCounts } from "./topics.ts";
 
 /**
  * Discovery only needs to know whether an entry exists, not count its entire history, and which topics are
@@ -26,7 +26,7 @@ export async function loadLlmsAvailability() {
   const indexed = new Set(counts.filter((c) => c.indexable).map((c) => c.slug));
   return {
     ...row!,
-    topics: TOPICS.filter((t) => indexed.has(t.slug)).map((t) => ({ slug: t.slug, name: t.name, definition: t.definition })),
+    topics: TOPICS.filter((t) => indexed.has(t.slug)).map((t) => ({ slug: t.slug, ...t.en })),
     tools: [...MCP_TOOLS.map((t) => t.name), ...serverModules().flatMap((m) => m.agent?.abilities ?? []).map((a) => mcpToolName(a.mcp.tool))],
     modules: {
       api: extra.flatMap((l) => l.api ?? []),
@@ -74,7 +74,7 @@ export function llmsTxt(opts: {
   }
   if (opts.hasWeekly) lines.push(`- [Weekly briefing](${u("/weekly")}): Weekly review, with past issues; also /api/v1/weeklies, /api/v1/agent/weekly, MCP tool ${T.weekly}, or /feed/weekly.xml.`);
   if (opts.hasMonthly) lines.push(`- [Monthly briefing](${u("/monthly")}): Monthly review, with past issues; also /api/v1/monthlies, /api/v1/agent/monthly, MCP tool ${T.monthly}, or /feed/monthly.xml.`);
-  lines.push(`- [Topics](${u("/topics")}): Latest news by ${TOPIC_GROUPS.map((g) => g.name).join(", ")}${opts.topics.length ? ` (${opts.topics.length} topics, listed below)` : ""}.`);
+  lines.push(`- [Topics](${u("/topics")}): Latest news by ${topicGroups("en").map((g) => g.name.toLowerCase()).join(", ")}${opts.topics.length ? ` (${opts.topics.length} topics, listed below)` : ""}.`);
   if (FEATURES.timeMachine) lines.push(`- [Chronicle](${u("/chronicle")}): Historical ?at=YYYY-MM-DD slices retain their Beijing calendar boundaries.`);
   if (FEATURES.eaccConcepts) for (const c of Object.values(CONCEPT_PAGES)) lines.push(`- [${c.h1}](${u(`/${c.slug}`)}): ${c.description}`);
   lines.push(...opts.modules.pages);
@@ -126,8 +126,9 @@ export function llmsTxt(opts: {
   }
   lines.push(`- [Selected snapshot](${u("/api/v1/selected/snapshot?lang=en")}): Start here, then pass the returned cursor to selected/changes. Language is bound to the cursor.`);
   lines.push(`- [Selected changes](${u("/api/v1/selected/changes")}): Upserts and removals; never guess a window from publication times.`);
-  lines.push(`- [${POLICY.terms.name}](${u("/terms")})${POLICY.terms.covers ? `: ${POLICY.terms.covers}` : ""}`);
-  lines.push(`- [Privacy](${u("/privacy")})${POLICY.privacy.covers ? `: ${POLICY.privacy.covers}` : ""}`, "");
+  // The policy pages are written in Chinese only; link the edition whose language they are in.
+  lines.push(`- [Terms of use, in Chinese](${u("/zh/terms")})${POLICY.terms.covers ? `: ${POLICY.terms.covers}` : ""}`);
+  lines.push(`- [Privacy, in Chinese](${u("/zh/privacy")})${POLICY.privacy.covers ? `: ${POLICY.privacy.covers}` : ""}`, "");
   lines.push("Weekly and monthly JSON indexes and details do not accept lang and return the original stored language. For Chinese editions, subscribe to /feed/v2/zh/weekly.xml or /feed/v2/zh/monthly.xml.");
   lines.push("API v1 items, hot-topics, stories, dailies and initial selected snapshots target Chinese when lang is omitted, preserving the legacy language choice. Selected paging and changes inherit the cursor language. If a Chinese edition is pending, its actual fallback language/status is disclosed. Explicit lang=en|zh exposes actual contentLanguage readiness; a missing edition may return its original with status. Existing /feed/*.xml addresses retain legacy behavior. Versioned feeds omit unavailable editions rather than label another language as English.");
   lines.push("Markdown exports use the stored requested edition (English by default) and never call a model. Original licensed text is independent of editorial language; unavailable body editions are identified rather than silently mixed.", "");

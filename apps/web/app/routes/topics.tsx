@@ -23,9 +23,11 @@ export function meta({ loaderData, matches }: Route.MetaArgs) {
   const locale = localeFromMatches(matches ?? []);
   if (!loaderData) return pageMeta({ title: SITE.topicsTitle, path: "/topics", image: "/og/pages/topics.png" }, locale);
   const { groups, topics } = loaderData;
-  const by = groups.map((g) => g.name).join("、");
+  // Names arrive in the edition's language; only the separator differs.
+  const sep = locale === "en" ? ", " : "、";
+  const by = groups.map((g) => (locale === "en" ? g.name.toLowerCase() : g.name)).join(sep);
   const indexed = topics.filter((t) => t.indexable);
-  const named = indexed.slice(0, 6).map((t) => t.name.split(" / ")[0]).join("、");
+  const named = indexed.slice(0, 6).map((t) => t.name.split(" / ")[0]).join(sep);
   const base = siteUrl();
   return pageMeta({
     title: SITE.topicsTitle,
@@ -113,9 +115,9 @@ export default function TopicsPage() {
         <section key={g.key} aria-labelledby={`topics-${g.key}`} className="pt-8">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
             <h2 id={`topics-${g.key}`} className="text-[15px] font-bold text-ink">
-              <Text value={g.name} />
+              {g.name}
             </h2>
-            <p className="text-[12px] text-ink-4"><Text value={g.blurb} /></p>
+            <p className="text-[12px] text-ink-4">{g.blurb}</p>
           </div>
           <ul className="mt-3 divide-y divide-line-soft overflow-hidden rounded-card border border-line bg-surface lg:mt-3.5 lg:grid lg:grid-cols-3 lg:gap-3 lg:divide-y-0 lg:overflow-visible lg:rounded-none lg:border-0 lg:bg-transparent xl:grid-cols-4">
             {topics

@@ -132,6 +132,7 @@ test('discovery lists the readable site before the machine interfaces, in Englis
   assert.ok(text.indexOf('## Website') < text.indexOf('## Public data for agents'), 'answer engines meet the pages first');
   if (FEATURES.eaccConcepts) for (const slug of ['what-is-eacc', 'eacc-vs-dacc', 'eacc-glossary']) assert.ok(text.includes(`/${slug})`), slug);
   assert.doesNotMatch(text, /每天|每周一|每月/, 'edition times are written in English');
+  assert.doesNotMatch(text, /\p{Script=Han}/u, 'topic groups and every other line are in English');
 });
 
 test('discovery uses only supported report language parameters', () => {

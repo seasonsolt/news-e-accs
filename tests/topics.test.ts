@@ -8,7 +8,8 @@
 // - a technical-direction topic stops taking its tags;
 // - withdrawn or not yet released articles appear in a list or a count;
 // - an article or story page names a topic its reports do not belong to;
-// - a topic without content has no page, or an unknown slug or a page past the end has one.
+// - a topic without content has no page, or an unknown slug or a page past the end has one;
+// - the English edition names topics, their groups or the topic chips of a page in Chinese.
 import { tag } from "./setup.ts";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -152,4 +153,23 @@ test("every topic has a page; unknown topics and pages past the end have none", 
   const body = JSON.parse(index.body) as { groups: Array<{ key: string }>; topics: Array<{ slug: string }> };
   assert.deepEqual(body.groups.map((g) => g.key), ["company", "field", "genre"]);
   assert.deepEqual(body.topics.map((t) => t.slug).sort(), TOPICS.map((t) => t.slug).sort(), "the index lists every topic");
+});
+
+test("the English edition names topics in English everywhere a reader sees them", async () => {
+  const cjk = /\p{Script=Han}/u;
+  const launch = await story(`Agent framework V2 ${T}`);
+  const item = await report({ source: OFFICIAL, at: hoursAgo(27), title: `智能体框架 V2 发布 ${T}`, tags: ["Agent"], fact: await fact(launch.id, "发布 V2") });
+  const get = async (url: string) => JSON.parse((await app.inject({ method: "GET", url })).body);
+
+  const index = await get("/api/site/topics?lang=en") as { groups: Array<{ name: string; blurb: string }>; topics: Array<{ name: string; definition: string }> };
+  for (const text of [...index.groups.flatMap((g) => [g.name, g.blurb]), ...index.topics.flatMap((t) => [t.name, t.definition])]) assert.ok(!cjk.test(text), text);
+  const agent = (await get("/api/site/topics/agent?lang=en")).topic;
+  assert.equal(agent.name, "Agents");
+  assert.equal(agent.groupName, "Technology fields");
+  const suggestions = (await get("/api/site/search/suggestions?lang=en")).topics as Array<{ name: string }>;
+  assert.ok(suggestions.every((t) => !cjk.test(t.name)));
+  assert.deepEqual((await get(`/api/site/stories/${launch.publicId}?lang=en`)).topics, [{ slug: "agent", name: "Agents" }, { slug: "model-releases", name: "Model releases" }]);
+  assert.deepEqual((await get(`/api/site/items/${item}?lang=en`)).topics.map((t: { name: string }) => t.name), ["Agents", "Model releases"]);
+  assert.deepEqual((await get(`/api/site/items/${item}`)).topics.map((t: { name: string }) => t.name), ["Agent 智能体", "模型发布"], "the Chinese edition keeps its names");
+  assert.equal((await get("/api/site/topics/agent")).topic.groupName, "技术方向");
 });

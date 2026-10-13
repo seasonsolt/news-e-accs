@@ -32,12 +32,18 @@ export interface Topic {
   pattern: string | null;
   /** Companies: what a whole search query may call it. */
   aliases: string[];
+  /** The English edition's name and definition; `name` stays Chinese because titles are matched against it. */
+  en: { name: string; definition: string };
 }
 
+type Lang = "en" | "zh";
+
 interface TopicFile {
-  groups: TopicGroup[];
+  groups: Array<TopicGroup & { en: { name: string; blurb: string } }>;
   topics: Array<{
     slug: string; name: string; group: TopicGroupKey; entityId?: string; aliases?: string[]; tags?: string[]; definition: string;
+    /** `name` only where the Chinese name is not already the English one. */
+    en: { name?: string; definition: string };
   }>;
 }
 
@@ -53,7 +59,12 @@ function titlePattern(name: string, entityId: string): string {
 
 const file = JSON.parse(readFileSync(path.join(REPO_ROOT, "industry/topics.json"), "utf8")) as TopicFile;
 
-export const TOPIC_GROUPS: TopicGroup[] = file.groups;
+export const TOPIC_GROUPS: TopicGroup[] = file.groups.map(({ key, name, blurb }) => ({ key, name, blurb }));
+
+/** The topic groups in the edition's language. */
+export function topicGroups(lang: Lang = "zh"): TopicGroup[] {
+  return lang === "en" ? file.groups.map(({ key, en }) => ({ key, ...en })) : TOPIC_GROUPS;
+}
 
 export const TOPICS: Topic[] = file.topics.map((t) => ({
   slug: t.slug,
@@ -64,7 +75,11 @@ export const TOPICS: Topic[] = file.topics.map((t) => ({
   tags: t.entityId ? [`entity:${t.entityId}`] : (t.tags ?? []),
   pattern: t.entityId ? titlePattern(t.name, t.entityId) : null,
   aliases: t.entityId ? [t.slug, t.name, ...nameParts(t.name), ...(t.aliases ?? [])] : [],
+  en: { name: t.en.name ?? t.name, definition: t.en.definition },
 }));
+
+/** A topic's name and definition in the edition's language. */
+export const topicText = (t: Topic, lang: Lang = "zh") => (lang === "en" ? t.en : { name: t.name, definition: t.definition });
 
 const BY_SLUG = new Map(TOPICS.map((t, position) => [t.slug, { topic: t, position }]));
 
@@ -74,13 +89,13 @@ export function findTopic(slug: string): Topic | null {
 
 const position = (slug: string) => BY_SLUG.get(slug)?.position ?? Number.MAX_SAFE_INTEGER;
 
-export function topicLinks(slugs: string[]): TopicLink[] {
-  return slugs.map((s) => findTopic(s)).filter((t): t is Topic => !!t).map((t) => ({ slug: t.slug, name: t.name }));
+export function topicLinks(slugs: string[], lang: Lang = "zh"): TopicLink[] {
+  return slugs.map((s) => findTopic(s)).filter((t): t is Topic => !!t).map((t) => ({ slug: t.slug, name: topicText(t, lang).name }));
 }
 
 /** Stable browse links in the same order as the topic directory, without its counts or modules. */
-export function topicBrowseLinks() {
-  return TOPICS.map(({ slug, name, group }) => ({ slug, name, group }));
+export function topicBrowseLinks(lang: Lang = "zh") {
+  return TOPICS.map((t) => ({ slug: t.slug, name: topicText(t, lang).name, group: t.group }));
 }
 
 /** One membership rule for topic discovery and a single topic's page and count. */
@@ -251,14 +266,13 @@ async function currentSeats(ids: string[], now: Date, topics: Topic[] = TOPICS):
   return new Map((await readSeats(now, ids, topics)).map((s) => [s.id, s]));
 }
 
-function summarize(t: Topic, seats: TopicMember[], now: Date, brands: Map<string, Brand>, live: Map<string, TopicMember>): TopicSummary {
+function summarize(t: Topic, seats: TopicMember[], now: Date, brands: Map<string, Brand>, live: Map<string, TopicMember>, lang: Lang): TopicSummary {
   const recent = recentCount(seats, now);
   const latest = seats.slice(0, LATEST_CANDIDATES).map((s) => live.get(s.id)).find((s) => s?.topics.includes(t.slug));
   return {
     slug: t.slug,
-    name: t.name,
+    ...topicText(t, lang),
     group: t.group,
-    definition: t.definition,
     brand: brands.get(t.slug) ?? null,
     total: seats.length,
     recent,
@@ -267,10 +281,10 @@ function summarize(t: Topic, seats: TopicMember[], now: Date, brands: Map<string
   };
 }
 
-export async function listTopicSummaries(): Promise<TopicsResponse> {
+export async function listTopicSummaries(lang: Lang = "zh"): Promise<TopicsResponse> {
   const [index, brands] = await Promise.all([topicIndex(), companyBrands()]);
   const live = await currentSeats(TOPICS.flatMap((t) => index.bySlug.get(t.slug)!.slice(0, LATEST_CANDIDATES).map((s) => s.id)), new Date());
-  return { groups: TOPIC_GROUPS, topics: TOPICS.map((t) => summarize(t, index.bySlug.get(t.slug)!, index.at, brands, live)) };
+  return { groups: topicGroups(lang), topics: TOPICS.map((t) => summarize(t, index.bySlug.get(t.slug)!, index.at, brands, live, lang)) };
 }
 
 export interface TopicCount {
@@ -316,7 +330,7 @@ function poolTotal(t: Topic, now?: Date): Promise<number> {
   return count.get();
 }
 
-export async function loadTopicPage(slug: string, page: number, now?: Date): Promise<TopicPage | null> {
+export async function loadTopicPage(slug: string, page: number, now?: Date, lang: Lang = "zh"): Promise<TopicPage | null> {
   const topic = findTopic(slug);
   if (!topic || !Number.isInteger(page) || page < 1) return null;
   const index = await topicIndex(now);
@@ -342,9 +356,9 @@ export async function loadTopicPage(slug: string, page: number, now?: Date): Pro
     companyBrands(),
     currentSeats(recheck, at, [topic]),
   ]);
-  const groupName = TOPIC_GROUPS.find((g) => g.key === topic.group)?.name ?? "";
+  const groupName = topicGroups(lang).find((g) => g.key === topic.group)?.name ?? "";
   return {
-    topic: { ...summarize(topic, seats, index.at, brands, live), groupName, poolTotal: pool },
+    topic: { ...summarize(topic, seats, index.at, brands, live, lang), groupName, poolTotal: pool },
     modules: Object.fromEntries(parts.map((part) => [part.name, part.part(live)])),
     items: rows.map(toFeedItemSummary),
     page,
