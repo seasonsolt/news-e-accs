@@ -46,6 +46,10 @@ export const config = {
   allowPrivateNetworkFetch: bool("ALLOW_PRIVATE_NETWORK_FETCH", false),
   feishuContentPushEnabled: bool("FEISHU_CONTENT_PUSH_ENABLED", false),
   indexNowSubmitEnabled: bool("INDEXNOW_SUBMIT_ENABLED", false),
+  /** The weekly Search Console reading (operations/search-console.ts); also needs the property and SEARCH_CONSOLE_KEY_FILE. */
+  searchConsoleEnabled: bool("SEARCH_CONSOLE_ENABLED", false),
+  /** The property as Search Console names it: "sc-domain:example.com" or "https://example.com/". */
+  searchConsoleProperty: env.SEARCH_CONSOLE_PROPERTY || null,
   /** Newsletter mail (confirmation letters and the daily issue) through Resend; off in development and tests. */
   newsletterEnabled: bool("NEWSLETTER_ENABLED", false),
   /** Putting 「AI 早报」 into the 公众号's draft box from the admin workbench; off in development and tests. */

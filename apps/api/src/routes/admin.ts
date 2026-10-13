@@ -5,6 +5,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { AdminSourceUpdate } from "@aihot/contracts/admin";
 import { actorOf } from "@aihot/backend/admin/auth";
 import { siteAnalyticsOverview } from "@aihot/backend/admin/analytics";
+import { weeklyReadings } from "@aihot/backend/admin/metrics";
 import { newsletterOverview } from "@aihot/backend/admin/newsletter";
 import {
   pushWechatDraft, removeWechatIllustration, requestWechatIllustration, saveWechatEdits, uploadWechatIllustration, wechatCoverPng, wechatExport,
@@ -140,6 +141,7 @@ export function registerAdmin(app: FastifyInstance) {
   app.post("/api/admin/wechat/:date/draft", adminHandler(async (req, _reply, admin) => pushWechatDraft(param(req, "date"), actorOf(admin))));
   app.put("/api/admin/wechat/:date", adminHandler(async (req, _reply, admin) => saveWechatEdits(param(req, "date"), body(req), actorOf(admin))));
   app.get("/api/admin/analytics", adminHandler(async (req) => siteAnalyticsOverview(Number(q(req).days) || 30)));
+  app.get("/api/admin/metrics", adminHandler(async (req) => weeklyReadings(Number(q(req).weeks) || 12)));
 
   // Models and evaluation
   app.get("/api/admin/models", adminHandler(async (req) => modelsOverview(Math.min(90, Number(q(req).days) || 7))));

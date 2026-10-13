@@ -46,6 +46,7 @@ const nav = (): Array<{ group: string; items: AdminNavEntry[] }> => [
       { to: "/admin/models", label: "模型与评测" },
       { to: "/admin/selectbench", label: "SelectBench" },
       { to: "/admin/settings", label: "设置" },
+      { to: "/admin/metrics", label: "周读数" },
       { to: "/admin/analytics", label: "访问统计" },
       { to: "/admin/audit", label: "审计记录" },
     ],

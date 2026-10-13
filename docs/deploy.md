@@ -351,3 +351,13 @@ v1 默认目标语言仍为中文；英文主稿缺少有效中文 edition 时�
 工作台里每条可以配一张图，印在这条标题下方；推送时图片先传到公众号（`media/uploadimg`），正文里用公众号给的地址，每张只传一次。「复制正文」不带配图，手动发时要在公众号编辑器里另外插入。
 
 图可以上传（PNG、JPEG、WebP），也可以让 worker 画：worker 所在的机器装好 Codex CLI，用运行 worker 的系统用户 `codex login`，然后在 `.env` 里设 `CODEX_BIN=<codex 的绝对路径>`（配置目录不在这个用户的主目录时，再设 `CODEX_HOME`），重启 api 和 worker。还要 `MODEL_CALLS_ENABLED=true`。每张图跑一次 `codex exec`（用它的图片生成，一到四分钟），消耗 Codex 登录账号的额度；每次都记回执，受后台预算里 `codex` 一行限制，填 0 就停。画的要求在 `industry/prompts/wechat-illustration.md`。
+
+### Search Console 周读数
+
+后台“周读数”把每周的页面访问、订阅和 Search Console 放在一张表里。Search Console 一栏由 worker 每周三上午读上一周（周一到周日）：展示和点击，以及 sitemap 里每个网址是否已被 Google 收录，按栏目（事件、条目、日报、指数……）分开记。要打开：
+
+1. 在 Google Cloud 建一个项目，启用 “Google Search Console API”，建一个服务账号，下载它的 JSON 密钥，放到服务器上只有运行 worker 的用户能读的位置；
+2. Search Console 的“设置 → 用户和权限”里，把服务账号的邮箱加为该资源的用户（“受限”权限就够）；
+3. `.env` 里设 `SEARCH_CONSOLE_PROPERTY`（网域资源写 `sc-domain:example.com`，网址前缀资源写 `https://example.com/`）、`SEARCH_CONSOLE_KEY_FILE=<密钥文件路径>` 和 `SEARCH_CONSOLE_ENABLED=true`，重启 worker。
+
+收录检查每个资源每天限 2,000 次，每周最多检查 1,800 个网址；超出配额时这一周只记已检查的部分。读数不花钱。

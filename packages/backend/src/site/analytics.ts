@@ -1,3 +1,5 @@
+import type { ModulePage } from "@aihot/contracts/modules";
+import { MODULES } from "@aihot/site/modules";
 import { sql } from "../db.ts";
 
 const STATIC_PATHS = new Set([
@@ -19,6 +21,14 @@ export function normalizePagePath(raw: unknown): string | null {
   return englishPagePath(raw);
 }
 
+// The modules' own pages, by their route pattern ("index/cost-of-intelligence", "guides/:slug"); the
+// English ones, since /zh is counted by stripping it. Pages without a parameter are matched first.
+const MODULE_PAGES = MODULES.flatMap((m) => (m.pages ?? []).flatMap((p): ModulePage[] => ("layout" in p ? p.pages : [p])))
+  .map((p) => p.path)
+  .filter((p) => !p.startsWith("zh/"))
+  .sort((a, b) => Number(a.includes(":")) - Number(b.includes(":")))
+  .map((p) => ({ path: `/${p}`, match: new RegExp(`^/${p.split("/").map((part) => (part.startsWith(":") ? "[^/]+" : part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))).join("/")}$`) }));
+
 function englishPagePath(raw: string): string | null {
   if (STATIC_PATHS.has(raw)) return raw;
   if (/^\/items\/[^/]+\/original$/.test(raw)) return "/items/:id/original";
@@ -30,7 +40,7 @@ function englishPagePath(raw: string): string | null {
   if (/^\/leaderboard\/category\/[^/]+$/.test(raw)) return "/leaderboard/category/:key";
   if (/^\/leaderboard\/sources\/[^/]+$/.test(raw)) return "/leaderboard/sources/:key";
   if (/^\/leaderboard\/[^/]+$/.test(raw)) return "/leaderboard/:model";
-  return null;
+  return MODULE_PAGES.find((p) => p.match.test(raw))?.path ?? null;
 }
 
 export async function recordPageView(path: string): Promise<void> {

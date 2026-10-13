@@ -75,6 +75,7 @@ export default [
     route("admin/newsletter", "routes/admin/newsletter.tsx"),
     route("admin/wechat", "routes/admin/wechat.tsx"),
     route("admin/analytics", "routes/admin/analytics.tsx"),
+    route("admin/metrics", "routes/admin/metrics.tsx"),
     route("admin/runs", "routes/admin/runs.tsx"),
     route("admin/models", "routes/admin/models.tsx"),
     route("admin/selectbench", "routes/admin/selectbench.tsx"),
