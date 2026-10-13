@@ -11,9 +11,13 @@ import { loadDiscoveryEntries } from "../publication/sitemap.ts";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const SCOPE = "https://www.googleapis.com/auth/webmasters.readonly";
-// URL Inspection allows 2,000 calls a day and 600 a minute for a property.
+// URL Inspection allows 2,000 calls a day and 600 a minute for a property. A call takes a few seconds, so
+// one at a time 1,300 URLs outlast both the hour an access token lives and the scheduled job's hour.
 const MAX_INSPECTIONS = 1_800;
+const INSPECTION_LANES = 5;
 const INSPECTION_GAP_MS = 120;
+// Access tokens live an hour; a new one is signed well before that.
+const TOKEN_RENEW_MS = 45 * 60_000;
 
 export interface SectionReading { clicks: number; impressions: number; inspected: number; indexed: number }
 
@@ -50,11 +54,12 @@ export async function readSearchConsoleWeek(now = new Date()) {
   const keyFile = credential("integrations", "SEARCH_CONSOLE_KEY_FILE");
   if (!config.searchConsoleEnabled || !property || !keyFile) return { status: "disabled" as const };
   const key = JSON.parse(readFileSync(keyFile, "utf8")) as { client_email: string; private_key: string };
-  const token = await accessToken(key);
+  let token = { value: accessToken(key), at: Date.now() };
   const google = async <T>(url: string, body: object, what: string): Promise<T> => {
+    if (Date.now() - token.at > TOKEN_RENEW_MS) token = { value: accessToken(key), at: Date.now() };
     const res = await fetch(url, {
       method: "POST",
-      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      headers: { authorization: `Bearer ${await token.value}`, "content-type": "application/json" },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(60_000),
     });
@@ -77,20 +82,25 @@ export async function readSearchConsoleWeek(now = new Date()) {
   // The discovery URLs are what the site asks Google to index; a quota refusal ends the count where it is.
   const urls = (await loadDiscoveryEntries(now)).map((e) => e.loc).slice(0, MAX_INSPECTIONS);
   let stopped: number | null = null;
-  for (const loc of urls) {
-    try {
-      const answer = await google<{ inspectionResult?: { indexStatusResult?: { verdict?: string } } }>(
-        "https://searchconsole.googleapis.com/v1/urlInspection/index:inspect", { inspectionUrl: siteUrl(loc), siteUrl: property }, "inspection");
-      const s = section(pageSection(loc));
-      s.inspected += 1;
-      if (answer.inspectionResult?.indexStatusResult?.verdict === "PASS") s.indexed += 1;
-    } catch (error) {
-      if ((error as { status?: number }).status !== 429) throw error;
-      stopped = 429;
-      break;
+  let next = 0;
+  const lane = async () => {
+    while (!stopped && next < urls.length) {
+      const loc = urls[next++]!;
+      try {
+        const answer = await google<{ inspectionResult?: { indexStatusResult?: { verdict?: string } } }>(
+          "https://searchconsole.googleapis.com/v1/urlInspection/index:inspect", { inspectionUrl: siteUrl(loc), siteUrl: property }, "inspection");
+        const s = section(pageSection(loc));
+        s.inspected += 1;
+        if (answer.inspectionResult?.indexStatusResult?.verdict === "PASS") s.indexed += 1;
+      } catch (error) {
+        if ((error as { status?: number }).status !== 429) throw error;
+        stopped = 429;
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, INSPECTION_GAP_MS));
     }
-    await new Promise((resolve) => setTimeout(resolve, INSPECTION_GAP_MS));
-  }
+  };
+  await Promise.all(Array.from({ length: INSPECTION_LANES }, lane));
 
   const all = [...sections.values()];
   const reading = {

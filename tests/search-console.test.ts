@@ -49,6 +49,8 @@ test("Search Console is read only when switched on, with a signed service-accoun
   Object.assign(config, { searchConsoleEnabled: true, searchConsoleProperty: "sc-domain:example.test" });
 
   const inspected: string[] = [];
+  let tokens = 0;
+  const realNow = Date.now;
   globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
     const url = String(input);
     if (url === "https://oauth2.googleapis.com/token") {
@@ -58,12 +60,15 @@ test("Search Console is read only when switched on, with a signed service-accoun
       const claim = JSON.parse(Buffer.from(claims!, "base64url").toString());
       assert.equal(claim.iss, "reader@project.iam.gserviceaccount.com");
       assert.equal(claim.scope, "https://www.googleapis.com/auth/webmasters.readonly");
+      tokens += 1;
       return Response.json({ access_token: "synthetic-token" });
     }
     assert.equal((init!.headers as Record<string, string>).authorization, "Bearer synthetic-token");
     const body = JSON.parse(String(init!.body));
     if (url === "https://www.googleapis.com/webmasters/v3/sites/sc-domain%3Aexample.test/searchAnalytics/query") {
       assert.deepEqual([body.startDate, body.endDate], [week.start, week.end]);
+      // As if the run had gone on for most of an hour: the next call signs a new access token first.
+      if (!body.dimensions) Date.now = () => realNow() + 50 * 60_000;
       if (!body.dimensions) return Response.json({ rows: [{ clicks: 12, impressions: 340 }] });
       return Response.json({ rows: [
         { keys: ["https://example.test/story/a"], clicks: 5, impressions: 100 },
@@ -79,7 +84,8 @@ test("Search Console is read only when switched on, with a signed service-accoun
     return Response.json({ inspectionResult: { indexStatusResult: { verdict: inspected.length === 1 ? "PASS" : "NEUTRAL" } } });
   }) as typeof fetch;
 
-  const result = await readSearchConsoleWeek(now);
+  const result = await readSearchConsoleWeek(now).finally(() => { Date.now = realNow; });
+  assert.equal(tokens, 2, "a long run renews its access token");
   assert.deepEqual({ ...result, urls: undefined }, { status: "read", week: week.start, clicks: 12, impressions: 340, inspected: 2, indexed: 1, urls: undefined, stopped: 429 });
   const [row] = await sql<{ property: string; sections: Record<string, { clicks: number; impressions: number; inspected: number; indexed: number }> }[]>`
     SELECT property, sections FROM search_console_weekly WHERE week = ${week.start}::date`;
