@@ -1,6 +1,7 @@
 // The e/acc concept pages (/what-is-eacc, /eacc-vs-dacc, /eacc-glossary), moved here from the static
-// tool site with their URLs, titles, text and markup unchanged: they rank for "e/acc" in English
-// search, so the words stay as they were. Only the internal links point at this site's pages now.
+// tool site with their URLs, text and markup. They rank for "e/acc" in English search; titles and
+// descriptions change only on Search Console evidence (2026-10: /what-is-eacc sat around position 8 for
+// "e/acc" with a 0.2% click rate, so its title and description lead with the meaning now).
 // Bodies are trusted HTML written here, rendered as English whatever the interface language.
 
 /** The movement itself, linked to its Wikipedia and Wikidata entries in every page's structured data. */
@@ -83,6 +84,14 @@ const WHAT_IS_FAQ: ConceptFaq[] = [
     a: "No, but they rhyme. Marc Andreessen's 2023 manifesto endorsed many e/acc themes — techno-capital, abundance, anti-doom — and cited e/acc figures, which pushed the movement into mainstream venture discourse.",
   },
   {
+    q: "Is there an e/acc manifesto?",
+    a: "Not an official one. The founding text is the May 2022 newsletter post; the fullest statement of its ideas is \"Notes on e/acc principles and tenets\" (July 2022) by @BasedBeffJezos and @bayeslord. Marc Andreessen's Techno-Optimist Manifesto (2023) is the document most often called the manifesto, but it was written by a sympathizer, not by the founders.",
+  },
+  {
+    q: "Is there an official e/acc coin or token?",
+    a: "No. Meme tokens borrow the name, but the movement has no organization that could issue one, and this site has no token. Treat any e/acc-branded coin as an unaffiliated speculative asset.",
+  },
+  {
     q: "Is e/acc a real organization?",
     a: "No. It has no formal structure, membership, or leadership — it is a banner people put in their bio. That is part of the design: it spreads as a meme, not as an institution.",
   },
@@ -90,9 +99,9 @@ const WHAT_IS_FAQ: ConceptFaq[] = [
 
 const WHAT_IS: ConceptPage = {
   slug: "what-is-eacc",
-  title: "What is e/acc? Effective Accelerationism, Explained | e-acc.ai",
+  title: "e/acc Meaning: What Is Effective Accelerationism? | e-acc.ai",
   description:
-    "e/acc (effective accelerationism) explained: what it means, who started it, core beliefs, e/acc vs d/acc and EA, key people, criticism — with sources and a live timeline.",
+    "e/acc means effective accelerationism: the view that AI and technology should be sped up, not slowed. Origins, core beliefs, e/acc vs d/acc, criticism — with sources.",
   h1: "What is e/acc — effective accelerationism, explained",
   lead: `
     <p class="prose-lead">
@@ -148,6 +157,21 @@ const WHAT_IS: ConceptPage = {
     },
     {
       kind: "section",
+      heading: "The e/acc manifesto: principles and tenets",
+      html: `
+    <p>
+      There is no single official manifesto, which is why the word points three ways. The
+      founding text is the May 2022 newsletter post above. The fullest statement of the ideas
+      is
+      <a href="https://beff.substack.com/p/notes-on-eacc-principles-and-tenets" target="_blank" rel="noopener">Notes on e/acc principles and tenets</a>
+      (July 10, 2022) by @BasedBeffJezos and @bayeslord: the thermodynamic argument, the
+      techno-capital machine, and why the movement refuses to slow down. And the document most
+      people mean by "the manifesto" is Marc Andreessen's Techno-Optimist Manifesto
+      (October 2023) — written by a sympathizer, not by the founders.
+    </p>`,
+    },
+    {
+      kind: "section",
       heading: "e/acc vs EA, d/acc and the decels",
       html: `
     <p>
@@ -173,6 +197,16 @@ const WHAT_IS: ConceptPage = {
       e/acc-aligned positions — deregulation, energy expansion, open-source AI — into
       actual policy debate. The full sequence lives on our
       <a href="/chronicle">AI acceleration timeline</a>.
+    </p>`,
+    },
+    {
+      kind: "section",
+      heading: "e/acc is not a coin or token",
+      html: `
+    <p>
+      Searches for an "e/acc token" or "e/acc coin" find meme tokens that borrow the name.
+      None is issued by the movement — it has no organization to issue one — and this site
+      has no token either. Treat any e/acc-branded coin as an unaffiliated speculative asset.
     </p>`,
     },
     {
@@ -238,9 +272,9 @@ const VS_DACC_FAQ: ConceptFaq[] = [
 
 const VS_DACC: ConceptPage = {
   slug: "eacc-vs-dacc",
-  title: "e/acc vs d/acc: Accelerationism's Two Camps | e-acc.ai",
+  title: "e/acc vs d/acc: What's the Difference? | e-acc.ai",
   description:
-    "e/acc vs d/acc compared: what Vitalik Buterin's defensive accelerationism proposes, the four meanings of the d, where the two camps agree, and where they split.",
+    "e/acc says accelerate technology, full stop; d/acc, Vitalik Buterin's 2023 idea, says accelerate but aim at defense and decentralization. Where the two camps agree and split.",
   h1: "e/acc vs d/acc — the two accelerationisms, compared",
   lead: `
     <p class="prose-lead">

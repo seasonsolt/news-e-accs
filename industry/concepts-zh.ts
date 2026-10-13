@@ -40,6 +40,14 @@ const WHAT_IS_FAQ: ConceptFaq[] = [
     a: "不是，但两者遥相呼应。Marc Andreessen 2023 年的宣言认同了许多 e/acc 的主题——技术资本、富足、反末日论——并点名引用了 e/acc 人物，把这场运动推进了主流风投话语。",
   },
   {
+    q: "e/acc 有宣言吗？",
+    a: "没有官方宣言。奠基文本是 2022 年 5 月那篇通讯；把思想讲得最完整的是 @BasedBeffJezos 和 @bayeslord 2022 年 7 月发表的《e/acc 原则与信条笔记》（Notes on e/acc principles and tenets）。最常被称作“宣言”的是 Marc Andreessen 2023 年的《技术乐观主义宣言》，但它出自同情者之手，而不是发起人。",
+  },
+  {
+    q: "有官方的 e/acc 币或代币吗？",
+    a: "没有。有些梗币借用了这个名字，但这场运动没有任何组织可以发行代币，本站也没有代币。任何挂着 e/acc 名号的币，都应当视为与运动无关的投机资产。",
+  },
+  {
     q: "e/acc 是一个真实存在的组织吗？",
     a: "不是。它没有正式的结构、成员或领导层，只是人们挂在个人简介里的一面旗帜。这正是设计的一部分：它像梗一样传播，而不是像机构一样运作。",
   },
@@ -101,6 +109,19 @@ const WHAT_IS: ConceptPage = {
     },
     {
       kind: "section",
+      id: "the-e-acc-manifesto-principles-and-tenets",
+      heading: "e/acc 宣言：原则与信条",
+      html: `
+    <p>
+      e/acc 没有一份官方宣言，所以“宣言”这个词会指向三个地方。奠基文本是上面提到的 2022 年 5 月那篇通讯。
+      把思想讲得最完整的，是 @BasedBeffJezos 和 @bayeslord 在 2022 年 7 月 10 日发表的
+      <a href="https://beff.substack.com/p/notes-on-eacc-principles-and-tenets" target="_blank" rel="noopener">《e/acc 原则与信条笔记》</a>：
+      热力学论证、技术资本机器，以及这场运动为什么拒绝减速。而大多数人说的“宣言”，是 Marc Andreessen 的
+      《技术乐观主义宣言》（2023 年 10 月）——它出自同情者之手，而不是发起人。
+    </p>`,
+    },
+    {
+      kind: "section",
       id: "e-acc-vs-ea-d-acc-and-the-decels",
       heading: "e/acc 与有效利他主义、d/acc 和减速派",
       html: `
@@ -123,6 +144,16 @@ const WHAT_IS: ConceptPage = {
       （2023 年 10 月）把 e/acc 的主题带进了主流风投话语，Garry Tan 等投资人也公开在名字后面挂上这个后缀。
       2024 年的美国大选周期，把几项与 e/acc 一致的立场——放松监管、扩张能源、开源 AI——带进了真正的政策辩论。
       完整的来龙去脉见我们的<a href="/zh/chronicle">AI 加速史</a>。
+    </p>`,
+    },
+    {
+      kind: "section",
+      id: "e-acc-is-not-a-coin-or-token",
+      heading: "e/acc 不是币，也不是代币",
+      html: `
+    <p>
+      搜索“e/acc 代币”或“e/acc 币”，会找到一些借用这个名字的梗币。它们都不是这场运动发行的——它根本没有能发行代币的组织——
+      本站也没有任何代币。任何挂着 e/acc 名号的币，都应当视为与运动无关的投机资产。
     </p>`,
     },
     {

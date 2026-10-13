@@ -378,8 +378,8 @@ test("news pages carry NewsArticle data matching their visible dates and source"
 
 test("the e/acc concept pages keep their English titles, text language and structured data", async () => {
   const pages = [
-    { path: "/what-is-eacc", title: "What is e/acc? Effective Accelerationism, Explained | e-acc.ai", type: "FAQPage", count: 6 },
-    { path: "/eacc-vs-dacc", title: "e/acc vs d/acc: Accelerationism&#x27;s Two Camps | e-acc.ai", type: "FAQPage", count: 5 },
+    { path: "/what-is-eacc", title: "e/acc Meaning: What Is Effective Accelerationism? | e-acc.ai", type: "FAQPage", count: 8 },
+    { path: "/eacc-vs-dacc", title: "e/acc vs d/acc: What&#x27;s the Difference? | e-acc.ai", type: "FAQPage", count: 5 },
     { path: "/eacc-glossary", title: "e/acc Glossary: Accelerationism Terms, Defined | e-acc.ai", type: "DefinedTermSet", count: 16 },
   ];
   for (const page of pages) {
@@ -447,8 +447,8 @@ test("a page without a loader still answers navigation with an empty result", as
 
 test("the Chinese concept pages are Chinese editions that name the English ones as alternates", async () => {
   const pages = [
-    { slug: "what-is-eacc", title: "什么是 e/acc？有效加速主义详解 | e-acc.ai", enTitle: "What is e/acc? Effective Accelerationism, Explained | e-acc.ai", type: "FAQPage", count: 6 },
-    { slug: "eacc-vs-dacc", title: "e/acc 与 d/acc：加速主义的两大阵营 | e-acc.ai", enTitle: "e/acc vs d/acc: Accelerationism&#x27;s Two Camps | e-acc.ai", type: "FAQPage", count: 5 },
+    { slug: "what-is-eacc", title: "什么是 e/acc？有效加速主义详解 | e-acc.ai", enTitle: "e/acc Meaning: What Is Effective Accelerationism? | e-acc.ai", type: "FAQPage", count: 8 },
+    { slug: "eacc-vs-dacc", title: "e/acc 与 d/acc：加速主义的两大阵营 | e-acc.ai", enTitle: "e/acc vs d/acc: What&#x27;s the Difference? | e-acc.ai", type: "FAQPage", count: 5 },
     { slug: "eacc-glossary", title: "e/acc 术语表：加速主义术语释义 | e-acc.ai", enTitle: "e/acc Glossary: Accelerationism Terms, Defined | e-acc.ai", type: "DefinedTermSet", count: 16 },
   ];
   for (const page of pages) {
