@@ -62,8 +62,9 @@ test("API startup is quiet and an unexpected error retains the request, stack an
     await app.inject({ url: "/api/stream?token=private-stream" }).catch(() => {});
     await app.close();
   `;
+  // A cold start of the whole API takes up to 10 s on CI beside other test files; the limit only stops a hung child.
   const result = spawnSync(process.execPath, ["--input-type=module", "-e", script], {
-    cwd: new URL("..", import.meta.url), encoding: "utf8", timeout: 15000,
+    cwd: new URL("..", import.meta.url), encoding: "utf8", timeout: 60_000,
     env: { ...process.env, DATABASE_URL: "postgres://127.0.0.1/aihot_logging_test", AIHOT_CREDENTIALS_DIR: "/nonexistent-test-credentials", LOG_LEVEL: "info" },
   });
   assert.equal(result.status, 0, result.stderr);

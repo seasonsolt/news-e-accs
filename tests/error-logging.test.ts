@@ -7,9 +7,11 @@ import { test } from "node:test";
 
 const MARKER = "synthetic-private-person@example.test";
 const API_APP_URL = new URL("../apps/api/src/app.ts", import.meta.url).href;
+// A cold start of the whole API takes 7–10 s on CI beside five other test files. The limit only stops
+// a hung child, which execFileSync would otherwise wait on past the runner's own timeout.
 function run(source: string): string {
   return execFileSync(process.execPath, ["--input-type=module", "-e", source], {
-    cwd: new URL("..", import.meta.url), encoding: "utf8", timeout: 10_000,
+    cwd: new URL("..", import.meta.url), encoding: "utf8", timeout: 60_000,
     env: { ...process.env, LOG_LEVEL: "error", MODEL_CALLS_ENABLED: "false", COLLECT_ENABLED: "false" },
     stdio: ["ignore", "pipe", "pipe"],
   });
