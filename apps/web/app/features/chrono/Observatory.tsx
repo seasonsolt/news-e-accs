@@ -4,6 +4,7 @@ import { Text, useTranslate } from "../../lib/i18n";
 // that very year), the deck shows that plate and that event instead. Dark in either theme: an instrument.
 import type { ChronicleEra, ChronicleMilestone } from "@aihot/contracts/chronicle";
 import { Plate } from "../../components/shell/Deck";
+import { DepthLayer } from "./DepthLayer";
 
 /** "138亿年前" → ["", "138", "亿年前"]; "公元前3201年" → ["公元前", "3201", "年"]; a date keeps its tail. */
 function splitLabel(label: string): [string, string, string] {
@@ -21,6 +22,7 @@ export function Observatory({ era, focus, label, distance }: { era: ChronicleEra
   return (
     <section className={`observatory ${era.forecast ? "is-forecast" : ""}`} aria-label={tx("观测舱")}>
       <Plate key={plate.key} src={plate.src} alt={plate.alt} className="observatory-plate" />
+      <DepthLayer key={`depth-${plate.key}`} src={plate.src} />
       <div className="observatory-shade" aria-hidden="true" />
       <header className="observatory-readout">
         <p className="observatory-kicker">

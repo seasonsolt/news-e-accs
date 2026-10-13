@@ -1083,7 +1083,11 @@ html { scrollbar-gutter: stable; }
 @media (min-width: 961px) { .observatory { margin-inline: 0; border-radius: var(--radius-panel) var(--radius-panel) 0 0; } }
 .observatory-plate { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; }
 .observatory-plate.is-empty { background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--brass) 18%, transparent), transparent 60%); }
-.observatory.is-forecast .observatory-plate { filter: saturate(.72) brightness(.92); }
+/* The plate's depth parallax (DepthLayer): a canvas over the <img>, faded in once both images are ready. */
+.observatory-depth { position: absolute; inset: 0; z-index: -2; pointer-events: none; opacity: 0; transition: opacity 400ms var(--ease-out-quart); }
+.observatory-depth.is-ready { opacity: 1; }
+.observatory-depth canvas { display: block; width: 100%; height: 100%; }
+.observatory.is-forecast :is(.observatory-plate, .observatory-depth) { filter: saturate(.72) brightness(.92); }
 .observatory.is-forecast::after { content: ""; position: absolute; inset: 12px; z-index: 1; border: 1px dashed rgb(217 164 65 / .55); border-radius: 10px; pointer-events: none; }
 .observatory-shade {
   position: absolute; inset: 0; z-index: -1;
@@ -1247,6 +1251,8 @@ html { scrollbar-gutter: stable; }
 @media (prefers-reduced-motion: no-preference) {
   .chronicle-track.motion-allowed:not([data-dragging]) .chronicle-needle { transition: left 140ms var(--ease-out-quart); }
   .observatory-plate.motion-allowed { animation: plate-in 700ms var(--ease-out-quart) both, plate-drift 48s ease-in-out 700ms infinite alternate; }
+  /* Under the parallax the drift holds still, so the two layers stay in register. */
+  .observatory:has(.observatory-depth.is-ready) .observatory-plate.motion-allowed { animation-play-state: running, paused; }
 }
 @keyframes plate-in { from { opacity: 0; transform: scale(1.03); } to { opacity: 1; transform: scale(1); } }
 @keyframes plate-drift { from { transform: scale(1); } to { transform: scale(1.06) translateX(-1.5%); } }

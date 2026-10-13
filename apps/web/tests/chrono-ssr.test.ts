@@ -62,6 +62,8 @@ test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era
   assert.equal(document.querySelector("h1")!.textContent, "1769年");
   assert.match(document.querySelector("header")!.textContent!, /蒸汽时代/);
   assert.ok(document.querySelector('img[alt="蒸汽时代（铜版画）"]'));
+  // The depth parallax is client-only decoration: the server sends the static plate alone.
+  assert.equal(document.querySelector(".observatory-depth, canvas"), null);
   const slider = document.querySelector('[role="slider"]')!;
   assert.equal(slider.getAttribute("aria-valuetext"), "1769年");
   assert.equal(slider.hasAttribute("data-dragging"), false);
