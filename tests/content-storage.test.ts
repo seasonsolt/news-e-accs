@@ -198,6 +198,11 @@ test('echoed English cannot become a ready Chinese item/report/body edition, inc
     // Seen in the 13 October daily: a full Chinese summary naming llama.cpp and a token.
     assert.equal(targetLanguageProse('AWS 介绍了如何在 Amazon SageMaker AI 上使用其 llama.cpp 深度学习容器部署 GGUF 模型，再添加 SemIf 适配器，使其能够针对声明的选项返回概率，而无需生成答案 token。该指南包含 CPU 和 GPU 部署代码。','zh'),true);
     assert.equal(targetLanguageProse('发布了新模型，the weights are available for research use today','zh'),false);
+    // Rejected in October: a short title naming a site, a post quoting commands, a lowercase product name.
+    assert.equal(targetLanguageProse('我刚发现，现在在 claude dot ai 上，Opus 5.5 只需一个提示词就能用 Blender 制作黏土动画','zh'),true);
+    assert.equal(targetLanguageProse('.@Cloudflare 的决策模型现已登陆 Ollama！\n\nClef (27B)：\nollama pull clef\n\nClef Flash (9B)：\nollama pull clef-flash','zh'),true);
+    assert.equal(targetLanguageProse('datasette 1.0a41','zh'),true);
+    assert.equal(targetLanguageProse('the model is out','zh'),false);
     assert.equal(targetLanguageProse('发布了新模型。','en'),false);
     assert.equal(targetLanguageProse('The source says “发布模型”.','en'),true);
   } finally {

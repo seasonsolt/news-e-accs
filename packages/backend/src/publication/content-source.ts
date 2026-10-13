@@ -49,15 +49,18 @@ export function targetLanguageProse(text: string, target: "en" | "zh"): boolean 
   if (!/[\p{L}]/u.test(prose)) return true;
   if (target === "en") return /[A-Za-z]{2}/.test(prose) && !/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Cyrillic}]/u.test(prose);
   if (/[\p{Script=Han}]/u.test(prose)) {
-    // A few lowercase terms (llama.cpp, token) belong in Chinese tech prose; a left-over English
-    // sentence brings many words for little Chinese around them.
+    // Lowercase terms and commands (llama.cpp, token, ollama pull clef) belong in Chinese tech prose,
+    // even in a short title; a left-over English sentence runs five or more lowercase words together,
+    // and passes only as a quotation inside plenty of Chinese.
     const english = prose.match(/\b[a-z][a-z'-]*\b/g)?.length ?? 0;
+    const run = Math.max(0, ...(prose.match(/\b[a-z][a-z'-]*(?:[ \t]+[a-z][a-z'-]*)*\b/g) ?? []).map(words => words.split(/[ \t]+/).length));
     const han = prose.match(/\p{Script=Han}/gu)?.length ?? 0;
-    return !/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Cyrillic}]/u.test(prose) && (english < 3 || han >= english * 10);
+    return !/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Cyrillic}]/u.test(prose) && (run < 5 || han >= english * 10);
   }
-  // Preserve short names/acronyms/version labels such as OpenAI, GPT-5 or Model 2.5.
+  // Preserve short names/acronyms/version labels such as OpenAI, GPT-5, Model 2.5 or datasette 1.0a41.
   const words = prose.split(/\s+/);
-  return words.length <= 4 && words.filter(word => /^[A-Z][a-z]+$/.test(word)).length <= 2 && words.every(word => /^(?:[A-Z][A-Za-z0-9.+/#_-]*|[0-9][0-9.,%+-]*)$/.test(word));
+  return words.length <= 4 && words.filter(word => /^[A-Z][a-z]+$/.test(word)).length <= 2 && words.filter(word => /^[a-z]/.test(word)).length <= 1
+    && words.every(word => /^(?:[A-Za-z][A-Za-z0-9.+/#_-]*|[0-9][0-9A-Za-z.,%+-]*)$/.test(word));
 }
 
 export function validateTranslation(entry: TranslationEntry, current: TranslationEntry): Record<string, string> {
