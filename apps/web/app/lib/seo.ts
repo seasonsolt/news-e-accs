@@ -83,8 +83,11 @@ export function pageMeta(input: PageMetaInput, locale: Locale = "en"): MetaDescr
   const title = input.title ? (input.rawTitle ? input.title : titled(input.title)) : (locale === "en" ? "e/acc — AI daily news & trending stories" : translate(locale, HOME_TITLE));
   const description = input.description ?? (locale === "en" ? "AI news, selected stories and daily briefings from e/acc. Reports are grouped into events, with original source links." : translate(locale, SITE_DESCRIPTION));
   const path = localePath(input.path, locale);
-  const url = `${base}${path}`;
   const actualLocale = input.contentLocale ?? (input.content ? contentLocale(input.content, locale) : locale);
+  // A frame showing the other edition's text (its own edition not written yet) is a copy of that
+  // edition's page: the canonical names the page whose language the text is in.
+  const copyOf = (input.content || input.contentLocale) && actualLocale && actualLocale !== locale ? actualLocale : null;
+  const url = `${base}${copyOf ? localePath(input.path, copyOf) : path}`;
   const imagePath = input.image?.startsWith("/og/") ? `${input.image}${input.image.includes("?") ? "&" : "?"}lang=${actualLocale ?? locale}` : input.image;
   const image = imagePath ? (imagePath.startsWith("http") ? imagePath : `${base}${imagePath}`) : `${base}/og/site.png?lang=${locale}`;
   const tags: MetaDescriptor[] = [
@@ -106,13 +109,13 @@ export function pageMeta(input: PageMetaInput, locale: Locale = "en"): MetaDescr
     { name: "twitter:image", content: image },
   ];
   if (input.noindex) tags.push({ name: "robots", content: input.nofollow ? "noindex, nofollow" : "noindex, follow" });
-  const both = input.alternates ?? (input.content ? hasBothEditions(input.content) : !/^\/(?:items|story|daily|weekly|monthly)(?:\/|$)/.test(publicPath(path.split("?")[0]!)));
+  const both = !copyOf && (input.alternates ?? (input.content ? hasBothEditions(input.content) : !/^\/(?:items|story|daily|weekly|monthly)(?:\/|$)/.test(publicPath(path.split("?")[0]!))));
   if (both && hasChineseRoute(path.split("?")[0]!)) {
     for (const [language, edition] of [["en", "en"], ["zh-CN", "zh"], ["x-default", "en"]] as const) {
       tags.push({ tagName: "link", rel: "alternate", hrefLang: language, href: `${base}${localePath(input.path, edition)}` });
     }
   }
-  if (input.jsonLd) tags.push({ "script:ld+json": localizeStructuredData(input.jsonLd, locale, base) });
+  if (input.jsonLd) tags.push({ "script:ld+json": localizeStructuredData(input.jsonLd, copyOf ?? locale, base) });
   return tags;
 }
 
@@ -132,6 +135,7 @@ export function organizationLd() {
     name: SITE.organization.name,
     url: base,
     logo: `${base}/icon.png`,
+    ...(SITE.organization.sameAs.length ? { sameAs: SITE.organization.sameAs } : {}),
     ...(founder ? {
       founder: {
         "@type": "Person",

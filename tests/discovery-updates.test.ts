@@ -69,7 +69,8 @@ test('discovery dates follow page content and publication scope', async () => {
 test('the Chinese edition is discovered only where the web always offers it as an alternate', async () => {
   const locs = new Set((await loadDiscoveryEntries(new Date('2026-10-09'))).map(e => e.loc));
   for (const loc of ['/zh', '/zh/all', '/zh/hot', '/zh/topics', '/zh/about', ...(FEATURES.eaccConcepts ? ['/zh/what-is-eacc'] : [])]) assert.ok(locs.has(loc), loc);
-  for (const loc of ['/zh/', '/zh/daily', '/zh/terms', '/zh/privacy', '/zh/daily/archive']) assert.ok(!locs.has(loc), `${loc} has no unconditional Chinese alternate`);
+  for (const loc of ['/zh/', '/zh/daily', '/zh/daily/archive']) assert.ok(!locs.has(loc), `${loc} has no unconditional Chinese alternate`);
+  for (const loc of ['/terms', '/privacy']) assert.ok(!locs.has(loc) && locs.has(`/zh${loc}`), `${loc} is written in Chinese only, so its Chinese page is the one discovered`);
   assert.ok(![...locs].some(loc => /^\/zh\/(items|story|daily|weekly|monthly)\//.test(loc)), 'content pages wait for both editions');
 });
 

@@ -4,7 +4,8 @@
 // - tracking and obsolete positioning parameters leak into canonical, or ordinary archives become noindex;
 // - a report's title omits its visible lead, or metadata promotes a withdrawn citation;
 // - an article invents a modification date from its source's publication date or omits its image;
-// - a story has no machine-readable subject, or claims its first report is its own publication date.
+// - a story has no machine-readable subject, or claims its first report is its own publication date;
+// - a frame showing the other edition's text claims to be a page of its own (duplicate content).
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { after, before, test } from "node:test";
@@ -121,4 +122,19 @@ test("story metadata describes the visible collection, current summary and repor
   const list = collection.mainEntity as { itemListElement: Array<{ name: string }> };
   assert.deepEqual(list.itemListElement.map((entry) => entry.name), [item.title]);
   assert.ok($("main").text().includes(story.digest!));
+});
+
+test("a frame showing the other edition's text names that edition's page as canonical", async () => {
+  const english = await page(`/story/${story.publicId}`);
+  assert.equal(english("link[rel=canonical]").attr("href"), `${web.origin}/zh/story/${story.publicId}`, "the Chinese story shown in the English frame");
+  assert.equal(english("meta[property='og:url']").attr("content"), `${web.origin}/zh/story/${story.publicId}`);
+  assert.equal(english("link[rel=alternate][hreflang]").length, 0);
+  const collection = structured(english).find((entry) => entry["@type"] === "CollectionPage")!;
+  assert.equal(collection.url, `${web.origin}/zh/story/${story.publicId}`, "structured data names the same page as the canonical");
+  const chinese = await page(`/zh/story/${story.publicId}`);
+  assert.equal(chinese("link[rel=canonical]").attr("href"), `${web.origin}/zh/story/${story.publicId}`);
+  for (const path of ["/terms", "/privacy"]) {
+    const $ = await page(path);
+    assert.equal($("link[rel=canonical]").attr("href"), `${web.origin}/zh${path}`, `${path} is written in Chinese only`);
+  }
 });

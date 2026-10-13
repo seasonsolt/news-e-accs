@@ -26,7 +26,11 @@ interface SitemapDocument { xml: string; expiresAt: number }
 
 let lastGood: SitemapDocument | null = null;
 
-type Entry = SitemapEntry;
+/** A story's Google News fields while the page is under two days old (news sitemap rules). */
+type Entry = SitemapEntry & { news?: { title: string; language: string; publishedAt: Date } };
+
+const NEWS_WINDOW_MS = 48 * 60 * 60 * 1000;
+const MAX_NEWS = 1000;
 
 /**
  * Pages whose Chinese edition the web always offers as an alternate (apps/web/app/lib/seo.ts). Items,
@@ -77,8 +81,9 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
     ...serverModules().flatMap((m) => m.sitemap?.pages ?? []),
     { loc: "/agent", revision: sha256(stableJson([SITE, ACCESS, AGENT])), changefreq: "weekly", priority: 0.7 },
     { loc: "/about", revision: sha256(stableJson(ABOUT)), changefreq: "monthly", priority: 0.5 },
-    { loc: "/terms", revision: sha256(stableJson([POLICY.terms, await readFile(path.join(REPO_ROOT, "site/pages/terms.md"), "utf8")])), changefreq: "monthly", priority: 0.4 },
-    { loc: "/privacy", revision: sha256(stableJson([POLICY.privacy, await readFile(path.join(REPO_ROOT, "site/pages/privacy.md"), "utf8")])), changefreq: "monthly", priority: 0.4 },
+    // The rules and privacy pages are written in Chinese only: their Chinese page is the canonical one.
+    { loc: "/zh/terms", revision: sha256(stableJson([POLICY.terms, await readFile(path.join(REPO_ROOT, "site/pages/terms.md"), "utf8")])), changefreq: "monthly", priority: 0.4 },
+    { loc: "/zh/privacy", revision: sha256(stableJson([POLICY.privacy, await readFile(path.join(REPO_ROOT, "site/pages/privacy.md"), "utf8")])), changefreq: "monthly", priority: 0.4 },
     { loc: "/changelog", revision: sha256(stableJson(loadChangelog())), changefreq: "weekly", priority: 0.5 },
   );
   if (FEATURES.timeMachine) entries.push({ loc: "/chronicle", changefreq: "weekly", priority: 0.5 });
@@ -91,9 +96,9 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
   }
   // A story needs listed evidence of its own. Its identity follows current readable reports as well
   // as the digest, so a correction or regrouping is visible even when latest_at does not advance.
-  const stories = await sql<{ public_id: string; revision: string }[]>`
+  const stories = await sql<{ public_id: string; revision: string; title: string; editorial_language: string; created_at: Date }[]>`
     SELECT st.public_id::text, md5(concat_ws('|', st.title, st.summary, st.digest, st.digest_updated_at::text,
-      st.version::text, members.revision)) AS revision
+      st.version::text, members.revision)) AS revision, st.title, st.editorial_language, st.created_at
     FROM stories st JOIN LATERAL (
       SELECT md5(string_agg(concat_ws(':', p.article_id, p.revision::text, fa.role, f.updated_at::text, s.name),
         ',' ORDER BY p.article_id, f.id)) AS revision
@@ -105,7 +110,16 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
       SELECT 1 FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id JOIN publications p ON p.article_id = fa.article_id
       WHERE f.story_id = st.id AND ${evidenceCondition()} AND ${listedCondition(at)})
     ORDER BY st.latest_at DESC NULLS LAST, st.id DESC ${limits ? sql`LIMIT ${limits.stories}` : sql``}`;
-  for (const s of stories) entries.push({ loc: `/story/${s.public_id}`, revision: s.revision, changefreq: "daily", priority: 0.5 });
+  let news = 0;
+  for (const s of stories) {
+    // A news entry names the page's own creation, never its reports' publication times, and only a
+    // native English story has an English headline of its own.
+    const fresh = s.editorial_language === "en" && at.getTime() - s.created_at.getTime() < NEWS_WINDOW_MS && news++ < MAX_NEWS;
+    entries.push({
+      loc: `/story/${s.public_id}`, revision: s.revision, changefreq: "daily", priority: 0.5,
+      ...(fresh ? { news: { title: s.title, language: "en", publishedAt: s.created_at } } : {}),
+    });
+  }
   for (const m of serverModules()) if (m.sitemap?.entries) entries.push(...(await m.sitemap.entries()));
   entries.push(...entries.filter((e) => hasChineseMirror(e.loc)).map((e) => ({ ...e, loc: e.loc === "/" ? "/zh" : `/zh${e.loc}` })));
   // Material/translation timestamps can also record a retry or a state repair. Hash the content;
@@ -130,10 +144,22 @@ async function build(at: Date): Promise<string> {
       if (e.lastmod) parts.push(`<lastmod>${e.lastmod.toISOString()}</lastmod>`);
       if (e.changefreq) parts.push(`<changefreq>${e.changefreq}</changefreq>`);
       if (e.priority !== undefined) parts.push(`<priority>${e.priority}</priority>`);
+      // Extension elements follow the core ones (sitemaps.org schema). Both editions of a mirrored page
+      // name each other, as the pages' own hreflang links do.
+      const english = e.loc === "/zh" ? "/" : e.loc.replace(/^\/zh(?=\/)/, "");
+      if (hasChineseMirror(english)) {
+        for (const [language, loc] of [["en", english], ["zh-CN", english === "/" ? "/zh" : `/zh${english}`], ["x-default", english]]) {
+          parts.push(`<xhtml:link rel="alternate" hreflang="${language}" href="${escapeXml(siteUrl(loc!))}"/>`);
+        }
+      }
+      if (e.news) {
+        parts.push(`<news:news>\n<news:publication><news:name>${escapeXml(SITE.name)}</news:name><news:language>${e.news.language}</news:language></news:publication>\n`
+          + `<news:publication_date>${e.news.publishedAt.toISOString()}</news:publication_date>\n<news:title>${escapeXml(e.news.title)}</news:title>\n</news:news>`);
+      }
       return `<url>\n${parts.join("\n")}\n</url>`;
     })
     .join("\n");
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">\n${body}\n</urlset>\n`;
 }
 
 const rebuilding = cached(refreshSitemap, SHARED_ONLY);

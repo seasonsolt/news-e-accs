@@ -39,7 +39,7 @@ export const SITE = {
   /** 一句话介绍：搜索引擎、分享卡片、RSS、llms.txt 会用。 */
   description: "e/acc follows AI news across hundreds of sources, selects the stories that matter, groups related coverage, and delivers a daily briefing.",
   /** llms.txt 里一句话介绍下面的一段详细介绍（选填）。 */
-  llmsIntro: null as string | null,
+  llmsIntro: `e/acc (e-acc.ai) is an English-first AI news site with a Chinese edition at /zh. It checks official blogs, news outlets, X accounts, WeChat publications and feeds every 15 minutes, groups coverage of the same development into an event page, and has models write each headline, summary and editorial reason, always linking the original report. A daily briefing comes out at ${EDITION_TIMES.daily} Beijing time, a weekly review on Mondays and a monthly review on the 1st. Its e/acc pages explain effective accelerationism, its people and its vocabulary.` as string | null,
   /** 一行小字：分享图、海报下方。 */
   tagline: "AI news at the pace of progress",
   /** 搜索引擎读到的关键词（首页结构化数据）。 */
@@ -73,6 +73,8 @@ export const SITE = {
   /** 结构化数据里的网站运营者（搜索引擎用）。 */
   organization: {
     name: "e/acc",
+    /** 同一运营者在别处的官方身份（社交账号、姊妹站），写进首页结构化数据的 sameAs。 */
+    sameAs: ["https://www.e-accs.com"] as string[],
     /** 创始人（选填）。 */
     founder: null as null | { name: string; alternateName?: string; jobTitle?: string; description?: string; url?: string },
   },

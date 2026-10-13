@@ -11,6 +11,7 @@ import { publishArticle } from '@aihot/backend/publication/publish';
 import { feedIssues, loadReport, v1Dailies, v1Daily, v1Period, v1Periods } from '@aihot/backend/publication/reports';
 import { reportFeed } from '@aihot/backend/publication/feeds';
 import { llmsTxt } from '@aihot/backend/publication/llms';
+import { FEATURES } from '@aihot/industry/features';
 import { stopBoss } from '@aihot/backend/jobs/queue';
 import { buildApp } from '../apps/api/src/app.ts';
 import type { ReportKind } from '@aihot/contracts/site';
@@ -123,6 +124,14 @@ test('discovery counts exactly the publicly indexed topics it lists', () => {
   const text = llmsTxt({ hasDailies: false, hasWeekly: false, hasMonthly: false, topics: [{ slug: 'sample', name: 'Example', definition: 'Example topic' }], tools: [],
     modules: { api: [], pace: [], pages: [], topics: [], access: [], usage: [], guideClients: [], ways: [] } });
   assert.match(text, /\(1 topics, listed below\)/);
+});
+
+test('discovery lists the readable site before the machine interfaces, in English', () => {
+  const text = llmsTxt({ hasDailies: true, hasWeekly: true, hasMonthly: true, topics: [], tools: [],
+    modules: { api: [], pace: [], pages: [], topics: [], access: [], usage: [], guideClients: [], ways: [] } });
+  assert.ok(text.indexOf('## Website') < text.indexOf('## Public data for agents'), 'answer engines meet the pages first');
+  if (FEATURES.eaccConcepts) for (const slug of ['what-is-eacc', 'eacc-vs-dacc', 'eacc-glossary']) assert.ok(text.includes(`/${slug})`), slug);
+  assert.doesNotMatch(text, /每天|每周一|每月/, 'edition times are written in English');
 });
 
 test('discovery uses only supported report language parameters', () => {
