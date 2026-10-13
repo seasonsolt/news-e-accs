@@ -292,8 +292,9 @@ test("reading-flow SSR keeps each hot rank, heat, headline and feed string exact
     assert.ok(star);
     assert.equal(star.textContent, "");
     const decoration = star.querySelector("span[aria-hidden=true]");
-    assert.equal(decoration?.children.length, 8);
+    assert.equal(decoration?.children.length, 0);
     assert.equal(decoration?.querySelector("[tabindex]"), null);
+    assert.equal(card.querySelectorAll("[aria-label='AI 评分 80 分']").length, 1);
   });
 });
 

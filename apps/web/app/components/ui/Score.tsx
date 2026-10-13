@@ -16,8 +16,11 @@ export function shownScore(score: number | null): number | null {
   return ITEM_COPY.showScore ? score : null;
 }
 
-/** "AI 评分 · 88" on desktop cards; `compact` keeps only the number (phones). */
-export function ScoreLabel({ score, compact = false }: { score: number | null; compact?: boolean }) {
+/**
+ * "AI 评分 · 88". With `desktopLabel` phones see only the number: one pill whose label appears from the
+ * desktop breakpoint, rather than a desktop and a phone copy of the same pill.
+ */
+export function ScoreLabel({ score, desktopLabel = false }: { score: number | null; desktopLabel?: boolean }) {
   const tx = useTranslate();
   const shown = shownScore(score);
   if (shown === null) return null;
@@ -29,12 +32,8 @@ export function ScoreLabel({ score, compact = false }: { score: number | null; c
       aria-label={tx("AI 评分 {0} 分", value)}
       className={`inline-flex h-[20px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2 ring-1 ring-inset ${tier.className}`}
     >
-      {!compact && (
-        <>
-          <span className="text-[11px] font-medium leading-none opacity-80"><Text value="AI 评分" /></span>
-          <span className="h-2.5 w-px bg-current opacity-25" aria-hidden="true" />
-        </>
-      )}
+      <span className={`text-[11px] font-medium leading-none opacity-80${desktopLabel ? " hidden lg:inline" : ""}`}><Text value="AI 评分" /></span>
+      <span className={`h-2.5 w-px bg-current opacity-25${desktopLabel ? " hidden lg:block" : ""}`} aria-hidden="true" />
       <span className="mono text-[12.5px] font-bold leading-none tabular-nums">{value}</span>
     </span>
   );
