@@ -128,13 +128,17 @@ export async function exportContentBatch(cursor = '', limit = 50, targetLanguage
 /** Current visible headlines get a small priority lane; eligibility and fingerprints are still
  * checked through the same canonical public projection as the historical sweep. */
 export async function priorityContentEntries(targetLanguage: EditionLanguage = 'en') {
-  const [hot, ranking, pool] = await Promise.all([
+  const [hot, ranking, pool, [daily]] = await Promise.all([
     loadHotStrip(), loadHot(), loadPool({ channel: 'all', category: null, tag: null, page: 1 }),
+    sql<{ key: string }[]>`SELECT key FROM reports WHERE kind='daily' ORDER BY key DESC LIMIT 1`,
   ]);
   const refs = new Map<string, { kind: ContentKind; id: string }>();
   const add = (kind: ContentKind, id: string | null | undefined) => {
     if (id) refs.set(`${kind}:${id}`, { kind, id });
   };
+  // The newest daily is mailed and exported in both languages that morning; the historical sweep
+  // reaches reports only after every item, so a backlog would hold it back for hours.
+  if (daily) add('report', `daily:${daily.key}`);
   for (const headline of hot ?? []) {
     add('story', headline.storyPublicId); add('item', headline.itemId);
   }

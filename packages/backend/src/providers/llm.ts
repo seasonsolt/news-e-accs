@@ -76,19 +76,40 @@ export class ModelOutputError extends Error {
   }
 }
 
-function extractJson(text: string): unknown {
+export function extractJson(text: string): unknown {
   let t = text.trim();
   const fence = /^```(?:json)?\s*([\s\S]*?)\s*```$/i.exec(t);
   if (fence) t = fence[1]!;
   const start = t.indexOf("{");
   const end = t.lastIndexOf("}");
   if (start === -1 || end === -1) throw new ModelOutputError("No JSON object in model output");
-  const body = t.slice(start, end + 1);
+  const body = escapeControlCharsInStrings(t.slice(start, end + 1));
   try {
     return JSON.parse(body);
-  } catch {
-    return JSON.parse(escapeControlCharsInStrings(body));
+  } catch (error) {
+    // Models sometimes close the object one brace too many ({"a":{}}}); the first complete object is the answer.
+    const first = firstObject(body);
+    if (first === null || first === body) throw error;
+    return JSON.parse(first);
   }
+}
+
+/** The first balanced {...} in the text, ignoring braces inside strings, or null if it never closes. */
+function firstObject(json: string): string | null {
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < json.length; i++) {
+    const ch = json[i]!;
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+    } else if (ch === '"') inString = true;
+    else if (ch === "{") depth++;
+    else if (ch === "}" && --depth === 0) return json.slice(0, i + 1);
+  }
+  return null;
 }
 
 /** Models sometimes emit raw newlines or tabs inside JSON strings (multi-line posts); escape only those. */

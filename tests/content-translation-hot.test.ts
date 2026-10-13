@@ -1,12 +1,12 @@
 // The translation queue's priority covers the whole hot ranking /hot shows, not only the home strip's five:
-// an event ranked sixth with no English edition is translated before the backlog.
+// an event ranked sixth with no English edition is translated before the backlog. The newest daily is too.
 import './setup.ts';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { after, test } from 'node:test';
 import { closeDb, sql } from '@aihot/backend/db';
 import type { HotEntry } from '@aihot/backend/events/hot';
-import { priorityContentEntries } from '@aihot/backend/publication/content-language';
+import { priorityContentEntries, saveTranslation } from '@aihot/backend/publication/content-language';
 
 after(closeDb);
 test('every ranked hot event without an English edition is a translation priority', async () => {
@@ -31,4 +31,18 @@ test('every ranked hot event without an English edition is a translation priorit
   const stories = new Set((await priorityContentEntries('en')).filter((e) => e.kind === 'story').map((e) => e.id));
   assert.ok(stories.has(entries[5]!.storyPublicId), 'the sixth event, past the home strip');
   assert.ok(stories.has(entries[0]!.storyPublicId));
+});
+
+test('the newest daily is a translation priority until its edition is stored', async () => {
+  const content = (title: string) => sql.json({ title, lead: { title, leadParagraph: 'A lab publishes a new model for public use.' }, sections: [] });
+  for (const key of ['2100-05-31', '2100-06-01']) {
+    await sql`INSERT INTO reports(kind,key,editorial_language,window_start,window_end,generated_at,content)
+      VALUES('daily',${key},'en',now()-interval '1 day',now(),now(),${content(`Daily briefing ${key}`)})`;
+  }
+  const reports = async () => (await priorityContentEntries('zh')).filter((e) => e.kind === 'report');
+  const [newest, ...others] = await reports();
+  assert.equal(newest?.id, 'daily:2100-06-01');
+  assert.deepEqual(others, [], 'older dailies stay with the historical sweep');
+  await saveTranslation({ ...newest!, translations: Object.fromEntries(newest!.segments.map((s) => [s.key, '一家实验室发布了面向公众的新模型。'])) }, 'offline-agent', 'test-fixture', [], true);
+  assert.deepEqual(await reports(), []);
 });
