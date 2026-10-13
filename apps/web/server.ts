@@ -13,6 +13,7 @@ import { isApiOwned, resolveRedirect } from "@aihot/contracts/http-policy";
 import { BROWSER_MAX_SECONDS } from "./app/lib/api.server.ts";
 import { proxyToApi } from "./app/lib/api-proxy.server.ts";
 import { logError } from "./app/lib/errors.server.ts";
+import { serverTiming, withTiming } from "./app/lib/timing.server.ts";
 
 const PORT = Number(process.env.WEB_PORT || 3000);
 const HOST = process.env.WEB_HOST || "127.0.0.1";
@@ -168,6 +169,8 @@ function pageResponse(req: import("node:http").IncomingMessage, res: import("nod
     // URL fixes the edition; language preferences and onboarding are applied only in the browser.
     // Shared HTML and Router data must stay independent of cookies, Accept-Language and the user
     // agent, except for choosing the bot streaming mode (onAllReady vs onShellReady).
+    const timing = serverTiming();
+    if (timing) res.setHeader("Server-Timing", timing);
     const cc = String(res.getHeader("Cache-Control") ?? "");
     if (!publicRead || status !== 200 || res.hasHeader("Set-Cookie") || !cc || /(?:private|no-store)/i.test(cc)) {
       res.removeHeader("Expires");
@@ -232,7 +235,7 @@ async function handle(req: import("node:http").IncomingMessage, res: import("nod
 
   if ((req.method === "GET" || req.method === "HEAD") && pathname.includes(".") && (await serveStatic(pathname, req, res))) return;
   pageResponse(req, res);
-  return ssr(req, res);
+  return withTiming(() => ssr(req, res));
 }
 
 process.on("unhandledRejection", (reason) => {

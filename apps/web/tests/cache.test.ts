@@ -591,6 +591,42 @@ test("a visitor cannot name its own address to the api without a trusted proxy i
   assert.deepEqual(await res.json(), { forwarded: "127.0.0.1", real: "127.0.0.1" });
 });
 
+test("pages and Router data report their api reads and time to headers; each request counts its own reads", async () => {
+  const paths = ["/", "/_.data", "/hot"];
+  const timingOf = (res: Response) => {
+    const timing = /^api;dur=(\d+\.\d);desc="(\d+) reads", total;dur=(\d+\.\d)$/.exec(res.headers.get("Server-Timing") ?? "");
+    assert.ok(timing, `${res.url}: ${res.headers.get("Server-Timing") ?? "missing"}`);
+    return { api: Number(timing[1]), reads: Number(timing[2]), total: Number(timing[3]) };
+  };
+  // Alone, a page's read count is what the api received for it.
+  const reads: number[] = [];
+  for (const path of paths) {
+    const before = apiRequests.length;
+    const res = await fetch(origin + path);
+    await res.arrayBuffer();
+    assert.equal(timingOf(res).reads, apiRequests.length - before, path);
+    assert.ok(timingOf(res).reads > 0, path);
+    reads.push(timingOf(res).reads);
+  }
+  // Concurrent requests keep separate records, and the delayed site meta read shows in both durations.
+  metaDelayMs = 30;
+  try {
+    const responses = await Promise.all(paths.map((path) => fetch(origin + path)));
+    for (const [index, res] of responses.entries()) {
+      assert.equal(res.status, 200);
+      const timing = timingOf(res);
+      assert.equal(timing.reads, reads[index], paths[index]);
+      assert.ok(timing.api >= 30 && timing.total >= 30, res.headers.get("Server-Timing")!);
+      await res.arrayBuffer();
+    }
+  } finally {
+    metaDelayMs = 0;
+  }
+  const asset = await fetch(origin + mediaPath);
+  assert.equal(asset.headers.get("Server-Timing"), null);
+  await asset.arrayBuffer();
+});
+
 test("API, feeds and static assets keep their own cache policy", async () => {
   const apiResponse = await fetch(origin + "/api/site/cache-example", { headers: { cookie: "eacc_language=zh" } });
   assert.equal(apiResponse.headers.get("Cache-Control"), "public, max-age=30, s-maxage=60");

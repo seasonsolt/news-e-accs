@@ -40,6 +40,7 @@ test("API startup is quiet and an unexpected error retains the request, stack an
     assert.equal(res.headers["retry-after"], "30");
     assert.equal(res.headers["cache-control"], "no-store");
     assert.equal(res.headers["content-type"], "application/problem+json");
+    assert.match(String(res.headers["server-timing"]), /^app;dur=\\d+\\.\\d$/);
     assert.equal(res.json().code, "temporarily_unavailable");
     assert.equal(res.json().requestId, res.headers["x-request-id"]);
     assert.equal((await app.inject({ url: "/api/logged" })).statusCode, 502);

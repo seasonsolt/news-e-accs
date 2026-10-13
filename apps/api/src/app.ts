@@ -57,6 +57,11 @@ export async function buildApp(): Promise<FastifyInstance> {
     return child;
   });
 
+  // Time spent in this process, for the browser's network panel and for the web process's page timing.
+  app.addHook("onSend", async (_req, reply) => {
+    reply.header("Server-Timing", `app;dur=${reply.elapsedTime.toFixed(1)}`);
+  });
+
   app.addHook("onResponse", async (req, reply) => {
     const path = (req.raw.url ?? "").split("?")[0] ?? "/";
     // The reverse proxy logs every request; the process only notes the slow and the failed.
