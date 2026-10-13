@@ -23,7 +23,7 @@ export function costOfIntelligenceAnswer(data: CostOfIntelligence): string {
       return `| ≥ ${Math.round(t.threshold * 100)}%（${t.reference}） | ${first.date} ${first.model.name} ${usd(first.price)} | ${now.date} ${now.model.name} ${usd(now.price)} | ${t.ratio ? `${Math.round(t.ratio)} 倍` : "—"} | ${t.halvingMonths ? `${t.halvingMonths.toFixed(1)} 个月` : "—"} |`;
     }),
     "",
-    `共 ${data.modelCount} 个同时有 GPQA 分数和官方 API 价格的模型。价格是厂商官方标准价，每条附出处；人民币价格按${data.fx ? ` ${data.fx.asOf} 的汇率 ${data.fx.rate}` : "最新汇率"}折算。GPQA 分数来自 Epoch AI（CC BY 4.0）。`,
+    `共 ${data.modelCount} 个同时有 GPQA 分数和官方 API 价格的模型。价格是厂商官方标准价，每条附出处；人民币价格按${data.fx ? ` ${data.fx.asOf} 的汇率 ${data.fx.rate} ` : "最新汇率"}折算。GPQA 分数来自 Epoch AI（CC BY 4.0）。`,
     "",
     `页面：${siteUrl("/index/cost-of-intelligence")}　数据下载（CSV）：${siteUrl("/api/site/indices/cost-of-intelligence.csv")}`,
   ];

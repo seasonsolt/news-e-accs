@@ -153,10 +153,10 @@ test("admin-only review, worker drafting, substantive editing, publication and r
     const queuePage = await fetch(`${web.origin}/admin/review`);
     assert.equal(queuePage.status, 200);
     const queueHtml = await queuePage.text();
-    assert.match(queueHtml, /Choose a story to deepen/);
-    assert.match(queueHtml, /Changes against published version/);
+    assert.match(queueHtml, /选择要做厚的事件/);
+    assert.match(queueHtml, /与已发布版本的差异/);
     assert.match(queueHtml, /Private pending background/);
-    assert.match(queueHtml, /Exact supporting quote/);
+    assert.match(queueHtml, /原文引用/);
   } finally { await web.stop(); }
   assert.equal(provider.hits(), beforeReads, "reading pages never calls a model");
   assert.equal((await command(privateDraft, (await entry(privateDraft)).version, "reject")).statusCode, 200);
