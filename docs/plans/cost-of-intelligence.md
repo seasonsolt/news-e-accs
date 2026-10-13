@@ -5,7 +5,7 @@
 
 ## 0. 进度
 
-2026-10-12 第一版完成（`modules/indices`，说明见模块 README）：页面、`/api/site/indices/cost-of-intelligence`、CSV 下载、sitemap、llms.txt 和 Dataset 结构化数据。还没做：API v1 和 MCP 出口；15 条待核验的价格。上线前要在入口仓库 `edge/src/route.mjs` 的 `NEWS_SECTIONS` 加上 `/index`。
+2026-10-12 第一版完成（`modules/indices`，说明见模块 README）：页面、`/api/site/indices/cost-of-intelligence`、CSV 下载、sitemap、llms.txt 和 Dataset 结构化数据。已上线（入口仓库 `edge/src/route.mjs` 已加 `/index`）。2026-10-13 核验完剩下的 15 条价格。还没做：API v1 和 MCP 出口。
 
 ## 1. 要回答的问题
 
@@ -27,14 +27,14 @@
 
 口径：第一方官方 API 的标准价，每百万 token，缓存未命中的输入价，最短上下文档；不含首发优惠、批量折扣和第三方托管。
 
-| 来源 | 内容 | 状态（10-12） |
+| 来源 | 内容 | 状态（10-13） |
 |---|---|---|
-| `price-history.json` | 2023 到 2025 年的首发价和降价，每条有生效日期和官方出处 | 68 条：53 条已核验，15 条待核验（Wayback 存档当时无法访问） |
+| `price-history.json` | 2023 到 2025 年的首发价和降价，每条有生效日期和官方出处 | 68 条，全部已核验 |
 | `lb_prices`（`kind = 'official'`） | 53 个模型的当前价，verified 2026-09-26 | 只有当前价；没有历史记录的模型，把当前价当作从发布日起的价格 |
 
 人民币价格按 `fx_rates` 里的汇率折成美元，和模型榜同一套换算。
 
-待核验的 15 条：o1-mini 首发价和降价日期、o3 首发价、Claude 3.5 Haiku 首发价、Mistral Large 2402 / Large 2411 / Small 2501、Grok 3 和 Grok 3 mini、Gemini 1.5 Pro 和 Flash 首发价、Gemini 2.0 Flash、DeepSeek 2025-09-05 的两条和 deepseek-reasoner。Wayback 恢复后重新核验。
+10-13 核验的 15 条（o1-mini 首发价和降价、o3、Claude 3.5 Haiku、Mistral Large 2402 / Large 2411 / Small 2501、Grok 3 和 Grok 3 mini、Gemini 1.5 Pro 和 Flash、Gemini 2.0 Flash、DeepSeek 的三条）对照的是厂商定价页在 Wayback 上的存档，出处直接写存档快照地址。核验时改了两处：Gemini 1.5 Pro 和 Flash 正式版 5 月 23 日发布，定价页写明 5 月 30 日开始计费，生效日改为 2024-05-30；o1-mini 降价在 2025-01-29 和 02-01 两次存档之间，按 o3-mini 发布日记为 01-31。
 
 ### 3.3 以后怎么更新
 
