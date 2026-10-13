@@ -348,3 +348,22 @@ for(const folded of [false,true]) test(folded?'desktop deep reading returns to i
     if(folded)await expect(page.getByRole('button',{name:'Expand 10/4',exact:true})).toBeVisible();
   }finally{await context.close();}
 });
+
+test('a card sends no click sparks with the page and makes them on the first save, on phones and desktops',async()=>{
+  for(const [browser,viewport] of [[chrome,{width:1280,height:900}],[safari,{width:390,height:844}]] as const){
+    const context=await readerContext(browser,{viewport});const page=await context.newPage();
+    try{
+      await page.goto(origin+'/');
+      const star=page.locator('[data-item-id="navigation-fixture"] button[aria-pressed]');
+      const sparks=star.locator('span[aria-hidden=true] > span');
+      await expect(sparks).toHaveCount(0);
+      await star.click();
+      await expect(star).toHaveAttribute('aria-pressed','true');
+      await expect(sparks).toHaveCount(8);
+      // One score pill per card: phones see the number, desktops the label too.
+      const score=page.locator('[data-item-id="navigation-fixture"] [aria-label^="AI score"]');
+      await expect(score).toHaveCount(1);
+      await expect(score.getByText('AI score',{exact:true})).toBeVisible({visible:viewport.width>=961});
+    }finally{await context.close();}
+  }
+});

@@ -15,6 +15,15 @@ export function ClickSpark({ children, className = "", trigger }: { children: Re
   const fire = (x: number, y: number) => {
     const layer = ref.current;
     if (!allowed || !layer) return;
+    // The strokes are made on the first click: a feed renders this beside every card, and the server
+    // need not send eight invisible spans for each one.
+    if (!layer.children.length) {
+      for (let i = 0; i < 8; i++) {
+        const spark = document.createElement("span");
+        spark.className = "absolute left-0 top-0 h-px w-2 origin-left bg-amber";
+        layer.append(spark);
+      }
+    }
     stop.current?.();
     stop.current = runFrames(layer, 400, (progress) => {
       const eased = progress * (2 - progress);
@@ -41,9 +50,7 @@ export function ClickSpark({ children, className = "", trigger }: { children: Re
       fire(event.detail === 0 ? box.width / 2 : event.clientX - box.left, event.detail === 0 ? box.height / 2 : event.clientY - box.top);
     }}>
       {children}
-      <span ref={ref} aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-0">
-        {Array.from({ length: 8 }, (_, i) => <span key={i} className="absolute left-0 top-0 h-px w-2 origin-left bg-amber" />)}
-      </span>
+      <span ref={ref} aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-0" />
     </span>
   );
 }
