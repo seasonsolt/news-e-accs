@@ -25,6 +25,7 @@ export interface JobData {
   "publication.republish-source": { sourceId: string };
   "media.prepare": { articleId: string } | { url: string; mode: string };
   "wechat.illustrate": { date: string; entry: string; request: string; subject: string };
+  "wechat.video": { date: string; request: string };
 }
 export type QueueName = keyof JobData;
 
@@ -40,6 +41,7 @@ export const QUEUES = {
   republishSource: "publication.republish-source",
   prepareMedia: "media.prepare",
   illustrate: "wechat.illustrate",
+  videoScript: "wechat.video",
 } as const satisfies Record<string, QueueName>;
 
 export type QueueOptions = NonNullable<Parameters<PgBoss["createQueue"]>[1]>;
@@ -58,6 +60,8 @@ const QUEUE_OPTIONS: Record<QueueName, QueueOptions> = {
   [QUEUES.prepareMedia]: { policy: "short", retryLimit: 1, retryDelay: 120, expireInSeconds: 600 },
   // A drawing is paid for and takes minutes: never retried by the queue; the editor asks again.
   [QUEUES.illustrate]: { policy: "short", retryLimit: 0, expireInSeconds: 900 },
+  // Paid and asked for by an editor who is waiting: not retried by the queue; the editor asks again.
+  [QUEUES.videoScript]: { policy: "short", retryLimit: 0, expireInSeconds: 600 },
 };
 
 const ensured = new Set<string>();

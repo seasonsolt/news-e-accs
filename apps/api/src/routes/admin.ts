@@ -8,8 +8,8 @@ import { siteAnalyticsOverview } from "@aihot/backend/admin/analytics";
 import { weeklyReadings } from "@aihot/backend/admin/metrics";
 import { newsletterOverview } from "@aihot/backend/admin/newsletter";
 import {
-  pushWechatDraft, removeWechatIllustration, requestWechatIllustration, saveWechatEdits, uploadWechatIllustration, wechatCoverPng, wechatExport,
-  wechatIllustrationJpeg, wechatIssues,
+  pushWechatDraft, removeWechatIllustration, requestWechatIllustration, requestWechatVideoScript, saveWechatEdits, saveWechatVideoScript, uploadWechatIllustration,
+  wechatCoverPng, wechatExport, wechatIllustrationJpeg, wechatIssues,
 } from "@aihot/backend/admin/wechat";
 import { navCounts } from "@aihot/backend/admin/navigation";
 import { listAudit } from "@aihot/backend/audit";
@@ -138,6 +138,8 @@ export function registerAdmin(app: FastifyInstance) {
     return uploadWechatIllustration(param(req, "date"), { entry: b.entry, image: decodeImage(b.image) }, actorOf(admin));
   }));
   app.delete("/api/admin/wechat/:date/illustration", adminHandler(async (req, _reply, admin) => removeWechatIllustration(param(req, "date"), body<{ entry: string }>(req).entry, actorOf(admin))));
+  app.post("/api/admin/wechat/:date/video", adminHandler(async (req, _reply, admin) => requestWechatVideoScript(param(req, "date"), actorOf(admin))));
+  app.put("/api/admin/wechat/:date/video", adminHandler(async (req, _reply, admin) => saveWechatVideoScript(param(req, "date"), body(req), actorOf(admin))));
   app.post("/api/admin/wechat/:date/draft", adminHandler(async (req, _reply, admin) => pushWechatDraft(param(req, "date"), actorOf(admin))));
   app.put("/api/admin/wechat/:date", adminHandler(async (req, _reply, admin) => saveWechatEdits(param(req, "date"), body(req), actorOf(admin))));
   app.get("/api/admin/analytics", adminHandler(async (req) => siteAnalyticsOverview(Number(q(req).days) || 30)));

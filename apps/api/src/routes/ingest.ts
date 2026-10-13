@@ -8,9 +8,14 @@ import { IngestError, ingestItems } from "@aihot/backend/ingest/items";
 
 const PLACEHOLDER = /^(|changeme|change-me|placeholder|xxx+|todo|test|dev|your[-_]?token.*)$/i;
 
-/** Constant-time check; an empty or placeholder server token rejects everything. */
+/** Whether the request carries the ingest token. */
 export function authorized(req: FastifyRequest): boolean {
-  const expected = credential("auth", "INGEST_TOKEN") ?? "";
+  return tokenMatches(req, "INGEST_TOKEN");
+}
+
+/** Whether the bearer token is the server's token `name`, in constant time; an empty or placeholder server token rejects everything. */
+export function tokenMatches(req: FastifyRequest, name: string): boolean {
+  const expected = credential("auth", name) ?? "";
   if (PLACEHOLDER.test(expected) || expected.length < 16) return false;
   const given = /^Bearer\s+(.+)$/i.exec(req.headers.authorization ?? "")?.[1]?.trim() ?? "";
   const a = Buffer.from(given);

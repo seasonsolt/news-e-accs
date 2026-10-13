@@ -11,6 +11,7 @@ import { registerAdminAuth } from "./routes/admin-auth.ts";
 import { registerAdmin } from "./routes/admin.ts";
 import { registerAnalytics } from "./routes/analytics.ts";
 import { registerIngest } from "./routes/ingest.ts";
+import { registerWechatVideo } from "./routes/wechat-video.ts";
 import { registerV1, registerV1Fallbacks } from "./routes/v1.ts";
 import { registerAgent } from "./routes/agent.ts";
 import { registerMedia } from "./routes/media.ts";
@@ -101,6 +102,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   registerAdmin(app);
   registerAnalytics(app);
   registerIngest(app);
+  registerWechatVideo(app);
   registerV1(app);
   registerAgent(app);
   registerMedia(app);

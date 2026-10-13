@@ -52,6 +52,22 @@ interface Illustration {
   updatedAt: string;
 }
 
+interface VideoScript {
+  opening: string;
+  segments: Array<{ key: string; narration: string }>;
+  closing: string;
+  caption: string;
+}
+
+interface Video {
+  status: "queued" | "writing" | "done" | "failed";
+  script: VideoScript | null;
+  error: string | null;
+  requestedBy: string | null;
+  editedBy: string | null;
+  updatedAt: string;
+}
+
 type WechatExport =
   | { date: string; status: "no_report" | "empty" }
   | { date: string; status: "not_ready"; reason: string }
@@ -62,6 +78,9 @@ type WechatExport =
       push: { enabled: boolean; configured: boolean; pushedAt: string | null; pushedRevision: number | null; pushedBy: string | null; imagesChanged: boolean };
       illustrations: Record<string, Illustration>;
       drawingUnavailable: string | null;
+      video: Video | null;
+      videoUnavailable: string | null;
+      videoEntries: number;
     };
 
 type Ready = Extract<WechatExport, { status: "ready" }>;
@@ -89,7 +108,7 @@ const UNAVAILABLE: Record<string, string> = {
 
 /** How long typing pauses before the issue is saved. */
 const SAVE_AFTER_MS = 800;
-/** How often the page asks again while a picture is being drawn. */
+/** How often the page asks again while a picture is being drawn or a script written. */
 const DRAWING_POLL_MS = 5000;
 /** The api takes requests up to 10 MB; a picture travels as base64 (4/3 of its size). */
 const UPLOAD_MAX_BYTES = 7 * 1024 * 1024;
@@ -284,6 +303,9 @@ function editsOf(draft: Draft): WechatEdits {
 const edited = (e: Item) =>
   e.title !== e.generated.title || e.body !== (e.generated.body ?? "") || e.comment !== (e.generated.comment ?? "");
 const drawing = (i: Illustration | undefined) => i?.status === "queued" || i?.status === "drawing";
+const writing = (v: Video | null) => v?.status === "queued" || v?.status === "writing";
+/** Chinese read aloud by the voice model, in characters a second, for the length estimate. */
+const SPOKEN_CHARS_PER_SECOND = 4.2;
 
 /** The entry's picture: drawn by the worker from a description, or uploaded. */
 function IllustrationPanel({ date, entry, picture, unavailable }: { date: string; entry: Item; picture: Illustration | undefined; unavailable: string | null }) {
@@ -497,6 +519,81 @@ function PublishPanel({ d, stale, pictures }: { d: Ready; stale: boolean; pictur
   );
 }
 
+/**
+ * The 视频号 edition: the voice-over script the worker writes from the issue as it stands, editable here,
+ * and the command that cuts the video on the editor's Mac (scripts/wechat-video.ts).
+ */
+function VideoPanel({ d }: { d: Ready }) {
+  const { run, pending } = useAdminAction();
+  const { video } = d;
+  const [script, setScript] = useState<VideoScript | null>(video?.script ?? null);
+  const busy = writing(video);
+  const dirty = !!script && JSON.stringify(script) !== JSON.stringify(video?.script);
+  const entries = new Map(d.article.entries.map((e) => [e.key, e]));
+  const command = `npm run wechat-video -- ${d.date}`;
+  const ask = () => {
+    if (video?.script && (dirty || video.editedBy) && !window.confirm("重新生成会换掉现在的口播稿（包括改过的地方），继续吗？")) return;
+    void run("POST", `/api/admin/wechat/${d.date}/video`, {}, { label: "video", success: "已开始写口播稿，约半分钟" });
+  };
+  const save = () => run("PUT", `/api/admin/wechat/${d.date}/video`, { script }, { label: "video-save", success: "已保存口播稿" });
+  const spoken = script ? [script.opening, ...script.segments.filter((s) => { const e = entries.get(s.key); return e && !e.hidden; }).map((s) => s.narration), script.closing] : [];
+  const seconds = Math.round(spoken.reduce((n, t) => n + chars(t.trim()), 0) / SPOKEN_CHARS_PER_SECOND);
+  return (
+    <div className="flex flex-col gap-5 p-5">
+      <div className="rounded-tile bg-bg-sunk p-4 ring-1 ring-line">
+        <div className="text-[14px] font-semibold text-ink">{busy ? "正在写口播稿…" : video?.status === "done" ? `口播稿已写好 · 约 ${seconds} 秒` : "视频号竖屏视频"}</div>
+        <p className="mt-1 text-[13px] leading-relaxed text-ink-2">
+          按这一期现在的顺序和改动，取前 {d.videoEntries} 条写成 60–90 秒的口播稿；改好后在你的 Mac 上合成视频，再到视频号助手或手机上发表（视频号没有发布接口）。
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Button tone={video?.script ? "secondary" : "primary"} disabled={!!d.videoUnavailable || busy} busy={pending === "video"} onClick={ask}>
+            <Icon d={ICONS.spark} size={15} />{video?.script ? "重新生成" : "生成口播稿"}
+          </Button>
+          {script && <Button tone="primary" disabled={!dirty || busy} busy={pending === "video-save"} onClick={save}>保存</Button>}
+        </div>
+        {video?.status === "failed" && video.error && <p className="mt-2 text-[12.5px] leading-relaxed text-hot">没写成：{video.error}</p>}
+        {d.videoUnavailable && <p className="mt-2 text-[12px] text-ink-4">{d.videoUnavailable}</p>}
+      </div>
+      {script && (
+        <>
+          <div className="flex flex-col gap-3">
+            <label className="flex flex-col gap-1.5 text-[12.5px] text-ink-3">开场
+              <textarea rows={2} value={script.opening} onChange={(ev) => setScript({ ...script, opening: ev.target.value })} className={`${FIELD} resize-y`} />
+            </label>
+            {script.segments.map((s, k) => {
+              const e = entries.get(s.key);
+              return (
+                <label key={s.key} className="flex flex-col gap-1.5 text-[12.5px] text-ink-3">
+                  <span className="truncate"><span className="num font-bold text-accent">{String(k + 1).padStart(2, "0")}</span>　{e?.title ?? "（这一条已不在本期）"}{e?.hidden && <span className="text-hot">　已隐藏，不会出现在视频里</span>}</span>
+                  <textarea rows={3} value={s.narration} onChange={(ev) => setScript({ ...script, segments: script.segments.map((x) => (x.key === s.key ? { ...x, narration: ev.target.value } : x)) })}
+                    className={`${FIELD} resize-y [field-sizing:content]`} />
+                </label>
+              );
+            })}
+            <label className="flex flex-col gap-1.5 text-[12.5px] text-ink-3">结尾
+              <textarea rows={2} value={script.closing} onChange={(ev) => setScript({ ...script, closing: ev.target.value })} className={`${FIELD} resize-y`} />
+            </label>
+            <label className="flex flex-col gap-1.5 text-[12.5px] text-ink-3">
+              <span className="flex items-center justify-between">视频号描述<button type="button" className="font-medium text-accent hover:underline" onClick={() => copyText(script.caption).then(() => toast("已复制描述", "ok"), () => toast("复制失败", "error"))}>复制</button></span>
+              <textarea rows={6} value={script.caption} onChange={(ev) => setScript({ ...script, caption: ev.target.value })} className={`${FIELD} resize-y`} />
+            </label>
+          </div>
+          <div>
+            <h3 className="mb-2 text-[13px] font-semibold text-ink-2">在 Mac 上合成视频</h3>
+            <div className="flex items-center gap-3 rounded-tile bg-raised px-3.5 py-2.5 ring-1 ring-line">
+              <code className="min-w-0 flex-1 truncate text-[13px] text-ink">{command}</code>
+              <Button size="sm" onClick={() => copyText(command).then(() => toast("已复制命令", "ok"), () => toast("复制失败", "error"))}>复制</Button>
+            </div>
+            <p className="mt-2 text-[12px] leading-relaxed text-ink-4">
+              {dirty ? "先保存，命令读的是保存后的口播稿。" : ""}在仓库目录运行，配音用本机的 VoxCPM2，几分钟后在「影片 / e-acc-daily / {d.date}」里得到 mp4、描述和封面。
+            </p>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 type Filter = "all" | "edited" | "hidden";
 
 function Workbench({ d, issues }: { d: Ready; issues: IssueRow[] }) {
@@ -514,7 +611,7 @@ function Workbench({ d, issues }: { d: Ready; issues: IssueRow[] }) {
   const first = useRef(true);
   const [open, setOpen] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
-  const [tab, setTab] = useState<"preview" | "publish">("preview");
+  const [tab, setTab] = useState<"preview" | "publish" | "video">("preview");
 
   // Saves after a pause in typing, one save at a time, each on the revision the previous one returned.
   useEffect(() => {
@@ -538,8 +635,8 @@ function Workbench({ d, issues }: { d: Ready; issues: IssueRow[] }) {
     return () => clearTimeout(timer);
   }, [draft, d.date]);
 
-  // While a picture is being drawn, the page asks again until it is there.
-  const anyDrawing = Object.values(d.illustrations).some(drawing);
+  // While a picture is being drawn or the script written, the page asks again until it is there.
+  const anyDrawing = Object.values(d.illustrations).some(drawing) || writing(d.video);
   useEffect(() => {
     if (!anyDrawing) return;
     const timer = setInterval(() => { if (revalidator.state === "idle") revalidator.revalidate(); }, DRAWING_POLL_MS);
@@ -674,10 +771,10 @@ function Workbench({ d, issues }: { d: Ready; issues: IssueRow[] }) {
 
         <aside aria-label="预览与发布" className="min-w-0 max-w-full flex-[1_1_400px] rounded-panel bg-surface ring-1 ring-line lg:sticky lg:top-[88px] xl:max-w-[480px]">
           <div role="tablist" className="flex gap-5 border-b border-line px-5">
-            {(["preview", "publish"] as const).map((k) => (
+            {(["preview", "publish", "video"] as const).map((k) => (
               <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
                 className={`-mb-px h-11 border-b-2 px-0.5 text-[14px] font-medium ${tab === k ? "border-accent text-ink" : "border-transparent text-ink-3 hover:text-ink"}`}>
-                {k === "preview" ? "手机预览" : "发布"}
+                {{ preview: "手机预览", publish: "发布", video: "视频号" }[k]}
               </button>
             ))}
           </div>
@@ -689,8 +786,10 @@ function Workbench({ d, issues }: { d: Ready; issues: IssueRow[] }) {
               </div>
               <PhonePreview html={d.article.html} selected={selected >= 0 ? selected : null} />
             </div>
-          ) : (
+          ) : tab === "publish" ? (
             <PublishPanel d={d} stale={stale} pictures={counts.pictures} />
+          ) : (
+            <VideoPanel key={`${d.video?.updatedAt ?? ""}`} d={d} />
           )}
         </aside>
       </div>

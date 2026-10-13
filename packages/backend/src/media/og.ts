@@ -25,7 +25,7 @@ export interface OgCard {
 
 let fontsPromise: Promise<Array<{ name: string; data: Buffer; weight: 400 | 700; style: "normal" }>> | null = null;
 
-function fonts() {
+export function fonts() {
   fontsPromise ??= Promise.all([
     readFile(path.join(REPO_ROOT, "assets/og-fonts/noto-sans-sc-400.ttf")),
     readFile(path.join(REPO_ROOT, "assets/og-fonts/noto-sans-sc-700.ttf")),

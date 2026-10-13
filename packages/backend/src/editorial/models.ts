@@ -30,7 +30,7 @@ export const CAPABILITIES = {
   digest: { label: "事件综述", env: "DIGEST_MODEL", default: DEFAULTS.digest ?? "default", purposes: ["story_digest"] },
   // Dailies are computed by rule; report_lead and report_daily remain for their older receipts.
   report: { label: "周报月报的总述与主题（日报由规则算出，不用模型）", env: "REPORT_MODEL", default: DEFAULTS.report ?? "default", purposes: ["report_weekly", "report_monthly", "report_lead", "report_daily"] },
-  wechat: { label: "公众号点评（「AI 早报」每条一句点评，由 worker 写好，后台导出时附上）", env: "WECHAT_MODEL", default: DEFAULTS.wechat ?? "default", purposes: ["wechat_comment"] },
+  wechat: { label: "公众号点评与视频号口播稿（「AI 早报」每条一句点评，由 worker 写好，后台导出时附上；工作台要时写视频口播稿）", env: "WECHAT_MODEL", default: DEFAULTS.wechat ?? "default", purposes: ["wechat_comment", "wechat_video"] },
   translate: { label: "精选全文翻译（含引用帖）", env: "TRANSLATE_MODEL", default: DEFAULTS.translate ?? "default", purposes: ["translate_body", "translate_quoted", "translate_content"] },
 } satisfies Record<string, Capability>;
 

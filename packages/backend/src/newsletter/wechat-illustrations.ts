@@ -3,6 +3,7 @@
 // and keeps the file under AIHOT_DATA_DIR/uploads/wechat-illustrations, or the editor uploads one. Each ask or
 // upload is a new `request`: a drawing that finishes after a newer ask is paid for but not shown, and
 // the picture already there stays until the new one is ready.
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { config } from "../config.ts";
 import { sql } from "../db.ts";
@@ -33,6 +34,14 @@ export async function wechatIllustrations(key: string): Promise<Map<string, Illu
     SELECT entry_key AS "entryKey", status, origin, prompt, request, file, error, wechat_url AS "wechatUrl", requested_by AS "requestedBy", updated_at AS "updatedAt"
     FROM wechat_illustrations WHERE report_key = ${key}`;
   return new Map(rows.map((r) => [r.entryKey, r]));
+}
+
+/** The entry's picture as JPEG bytes; null without one. */
+export async function illustrationJpeg(key: string, entry: string): Promise<Buffer | null> {
+  const [row] = await sql<{ file: string | null }[]>`SELECT file FROM wechat_illustrations WHERE report_key = ${key} AND entry_key = ${entry}`;
+  // Names are written here as <hash>.jpg; anything else is not read from disk.
+  if (!row?.file || !/^[0-9a-f]{32}\.jpg$/.test(row.file)) return null;
+  return readFile(path.join(illustrationDir(), row.file)).catch(() => null);
 }
 
 /** Why the worker cannot draw here, or null when it can. */

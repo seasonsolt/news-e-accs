@@ -1,10 +1,9 @@
 // The 公众号 workbench: a day's column 「AI 早报」 (newsletter/wechat-column.ts) with the comments the worker
 // has written for it and the editor's changes (wechat_issues), the changes themselves, its cover, the
 // entries' illustrations (newsletter/wechat-illustrations.ts), putting it into the 公众号's draft box
-// (providers/wechat-mp.ts), and the recent issues.
+// (providers/wechat-mp.ts), the 视频号 edition's voice-over script (newsletter/wechat-video.ts), and the
+// recent issues.
 import { createHash, randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { calendarDate } from "@aihot/contracts/time";
 import { audit, Conflict } from "../audit.ts";
 import { config } from "../config.ts";
@@ -13,7 +12,8 @@ import { enqueue, QUEUES } from "../jobs/queue.ts";
 import { renderWechatCover, WECHAT_COVER_SQUARE, WECHAT_COVER_WIDE, wechatCoverEtag, type WechatCover } from "../media/wechat-cover.ts";
 import { WECHAT_MIN_ENTRIES, wechatColumn } from "../newsletter/wechat-column.ts";
 import { wechatComments } from "../newsletter/wechat-comments.ts";
-import { drawingUnavailable, illustrationDir, illustrationSubject, wechatIllustrations, type IllustrationRow } from "../newsletter/wechat-illustrations.ts";
+import { drawingUnavailable, illustrationDir, illustrationJpeg, illustrationSubject, wechatIllustrations, type IllustrationRow } from "../newsletter/wechat-illustrations.ts";
+import { scriptingUnavailable, VIDEO_CAPTION_MAX, VIDEO_ENTRIES, VIDEO_LINE_MAX, wechatVideo, type WechatVideoRow, type WechatVideoScript } from "../newsletter/wechat-video.ts";
 import { saveJpeg } from "../providers/codex.ts";
 import { addWechatDraft, updateWechatDraft, uploadWechatArticleImage, uploadWechatImage, WechatApiError, wechatConfigured, type WechatDraftArticle } from "../providers/wechat-mp.ts";
 import { SITE } from "@aihot/site";
@@ -32,6 +32,10 @@ export type WechatExport =
       /** The entries' illustrations by entry key, and why the worker cannot draw here (null when it can). */
       illustrations: Record<string, WechatIllustration>;
       drawingUnavailable: string | null;
+      /** The 视频号 edition's script, why the worker cannot write one here (null when it can), and how many entries it speaks. */
+      video: Omit<WechatVideoRow, "request"> | null;
+      videoUnavailable: string | null;
+      videoEntries: number;
     };
 
 export interface WechatIllustration {
@@ -85,7 +89,7 @@ const illustrationUrl = (key: string, entry: string, file: string) =>
 async function issue(key: string) {
   const column = await wechatColumn(key);
   if (column.status !== "ready") return column;
-  const [row, comments, illustrations] = await Promise.all([stored(key), wechatComments(key), wechatIllustrations(key)]);
+  const [row, comments, illustrations, video] = await Promise.all([stored(key), wechatComments(key), wechatIllustrations(key), wechatVideo(key)]);
   const { edits, revision } = row;
   /** The article with the illustrations printed from `images` (entry key to address). */
   const render = (images: ReadonlyMap<string, string>) => wechatArticle(column.report, column.extra, comments, edits, images);
@@ -95,7 +99,7 @@ async function issue(key: string) {
   const cover: WechatCover = { date: key, issueNumber: column.report.issueNumber, headline: article.entries.find((e) => !e.hidden)?.title ?? "", theme: article.theme };
   const shown = article.entries.filter((e) => !e.hidden && files.has(e.key)).map((e) => `${e.key}=${files.get(e.key)}`);
   const imagesEtag = createHash("sha256").update(shown.join("\n")).digest("hex").slice(0, 16);
-  return { status: "ready" as const, edits, revision, article, cover, row, illustrations, render, imagesEtag };
+  return { status: "ready" as const, edits, revision, article, cover, row, illustrations, render, imagesEtag, video };
 }
 
 export async function wechatExport(date?: string): Promise<WechatExport> {
@@ -117,6 +121,9 @@ export async function wechatExport(date?: string): Promise<WechatExport> {
       requestedBy: r.requestedBy, updatedAt: r.updatedAt,
     }])),
     drawingUnavailable: drawingUnavailable(),
+    video: found.video && { status: found.video.status, script: found.video.script, error: found.video.error, requestedBy: found.video.requestedBy, editedBy: found.video.editedBy, updatedAt: found.video.updatedAt },
+    videoUnavailable: scriptingUnavailable(),
+    videoEntries: VIDEO_ENTRIES,
   };
 }
 
@@ -259,11 +266,8 @@ export async function removeWechatIllustration(date: string, entry: unknown, act
 }
 
 /** The entry's illustration as JPEG bytes; null without one. */
-export async function wechatIllustrationJpeg(date: string, entry: string): Promise<Buffer | null> {
-  const [row] = await sql<{ file: string | null }[]>`SELECT file FROM wechat_illustrations WHERE report_key = ${dateKey(date)} AND entry_key = ${entry}`;
-  // Names are written here as <hash>.jpg; anything else is not read from disk.
-  if (!row?.file || !/^[0-9a-f]{32}\.jpg$/.test(row.file)) return null;
-  return readFile(path.join(illustrationDir(), row.file)).catch(() => null);
+export function wechatIllustrationJpeg(date: string, entry: string): Promise<Buffer | null> {
+  return illustrationJpeg(dateKey(date), entry);
 }
 
 /** The latest dailies, newest first, with whether the workbench changed them and how many comments they have. */
@@ -275,6 +279,58 @@ export async function wechatIssues(limit = 30): Promise<{ rows: WechatIssueRow[]
     FROM reports r LEFT JOIN wechat_issues w ON w.report_key = r.key
     WHERE r.kind = 'daily' ORDER BY r.key DESC LIMIT ${Math.min(Math.max(limit, 1), 100)}`;
   return { rows };
+}
+
+/** A script still being written; one that has not moved for this long was lost with its worker. */
+const SCRIPTING_STALE_MS = 10 * 60_000;
+
+/** Asks the worker for a new voice-over script of the issue as it stands; it replaces the stored one when ready. */
+export async function requestWechatVideoScript(date: string, actor: string): Promise<{ request: string }> {
+  const key = dateKey(date);
+  const unavailable = scriptingUnavailable();
+  if (unavailable) throw new Conflict(unavailable);
+  const found = await issue(key);
+  if (found.status !== "ready") throw new Conflict("这一天没有可以做视频的早报。");
+  const request = randomUUID();
+  await sql.begin(async (tx) => {
+    const [before] = await tx<{ status: string; updated_at: Date }[]>`SELECT status, updated_at FROM wechat_videos WHERE report_key = ${key} FOR UPDATE`;
+    if (before && (before.status === "queued" || before.status === "writing") && Date.now() - before.updated_at.getTime() < SCRIPTING_STALE_MS) {
+      throw new Conflict("口播稿正在写，等它写完再重写。");
+    }
+    await tx`
+      INSERT INTO wechat_videos (report_key, status, request, requested_by) VALUES (${key}, 'queued', ${request}, ${actor})
+      ON CONFLICT (report_key) DO UPDATE SET status = 'queued', request = EXCLUDED.request, error = NULL, requested_by = EXCLUDED.requested_by, updated_at = now()`;
+    await enqueue(QUEUES.videoScript, { date: key, request }, {}, tx);
+    await audit(actor, "wechat.video.request", `wechat:${key}`, null, null, { request }, { db: tx });
+  });
+  return { request };
+}
+
+function line(value: unknown, name: string, max: number): string {
+  if (typeof value !== "string" || Array.from(value).length > max) throw bad(`${name} must be text of at most ${max} characters`);
+  return value;
+}
+
+/** Replaces the finished script's words with the editor's; its paragraphs stay those of the same entries. */
+export async function saveWechatVideoScript(date: string, input: { script?: unknown }, actor: string): Promise<{ ok: true }> {
+  const key = dateKey(date);
+  const s = input.script as Record<string, unknown> | undefined;
+  if (!s || typeof s !== "object" || !Array.isArray(s.segments)) throw bad("script must be an object with segments");
+  return sql.begin(async (tx) => {
+    const [before] = await tx<{ status: string; script: WechatVideoScript | null }[]>`SELECT status, script FROM wechat_videos WHERE report_key = ${key} FOR UPDATE`;
+    // A failed rewrite keeps the script before it, which stays editable; one under way would replace the edits.
+    if (!before?.script || before.status === "queued" || before.status === "writing") throw new Conflict("口播稿还没写好，等它写完再改。");
+    const given = new Map((s.segments as Array<Record<string, unknown>>).map((x) => [x?.key, x?.narration]));
+    const script: WechatVideoScript = {
+      opening: line(s.opening, "opening", VIDEO_LINE_MAX),
+      segments: before.script.segments.map((x) => ({ key: x.key, narration: given.has(x.key) ? line(given.get(x.key), "narration", VIDEO_LINE_MAX) : x.narration })),
+      closing: line(s.closing, "closing", VIDEO_LINE_MAX),
+      caption: line(s.caption, "caption", VIDEO_CAPTION_MAX),
+    };
+    await tx`UPDATE wechat_videos SET script = ${tx.json(script as never)}, edited_by = ${actor}, updated_at = now() WHERE report_key = ${key}`;
+    await audit(actor, "wechat.video.edit", `wechat:${key}`, null, before.script, script, { db: tx });
+    return { ok: true as const };
+  });
 }
 
 /** The draft API's own limit on an article's body, in characters. */
