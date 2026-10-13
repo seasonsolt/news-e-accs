@@ -9,6 +9,10 @@ Requires=postgresql.service
 [Service]
 Environment=API_HOST=127.0.0.1
 Environment=API_PORT=3001
+# Each idle PostgreSQL connection keeps ~8 MB on this 2 GB server. The api's reads are short and at most
+# four searches run at once (publication/pool.ts). The worker keeps the default 10: some of its
+# transactions read through the shared pool while holding a connection, so a small pool can wait on itself.
+Environment=DATABASE_POOL_MAX=5
 ExecStartPre=/opt/node24/bin/node scripts/migrate.ts
 ExecStartPre=/opt/node24/bin/node scripts/seed.ts
 ExecStart=/opt/node24/bin/node apps/api/src/main.ts
