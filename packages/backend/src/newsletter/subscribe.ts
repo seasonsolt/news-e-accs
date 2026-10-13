@@ -96,6 +96,6 @@ export async function confirm(token: string): Promise<{ ok: true }> {
     console.error(JSON.stringify({ level: "error", msg: "newsletter confirm failed", error: String(error).slice(0, 300) }));
     throw new NewsletterRejected(503, "temporarily_unavailable", "暂时无法完成确认，请稍后再点一次。", 60);
   }
-  await sql`UPDATE newsletter_subscribers SET status = 'confirmed', confirmed_at = coalesce(confirmed_at, now()), updated_at = now() WHERE id = ${row.id}`;
+  await sql`UPDATE newsletter_subscribers SET status = 'confirmed', confirmed_at = coalesce(confirmed_at, now()), unsubscribed_at = NULL, updated_at = now() WHERE id = ${row.id}`;
   return { ok: true };
 }

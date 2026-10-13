@@ -4,7 +4,7 @@ import { num, pct } from "../../features/admin/format";
 import { AdminPage, Badge, Card, DataTable, FilterChips, Stat } from "../../features/admin/ui";
 import { adminGet } from "../../lib/admin.server";
 
-interface SectionReading { clicks: number; impressions: number; inspected: number; indexed: number }
+interface SectionReading { clicks: number; impressions: number; inspected: number; indexed: number; reasons?: Record<string, number> }
 interface WeeklyReading {
   week: string;
   end: string;
@@ -30,6 +30,21 @@ const SECTION_LABELS: Record<string, string> = {
   leaderboard: "模型榜", topics: "话题", all: "全部", hot: "热榜", chronicle: "编年",
 };
 const label = (section: string) => SECTION_LABELS[section] ?? section;
+// Google's coverage states for pages it has not indexed, as Search Console names them in Chinese.
+const REASON_LABELS: Record<string, string> = {
+  "Crawled - currently not indexed": "已抓取，未编入索引",
+  "Discovered - currently not indexed": "已发现，未抓取",
+  "URL is unknown to Google": "Google 不知道这个网址",
+  "Duplicate, Google chose different canonical than user": "重复，Google 选了别的规范网址",
+  "Duplicate without user-selected canonical": "重复，未指定规范网址",
+  "Alternate page with proper canonical tag": "备用网页，规范标记正确",
+  "Excluded by ‘noindex’ tag": "noindex 排除",
+  "Page with redirect": "重定向",
+  "Not found (404)": "404",
+  "Soft 404": "软 404",
+};
+const reasons = (x: SectionReading) =>
+  Object.entries(x.reasons ?? {}).sort((a, b) => b[1] - a[1]).map(([r, n]) => `${REASON_LABELS[r] ?? r} ${n}`).join("；");
 
 export default function MetricsAdmin({ loaderData: d }: Route.ComponentProps) {
   // The sections with the most views over the window get a column each; the rest are summed.
@@ -45,7 +60,7 @@ export default function MetricsAdmin({ loaderData: d }: Route.ComponentProps) {
       </div>
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="上周页面访问" value={latest ? num(latest.views) : "—"} hint={latest && latest.days < 7 ? `只有 ${latest.days} 天有记录` : latest ? `日均 ${num(Math.round(latest.views / 7))}` : undefined} />
-        <Stat label="已确认订阅" value={num(d.rows[0]?.subscribers ?? 0)} hint="退订未同步，实际略少" />
+        <Stat label="已确认订阅" value={num(d.rows[0]?.subscribers ?? 0)} hint="不含已退订（每天从 Resend 同步）" />
         <Stat label="上周搜索展示" value={searched?.search ? num(searched.search.impressions) : "—"} hint={searched?.search ? `点击 ${num(searched.search.clicks)}` : undefined} />
         <Stat label="已收录 / 已检查" value={searched?.search ? `${num(searched.search.indexed)} / ${num(searched.search.inspected)}` : "—"} hint={searched?.search ? `${searched.week} 那周` : undefined} />
       </div>
@@ -79,6 +94,7 @@ export default function MetricsAdmin({ loaderData: d }: Route.ComponentProps) {
               { key: "clicks", label: "点击", align: "right", render: ([, x]) => num(x.clicks) },
               { key: "indexed", label: "已收录 / 已检查", align: "right", className: "whitespace-nowrap", render: ([, x]) => (x.inspected ? `${num(x.indexed)} / ${num(x.inspected)}` : "—") },
               { key: "rate", label: "收录率", align: "right", render: ([, x]) => (x.inspected ? pct(x.indexed / x.inspected) : "—") },
+              { key: "reasons", label: "未收录原因", render: ([, x]) => <span className="text-[12.5px] text-ink-3">{reasons(x) || "—"}</span> },
             ]}
           />
         </Card>

@@ -40,7 +40,7 @@ export async function sendDailyIssue(date = calendarDate(Date.now(), config.repo
   const gap = editionGap(report, language);
   if (gap) return { status: "skipped", reason: gap };
   // Nobody to mail yet: leave the day unclaimed, so a reader who confirms later this morning still gets it.
-  const [{ n }] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM newsletter_subscribers WHERE status = 'confirmed' AND language = ${language}`;
+  const [{ n }] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM newsletter_subscribers WHERE status = 'confirmed' AND unsubscribed_at IS NULL AND language = ${language}`;
   if (n === 0) return { status: "no_subscribers" };
 
   const [claimed] = await sql`INSERT INTO newsletter_language_sends (report_key, language, status) VALUES (${date}, ${language}, 'sending') ON CONFLICT (report_key, language) DO NOTHING RETURNING report_key`;

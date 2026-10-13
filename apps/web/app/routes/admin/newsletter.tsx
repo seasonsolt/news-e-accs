@@ -12,6 +12,7 @@ interface Subscriber {
   created_at: string;
   confirm_sent_at: string | null;
   confirmed_at: string | null;
+  unsubscribed_at: string | null;
 }
 
 interface NewsletterData {
@@ -19,7 +20,7 @@ interface NewsletterData {
   page: number;
   pageSize: number;
   totalRows: number;
-  totals: { total: number; confirmed: number; pending: number };
+  totals: { total: number; confirmed: number; pending: number; unsubscribed: number };
   daily: Array<{ day: string; signups: number; confirmations: number }>;
   rows: Subscriber[];
 }
@@ -32,7 +33,7 @@ export const meta: Route.MetaFunction = () => [{ title: `订阅 · ${SITE.name} 
 
 export default function NewsletterAdmin({ loaderData: d }: Route.ComponentProps) {
   return (
-    <AdminPage title="订阅" subtitle="双重确认订阅的数量、转化趋势和最近记录。状态是本站记录；Resend 退订状态未同步到本地。邮箱只在管理员后台显示。">
+    <AdminPage title="订阅" subtitle="双重确认订阅的数量、转化趋势和最近记录。退订由读者点邮件里的链接，在 Resend 完成，每天同步回本站。邮箱只在管理员后台显示。">
       <div className="mb-4">
         <FilterChips
           param="days"
@@ -40,10 +41,11 @@ export default function NewsletterAdmin({ loaderData: d }: Route.ComponentProps)
         />
       </div>
 
-      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-3">
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="订阅总数" value={num(d.totals.total)} />
-        <Stat label="本站已确认" value={num(d.totals.confirmed)} tone="ok" />
+        <Stat label="已确认" value={num(d.totals.confirmed)} tone="ok" hint="不含已退订" />
         <Stat label="待确认" value={num(d.totals.pending)} tone={d.totals.pending ? "warn" : undefined} />
+        <Stat label="已退订" value={num(d.totals.unsubscribed)} />
       </div>
 
       <Card title={`近 ${d.days} 天新增与确认`}>
@@ -65,10 +67,11 @@ export default function NewsletterAdmin({ loaderData: d }: Route.ComponentProps)
           empty="还没有订阅记录"
           columns={[
             { key: "email", label: "邮箱", render: (s) => <span className="break-all text-ink">{s.email}</span> },
-            { key: "status", label: "本站记录", render: (s) => <Badge tone={s.status === "confirmed" ? "ok" : "warn"}>{s.status === "confirmed" ? "已确认" : "待确认"}</Badge> },
+            { key: "status", label: "状态", render: (s) => (s.unsubscribed_at ? <Badge>已退订</Badge> : <Badge tone={s.status === "confirmed" ? "ok" : "warn"}>{s.status === "confirmed" ? "已确认" : "待确认"}</Badge>) },
             { key: "created", label: "提交时间", render: (s) => <span className="num whitespace-nowrap">{bj(s.created_at, true)}</span> },
             { key: "sent", label: "确认邮件", render: (s) => <span className="num whitespace-nowrap">{bj(s.confirm_sent_at, true)}</span> },
             { key: "confirmed", label: "确认时间", render: (s) => <span className="num whitespace-nowrap">{bj(s.confirmed_at, true)}</span> },
+            { key: "unsubscribed", label: "发现退订", render: (s) => <span className="num whitespace-nowrap">{bj(s.unsubscribed_at, true)}</span> },
           ]}
         />
       </Card>

@@ -7,9 +7,10 @@ export async function newsletterOverview(days = 30, page = 1) {
   const currentPage = Math.max(1, Math.floor(page));
   const offset = (currentPage - 1) * PAGE_SIZE;
 
-  const [totals] = await sql<{ total: number; confirmed: number; pending: number }[]>`
+  const [totals] = await sql<{ total: number; confirmed: number; pending: number; unsubscribed: number }[]>`
     SELECT count(*)::int AS total,
-           count(*) FILTER (WHERE status = 'confirmed')::int AS confirmed,
+           count(*) FILTER (WHERE status = 'confirmed' AND unsubscribed_at IS NULL)::int AS confirmed,
+           count(*) FILTER (WHERE status = 'confirmed' AND unsubscribed_at IS NOT NULL)::int AS unsubscribed,
            count(*) FILTER (WHERE status = 'pending')::int AS pending
     FROM newsletter_subscribers`;
   const daily = await sql<{ day: string; signups: number; confirmations: number }[]>`
@@ -47,8 +48,9 @@ export async function newsletterOverview(days = 30, page = 1) {
     created_at: Date;
     confirm_sent_at: Date | null;
     confirmed_at: Date | null;
+    unsubscribed_at: Date | null;
   }[]>`
-    SELECT id, email, status, created_at, confirm_sent_at, confirmed_at
+    SELECT id, email, status, created_at, confirm_sent_at, confirmed_at, unsubscribed_at
     FROM newsletter_subscribers
     ORDER BY created_at DESC, id DESC
     LIMIT ${PAGE_SIZE} OFFSET ${offset}`;

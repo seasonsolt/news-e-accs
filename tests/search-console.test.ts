@@ -81,19 +81,22 @@ test("Search Console is read only when switched on, with a signed service-accoun
     // The third inspection runs into the daily quota: the count stops where it is and is still kept.
     if (inspected.length === 2) return new Response("quota", { status: 429 });
     inspected.push(new URL(body.inspectionUrl).pathname);
-    return Response.json({ inspectionResult: { indexStatusResult: { verdict: inspected.length === 1 ? "PASS" : "NEUTRAL" } } });
+    return Response.json({ inspectionResult: { indexStatusResult: inspected.length === 1
+      ? { verdict: "PASS", coverageState: "Submitted and indexed" }
+      : { verdict: "NEUTRAL", coverageState: "Crawled - currently not indexed" } } });
   }) as typeof fetch;
 
   const result = await readSearchConsoleWeek(now).finally(() => { Date.now = realNow; });
   assert.equal(tokens, 2, "a long run renews its access token");
   assert.deepEqual({ ...result, urls: undefined }, { status: "read", week: week.start, clicks: 12, impressions: 340, inspected: 2, indexed: 1, urls: undefined, stopped: 429 });
-  const [row] = await sql<{ property: string; sections: Record<string, { clicks: number; impressions: number; inspected: number; indexed: number }> }[]>`
+  const [row] = await sql<{ property: string; sections: Record<string, { clicks: number; impressions: number; inspected: number; indexed: number; reasons?: Record<string, number> }> }[]>`
     SELECT property, sections FROM search_console_weekly WHERE week = ${week.start}::date`;
   assert.equal(row!.property, "sc-domain:example.test");
   assert.deepEqual([row!.sections.story!.clicks, row!.sections.story!.impressions], [7, 160], "/zh/story counts with /story");
   assert.deepEqual([row!.sections.daily!.clicks, row!.sections.daily!.impressions], [5, 180]);
   const sections = Object.values(row!.sections);
   assert.deepEqual([sections.reduce((n, s) => n + s.inspected, 0), sections.reduce((n, s) => n + s.indexed, 0)], [2, 1]);
+  assert.deepEqual(sections.flatMap((s) => Object.entries(s.reasons ?? {})), [["Crawled - currently not indexed", 1]], "a page not indexed is counted under Google's reason");
 });
 
 test("the weekly readings put views by section, subscribers and Search Console on one row a week", async () => {

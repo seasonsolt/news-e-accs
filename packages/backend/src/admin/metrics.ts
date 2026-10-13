@@ -32,7 +32,8 @@ export async function weeklyReadings(weeks = 12, now = new Date()) {
       SELECT to_char(day, 'YYYY-MM-DD') AS day, path, views::int AS views FROM site_pageviews_daily WHERE day >= ${first}::date`,
     sql<{ week: string; subscribers: number; signups: number; confirmations: number }[]>`
       SELECT to_char(w.week, 'YYYY-MM-DD') AS week,
-        (SELECT count(*)::int FROM newsletter_subscribers WHERE status = 'confirmed' AND confirmed_at < ((w.week + 7)::timestamp AT TIME ZONE 'Asia/Taipei')) AS subscribers,
+        (SELECT count(*)::int FROM newsletter_subscribers WHERE status = 'confirmed' AND confirmed_at < ((w.week + 7)::timestamp AT TIME ZONE 'Asia/Taipei')
+          AND (unsubscribed_at IS NULL OR unsubscribed_at >= ((w.week + 7)::timestamp AT TIME ZONE 'Asia/Taipei'))) AS subscribers,
         (SELECT count(*)::int FROM newsletter_subscribers WHERE created_at >= (w.week::timestamp AT TIME ZONE 'Asia/Taipei') AND created_at < ((w.week + 7)::timestamp AT TIME ZONE 'Asia/Taipei')) AS signups,
         (SELECT count(*)::int FROM newsletter_subscribers WHERE status = 'confirmed' AND confirmed_at >= (w.week::timestamp AT TIME ZONE 'Asia/Taipei') AND confirmed_at < ((w.week + 7)::timestamp AT TIME ZONE 'Asia/Taipei')) AS confirmations
       FROM unnest(${mondays}::date[]) AS w(week)`,

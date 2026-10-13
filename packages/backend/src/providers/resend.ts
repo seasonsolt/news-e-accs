@@ -89,6 +89,22 @@ export async function subscribeContact(email: string, language: DistributionLang
   if (joined.status !== 200 && joined.status !== 201 && joined.status !== 409) fail("add contact to segment", joined);
 }
 
+/**
+ * Every contact with whether it is unsubscribed, a hundred a page. Unsubscribing is per contact in
+ * Resend, through any issue's link, so it covers both editions' segments.
+ */
+export async function listContacts(): Promise<Array<{ email: string; unsubscribed: boolean }>> {
+  const contacts: Array<{ email: string; unsubscribed: boolean }> = [];
+  for (let after: string | null = null; ;) {
+    const r = await call("GET", `/contacts?limit=100${after ? `&after=${encodeURIComponent(after)}` : ""}`);
+    if (r.status !== 200) fail("list contacts", r);
+    const page = (r.json?.data ?? []) as Array<{ id: string; email: string; unsubscribed: boolean }>;
+    for (const c of page) contacts.push({ email: c.email.toLowerCase(), unsubscribed: c.unsubscribed === true });
+    if (!r.json?.has_more || page.length === 0) return contacts;
+    after = page.at(-1)!.id;
+  }
+}
+
 /** Creates and sends a broadcast to every subscribed contact in the segment; returns its id. */
 export async function sendBroadcast(issue: { name: string; subject: string; html: string; text: string }, language: DistributionLanguage = "zh"): Promise<string> {
   const segment = newsletterSegment(language);

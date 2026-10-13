@@ -19,7 +19,9 @@ const INSPECTION_GAP_MS = 120;
 // Access tokens live an hour; a new one is signed well before that.
 const TOKEN_RENEW_MS = 45 * 60_000;
 
-export interface SectionReading { clicks: number; impressions: number; inspected: number; indexed: number }
+// reasons: Google's coverage state for each inspected URL that is not indexed ("Crawled - currently not indexed",
+// "Discovered - currently not indexed", ...), counted; weeks read before it was kept have none.
+export interface SectionReading { clicks: number; impressions: number; inspected: number; indexed: number; reasons?: Record<string, number> }
 
 /** The address's first part, the Chinese edition counted with the English page: "/zh/story/x" is "story". */
 export function pageSection(path: string): string {
@@ -69,7 +71,7 @@ export async function readSearchConsoleWeek(now = new Date()) {
 
   const week = lastFullWeek(now);
   const sections = new Map<string, SectionReading>();
-  const section = (name: string) => sections.get(name) ?? sections.set(name, { clicks: 0, impressions: 0, inspected: 0, indexed: 0 }).get(name)!;
+  const section = (name: string) => sections.get(name) ?? sections.set(name, { clicks: 0, impressions: 0, inspected: 0, indexed: 0, reasons: {} }).get(name)!;
   const query = `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(property)}/searchAnalytics/query`;
   type Rows = { rows?: Array<{ keys?: string[]; clicks: number; impressions: number }> };
   const [total] = (await google<Rows>(query, { startDate: week.start, endDate: week.end }, "totals")).rows ?? [];
@@ -87,11 +89,16 @@ export async function readSearchConsoleWeek(now = new Date()) {
     while (!stopped && next < urls.length) {
       const loc = urls[next++]!;
       try {
-        const answer = await google<{ inspectionResult?: { indexStatusResult?: { verdict?: string } } }>(
+        const answer = await google<{ inspectionResult?: { indexStatusResult?: { verdict?: string; coverageState?: string } } }>(
           "https://searchconsole.googleapis.com/v1/urlInspection/index:inspect", { inspectionUrl: siteUrl(loc), siteUrl: property }, "inspection");
         const s = section(pageSection(loc));
         s.inspected += 1;
-        if (answer.inspectionResult?.indexStatusResult?.verdict === "PASS") s.indexed += 1;
+        const status = answer.inspectionResult?.indexStatusResult;
+        if (status?.verdict === "PASS") s.indexed += 1;
+        else {
+          const reason = status?.coverageState ?? "unknown";
+          s.reasons![reason] = (s.reasons![reason] ?? 0) + 1;
+        }
       } catch (error) {
         if ((error as { status?: number }).status !== 429) throw error;
         stopped = 429;
