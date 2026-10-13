@@ -5,6 +5,7 @@ import { Text, useTranslate } from "../../lib/i18n";
 import type { ChronicleEra, ChronicleMilestone } from "@aihot/contracts/chronicle";
 import { Plate } from "../../components/shell/Deck";
 import { DepthLayer } from "./DepthLayer";
+import { plateOf } from "./format";
 
 /** "138亿年前" → ["", "138", "亿年前"]; "公元前3201年" → ["公元前", "3201", "年"]; a date keeps its tail. */
 function splitLabel(label: string): [string, string, string] {
@@ -12,17 +13,16 @@ function splitLabel(label: string): [string, string, string] {
   return m ? [m[1]!, m[2]!, m[3]!] : ["", label, ""];
 }
 
-export function Observatory({ era, focus, label, distance }: { era: ChronicleEra; focus: ChronicleMilestone | null; label: string; distance: string }) {
+export function Observatory({ era, focus, nearby, label, distance }: { era: ChronicleEra; focus: ChronicleMilestone | null; nearby: string[]; label: string; distance: string }) {
   const tx = useTranslate();
   const [lead, figure, tail] = splitLabel(label);
   const moment = focus?.art ? focus : null;
-  const plate = moment
-    ? { key: `m-${moment.id}`, src: `/media/art/moments/${moment.art}`, alt: `${moment.title}（${moment.artStyle ?? era.artStyle}）` }
-    : { key: `e-${era.id}`, src: `/media/art/epochs/${era.art}`, alt: `${era.title}（${era.artStyle}）` };
+  const plate = plateOf(era, focus);
   return (
     <section className={`observatory ${era.forecast ? "is-forecast" : ""}`} aria-label={tx("观测舱")}>
       <Plate key={plate.key} src={plate.src} alt={plate.alt} className="observatory-plate" />
-      <DepthLayer key={`depth-${plate.key}`} src={plate.src} />
+      {/* Kept mounted across plates: it flies from one to the next. */}
+      <DepthLayer src={plate.src} at={plate.at} nearby={nearby} />
       <div className="observatory-shade" aria-hidden="true" />
       <header className="observatory-readout">
         <p className="observatory-kicker">

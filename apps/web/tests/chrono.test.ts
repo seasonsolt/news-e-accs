@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import { eraAt, type ChronicleEra, type ChronicleMilestone } from "@aihot/contracts/chronicle";
 import { parseAt, stepAt, withAt } from "../app/features/chrono/at.ts";
-import { distanceLabel, keepAxisInView, MIN_AXIS_SPAN, panAxisWindow, projectAxis, stepEra, stepPicture, timeParam, untilLabel, zoomAxisWindow } from "../app/features/chrono/format.ts";
+import { distanceLabel, keepAxisInView, MIN_AXIS_SPAN, nearbyPlates, panAxisWindow, projectAxis, stepEra, stepPicture, timeParam, untilLabel, zoomAxisWindow } from "../app/features/chrono/format.ts";
 import { ApiError, apiErrorResponse, loadOr404 } from "../app/lib/api.server.ts";
 
 const today = "2026-10-04";
@@ -86,6 +86,15 @@ test("picture navigation visits illustrated milestones inside eras, skips bare t
   assert.equal(stepPicture([], [], 5, -1), 5);
   assert.equal(stepPicture([], milestones, 5, 1), 8);
   assert.equal(stepPicture(eras, [], 5, 1), 10 + 1e-9);
+});
+
+test("nearby plates are the ones the arrow keys lead to, a milestone's own drawing over its era's", () => {
+  // Far apart on the log axis, so that standing on one never snaps to another.
+  const eras: ChronicleEra[] = [-1e9, 1900].map((from, i) => ({ id: `era-${i}`, from, title: "Era", summary: "", art: `era-${i}`, artStyle: "" }));
+  const milestones: ChronicleMilestone[] = [{ t: -1e6, art: "old" }, { t: -1e3 }].map((m, i) => ({ id: `moment-${i}`, precision: "year", title: "Moment", detail: "", category: "human", source: "https://example.com", ...m }));
+  assert.deepEqual(nearbyPlates(eras, milestones, -1e6, 2026), ["/media/art/epochs/era-0", "/media/art/epochs/era-1"]);
+  assert.deepEqual(nearbyPlates(eras, milestones, -1e9 + 1e-9, 2026), ["/media/art/moments/old"]);
+  assert.deepEqual(nearbyPlates(eras, milestones, 1900 + 1e-9, 2026), ["/media/art/moments/old"]);
 });
 
 test("era navigation visits every plate even across densely packed recent breakthroughs", () => {

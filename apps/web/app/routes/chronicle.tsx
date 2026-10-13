@@ -3,7 +3,7 @@ import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { useEffect, useState } from "react";
 import { data, useLoaderData, useLocation, useRouteLoaderData, type ShouldRevalidateFunction } from "react-router";
 import { FEATURES } from "@aihot/industry/features";
-import { AXIS_FUTURE_YEARS, BIG_BANG, decimalYear, eraAt, timeLabel, toAxis, yearToDate, type ChronicleMilestone, type ChronicleResponse } from "@aihot/contracts/chronicle";
+import { AXIS_FUTURE_YEARS, BIG_BANG, decimalYear, eraAt, timeLabel, yearToDate, type ChronicleResponse } from "@aihot/contracts/chronicle";
 import type { Route } from "./+types/chronicle";
 import type { loader as rootLoader } from "../root";
 import { loadOr404 } from "../lib/api.server";
@@ -15,7 +15,7 @@ import { CivilizationGauges } from "../features/chrono/CivilizationGauges";
 import { EraStrip } from "../features/chrono/EraStrip";
 import { MomentList } from "../features/chrono/MomentList";
 import { Observatory } from "../features/chrono/Observatory";
-import { distanceLabel, timeParam } from "../features/chrono/format";
+import { distanceLabel, focusAt, nearbyPlates, timeParam } from "../features/chrono/format";
 import { atLabel, withAt } from "../features/chrono/at";
 
 function moment(search: string, now: number) {
@@ -57,12 +57,7 @@ export default function ChroniclePage() {
   };
   const era = eraAt(chronicle.eras, t);
   if (!era) return <p className="py-8 text-ink-3"><Text value="尚无时代数据。" /></p>;
-  // Standing on a milestone (a click snaps to one): the deck shows that event and, if drawn, its own plate.
-  const u = toAxis(t, now);
-  const focus = chronicle.milestones.reduce<ChronicleMilestone | null>((best, m) => {
-    const d = Math.abs(toAxis(m.t, now) - u);
-    return d < 0.0008 && (!best || d < Math.abs(toAxis(best.t, now) - u)) ? m : best;
-  }, null);
+  const focus = focusAt(chronicle.milestones, t, now);
   const previous = chronicle.milestones.filter((m) => m.t < t - 1e-6).at(-1);
   const following = chronicle.milestones.find((m) => m.t > t + 1e-6);
   const date = yearToDate(t);
@@ -71,7 +66,7 @@ export default function ChroniclePage() {
   const links = [{ to: "/", label: tx("精选") }, { to: "/hot", label: tx("热点榜") }, { to: "/daily", label: tx("日报") }];
   return (
     <div className="chronicle-page pb-8 pt-3 lg:pt-0">
-      <Observatory era={era} focus={focus} label={focus ? tx(timeLabel(focus.t, now, focus.precision, focus.date)) : tx(timeLabel(t, now))} distance={tx(distanceLabel(t, now))} />
+      <Observatory era={era} focus={focus} nearby={nearbyPlates(chronicle.eras, chronicle.milestones, t, now)} label={focus ? tx(timeLabel(focus.t, now, focus.precision, focus.date)) : tx(timeLabel(t, now))} distance={tx(distanceLabel(t, now))} />
       {/* The chronometer docks under the deck and stays at hand while the readouts below scroll by. */}
       <section aria-label={tx("时间导航")} className="chronometer">
         <ChronicleAxis eras={chronicle.eras} milestones={chronicle.milestones} now={now} t={t} onMove={setT} onCommit={commit} />

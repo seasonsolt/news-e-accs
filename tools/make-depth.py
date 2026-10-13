@@ -22,7 +22,7 @@ from transformers import pipeline
 ROOT = Path(__file__).resolve().parent.parent
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 force = "--force" in sys.argv
-src = Path(args[0]) if args else ROOT / "apps/web/public/media/art/epochs"
+src = Path(args[0]).resolve() if args else ROOT / "apps/web/public/media/art/epochs"
 
 device = "mps" if torch.backends.mps.is_available() else "cpu"
 estimate = pipeline("depth-estimation", model="depth-anything/Depth-Anything-V2-Small-hf", device=device)

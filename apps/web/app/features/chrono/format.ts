@@ -1,5 +1,5 @@
 // Reader-facing numbers and axis windows for the four-dimensional view: 79.6 亿人, 1.9×10¹³ 瓦, 3 天.
-import type { ChronicleEra, ChronicleMetric, ChronicleMilestone } from "@aihot/contracts/chronicle";
+import { eraAt, toAxis, type ChronicleEra, type ChronicleMetric, type ChronicleMilestone } from "@aihot/contracts/chronicle";
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
 
@@ -102,6 +102,32 @@ export function stepPicture(eras: ChronicleEra[], milestones: ChronicleMilestone
     ...milestones.filter((m) => m.art).map((m) => m.t),
   ])].sort((a, b) => a - b);
   return (direction === 1 ? pictures.find((moment) => moment > t + 1e-6) : pictures.findLast((moment) => moment < t - 1e-6)) ?? t;
+}
+
+/** The milestone standing at t, if any: a click snaps to one, and the deck then shows that event. */
+export function focusAt(milestones: ChronicleMilestone[], t: number, now: number): ChronicleMilestone | null {
+  const u = toAxis(t, now);
+  return milestones.reduce<ChronicleMilestone | null>((best, m) => {
+    const d = Math.abs(toAxis(m.t, now) - u);
+    return d < 0.0008 && (!best || d < Math.abs(toAxis(best.t, now) - u)) ? m : best;
+  }, null);
+}
+
+/** The deck's plate: the milestone's own drawing if it has one, otherwise its era's. `src` has no width suffix. */
+export function plateOf(era: ChronicleEra, focus: ChronicleMilestone | null) {
+  const moment = focus?.art ? focus : null;
+  return moment
+    ? { key: `m-${moment.id}`, at: moment.t, src: `/media/art/moments/${moment.art}`, alt: `${moment.title}（${moment.artStyle ?? era.artStyle}）` }
+    : { key: `e-${era.id}`, at: era.from, src: `/media/art/epochs/${era.art}`, alt: `${era.title}（${era.artStyle}）` };
+}
+
+/** The plates the arrow keys lead to from t, either way: worth fetching before the reader asks. */
+export function nearbyPlates(eras: ChronicleEra[], milestones: ChronicleMilestone[], t: number, now: number): string[] {
+  return ([-1, 1] as const).flatMap((direction) => {
+    const next = stepPicture(eras, milestones, t, direction);
+    const era = next === t ? undefined : eraAt(eras, next);
+    return era ? [plateOf(era, focusAt(milestones, next, now)).src] : [];
+  });
 }
 
 /** The next capability's distance, using the same units as the moment label. */
