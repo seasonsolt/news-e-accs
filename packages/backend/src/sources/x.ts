@@ -6,7 +6,12 @@ import type { XPostData } from "../content/materials.ts";
 import { sha256 } from "../lib/ids.ts";
 import { FetchError, type Candidate, type SourceRow } from "./types.ts";
 
-function avatar(url: string | undefined): string | null {
+/** Scheduled SocialData searches stay off; X posts arrive through POST /api/ingest/items. Off unless set to true. */
+export function xPushOnly(): boolean {
+  return process.env.X_PUSH_ONLY === "true";
+}
+
+function avatar(url: string | null | undefined): string | null {
   // Larger avatar than the default 48px thumbnail.
   return url ? url.replace("_normal.", "_bigger.") : null;
 }
@@ -53,23 +58,92 @@ export function xArticleText(article: SdArticle): { title: string; text: string 
   return text ? { title: (article.title ?? "").trim(), text } : null;
 }
 
-export function tweetToCandidate(t: SdTweet): Candidate {
-  const post = toXPost(t);
+/** The stored X Article block: a Markdown heading plus the text, as extraction writes it onto the post. */
+export function xArticleBlock(article: { title?: string | null; text?: string | null } | null | undefined): string {
+  if (!article) return "";
+  return [article.title ? `# ${article.title}` : "", article.text ?? ""].filter(Boolean).join("\n\n");
+}
+
+/** A post that is only the article link takes the article's title; any other post keeps its own. */
+export function titleForXArticle(title: string, postText: string | null | undefined, article: { title?: string | null }): string {
+  return article.title && onlyXArticleLink(postText) ? article.title : title;
+}
+
+export interface XCounts {
+  favorite?: number | null;
+  retweet?: number | null;
+  reply?: number | null;
+  views?: number | null;
+}
+
+/**
+ * The same candidate the SocialData collector stores. `reply` is kept only for a push: the paid search
+ * records likes, reposts and views, and a pushed post adds replies beside them.
+ */
+export function candidateFromXPost(post: XPostData, publishedAt: Date | null, counts: XCounts, opts?: { reply?: boolean }): Candidate {
   const firstLine = post.text.split("\n").find((l) => l.trim()) ?? post.text;
+  const raw = opts?.reply
+    ? { favorite: counts.favorite ?? null, retweet: counts.retweet ?? null, reply: counts.reply ?? null, views: counts.views ?? null }
+    : { favorite: counts.favorite ?? null, retweet: counts.retweet ?? null, views: counts.views ?? null };
   return {
-    url: `https://x.com/${t.user.screen_name}/status/${t.id_str}`,
-    identityKey: `x:${t.id_str}`,
+    url: `https://x.com/${post.handle}/status/${post.tweetId}`,
+    identityKey: `x:${post.tweetId}`,
     title: firstLine.length > 140 ? `${firstLine.slice(0, 137)}...` : firstLine,
-    author: t.user.screen_name,
-    language: t.lang ?? null,
-    publishedAt: new Date(t.tweet_created_at),
+    author: post.handle,
+    language: post.lang ?? null,
+    publishedAt,
     bodyText: [post.text, post.quoted ? `\n\n【引用 @${post.quoted.handle}】${post.quoted.text}` : ""].join("").trim(),
     // A linked X Article is the post's real body: extraction fetches it (jobs/content.ts route).
     bodyStatus: linksXArticle(post.text) ? "pending" : "ok",
     xPost: post,
     media: post.media ?? [],
-    raw: { favorite: t.favorite_count ?? null, retweet: t.retweet_count ?? null, views: t.views_count ?? null },
+    raw,
   };
+}
+
+/** Fields a pusher already normalised, turned into the post block the collector stores. */
+export function xPostFromFields(input: {
+  tweetId: string;
+  handle: string;
+  authorName: string;
+  avatarUrl?: string | null;
+  text: string;
+  lang?: string | null;
+  replyTo?: string | null;
+  media?: XPostData["media"];
+  quoted?: XPostData["quoted"];
+}): XPostData {
+  return {
+    tweetId: input.tweetId,
+    authorName: input.authorName,
+    handle: input.handle,
+    avatarUrl: avatar(input.avatarUrl),
+    text: input.text,
+    lang: input.lang ?? null,
+    replyTo: input.replyTo ?? null,
+    media: input.media ?? [],
+    quoted: input.quoted ?? null,
+  };
+}
+
+/** Attach a pushed X Article the way extraction would, so judging never goes back to SocialData for it. */
+export function withPushedArticle(candidate: Candidate, article: { title?: string | null; text: string }): Candidate {
+  const stored = { title: (article.title ?? "").trim(), text: article.text.trim() };
+  return {
+    ...candidate,
+    title: titleForXArticle(candidate.title, candidate.xPost?.text, stored),
+    bodyText: [candidate.bodyText ?? "", xArticleBlock(stored)].filter(Boolean).join("\n\n"),
+    bodyStatus: "ok",
+    xArticle: stored,
+  };
+}
+
+export function tweetToCandidate(t: SdTweet): Candidate {
+  return candidateFromXPost(toXPost(t), new Date(t.tweet_created_at), {
+    favorite: t.favorite_count ?? null,
+    retweet: t.retweet_count ?? null,
+    views: t.views_count ?? null,
+  });
 }
 
 /** Half-hour receipt window: a retried fetch in the same window reuses the paid response. */

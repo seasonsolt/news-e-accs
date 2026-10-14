@@ -12,7 +12,7 @@ import { fetchDetail, fetchWebList, isCallToActionTitle, needsTitle, type Detail
 import { unsupportedConfig } from "./config-keys.ts";
 import { admitListing, filterPublicationWindow } from "./filters.ts";
 import { fetchJsonList } from "./json-list.ts";
-import { fetchXSearch, planXShards, readXSearch, shardHandle, shardQuery, selfThreadHandle, SHARDABLE_SQL, tweetToCandidate, type XBacklog } from "./x.ts";
+import { fetchXSearch, planXShards, readXSearch, shardHandle, shardQuery, selfThreadHandle, SHARDABLE_SQL, tweetToCandidate, xPushOnly, type XBacklog } from "./x.ts";
 import { FetchError, type Candidate, type SourceRow } from "./types.ts";
 
 export interface CollectResult {
@@ -106,6 +106,10 @@ export async function collectSource(sourceId: string, opts: { force?: boolean } 
   if (!source.enabled && !opts.force) return { sourceId, status: "skipped", found: 0, created: 0, revised: 0, error: "paused" };
   if (source.kind === "mp_account" || source.kind === "external") {
     // WeChat accounts are reconciled by the mp job; external sources only receive reports.
+    return { sourceId, status: "skipped", found: 0, created: 0, revised: 0 };
+  }
+  if (source.kind === "x_search" && xPushOnly()) {
+    // Posts arrive through /api/ingest/items. A search here would bill SocialData, including a manual run.
     return { sourceId, status: "skipped", found: 0, created: 0, revised: 0 };
   }
 
@@ -287,6 +291,7 @@ function coveredTo(m: SourceRow): bigint {
  * kept in each account's cursor, so they survive a change of shards.
  */
 export async function collectXShard(key: string, sourceIds: string[]): Promise<{ key: string; status: "ok" | "failed" | "skipped"; accounts: number; found: number; created: number; error?: string }> {
+  if (xPushOnly()) return { key, status: "skipped", accounts: 0, found: 0, created: 0 };
   const members = (
     await sql<SourceRow[]>`
       SELECT id, name, kind, config, tier, participation_mode, first_party, interval_minutes, enabled, cursor, fail_count
@@ -363,16 +368,18 @@ async function scheduleXShards(): Promise<number> {
 
 /** Every minute: enqueue due sources (enabled, not WeChat/external), oldest due first; X accounts by shard. */
 export async function scheduleDueSources(): Promise<{ enqueued: number; shards: number }> {
+  const pushOnly = xPushOnly();
   const rows = await sql<{ id: string }[]>`
     SELECT id FROM sources
     WHERE enabled AND kind IN ('rss', 'web_list', 'json_list', 'x_search') AND (next_fetch_at IS NULL OR next_fetch_at <= now()) AND NOT (${sharded()})
+      AND (NOT ${pushOnly} OR kind <> 'x_search')
     ORDER BY next_fetch_at NULLS FIRST LIMIT 40`;
   let enqueued = 0;
   for (const r of rows) {
     if (await enqueue(QUEUES.fetchSource, { sourceId: r.id }, { singletonKey: r.id })) enqueued += 1;
     await sql`UPDATE sources SET next_fetch_at = now() + interval '10 minutes' WHERE id = ${r.id}`;
   }
-  return { enqueued, shards: await scheduleXShards() };
+  return { enqueued, shards: pushOnly ? 0 : await scheduleXShards() };
 }
 
 /** Minutes between reads of a shard: editorial accounts every half hour, hot-signal accounts hourly. */

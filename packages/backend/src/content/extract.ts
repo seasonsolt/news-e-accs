@@ -11,7 +11,7 @@ import { BudgetExceededError } from "../providers/receipts.ts";
 import { getArticle } from "../providers/socialdata.ts";
 import { articleUtcOffset, parseLooseDate } from "../sources/dates.ts";
 import type { SourceRow } from "../sources/types.ts";
-import { onlyXArticleLink, xArticleText } from "../sources/x.ts";
+import { titleForXArticle, xArticleBlock, xArticleText } from "../sources/x.ts";
 import { sanitizeBody, trimTrailingChrome } from "./sanitize.ts";
 import { contentHash, fillPublicationTime, reviseMaterial } from "./materials.ts";
 import { markdownBody } from "./markdown.ts";
@@ -215,14 +215,13 @@ async function extractXArticle(articleId: string, tweetId: string, revision: num
       SELECT title, excerpt, body_text, x_post, x_article FROM articles
       WHERE id = ${articleId} AND revision = ${revision} AND body_status <> 'ok' FOR UPDATE`;
     if (!row) return "skipped";
-    const block = (a: { title?: string | null; text?: string } | null) => (a ? [a.title ? `# ${a.title}` : "", a.text ?? ""].filter(Boolean).join("\n\n") : "");
     // The post's own text, without an article appended by an earlier extraction (an admin re-run
     // extracts again from the post; appending once more would repeat the article).
-    const previous = block(row.x_article);
+    const previous = xArticleBlock(row.x_article);
     let base = row.body_text ?? "";
     if (previous && base.endsWith(previous)) base = base.slice(0, -previous.length).replace(/\s+$/, "");
-    const title = got.title && onlyXArticleLink(row.x_post?.text) ? got.title : row.title;
-    const bodyText = [base, block(got)].filter(Boolean).join("\n\n");
+    const title = titleForXArticle(row.title, row.x_post?.text, got);
+    const bodyText = [base, xArticleBlock(got)].filter(Boolean).join("\n\n");
     if (bodyText === row.body_text && title === row.title) {
       // The same article again: nothing new, no new revision.
       await tx`UPDATE articles SET body_status = 'ok', x_article = ${tx.json(got as never)}, updated_at = now() WHERE id = ${articleId}`;
