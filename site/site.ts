@@ -74,7 +74,7 @@ export const SITE = {
   organization: {
     name: "e/acc",
     /** 同一运营者在别处的官方身份（社交账号、姊妹站），写进首页结构化数据的 sameAs。 */
-    sameAs: ["https://www.e-accs.com"] as string[],
+    sameAs: [] as string[],
     /** 创始人（选填）。 */
     founder: null as null | { name: string; alternateName?: string; jobTitle?: string; description?: string; url?: string },
   },
