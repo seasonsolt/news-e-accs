@@ -135,16 +135,20 @@ export function codexAnswer(stdout: string): { text: string; usage: Record<strin
   return { text, usage, threadId };
 }
 
-/** One answer to `prompt` from `model`, with no tools, in an empty scratch directory, keeping no session. */
-export async function codexText(opts: { model: string; reasoningEffort?: string; prompt: string; timeoutMs: number }) {
+/**
+ * One answer to `prompt` from `model` (the account's default without one), with no tools, in an empty
+ * scratch directory, keeping no session. `webSearch` lets the model search the web live; it still cannot
+ * fetch or run anything, so what it reads there can only change its answer.
+ */
+export async function codexText(opts: { model?: string; reasoningEffort?: string; prompt: string; timeoutMs: number; webSearch?: boolean }) {
   const bin = config.codexBin;
   if (!bin) throw new Error("CODEX_BIN is not configured");
   const work = await mkdtemp(path.join(tmpdir(), "codex-text-"));
   try {
     const args = [
-      "exec", "--json", "--skip-git-repo-check", "--ephemeral", "--sandbox", "read-only", "--cd", work, "-m", opts.model,
+      "exec", "--json", "--skip-git-repo-check", "--ephemeral", "--sandbox", "read-only", "--cd", work, ...(opts.model ? ["-m", opts.model] : []),
       ...(opts.reasoningEffort ? ["-c", `model_reasoning_effort="${opts.reasoningEffort}"`] : []),
-      "-c", 'web_search="disabled"', ...TEXT_ONLY, "-",
+      "-c", `web_search="${opts.webSearch ? "live" : "disabled"}"`, ...TEXT_ONLY, "-",
     ];
     return codexAnswer(await run(bin, args, work, { timeoutMs: opts.timeoutMs, input: opts.prompt }));
   } finally {

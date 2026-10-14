@@ -44,9 +44,11 @@ interface WechatArticle {
 
 interface Illustration {
   status: "queued" | "drawing" | "done" | "failed";
-  origin: "drawn" | "uploaded";
+  /** While work is under way, what was asked: "source" (find) or "drawn". */
+  origin: "drawn" | "uploaded" | "source" | "web";
   prompt: string | null;
   error: string | null;
+  credit: string | null;
   url: string | null;
   requestedBy: string | null;
   updatedAt: string;
@@ -307,13 +309,25 @@ const writing = (v: Video | null) => v?.status === "queued" || v?.status === "wr
 /** Chinese read aloud by the voice model, in characters a second, for the length estimate. */
 const SPOKEN_CHARS_PER_SECOND = 4.2;
 
-/** The entry's picture: drawn by the worker from a description, or uploaded. */
+/** A credit's site, as the article prints it. */
+const creditHost = (page: string) => {
+  try {
+    return new URL(page).hostname.replace(/^www\./, "");
+  } catch {
+    return page;
+  }
+};
+
+/** The entry's picture: found by the worker (the entry's reports, then the web), drawn from a description, or uploaded. */
 function IllustrationPanel({ date, entry, picture, unavailable }: { date: string; entry: Item; picture: Illustration | undefined; unavailable: string | null }) {
   const { run, pending } = useAdminAction();
   const [prompt, setPrompt] = useState(picture?.prompt ?? "");
   const file = useRef<HTMLInputElement>(null);
   const busy = drawing(picture);
-  const draw = () => run("POST", `/api/admin/wechat/${date}/illustration`, { entry: entry.key, prompt }, { label: "draw", success: "已开始画，约 1–4 分钟" });
+  const finding = busy && picture?.origin === "source";
+  const found = !busy && (picture?.origin === "source" || picture?.origin === "web") && picture.url ? picture : null;
+  const find = () => run("POST", `/api/admin/wechat/${date}/illustration`, { entry: entry.key, prompt, mode: "find" }, { label: "find", success: "开始找图，先看原文，再搜网页" });
+  const draw = () => run("POST", `/api/admin/wechat/${date}/illustration`, { entry: entry.key, prompt, mode: "draw" }, { label: "draw", success: "已开始画，约 1–4 分钟" });
   const upload = async (f: File | undefined) => {
     if (!f) return;
     if (!/^image\/(png|jpeg|webp)$/.test(f.type)) return toast("只能上传 PNG、JPEG 或 WebP", "error");
@@ -341,22 +355,31 @@ function IllustrationPanel({ date, entry, picture, unavailable }: { date: string
             )}
           {busy && (
             <div className="absolute inset-0 flex animate-pulse items-center justify-center bg-bg-sunk/85 text-[13px] font-medium text-ink-2">
-              正在画，约 1–4 分钟
+              {finding ? "正在找图，搜网页约 1–3 分钟" : "正在画，约 1–4 分钟"}
             </div>
           )}
         </div>
         <div className="flex min-w-0 flex-[999_1_260px] flex-col gap-2">
-          <label htmlFor={`p-${entry.key}`} className="text-[12.5px] text-ink-3">画什么<span className="text-ink-4">（留空则按标题和正文画）</span></label>
+          {found?.credit && (
+            <p className="text-[12.5px] text-ink-3">
+              {found.origin === "source" ? "来自原文" : "来自网络"} · <a href={found.credit} target="_blank" rel="noreferrer" className="text-accent hover:underline">{creditHost(found.credit)}</a>
+              <span className="text-ink-4">（文中注明图源）</span>
+            </p>
+          )}
+          <label htmlFor={`p-${entry.key}`} className="text-[12.5px] text-ink-3">描述<span className="text-ink-4">（可留空：找图时当搜索提示，画图时当画面描述；留空按标题和正文）</span></label>
           <textarea id={`p-${entry.key}`} rows={2} maxLength={500} value={prompt} onChange={(ev) => setPrompt(ev.target.value)}
-            placeholder={`例：${entry.title.slice(0, 16)}…的场景，用象征手法`} className={`${FIELD} resize-y`} />
+            placeholder={`例：${entry.title.slice(0, 16)}…的官方发布图`} className={`${FIELD} resize-y`} />
           <div className="flex flex-wrap items-center gap-2">
-            <Button tone="primary" disabled={!!unavailable || busy} busy={pending === "draw"} onClick={draw}>
-              <Icon d={ICONS.spark} size={15} />{picture?.url ? "重画" : "生成配图"}
+            <Button tone="primary" disabled={busy} busy={pending === "find"} onClick={find}>
+              <Icon d={ICONS.image} size={15} />{found ? "换一张" : "找配图"}
+            </Button>
+            <Button disabled={!!unavailable || busy} busy={pending === "draw"} onClick={draw}>
+              <Icon d={ICONS.spark} size={15} />{picture?.url && picture.origin === "drawn" ? "重画" : "AI 绘图"}
             </Button>
             <Button busy={pending === "upload"} onClick={() => file.current?.click()}>上传图片</Button>
             <input ref={file} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(ev) => { void upload(ev.target.files?.[0]); ev.target.value = ""; }} />
           </div>
-          {picture?.status === "failed" && picture.error && <p className="text-[12.5px] leading-relaxed text-hot">没画成：{picture.error}</p>}
+          {picture?.status === "failed" && picture.error && <p className="text-[12.5px] leading-relaxed text-hot">{picture.origin === "drawn" ? `没画成：${picture.error}` : picture.error}</p>}
           {unavailable && <p className="text-[12px] text-ink-4">{unavailable}</p>}
         </div>
       </div>
@@ -750,6 +773,11 @@ function Workbench({ d, issues }: { d: Ready; issues: IssueRow[] }) {
               <span className="num text-[13px] text-ink-3">
                 发 {counts.shown} 条 · 点评 {counts.commented} · 配图 {counts.pictures} · 已改 {counts.edited} · 隐藏 {counts.hidden}
               </span>
+              {counts.shown > counts.pictures && (
+                <Button busy={pending === "find-all"} onClick={() => run("POST", `/api/admin/wechat/${d.date}/illustrations/find`, {}, { label: "find-all", success: "开始给没配图的条目找图" })}>
+                  <Icon d={ICONS.image} size={15} />没图的都找一张
+                </Button>
+              )}
               <div className="ml-auto">
                 <Segmented<Filter> label="筛选" value={filter} onChange={setFilter} options={[{ key: "all", label: "全部" }, { key: "edited", label: "已改" }, { key: "hidden", label: "已隐藏" }]} />
               </div>

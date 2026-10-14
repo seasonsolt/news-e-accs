@@ -7,7 +7,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { calendarDate } from "@aihot/contracts/time";
 import { audit, Conflict } from "../audit.ts";
 import { config } from "../config.ts";
-import { sql } from "../db.ts";
+import { sql, type Tx } from "../db.ts";
 import { enqueue, QUEUES } from "../jobs/queue.ts";
 import { renderWechatCover, WECHAT_COVER_SQUARE, WECHAT_COVER_WIDE, wechatCoverEtag, type WechatCover } from "../media/wechat-cover.ts";
 import { WECHAT_MIN_ENTRIES, wechatColumn } from "../newsletter/wechat-column.ts";
@@ -43,7 +43,9 @@ export interface WechatIllustration {
   origin: IllustrationRow["origin"];
   prompt: string | null;
   error: string | null;
-  /** The picture the article prints now (kept while a new one is drawn); null before the first. */
+  /** The page a found picture is from. */
+  credit: string | null;
+  /** The picture the article prints now (kept while a new one is found or drawn); null before the first. */
   url: string | null;
   requestedBy: string | null;
   updatedAt: string;
@@ -91,8 +93,9 @@ async function issue(key: string) {
   if (column.status !== "ready") return column;
   const [row, comments, illustrations, video] = await Promise.all([stored(key), wechatComments(key), wechatIllustrations(key), wechatVideo(key)]);
   const { edits, revision } = row;
-  /** The article with the illustrations printed from `images` (entry key to address). */
-  const render = (images: ReadonlyMap<string, string>) => wechatArticle(column.report, column.extra, comments, edits, images);
+  /** The article with the illustrations printed from `images` (entry key to address), each under its credit. */
+  const render = (images: ReadonlyMap<string, string>) => wechatArticle(column.report, column.extra, comments, edits,
+    new Map([...images].map(([entry, src]) => [entry, { src, credit: illustrations.get(entry)?.credit ?? null }])));
   const files = new Map([...illustrations].flatMap(([entry, r]) => (r.file ? [[entry, r.file] as const] : [])));
   const article = render(new Map([...files].map(([entry, file]) => [entry, illustrationUrl(key, entry, file)])));
   // The cover leads with the first entry printed, so reordering the issue changes it.
@@ -117,7 +120,7 @@ export async function wechatExport(date?: string): Promise<WechatExport> {
       imagesChanged: !!found.row.push && (found.row.push.images ?? EMPTY_IMAGES) !== found.imagesEtag,
     },
     illustrations: Object.fromEntries([...found.illustrations].map(([entry, r]) => [entry, {
-      status: r.status, origin: r.origin, prompt: r.prompt, error: r.error, url: r.file ? illustrationUrl(key, entry, r.file) : null,
+      status: r.status, origin: r.origin, prompt: r.prompt, error: r.error, credit: r.credit, url: r.file ? illustrationUrl(key, entry, r.file) : null,
       requestedBy: r.requestedBy, updatedAt: r.updatedAt,
     }])),
     drawingUnavailable: drawingUnavailable(),
@@ -199,37 +202,65 @@ async function columnEntry(key: string, entry: unknown) {
   return { found, entry: one };
 }
 
-/** A drawing still under way; one that has not moved for this long was lost with its worker. */
+/** Work on a picture still under way; work that has not moved for this long was lost with its worker. */
 const DRAWING_STALE_MS = 15 * 60_000;
 
+type Entry = WechatArticle["entries"][number];
+const working = (row: { status: string; updated_at: Date } | undefined) =>
+  !!row && (row.status === "queued" || row.status === "drawing") && Date.now() - row.updated_at.getTime() < DRAWING_STALE_MS;
+
+/** Queues the work on one entry's picture inside `tx`; false when that entry's picture is already being worked on. */
+async function queueIllustration(tx: Tx, key: string, entry: Entry, mode: "find" | "draw", prompt: string | null, actor: string): Promise<string | null> {
+  const [before] = await tx<{ status: string; origin: string; file: string | null; prompt: string | null; updated_at: Date }[]>`
+    SELECT status, origin, file, prompt, updated_at FROM wechat_illustrations WHERE report_key = ${key} AND entry_key = ${entry.key} FOR UPDATE`;
+  if (working(before)) return null;
+  const request = randomUUID();
+  await tx`
+    INSERT INTO wechat_illustrations (report_key, entry_key, status, origin, prompt, request, requested_by)
+    VALUES (${key}, ${entry.key}, 'queued', ${mode === "find" ? "source" : "drawn"}, ${prompt}, ${request}, ${actor})
+    ON CONFLICT (report_key, entry_key) DO UPDATE SET status = 'queued', origin = EXCLUDED.origin, prompt = EXCLUDED.prompt, request = EXCLUDED.request,
+      error = NULL, requested_by = EXCLUDED.requested_by, updated_at = now()`;
+  await enqueue(QUEUES.illustrate, { date: key, entry: entry.key, request, subject: illustrationSubject(entry, prompt), mode, kept: before?.file ? before.origin : null },
+    // The queue holds one waiting job per key ("short"): one per entry, so other entries queue behind it.
+    { singletonKey: `${key}:${entry.key}` }, tx);
+  await audit(actor, mode === "find" ? "wechat.illustration.find" : "wechat.illustrate", `wechat:${key}`, null,
+    before ? { entry: entry.key, prompt: before.prompt } : null, { entry: entry.key, prompt }, { db: tx });
+  return request;
+}
+
 /**
- * Asks the worker to draw the entry's illustration, of `prompt` or else of the entry itself. The picture
- * already there stays until the new one is ready. One drawing per entry at a time.
+ * Asks the worker for the entry's illustration: to find one (`mode` "find"; the entry's reports first,
+ * then the web) or to draw one, of `prompt` or else of the entry itself. The picture already there stays
+ * until the new one is ready. One piece of work per entry at a time.
  */
-export async function requestWechatIllustration(date: string, input: { entry?: unknown; prompt?: unknown }, actor: string): Promise<{ request: string }> {
+export async function requestWechatIllustration(date: string, input: { entry?: unknown; prompt?: unknown; mode?: unknown }, actor: string): Promise<{ request: string }> {
   const key = dateKey(date);
-  const unavailable = drawingUnavailable();
-  if (unavailable) throw new Conflict(unavailable);
+  const mode = input.mode === undefined ? "draw" : input.mode;
+  if (mode !== "find" && mode !== "draw") throw bad("mode must be find or draw");
+  if (mode === "draw") {
+    const unavailable = drawingUnavailable();
+    if (unavailable) throw new Conflict(unavailable);
+  }
   const { entry } = await columnEntry(key, input.entry);
   const raw = input.prompt === undefined || input.prompt === null ? "" : input.prompt;
   if (typeof raw !== "string" || Array.from(raw).length > PROMPT_MAX) throw bad(`prompt must be text of at most ${PROMPT_MAX} characters`);
   const prompt = raw.trim() || null;
-  const request = randomUUID();
-  await sql.begin(async (tx) => {
-    const [before] = await tx<{ status: string; prompt: string | null; updated_at: Date }[]>`
-      SELECT status, prompt, updated_at FROM wechat_illustrations WHERE report_key = ${key} AND entry_key = ${entry.key} FOR UPDATE`;
-    if (before && (before.status === "queued" || before.status === "drawing") && Date.now() - before.updated_at.getTime() < DRAWING_STALE_MS) {
-      throw new Conflict("这一条正在画，等它画完再重画。");
-    }
-    await tx`
-      INSERT INTO wechat_illustrations (report_key, entry_key, status, origin, prompt, request, requested_by)
-      VALUES (${key}, ${entry.key}, 'queued', 'drawn', ${prompt}, ${request}, ${actor})
-      ON CONFLICT (report_key, entry_key) DO UPDATE SET status = 'queued', prompt = EXCLUDED.prompt, request = EXCLUDED.request,
-        error = NULL, requested_by = EXCLUDED.requested_by, updated_at = now()`;
-    await enqueue(QUEUES.illustrate, { date: key, entry: entry.key, request, subject: illustrationSubject(entry, prompt) }, {}, tx);
-    await audit(actor, "wechat.illustrate", `wechat:${key}`, null, before ? { entry: entry.key, prompt: before.prompt } : null, { entry: entry.key, prompt }, { db: tx });
-  });
+  const request = await sql.begin((tx) => queueIllustration(tx, key, entry, mode, prompt, actor));
+  if (!request) throw new Conflict("这一条的配图正在找或正在画，等它完成再试。");
   return { request };
+}
+
+/** Asks the worker to find a picture for every printed entry that has none and none under way. */
+export async function findWechatIllustrations(date: string, actor: string): Promise<{ queued: number }> {
+  const key = dateKey(date);
+  const found = await issue(key);
+  if (found.status !== "ready") throw new Conflict("这一天没有可以配图的早报。");
+  const wanted = found.article.entries.filter((e) => !e.hidden && !found.illustrations.get(e.key)?.file);
+  let queued = 0;
+  await sql.begin(async (tx) => {
+    for (const entry of wanted) if (await queueIllustration(tx, key, entry, "find", null, actor)) queued++;
+  });
+  return { queued };
 }
 
 /** Puts the editor's own picture under the entry, in place of any drawn one (a drawing under way is dropped). */
@@ -247,7 +278,7 @@ export async function uploadWechatIllustration(date: string, input: { entry?: un
       INSERT INTO wechat_illustrations (report_key, entry_key, status, origin, request, file, requested_by)
       VALUES (${key}, ${entry.key}, 'done', 'uploaded', ${randomUUID()}, ${saved.file}, ${actor})
       ON CONFLICT (report_key, entry_key) DO UPDATE SET status = 'done', origin = 'uploaded', prompt = NULL, request = EXCLUDED.request,
-        file = EXCLUDED.file, error = NULL, receipt_id = NULL, wechat_url = NULL, requested_by = EXCLUDED.requested_by, updated_at = now()`;
+        file = EXCLUDED.file, credit = NULL, error = NULL, receipt_id = NULL, wechat_url = NULL, requested_by = EXCLUDED.requested_by, updated_at = now()`;
     await audit(actor, "wechat.illustration.upload", `wechat:${key}`, null, null, { entry: entry.key, file: saved.file }, { db: tx });
   });
   return { ok: true };

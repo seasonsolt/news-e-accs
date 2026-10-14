@@ -90,6 +90,10 @@ docker compose run --rm setup && docker compose up -d
 
 日报缺期告警按北京时间的具体日期跟踪，跨午夜不会自动恢复；只有对应日报存在才发恢复通知。新缺期检查最近 7 个日历日（含今天），不早于最早的日报或 reports.compose 运行记录；没有历史记录时只检查今天。已告警的日期即使超出 7 天仍保留，关闭采集/模型或 worker 启动宽限期也不会把缺期当成恢复。旧的 report.daily 状态自动按首次告警时间迁移，保留提醒间隔。出刊后两小时告警、每小时提醒及飞书开关保持不变；无需数据库迁移。自定义 responder 若按旧 `report.daily` 精确匹配，需改为识别 `report.daily:YYYY-MM-DD` 日期键。
 
+#### 公众号配图先找后画，点评换口气（2026 年 10 月 14 日）
+
+迁移 `0120` 给 `wechat_illustrations` 加一列 `credit`，只加不删。工作台每条多了「找配图」，工作台顶上多了「没图的都找一张」：worker 先从这条的原文、再从同一事件的其他报道里取第一张够大的图，没有就读这些网页的预览图（og:image），再没有就让 Codex CLI 搜网页（记回执，算在后台预算 `codex-text` 一行里），取搜到的网页的预览图。找来的图在正文里注明“图源”。原文里找图不需要 `CODEX_BIN`；搜网页和 AI 绘图需要它和 `MODEL_CALLS_ENABLED=true`。「公众号点评」的提示词换成了口语、先下判断的写法，并把编辑最近在工作台里改写过的点评（最多 12 条）作为例子一起交给模型；一条点评最长从 60 字放宽到 90 字，提到的公司和产品名只要在当天任何一条里出现过即可。已经写好的点评不会重写。
+
 #### 视频号版「AI 早报」（2026 年 10 月 13 日）
 
 迁移 `0119` 新建表 `wechat_videos`，只加不删。后台“公众号”工作台多了“视频号”一栏：点「生成口播稿」，worker 按这一期现在的顺序和改动，取前 6 条写成 60–90 秒的口播稿（用“公众号点评”那一步的模型，记回执，受预算限制；要 `MODEL_CALLS_ENABLED=true`），稿子可以在工作台里改。视频在编辑自己的 Mac 上合成，服务器只多一个凭 `WECHAT_VIDEO_TOKEN` 读口播稿的接口，不配这个变量就不开放（见下方 [视频号视频](#视频号视频)）。
@@ -354,7 +358,9 @@ v1 默认目标语言仍为中文；英文主稿缺少有效中文 edition 时�
 
 工作台里每条可以配一张图，印在这条标题下方；推送时图片先传到公众号（`media/uploadimg`），正文里用公众号给的地址，每张只传一次。「复制正文」不带配图，手动发时要在公众号编辑器里另外插入。
 
-图可以上传（PNG、JPEG、WebP），也可以让 worker 画：worker 所在的机器装好 Codex CLI，用运行 worker 的系统用户 `codex login`，然后在 `.env` 里设 `CODEX_BIN=<codex 的绝对路径>`（配置目录不在这个用户的主目录时，再设 `CODEX_HOME`），重启 api 和 worker。还要 `MODEL_CALLS_ENABLED=true`。每张图跑一次 `codex exec`（用它的图片生成，一到四分钟），消耗 Codex 登录账号的额度；每次都记回执，受后台预算里 `codex` 一行限制，填 0 就停。画的要求在 `industry/prompts/wechat-illustration.md`。
+图可以让 worker 找：点「找配图」（或「没图的都找一张」），worker 依次试这条的原文和同一事件其他报道里的图（宽至少 480、不过扁过长）、这些网页的预览图（og:image），都没有时让 Codex CLI 搜网页，取搜到的网页的预览图；再点一次换下一张。找来的图记下所在网页，正文里在图下注明“图源：网站”；转载前确认可以使用，不行就换一张、上传或画。搜网页的要求在 `industry/prompts/wechat-image-search.md`，算在后台预算 `codex-text` 一行里。
+
+图也可以上传（PNG、JPEG、WebP），或者让 worker 画：worker 所在的机器装好 Codex CLI，用运行 worker 的系统用户 `codex login`，然后在 `.env` 里设 `CODEX_BIN=<codex 的绝对路径>`（配置目录不在这个用户的主目录时，再设 `CODEX_HOME`），重启 api 和 worker。还要 `MODEL_CALLS_ENABLED=true`。每张图跑一次 `codex exec`（用它的图片生成，一到四分钟），消耗 Codex 登录账号的额度；每次都记回执，受后台预算里 `codex` 一行限制，填 0 就停。画的要求在 `industry/prompts/wechat-illustration.md`。
 
 ### 视频号视频
 

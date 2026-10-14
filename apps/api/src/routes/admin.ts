@@ -8,7 +8,7 @@ import { siteAnalyticsOverview } from "@aihot/backend/admin/analytics";
 import { weeklyReadings } from "@aihot/backend/admin/metrics";
 import { newsletterOverview } from "@aihot/backend/admin/newsletter";
 import {
-  pushWechatDraft, removeWechatIllustration, requestWechatIllustration, requestWechatVideoScript, saveWechatEdits, saveWechatVideoScript, uploadWechatIllustration,
+  findWechatIllustrations, pushWechatDraft, removeWechatIllustration, requestWechatIllustration, requestWechatVideoScript, saveWechatEdits, saveWechatVideoScript, uploadWechatIllustration,
   wechatCoverPng, wechatExport, wechatIllustrationJpeg, wechatIssues,
 } from "@aihot/backend/admin/wechat";
 import { navCounts } from "@aihot/backend/admin/navigation";
@@ -133,6 +133,7 @@ export function registerAdmin(app: FastifyInstance) {
     return jpeg ? reply.type("image/jpeg").header("cache-control", "private, max-age=31536000, immutable").send(jpeg) : notFound(req, reply);
   }));
   app.post("/api/admin/wechat/:date/illustration", adminHandler(async (req, _reply, admin) => requestWechatIllustration(param(req, "date"), body(req), actorOf(admin))));
+  app.post("/api/admin/wechat/:date/illustrations/find", adminHandler(async (req, _reply, admin) => findWechatIllustrations(param(req, "date"), actorOf(admin))));
   app.post("/api/admin/wechat/:date/illustration/upload", adminHandler(async (req, _reply, admin) => {
     const b = body<{ entry: string; image: string }>(req);
     return uploadWechatIllustration(param(req, "date"), { entry: b.entry, image: decodeImage(b.image) }, actorOf(admin));

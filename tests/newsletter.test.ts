@@ -19,12 +19,13 @@ import { currentContent, saveTranslation } from "@aihot/backend/publication/cont
 import { sendDailyIssue } from "@aihot/backend/newsletter/issue";
 import { wechatArticle } from "@aihot/backend/newsletter/wechat";
 import {
-  pushWechatDraft, removeWechatIllustration, requestWechatIllustration, saveWechatEdits, uploadWechatIllustration, wechatCoverPng, wechatExport,
+  findWechatIllustrations, pushWechatDraft, removeWechatIllustration, requestWechatIllustration, saveWechatEdits, uploadWechatIllustration, wechatCoverPng, wechatExport,
   wechatIllustrationJpeg, wechatIssues,
 } from "@aihot/backend/admin/wechat";
-import { drawWechatIllustration } from "@aihot/backend/newsletter/wechat-illustrations";
+import { drawWechatIllustration, findWechatIllustration } from "@aihot/backend/newsletter/wechat-illustrations";
 import { resetWechatToken } from "@aihot/backend/providers/wechat-mp";
 import sharp from "sharp";
+import http from "node:http";
 import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -271,11 +272,18 @@ test("a short daily is filled to ten from the window's best scored reports, one 
   }
 });
 
-test("the worker comments the column's entries, keeping only comments grounded in their entry, and pays once per question", async () => {
+test("the worker comments the column's entries in the editor's voice, keeping only comments grounded in the day's entries, and pays once per question", async () => {
   await sql`DELETE FROM wechat_comments WHERE report_key = ${TODAY}`;
+  // An earlier issue whose comment the editor rewrote: the model is shown it as the voice to write in.
+  const earlier = "1999-01-01";
+  await sql`INSERT INTO wechat_issues (report_key, edits) VALUES (${earlier}, ${sql.json({ entries: { [`old-${T}`]: { title: "旧条目", comment: "毫无性价比，想不出买的理由" } } })})
+    ON CONFLICT (report_key) DO UPDATE SET edits = EXCLUDED.edits`;
   const asked: string[] = [];
+  const systems: string[] = [];
   const model = await stub((_hit, req) => {
-    const user = (JSON.parse(req.body) as { messages: Array<{ role: string; content: string }> }).messages.find((m) => m.role === "user")!.content;
+    const messages = (JSON.parse(req.body) as { messages: Array<{ role: string; content: string }> }).messages;
+    const user = messages.find((m) => m.role === "user")!.content;
+    systems.push(messages.find((m) => m.role === "system")!.content);
     asked.push(user);
     const count = user.match(/^\d+\. /gm)!.length;
     const comments = Array.from({ length: count }, (_, k) => ({
@@ -305,7 +313,9 @@ test("the worker comments the column's entries, keeping only comments grounded i
     assert.deepEqual(await commentWechatColumn(TODAY), { status: "done", written: 0 });
     assert.equal(asked.length, 2, "the same question is not paid for twice");
     assert.equal((await commentWechatColumn("2000-01-01")).status, "no_report");
+    assert.match(systems[0]!, /「旧条目」\n  点评：毫无性价比，想不出买的理由/, "the editor's rewrites are the examples");
   } finally {
+    await sql`DELETE FROM wechat_issues WHERE report_key = ${earlier}`;
     await model.close();
   }
 });
@@ -438,6 +448,11 @@ async function fakeCodex(dir: string) {
   return bin;
 }
 
+/** The job the workbench queued for `request`, taken off the queue as the worker takes it. */
+const job = async (request: string) =>
+  (await sql<{ data: Parameters<typeof drawWechatIllustration>[0] }[]>`
+    DELETE FROM pgboss.job WHERE name = 'wechat.illustrate' AND data->>'request' = ${request} RETURNING data`)[0]!.data;
+
 const ready = async () => {
   const exported = await wechatExport(TODAY);
   assert.equal(exported.status, "ready");
@@ -461,7 +476,7 @@ test("an entry's illustration is drawn by the worker's codex, kept until a new o
     assert.deepEqual([queued.illustrations[entry]?.status, queued.illustrations[entry]?.prompt, queued.illustrations[entry]?.url], ["queued", "一座灯塔", null]);
     await assert.rejects(requestWechatIllustration(TODAY, { entry }, "editor@example.org"), /正在画/, "one drawing per entry at a time");
 
-    assert.deepEqual(await drawWechatIllustration({ date: TODAY, entry, request: asked.request, subject: "一座灯塔" }), { status: "done" });
+    assert.deepEqual(await drawWechatIllustration(await job(asked.request)), { status: "done" });
     const drawn = await ready();
     const url = drawn.illustrations[entry]!.url!;
     assert.match(url, new RegExp(`^/api/admin/wechat/${TODAY}/illustration\\.jpg\\?entry=`));
@@ -473,7 +488,7 @@ test("an entry's illustration is drawn by the worker's codex, kept until a new o
 
     process.env.FAKE_CODEX_FAIL = "1";
     const again = await requestWechatIllustration(TODAY, { entry }, "editor@example.org");
-    assert.deepEqual(await drawWechatIllustration({ date: TODAY, entry, request: again.request, subject: "头条" }), { status: "failed" });
+    assert.deepEqual(await drawWechatIllustration(await job(again.request)), { status: "failed" });
     delete process.env.FAKE_CODEX_FAIL;
     const failed = (await ready()).illustrations[entry]!;
     assert.equal(failed.status, "failed");
@@ -483,11 +498,15 @@ test("an entry's illustration is drawn by the worker's codex, kept until a new o
     const late = await requestWechatIllustration(TODAY, { entry }, "editor@example.org");
     const png = await sharp({ create: { width: 800, height: 450, channels: 3, background: "#204060" } }).png().toBuffer();
     assert.deepEqual(await uploadWechatIllustration(TODAY, { entry, image: png }, "editor@example.org"), { ok: true });
-    assert.deepEqual(await drawWechatIllustration({ date: TODAY, entry, request: late.request, subject: "头条" }), { status: "superseded" }, "an upload replaces the drawing asked before it");
+    assert.deepEqual(await drawWechatIllustration(await job(late.request)), { status: "superseded" }, "an upload replaces the drawing asked before it");
     const uploaded = (await ready()).illustrations[entry]!;
     assert.deepEqual([uploaded.status, uploaded.origin], ["done", "uploaded"]);
     assert.notEqual(uploaded.url, url);
     await assert.rejects(uploadWechatIllustration(TODAY, { entry, image: Buffer.from("not a picture") }, "editor@example.org"), (e: { statusCode?: number }) => e.statusCode === 400);
+    process.env.FAKE_CODEX_FAIL = "1";
+    await drawWechatIllustration(await job((await requestWechatIllustration(TODAY, { entry }, "editor@example.org")).request));
+    delete process.env.FAKE_CODEX_FAIL;
+    assert.deepEqual(Object.values((await ready()).illustrations[entry]!).slice(0, 2), ["failed", "uploaded"], "a failed drawing gives the uploaded picture its origin back");
 
     assert.deepEqual(await removeWechatIllustration(TODAY, entry, "editor@example.org"), { removed: true });
     const removed = await ready();
@@ -554,6 +573,87 @@ test("a push uploads each illustration to the 公众号 once and prints it from 
     await sql`DELETE FROM wechat_illustrations WHERE report_key = ${TODAY}`;
     await rm(config.dataDir, { recursive: true, force: true });
     config.dataDir = dataDir;
+  }
+});
+
+/** A stand-in for the Codex CLI's web search: answers with the pages it "found", as `codex exec --json` does. */
+async function fakeSearch(dir: string, pages: string[]) {
+  const answer = JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: JSON.stringify({ pages }) } });
+  const bin = path.join(dir, "codex-search");
+  await writeFile(bin, `#!/bin/sh\ncat > /dev/null\necho '${answer}'\necho '{"type":"turn.completed","usage":{"input_tokens":1,"output_tokens":1}}'\n`);
+  await chmod(bin, 0o755);
+  return bin;
+}
+
+test("finding a picture takes the entry's own report's first sizeable one, then a page the web search turns up, credited either way", async () => {
+  await sql`DELETE FROM wechat_illustrations WHERE report_key = ${TODAY}`;
+  const dataDir = config.dataDir;
+  config.dataDir = await mkdtemp(path.join(tmpdir(), "wechat-illustrations-"));
+  const png = (width: number, height: number, background: string) => sharp({ create: { width, height, channels: 3, background } }).png().toBuffer();
+  const files: Record<string, { type: string; body: Buffer | string }> = {
+    "/icon.png": { type: "image/png", body: await png(96, 96, "#000000") },
+    "/photo.png": { type: "image/png", body: await png(1200, 675, "#c08040") },
+    "/web.png": { type: "image/png", body: await png(1000, 600, "#4080c0") },
+    "/article": { type: "text/html", body: "<html><head><title>no preview</title></head></html>" },
+  };
+  const site = http.createServer((req, res) => {
+    const file = files[new URL(req.url ?? "/", "http://site").pathname];
+    res.writeHead(file ? 200 : 404, { "content-type": file?.type ?? "text/plain" });
+    res.end(file?.body ?? "");
+  });
+  await new Promise<void>((resolve) => site.listen(0, "127.0.0.1", () => resolve()));
+  const base = `http://127.0.0.1:${(site.address() as { port: number }).port}`;
+  files["/news"] = { type: "text/html", body: `<html><head><meta property="og:image" content="/web.png"></head></html>` };
+  const source = `wechat-find-${T}`;
+  const modelCalls = config.modelCallsEnabled;
+  const [report] = await sql<{ content: unknown }[]>`SELECT content FROM reports WHERE kind = 'daily' AND key = ${TODAY}`;
+  try {
+    await sql`INSERT INTO sources (id, name, kind, tier, next_fetch_at) VALUES (${source}, 'Find fixture', 'rss', 'T1', '2100-01-01')`;
+    const material = await upsertMaterial({
+      sourceId: source, url: `${base}/article`, title: "Picture fixture", language: "en", bodyText: "An article.", bodyStatus: "ok", via: "fetch", publishedAt: new Date(),
+      media: [{ kind: "image", url: `${base}/icon.png` }, { kind: "image", url: `${base}/photo.png` }],
+    });
+    await sql`INSERT INTO analyses (article_id, input_revision, origin, editorial_language, relevance, category, title, summary, score, selected)
+      VALUES (${material.articleId}, 1, 'rule', 'zh', 'pass', 'ai-models', '配图条目', '配图摘要', 90, true)`;
+    await publishArticle(material.articleId, { releasedAt: new Date(Date.now() - 60_000) });
+    const content = report!.content as { sections: Array<{ label: string; items: unknown[] }> };
+    const sections = [...content.sections, { label: "模型", items: [{ itemId: material.articleId, title: "配图条目", summary: "配图摘要", sourceName: "Find fixture", sourceUrl: `${base}/article` }] }];
+    await sql`UPDATE reports SET content = ${sql.json({ ...content, sections } as never)} WHERE kind = 'daily' AND key = ${TODAY}`;
+    const entry = material.articleId;
+
+    const asked = await requestWechatIllustration(TODAY, { entry, mode: "find" }, "editor@example.org");
+    assert.equal((await ready()).illustrations[entry]!.origin, "source", "finding works without codex");
+    assert.deepEqual(await findWechatIllustration(await job(asked.request)), { status: "done" });
+    const own = (await ready()).illustrations[entry]!;
+    assert.deepEqual([own.status, own.origin, own.credit], ["done", "source", `${base}/article`], "the report's first sizeable picture, credited to its page");
+    assert.equal((await sharp((await wechatIllustrationJpeg(TODAY, entry))!).stats()).dominant.r > 150, true, "the photo, not the icon");
+    assert.match((await ready()).article.html, /图源：127\.0\.0\.1/, "the article credits the picture's site");
+
+    const again = await requestWechatIllustration(TODAY, { entry, mode: "find" }, "editor@example.org");
+    assert.deepEqual(await findWechatIllustration(await job(again.request)), { status: "none" });
+    const kept = (await ready()).illustrations[entry]!;
+    assert.deepEqual([kept.status, kept.origin === "source", kept.url === own.url], ["failed", true, true], "without another picture and without codex, the one there stays");
+    assert.match(kept.error!, /没开/);
+
+    config.codexBin = await fakeSearch(config.dataDir, [`${base}/news`]);
+    config.modelCallsEnabled = true;
+    const searched = await requestWechatIllustration(TODAY, { entry, mode: "find" }, "editor@example.org");
+    assert.deepEqual(await findWechatIllustration(await job(searched.request)), { status: "done" });
+    const web = (await ready()).illustrations[entry]!;
+    assert.deepEqual([web.origin, web.credit], ["web", `${base}/news`], "the preview picture of a page the search found");
+    assert.notEqual(web.url, own.url);
+    const [receipt] = await sql`SELECT r.status, r.purpose, r.service FROM receipts r JOIN wechat_illustrations w ON w.receipt_id = r.id WHERE w.report_key = ${TODAY} AND w.entry_key = ${entry}`;
+    assert.deepEqual([receipt!.status, receipt!.purpose, receipt!.service], ["completed", "wechat_image_search", "codex-text"], "a search is receipted");
+
+    assert.deepEqual(await findWechatIllustrations(TODAY, "editor@example.org"), { queued: (await ready()).article.entries.filter((e) => !e.hidden).length - 1 }, "every printed entry without a picture");
+  } finally {
+    await sql`UPDATE reports SET content = ${sql.json(report!.content as never)} WHERE kind = 'daily' AND key = ${TODAY}`;
+    await sql`DELETE FROM wechat_illustrations WHERE report_key = ${TODAY}`;
+    await new Promise<void>((resolve) => site.close(() => resolve()));
+    await rm(config.dataDir, { recursive: true, force: true });
+    config.dataDir = dataDir;
+    config.codexBin = null;
+    config.modelCallsEnabled = modelCalls;
   }
 });
 

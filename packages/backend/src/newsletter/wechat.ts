@@ -66,6 +66,8 @@ export interface WechatEdits {
   entries?: Record<string, { title?: string; body?: string; comment?: string }>;
 }
 
+export interface WechatImage { src: string; credit: string | null }
+
 /** An entry as the workbench shows it: what is printed, and what was generated before the edits. */
 export interface ColumnEntry {
   key: string;
@@ -81,8 +83,8 @@ export interface ColumnEntry {
   title: string;
   body: string | null;
   comment: string | null;
-  /** The address the article prints the entry's illustration from; null without one. */
-  image: string | null;
+  /** The entry's illustration: where the article prints it from, and the page a found one is from; null without one. */
+  image: WechatImage | null;
   generated: { title: string; body: string | null; comment: string | null };
 }
 
@@ -155,7 +157,7 @@ export function wechatEntries(report: ReportDetail, extra: WechatEntry[]): Array
 
 /** The generated entries with the comments and the editor's changes applied, in the editor's order. */
 function columnEntries(
-  report: ReportDetail, extra: WechatEntry[], comments: ReadonlyMap<string, string>, edits: WechatEdits, images: ReadonlyMap<string, string>,
+  report: ReportDetail, extra: WechatEntry[], comments: ReadonlyMap<string, string>, edits: WechatEdits, images: ReadonlyMap<string, WechatImage>,
 ): ColumnEntry[] {
   const hidden = new Set(edits.hidden ?? []);
   const entries = wechatEntries(report, extra).map((e): ColumnEntry => {
@@ -179,6 +181,15 @@ function columnEntries(
     .map(({ e }) => e);
 }
 
+/** A credit as printed: the page's site, without www. */
+function creditHost(page: string): string {
+  try {
+    return new URL(page).hostname.replace(/^www\./, "");
+  } catch {
+    return page;
+  }
+}
+
 function note(e: ColumnEntry): string {
   return [
     e.section,
@@ -188,10 +199,10 @@ function note(e: ColumnEntry): string {
   ].join(" · ");
 }
 
-/** `comments` by item id; `edits` from the workbench; `images`, the illustrations' addresses by entry key. */
+/** `comments` by item id; `edits` from the workbench; `images`, the illustrations by entry key. */
 export function wechatArticle(
   report: ReportDetail, extra: WechatEntry[] = [], comments: ReadonlyMap<string, string> = new Map(), edits: WechatEdits = {},
-  images: ReadonlyMap<string, string> = new Map(),
+  images: ReadonlyMap<string, WechatImage> = new Map(),
 ): WechatArticle {
   const all = columnEntries(report, extra, comments, edits, images);
   const entries = all.filter((e) => !e.hidden);
@@ -247,7 +258,8 @@ export function wechatArticle(
     `<section style="padding:24px 0;border-top:1px solid ${C.line};">`,
     `<p style="margin:0;font-size:12px;line-height:1.6;color:${C.ink3};"><span style="font-size:22px;font-weight:bold;color:${C.accent};">${two(k + 1)}</span>　${byline(e)}</p>`,
     `<p style="margin:10px 0 0;font-size:18px;font-weight:bold;line-height:1.5;color:${C.ink};">${esc(e.title)}</p>`,
-    ...(e.image ? [`<p style="margin:14px 0 0;"><img src="${esc(e.image)}" alt="" style="display:block;width:100%;height:auto;border-radius:10px;"></p>`] : []),
+    ...(e.image ? [`<p style="margin:14px 0 0;"><img src="${esc(e.image.src)}" alt="" style="display:block;width:100%;height:auto;border-radius:10px;"></p>`] : []),
+    ...(e.image?.credit ? [`<p style="margin:6px 0 0;font-size:12px;line-height:1.5;color:${C.ink4};">图源：${esc(creditHost(e.image.credit))}</p>`] : []),
     ...(e.body ? [`<p style="margin:10px 0 0;text-align:justify;">${esc(e.body)}</p>`] : []),
     ...(e.related.length ? [`<p style="margin:10px 0 0;font-size:13.5px;line-height:1.7;color:${C.ink3};">${e.related.map((r) => `<span style="color:${C.ink4};">·</span> ${esc(r)}`).join("<br>")}</p>`] : []),
     ...(e.comment ? [`<p style="margin:14px 0 0;padding:12px 14px;border-radius:8px;background-color:${C.tint};color:${C.ink};"><span style="font-weight:bold;color:${C.accent};">${esc(COMMENT_LABEL)}</span>　${esc(e.comment)}</p>`] : []),

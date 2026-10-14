@@ -24,7 +24,7 @@ export interface JobData {
   "notify.selected": { articleId: string; attempt?: number };
   "publication.republish-source": { sourceId: string };
   "media.prepare": { articleId: string } | { url: string; mode: string };
-  "wechat.illustrate": { date: string; entry: string; request: string; subject: string };
+  "wechat.illustrate": { date: string; entry: string; request: string; subject: string; mode: "find" | "draw"; kept: string | null };
   "wechat.video": { date: string; request: string };
 }
 export type QueueName = keyof JobData;
