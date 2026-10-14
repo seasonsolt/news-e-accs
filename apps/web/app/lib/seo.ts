@@ -35,6 +35,10 @@ export interface PageMetaInput {
   noindex?: boolean;
   nofollow?: boolean;
   type?: "website" | "article";
+  /** When the page was first published. Emitted as article:published_time for article pages. */
+  publishedTime?: string | null;
+  /** When the page was last updated. Emitted as article:modified_time only when the page has one. */
+  modifiedTime?: string | null;
   jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;
 }
 
@@ -96,6 +100,8 @@ export function pageMeta(input: PageMetaInput, locale: Locale = "en"): MetaDescr
     { tagName: "link", rel: "canonical", href: url },
     { property: "og:site_name", content: SITE.name },
     { property: "og:type", content: input.type ?? "website" },
+    ...(input.type === "article" && input.publishedTime ? [{ property: "article:published_time", content: input.publishedTime }] : []),
+    ...(input.type === "article" && input.modifiedTime ? [{ property: "article:modified_time", content: input.modifiedTime }] : []),
     { property: "og:title", content: input.title ?? title },
     { property: "og:description", content: description },
     { property: "og:url", content: url },
@@ -337,13 +343,101 @@ export function reportLd(r: ReportDetail, path: string, description: string) {
   });
 }
 
-/** The event page collects public reports; their publication times do not date the page itself. */
+/**
+ * A meta description cut on a sentence or word boundary.
+ * A hard character cut used to split a token: "llm-gemini 0.35" became "llm-gemini 0".
+ */
+export function clipText(text: string, max = 160): string {
+  const flat = text.replace(/\s+/g, " ").trim();
+  const chars = [...flat];
+  if (chars.length <= max) return flat;
+  const floor = Math.min(max, Math.max(40, Math.floor(max * 0.5)));
+  let sentence = -1;
+  for (let i = floor; i < max && i < chars.length; i++) {
+    if (!isSentenceEnd(chars, i)) continue;
+    let end = i + 1;
+    while (end < chars.length && end <= max && /["”')\]]/u.test(chars[end]!)) end += 1;
+    if (end <= max) sentence = end;
+  }
+  if (sentence > 0) return chars.slice(0, sentence).join("").trim();
+  let word = -1;
+  for (let i = floor; i < max && i < chars.length; i++) if (isWordBreak(chars[i]!)) word = i;
+  if (word > 0) return `${chars.slice(0, word).join("").trimEnd()}…`;
+  // No break in the window: back out of a Latin word or number that continues past the cut.
+  let end = max;
+  if (isTokenChar(chars[max - 1] ?? "") && isTokenChar(chars[max] ?? "")) {
+    while (end > floor && isTokenChar(chars[end - 1] ?? "")) end -= 1;
+    while (end > floor && isWordBreak(chars[end - 1] ?? "")) end -= 1;
+    if (end >= floor && end < max) return `${chars.slice(0, end).join("").trimEnd()}…`;
+  }
+  return `${chars.slice(0, max).join("").trimEnd()}…`;
+}
+
+function isWordBreak(ch: string): boolean {
+  return ch === " " || ch === "，" || ch === "," || ch === "、" || ch === "；" || ch === ";";
+}
+
+function isTokenChar(ch: string): boolean {
+  return /[A-Za-z0-9._-]/.test(ch);
+}
+
+/** A period between digits is a decimal point, not the end of a sentence. */
+function isSentenceEnd(chars: string[], index: number): boolean {
+  const ch = chars[index]!;
+  if (!"。！？.!?".includes(ch)) return false;
+  const next = chars[index + 1];
+  if (ch === "." && /\d/.test(chars[index - 1] ?? "") && (next === undefined || /\d/.test(next))) return false;
+  return next === undefined || /[\s"”')\]]/u.test(next);
+}
+
+/** Earliest coverage and the latest of the newest report and a current digest. */
+export function storyTimes(story: Pick<StoryDetail, "firstReportAt" | "latestAt" | "digest" | "digestUpdatedAt">): { published: string | null; modified: string | null } {
+  const modified = [story.latestAt, story.digest ? story.digestUpdatedAt : null]
+    .filter((at): at is string => !!at).sort((a, b) => Date.parse(b) - Date.parse(a))[0] ?? null;
+  return { published: story.firstReportAt, modified };
+}
+
+function storySourceUrls(story: StoryDetail): string[] {
+  const seen = new Set<string>();
+  const urls: string[] = [];
+  for (const report of [...story.timeline, ...story.officialReports, ...story.developments.map((d) => d.representative)]) {
+    const url = report.originalUrl?.trim();
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    urls.push(url);
+  }
+  return urls;
+}
+
+/**
+ * The event as one news article: dated from its earliest coverage to its latest update, published by
+ * the site, and citing the original reports. The collection listing stays beside it.
+ */
+export function storyArticleLd(story: StoryDetail, inLanguage?: string) {
+  const times = storyTimes(story);
+  const sources = storySourceUrls(story);
+  const article = newsArticleLd({
+    path: `/story/${story.publicId}`,
+    headline: story.title,
+    description: story.digest ?? story.summary ?? story.excerpt?.text,
+    image: `/og/stories/${story.publicId}.png`,
+    datePublished: times.published,
+    dateModified: times.modified,
+    inLanguage,
+  });
+  return {
+    ...article,
+    publisher: { "@id": `${siteUrl()}/#organization` },
+    ...(sources.length ? { citation: sources, isBasedOn: sources } : {}),
+  };
+}
+
+/** The event page collects public reports; their publication times do not date the collection itself. */
 export function storyLd(story: StoryDetail) {
   const base = siteUrl();
   const url = `${base}/story/${story.publicId}`;
   const description = story.digest ?? story.summary ?? story.excerpt?.text;
-  const updated = [story.latestAt, story.digest ? story.digestUpdatedAt : null]
-    .filter((at): at is string => !!at).sort((a, b) => Date.parse(b) - Date.parse(a))[0];
+  const updated = storyTimes(story).modified;
   const reports = [...story.timeline].sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
   return {
     "@context": "https://schema.org",

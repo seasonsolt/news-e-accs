@@ -94,6 +94,7 @@ function reportView(r: ReportRow): StoryReportView {
     title: r.title,
     summary: r.summary,
     source: { name: publicSourceName(r.source_name), firstParty: r.first_party },
+    originalUrl: r.url,
     publishedAt: r.at.toISOString(),
     selected: r.selected,
   };

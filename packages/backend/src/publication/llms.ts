@@ -65,6 +65,7 @@ export function llmsTxt(opts: {
   if (SITE.llmsIntro) lines.push(SITE.llmsIntro, "");
   // Answer engines cite pages, so the readable site comes before the machine interfaces.
   lines.push("## Website", "");
+  lines.push(`- [Full recent content](${u("/llms-full.txt")}): Last 7 days of daily briefings and current hot stories, in Markdown, each with its event page and original source links.`);
   lines.push(`- [Editorial picks](${u("/")}): The day's selected news.`);
   lines.push(`- [Hot topics](${u("/hot")}): Events several independent sources discussed in the last 48 hours, with latest progress, heat changes, report timeline and digest.`);
   lines.push(`- [All news](${u("/all")}): The full feed, filterable by category.`);

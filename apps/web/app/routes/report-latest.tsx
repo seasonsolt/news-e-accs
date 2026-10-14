@@ -43,6 +43,7 @@ export function meta({ matches, loaderData, location }: Route.MetaArgs) {
   const locale = localeFromMatches(matches ?? []);
   const description = locale === "en" ? kind === "daily" ? `${SITE.name} daily AI briefing, published at 08:00 (${loaderData?.report?.reportTimeZone ?? "Asia/Shanghai"}).` : kind === "weekly" ? "A weekly review." : "A monthly review." : `${REPORTS.descriptions[kind]}。`;
   const report = loaderData?.report;
+  const article = !!report && !loaderData?.at;
   return [...pageMeta({
     content: report,
     alternates: !!loaderData?.alternateEdition,
@@ -51,6 +52,8 @@ export function meta({ matches, loaderData, location }: Route.MetaArgs) {
     path: location.pathname,
     noindex: !!loaderData?.at,
     image: `/og/pages/${kind}.png`,
+    type: article ? "article" : "website",
+    publishedTime: article ? report.generatedAt : undefined,
     // The latest issue, described at this page's own address (its canonical).
     jsonLd: report && !loaderData?.at ? newsArticleLd({ path: location.pathname, headline: `AI ${KIND_LABEL[kind]}`, description: report.lead?.leadParagraph ?? description, image: `/og/reports/${kind}/${report.key}.png`, datePublished: report.generatedAt, inLanguage: contentHtmlLanguage(report, locale) }) : undefined,
   }, locale), feedLink(kind)];

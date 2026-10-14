@@ -12,7 +12,7 @@ import type { StoryDetail, StoryReportView } from "@aihot/contracts/site";
 import { SITE } from "@aihot/site";
 import { cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
-import { breadcrumbLd, pageMeta, storyLd, titled } from "../lib/seo";
+import { breadcrumbLd, clipText, organizationLd, pageMeta, storyArticleLd, storyLd, storyTimes, titled } from "../lib/seo";
 import { beijingDate, beijingTime } from "@aihot/contracts/time";
 import { monthDay, monthDayTime, relativeTime } from "../lib/format";
 import { HeatChart } from "../features/story/HeatChart";
@@ -43,17 +43,23 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
   if (!loaderData) return [{ title: titled(translate(locale, "事件不存在")) }, { name: "robots", content: "noindex" }];
   const s = loaderData.story;
   const language = contentHtmlLanguage(s, locale);
+  const overview = s.digest ?? s.summary ?? s.excerpt?.text;
+  const times = storyTimes(s);
   return pageMeta({
     content: s,
     alternates: loaderData.alternateEdition,
     title: s.title,
-    description: (s.digest ?? s.summary ?? s.excerpt?.text)?.slice(0, 150) ?? `${s.sourceCount} 个报道来源 ${s.reportCount} 篇报道，完整时间线与最新进展。`,
+    description: overview ? clipText(overview) : `${s.sourceCount} 个报道来源 ${s.reportCount} 篇报道，完整时间线与最新进展。`,
     path: `/story/${s.publicId}`,
     image: `/og/stories/${s.publicId}.png`,
     type: "article",
+    publishedTime: times.published,
+    modifiedTime: times.modified,
     jsonLd: [
+      storyArticleLd(s, language),
       { ...storyLd(s), ...(language ? { inLanguage: language } : {}) },
       breadcrumbLd([{ name: SITE.name, path: "/" }, { name: "热点榜", path: "/hot" }, { name: s.title, path: `/story/${s.publicId}` }]),
+      organizationLd(),
     ],
   }, locale);
 }
@@ -148,6 +154,26 @@ function useActiveSection(keys: SectionKey[]): [SectionKey, (k: SectionKey) => v
   return [active, go];
 }
 
+/** The report's own address, beside the on-site reading link. */
+function SourceAnchor({ name, url, title, className = "" }: { name: string; url?: string | null; title?: string; className?: string }) {
+  const tx = useTranslate();
+  let href: string | null = null;
+  if (url) {
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol === "http:" || parsed.protocol === "https:") href = parsed.href;
+    } catch {
+      href = null;
+    }
+  }
+  if (!href) return <span className={`min-w-0 truncate ${className}`}>{name}</span>;
+  return (
+    <a href={href} target="_blank" rel="noopener" aria-label={tx("阅读{0}原文：{1}（新标签页）", name, title ?? href)} className={`min-w-0 truncate hover:text-accent ${className}`}>
+      {name}
+    </a>
+  );
+}
+
 /** One report on the story timeline: time, source and marks, title, a summary that opens on demand. */
 function TimelineRow({ r }: { r: StoryReportView }) {
   const tx = useTranslate();
@@ -165,7 +191,7 @@ function TimelineRow({ r }: { r: StoryReportView }) {
       </time>
       <div className="min-w-0">
         <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 text-[12px] leading-[20px] text-ink-4 lg:mt-0">
-          <span className="min-w-0 truncate">{r.source.name}</span>
+          <SourceAnchor name={r.source.name} url={r.originalUrl} title={r.title} />
           {r.selected && <SelectedBadge />}
         </div>
         <IntentLink viewTransition to={`/items/${r.id}`} className="mt-1 block text-[16px] font-[650] leading-[1.6] text-ink transition-colors hover:text-accent lg:text-[15.5px]">
@@ -239,6 +265,11 @@ export default function StoryPage() {
     order === "desc" ? Date.parse(b.firstReportAt) - Date.parse(a.firstReportAt) : Date.parse(a.firstReportAt) - Date.parse(b.firstReportAt)
   ), [story.developments, order]);
   const newest = story.latestReport;
+  const latestSource = newest
+    ? story.timeline.find((r) => r.id === newest.id)
+      ?? story.officialReports.find((r) => r.id === newest.id)
+      ?? story.developments.find((d) => d.representative.id === newest.id)?.representative
+    : null;
   const overview = story.digest
     ? { label: tx("AI 综述"), text: story.digest, note: story.digestUpdatedAt ? tx("AI 根据报道生成 · {0}更新", tx(relativeTime(story.digestUpdatedAt))) : tx("AI 根据报道生成") }
     : story.summary
@@ -319,10 +350,13 @@ export default function StoryPage() {
                   {story.latestAt && <span className="num text-ink-4">{tx(monthDayTime(story.latestAt))}</span>}
                 </div>
                 {newest ? (
-                  <Link viewTransition to={`/items/${newest.id}`} className="group mt-1.5 inline text-[14px] leading-[1.7] text-ink-2 transition-colors hover:text-accent">
-                    {story.latest}
-                    <IconChevronRight size={14} className="ml-0.5 inline -translate-y-px text-ink-4 transition-transform group-hover:translate-x-0.5" />
-                  </Link>
+                  <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <Link viewTransition to={`/items/${newest.id}`} className="group inline text-[14px] leading-[1.7] text-ink-2 transition-colors hover:text-accent">
+                      {story.latest}
+                      <IconChevronRight size={14} className="ml-0.5 inline -translate-y-px text-ink-4 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                    {latestSource && <SourceAnchor name={latestSource.source.name} url={latestSource.originalUrl} title={latestSource.title} className="text-[12.5px] text-ink-4" />}
+                  </div>
                 ) : (
                   <p className="mt-1.5 text-[14px] leading-[1.7] text-ink-2">{story.latest}</p>
                 )}
@@ -349,8 +383,9 @@ export default function StoryPage() {
                     <Link viewTransition to={`/items/${d.representative.id}`} className="mt-0.5 block text-[15px] font-semibold leading-snug text-ink transition-colors hover:text-accent">
                       {d.title}
                     </Link>
-                    <div className="mt-0.5 truncate text-[12.5px] text-ink-4">
-                      {d.representative.source.name}：{d.representative.title}
+                    <div className="mt-0.5 flex min-w-0 items-baseline gap-1 truncate text-[12.5px] text-ink-4">
+                      <SourceAnchor name={d.representative.source.name} url={d.representative.originalUrl} title={d.representative.title} />
+                      <span className="min-w-0 truncate">：{d.representative.title}</span>
                     </div>
                   </li>
                 ))}
@@ -457,7 +492,7 @@ export default function StoryPage() {
               <ul className="mt-1 divide-y divide-line-soft">
                 {story.officialReports.slice(0, 5).map((r) => (
                   <li key={r.id} className="py-3">
-                    <div className="truncate text-[11.5px] text-ink-4">{r.source.name}</div>
+                    <div className="truncate text-[11.5px] text-ink-4"><SourceAnchor name={r.source.name} url={r.originalUrl} title={r.title} /></div>
                     <Link viewTransition to={`/items/${r.id}`} className="group mt-1 block text-[13.5px] font-semibold leading-[1.6] text-ink transition-colors hover:text-accent">
                       {r.title}
                       <IconChevronRight size={13} className="ml-0.5 inline -translate-y-px text-ink-4 transition-transform group-hover:translate-x-0.5" />

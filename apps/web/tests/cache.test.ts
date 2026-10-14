@@ -366,14 +366,23 @@ test("news pages carry NewsArticle data matching their visible dates and source"
   assert.equal(article.inLanguage, "zh-CN");
   assert.match(String(article.url), /\/items\/seo-sample$/);
   assert.ok(itemLd.some((e) => e["@type"] === "BreadcrumbList"));
-  const story = await fetch(`${origin}/story/seo-story`, { headers: { "Accept-Language": "zh-CN" } });
-  assert.equal(story.status, 200);
-  // An event page is a collection of public reports: it is dated modified, never "published".
-  const event = jsonLd(await story.text()).find((e) => e["@type"] === "CollectionPage")!;
+  const storyResponse = await fetch(`${origin}/story/seo-story`, { headers: { "Accept-Language": "zh-CN" } });
+  assert.equal(storyResponse.status, 200);
+  const storyHtml = await storyResponse.text();
+  // The collection is dated modified, never published. The article carries the earliest coverage and the latest update.
+  const storyLd = jsonLd(storyHtml);
+  const event = storyLd.find((e) => e["@type"] === "CollectionPage")!;
   assert.ok(event, "event CollectionPage");
   assert.equal("datePublished" in event, false);
   assert.equal(event.dateModified, "2026-10-09T00:00:00.000Z");
   assert.equal(event.description, "事件综述");
+  const storyArticle = storyLd.find((e) => e["@type"] === "NewsArticle")!;
+  assert.equal(storyArticle.headline, "示例事件");
+  assert.equal(storyArticle.datePublished, "2026-10-08T00:00:00.000Z");
+  assert.equal(storyArticle.dateModified, "2026-10-09T00:00:00.000Z");
+  assert.equal((storyArticle.publisher as { "@id": string })["@id"], storyLd.find((e) => e["@type"] === "Organization")!["@id"]);
+  assert.match(storyHtml, /property="article:published_time" content="2026-10-08T00:00:00.000Z"/);
+  assert.match(storyHtml, /property="article:modified_time" content="2026-10-09T00:00:00.000Z"/);
 });
 
 test("the e/acc concept pages keep their English titles, text language and structured data", async () => {

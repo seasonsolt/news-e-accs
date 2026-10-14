@@ -10,6 +10,7 @@ import { PUBLIC_API_CATEGORY_KEYS } from "@aihot/contracts/taxonomy";
 import { REPO_ROOT, config } from "@aihot/backend/config";
 import { applyPublicHeaders, sendTextWithEtag } from "../http/respond.ts";
 import { loadSitemap } from "@aihot/backend/publication/sitemap";
+import { llmsFullTxt } from "@aihot/backend/publication/llms-full";
 import { llmsTxt, loadLlmsAvailability } from "@aihot/backend/publication/llms";
 import { loadContact } from "@aihot/backend/site/contact";
 
@@ -123,6 +124,13 @@ export function registerStatic(app: FastifyInstance) {
     applyPublicHeaders(reply, { cors: false });
     // Cached like /openapi-v1.json: a release that adds an ability is described everywhere within minutes.
     return sendTextWithEtag(req, reply, text, { etagPrefix: "llms", cacheControl: "public, max-age=300, must-revalidate", contentType: "text/plain; charset=utf-8" });
+  });
+
+  app.get("/llms-full.txt", async (req, reply) => {
+    const text = await llmsFullTxt();
+    applyPublicHeaders(reply, { cors: false });
+    // Same lifetime as llms.txt: briefings and the hot list move through the day, and an ETag makes the repeat free.
+    return sendTextWithEtag(req, reply, text, { etagPrefix: "llms-full", cacheControl: "public, max-age=300, must-revalidate", contentType: "text/markdown; charset=utf-8" });
   });
 
   // The site's public files (site/public/), placeholders filled in; one the site does not have is a 404.

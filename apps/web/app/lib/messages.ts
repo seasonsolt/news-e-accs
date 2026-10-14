@@ -982,6 +982,8 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "匿名 GET，自己写程序取数": "Anonymous GET; fetch data from your own programs",
   "脚本、机器人、小程序、看板": "Scripts, bots, mini-apps, dashboards",
   "llms.txt": "llms.txt",
+  "llms-full.txt": "llms-full.txt",
+  "最近 7 天的日报和当前热点，附事件页与原文链接": "The last 7 days of daily briefings and current hot stories, with event pages and original source links.",
   "Agent 使用说明": "Agent guide",
   "OpenAPI 3.1": "OpenAPI 3.1",
   "AI 模型": "AI models",

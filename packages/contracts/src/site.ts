@@ -245,6 +245,8 @@ export interface StoryReportView {
   title: string;
   summary: string | null;
   source: SourceRef & { firstParty: boolean };
+  /** The report's own address. The event page links here as well as to /items. */
+  originalUrl: string;
   publishedAt: string;
   selected: boolean;
 }

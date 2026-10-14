@@ -332,7 +332,7 @@ cd apps/web && NODE_ENV=production node --env-file=../../.env server.ts   # 网�
 MCP 3.0.0 的工具参数 `lang=en|zh` 默认 `en`，所需 edition 不完整时返回 `edition_unavailable`。
 v1 默认目标语言仍为中文；英文主稿缺少有效中文 edition 时诚实返回实际语言与回退状态，不宣称始终返回中文。显式 `?lang=en|zh` 返回所选 edition 和实际语言状态；快照的语言绑定到分页及增量 cursor。
 分享图 `?lang=en|zh` 默认英文。Markdown helper 默认英文，缺失正文 edition 会明确提示而不是混入其他语言。
-新增 `/feed/v2/` 或其他顶层入口发布前需要核对入口仓库 `edge/src/route.mjs` 的转发配置。
+新增 `/feed/v2/`、`/llms-full.txt` 或其他顶层入口发布前需要核对入口仓库 `edge/src/route.mjs` 的转发配置。
 
 新邮件订阅默认英文，可提交 `language=zh`（JSON 字段）选择中文。既有订阅记录保持中文发送，
 `language_preference_known=false` 仅表示兼容策略，不表示读者已选择中文。再次订阅和重试保持原记录语言；

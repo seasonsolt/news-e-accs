@@ -8,7 +8,7 @@ import type { ReportDetail, ReportNavigationResponse, ReportKind } from "@aihot/
 import { requestAt } from "../features/chrono/at";
 import { apiGet, cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
-import { newsArticleLd, pageMeta, titled } from "../lib/seo";
+import { clipText, newsArticleLd, pageMeta, titled } from "../lib/seo";
 import { zonedDate } from "@aihot/contracts/time";
 import { ReportLayout } from "../features/report/ReportLayout";
 import { ReportDeck, ReportPaper } from "../features/report/ReportPaper";
@@ -47,7 +47,7 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
   const lead = r.lead?.title.trim() || r.highlights.find((item) => item.available)?.title.trim();
   const name = `${translate(locale, withSubject(KIND_LABEL[r.kind]))} ${r.key}`;
   const title = lead ? `${name}${locale === "en" ? ": " : "："}${lead}` : name;
-  const description = r.lead?.leadParagraph ?? r.overview?.slice(0, 150) ?? (locale === "en" ? `${SITE.name} ${translate(locale, KIND_LABEL[r.kind])} for ${r.key}.` : `${SITE.name} ${r.key} 的${withSubject(KIND_LABEL[r.kind])}。`);
+  const description = r.lead?.leadParagraph ?? (r.overview ? clipText(r.overview) : (locale === "en" ? `${SITE.name} ${translate(locale, KIND_LABEL[r.kind])} for ${r.key}.` : `${SITE.name} ${r.key} 的${withSubject(KIND_LABEL[r.kind])}。`));
   const path = `/${r.kind}/${r.key}`;
   const image = `/og/reports/${r.kind}/${r.key}.png`;
   return [...pageMeta({
@@ -58,6 +58,7 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
     path,
     image,
     type: "article",
+    publishedTime: r.generatedAt,
     noindex: !!loaderData.at,
     jsonLd: loaderData.at ? undefined : newsArticleLd({ path, headline: title, description, image, datePublished: r.generatedAt, inLanguage: contentHtmlLanguage(r, locale) }),
   }, locale), feedLink(r.kind)];

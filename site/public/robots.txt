@@ -1,3 +1,50 @@
+# Answer engines. A crawler with its own group ignores User-agent: *, so each group
+# repeats the same Allow and Disallow rules and then explicitly allows the public site.
+User-agent: GPTBot
+Allow: /api/v1/
+Allow: /api/mcp
+Disallow: /api/
+Disallow: /admin/
+Disallow: /starred
+Disallow: /feedback
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /api/v1/
+Allow: /api/mcp
+Disallow: /api/
+Disallow: /admin/
+Disallow: /starred
+Disallow: /feedback
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /api/v1/
+Allow: /api/mcp
+Disallow: /api/
+Disallow: /admin/
+Disallow: /starred
+Disallow: /feedback
+Allow: /
+
+User-agent: Google-Extended
+Allow: /api/v1/
+Allow: /api/mcp
+Disallow: /api/
+Disallow: /admin/
+Disallow: /starred
+Disallow: /feedback
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /api/v1/
+Allow: /api/mcp
+Disallow: /api/
+Disallow: /admin/
+Disallow: /starred
+Disallow: /feedback
+Allow: /
+
 User-agent: *
 Allow: /api/v1/
 Allow: /api/mcp
