@@ -44,6 +44,8 @@ export interface MaterialInput {
   bodyStatus?: "pending" | "ok" | "unconfirmed" | "none";
   media?: MediaItem[];
   xPost?: XPostData | null;
+  /** Long-form X Article already in hand (a push). Extraction writes the same column when it fetches one. */
+  xArticle?: { title?: string | null; text: string } | null;
   raw?: unknown;
   /** How it arrived: the engine's collection, the ingest API or an import, or the module that brought it (its name). */
   via: "fetch" | "ingest" | "import" | (string & {});
@@ -204,12 +206,13 @@ async function upsertIn(db: Db, m: MaterialInput): Promise<MaterialResult> {
     const [inserted] = await db<{ id: string }[]>`
       INSERT INTO articles (id, source_id, identity_key, url, title, author, language, published_at, published_at_claim,
         discovered_at, source_updated_at, timeline_at, backfill, backfill_reason, revision, content_hash, excerpt,
-        body_text, body_html, body_status, media, x_post, raw)
+        body_text, body_html, body_status, media, x_post, x_article, raw)
       VALUES (${newId}, ${m.sourceId}, ${identityKey}, ${m.url}, ${title}, ${m.author ?? null}, ${m.language ?? null},
         ${t.publishedAt}, ${m.publishedAt ?? null}, ${discoveredAt}, ${m.sourceUpdatedAt ?? null}, ${t.timelineAt},
         ${t.backfill}, ${t.backfillReason}, 1, ${hash}, ${m.excerpt ?? null}, ${m.bodyText ?? null}, ${m.bodyHtml ?? null},
         ${m.bodyStatus ?? (m.bodyText ? "ok" : "pending")}, ${db.json((m.media ?? []) as never)},
-        ${m.xPost ? db.json(m.xPost as never) : null}, ${m.raw === undefined ? null : db.json(m.raw as never)})
+        ${m.xPost ? db.json(m.xPost as never) : null}, ${m.xArticle ? db.json(m.xArticle as never) : null},
+        ${m.raw === undefined ? null : db.json(m.raw as never)})
       ON CONFLICT (identity_key) DO NOTHING RETURNING id`;
     if (inserted) {
       await db`INSERT INTO article_revisions (article_id, revision, content_hash, title, body_text)
@@ -246,7 +249,11 @@ async function upsertIn(db: Db, m: MaterialInput): Promise<MaterialResult> {
   const bodyText = m.bodyText ?? existing!.body_text;
   const excerpt = m.excerpt ?? existing!.excerpt;
   const next = contentHash({ title, bodyText, excerpt });
-  if (!time && existing!.content_hash === next) return unchanged;
+  if (!time && existing!.content_hash === next) {
+    // A second push of the same post can be the one that brings the article. Fill it in without a revision.
+    if (m.xArticle) await db`UPDATE articles SET x_article = coalesce(x_article, ${db.json(m.xArticle as never)}) WHERE id = ${existing!.id}`;
+    return unchanged;
+  }
   if (!time && existing!.content_hash === null) {
     // Imported history carries no hash of this form (its collectors normalised differently): the
     // first report here records the baseline instead of a revision, so an import does not send
@@ -273,7 +280,8 @@ async function upsertIn(db: Db, m: MaterialInput): Promise<MaterialResult> {
       body_text = coalesce(${m.bodyText ?? null}, body_text), body_html = coalesce(${m.bodyHtml ?? null}, body_html),
       body_status = CASE WHEN ${m.bodyText ?? null}::text IS NULL THEN body_status ELSE ${m.bodyStatus ?? "ok"} END,
       media = CASE WHEN ${media}::jsonb IS NULL THEN media ELSE ${media}::jsonb END,
-      x_post = coalesce(${m.xPost ? sql.json(m.xPost as never) : null}, x_post)`,
+      x_post = coalesce(${m.xPost ? sql.json(m.xPost as never) : null}, x_post),
+      x_article = coalesce(${m.xArticle ? sql.json(m.xArticle as never) : null}, x_article)`,
     hash: next, title, bodyText,
   });
   return { articleId: existing!.id, created: false, revised: true, backfill: time?.backfill ?? existing!.backfill };

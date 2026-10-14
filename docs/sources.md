@@ -256,3 +256,50 @@ Content-Type: application/json
 - `sourceId` 不存在时会自动建一个 `external` 信源，默认不进公开页面：到后台把它的参与方式改成 `editorial` 才会出现在站上。
 - 在后台暂停信源后，推送接口返回 409，不再接收新文章；恢复信源后可以继续推送。
 - 条目的 `raw._aihot.backfill` 为 `true` 时按历史回灌处理（不进入“今天”、不推送）。
+
+### 推送 X 帖子
+
+外部程序可以代替 SocialData，把 X 帖子推进同一个接口。带 `x` 的条目按 X 采集器自己的样子入库：身份是 `x:<tweetId>`（和付费采集抓到的同一条帖子判重），保存作者、头像、正文、图片和视频、引用帖、点赞/转发/回复/浏览数。正文已经在推送里，不会再去抓 x.com。作者用户名（不区分大小写，可以带 `@`）对上已有 `x_search` 信源的 `from:用户名` 时，帖子记在那个信源上，分级和参与方式不变。对不上、或信源已暂停的，不入库、也不另建外部信源，用户名出现在返回的 `unmatched` 里。
+
+`X_PUSH_ONLY=true` 时，worker 不再为 X 账号调用 SocialData（定时合并搜索、单账号抓取、后台的“立即抓取”都跳过），RSS、网页和 JSON 信源照常。没写或不是 `true` 时，付费搜索保持原样，推送接口仍然可用。后台“预览抓取”不受这个开关影响，预览仍会向 SocialData 付费。
+
+一条帖子里如果有 X 长文链接、又带了 `article.text`，长文和帖子一起存下，不再向 SocialData 买长文。没带长文时：付费搜索还开着，就和原来一样等采集去取；`X_PUSH_ONLY=true` 时记为正文未确认，不再调用 SocialData。
+
+一次请求可以混着普通链接和 X 帖子。普通链接仍走上面的规则（`sourceId` 必填）。只有 X 帖子、或只有 `checkedHandles` 时，`sourceId` 可以不填；填了也不要用来建信源。`checkedHandles` 是这一轮看过、但没有新帖的账号：记一次成功的检查，信源健康、上次成功时间和下次抓取时间都前进，安静的账号不会因为停了付费搜索就被当成抓取失败。每请求最多 100 个。
+
+```json
+{
+  "items": [
+    {
+      "url": "https://x.com/OpenAI/status/1840000000000000001",
+      "raw": { "_aihot": { "backfill": false } },
+      "x": {
+        "tweetId": "1840000000000000001",
+        "handle": "OpenAI",
+        "authorName": "OpenAI",
+        "avatarUrl": "https://pbs.twimg.com/profile_images/example_normal.jpg",
+        "text": "帖子正文（t.co 短链请先展开）",
+        "lang": "en",
+        "createdAt": "2026-10-14T01:23:45.000Z",
+        "media": [{ "type": "photo", "url": "https://pbs.twimg.com/media/example.jpg", "width": 1200, "height": 675 }],
+        "quoted": {
+          "tweetId": "1840000000000000000",
+          "handle": "AnthropicAI",
+          "authorName": "Anthropic",
+          "text": "被引用的帖子",
+          "media": []
+        },
+        "counts": { "like": 1200, "retweet": 300, "reply": 40, "views": 90000 },
+        "article": { "title": "长文标题", "text": "长文正文。没有长文就不要这个字段。" }
+      }
+    }
+  ],
+  "checkedHandles": ["@OpenAI", "AnthropicAI"]
+}
+```
+
+- `tweetId` 是十进制字符串（不要用数字，长 id 会丢精度）。`handle` 1–15 位字母、数字或下划线。`text` 必填，可以是空字符串。`createdAt` 也接受 `created_at`；没有时用条目的 `publishedAt`。
+- `url` 可省略。写了的话必须是这条帖子的 `x.com` 或 `twitter.com` 状态链接。入库地址一律是 `https://x.com/<handle>/status/<tweetId>`。
+- 图片和视频用 `type`（`photo`、`video`、`animated_gif`）或 `kind`（`image`、`video`），地址必须是 `https`。头像里的 `_normal` 会换成 `_bigger`，和采集器一致。
+- 返回在原来的 `created` 之外多两个字段：`rejected`（格式不对、被整条跳过的帖子数）、`unmatched`（没有启用中的 X 信源可归的用户名）。普通推送不带这两个字段。
+- 转发和别人的回复不要推。认证发布方的自己线程可以推。同一条帖子重复推送只计一次，身份相同就和已经采集到的帖子合并。

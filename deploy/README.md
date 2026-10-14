@@ -85,6 +85,18 @@ api 自己的响应带 `app`。`x-eacc-edge-cache: HIT` 时这些是缓存那一
 
 改配置：编辑服务器上的 `/srv/eacc/.env`，然后 `ssh dmit systemctl restart eacc-api eacc-worker eacc-web`。
 
+### 用外部推送代替 SocialData 采集 X
+
+新闻站代码发布（`deploy/update.sh`，见上）之后，在服务器上改 `/srv/eacc/.env`，不需要新的数据库迁移：
+
+1. 确认已有 `INGEST_TOKEN`（至少 16 位）。没有就生成一个写进去。外部程序请求 `POST /api/ingest/items`，头是 `Authorization: Bearer <INGEST_TOKEN>`。这是现有的 `/api/` 路径，入口 Worker 不用加新路由。载荷见 `docs/sources.md` 的“推送 X 帖子”。
+2. 加上 `X_PUSH_ONLY=true`。
+3. `ssh dmit systemctl restart eacc-api eacc-worker`。api 和 worker 都读这个开关：worker 不再对 X 账号调用 SocialData，RSS 照常；api 在帖子没带长文时不再去买长文。
+4. 立刻让外部程序推一次，`checkedHandles` 带上全部仍启用的 X 账号（例如 `x-openai` 对应的 `OpenAI`）。这一步刷新每个账号的上次成功时间和健康状态。不推的话，停掉付费搜索之后后台会把这些账号报成抓取落后。
+5. 之后按账号的抓取间隔持续推送新帖，并在每轮带上本轮看过的 `checkedHandles`。`SOCIALDATA_API_KEY` 先留着；只有后台“预览抓取”还会用它。不再预览后再从 `.env` 删掉。
+
+回滚这个开关：把 `X_PUSH_ONLY` 改回不是 `true`（或删掉），重启 api 和 worker，付费搜索恢复。已经推入的帖子留在库里，不用迁数据。
+
 ### 打开模型调用
 
 没有模型 key 时 `MODEL_CALLS_ENABLED=false`：只抓取不精选，首页是空的。在 `/srv/eacc/.env` 里填

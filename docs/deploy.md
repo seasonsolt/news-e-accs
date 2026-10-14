@@ -88,6 +88,19 @@ docker compose run --rm setup && docker compose up -d
 
 下面按时间从新到旧列出每次更新要注意的事。
 
+#### X 账号可以改为外部推送（2026 年 10 月 14 日）
+
+没有迁移，也没有必填的新环境变量。`POST /api/ingest/items` 可以接收 X 帖子，记到已有的 `x_search` 信源上，字段和付费采集一致。不设置 `X_PUSH_ONLY` 时，SocialData 搜索照旧。
+
+要用外部程序代替 SocialData：
+
+1. 确认 `.env` 里有 `INGEST_TOKEN`（至少 16 位）。外部程序用 `Authorization: Bearer <INGEST_TOKEN>` 调用 `POST /api/ingest/items`。载荷和字段见 [信源](sources.md#推送-x-帖子)。
+2. 在 `.env` 写入 `X_PUSH_ONLY=true`，重启 **api** 和 **worker**。worker 停止定时和手动的 X 搜索；api 在长文没有随帖子推来时不再去买 SocialData 的长文。RSS、网页列表、JSON 不受影响。
+3. 外部程序开始推送后，先对所有仍启用的 X 账号送一次 `checkedHandles`（没有新帖也要），否则这些账号的“上次成功”还停在切换前，后台会把它们看成抓取落后。之后每轮检查都带上看过的账号。
+4. `SOCIALDATA_API_KEY` 可以留着：后台“预览抓取”仍会用它，预览是付费的。确认不再预览后可以删掉这个 key。
+
+Docker 改完 `.env` 后执行 `docker compose up -d api worker`。本站服务器的步骤见 `deploy/README.md`。
+
 日报缺期告警按北京时间的具体日期跟踪，跨午夜不会自动恢复；只有对应日报存在才发恢复通知。新缺期检查最近 7 个日历日（含今天），不早于最早的日报或 reports.compose 运行记录；没有历史记录时只检查今天。已告警的日期即使超出 7 天仍保留，关闭采集/模型或 worker 启动宽限期也不会把缺期当成恢复。旧的 report.daily 状态自动按首次告警时间迁移，保留提醒间隔。出刊后两小时告警、每小时提醒及飞书开关保持不变；无需数据库迁移。自定义 responder 若按旧 `report.daily` 精确匹配，需改为识别 `report.daily:YYYY-MM-DD` 日期键。
 
 #### 公众号配图先找后画，点评换口气（2026 年 10 月 14 日）
