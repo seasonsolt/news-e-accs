@@ -11,6 +11,7 @@
 ```
 
 - news.e-accs.com 只接受带 `EDGE_SECRET` 的请求（也就是经过 Worker 的），其余请求重定向到 e-acc.ai。
+- 入口 Worker 的代码在本仓库 `edge/`。若线上仍从 `seasonsolt/e-acc.ai` 的 `edge/` 发布，先把这次的 `edge/src` 同步过去再发布，否则 e-acc.ai 上的分流不会变。
 - 服务器的 443 端口给 sing-box 用了，所以走 Tunnel（只出站，不开端口）。
 - 服务器上不用 Docker：PostgreSQL 17（Debian 自带）、Node 24（`/opt/node24`）、systemd。
 
@@ -19,11 +20,13 @@
 | 发布什么 | 怎么发布 | 怎么回滚 |
 |---|---|---|
 | 新闻站（本仓库） | `deploy/update.sh` | `deploy/update.sh --rollback` |
-| 入口 Worker（`e-acc.ai/edge`） | `cd edge && cf deploy --secrets-file <含 EDGE_SECRET 的文件>` | Cloudflare 后台 Workers → eacc-edge → Deployments，或 `npx wrangler rollback <版本 ID>` |
+| 入口 Worker（本仓库 `edge/`，Worker 名 `eacc-edge`） | `cd edge && npm install && cf deploy --secrets-file <含 EDGE_SECRET 的文件>` | Cloudflare 后台 Workers → eacc-edge → Deployments，或在 `edge/` 里 `npx wrangler rollback <版本 ID>` |
 | Pages 静态站（`e-acc.ai`） | 推送到 main 自动发布 | Cloudflare 后台 Pages → eacc → 选旧部署回滚 |
 
-**新闻站新增顶层路由**（比如 `/products`）时，必须同时把它加进 `e-acc.ai` 仓库 `edge/src/route.mjs` 的
-`NEWS_SECTIONS` 并发布 Worker，否则这个路径会落到 Pages，返回 404。先发布新闻站，再发布 Worker。
+**新闻站新增顶层路由**（比如 `/products`、`/llms-full.txt`）时，必须同时把它加进本仓库 `edge/src/route.mjs`
+（`NEWS_SECTIONS` 或 `NEWS_EXACT`）并发布 Worker，否则这个路径会落到 Pages，返回 404。先发布新闻站，再发布 Worker。
+Worker 只缓存匿名的公开页面、Router data 和 `/og/`。带 `aihot_admin`、`aihot_oauth_state` 或 `CF_Authorization`
+的请求，以及 `/api/*`、`/admin*`、`/starred`、`/feedback`，不读也不写缓存。带 `Set-Cookie` 或 `private` / `no-store` 的响应不写入缓存。
 
 ## 新闻站发布
 
