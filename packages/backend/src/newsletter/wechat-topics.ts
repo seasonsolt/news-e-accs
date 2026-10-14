@@ -2,8 +2,9 @@
 // move grouped under a heading that is a judgment, and for each entry an earlier daily carried, one line
 // on what is new since. Written by the worker once the day's column is ready, in one model call over
 // every entry, and kept per day (wechat_topics); the editor renames topics and moves entries between them
-// in the workbench (WechatEdits). A heading or line naming a figure or Latin name its entries do not
-// name is not kept, and a topic left with fewer than two entries is dropped.
+// in the workbench (WechatEdits), and the headings the editor rewrote lately are the model's examples. A
+// heading or line naming a figure or Latin name its entries do not name is not kept, and a topic left
+// with fewer than two entries is dropped.
 import { z } from "zod";
 import { calendarDate } from "@aihot/contracts/time";
 import { config } from "../config.ts";
@@ -23,6 +24,8 @@ type Entry = ReturnType<typeof wechatEntries>[number];
 
 const VERSION = promptVersion("wechat-topics");
 const TOPICS_MAX = 4;
+/** How many of the editor's renamed headings the model is shown. */
+const EXAMPLES = 12;
 const TITLE_MAX = 24;
 const FOLLOWUP_MAX = 60;
 const TopicsSchema = z.object({
@@ -33,6 +36,18 @@ const TopicsSchema = z.object({
 export async function wechatTopics(key: string): Promise<WechatTopics | null> {
   const [row] = await sql<WechatTopics[]>`SELECT topics, followups FROM wechat_topics WHERE report_key = ${key}`;
   return row ?? null;
+}
+
+/** The headings the editor rewrote over the generated ones, newest first, as "generated → editor's". */
+async function editorHeadings(): Promise<string> {
+  const rows = await sql<{ generated: string; title: string }[]>`
+    SELECT t.topics -> (k.key::int) ->> 'title' AS generated, btrim(k.value) AS title
+    FROM wechat_issues i JOIN wechat_topics t ON t.report_key = i.report_key
+    CROSS JOIN LATERAL jsonb_each_text(coalesce(i.edits->'topicTitles', '{}'::jsonb)) k
+    WHERE k.key ~ '^[0-9]+$' AND nullif(btrim(k.value), '') IS NOT NULL
+      AND btrim(k.value) IS DISTINCT FROM t.topics -> (k.key::int) ->> 'title'
+    ORDER BY i.report_key DESC, k.key LIMIT ${EXAMPLES}`;
+  return rows.length ? rows.map((r) => `- ${r.generated ?? "（无）"} → ${r.title}`).join("\n") : "（还没有）";
 }
 
 const text = (e: Entry) => `${e.title}\n${e.body ?? ""}`;
@@ -78,7 +93,7 @@ export async function topicWechatColumn(date?: string): Promise<{ status: string
   const res = await chatJson({
     model, purpose: "wechat_topics", promptVersion: VERSION,
     subject: `wechat-topics:${key}@${sha256(stableJson(lines))}`,
-    system: promptText("wechat-topics"), user: lines.join("\n\n"),
+    system: promptText("wechat-topics", { examples: await editorHeadings() }), user: lines.join("\n\n"),
     schema: TopicsSchema, temperature: 0.5, maxTokens: 2000,
   });
   const used = new Set<number>();

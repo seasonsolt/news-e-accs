@@ -326,8 +326,11 @@ test("the worker groups the column under judged topics once and writes what a fo
   const yesterday = addDays(TODAY, -1);
   const [report] = await sql<{ content: unknown }[]>`SELECT content FROM reports WHERE kind = 'daily' AND key = ${TODAY}`;
   const asked: string[] = [];
+  const systems: string[] = [];
   const model = await stub((_hit, req) => {
-    const user = (JSON.parse(req.body) as { messages: Array<{ role: string; content: string }> }).messages.find((m) => m.role === "user")!.content;
+    const messages = (JSON.parse(req.body) as { messages: Array<{ role: string; content: string }> }).messages;
+    const user = messages.find((m) => m.role === "user")!.content;
+    systems.push(messages.find((m) => m.role === "system")!.content);
     asked.push(user);
     const n = (title: string) => Number(new RegExp(`^(\\d+)\\. ${title}`, "m").exec(user)![1]);
     const answer = {
@@ -362,7 +365,11 @@ test("the worker groups the column under judged topics once and writes what a fo
     const sections = [...content.sections, { label: "模型", items: [cite(after!.articleId, "新版本发布", { followUp: yesterday })] }];
     await sql`UPDATE reports SET content = ${sql.json({ ...content, sections } as never)} WHERE kind = 'daily' AND key = ${TODAY}`;
 
+    // An earlier issue whose heading the editor rewrote: the model is shown the pair.
+    await sql`INSERT INTO wechat_topics (report_key, topics, followups, model) VALUES ('1999-01-02', ${sql.json([{ title: "融资规模跨越多个量级", entries: [] }])}, '{}', 'm')`;
+    await sql`INSERT INTO wechat_issues (report_key, edits) VALUES ('1999-01-02', ${sql.json({ topicTitles: { 0: "钱还在往 AI 里涌" } })})`;
     assert.deepEqual(await topicWechatColumn(TODAY), { status: "done", topics: 1 }, "a one-entry topic and one naming what its entries do not are dropped");
+    assert.match(systems[0]!, /- 融资规模跨越多个量级 → 钱还在往 AI 里涌/, "the editor's headings are the examples");
     assert.match(asked[0]!, /新版本发布\n（跟进：之前的早报报道过「新版本预告」）/, "the model is told what the earlier daily said");
     assert.deepEqual(await topicWechatColumn(TODAY), { status: "done" });
     assert.equal(asked.length, 1, "grouped once a day");
@@ -386,8 +393,8 @@ test("the worker groups the column under judged topics once and writes what a fo
     await model.close();
     await sql`UPDATE reports SET content = ${sql.json(report!.content as never)} WHERE kind = 'daily' AND key = ${TODAY}`;
     await sql`DELETE FROM reports WHERE kind = 'daily' AND key = ${yesterday}`;
-    await sql`DELETE FROM wechat_topics WHERE report_key = ${TODAY}`;
-    await sql`DELETE FROM wechat_issues WHERE report_key = ${TODAY}`;
+    await sql`DELETE FROM wechat_topics WHERE report_key IN (${TODAY}, '1999-01-02')`;
+    await sql`DELETE FROM wechat_issues WHERE report_key IN (${TODAY}, '1999-01-02')`;
   }
 });
 
