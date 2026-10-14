@@ -1,5 +1,5 @@
 import { SITE } from "@aihot/site";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useRevalidator } from "react-router";
 import type { Route } from "./+types/wechat";
 import { useAdminAction } from "../../features/admin/action";
@@ -18,7 +18,12 @@ interface ColumnEntry {
   title: string;
   body: string | null;
   comment: string | null;
-  generated: { title: string; body: string | null; comment: string | null };
+  /** The date of the earlier daily that carried the event, and what is new since. */
+  followUp?: string;
+  followUpNote: string | null;
+  /** The entry's topic, by its place in the article's topics; null when it stands alone. */
+  topic: number | null;
+  generated: { title: string; body: string | null; comment: string | null; followUpNote: string | null; topic: number | null };
 }
 
 interface WechatEdits {
@@ -27,7 +32,9 @@ interface WechatEdits {
   theme?: string;
   order?: string[];
   hidden?: string[];
-  entries?: Record<string, { title?: string; body?: string; comment?: string }>;
+  entries?: Record<string, { title?: string; body?: string; comment?: string; followUpNote?: string }>;
+  topicTitles?: Record<string, string>;
+  topicOf?: Record<string, number>;
 }
 
 interface WechatArticle {
@@ -39,6 +46,7 @@ interface WechatArticle {
   html: string;
   text: string;
   entries: ColumnEntry[];
+  topics: Array<{ title: string; generated: string }>;
   counts: { daily: number; added: number; commented: number };
 }
 
@@ -269,7 +277,9 @@ interface Draft {
   title: string;
   digest: string;
   theme: string;
-  items: Array<ColumnEntry & { body: string; comment: string }>;
+  /** The topics' headings, by place. */
+  topics: string[];
+  items: Array<ColumnEntry & { body: string; comment: string; followUpNote: string }>;
 }
 type Item = Draft["items"][number];
 
@@ -278,20 +288,43 @@ function draftOf(d: Ready): Draft {
     title: d.edits.title ?? "",
     digest: d.edits.digest ?? "",
     theme: d.article.theme,
-    items: d.article.entries.map((e) => ({ ...e, body: e.body ?? "", comment: e.comment ?? "" })),
+    topics: d.article.topics.map((t) => t.title),
+    items: d.article.entries.map((e) => ({ ...e, body: e.body ?? "", comment: e.comment ?? "", followUpNote: e.followUpNote ?? "" })),
   };
 }
 
+/** The items as the article prints them (as the server does): each topic gathered where its first entry stands, the rest after the topics. */
+function gather(items: Item[]): Item[] {
+  const first = new Map<number, number>();
+  items.forEach((e, i) => { if (e.topic !== null && !first.has(e.topic)) first.set(e.topic, i); });
+  const opening = Math.min(items.length, ...first.values());
+  return items
+    .map((e, i) => ({ e, at: e.topic !== null ? first.get(e.topic)! : i < opening ? i : items.length + i, i }))
+    .sort((a, b) => a.at - b.at || a.i - b.i)
+    .map(({ e }) => e);
+}
+
+/** The heading shown above row `k`: its topic's where a topic starts, 「其他消息」 where the entries in no topic follow them. */
+function headingAt(items: Item[], topics: string[], k: number): { topic: number | null; title: string } | null {
+  const e = items[k]!;
+  const before = k > 0 ? items[k - 1]!.topic : null;
+  if (e.topic !== null) return e.topic !== before || k === 0 ? { topic: e.topic, title: topics[e.topic] ?? "" } : null;
+  return before !== null ? { topic: null, title: "其他消息" } : null;
+}
+
 /** The edits the working copy amounts to: only what differs from the generated column. */
-function editsOf(draft: Draft): WechatEdits {
+function editsOf(d: Ready, draft: Draft): WechatEdits {
   const entries: NonNullable<WechatEdits["entries"]> = {};
   for (const e of draft.items) {
-    const one: { title?: string; body?: string; comment?: string } = {};
+    const one: { title?: string; body?: string; comment?: string; followUpNote?: string } = {};
     if (e.title.trim() && e.title !== e.generated.title) one.title = e.title;
     if (e.body !== (e.generated.body ?? "")) one.body = e.body;
     if (e.comment !== (e.generated.comment ?? "")) one.comment = e.comment;
+    if (e.followUpNote !== (e.generated.followUpNote ?? "")) one.followUpNote = e.followUpNote;
     if (Object.keys(one).length) entries[e.key] = one;
   }
+  const topicTitles = Object.fromEntries(draft.topics.flatMap((t, i) => (t.trim() && t !== d.article.topics[i]?.generated ? [[String(i), t]] : [])));
+  const topicOf = Object.fromEntries(draft.items.flatMap((e) => (e.topic !== e.generated.topic ? [[e.key, e.topic ?? -1]] : [])));
   return {
     ...(draft.title.trim() ? { title: draft.title } : {}),
     ...(draft.digest.trim() ? { digest: draft.digest } : {}),
@@ -299,11 +332,14 @@ function editsOf(draft: Draft): WechatEdits {
     order: draft.items.map((e) => e.key),
     hidden: draft.items.filter((e) => e.hidden).map((e) => e.key),
     entries,
+    topicTitles,
+    topicOf,
   };
 }
 
 const edited = (e: Item) =>
-  e.title !== e.generated.title || e.body !== (e.generated.body ?? "") || e.comment !== (e.generated.comment ?? "");
+  e.title !== e.generated.title || e.body !== (e.generated.body ?? "") || e.comment !== (e.generated.comment ?? "")
+  || e.followUpNote !== (e.generated.followUpNote ?? "") || e.topic !== e.generated.topic;
 const drawing = (i: Illustration | undefined) => i?.status === "queued" || i?.status === "drawing";
 const writing = (v: Video | null) => v?.status === "queued" || v?.status === "writing";
 /** Chinese read aloud by the voice model, in characters a second, for the length estimate. */
@@ -366,6 +402,7 @@ function IllustrationPanel({ date, entry, picture, unavailable }: { date: string
               <span className="text-ink-4">（文中注明图源）</span>
             </p>
           )}
+          {!busy && picture?.url && picture.origin === "drawn" && <p className="text-[12.5px] text-ink-3">AI 绘制<span className="text-ink-4">（文中注明“AI 绘制”{picture.prompt ? "和画面描述" : ""}）</span></p>}
           <label htmlFor={`p-${entry.key}`} className="text-[12.5px] text-ink-3">描述<span className="text-ink-4">（可留空：找图时当搜索提示，画图时当画面描述；留空按标题和正文）</span></label>
           <textarea id={`p-${entry.key}`} rows={2} maxLength={500} value={prompt} onChange={(ev) => setPrompt(ev.target.value)}
             placeholder={`例：${entry.title.slice(0, 16)}…的官方发布图`} className={`${FIELD} resize-y`} />
@@ -387,8 +424,8 @@ function IllustrationPanel({ date, entry, picture, unavailable }: { date: string
   );
 }
 
-function EntryRow({ d, item, index, total, number, open, onToggle, move, setItem, drag }: {
-  d: Ready; item: Item; index: number; total: number; number: number; open: boolean; onToggle: () => void;
+function EntryRow({ d, topics, item, index, total, number, open, onToggle, move, setItem, drag }: {
+  d: Ready; topics: string[]; item: Item; index: number; total: number; number: number; open: boolean; onToggle: () => void;
   move: (from: number, to: number) => void; setItem: (patch: Partial<Item>) => void;
   drag: { start: () => void; drop: () => void };
 }) {
@@ -439,13 +476,35 @@ function EntryRow({ d, item, index, total, number, open, onToggle, move, setItem
               <label htmlFor={`t-${item.key}`}>标题</label>
               {edited(item) && (
                 <button type="button" className="font-medium text-accent hover:underline"
-                  onClick={() => setItem({ title: item.generated.title, body: item.generated.body ?? "", comment: item.generated.comment ?? "" })}>
+                  onClick={() => setItem({
+                    title: item.generated.title, body: item.generated.body ?? "", comment: item.generated.comment ?? "",
+                    followUpNote: item.generated.followUpNote ?? "", topic: item.generated.topic,
+                  })}>
                   恢复生成的版本
                 </button>
               )}
             </div>
             <input id={`t-${item.key}`} value={item.title} onChange={(ev) => setItem({ title: ev.target.value })} className={`${FIELD} font-semibold`} />
           </div>
+          {topics.length > 0 && (
+            <div className="flex items-center gap-2">
+              <label htmlFor={`g-${item.key}`} className="shrink-0 text-[12.5px] text-ink-3">主题</label>
+              <select id={`g-${item.key}`} value={item.topic ?? -1} onChange={(ev) => setItem({ topic: Number(ev.target.value) < 0 ? null : Number(ev.target.value) })} className={`${FIELD} w-auto min-w-0 flex-1`}>
+                {topics.map((t, k) => <option key={k} value={k}>{t || `主题 ${k + 1}`}</option>)}
+                <option value={-1}>不归入主题</option>
+              </select>
+            </div>
+          )}
+          {item.followUp && (
+            <div>
+              <div className="mb-1.5 flex items-center justify-between text-[12.5px] text-ink-3">
+                <label htmlFor={`f-${item.key}`}>跟进 {Number(item.followUp.slice(5, 7))} 月 {Number(item.followUp.slice(8, 10))} 日早报 · 这次新在哪</label>
+                <span className="text-ink-4">留空则只标“跟进”</span>
+              </div>
+              <textarea id={`f-${item.key}`} rows={1} value={item.followUpNote} placeholder="（无跟进说明）" onChange={(ev) => setItem({ followUpNote: ev.target.value })}
+                className={`${FIELD} resize-y [field-sizing:content]`} />
+            </div>
+          )}
           <div>
             <label htmlFor={`b-${item.key}`} className="mb-1.5 block text-[12.5px] text-ink-3">正文</label>
             <textarea id={`b-${item.key}`} rows={5} value={item.body} placeholder="（无正文）" onChange={(ev) => setItem({ body: ev.target.value })}
@@ -643,7 +702,7 @@ function Workbench({ d, issues }: { d: Ready; issues: IssueRow[] }) {
       return;
     }
     setSaving("pending");
-    const edits = editsOf(draft);
+    const edits = editsOf(d, draft);
     const timer = setTimeout(() => {
       queue.current = queue.current.then(async () => {
         setSaving("saving");
@@ -668,15 +727,20 @@ function Workbench({ d, issues }: { d: Ready; issues: IssueRow[] }) {
 
   const set = (patch: Partial<Draft>) => setDraft((x) => ({ ...x, ...patch }));
   const setItem = (key: string, patch: Partial<Item>) =>
-    setDraft((x) => ({ ...x, items: x.items.map((e) => (e.key === key ? { ...e, ...patch } : e)) }));
+    setDraft((x) => {
+      const items = x.items.map((e) => (e.key === key ? { ...e, ...patch } : e));
+      return { ...x, items: "topic" in patch ? gather(items) : items };
+    });
+  // A topic's entries stay together: moving one past another topic's entries leaves it in its own.
   const move = (from: number, to: number) =>
     setDraft((x) => {
       if (to < 0 || to >= x.items.length || from === to) return x;
       const items = [...x.items];
       const [moved] = items.splice(from, 1);
       items.splice(to, 0, moved!);
-      return { ...x, items };
+      return { ...x, items: gather(items) };
     });
+  const setTopic = (place: number, title: string) => setDraft((x) => ({ ...x, topics: x.topics.map((t, i) => (i === place ? title : t)) }));
 
   const shown = draft.items.filter((e) => !e.hidden);
   const counts = {
@@ -752,8 +816,8 @@ function Workbench({ d, issues }: { d: Ready; issues: IssueRow[] }) {
                   <textarea id="w-digest" rows={3} value={draft.digest} placeholder={d.article.defaults.digest} onChange={(ev) => set({ digest: ev.target.value })} className={`${FIELD} resize-y`} />
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-[12.5px] text-ink-3">主题</span>
-                  <Segmented label="主题" value={draft.theme} onChange={(theme) => set({ theme })} options={d.themes.map((t) => ({ key: t.key, label: t.label }))} />
+                  <span className="text-[12.5px] text-ink-3">配色</span>
+                  <Segmented label="配色" value={draft.theme} onChange={(theme) => set({ theme })} options={d.themes.map((t) => ({ key: t.key, label: t.label }))} />
                 </div>
               </div>
               <div className="flex min-w-0 flex-[1_1_260px] flex-col gap-2">
@@ -784,13 +848,31 @@ function Workbench({ d, issues }: { d: Ready; issues: IssueRow[] }) {
             </div>
             <ol className="flex flex-col gap-0.5">
               {visibleRows.map(({ e, i }) => (
+                <Fragment key={e.key}>
+                {filter === "all" && (() => {
+                  const heading = headingAt(draft.items, draft.topics, i);
+                  if (!heading) return null;
+                  return heading.topic === null
+                    ? <li className="mt-2 px-3 py-1.5 text-[12.5px] font-semibold text-ink-3">其他消息</li>
+                    : (
+                      <li className="mt-2 flex items-center gap-2 rounded-tile border-l-4 border-accent bg-surface-2 px-3 py-1.5">
+                        <span className="shrink-0 text-[12px] text-ink-4">主题</span>
+                        <input aria-label="主题标题" value={heading.title} maxLength={40} onChange={(ev) => setTopic(heading.topic!, ev.target.value)}
+                          className="min-w-0 flex-1 bg-transparent text-[14.5px] font-semibold text-ink outline-none focus:underline" />
+                        {heading.title !== d.article.topics[heading.topic]?.generated && (
+                          <button type="button" className="shrink-0 text-[12px] font-medium text-accent hover:underline" onClick={() => setTopic(heading.topic!, d.article.topics[heading.topic!]!.generated)}>恢复</button>
+                        )}
+                      </li>
+                    );
+                })()}
                 <EntryRow
-                  key={e.key} d={d} item={e} index={i} total={draft.items.length} number={numbers.get(e.key) ?? 0}
+                  topics={draft.topics} d={d} item={e} index={i} total={draft.items.length} number={numbers.get(e.key) ?? 0}
                   open={open === e.key}
                   onToggle={() => { setOpen(open === e.key ? null : e.key); setTab("preview"); }}
                   move={move} setItem={(patch) => setItem(e.key, patch)}
                   drag={{ start: () => { dragged.current = i; }, drop: () => { if (dragged.current !== null) move(dragged.current, i); dragged.current = null; } }}
                 />
+                </Fragment>
               ))}
             </ol>
             {!visibleRows.length && <p className="m-2 rounded-tile border border-dashed border-line-strong p-7 text-center text-[13.5px] text-ink-4">没有符合的条目</p>}

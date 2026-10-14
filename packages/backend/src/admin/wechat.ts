@@ -12,6 +12,7 @@ import { enqueue, QUEUES } from "../jobs/queue.ts";
 import { renderWechatCover, WECHAT_COVER_SQUARE, WECHAT_COVER_WIDE, wechatCoverEtag, type WechatCover } from "../media/wechat-cover.ts";
 import { WECHAT_MIN_ENTRIES, wechatColumn } from "../newsletter/wechat-column.ts";
 import { wechatComments } from "../newsletter/wechat-comments.ts";
+import { wechatTopics } from "../newsletter/wechat-topics.ts";
 import { drawingUnavailable, illustrationDir, illustrationJpeg, illustrationSubject, wechatIllustrations, type IllustrationRow } from "../newsletter/wechat-illustrations.ts";
 import { scriptingUnavailable, VIDEO_CAPTION_MAX, VIDEO_ENTRIES, VIDEO_LINE_MAX, wechatVideo, type WechatVideoRow, type WechatVideoScript } from "../newsletter/wechat-video.ts";
 import { saveJpeg } from "../providers/codex.ts";
@@ -84,6 +85,22 @@ async function stored(key: string): Promise<Stored> {
   return row ?? NONE;
 }
 
+/** A found picture's site, without www. */
+function creditHost(page: string): string {
+  try {
+    return new URL(page).hostname.replace(/^www\./, "");
+  } catch {
+    return page;
+  }
+}
+
+/** The line under a picture: where a found one is from, or that it was drawn and of what; none under an upload. */
+function caption(picture: IllustrationRow | undefined): string | null {
+  if (picture?.credit) return `图源：${creditHost(picture.credit)}`;
+  if (picture?.origin === "drawn") return picture.prompt ? `AI 绘制：${picture.prompt}` : "AI 绘制";
+  return null;
+}
+
 /** Where the workbench loads an illustration from; the file name in it changes with the picture. */
 const illustrationUrl = (key: string, entry: string, file: string) =>
   `/api/admin/wechat/${key}/illustration.jpg?entry=${encodeURIComponent(entry)}&v=${file.slice(0, 12)}`;
@@ -91,11 +108,11 @@ const illustrationUrl = (key: string, entry: string, file: string) =>
 async function issue(key: string) {
   const column = await wechatColumn(key);
   if (column.status !== "ready") return column;
-  const [row, comments, illustrations, video] = await Promise.all([stored(key), wechatComments(key), wechatIllustrations(key), wechatVideo(key)]);
+  const [row, comments, illustrations, video, topics] = await Promise.all([stored(key), wechatComments(key), wechatIllustrations(key), wechatVideo(key), wechatTopics(key)]);
   const { edits, revision } = row;
-  /** The article with the illustrations printed from `images` (entry key to address), each under its credit. */
+  /** The article with the illustrations printed from `images` (entry key to address), each over its caption. */
   const render = (images: ReadonlyMap<string, string>) => wechatArticle(column.report, column.extra, comments, edits,
-    new Map([...images].map(([entry, src]) => [entry, { src, credit: illustrations.get(entry)?.credit ?? null }])));
+    new Map([...images].map(([entry, src]) => [entry, { src, caption: caption(illustrations.get(entry)) }])), topics ?? undefined);
   const files = new Map([...illustrations].flatMap(([entry, r]) => (r.file ? [[entry, r.file] as const] : [])));
   const article = render(new Map([...files].map(([entry, file]) => [entry, illustrationUrl(key, entry, file)])));
   // The cover leads with the first entry printed, so reordering the issue changes it.
@@ -153,6 +170,14 @@ function keys(value: unknown, name: string): string[] | undefined {
   return [...new Set(value as string[])];
 }
 
+/** An object of at most 200 values, each checked by `check`; undefined when absent or empty. */
+function byKey<T>(value: unknown, name: string, check: (v: unknown) => T): Record<string, T> | undefined {
+  if (value === undefined) return undefined;
+  if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).length > 200) throw bad(`${name} must be an object`);
+  const out = Object.fromEntries(Object.entries(value).map(([k, v]) => [k, check(v)]));
+  return Object.keys(out).length ? out : undefined;
+}
+
 /** The edits as the workbench sent them, checked field by field; unknown fields are dropped. */
 export function checkEdits(input: unknown): WechatEdits {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw bad("edits must be an object");
@@ -163,7 +188,7 @@ export function checkEdits(input: unknown): WechatEdits {
     if (!e.entries || typeof e.entries !== "object" || Array.isArray(e.entries) || Object.keys(e.entries).length > 200) throw bad("entries must be an object by entry key");
     for (const [k, v] of Object.entries(e.entries as Record<string, Record<string, unknown>>)) {
       if (!v || typeof v !== "object") throw bad("an entry edit must be an object");
-      const one = { title: text(v.title, "title"), body: text(v.body, "body"), comment: text(v.comment, "comment") };
+      const one = { title: text(v.title, "title"), body: text(v.body, "body"), comment: text(v.comment, "comment"), followUpNote: text(v.followUpNote, "followUpNote") };
       const kept = Object.fromEntries(Object.entries(one).filter(([, x]) => x !== undefined));
       if (Object.keys(kept).length) entries[k] = kept;
     }
@@ -171,6 +196,11 @@ export function checkEdits(input: unknown): WechatEdits {
   const out: WechatEdits = {
     title: text(e.title, "title"), digest: text(e.digest, "digest"), theme: e.theme as WechatEdits["theme"],
     order: keys(e.order, "order"), hidden: keys(e.hidden, "hidden"), entries: Object.keys(entries).length ? entries : undefined,
+    topicTitles: byKey(e.topicTitles, "topicTitles", (v) => text(v, "topic title")!),
+    topicOf: byKey(e.topicOf, "topicOf", (v) => {
+      if (!Number.isInteger(v) || (v as number) < -1 || (v as number) > 20) throw bad("a topic must be its place in the topics, or -1");
+      return v as number;
+    }),
   };
   return Object.fromEntries(Object.entries(out).filter(([, x]) => x !== undefined)) as WechatEdits;
 }

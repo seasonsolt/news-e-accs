@@ -62,11 +62,22 @@ export interface WechatEdits {
   /** Entry keys in the editor's order; entries not listed follow in generated order. */
   order?: string[];
   hidden?: string[];
-  /** Per entry key; an empty comment removes the generated one. */
-  entries?: Record<string, { title?: string; body?: string; comment?: string }>;
+  /** Per entry key; an empty comment or follow-up line removes the generated one. */
+  entries?: Record<string, { title?: string; body?: string; comment?: string; followUpNote?: string }>;
+  /** Topic headings the editor rewrote, by the topic's place in the generated topics ("0", "1", …). */
+  topicTitles?: Record<string, string>;
+  /** Entries the editor moved, by entry key: the topic's place, or -1 for none. */
+  topicOf?: Record<string, number>;
 }
 
-export interface WechatImage { src: string; credit: string | null }
+/** An entry's picture as printed: where from, and the line under it (its source, or that it was drawn). */
+export interface WechatImage { src: string; caption: string | null }
+
+/** The day's topics as the worker grouped them (wechat-topics.ts), and the follow-up lines by entry key. */
+export interface WechatTopics {
+  topics: Array<{ title: string; entries: string[] }>;
+  followups: Record<string, string>;
+}
 
 /** An entry as the workbench shows it: what is printed, and what was generated before the edits. */
 export interface ColumnEntry {
@@ -76,6 +87,10 @@ export interface ColumnEntry {
   firstParty: boolean;
   otherSources?: number;
   followUp?: string;
+  /** What is new since the earlier daily that carried the event; null without one. */
+  followUpNote: string | null;
+  /** The entry's topic, by its place in the article's topics; null when it stands alone. */
+  topic: number | null;
   related: string[];
   /** Added after the daily's own entries (wechat-column.ts). */
   added: boolean;
@@ -85,7 +100,7 @@ export interface ColumnEntry {
   comment: string | null;
   /** The entry's illustration: where the article prints it from, and the page a found one is from; null without one. */
   image: WechatImage | null;
-  generated: { title: string; body: string | null; comment: string | null };
+  generated: { title: string; body: string | null; comment: string | null; followUpNote: string | null; topic: number | null };
 }
 
 export interface WechatArticle {
@@ -98,8 +113,10 @@ export interface WechatArticle {
   theme: WechatTheme;
   html: string;
   text: string;
-  /** Every entry in the editor's order, hidden ones included. */
+  /** Every entry as printed, hidden ones included: the editor's order, each topic gathered where its first entry stands, the entries in no topic after the topics. */
   entries: ColumnEntry[];
+  /** The topics' headings, and the generated ones. */
+  topics: Array<{ title: string; generated: string }>;
   /** Printed entries from the daily itself, those added after them, and how many printed carry a comment. */
   counts: { daily: number; added: number; commented: number };
 }
@@ -117,6 +134,9 @@ const monthDay = (key: string) => {
 };
 
 const two = (n: number) => String(n).padStart(2, "0");
+
+/** The heading of entries standing alone after a topic. */
+const OTHERS = "其他消息";
 
 /** An entry's stable key across regenerations: its item, else its headline. */
 export const entryKey = (e: { itemId: string | null; title: string }) => e.itemId ?? `title:${e.title}`;
@@ -155,15 +175,21 @@ export function wechatEntries(report: ReportDetail, extra: WechatEntry[]): Array
   ];
 }
 
-/** The generated entries with the comments and the editor's changes applied, in the editor's order. */
+/** The generated entries with the comments, topics and the editor's changes applied, printed order (see WechatArticle.entries). */
 function columnEntries(
   report: ReportDetail, extra: WechatEntry[], comments: ReadonlyMap<string, string>, edits: WechatEdits, images: ReadonlyMap<string, WechatImage>,
+  topics: WechatTopics,
 ): ColumnEntry[] {
   const hidden = new Set(edits.hidden ?? []);
+  const topicOf = new Map(topics.topics.flatMap((t, i) => t.entries.map((key) => [key, i] as const)));
   const entries = wechatEntries(report, extra).map((e): ColumnEntry => {
     const key = entryKey(e);
-    const generated = { title: e.title, body: e.body, comment: (e.itemId && comments.get(e.itemId)) || null };
+    const generated = {
+      title: e.title, body: e.body, comment: (e.itemId && comments.get(e.itemId)) || null,
+      followUpNote: (e.followUp && topics.followups[key]) || null, topic: topicOf.get(key) ?? null,
+    };
     const edit = edits.entries?.[key] ?? {};
+    const moved = edits.topicOf?.[key];
     return {
       key, section: e.section, sourceName: e.sourceName, firstParty: e.firstParty, otherSources: e.otherSources, followUp: e.followUp,
       related: (e.related ?? []).filter((r) => r.available).map((r) => r.title),
@@ -171,23 +197,25 @@ function columnEntries(
       title: edit.title?.trim() || generated.title,
       body: edit.body === undefined ? generated.body : edit.body.trim() || null,
       comment: edit.comment === undefined ? generated.comment : edit.comment.trim() || null,
+      followUpNote: edit.followUpNote === undefined ? generated.followUpNote : edit.followUpNote.trim() || null,
+      topic: moved === undefined ? generated.topic : moved >= 0 && moved < topics.topics.length ? moved : null,
       image: images.get(key) ?? null,
     };
   });
   const rank = new Map((edits.order ?? []).map((key, i) => [key, i]));
-  return entries
+  const ordered = entries
     .map((e, i) => ({ e, at: rank.get(e.key) ?? rank.size + i }))
     .sort((a, b) => a.at - b.at)
     .map(({ e }) => e);
-}
-
-/** A credit as printed: the page's site, without www. */
-function creditHost(page: string): string {
-  try {
-    return new URL(page).hostname.replace(/^www\./, "");
-  } catch {
-    return page;
-  }
+  // A topic is printed where its first entry stands, its other entries after it in the editor's order;
+  // entries in no topic stay put before the first topic (the lead) and gather after the last one.
+  const first = new Map<number, number>();
+  ordered.forEach((e, i) => { if (e.topic !== null && !first.has(e.topic)) first.set(e.topic, i); });
+  const opening = Math.min(ordered.length, ...first.values());
+  return ordered
+    .map((e, i) => ({ e, at: e.topic !== null ? first.get(e.topic)! : i < opening ? i : ordered.length + i, i }))
+    .sort((a, b) => a.at - b.at || a.i - b.i)
+    .map(({ e }) => e);
 }
 
 function note(e: ColumnEntry): string {
@@ -195,16 +223,17 @@ function note(e: ColumnEntry): string {
     e.section,
     `来源：${e.sourceName}`,
     ...(e.otherSources ? [`另有 ${e.otherSources} 家信源报道`] : []),
-    ...(e.followUp ? [`${monthDay(e.followUp)}早报报道过此事`] : []),
+    ...(e.followUp && !e.followUpNote ? [`${monthDay(e.followUp)}早报报道过此事`] : []),
   ].join(" · ");
 }
 
-/** `comments` by item id; `edits` from the workbench; `images`, the illustrations by entry key. */
+/** `comments` by item id; `edits` from the workbench; `images`, the illustrations by entry key; `topics` as the worker grouped the day. */
 export function wechatArticle(
   report: ReportDetail, extra: WechatEntry[] = [], comments: ReadonlyMap<string, string> = new Map(), edits: WechatEdits = {},
-  images: ReadonlyMap<string, WechatImage> = new Map(),
+  images: ReadonlyMap<string, WechatImage> = new Map(), topics: WechatTopics = { topics: [], followups: {} },
 ): WechatArticle {
-  const all = columnEntries(report, extra, comments, edits, images);
+  const all = columnEntries(report, extra, comments, edits, images, topics);
+  const headings = topics.topics.map((t, i) => ({ title: edits.topicTitles?.[String(i)]?.trim() || t.title, generated: t.title }));
   const entries = all.filter((e) => !e.hidden);
   const theme = edits.theme ?? "amber";
   const C = WECHAT_THEMES[theme].palette;
@@ -252,14 +281,23 @@ export function wechatArticle(
   const byline = (e: ColumnEntry) => `<span style="padding:1px 6px;border-radius:5px;background-color:${C.tint};color:${C.accent};">${esc(e.section)}</span>　` + [
     esc(e.sourceName) + (e.firstParty ? " · 一手" : ""),
     ...(e.otherSources ? [`另有 ${e.otherSources} 家信源报道`] : []),
-    ...(e.followUp ? [`跟进 ${esc(monthDay(e.followUp))}早报`] : []),
+    ...(e.followUp && !e.followUpNote ? [`跟进 ${esc(monthDay(e.followUp))}早报`] : []),
   ].join(" · ");
+  // A topic's heading opens its entries; the entries in no topic after them open under 「其他消息」.
+  const heading = (k: number): string | null => {
+    const e = entries[k]!;
+    const before = k > 0 ? entries[k - 1]!.topic : null;
+    if (e.topic !== null) return e.topic !== before || k === 0 ? headings[e.topic]!.title : null;
+    return before !== null ? OTHERS : null;
+  };
   const body = entries.map((e, k) => [
+    ...(heading(k) ? [`<p style="margin:${k ? 16 : 0}px 0 0;padding:10px 14px;border-left:4px solid ${C.accent};border-radius:2px;background-color:${C.tint};font-size:17px;font-weight:bold;line-height:1.5;color:${C.ink};">${esc(heading(k)!)}</p>`] : []),
     `<section style="padding:24px 0;border-top:1px solid ${C.line};">`,
     `<p style="margin:0;font-size:12px;line-height:1.6;color:${C.ink3};"><span style="font-size:22px;font-weight:bold;color:${C.accent};">${two(k + 1)}</span>　${byline(e)}</p>`,
     `<p style="margin:10px 0 0;font-size:18px;font-weight:bold;line-height:1.5;color:${C.ink};">${esc(e.title)}</p>`,
+    ...(e.followUp && e.followUpNote ? [`<p style="margin:8px 0 0;font-size:14px;line-height:1.7;color:${C.ink3};"><span style="font-weight:bold;color:${C.accent};">跟进 ${esc(monthDay(e.followUp))}早报</span>　${esc(e.followUpNote)}</p>`] : []),
     ...(e.image ? [`<p style="margin:14px 0 0;"><img src="${esc(e.image.src)}" alt="" style="display:block;width:100%;height:auto;border-radius:10px;"></p>`] : []),
-    ...(e.image?.credit ? [`<p style="margin:6px 0 0;font-size:12px;line-height:1.5;color:${C.ink4};">图源：${esc(creditHost(e.image.credit))}</p>`] : []),
+    ...(e.image?.caption ? [`<p style="margin:6px 0 0;font-size:12px;line-height:1.5;color:${C.ink4};">${esc(e.image.caption)}</p>`] : []),
     ...(e.body ? [`<p style="margin:10px 0 0;text-align:justify;">${esc(e.body)}</p>`] : []),
     ...(e.related.length ? [`<p style="margin:10px 0 0;font-size:13.5px;line-height:1.7;color:${C.ink3};">${e.related.map((r) => `<span style="color:${C.ink4};">·</span> ${esc(r)}`).join("<br>")}</p>`] : []),
     ...(e.comment ? [`<p style="margin:14px 0 0;padding:12px 14px;border-radius:8px;background-color:${C.tint};color:${C.ink};"><span style="font-weight:bold;color:${C.accent};">${esc(COMMENT_LABEL)}</span>　${esc(e.comment)}</p>`] : []),
@@ -301,7 +339,9 @@ export function wechatArticle(
     ...entries.map((e, k) => `${two(k + 1)} ${e.title}`),
     "",
     ...entries.flatMap((e, k) => [
+      ...(heading(k) ? [`【${heading(k)}】`, ""] : []),
       `${two(k + 1)} ${e.title}`,
+      ...(e.followUp && e.followUpNote ? [`跟进 ${monthDay(e.followUp)}早报：${e.followUpNote}`] : []),
       ...(e.body ? [e.body] : []),
       ...(e.related.length ? [`相关：${e.related.join("；")}`] : []),
       ...(e.comment ? [`${COMMENT_LABEL}：${e.comment}`] : []),
@@ -324,6 +364,7 @@ export function wechatArticle(
     html,
     text,
     entries: all,
+    topics: headings,
     counts: { daily: entries.length - added, added, commented: entries.filter((e) => e.comment).length },
   };
 }

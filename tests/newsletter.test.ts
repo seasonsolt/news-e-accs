@@ -30,6 +30,7 @@ import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { commentWechatColumn } from "@aihot/backend/newsletter/wechat-comments";
+import { topicWechatColumn, wechatTopics } from "@aihot/backend/newsletter/wechat-topics";
 
 const T = tag();
 const EMAIL = `Reader.${T}@Example.org`;
@@ -317,6 +318,76 @@ test("the worker comments the column's entries in the editor's voice, keeping on
   } finally {
     await sql`DELETE FROM wechat_issues WHERE report_key = ${earlier}`;
     await model.close();
+  }
+});
+
+test("the worker groups the column under judged topics once and writes what a follow-up adds; the editor renames and moves them", async () => {
+  const source = `wechat-topics-${T}`;
+  const yesterday = addDays(TODAY, -1);
+  const [report] = await sql<{ content: unknown }[]>`SELECT content FROM reports WHERE kind = 'daily' AND key = ${TODAY}`;
+  const asked: string[] = [];
+  const model = await stub((_hit, req) => {
+    const user = (JSON.parse(req.body) as { messages: Array<{ role: string; content: string }> }).messages.find((m) => m.role === "user")!.content;
+    asked.push(user);
+    const n = (title: string) => Number(new RegExp(`^(\\d+)\\. ${title}`, "m").exec(user)![1]);
+    const answer = {
+      topics: [
+        { title: "头条和产品一起看", entries: [n(`头条 ${T}`), n("产品 B 上线")] },
+        { title: "只有一条成不了主题", entries: [n("新版本发布")] },
+        { title: "Nova-9 改写一切", entries: [n("新版本发布"), n(`头条 ${T}`)] },
+      ],
+      followups: [{ n: n("新版本发布"), text: "这次正式上线，之前只是预告" }, { n: n("产品 B 上线"), text: "不是跟进的条目不写" }],
+    };
+    return { id: `wt-${T}`, choices: [{ message: { content: JSON.stringify(answer) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } };
+  });
+  pointModels(model.url, ["deepseek-flash"]);
+  try {
+    await sql`INSERT INTO sources (id, name, kind, tier, next_fetch_at) VALUES (${source}, 'Topics fixture', 'rss', 'T1', '2100-01-01')`;
+    const [before, after] = await Promise.all(["preview", "release"].map((slug) => upsertMaterial({
+      sourceId: source, url: `https://example.org/${slug}-${T}`, title: slug, language: "zh", bodyText: "正文。", bodyStatus: "ok", via: "fetch", publishedAt: new Date(),
+    })));
+    const [story] = await sql<{ id: number }[]>`INSERT INTO stories (public_id, title, summary, editorial_language) VALUES (${crypto.randomUUID()}, '新版本', '新版本', 'zh') RETURNING id`;
+    for (const m of [before!, after!]) {
+      await sql`INSERT INTO analyses (article_id, input_revision, origin, editorial_language, relevance, category, title, summary, score, selected)
+        VALUES (${m.articleId}, 1, 'rule', 'zh', 'pass', 'ai-models', 'x', 'x', 90, true)`;
+      await publishArticle(m.articleId, { releasedAt: new Date(Date.now() - 60_000) });
+    }
+    await sql`UPDATE publications SET story_id = ${story!.id} WHERE article_id IN (${before!.articleId}, ${after!.articleId})`;
+    const cite = (itemId: string, title: string, extra = {}) => ({ itemId, title, summary: "摘要", sourceName: "Topics fixture", sourceUrl: "https://example.org/t", ...extra });
+    await sql`INSERT INTO reports (kind, key, window_start, window_end, content, generated_at)
+      VALUES ('daily', ${yesterday}, now() - interval '2 day', now() - interval '1 day',
+        ${sql.json({ date: yesterday, lead: null, highlights: [], sections: [{ label: "模型", items: [cite(before!.articleId, "新版本预告")] }], flashes: [], metrics: {} })}, now())
+      ON CONFLICT (kind, key) DO NOTHING`;
+    const content = report!.content as { sections: Array<{ label: string; items: unknown[] }> };
+    const sections = [...content.sections, { label: "模型", items: [cite(after!.articleId, "新版本发布", { followUp: yesterday })] }];
+    await sql`UPDATE reports SET content = ${sql.json({ ...content, sections } as never)} WHERE kind = 'daily' AND key = ${TODAY}`;
+
+    assert.deepEqual(await topicWechatColumn(TODAY), { status: "done", topics: 1 }, "a one-entry topic and one naming what its entries do not are dropped");
+    assert.match(asked[0]!, /新版本发布\n（跟进：之前的早报报道过「新版本预告」）/, "the model is told what the earlier daily said");
+    assert.deepEqual(await topicWechatColumn(TODAY), { status: "done" });
+    assert.equal(asked.length, 1, "grouped once a day");
+    const stored = await wechatTopics(TODAY);
+    assert.deepEqual(Object.values(stored!.followups), ["这次正式上线，之前只是预告"], "only a follow-up gets a line");
+
+    const grouped = await ready();
+    assert.deepEqual(grouped.article.topics, [{ title: "头条和产品一起看", generated: "头条和产品一起看" }]);
+    const text = grouped.article.text.split("【今日速览】")[1]!;
+    assert.match(text, /【头条和产品一起看】\n\n01 头条[^\n]*\n[\s\S]*\n02 产品 B 上线[\s\S]*【其他消息】/, "a topic's entries under its heading, the others after");
+    assert.match(text, new RegExp(`跟进 ${Number(yesterday.slice(5, 7))} 月 ${Number(yesterday.slice(8))} 日早报：这次正式上线，之前只是预告`));
+    assert.match(grouped.article.html, /border-left:4px solid[^>]*>头条和产品一起看</);
+
+    const second = grouped.article.entries.find((e) => e.title === "产品 B 上线")!;
+    await saveWechatEdits(TODAY, { revision: grouped.revision, edits: { topicTitles: { 0: "改过的主题" }, topicOf: { [second.key]: -1 } } }, "editor@example.org");
+    const moved = await ready();
+    assert.equal(moved.article.topics[0]!.title, "改过的主题");
+    assert.equal(moved.article.entries.find((e) => e.key === second.key)!.topic, null, "the editor took the entry out of its topic");
+    assert.match(moved.article.text, /【改过的主题】\n\n01 头条[^\n]*\n[\s\S]*【其他消息】\n\n02/);
+  } finally {
+    await model.close();
+    await sql`UPDATE reports SET content = ${sql.json(report!.content as never)} WHERE kind = 'daily' AND key = ${TODAY}`;
+    await sql`DELETE FROM reports WHERE kind = 'daily' AND key = ${yesterday}`;
+    await sql`DELETE FROM wechat_topics WHERE report_key = ${TODAY}`;
+    await sql`DELETE FROM wechat_issues WHERE report_key = ${TODAY}`;
   }
 });
 

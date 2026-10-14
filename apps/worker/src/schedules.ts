@@ -27,6 +27,7 @@ import { sourceHealthWeekly } from "@aihot/backend/operations/reports";
 import { sendDailyIssues } from "@aihot/backend/newsletter/issue";
 import { syncUnsubscribes } from "@aihot/backend/newsletter/unsubscribes";
 import { commentWechatColumn } from "@aihot/backend/newsletter/wechat-comments";
+import { topicWechatColumn } from "@aihot/backend/newsletter/wechat-topics";
 
 /** A schedule, optionally on its own calendar (the report calendar); the default is Asia/Shanghai. */
 type EngineScheduled = Scheduled & { timeZone?: string };
@@ -53,6 +54,8 @@ export const ENGINE_SCHEDULES: EngineScheduled[] = [
   { name: "newsletter.unsubscribes", cron: "20 5 * * *", missed: "once", run: () => syncUnsubscribes(), when: () => config.newsletterEnabled },
   // The site's comment on each entry of today's 公众号 column, once its Chinese edition is ready (model calls).
   { name: "wechat.comment", timeZone: config.reportTimeZone, cron: `5-55/10 ${dailyHour}-${Math.min(23, dailyHour + 4)} * * *`, run: () => commentWechatColumn() },
+  // The column's topics and follow-up lines, once a day as soon as its Chinese edition is ready (model calls).
+  { name: "wechat.topics", timeZone: config.reportTimeZone, cron: `5-55/10 ${dailyHour}-${Math.min(23, dailyHour + 4)} * * *`, run: () => topicWechatColumn() },
   // The deletions the privacy notice promises, once their retention periods are over.
   { name: "ops.retention", cron: "30 3 * * *", missed: "once", run: () => dailyRetention() },
   // IndexNow for added, changed and removed discovery URLs (off unless INDEXNOW_SUBMIT_ENABLED).

@@ -1,9 +1,10 @@
 // The site's one-line comment on each entry of the 公众号 column 「AI 早报」 (industry/prompts/wechat-comment.md),
 // written by the worker once the day's column is ready and kept per day and entry; the export prints the
-// ones it finds. One model call comments every entry still without one, in the voice of the comments the
-// editor rewrote in the workbench lately (given as examples). A comment that runs long, shouts, or names
-// a figure or Latin name none of the day's entries names is not kept: its entry is asked once more on
-// its own with the others still missing, and the same question is never paid for twice (its receipt).
+// ones it finds. One model call comments every entry still without one, reading the start of each one's
+// original too, in the voice of the comments the editor rewrote in the workbench lately (given as
+// examples). A comment that runs long, shouts, or names a figure or Latin name none of the day's entries
+// or those originals name is not kept: its entry is asked once more on its own with the others still
+// missing, and the same question is never paid for twice (its receipt).
 import { z } from "zod";
 import { calendarDate } from "@aihot/contracts/time";
 import { config } from "../config.ts";
@@ -24,6 +25,8 @@ const VERSION = promptVersion("wechat-comment");
 const COMMENT_MAX = 90;
 /** How many of the editor's rewrites the model is shown. */
 const EXAMPLES = 12;
+/** How much of each entry's original the model reads, for a detail worth remarking on. */
+const EXCERPT_MAX = 1200;
 const CommentsSchema = z.object({ comments: z.array(z.object({ n: z.number().int(), comment: z.string() })) });
 
 export async function wechatComments(key: string): Promise<Map<string, string>> {
@@ -44,7 +47,15 @@ async function editorComments(): Promise<string> {
   return rows.length ? rows.map((r) => `- 「${r.title}」\n  点评：${r.comment}`).join("\n") : "（还没有）";
 }
 
-/** `day`: every entry of the column, whose names a comment may bring in. */
+/** The start of each entry's original (article body, else the post's text), by item id. */
+async function excerpts(ids: string[]): Promise<Map<string, string>> {
+  const rows = await sql<{ id: string; text: string | null }[]>`
+    SELECT id, coalesce(nullif(btrim(body_text), ''), nullif(btrim(x_post->>'text'), ''), nullif(btrim(excerpt), '')) AS text
+    FROM articles WHERE id = ANY(${ids}::text[])`;
+  return new Map(rows.flatMap((r) => (r.text ? [[r.id, Array.from(r.text.replace(/\s+/g, " ")).slice(0, EXCERPT_MAX).join("")] as const] : [])));
+}
+
+/** `day`: every entry of the column and the excerpts shown, whose names a comment may bring in. */
 function usable(comment: string, day: string): string | null {
   const text = comment.trim();
   if (!text || Array.from(text).length > COMMENT_MAX || /[!！]/.test(text)) return null;
@@ -59,16 +70,20 @@ export async function commentWechatColumn(date?: string): Promise<{ status: stri
   if (column.status !== "ready") return { status: column.status };
   const have = await wechatComments(key);
   const entries = wechatEntries(column.report, column.extra);
-  const day = entries.map((e) => `${e.title}\n${e.body ?? ""}`).join("\n");
   const missing = entries
     .filter((e): e is Entry & { itemId: string } => e.itemId !== null && !have.has(e.itemId));
   if (!missing.length) return { status: "done", written: 0 };
+  const originals = await excerpts(missing.map((e) => e.itemId));
+  const day = [...entries.map((e) => `${e.title}\n${e.body ?? ""}`), ...originals.values()].join("\n");
   const model = await modelFor("wechat");
   const res = await chatJson({
     model, purpose: "wechat_comment", promptVersion: VERSION,
     subject: `wechat:${key}@${sha256(stableJson(missing.map((e) => [e.itemId, e.title, e.body])))}`,
     system: promptText("wechat-comment", { examples: await editorComments() }),
-    user: missing.map((e, k) => `${k + 1}. ${e.title}\n${e.body ?? ""}`.trim()).join("\n\n"),
+    user: missing.map((e, k) => {
+      const original = originals.get(e.itemId);
+      return `${`${k + 1}. ${e.title}\n${e.body ?? ""}`.trim()}${original ? `\n原文节选：${original}` : ""}`;
+    }).join("\n\n"),
     schema: CommentsSchema, temperature: 0.7, maxTokens: 2000,
   });
   const written = await sql.begin(async (tx) => {
