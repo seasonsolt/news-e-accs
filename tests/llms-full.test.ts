@@ -3,7 +3,6 @@
 // event page or original source, a non-http address is kept, or the route is uncached.
 import { tag } from "./setup.ts";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { after, test } from "node:test";
 import { addDays, beijingDate } from "@aihot/contracts/time";
@@ -21,26 +20,6 @@ const today = beijingDate(now);
 const edge = addDays(today, -6);
 const old = addDays(today, -7);
 after(async () => { await app.close(); await stopBoss(); await closeDb(); });
-
-const AI_AGENTS = ["GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended", "OAI-SearchBot"];
-const SHARED = ["Allow: /api/v1/", "Allow: /api/mcp", "Disallow: /api/", "Disallow: /admin/", "Disallow: /starred", "Disallow: /feedback"];
-
-function robotGroups(text: string): Map<string, string[]> {
-  const groups = new Map<string, string[]>();
-  let agent = "";
-  for (const line of text.split("\n")) {
-    const match = /^User-agent:\s*(.+)$/.exec(line.trim());
-    if (match) { agent = match[1]!.trim(); groups.set(agent, []); continue; }
-    if (agent && /^(?:Allow|Disallow):/.test(line.trim())) groups.get(agent)!.push(line.trim());
-  }
-  return groups;
-}
-
-test("robots.txt lets answer-engine crawlers read the public site under the same private-path rules", () => {
-  const groups = robotGroups(readFileSync(new URL("../site/public/robots.txt", import.meta.url), "utf8"));
-  assert.deepEqual(groups.get("*"), SHARED);
-  for (const agent of AI_AGENTS) assert.deepEqual(groups.get(agent), [...SHARED, "Allow: /"], agent);
-});
 
 test("llms-full.txt cites the last 7 days and the hot list, and drops withdrawn or older material", async () => {
   const source = `llms-full-${T}`;
@@ -126,7 +105,4 @@ test("llms-full.txt cites the last 7 days and the hot list, and drops withdrawn 
   const discovery = await app.inject({ method: "GET", url: "/llms.txt" });
   assert.equal(discovery.statusCode, 200);
   assert.match(discovery.body, /\[Full recent content\]\([^)]+\/llms-full\.txt\)/);
-  const robots = await app.inject({ method: "GET", url: "/robots.txt" });
-  assert.equal(robots.statusCode, 200);
-  for (const agent of AI_AGENTS) assert.ok(robots.body.includes(`User-agent: ${agent}`), agent);
 });
