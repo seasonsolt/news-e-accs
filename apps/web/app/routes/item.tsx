@@ -52,6 +52,7 @@ export function meta({ matches, loaderData, location }: Route.MetaArgs) {
     path: location.pathname,
     image: `/og/items/${item.id}.png`,
     type: "article",
+    publishedTime: item.publishedAt ?? item.discoveredAt,
     noindex: !item.indexable,
     jsonLd: [
       newsArticleLd({

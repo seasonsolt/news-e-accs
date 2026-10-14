@@ -104,7 +104,7 @@ flowchart LR
 | `/feed.xml` `/feed/full.xml` `/feed/all.xml` `/feed/daily.xml` `/feed/weekly.xml` `/feed/monthly.xml` | RSS：精选、精选全文、全部、日报、周报、月报；另有按分类的 `/feed/category/<key>.xml` 和分类全文版 `/feed/full/category/<key>.xml` |
 | `/api/v1/` | 公开 API，文档在 `/openapi-v1.json`；给 Agent 读的 Markdown 从 `/api/v1/agent` 开始；说明页在 `/agent` |
 | `/api/mcp` | MCP 服务：最新、搜索、热点、事件、日报、周报、月报各一个工具，工具名前缀是 `site/site.ts` 的 `mcpPrefix` |
-| `/llms.txt` `/sitemap.xml` `/robots.txt` | 给大模型和搜索引擎的说明（`robots.txt` 等根目录文件在 `site/public/`） |
+| `/llms.txt` `/llms-full.txt` `/sitemap.xml` `/robots.txt` | 给大模型和搜索引擎的说明。`llms-full.txt` 是最近 7 天日报和当前热点的 Markdown，每条带事件页和原文链接；`robots.txt` 等根目录文件在 `site/public/` |
 | `/admin` | 后台 |
 
 精选、热点榜、模型榜与报告支持 `?at=YYYY-MM-DD`：截至该北京日 23:59:59.999，只通过公开读取层读取已发布记录；今天等同实时，未来和非法日期由接口返回 400。历史精选不走实时缓存，游标绑定日期，热点与模型榜的历史缓存不覆盖实时缓存。30 天以前的热点榜只保留每个北京日最后一份已发布记录；已删历史不恢复，模型价格仍为当前价。公开资讯内容仍匿名读取；界面语言只由 URL 决定，语言偏好 cookie 和 onboarding 状态只在浏览器读取，不触发模型。公开 HTML/data 使用路由声明的缓存期限；服务端输出不能依赖 cookie、`Accept-Language` 或用户代理（仅 bot 流式发送时机除外），见 [界面国际化](internationalization.md)；历史页 noindex，canonical 不带 `at`。MCP 和 API v1 暂不提供历史切片。

@@ -23,7 +23,7 @@
 | Pages 静态站（`e-acc.ai`） | 推送到 main 自动发布 | Cloudflare 后台 Pages → eacc → 选旧部署回滚 |
 
 **新闻站新增顶层路由**（比如 `/products`）时，必须同时把它加进 `e-acc.ai` 仓库 `edge/src/route.mjs` 的
-`NEWS_SECTIONS` 并发布 Worker，否则这个路径会落到 Pages，返回 404。先发布新闻站，再发布 Worker。
+`NEWS_SECTIONS`（单个路径如 `/llms-full.txt` 加进 `NEWS_EXACT`）并发布 Worker，否则这个路径会落到 Pages，返回 404。先发布新闻站，再发布 Worker。
 
 ## 新闻站发布
 

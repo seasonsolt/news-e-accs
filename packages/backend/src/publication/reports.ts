@@ -5,7 +5,7 @@ import { REPORTS, SITE, withSubject } from "@aihot/site";
 import { sql } from "../db.ts";
 import { cached, type Cached } from "../lib/cache.ts";
 import { proxiedImage, proxiedImageSet } from "../media/imgproxy.ts";
-import { isoWeekLabel, isoWeekRange, monthRange } from "@aihot/contracts/time";
+import { addDays, beijingDate, isoWeekLabel, isoWeekRange, monthRange } from "@aihot/contracts/time";
 import { dailyUrl, itemUrl, periodUrl, siteUrl } from "./links.ts";
 import { publicSourceName } from "./rules.ts";
 import { listedCondition } from "./scope.ts";
@@ -663,6 +663,58 @@ export async function v1Period(kind: PeriodKind, key: string | "latest") {
       })).filter((s: { items: unknown[] }) => s.items.length > 0),
     },
   };
+}
+
+export interface LlmsDailyCitation {
+  title: string;
+  summary: string | null;
+  sourceName: string;
+  sourceUrl: string;
+  storyPublicId: string | null;
+  itemId: string | null;
+}
+
+export interface LlmsDailyIssue {
+  key: string;
+  title: string | null;
+  lead: string | null;
+  entries: Array<{ main: LlmsDailyCitation; related: LlmsDailyCitation[] }>;
+}
+
+/** Public stories in daily briefings from the last 7 Beijing days, newest first. Withdrawn citations are left out. */
+export async function recentLlmsDailies(now = new Date()): Promise<LlmsDailyIssue[]> {
+  const from = addDays(beijingDate(now), -6);
+  const rows = await sql<ReportRow[]>`
+    SELECT editorial_language, kind, key, window_start, window_end, content, generated_at
+    FROM reports WHERE kind = 'daily' AND key >= ${from} ORDER BY key DESC`;
+  if (rows.length === 0) return [];
+  const rawEntries = rows.flatMap((r) => {
+    const entries = [...(r.content.sections ?? []).flatMap((s: { items?: unknown[] }) => s.items ?? []), ...(r.content.flashes ?? [])];
+    return [...entries, ...entries.flatMap((e) => (e as { related?: unknown[] }).related ?? [])];
+  });
+  const gone = await unavailableIds([...new Set(rawEntries.map((e) => (e as { itemId?: string }).itemId).filter((id): id is string => !!id))]);
+  const leads = await dailyLeads(rows, gone);
+  const cite = (raw: Record<string, any>): LlmsDailyCitation => ({
+    title: String(raw.title ?? ""),
+    summary: typeof raw.summary === "string" && raw.summary ? raw.summary : null,
+    sourceName: publicSourceName(String(raw.sourceName ?? raw.source?.name ?? "")),
+    sourceUrl: String(raw.sourceUrl ?? raw.links?.original ?? ""),
+    storyPublicId: typeof raw.storyPublicId === "string" && raw.storyPublicId ? raw.storyPublicId : null,
+    itemId: raw.itemId ? String(raw.itemId) : null,
+  });
+  return rows.map((r) => {
+    const entries = [...(r.content.sections ?? []).flatMap((s: { items?: Record<string, any>[] }) => s.items ?? []), ...(r.content.flashes ?? [])];
+    const lead = leads.get(r.key);
+    return {
+      key: r.key,
+      title: lead?.title ?? null,
+      lead: lead?.leadParagraph ?? null,
+      entries: entries.filter((e) => !e.itemId || !gone.has(String(e.itemId))).map((e) => ({
+        main: cite(e),
+        related: ((e.related ?? []) as Record<string, any>[]).filter((x) => !x.itemId || !gone.has(String(x.itemId))).map(cite),
+      })),
+    };
+  });
 }
 
 export { siteUrl };

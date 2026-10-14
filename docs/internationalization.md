@@ -46,6 +46,7 @@ SSR、浏览器分页/展开/搜索及 React Router `.data` 导航按 URL 显式
 | Markdown | `/items/:id/markdown?lang=en|zh`，默认 en | 标题版未就绪 503 `edition_unavailable`；正文未就绪给明确提示与原文链接；引用帖子保留 attribution、原始 URL 及已验证译文，未验证/失效时明确标记原文语言 unknown 或请求版未就绪 |
 | OG/poster | 无前缀 endpoint，`?lang=en|zh` 默认 en | 目标版未就绪 404；读取已存稿件，不触发模型 |
 | llms.txt | 英文说明并列出语言与兼容入口 | 不随 cookie 变化 |
+| llms-full.txt | 英文标题；日报和热点用已存稿件的语言 | 不随 cookie 变化，不调用模型 |
 
 web RSS discovery、页脚、More 与 Agent RSS 地址使用真实 versioned endpoint，不能用旧 feed 上被忽略的 `?lang=en` 冒充英文。v1 旧字段保持，语言/时区为兼容附加字段；将 v1 默认切换英文仍需独立版本或公告，不包含在本次实施。
 
