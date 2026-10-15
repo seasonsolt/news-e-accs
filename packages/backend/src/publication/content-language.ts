@@ -163,7 +163,8 @@ export async function localizePublication<T>(input: T, lang: string, originalBod
   const identify = (o:any): {kind:ContentKind;id:string}|null => {
     if (o?.story?.publicId && 'rank' in o && 'summary' in o) return {kind:'story',id:o.story.publicId};
     if (o && typeof o === 'object' && typeof o.title === 'string') {
-      if (typeof o.id === 'string' && ('summary' in o || 'originalTitle' in o)) return {kind:'item',id:o.id};
+      // Followups and a group's report list name a report by id, title and timelineAt only.
+      if (typeof o.id === 'string' && ('summary' in o || 'originalTitle' in o || 'timelineAt' in o)) return {kind:'item',id:o.id};
       if (typeof o.publicId === 'string') return {kind:'story',id:o.publicId};
       if (typeof o.storyPublicId === 'string') return {kind:'story',id:o.storyPublicId};
       if (typeof o.itemId === 'string' && 'rank' in o && 'participants' in o) return {kind:'item',id:o.itemId};
