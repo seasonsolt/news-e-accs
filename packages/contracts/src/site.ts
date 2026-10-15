@@ -171,6 +171,18 @@ export interface ItemDetail extends ItemSummary {
   indexable: boolean;
   markdownAvailable: boolean;
   group: GroupInfo | null;
+  /** The event, with its digest so far when one has been written. */
+  story: (StoryRef & { digest?: string | null }) | null;
+  /**
+   * The fact this report is evidence of, as analysis structured it. Its words are not translated:
+   * `language` says which script they are in. `quote` is one short sentence of the report's own
+   * evidence, never from a post the site does not show.
+   */
+  fact?: { subject: string | null; action: string | null; object: string | null; occurredAt: string | null; quote: string | null; language: "zh" | "en" } | null;
+  /** The author is the news's own source (principal) or passes on someone else's (relayer); observers carry neither. */
+  authorRole?: "principal" | "relayer" | null;
+  /** An X post's counts as they were when the post was collected. */
+  xCounts?: { views: number | null; favorite: number | null; retweet: number | null; reply: number | null; collectedAt: string } | null;
 }
 
 /** A fact's public reports under the list's filters: what "另有 N 家信源报道" opens. */

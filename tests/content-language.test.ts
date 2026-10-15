@@ -87,7 +87,10 @@ test('story overview, development titles and nested reports are localized; edits
   const translations=Object.fromEntries(source.segments.map(s=>[s.key,`English ${s.key}`]));
   await saveTranslation({...source,translations},'offline-agent','gpt-6-luna',[],true);
   const result=await app.inject({method:'GET',url:`/api/site/stories/${publicId}?lang=en`});
-  assert.equal(result.statusCode,200);assert.equal(result.json().digest,'English digest');assert.equal(result.json().developments[0].title,'English developments.0.title');
+  assert.equal(result.statusCode,200);assert.equal(result.json().digest,'English digest');
+  // The item page carries its event's digest in the same edition.
+  const itemPage=await app.inject({method:'GET',url:`/api/site/items/${id}?lang=en`});
+  assert.equal(itemPage.json().story.digest,'English digest');assert.equal(result.json().developments[0].title,'English developments.0.title');
   const partial=await localizePublication({publicId,title:'事件标题'},'en');assert.equal(partial.title,'English title');
   const strip={rank:1,title:'事件标题',heat:12,trend:'up',storyPublicId:publicId,itemId:id,participants:[],participantCount:1};
   const home=await localizePublication({hot:[strip]},'en');
