@@ -39,7 +39,15 @@ export function meta({ matches, data }: { matches?: Array<{ id: string; data?: u
         creator: { "@type": "Organization", name: SITE.name, url: siteUrl() },
         ...(data ? { dateModified: data.asOf, temporalCoverage: `${data.tiers.flatMap((t) => t.points)[0]?.date ?? data.asOf}/${data.asOf}` } : {}),
         variableMeasured: ["Blended USD per million tokens (3:1 input:output)", "GPQA Diamond accuracy"],
-        isBasedOn: { "@type": "Dataset", name: "Epoch AI GPQA Diamond benchmark", url: "https://epoch.ai/benchmarks/gpqa-diamond", license: "https://creativecommons.org/licenses/by/4.0/" },
+        // Google checks a nested Dataset like a top-level one: it needs its own description and creator.
+        isBasedOn: {
+          "@type": "Dataset",
+          name: "Epoch AI GPQA Diamond benchmark",
+          description: "Epoch AI's results for AI models on GPQA Diamond, 198 graduate-level multiple-choice questions in biology, chemistry and physics.",
+          url: "https://epoch.ai/benchmarks/gpqa-diamond",
+          creator: { "@type": "Organization", name: "Epoch AI", url: "https://epoch.ai" },
+          license: "https://creativecommons.org/licenses/by/4.0/",
+        },
         distribution: { "@type": "DataDownload", encodingFormat: "text/csv", contentUrl: `${siteUrl()}${CSV}` },
       },
     ],

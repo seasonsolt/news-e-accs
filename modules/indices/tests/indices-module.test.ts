@@ -43,6 +43,20 @@ after(async () => {
   await closeDb();
 });
 
+/** Every JSON-LD node on a page, nested ones included: Google validates each Dataset it finds. */
+function jsonLdNodes(html: string): Array<Record<string, unknown>> {
+  const nodes: Array<Record<string, unknown>> = [];
+  const walk = (value: unknown) => {
+    if (Array.isArray(value)) value.forEach(walk);
+    else if (value && typeof value === "object") {
+      nodes.push(value as Record<string, unknown>);
+      Object.values(value).forEach(walk);
+    }
+  };
+  for (const [, json] of html.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)) walk(JSON.parse(json!));
+  return nodes;
+}
+
 test("the index API steps from GPT-4's launch price to the cheaper CNY model, and offers CSV", async () => {
   const response = await app.inject("/api/site/indices/cost-of-intelligence");
   assert.equal(response.statusCode, 200);
@@ -107,7 +121,12 @@ test("the index is routed to the api, listed in the sitemap and llms.txt, and re
       assert.equal(response.status, 200, prefix);
       const html = await response.text();
       assert.ok(html.includes(title), prefix);
-      assert.match(html, /"@type":"Dataset"/);
+      const datasets = jsonLdNodes(html).filter((node) => node["@type"] === "Dataset");
+      assert.equal(datasets.length, 2, `${prefix}: the index and the benchmark it is based on`);
+      for (const dataset of datasets) {
+        assert.ok(typeof dataset.description === "string" && dataset.description.trim(), `${prefix}: ${dataset.name} has a description`);
+        assert.ok((dataset.creator as { name?: string } | undefined)?.name, `${prefix}: ${dataset.name} has a creator`);
+      }
       assert.match(html, /hrefLang="zh-CN"|hreflang="zh-CN"/);
       assert.match(html, /<svg[^>]+role="img"/);
       assert.ok(html.includes("Test CNY model"), `${prefix}: the steps table names the model`);
