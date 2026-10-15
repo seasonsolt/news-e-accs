@@ -8,6 +8,7 @@ import { loadTimeline } from "@aihot/backend/publication/timeline";
 import { loadStoryFollowups } from "@aihot/backend/publication/followups";
 import { loadGroupReports } from "@aihot/backend/publication/groups";
 import { loadItemDetail } from "@aihot/backend/publication/detail";
+import { itemAvailability } from "@aihot/backend/publication/availability";
 import { loadStoryDetail, v1HotTopics, v1Story } from "@aihot/backend/publication/stories";
 import { candidates } from "@aihot/backend/reports/edition";
 import { composeStoryDigest, DIGEST_PROMPT_VERSION, DIGEST_SYSTEM, DigestSchema } from "@aihot/backend/events/digest";
@@ -124,6 +125,31 @@ test("mentions cannot choose a timeline origin, anchor, representative, or a lat
   assert.equal((await v1Story(g.storyId))!.story.latest, after.latest);
   const firstParty = await loadTimeline({ ...q, channel: "firstParty" });
   assert.ok(!firstParty.cards.some(c => c.item.id === official), "a stale true projection flag cannot put T1_5 into first-party channel");
+});
+
+// The saved page counts an event's developments after the star: the other selected facts of the
+// item's event, each at its first selected report, as the followups list shows them.
+test("availability brings the category and the first times of the event's other developments", async () => {
+  const media = await source("availability", "T2");
+  const g = await story();
+  const saved = await report(media, g, { title: "收藏的报道", hours: 10 });
+  await report(media, g, { title: "同一事实的后续报道", hours: 1 });
+  const [f] = await sql`INSERT INTO facts (public_id,story_id,title) VALUES (${`f-${randomUUID()}`},${g.storyId},'新进展') RETURNING id`;
+  const next = { ...g, factId: Number(f!.id) };
+  await report(media, next, { title: "新进展首发", hours: 5 });
+  await report(media, next, { title: "新进展跟进", hours: 2 });
+  await report(media, next, { title: "未入选的更早报道", hours: 8, selected: false });
+  await sql`UPDATE publications SET category = 'ai-models' WHERE article_id = ${saved}`;
+  const result = await itemAvailability([saved, "missing-id", "bad id!"], now);
+  assert.deepEqual(Object.keys(result).sort(), [saved, "missing-id"].sort(), "malformed ids are dropped");
+  assert.equal(result["missing-id"]!.status, "unavailable");
+  const item = result[saved]!;
+  assert.equal(item.status, "public");
+  assert.equal(item.category, "ai-models");
+  assert.deepEqual(item.story, { id: g.storyPublicId, developments: [at(5).toISOString()] }, "own fact excluded; a fact dates from its first selected report");
+  const into = await story("合并目标");
+  await sql`UPDATE stories SET merged_into = ${into.storyId} WHERE id = ${g.storyId}`;
+  assert.equal((await itemAvailability([saved], now))[saved]!.story, undefined, "a merged event has no page to send readers to");
 });
 
 // The detail's group badge and its expanded report list must count the same evidence, even while

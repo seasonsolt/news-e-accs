@@ -452,6 +452,12 @@ export interface StoryFollowupsResponse { items: StoryFollowup[]; more: boolean 
 export interface ItemAvailability {
   status: "public" | "summary-only" | "unavailable";
   sourceName?: string;
+  category?: CategoryKey | null;
+  /**
+   * The item's event and when each of its other selected developments first appeared, newest first
+   * (at most 20), so the saved page can count the ones that came after the star.
+   */
+  story?: { id: string; developments: string[] };
 }
 
 /** An issue in the archive and the calendar, numbered in its whole series; closed daily months omit their titles. */
