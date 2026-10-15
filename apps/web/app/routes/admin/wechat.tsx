@@ -1,3 +1,4 @@
+import { stripMarkup } from "@aihot/industry/speech";
 import { SITE } from "@aihot/site";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useRevalidator } from "react-router";
@@ -619,13 +620,13 @@ function VideoPanel({ d }: { d: Ready }) {
   };
   const save = () => run("PUT", `/api/admin/wechat/${d.date}/video`, { script }, { label: "video-save", success: "已保存口播稿" });
   const spoken = script ? [script.opening, ...script.segments.filter((s) => { const e = entries.get(s.key); return e && !e.hidden; }).map((s) => s.narration), script.closing] : [];
-  const seconds = Math.round(spoken.reduce((n, t) => n + chars(t.trim()), 0) / SPOKEN_CHARS_PER_SECOND);
+  const seconds = Math.round(spoken.reduce((n, t) => n + chars(stripMarkup(t)), 0) / SPOKEN_CHARS_PER_SECOND);
   return (
     <div className="flex flex-col gap-5 p-5">
       <div className="rounded-tile bg-bg-sunk p-4 ring-1 ring-line">
         <div className="text-[14px] font-semibold text-ink">{busy ? "正在写口播稿…" : video?.status === "done" ? `口播稿已写好 · 约 ${seconds} 秒` : "视频号竖屏视频"}</div>
         <p className="mt-1 text-[13px] leading-relaxed text-ink-2">
-          按这一期现在的顺序和改动，取前 {d.videoEntries} 条写成 60–90 秒的口播稿；改好后在你的 Mac 上合成视频，再到视频号助手或手机上发表（视频号没有发布接口）。
+          按这一期现在的顺序和改动，取前 {d.videoEntries} 条写成 60–90 秒的口播稿。开场是一句钩子，来自当天最重要的一条；写完会再出声改一稿。`[[停]]` 和 `**重读**` 只给配音用，字幕里不出现。改好后在你的 Mac 上合成视频，再到视频号助手或手机上发表（视频号没有发布接口）。
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Button tone={video?.script ? "secondary" : "primary"} disabled={!!d.videoUnavailable || busy} busy={pending === "video"} onClick={ask}>

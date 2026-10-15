@@ -88,6 +88,10 @@ docker compose run --rm setup && docker compose up -d
 
 下面按时间从新到旧列出每次更新要注意的事。
 
+#### 视频号口播改成连续配音（2026 年 10 月 15 日）
+
+没有迁移，没有必填的新环境变量。已经写好的口播稿不用重写，下次点「生成口播稿」才换成新写法：开场改成从当天第一条里抽出的一句，写不成时仍用原来的问候；写完再出声改一稿。Mac 上 `npm run wechat-video` 的配音改成每段接着上一段的声音，默认扩散步数从 10 提到 18（`VOXCPM_TIMESTEPS`），响度改为两遍 loudnorm（`VOICE_LOUDNESS_LUFS`，默认 -16）。配音的 venv 里装了 faster-whisper 时，按录音对齐字幕并写出 SRT，某一段和稿子差得太多会在终端里警告；没装就仍按字数估时间。详见下方 [视频号视频](#视频号视频)。
+
 #### X 账号可以改为外部推送（2026 年 10 月 14 日）
 
 没有迁移，也没有必填的新环境变量。`POST /api/ingest/items` 可以接收 X 帖子，记到已有的 `x_search` 信源上，字段和付费采集一致。不设置 `X_PUSH_ONLY` 时，SocialData 搜索照旧。
@@ -384,10 +388,19 @@ v1 默认目标语言仍为中文；英文主稿缺少有效中文 edition 时�
 1. 服务器 `.env` 里设 `WECHAT_VIDEO_TOKEN`（至少 16 个字符的随机串，比如 `openssl rand -hex 24`），重启 api。
 2. Mac 上装好 ffmpeg（带 libx264），和一个装了 mlx-audio 与 soundfile 的 Python venv，用来跑 VoxCPM2（模型 `mlx-community/VoxCPM2-bf16`，第一次运行前先下载好）。
 3. 在 Mac 上仓库目录的 `.env` 里写同一个 `WECHAT_VIDEO_TOKEN`；venv 不在 `~/.local/share/voxcpm2-mlx/venv` 时设 `VOXCPM_PYTHON=<venv 里 python 的路径>`。
-4. 在工作台“视频号”一栏生成并改好口播稿，然后在 Mac 上运行 `npm run wechat-video -- <日期>`。几分钟后，`~/Movies/e-acc-daily/<日期>/` 里会有 mp4（1080×1920）、视频号描述 `caption.txt` 和封面 `cover.png`。
+4. 在工作台“视频号”一栏生成并改好口播稿，然后在 Mac 上运行 `npm run wechat-video -- <日期>`。几分钟后，`~/Movies/e-acc-daily/<日期>/` 里会有 mp4（1080×1920）、视频号描述 `caption.txt`、封面 `cover.png` 和字幕 `AI早报-<日期>.srt`。
 5. 在视频号助手（channels.weixin.qq.com）或手机上上传 mp4，粘贴描述。
 
-声音默认按 `VOICE_DESCRIPTION` 的文字描述生成（VoxCPM2 的声音设计），不需要参考录音。要换成某个人的声音，就设 `VOICE_REF_AUDIO=<10–30 秒的清晰录音>` 和 `VOICE_REF_TEXT=<录音的逐字文本>`，而且只能用本人同意使用的录音，不要克隆公众人物或配音演员的声音。其他选填项：`WECHAT_VIDEO_BASE_URL`（默认站点地址）、`VOXCPM_MODEL`、`VOXCPM_TIMESTEPS`（默认 10）。配音约需成片时长的 1.5 倍，一分半的视频大约两三分钟。
+口播稿分两次写成，都记回执，受预算限制。第一次写开场和每条；开场是一句，只来自当天最重要的那一条，写不成、或念出来不像那一条，就用原来的问候（“早上好，这里是 AI 早报……”）。第二次把草稿出声改一稿，某一句改砸了就留第一次的，再不行就念标题。稿子里可以写 `[[停]]`（停一拍）和 `**这个词**`（读重），一句里少用。字幕和画面上的字会去掉这两处标记。配音前还会把多音字和型号换成要念的说法（`调用`、`一行`、`重新`，以及 GPT、Opus、GLM、xAI），这只进音频，不改进字幕。要加词，改 `industry/speech.ts`。
+
+声音默认按 `VOICE_DESCRIPTION` 的文字描述生成（VoxCPM2 的声音设计），不需要参考录音。要换成某个人的声音，就设 `VOICE_REF_AUDIO=<10–30 秒的清晰录音>` 和 `VOICE_REF_TEXT=<录音的逐字文本>`，而且只能用本人同意使用的录音，不要克隆公众人物或配音演员的声音。每一段都接着上一段的声音往下念，避免每条新闻换一种口气。其他选填项：`WECHAT_VIDEO_BASE_URL`（默认站点地址）、`VOXCPM_MODEL`、`VOXCPM_TIMESTEPS`（默认 18，常用 16–20；越大越慢）、`VOICE_LOUDNESS_LUFS`（成片响度，默认 -16，两遍 loudnorm）。步数 18 时，配音大约是成片时长的两三倍。
+
+字幕默认用同一 venv 里的 faster-whisper 按录音对齐（`WHISPER_MODEL`，默认 `small`；设成 `off` 就不用）。模型要事先下好；配音进程默认不联网（`HF_HUB_OFFLINE=1`），模型不在缓存里就退回按字数估时间。转写和稿子的字错率超过 `VOICE_CER_WARN`（默认 0.18）时，终端会打出那一段的稿子和听写，方便重跑。字错率分不出“调”的两读，多音字靠上面的词表预防，不靠这次核对。没装 faster-whisper 时照样出片，字幕按字数比例排。
+
+```bash
+# 在配音的 venv 里，可选
+pip install faster-whisper
+```
 
 ### Search Console 周读数
 

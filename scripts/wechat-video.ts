@@ -8,17 +8,24 @@
 //
 // Needs ffmpeg (with libx264) on PATH, WECHAT_VIDEO_TOKEN (the server's value), and a venv with
 // mlx-audio (VOXCPM_PYTHON). The voice is VOICE_DESCRIPTION in words, or a recording VOICE_REF_AUDIO
-// (with VOICE_REF_TEXT, its transcript) of someone who agreed to have their voice used.
+// (with VOICE_REF_TEXT, its transcript) of someone who agreed to have their voice used. Each line is
+// spoken as a continuation of the line before it. VOXCPM_TIMESTEPS defaults to 18. With faster-whisper
+// installed in that venv, subtitles follow the recording and a too-different line is printed; without
+// it, each subtitle takes a share of its line by length.
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { characterErrorRate, forSpeech, stripMarkup } from "@aihot/industry/speech";
 import { SITE } from "@aihot/site";
 import { calendarDate } from "@aihot/contracts/time";
 import { renderVideoFrame, type VideoFrame } from "../packages/backend/src/media/wechat-video-frames.ts";
 import type { WechatVideoSpec } from "../packages/backend/src/newsletter/wechat-video.ts";
+import { absoluteCues, formatSrt, loudnormFilter, parseLoudnorm, subtitles, type WhisperWord } from "./wechat-video-speech.ts";
+
+export { subtitles } from "./wechat-video-speech.ts";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 /** A path from .env, where `~` is not expanded by the shell. */
@@ -32,20 +39,27 @@ const base = (arg("--base") ?? process.env.WECHAT_VIDEO_BASE_URL ?? SITE.default
 const out = expand(arg("--out") ?? path.join("~/Movies/e-acc-daily", date));
 const token = process.env.WECHAT_VIDEO_TOKEN;
 const python = expand(process.env.VOXCPM_PYTHON ?? "~/.local/share/voxcpm2-mlx/venv/bin/python");
+const steps = Number(process.env.VOXCPM_TIMESTEPS);
+const loudness = Number(process.env.VOICE_LOUDNESS_LUFS);
+const cerLimit = Number(process.env.VOICE_CER_WARN);
 const voice = {
   model: process.env.VOXCPM_MODEL ?? "mlx-community/VoxCPM2-bf16",
-  timesteps: Number(process.env.VOXCPM_TIMESTEPS) || 10,
+  timesteps: Number.isFinite(steps) && steps >= 4 && steps <= 30 ? steps : 18,
   instruct: process.env.VOICE_DESCRIPTION ?? "沉稳清晰的普通话男声，语速适中，新闻播报风格",
   refAudio: process.env.VOICE_REF_AUDIO ? expand(process.env.VOICE_REF_AUDIO) : null,
   refText: process.env.VOICE_REF_TEXT ?? null,
 };
+const whisperName = process.env.WHISPER_MODEL ?? "small";
+const whisperModel = whisperName === "off" || whisperName === "0" ? null : whisperName;
+/** Integrated loudness of the finished track, LUFS. */
+const LOUDNESS = Number.isFinite(loudness) && loudness >= -36 && loudness <= -5 ? loudness : -16;
+/** A transcript this far from its line is printed so the editor can speak that line again. */
+const CER_WARN = Number.isFinite(cerLimit) && cerLimit > 0 && cerLimit < 1 ? cerLimit : 0.18;
 
 /** Silence before the first line, between lines and after the last, in seconds. */
 const LEAD = 0.4;
 const GAP = 0.45;
 const TAIL = 1.2;
-/** A subtitle shows at most this many characters, one line at the frame's size. */
-const SUBTITLE_MAX = 18;
 const FPS = 30;
 
 function fail(message: string): never {
@@ -70,44 +84,62 @@ function run(cmd: string, args: string[]): Promise<void> {
   });
 }
 
-/** Speaks every line in one run of the voice model; the seconds of each. */
-function speak(lines: Array<{ text: string; out: string }>): Promise<number[]> {
+function runCollect(cmd: string, args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = spawn(python, ["-I", path.join(HERE, "wechat-video-tts.py")], { stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, HF_HUB_OFFLINE: process.env.HF_HUB_OFFLINE ?? "1" } });
-    const seconds: number[] = [];
+    const child = spawn(cmd, args, { stdio: ["ignore", "ignore", "pipe"] });
     let err = "";
-    child.stderr.on("data", (d: Buffer) => { err = (err + d.toString()).slice(-4000); });
-    createInterface({ input: child.stdout }).on("line", (raw) => {
-      const msg = JSON.parse(raw) as { seconds?: number; done?: boolean };
-      if (msg.seconds === undefined) return;
-      seconds.push(msg.seconds);
-      console.log(`  配音 ${seconds.length}/${lines.length}（${msg.seconds.toFixed(1)} 秒）`);
-    });
+    child.stderr.on("data", (d: Buffer) => { err += d.toString(); if (err.length > 200_000) err = err.slice(-100_000); });
     child.on("error", reject);
-    child.on("close", (code) => (code === 0 && seconds.length === lines.length ? resolve(seconds) : reject(new Error(`voice model exited ${code}\n${err}`))));
-    child.stdin.end(JSON.stringify({ ...voice, lines }));
+    child.on("close", (code) => (code === 0 ? resolve(err) : reject(new Error(`${cmd} exited ${code}\n${err.slice(-4000)}`))));
   });
 }
 
+interface SpokenLine {
+  seconds: number;
+  transcript: string | null;
+  words: WhisperWord[] | null;
+}
+
 /**
- * A spoken line cut into subtitles of at most SUBTITLE_MAX characters, at its punctuation where it can,
- * each with its share of the line's time by length. The punctuation that ends a subtitle is not shown.
+ * Speaks every line in one run of the voice model. The text already has the pronunciation lexicon and
+ * the pause marks applied; `scripts` is the line the viewer reads, which the transcript is checked against.
  */
-export function subtitles(text: string, seconds: number): Array<{ text: string; seconds: number }> {
-  const phrases = text.split(/(?<=[，。！？；：,.!?;:])/).map((p) => p.trim()).filter(Boolean);
-  const parts: string[] = [];
-  for (const phrase of phrases) {
-    const chars = Array.from(phrase);
-    for (let i = 0; i < chars.length; i += SUBTITLE_MAX) {
-      const piece = chars.slice(i, i + SUBTITLE_MAX).join("");
-      const last = parts.at(-1);
-      // Short phrases of one sentence share a subtitle; a sentence's end always starts a new one.
-      if (i === 0 && last && !/[。！？.!?]$/.test(last) && Array.from(last + piece).length <= SUBTITLE_MAX) parts[parts.length - 1] = last + piece;
-      else parts.push(piece);
-    }
-  }
-  const total = parts.reduce((n, p) => n + Array.from(p).length, 0);
-  return parts.map((p) => ({ text: p.replace(/[，。；：,.;:]+$/, ""), seconds: (seconds * Array.from(p).length) / total }));
+function speak(lines: Array<{ text: string; script: string; out: string }>): Promise<{ spoken: SpokenLine[]; warnings: number }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(python, ["-I", path.join(HERE, "wechat-video-tts.py")], { stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, HF_HUB_OFFLINE: process.env.HF_HUB_OFFLINE ?? "1" } });
+    const spoken: SpokenLine[] = [];
+    let warnings = 0;
+    let whisperReady = whisperModel !== null;
+    let err = "";
+    child.stderr.on("data", (d: Buffer) => { err = (err + d.toString()).slice(-4000); });
+    createInterface({ input: child.stdout }).on("line", (raw) => {
+      const msg = JSON.parse(raw) as { seconds?: number; done?: boolean; notice?: string; transcript?: string | null; words?: WhisperWord[] | null };
+      if (msg.notice) {
+        console.log(`  ${msg.notice}`);
+        if (/未安装|没能加载|未启用|按字数/.test(msg.notice)) whisperReady = false;
+        return;
+      }
+      if (msg.seconds === undefined) return;
+      const transcript = msg.transcript ?? null;
+      const words = msg.words?.length ? msg.words : null;
+      spoken.push({ seconds: msg.seconds, transcript, words });
+      const n = spoken.length;
+      console.log(`  配音 ${n}/${lines.length}（${msg.seconds.toFixed(1)} 秒）`);
+      if (whisperReady && !words) console.log(`  配音 ${n} 没有转写，这一段字幕按字数对齐。`);
+      if (transcript && words) {
+        const cer = characterErrorRate(lines[n - 1]!.script, transcript);
+        if (cer > CER_WARN) {
+          warnings += 1;
+          const preview = stripMarkup(lines[n - 1]!.script).slice(0, 42);
+          const heard = transcript.replace(/\s+/g, " ").trim().slice(0, 42);
+          console.log(`  核对 ${n}/${lines.length} 字错率 ${Math.round(cer * 100)}%，超过 ${Math.round(CER_WARN * 100)}%。稿：「${preview}」听成：「${heard}」。建议重跑这一段。`);
+        }
+      }
+    });
+    child.on("error", reject);
+    child.on("close", (code) => (code === 0 && spoken.length === lines.length ? resolve({ spoken, warnings }) : reject(new Error(`voice model exited ${code}\n${err}`))));
+    child.stdin.end(JSON.stringify({ ...voice, whisperModel, lines: lines.map(({ text, out }) => ({ text, out })) }));
+  });
 }
 
 async function main() {
@@ -138,15 +170,16 @@ async function main() {
   ].filter((c) => c.line.trim());
 
   const voiceName = voice.refAudio ? `参考录音 ${path.basename(voice.refAudio)}` : `声音描述「${voice.instruct}」`;
-  console.log(`配音：VoxCPM2，${voiceName}，共 ${cards.length} 段（每段约需它时长的 1.5 倍）`);
+  console.log(`配音：VoxCPM2，${voiceName}，${voice.timesteps} 步，共 ${cards.length} 段（每段接着上一段）`);
   const wavs = cards.map((_, k) => path.join(out, "voice", `${String(k).padStart(3, "0")}.wav`));
-  const seconds = await speak(cards.map((c, k) => ({ text: c.line.trim(), out: wavs[k]! })));
+  const { spoken, warnings } = await speak(cards.map((c, k) => ({ text: forSpeech(c.line.trim()), script: c.line.trim(), out: wavs[k]! })));
+  const seconds = spoken.map((s) => s.seconds);
 
   console.log("渲染画面");
   const list: string[] = [];
   let n = 0;
   for (const [k, card] of cards.entries()) {
-    const subs = subtitles(card.line.trim(), seconds[k]!);
+    const subs = subtitles(card.line.trim(), seconds[k]!, spoken[k]!.words);
     for (const [j, sub] of subs.entries()) {
       const file = path.join(out, "frames", `${String(n++).padStart(4, "0")}.png`);
       await writeFile(file, await renderVideoFrame(card.frame(sub.text)));
@@ -158,15 +191,22 @@ async function main() {
   // The concat demuxer holds the last picture only if it is listed again.
   list.push(list.at(-2)!);
   await writeFile(path.join(out, "frames.txt"), list.join("\n") + "\n");
+  const srt = path.join(out, `AI早报-${date}.srt`);
+  await writeFile(srt, formatSrt(absoluteCues(cards.map((c, k) => ({ text: c.line.trim(), seconds: seconds[k]!, words: spoken[k]!.words })), LEAD, GAP)));
 
   console.log("合成视频");
-  const audio = path.join(out, "voice.m4a");
+  const mixed = path.join(out, "voice-concat.wav");
   const pads = wavs.map((_, k) => `[${k}:a]aformat=sample_rates=48000:channel_layouts=mono,apad=pad_dur=${k === wavs.length - 1 ? TAIL : GAP}[a${k}]`);
   await run("ffmpeg", [
     "-y", "-loglevel", "error", ...wavs.flatMap((w) => ["-i", w]),
-    "-filter_complex", `${pads.join(";")};${wavs.map((_, k) => `[a${k}]`).join("")}concat=n=${wavs.length}:v=0:a=1,adelay=${LEAD * 1000}:all=1,loudnorm=I=-16:TP=-1.5:LRA=11[out]`,
-    "-map", "[out]", "-ar", "48000", "-c:a", "aac", "-b:a", "160k", audio,
+    "-filter_complex", `${pads.join(";")};${wavs.map((_, k) => `[a${k}]`).join("")}concat=n=${wavs.length}:v=0:a=1,adelay=${LEAD * 1000}:all=1[out]`,
+    "-map", "[out]", "-ar", "48000", "-c:a", "pcm_s16le", mixed,
   ]);
+  const measured = parseLoudnorm(await runCollect("ffmpeg", ["-hide_banner", "-i", mixed, "-af", `loudnorm=I=${LOUDNESS}:TP=-1.5:LRA=11:print_format=json`, "-f", "null", "-"]));
+  if (!measured) console.log("  响度测量没读到，改用单遍 loudnorm。");
+  const audio = path.join(out, "voice.m4a");
+  await run("ffmpeg", ["-y", "-loglevel", "error", "-i", mixed, "-af", loudnormFilter(LOUDNESS, measured), "-ar", "48000", "-c:a", "aac", "-b:a", "160k", audio]);
+  await rm(mixed, { force: true });
   const video = path.join(out, `AI早报-${date}.mp4`);
   await run("ffmpeg", [
     "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", path.join(out, "frames.txt"), "-i", audio,
@@ -176,7 +216,8 @@ async function main() {
   await writeFile(path.join(out, "caption.txt"), spec.caption + "\n");
   await rm(path.join(out, "frames"), { recursive: true });
   const total = LEAD + seconds.reduce((a, b) => a + b, 0) + GAP * (seconds.length - 1) + TAIL;
-  console.log(`\n完成：${video}（约 ${Math.round(total)} 秒）\n描述文案：${path.join(out, "caption.txt")}\n封面：${path.join(out, "cover.png")}`);
+  const check = warnings ? `；${warnings} 段字错率超过 ${Math.round(CER_WARN * 100)}%，建议重跑` : "";
+  console.log(`\n完成：${video}（约 ${Math.round(total)} 秒）\n描述文案：${path.join(out, "caption.txt")}\n封面：${path.join(out, "cover.png")}\n字幕：${srt}${check}`);
   console.log("在视频号助手（channels.weixin.qq.com）或手机上发表：上传 mp4，粘贴描述，可选封面。");
 }
 

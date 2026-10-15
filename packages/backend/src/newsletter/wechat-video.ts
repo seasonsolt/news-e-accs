@@ -1,12 +1,15 @@
 // The 视频号 edition of 「AI 早报」: a 60–90 second vertical video of the day's first printed entries, one
 // spoken paragraph each. 视频号 has no API to publish a video, and the server has neither the voice
 // model nor the cycles to render one, so the work is split: the workbench asks for a voice-over script
-// (admin/wechat.ts), the worker writes it here with the model (industry/prompts/wechat-video.md) and the
-// editor may rewrite it, then scripts/wechat-video.ts on the editor's Mac reads it (videoSpec, through
-// the WECHAT_VIDEO_TOKEN route), speaks it with the local voice model, renders the frames
-// (media/wechat-video-frames.ts) and cuts the mp4 that the editor uploads by hand. The opening, closing
-// and caption are written by rule; only the entries' paragraphs are the model's.
+// (admin/wechat.ts), the worker writes it here with the model (industry/prompts/wechat-video.md), reads
+// that draft aloud once (industry/prompts/wechat-video-read.md) and the editor may rewrite it, then
+// scripts/wechat-video.ts on the editor's Mac reads it (videoSpec, through the WECHAT_VIDEO_TOKEN route),
+// speaks it with the local voice model, renders the frames (media/wechat-video-frames.ts) and cuts the
+// mp4 that the editor uploads by hand. The closing and the caption are written by rule. The opening is
+// one sentence from the day's first entry; the ruled greeting is used when that sentence does not hold.
 import { z } from "zod";
+import { stripMarkup } from "@aihot/industry/speech";
+import { PLAIN_TERMS } from "@aihot/industry/taxonomy";
 import { config } from "../config.ts";
 import { sql } from "../db.ts";
 import { modelFor } from "../editorial/models.ts";
@@ -24,13 +27,19 @@ import { WECHAT_COLUMN, wechatArticle, type ColumnEntry, type WechatArticle, typ
 export const VIDEO_ENTRIES = 6;
 /** The prompt asks for 30–60 characters; anything past this does not fit its ten seconds. */
 const NARRATION_MAX = 90;
+/** The prompt asks for one sentence of at most 40 characters; a little past that still fits the opening. */
+const OPENING_MAX = 48;
 /** Longest an editor may make one spoken paragraph, and the caption (视频号 takes 1,000 characters). */
 export const VIDEO_LINE_MAX = 300;
 export const VIDEO_CAPTION_MAX = 1000;
 const HASHTAGS = ["#AI", "#人工智能", "#AI早报", "#科技新闻"];
 
-const VERSION = promptVersion("wechat-video");
-const SegmentsSchema = z.object({ segments: z.array(z.object({ n: z.number().int(), narration: z.string() })) });
+const DRAFT_VERSION = promptVersion("wechat-video");
+const READ_VERSION = promptVersion("wechat-video-read");
+const ScriptSchema = z.object({
+  opening: z.string().optional(),
+  segments: z.array(z.object({ n: z.number().int(), narration: z.string() })),
+});
 
 export interface WechatVideoScript {
   opening: string;
@@ -106,11 +115,60 @@ export function ruledParts(key: string, article: WechatArticle, entries: ColumnE
   };
 }
 
-/** A paragraph that reads aloud in about ten seconds and names nothing its entry does not; else null. */
-function usable(narration: string | undefined, entry: ColumnEntry): string | null {
+type SpokenEntry = Pick<ColumnEntry, "title" | "body" | "comment">;
+
+const corpusOf = (entry: SpokenEntry) => `${entry.title}\n${entry.body ?? ""}\n${entry.comment ?? ""}`;
+
+/**
+ * Bigrams that show up in a greeting and say nothing about the lead. An opening has to share a name
+ * or some other two characters with the lead, so “早上好” cannot replace the hook.
+ */
+const LEAD_STOP = new Set(["今天", "这个", "一个", "我们", "他们", "已经", "可以", "没有", "不是", "就是", "还是", "因为", "所以", "如果", "不过", "另外", "同时", "目前", "这里", "早上", "大家", "值得", "关注", "新闻"]);
+
+const PLAIN_CITE = new Set(PLAIN_TERMS);
+
+function citesLead(shown: string, lead: string): boolean {
+  const known = lead.toLowerCase();
+  const latin = shown.match(/[A-Za-z][A-Za-z0-9.+-]*/g) ?? [];
+  // A short or generic token such as AI does not make a greeting into a hook, and it has to be its own word.
+  if (latin.some((word) => {
+    const token = word.toLowerCase().replace(/[.+-]+$/, "");
+    if (token.length < 3 || PLAIN_CITE.has(token)) return false;
+    return new RegExp(`(?<![a-z0-9])${token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![a-z0-9])`).test(known);
+  })) return true;
+  for (const run of shown.match(/\p{Script=Han}{2,}/gu) ?? []) {
+    for (let i = 0; i < run.length - 1; i++) {
+      const bi = run.slice(i, i + 2);
+      if (!LEAD_STOP.has(bi) && lead.includes(bi)) return true;
+    }
+  }
+  return false;
+}
+
+/** One sentence, no shout, and it names something the lead names. The stored line may keep pause and stress marks. */
+export function acceptedOpening(opening: string | undefined, lead: SpokenEntry): string | null {
+  const text = opening?.replace(/\s+/g, " ").trim();
+  if (!text) return null;
+  const shown = stripMarkup(text);
+  const body = shown.replace(/。+$/u, "");
+  if (!body || Array.from(shown).length > OPENING_MAX || /[!！]/.test(shown) || /[。！？!?；;]/.test(body)) return null;
+  if (body === lead.title.replace(/[。！？\s]+$/u, "")) return null;
+  const corpus = corpusOf(lead);
+  if (!citesLead(shown, corpus) || !grounded(shown, corpus)) return null;
+  return /。$/.test(text) ? text : `${text}。`;
+}
+
+/**
+ * A paragraph that reads aloud in about ten seconds and names nothing its entry does not.
+ * Pause (`[[停]]`) and stress (`**词**`) marks stay in the stored line; they are not part of its length.
+ * Null when the line is empty, too long, a shout, or ungrounded.
+ */
+export function acceptedNarration(narration: string | undefined, entry: SpokenEntry): string | null {
   const text = narration?.replace(/\s+/g, " ").trim();
-  if (!text || Array.from(text).length > NARRATION_MAX || /[!！]/.test(text)) return null;
-  return grounded(text, `${entry.title}\n${entry.body ?? ""}\n${entry.comment ?? ""}`) ? text : null;
+  if (!text) return null;
+  const shown = stripMarkup(text);
+  if (!shown || Array.from(shown).length > NARRATION_MAX || /[!！]/.test(shown)) return null;
+  return grounded(shown, corpusOf(entry)) ? text : null;
 }
 
 /** An entry without a usable paragraph is read as its title, and its comment when it has one. */
@@ -138,24 +196,44 @@ export async function writeWechatVideoScript(job: { date: string; request: strin
     const entries = issue ? spoken(issue.article) : [];
     if (!issue || !entries.length) throw new Error("这一天没有可以做视频的早报。");
     const model = await modelFor("wechat");
-    const res = await chatJson({
-      model, purpose: "wechat_video", promptVersion: VERSION, attemptTag: job.request,
-      subject: `wechat-video:${job.date}@${sha256(stableJson(entries.map((e) => [e.key, e.title, e.body, e.comment])))}`,
-      system: promptText("wechat-video"),
-      user: entries.map((e, k) => [`${k + 1}. ${e.title}`, e.body ?? "", e.comment ? `点评：${e.comment}` : ""].filter(Boolean).join("\n")).join("\n\n"),
-      schema: SegmentsSchema, temperature: 0.6, maxTokens: 2000,
+    const source = entries.map((e, k) => [`${k + 1}. ${e.title}`, e.body ?? "", e.comment ? `点评：${e.comment}` : ""].filter(Boolean).join("\n")).join("\n\n");
+    const fingerprint = sha256(stableJson(entries.map((e) => [e.key, e.title, e.body, e.comment])));
+    const draft = await chatJson({
+      model, purpose: "wechat_video", promptVersion: DRAFT_VERSION, attemptTag: job.request,
+      subject: `wechat-video:${job.date}@${fingerprint}`,
+      system: promptText("wechat-video"), user: source,
+      schema: ScriptSchema, temperature: 0.6, maxTokens: 2200,
     });
-    const written = new Map(res.data.segments.map((s) => [s.n, s.narration]));
+    // A second pass reads the draft aloud. A failure here keeps the draft; the greeting and the titles
+    // are still there when a line does not hold.
+    let read: { data: z.infer<typeof ScriptSchema>; receiptId: number } | null = null;
+    try {
+      read = await chatJson({
+        model, purpose: "wechat_video", promptVersion: READ_VERSION, attemptTag: job.request,
+        subject: `wechat-video-read:${job.date}@${fingerprint}`,
+        system: promptText("wechat-video-read"),
+        user: `条目：\n${source}\n\n草稿：\n${JSON.stringify({ opening: draft.data.opening ?? "", segments: draft.data.segments })}`,
+        schema: ScriptSchema, temperature: 0.3, maxTokens: 2200,
+      });
+    } catch (error) {
+      console.error("[wechat.video] read-aloud", logError(error));
+    }
+    const ruled = ruledParts(job.date, issue.article, entries);
+    const lead = entries[0]!;
+    const draftLines = new Map(draft.data.segments.map((s) => [s.n, s.narration]));
+    const readLines = new Map(read?.data.segments.map((s) => [s.n, s.narration]) ?? []);
     const script: WechatVideoScript = {
-      ...ruledParts(job.date, issue.article, entries),
-      segments: entries.map((e, k) => ({ key: e.key, narration: usable(written.get(k + 1), e) ?? fallback(e) })),
+      ...ruled,
+      opening: acceptedOpening(read?.data.opening, lead) ?? acceptedOpening(draft.data.opening, lead) ?? ruled.opening,
+      segments: entries.map((e, k) => ({ key: e.key, narration: acceptedNarration(readLines.get(k + 1), e) ?? acceptedNarration(draftLines.get(k + 1), e) ?? fallback(e) })),
     };
+    const receiptIds = [draft.receiptId, ...(read && read.receiptId !== draft.receiptId ? [read.receiptId] : [])];
     const kept = await sql.begin(async (tx) => {
       const updated = await tx`
-        UPDATE wechat_videos SET status = 'done', script = ${tx.json(script as never)}, error = NULL, model = ${model}, receipt_id = ${res.receiptId},
+        UPDATE wechat_videos SET status = 'done', script = ${tx.json(script as never)}, error = NULL, model = ${model}, receipt_id = ${receiptIds.at(-1)!},
           edited_by = NULL, updated_at = now()
         WHERE ${mine}`;
-      await completeReceipt(tx, res.receiptId);
+      for (const id of receiptIds) await completeReceipt(tx, id);
       return updated.count > 0;
     });
     return { status: kept ? "done" : "superseded" };
