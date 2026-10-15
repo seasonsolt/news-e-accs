@@ -16,21 +16,22 @@ import { fullDateTime, relativeTime } from "../lib/format";
 import { markRead } from "../lib/local-state";
 import { recordEngagement, outboundLink } from "../lib/engagement";
 import { SameEventBadge, SelectedBadge } from "../components/ui/Badge";
-import { ScoreLabel, shownScore } from "../components/ui/Score";
+import { shownScore } from "../components/ui/Score";
 import { PillTabs } from "../components/ui/Tabs";
-import { ArticleLayout, RailSection } from "../components/ui/Page";
 import { Menu, MenuItem } from "../components/ui/Menu";
-import { StarButton } from "../features/feed/parts";
-import { GroupButton, GroupSources } from "../features/feed/ReadingGroup";
+import { StarPill } from "../features/feed/parts";
+import { ItemSources } from "../features/item/ItemSources";
+import { withoutShortLinks } from "../features/item/post-links";
 import { ArticleBody } from "../features/item/ArticleBody";
 import { scrollToAnchor } from "../components/ui/OutlineSheet";
 import { StoryFollowups } from "../features/item/StoryFollowups";
 import { MediaGallery } from "../features/item/MediaGallery";
 import { QuotedPost } from "../features/item/QuotedPost";
-import { IconArrowLeft, IconCopy, IconDownload, IconExternal, IconImage, IconMenu, IconShare } from "../components/icons";
+import { IconArrowLeft, IconArrowUpRight, IconCopy, IconDownload, IconExternal, IconImage, IconMenu, IconShare } from "../components/icons";
 import { ReadingGear } from "../features/art/ReadingGear";
 import { CATEGORY_ART } from "../features/art/CategoryBanner";
-import { Deck } from "../components/shell/Deck";
+import { Plate } from "../components/shell/Deck";
+import { CATEGORIES } from "@aihot/industry/taxonomy";
 
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
@@ -86,14 +87,6 @@ function jumpTo(e: React.MouseEvent, id: string) {
 /** WeChat's in-app browser cannot save downloads: there the Markdown is copied instead. */
 function inWeChat(): boolean {
   return typeof navigator !== "undefined" && /MicroMessenger/i.test(navigator.userAgent);
-}
-
-function hostOf(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return "";
-  }
 }
 
 async function shareOrCopy(item: Pick<SiteItemDetail, "id" | "title">, locale: Locale): Promise<"shared" | "copied" | null> {
@@ -160,10 +153,10 @@ export default function ItemPage() {
   const isX = item.channel === "x" && !!item.x;
   // Without a reliable date from the original, the time shown is when it was collected, labelled as such.
   const publishedIso = item.publishedAt ?? item.discoveredAt;
-  const timeLabel = item.publishedAt ? "发布时间" : "收录时间";
   const summaryOnly = item.readingMode === "summary-only";
   const showOutline = item.outline.length >= 3;
-  const originalLabel = isX ? tx("在 X 查看原推") : tx("打开原文");
+  const fromX = item.channel === "x";
+  const originalLabel = fromX ? tx("在 X 查看原推") : tx("打开原文");
 
   const related = item.relatedStories.filter((s) => s.publicId !== item.story?.publicId);
 
@@ -175,10 +168,16 @@ export default function ItemPage() {
     <button type="button" onClick={back} className="-ml-1.5 inline-flex h-8 items-center gap-1.5 rounded-full px-1.5 text-[14px] text-ink-2 transition-colors hover:text-ink lg:text-[13px] lg:text-ink-3">
       <IconArrowLeft size={16} /><Text value="返回" /></button>
   );
+  const score = shownScore(item.score);
   const moreMenu = (
     <Menu label={tx("更多操作")} trigger={<IconMenu size={17} />}>
       {(close) => (
         <>
+          {score !== null && (
+            <div className="border-b border-line-soft px-3 pb-2 pt-1.5 text-[12px] text-ink-4">
+              <Text value="AI 评分" /> <span className="num text-ink-2">{Math.round(score)}</span>
+            </div>
+          )}
           <MenuItem icon={<IconShare size={15} />} onSelect={() => { close(); void share(); }}><Text value="分享链接" /></MenuItem>
           <MenuItem icon={<IconImage size={15} />} onSelect={() => { close(); openPoster(); }}><Text value="生成分享海报" /></MenuItem>
           <MenuItem
@@ -203,173 +202,105 @@ export default function ItemPage() {
       )}
     </Menu>
   );
-  // Desktop actions head the right rail, one row as tall as 返回 at the head of the left one.
-  const actions = (
-    <div className="flex items-center gap-1">
-      <a
-        href={item.links.original}
-        target="_blank"
-        rel="noopener noreferrer"
-        {...outboundLink(item.links.original)}
-        className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full border border-line-strong bg-surface px-3.5 text-[12.5px] font-medium text-ink-2 transition-colors hover:border-ink-4 hover:text-ink"
-      >
-        {originalLabel} <IconExternal size={13} />
-      </a>
-      <StarButton item={item} size={32} />
-      {moreMenu}
-    </div>
-  );
-  const verdict = (item.selected || shownScore(item.score) !== null) && (
-    <div className="flex items-center gap-2">
-      {item.selected && (item.sameEvent ? <SameEventBadge /> : <SelectedBadge />)}
-      <ScoreLabel score={item.score} />
-    </div>
-  );
-
-  // Rails: the piece's facts on the left (wide screens), the editor's notes on the right, the outline
-  // under the facts (or under the notes when only the right rail shows).
-  const facts = (
-    <RailSection title={tx("来源")}>
-      <div className="text-[14px] font-semibold leading-snug text-ink">{isX ? item.x!.authorName : item.source.name}</div>
-      <div className="mt-1 text-[12.5px] leading-relaxed text-ink-3">
-        {isX ? `@${item.x!.handle} · X` : item.author ?? hostOf(item.links.original)}
-      </div>
-      <div className="mt-3 text-[12px] text-ink-4"><Text value={timeLabel} /></div>
-      <time dateTime={publishedIso} className="mono mt-0.5 block text-[12.5px] text-ink-2">
-        {fullDateTime(publishedIso)}
-      </time>
-      <div className="mt-0.5 text-[12px] text-ink-4" suppressHydrationWarning>
-        {tx(relativeTime(publishedIso))}
-      </div>
-    </RailSection>
-  );
+  const badge = item.selected && (item.sameEvent ? <SameEventBadge /> : <SelectedBadge />);
+  const category = item.category ? CATEGORIES.find((c) => c.key === item.category) : null;
+  // An X post's source name already ends in "· X"; its author is the account's handle.
+  const byline = isX ? `@${item.x!.handle}` : fromX && item.author ? `@${item.author.replace(/^@/, "")}` : item.author;
+  // Post text keeps t.co short links that say nothing on their own: the page names how many the post has.
+  const { text: summaryText, links: postLinks } = fromX && item.summary ? withoutShortLinks(item.summary) : { text: item.summary, links: 0 };
   const outline = showOutline && (
-    <RailSection title={tx("本文目录")}>
-      <nav aria-label={tx("本文目录")}>
-        <ol className="-ml-px space-y-0.5 border-l border-line">
-          {item.outline.map((o) => (
-            <li key={o.id}>
-              <a href={`#${o.id}`} onClick={(e) => jumpTo(e, o.id)} className={`-ml-px block border-l border-transparent py-1 text-[12.5px] leading-snug text-ink-3 transition-colors hover:border-accent hover:text-ink ${o.level > 2 ? "pl-5" : "pl-3"}`}>
-                {o.text}
-              </a>
-            </li>
-          ))}
-        </ol>
-      </nav>
-    </RailSection>
-  );
-  const notes = (
-    <>
-      {item.reason && !summaryOnly ? (
-        <RailSection title={tx(ITEM_COPY.reasonLabel)}>
-          {verdict && <div className="mb-3">{verdict}</div>}
-          <p className="text-[13.5px] leading-[1.8] text-ink-2">{item.reason}</p>
-        </RailSection>
-      ) : (
-        verdict && <RailSection title={shownScore(item.score) !== null ? tx("AI 评分") : undefined}>{verdict}</RailSection>
-      )}
-      {item.topics.length > 0 && (
-        <RailSection title={tx("主题")}>
-          <div className="flex flex-wrap gap-1.5">
-            {item.topics.map((t) => (
-              <Link viewTransition key={t.slug} to={`/topics/${t.slug}`} className="chip">
-                {t.name}
-              </Link>
-            ))}
-          </div>
-        </RailSection>
-      )}
-      {item.tags.length > 0 && (
-        <RailSection title={tx("标签")}>
-          <div className="flex flex-wrap gap-1.5">
-            {item.tags.slice(0, 8).map((t) => (
-              <Link key={t} to={`/all?tag=${encodeURIComponent(t)}`} className="chip">
-                #{tx(t)}
-              </Link>
-            ))}
-          </div>
-        </RailSection>
-      )}
-    </>
+    <nav aria-label={tx("本文目录")} className="border-t border-line pt-3.5">
+      <h2 className="text-[12px] font-semibold text-ink-3"><Text value="本文目录" /></h2>
+      <ol className="-ml-px mt-2.5 space-y-0.5 border-l border-line">
+        {item.outline.map((o) => (
+          <li key={o.id}>
+            <a href={`#${o.id}`} onClick={(e) => jumpTo(e, o.id)} className={`-ml-px block border-l border-transparent py-1 text-[12.5px] leading-snug text-ink-3 transition-colors hover:border-accent hover:text-ink ${o.level > 2 ? "pl-5" : "pl-3"}`}>
+              {o.text}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
   );
 
   return (
-    <div className="mx-auto max-w-[var(--page-max-reading)] pb-8">
+    <div className="pb-8">
       {item.body && <ReadingGear />}
-      <Deck
-        compact
-        art={item.category ? CATEGORY_ART[item.category] : undefined}
-        label={isX ? item.x!.authorName : item.title}
-        kicker={<>{isX ? `${item.x!.authorName} · @${item.x!.handle} · X` : item.source.name} · <time dateTime={publishedIso}>{fullDateTime(publishedIso)}</time></>}
-        title={<span lang={contentHtmlLanguage(item, locale) ?? "und"}>{isX ? item.x!.authorName : item.title}</span>}
-        description={!isX && item.originalTitle ? item.originalTitle : undefined}
-      />
-      <ContentLanguage content={item} />
+      {/* The category's plate as a thin band: the page keeps the site's deck without giving it the first screen. */}
+      <div className="item-band" aria-hidden="true">
+        {item.category && <Plate key={item.category} src={`/media/art/${CATEGORY_ART[item.category]}`} className="deck-plate" />}
+      </div>
 
-      {/* Phones: a sticky bar with back, 收藏, the original, share and more. Desktop puts these in the rails. */}
+      {/* Phones: a sticky bar with back, 收藏, the original and more (share is in more). */}
       <div className="sticky top-0 z-30 -mx-4 flex h-12 items-center gap-1.5 border-b border-line-soft bg-bg/95 px-4 backdrop-blur lg:hidden">
         {backButton}
         <span className="flex-1" />
-        <StarButton item={item} size={32} />
-        <a href={item.links.original} target="_blank" rel="noopener noreferrer" {...outboundLink(item.links.original)} className="inline-flex h-8 items-center gap-1 px-1.5 text-[14px] text-ink-2">
-          <IconExternal size={15} /><Text value="原文" /></a>
-        <button type="button" aria-label={tx("分享")} onClick={share} className="inline-flex size-8 items-center justify-center rounded-full text-ink-3 hover:text-ink">
-          <IconShare size={17} />
-        </button>
+        <StarPill item={item} className="h-8 px-2.5" />
+        <a href={item.links.original} target="_blank" rel="noopener noreferrer" {...outboundLink(item.links.original)} className="inline-flex h-8 items-center gap-1 rounded-full bg-ink px-3 text-[13px] font-medium text-bg">
+          <Text value="原文" /><IconExternal size={13} /></a>
         {moreMenu}
       </div>
 
-      {/* The text on the page in one column; back and the facts in the left rail, actions and notes in the right. */}
-      <ArticleLayout
-        left={
-          <>
-            {backButton}
-            {facts}
-            {outline}
-          </>
-        }
-        right={
-          <>
-            {actions}
-            {notes}
-            <div className="space-y-8 2xl:hidden">{outline}</div>
-          </>
-        }
-      >
-        {/* Between lg and 2xl the left rail is hidden: 返回 stays at the top while reading. */}
-        <div className="sticky top-0 z-20 -mx-2 hidden bg-bg/95 px-2 py-1.5 backdrop-blur lg:block 2xl:hidden">{backButton}</div>
-        <article lang={contentHtmlLanguage(item, locale)} className="pb-6 pt-6 lg:pt-2 2xl:pt-1">
-          <div className={`flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-ink-3 2xl:hidden ${isX ? "" : "mb-3"}`}>
-            <span className="font-semibold text-ink-2">{isX ? item.x!.authorName : item.source.name}</span>
-            {isX && <span>· @{item.x!.handle} · X</span>}
-            {item.author && !isX && <span>· {item.author}</span>}
+      <div className={`mx-auto ${showOutline ? "max-w-[var(--page-max-reading)] 2xl:grid 2xl:grid-cols-[minmax(0,1fr)_minmax(0,720px)_minmax(0,1fr)] 2xl:gap-x-12" : "max-w-[720px]"}`}>
+        {showOutline && <div className="hidden 2xl:block" />}
+        <article lang={contentHtmlLanguage(item, locale)} className="min-w-0 pb-6 pt-5 lg:pt-6">
+          <div className="sticky top-2 z-20 mb-3 hidden w-fit rounded-full bg-bg/90 pl-1.5 pr-2 backdrop-blur lg:block">{backButton}</div>
+          <ContentLanguage content={item} />
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-ink-3">
+            {category && (
+              <Link viewTransition to={`/all?category=${category.key}`} className="mr-1 rounded-full bg-accent-soft px-2 py-0.5 text-[12px] font-medium text-accent transition-colors hover:text-accent-ink">
+                {tx(category.label)}
+              </Link>
+            )}
+            <span className="font-semibold text-ink-2">{isX ? `${item.x!.authorName} · X` : item.source.name}</span>
+            {byline && <span>· {byline}</span>}
             <span>·</span>
             {!item.publishedAt && <span><Text value="收录于" /></span>}
             <time dateTime={publishedIso} className="mono">{fullDateTime(publishedIso)}</time>
             <span suppressHydrationWarning>· {tx(relativeTime(publishedIso))}</span>
-            {item.selected && (
-              <span className="ml-1 lg:hidden">
-                {item.sameEvent ? <SameEventBadge /> : <SelectedBadge />}
-              </span>
-            )}
-            {shownScore(item.score) !== null && (
-              <span className="ml-1 lg:hidden">
-                <ScoreLabel score={item.score} />
-              </span>
-            )}
+            {badge && <span className="ml-1 lg:hidden">{badge}</span>}
           </div>
 
-          {item.summary && (!isX || item.summary.replace(/\s+/g, " ").trim() !== item.title) && (
-            <section className={isX ? "mt-4" : "mt-7 xl:mt-8"}>
-              <div className="mb-2 text-[12px] font-semibold text-accent">{summaryOnly ? tx("摘要") : tx("AI 导读")}</div>
-              <p className="text-[18px] leading-[1.7] text-ink xl:text-[20px] xl:leading-[1.7]">{item.summary}</p>
+          <h1 lang={contentHtmlLanguage(item, locale) ?? "und"} className="mt-3 text-balance text-[26px] font-[750] leading-[1.25] tracking-[-0.01em] text-ink lg:text-[34px] lg:leading-[1.2]">
+            {item.title}
+          </h1>
+          {!fromX && item.originalTitle && item.originalTitle !== item.title && (
+            <p className="mt-2 text-[14px] leading-relaxed text-ink-4">{item.originalTitle}</p>
+          )}
+
+          <div className="mt-5 hidden items-center gap-2 lg:flex">
+            <a
+              href={item.links.original}
+              target="_blank"
+              rel="noopener noreferrer"
+              {...outboundLink(item.links.original)}
+              className="inline-flex h-8 items-center gap-1.5 rounded-full bg-ink px-4 text-[13px] font-medium text-bg transition-opacity hover:opacity-90"
+            >
+              {originalLabel} <IconExternal size={13} />
+            </a>
+            <StarPill item={item} />
+            <button type="button" onClick={share} className="inline-flex h-8 items-center gap-1.5 rounded-full border border-line-strong bg-surface px-3 text-[13px] text-ink-2 transition-colors hover:border-ink-4 hover:text-ink">
+              <IconShare size={14} /><Text value="分享" /></button>
+            {moreMenu}
+            {badge && <span className="ml-auto">{badge}</span>}
+          </div>
+
+          {summaryText && (!isX || summaryText.replace(/\s+/g, " ").trim() !== item.title) && (
+            <section className="mt-8">
+              <h2 className="text-[12.5px] font-semibold text-accent">{summaryOnly ? tx("摘要") : tx("发生了什么")}</h2>
+              <p className="mt-2 text-[17px] leading-[1.75] text-ink lg:text-[18px]">{summaryText}</p>
+              {postLinks > 0 && (
+                <a href={item.links.original} target="_blank" rel="noopener noreferrer" {...outboundLink(item.links.original)} className="mt-2 inline-flex items-center gap-1 text-[13px] text-ink-3 transition-colors hover:text-accent">
+                  {tx("原帖含 {0} 个链接", postLinks)} <IconArrowUpRight size={13} />
+                </a>
+              )}
             </section>
           )}
 
           {item.reason && !summaryOnly && (
-            <section className="mt-6 border-t border-line pt-4 lg:hidden">
-              <div className="mb-1 text-[12px] font-semibold text-ink-3"><Text value={ITEM_COPY.reasonLabel} /></div>
-              <p className="text-[15px] leading-[1.75] text-ink-2">{item.reason}</p>
+            <section className="mt-6 rounded-tile bg-accent-soft px-4 py-3.5 lg:px-5 lg:py-4">
+              <h2 className="text-[12.5px] font-semibold text-accent"><Text value={ITEM_COPY.reasonLabel} /></h2>
+              <p className="mt-1.5 text-[15px] leading-[1.8] text-ink-2">{item.reason}</p>
             </section>
           )}
 
@@ -382,17 +313,12 @@ export default function ItemPage() {
             </p>
           )}
 
-          {item.group && item.group.reportCount > 1 && (
-            <div className="mt-5">
-              <div className="hidden lg:block"><GroupSources group={item.group} parentId={item.id} /></div>
-              <GroupButton group={item.group} parentId={item.id} />
-            </div>
-          )}
+          {summaryOnly && <p className="mt-6 rounded-control bg-bg-sunk px-4 py-3 text-[13.5px] leading-relaxed text-ink-3"><Text value="应来源方要求，这里只提供摘要与原文入口。完整内容请阅读原文。" /></p>}
 
-          {summaryOnly && <p className="mt-7 rounded-control bg-bg-sunk px-4 py-3 text-[13.5px] leading-relaxed text-ink-3"><Text value="应来源方要求，这里只提供摘要与原文入口。完整内容请阅读原文。" /></p>}
+          {item.group && item.group.reportCount > 1 && <ItemSources group={item.group} parentId={item.id} />}
 
           {item.body && bodyHtml && (
-            <section className="mt-9 border-t border-line pt-4 xl:mt-10">
+            <section className="mt-10 border-t border-line pt-4">
               <div className="mb-6 flex items-center justify-between gap-3">
                 <span className="text-[12px] text-ink-4">{bodyLabel}</span>
                 {hasTranslation && locale === "zh" && (
@@ -411,6 +337,7 @@ export default function ItemPage() {
               {hasTranslation && lang === "zh" && !item.body.complete && (
                 <p className="mb-5 rounded-control bg-bg-sunk px-3 py-2 text-[13px] text-ink-3"><Text value="译文尚不完整，完整内容请切换到原文。" /></p>
               )}
+              {outline && <div className="mb-8 2xl:hidden">{outline}</div>}
               <ArticleBody html={bodyHtml} lang={actualBodyLocale ?? "und"} />
             </section>
           )}
@@ -418,20 +345,16 @@ export default function ItemPage() {
           {isX && item.x!.media.length > 0 && <MediaGallery media={item.x!.media} postUrl={item.links.original} />}
           {isX && item.x!.quoted?.text && <QuotedPost quoted={item.x!.quoted} original={lang === "original"} />}
 
-          <p className="mt-8 text-[13px] text-ink-4"><Text value="来源：" /><a href={item.links.original} target="_blank" rel="noopener noreferrer" {...outboundLink(item.links.original)} className="text-ink-3 hover:text-accent">
-              {isX ? item.x!.authorName : item.source.name}
-            </a>
-            <span> · {hostOf(item.links.original)}</span>
-          </p>
+          {item.story && <StoryFollowups story={item.story} current={{ id: item.id, title: item.title, timelineAt: item.timelineAt }} />}
 
           {(item.topics.length > 0 || item.tags.length > 0) && (
-            <div className="mt-4 flex flex-wrap gap-1.5 lg:hidden">
+            <div className="mt-9 flex flex-wrap gap-1.5">
               {item.topics.map((t) => (
                 <Link viewTransition key={t.slug} to={`/topics/${t.slug}`} className="chip">
                   {t.name}
                 </Link>
               ))}
-              {item.tags.slice(0, 6).map((t) => (
+              {item.tags.slice(0, 8).map((t) => (
                 <Link key={t} to={`/all?tag=${encodeURIComponent(t)}`} className="chip">
                   #{tx(t)}
                 </Link>
@@ -439,12 +362,10 @@ export default function ItemPage() {
             </div>
           )}
 
-          {item.story && <StoryFollowups story={item.story} currentId={item.id} />}
-
           {related.length > 0 && (
-            <section className="mt-8">
-              <h2 className="mb-2 text-[14px] font-semibold text-ink"><Text value="相关事件" /></h2>
-              <ul className="divide-y divide-line-soft">
+            <section className="mt-9">
+              <h2 className="text-[12.5px] font-semibold text-ink-3"><Text value="相关事件" /></h2>
+              <ul className="mt-1 divide-y divide-line-soft">
                 {related.map((s) => (
                   <li key={s.publicId}>
                     <Link to={`/story/${s.publicId}`} className="block py-2.5 text-[14px] text-ink-2 hover:text-accent">
@@ -456,7 +377,12 @@ export default function ItemPage() {
             </section>
           )}
         </article>
-      </ArticleLayout>
+        {showOutline && (
+          <aside className="hidden 2xl:block">
+            <div className="sticky top-6 max-w-[240px]">{outline}</div>
+          </aside>
+        )}
+      </div>
 
       {posterRequested && (
         <Suspense fallback={null}>

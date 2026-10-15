@@ -14,7 +14,7 @@ import { listPath, filterParams } from "../../lib/seo";
 import { sessionCache } from "../../lib/session-cache";
 import { outboundLink } from "../../lib/engagement";
 
-const reportsUrl = (factId: string, filters: TimelineFilters | undefined) =>
+export const reportsUrl = (factId: string, filters: TimelineFilters | undefined) =>
   listPath(`/api/site/groups/${encodeURIComponent(factId)}/reports`, filters ? filterParams(filters) : {});
 
 function useGroupLabel() {
@@ -42,7 +42,7 @@ function remember(entry: string, key: string, reports: GroupReport[] | null | un
  * A fact's reports under the list's filters, read by `load`. Read `again` (on return), the rows shown stay
  * until the new ones arrive, and a group with no reports left shows none.
  */
-function useReports(url: string, saved: GroupReport[] | null = null) {
+export function useReports(url: string, saved: GroupReport[] | null = null) {
   const [state, setState] = useState({ url, reports: saved, loading: false, error: false });
   const request = useRef<AbortController | null>(null);
   useEffect(() => () => request.current?.abort(), [url]);
