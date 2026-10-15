@@ -113,8 +113,21 @@ def transcribe(model, path: str):
             return None
 
 
+def load_audio(path: str):
+    """16 kHz mono float32. faster-whisper would otherwise open the file with PyAV, and PyAV 19
+    dropped the metadata_errors argument that release still passes, so every line would fail."""
+    audio, rate = sf.read(path, dtype="float32", always_2d=False)
+    audio = np.asarray(audio, dtype=np.float32)
+    if audio.ndim > 1:
+        audio = audio.mean(axis=1)
+    if int(rate) != 16000 and audio.size:
+        n = int(round(audio.size * 16000 / int(rate)))
+        audio = np.interp(np.linspace(0, audio.size - 1, n), np.arange(audio.size), audio).astype(np.float32)
+    return np.ascontiguousarray(audio)
+
+
 def collect(model, path: str, vad: bool):
-    segments, _info = model.transcribe(path, language="zh", word_timestamps=True, vad_filter=vad)
+    segments, _info = model.transcribe(load_audio(path), language="zh", word_timestamps=True, vad_filter=vad)
     words = []
     texts = []
     for seg in segments:

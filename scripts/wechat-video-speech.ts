@@ -98,20 +98,68 @@ export function loudnormFilter(target: number, stats: LoudnormStats | null): str
 
 interface Part { text: string; weight: number }
 
+/** A number, a fraction, or one Latin token. A subtitle may break before one of these, not inside it. */
+const WHOLE = /\d{1,3}(?:,\d{3})+(?:\.\d+)?%?|\d+(?:\.\d+)?(?:\/\d+)?%?|[A-Za-z][A-Za-z0-9.+-]*/g;
+
 function splitParts(text: string): Part[] {
-  const phrases = text.split(/(?<=[，。！？；：,.!?;:])/).map((p) => p.trim()).filter(Boolean);
+  // A comma inside 16,000 is a thousands separator, not a place to breathe.
+  const phrases = text.replace(/(\d),(?=\d)/g, "$1\u0000").split(/(?<=[，。！？；：,.!?;:])/).map((p) => p.replaceAll("\u0000", ",").trim()).filter(Boolean);
   const parts: string[] = [];
   for (const phrase of phrases) {
-    const chars = Array.from(phrase);
-    for (let i = 0; i < chars.length; i += SUBTITLE_MAX) {
-      const piece = chars.slice(i, i + SUBTITLE_MAX).join("");
+    for (const [i, piece] of pack(phrase).entries()) {
       const last = parts.at(-1);
       // Short phrases of one sentence share a subtitle; a sentence's end always starts a new one.
       if (i === 0 && last && !/[。！？.!?]$/.test(last) && Array.from(last + piece).length <= SUBTITLE_MAX) parts[parts.length - 1] = last + piece;
       else parts.push(piece);
     }
   }
-  return parts.map((p) => ({ text: p.replace(/[，。；：,.;:]+$/, ""), weight: Array.from(p).length }));
+  return parts.map((p) => ({ text: p.replace(/[，。；：,.;:]+$/, "").trim(), weight: Array.from(p).length }));
+}
+
+/** Lines of at most SUBTITLE_MAX characters, breaking on spaces and before a whole number or Latin word. */
+function pack(phrase: string): string[] {
+  const lines: string[] = [];
+  let cur = "";
+  const len = (s: string) => Array.from(s).length;
+  // A one- or two-character Chinese word sitting after a space starts the next line instead of ending this one.
+  const finish = (value: string) => {
+    const moved = value.match(/^(.*\s)(\p{Script=Han}{1,2})$/u);
+    if (moved && len(moved[1]!.trim()) >= 8) {
+      lines.push(moved[1]!.trimEnd());
+      return moved[2]!;
+    }
+    if (value.trim()) lines.push(value.trimEnd());
+    return "";
+  };
+  for (const tok of tokensOf(phrase)) {
+    if (!cur && /^\s+$/.test(tok)) continue;
+    const piece = cur ? tok : tok.trimStart();
+    if (len(piece) > SUBTITLE_MAX) {
+      const carry = finish(cur);
+      if (carry) lines.push(carry);
+      const chars = Array.from(piece);
+      for (let i = 0; i < chars.length; i += SUBTITLE_MAX) lines.push(chars.slice(i, i + SUBTITLE_MAX).join(""));
+      cur = "";
+      continue;
+    }
+    if (cur && len(cur + piece) > SUBTITLE_MAX) cur = finish(cur);
+    cur += piece;
+  }
+  const rest = finish(cur);
+  if (rest) lines.push(rest);
+  return lines.filter((l) => l.trim());
+}
+
+function tokensOf(phrase: string): string[] {
+  const out: string[] = [];
+  let at = 0;
+  for (const match of phrase.matchAll(WHOLE)) {
+    for (const ch of Array.from(phrase.slice(at, match.index))) out.push(ch);
+    out.push(match[0]);
+    at = match.index! + match[0].length;
+  }
+  for (const ch of Array.from(phrase.slice(at))) out.push(ch);
+  return out;
 }
 
 function proportion(parts: Part[], seconds: number): Cue[] {

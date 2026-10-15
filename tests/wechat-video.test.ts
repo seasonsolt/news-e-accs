@@ -150,6 +150,13 @@ test("a spoken line is cut into one-line subtitles at its punctuation, timed by 
   assert.ok(Math.abs(subs.reduce((n, s) => n + s.seconds, 0) - 6) < 1e-9);
   assert.ok(subtitles("一".repeat(40), 4).every((s) => Array.from(s.text).length <= 18));
   assert.deepEqual(subtitles("面向公司开放。落地更重要。", 3).map((s) => s.text), ["面向公司开放", "落地更重要"], "a sentence's end starts a new subtitle");
+  const wrapped = subtitles("Deep Review 已经审过 16,000 篇论文。成本大约是 X-SHiELD 的 1/300。合并从每天约 2,500 项涨到超过 30,000 项。", 12).map((s) => s.text);
+  assert.ok(wrapped.every((s) => Array.from(s).length <= 18));
+  assert.ok(wrapped.some((s) => s.includes("16,000")));
+  assert.ok(wrapped.some((s) => s.includes("1/300")));
+  assert.ok(wrapped.some((s) => s.includes("2,500")));
+  assert.ok(wrapped.some((s) => s.includes("30,000")));
+  assert.equal(wrapped.some((s) => /^(view|Re|6,000|\/300|000|500)$/.test(s)), false, wrapped.join(" | "));
   const marked = "Nova **模型**发布[[停]]，推理成本下降一半。";
   assert.deepEqual(subtitles(marked, 4), subtitles(stripMarkup(marked), 4), "pause and stress marks are not shown");
 });
