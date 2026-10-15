@@ -3,6 +3,7 @@
 // Storage failures degrade silently.
 import { useEffect, useSyncExternalStore } from "react";
 import { beijingDate } from "@aihot/contracts/time";
+import { recordEngagement } from "./engagement.ts";
 
 export const KEYS = {
   starred: "aihot-starred-items",
@@ -14,6 +15,7 @@ export const KEYS = {
   feedbackDraft: "aihot-feedback-draft-v1",
   onboarded: "eacc-onboarded",
   recentSearches: "aihot-recent-searches",
+  firstStar: "eacc-first-star",
 } as const;
 
 const STARRED_LIMIT = 500;
@@ -186,14 +188,33 @@ function isStarred(id: string): boolean {
   return starredSetCache.ids.has(id);
 }
 
+function starredBefore(): boolean {
+  return readRaw(KEYS.firstStar) === "1";
+}
+
+/** A device that already has stars is not new. Sets the flag without counting a first star. */
+export function noteExistingStars() {
+  if (typeof window === "undefined" || starredBefore()) return;
+  if (getStarred().length > 0) writeRaw(KEYS.firstStar, "1");
+}
+
+function recordStarChange(id: string, added: boolean, firstDevice: boolean) {
+  if (!ID_PATTERN.test(id)) return;
+  recordEngagement(added ? "star_add" : "star_remove", id);
+  if (added && firstDevice && writeRaw(KEYS.firstStar, "1")) recordEngagement("first_star");
+}
+
 export function toggleStar(item: Omit<LocalStarredItem, "savedAt">): boolean {
   return editLocalData(() => {
     if (starredUnreadable()) return false;
+    noteExistingStars();
     const list = getStarred();
+    const firstDevice = !starredBefore() && list.length === 0;
     const exists = list.some((s) => s.id === item.id);
     const next = exists ? list.filter((s) => s.id !== item.id) : [{ ...item, savedAt: new Date().toISOString() }, ...list].slice(0, STARRED_LIMIT);
     const saved = writeRaw(KEYS.starred, JSON.stringify(next));
     invalidate(KEYS.starred);
+    if (saved) recordStarChange(item.id, !exists, firstDevice);
     return saved && !exists;
   });
 }
@@ -201,8 +222,12 @@ export function toggleStar(item: Omit<LocalStarredItem, "savedAt">): boolean {
 export function removeStar(id: string) {
   editLocalData(() => {
     if (starredUnreadable()) return;
-    writeRaw(KEYS.starred, JSON.stringify(getStarred().filter((s) => s.id !== id)));
+    noteExistingStars();
+    const list = getStarred();
+    if (!list.some((s) => s.id === id)) return;
+    const saved = writeRaw(KEYS.starred, JSON.stringify(list.filter((s) => s.id !== id)));
     invalidate(KEYS.starred);
+    if (saved) recordStarChange(id, false, false);
   });
 }
 
@@ -480,6 +505,7 @@ function mergeLocalData(incoming: { starred: unknown[]; read: unknown[]; theme: 
       themeApplied = writeRaw(KEYS.theme, incoming.theme);
     }
     const fontApplied = !getFontPreference() && incoming.font === "browser" && writeRaw(KEYS.font, "browser");
+    if (mergedStarred.length > 0 && !starredBefore()) writeRaw(KEYS.firstStar, "1");
     cache.clear();
     emit();
     return { starredAdded: accepted.length, starredSkipped, readAdded: readFailed ? 0 : Math.min(readAdditions.length, readRoom), readSkipped, themeApplied, fontApplied, readFailed };

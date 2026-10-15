@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
 import { beijingDate, beijingTime } from "@aihot/contracts/time";
+import { outboundLink, recordEngagement } from "../app/lib/engagement.ts";
 
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
 after(() => {
@@ -34,6 +35,7 @@ test("import keeps bookmarks with invalid dates and persists displayable replace
     id: `import-${i}`, title: `Bookmark ${i}`, savedAt: date, publishedAt: date,
   })) }));
   assert.equal(report.starredAdded, invalid.length);
+  assert.equal(values.get(state.KEYS.firstStar), "1", "imported stars are already on the device, so they are not a first star");
   const saved = JSON.parse(values.get(state.KEYS.starred)!);
   assert.equal(saved.length, invalid.length);
   for (const item of saved) {
@@ -89,4 +91,73 @@ test("failed bookmark writes and damaged existing data do not report a successfu
   assert.equal(values.get(state.KEYS.starred), "damaged original data");
   window.localStorage.setItem = () => { throw new Error("quota"); };
   assert.equal(state.toggleStar(item), false);
+});
+
+const star = (id: string) => ({ id, title: id, summary: null, sourceName: "", publishedAt: null, score: null, aiSelected: false });
+
+const originalFetch = globalThis.fetch;
+after(() => { globalThis.fetch = originalFetch; });
+
+/** Captures report requests instead of sending them. */
+function listen(calls: Array<{ url: string; init: RequestInit }>, response: Promise<Response> = Promise.resolve(new Response(null, { status: 204 }))) {
+  globalThis.fetch = ((url: string, init: RequestInit) => { calls.push({ url, init }); return response; }) as typeof fetch;
+}
+const bodies = (calls: Array<{ init: RequestInit }>) => calls.map((c) => c.init.body);
+
+test("the first star on a device is counted once, and an existing list is not a new device", async () => {
+  const calls: Array<{ url: string; init: RequestInit }> = [];
+  const { state, values } = await reader();
+  listen(calls);
+  assert.equal(state.toggleStar(star("first")), true);
+  assert.equal(state.toggleStar(star("second")), true);
+  assert.equal(values.get(state.KEYS.firstStar), "1");
+  assert.deepEqual(bodies(calls), [
+    JSON.stringify({ event: "star_add", target: "first" }),
+    JSON.stringify({ event: "first_star", target: "" }),
+    JSON.stringify({ event: "star_add", target: "second" }),
+  ]);
+
+  calls.length = 0;
+  const existing = await reader([{ id: "kept", title: "Kept" }]);
+  existing.state.noteExistingStars();
+  assert.equal(existing.values.get(existing.state.KEYS.firstStar), "1");
+  assert.equal(calls.length, 0);
+  assert.equal(existing.state.toggleStar(star("kept")), false);
+  assert.equal(existing.state.toggleStar(star("later")), true);
+  assert.deepEqual(bodies(calls), [
+    JSON.stringify({ event: "star_remove", target: "kept" }),
+    JSON.stringify({ event: "star_add", target: "later" }),
+  ]);
+});
+
+test("engagement reports are fire-and-forget, skipped during SSR, and count middle clicks on source links", async () => {
+  const calls: Array<{ url: string; init: RequestInit }> = [];
+  listen(calls, Promise.reject(new Error("offline")));
+  const saved = Object.getOwnPropertyDescriptor(globalThis, "window");
+  Reflect.deleteProperty(globalThis, "window");
+  recordEngagement("share_click");
+  assert.equal(calls.length, 0);
+
+  Object.defineProperty(globalThis, "window", { configurable: true, value: {} });
+  recordEngagement("share_click");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(calls.length, 1, "a failed send is swallowed");
+  assert.equal(calls[0]!.url, "/api/site/events");
+  assert.equal(calls[0]!.init.method, "POST");
+  assert.equal(calls[0]!.init.keepalive, true);
+  assert.equal(calls[0]!.init.credentials, "omit");
+  assert.equal(calls[0]!.init.body, JSON.stringify({ event: "share_click", target: "" }));
+
+  calls.length = 0;
+  listen(calls);
+  const link = outboundLink("https://WWW.Example.com/a/b?token=1");
+  link.onClick();
+  link.onAuxClick({ button: 1 });
+  link.onAuxClick({ button: 2 });
+  assert.deepEqual(bodies(calls), [
+    JSON.stringify({ event: "outbound_click", target: "example.com" }),
+    JSON.stringify({ event: "outbound_click", target: "example.com" }),
+  ]);
+  if (saved) Object.defineProperty(globalThis, "window", saved);
+  else Reflect.deleteProperty(globalThis, "window");
 });

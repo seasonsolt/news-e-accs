@@ -12,6 +12,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { SITE } from "@aihot/site";
 
 import { markOnboarded } from "../../lib/local-state";
+import { recordEngagement } from "../../lib/engagement";
 import { useMotionAllowed } from "../motion/preferences";
 import { BrassSheen } from "../motion/BrassSheen";
 import { DecryptedText } from "../motion/react-bits/DecryptedText";
@@ -140,6 +141,7 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
 
   async function subscribe(e: FormEvent) {
     e.preventDefault();
+    recordEngagement("subscribe_submit");
     setPhase({ kind: "sending" });
     const error = await post("/api/site/newsletter/subscribe", { email, language: locale });
     if (error) return setPhase({ kind: "error", message: error });

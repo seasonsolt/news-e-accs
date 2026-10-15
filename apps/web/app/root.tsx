@@ -18,7 +18,7 @@ import { BackToTop, NavigationProgress } from "./components/shell/Chrome";
 import { LanguageHint } from "./components/shell/LanguageHint";
 import { buttonClass } from "./components/ui/Controls";
 import { DECK_BLEED_SCRIPT } from "./components/shell/Deck";
-import { rememberPage, APPEARANCE_BOOT_SCRIPT, MOTION_BOOT_SCRIPT, ONBOARDING_BOOT_SCRIPT, useAppearanceSync } from "./lib/local-state";
+import { rememberPage, noteExistingStars, APPEARANCE_BOOT_SCRIPT, MOTION_BOOT_SCRIPT, ONBOARDING_BOOT_SCRIPT, useAppearanceSync } from "./lib/local-state";
 import { apiGet } from "./lib/api.server";
 import { useHydratedFlag } from "./lib/hydration";
 import { webModules } from "./site-modules";
@@ -137,6 +137,7 @@ export default function App() {
   const { pathname, search } = useLocation();
   const countedPath = useRef<string | null>(null);
   useEffect(() => rememberPage(pathname + search), [pathname, search]);
+  useEffect(() => { noteExistingStars(); }, []);
   useEffect(() => {
     if (pathname === "/admin" || pathname.startsWith("/admin/") || countedPath.current === pathname) return;
     countedPath.current = pathname;

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { SITE } from "@aihot/site";
 import { Sheet } from "../../components/ui/Sheet";
 import { IconDownload, IconShare } from "../../components/icons";
+import { recordEngagement } from "../../lib/engagement";
 
 export default function PosterSheet({ id, title, open, onClose }: { id: string; title: string; open: boolean; onClose: () => void }) {
   const tx = useTranslate();
@@ -23,6 +24,7 @@ export default function PosterSheet({ id, title, open, onClose }: { id: string; 
   }, [open]);
 
   async function share() {
+    recordEngagement("share_click");
     try {
       const blob = await (await fetch(src)).blob();
       await navigator.share({ files: [new File([blob], `${SITE.mcpPrefix}-${id}.png`, { type: "image/png" })], title });

@@ -104,7 +104,7 @@ export const POLICY = {
     headers: null as null | Record<string, string>,
   },
   privacy: {
-    description: "本站如何处理浏览器本地数据、反馈资料与访问日志。",
+    description: "本站如何处理浏览器本地数据、反馈资料、访问日志和匿名的汇总互动次数。",
     /** llms.txt 里对这一页的一句说明（选填）。 */
     covers: null as string | null,
   },

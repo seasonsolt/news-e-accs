@@ -3,6 +3,7 @@ import { Text } from "../../lib/i18n";
 // it. The item's own text and translation often only make sense next to it.
 import type { XPostView } from "@aihot/contracts/site";
 import { IconArrowUpRight } from "../../components/icons";
+import { outboundLink } from "../../lib/engagement";
 
 type Quoted = NonNullable<XPostView["quoted"]>;
 
@@ -32,7 +33,7 @@ export function QuotedPost({ quoted, original = false }: { quoted: Quoted; origi
         </details>
       )}
       {quoted.url && (
-        <a href={quoted.url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-0.5 text-[13px] text-accent hover:text-accent-ink"><Text value="在 X 查看被引用的帖子" /><IconArrowUpRight size={13} />
+        <a href={quoted.url} target="_blank" rel="noopener noreferrer" {...outboundLink(quoted.url)} className="mt-2 inline-flex items-center gap-0.5 text-[13px] text-accent hover:text-accent-ink"><Text value="在 X 查看被引用的帖子" /><IconArrowUpRight size={13} />
         </a>
       )}
     </figure>

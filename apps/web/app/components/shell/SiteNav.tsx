@@ -15,6 +15,7 @@ import { useAt, withAt } from "../../features/chrono/at";
 import { MORE_MENU, TOPNAV, tabIsActive, type NavItem } from "./nav";
 import { webModules } from "../../site-modules";
 import { useChangelogDot } from "./changelog";
+import { recordEngagement } from "../../lib/engagement";
 
 function itemHref(item: NavItem, at: string | null) {
   return item.document ? item.to : withAt(item.to, at);
@@ -47,7 +48,7 @@ function MoreMenu({ dot }: { dot: boolean }) {
             <ul>
               {group.items.map((item) => (
                 <li key={item.to}>
-                  <Link to={itemHref(item, at)} reloadDocument={item.document} prefetch={item.document ? "none" : "intent"} className="site-more-link">
+                  <Link to={itemHref(item, at)} reloadDocument={item.document} prefetch={item.document ? "none" : "intent"} onClick={item.to === "/subscribe" ? () => recordEngagement("subscribe_click") : undefined} className="site-more-link">
                     <item.icon size={15} />
                     <span>{tx(item.label)}</span>
                     {dot && item.changelog && <span className="site-nav-dot" aria-label={tx("有新的更新")} />}

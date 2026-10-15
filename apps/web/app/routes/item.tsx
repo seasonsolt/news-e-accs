@@ -14,6 +14,7 @@ import { pageReuse } from "../lib/page-reuse";
 import { breadcrumbLd, newsArticleLd, pageMeta, siteUrl, titled } from "../lib/seo";
 import { fullDateTime, relativeTime } from "../lib/format";
 import { markRead } from "../lib/local-state";
+import { recordEngagement, outboundLink } from "../lib/engagement";
 import { SameEventBadge, SelectedBadge } from "../components/ui/Badge";
 import { ScoreLabel, shownScore } from "../components/ui/Score";
 import { PillTabs } from "../components/ui/Tabs";
@@ -131,6 +132,7 @@ export default function ItemPage() {
     setPosterOpen(true);
   };
   const share = async () => {
+    recordEngagement("share_click");
     const r = await shareOrCopy(item, locale);
     if (r === "copied") setToast(tx("链接已复制"));
   };
@@ -208,6 +210,7 @@ export default function ItemPage() {
         href={item.links.original}
         target="_blank"
         rel="noopener noreferrer"
+        {...outboundLink(item.links.original)}
         className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full border border-line-strong bg-surface px-3.5 text-[12.5px] font-medium text-ink-2 transition-colors hover:border-ink-4 hover:text-ink"
       >
         {originalLabel} <IconExternal size={13} />
@@ -308,7 +311,7 @@ export default function ItemPage() {
         {backButton}
         <span className="flex-1" />
         <StarButton item={item} size={32} />
-        <a href={item.links.original} target="_blank" rel="noopener noreferrer" className="inline-flex h-8 items-center gap-1 px-1.5 text-[14px] text-ink-2">
+        <a href={item.links.original} target="_blank" rel="noopener noreferrer" {...outboundLink(item.links.original)} className="inline-flex h-8 items-center gap-1 px-1.5 text-[14px] text-ink-2">
           <IconExternal size={15} /><Text value="原文" /></a>
         <button type="button" aria-label={tx("分享")} onClick={share} className="inline-flex size-8 items-center justify-center rounded-full text-ink-3 hover:text-ink">
           <IconShare size={17} />
@@ -415,7 +418,7 @@ export default function ItemPage() {
           {isX && item.x!.media.length > 0 && <MediaGallery media={item.x!.media} postUrl={item.links.original} />}
           {isX && item.x!.quoted?.text && <QuotedPost quoted={item.x!.quoted} original={lang === "original"} />}
 
-          <p className="mt-8 text-[13px] text-ink-4"><Text value="来源：" /><a href={item.links.original} target="_blank" rel="noopener noreferrer" className="text-ink-3 hover:text-accent">
+          <p className="mt-8 text-[13px] text-ink-4"><Text value="来源：" /><a href={item.links.original} target="_blank" rel="noopener noreferrer" {...outboundLink(item.links.original)} className="text-ink-3 hover:text-accent">
               {isX ? item.x!.authorName : item.source.name}
             </a>
             <span> · {hostOf(item.links.original)}</span>

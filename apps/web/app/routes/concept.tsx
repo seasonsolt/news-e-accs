@@ -16,6 +16,7 @@ import { pageReuse } from "../lib/page-reuse";
 import { useTranslate } from "../lib/i18n";
 import { breadcrumbLd, pageMeta, siteUrl } from "../lib/seo";
 import { Deck } from "../components/shell/Deck";
+import { recordEngagement } from "../lib/engagement";
 import { ArticleLayout, RailSection } from "../components/ui/Page";
 
 type Slug = keyof typeof CONCEPT_PAGES;
@@ -184,7 +185,7 @@ export default function Concept() {
           <aside className="mt-12 border-t border-line pt-6">
             <p className="text-[15px] font-semibold text-ink">{t.ctaTitle}</p>
             <p className="mt-1 text-[14px] leading-relaxed text-ink-3">{t.ctaBody}</p>
-            <Link to="/subscribe" className="deck-button is-primary mt-4 inline-flex">{t.ctaButton}</Link>
+            <Link to="/subscribe" onClick={() => recordEngagement("subscribe_click")} className="deck-button is-primary mt-4 inline-flex">{t.ctaButton}</Link>
           </aside>
         </article>
       </ArticleLayout>

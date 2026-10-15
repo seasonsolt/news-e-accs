@@ -1,4 +1,5 @@
 import { sql } from "../db.ts";
+import { SITE_EVENTS } from "../site/analytics.ts";
 
 export async function siteAnalyticsOverview(days = 30) {
   const windowDays = [7, 30, 90].includes(days) ? days : 30;
@@ -31,5 +32,55 @@ export async function siteAnalyticsOverview(days = 30) {
     GROUP BY path
     ORDER BY views DESC, path
     LIMIT 50`;
-  return { days: windowDays, totals: totals!, daily, pages };
+  const eventRows = await sql<{ day: string; event: string; count: number }[]>`
+    SELECT to_char(day, 'YYYY-MM-DD') AS day, event, sum(count)::bigint AS count
+    FROM site_events_daily
+    WHERE day >= (now() AT TIME ZONE 'Asia/Taipei')::date - ${windowDays - 1}::int
+      AND day <= (now() AT TIME ZONE 'Asia/Taipei')::date
+      AND event = ANY(${[...SITE_EVENTS]}::text[])
+    GROUP BY day, event`;
+  const countsByDay = new Map<string, Map<string, number>>();
+  for (const row of eventRows) {
+    let slot = countsByDay.get(row.day);
+    if (!slot) countsByDay.set(row.day, slot = new Map());
+    slot.set(row.event, row.count);
+  }
+  const engagementDaily = daily.map((row) => ({
+    day: row.day,
+    counts: Object.fromEntries(SITE_EVENTS.map((event) => [event, countsByDay.get(row.day)?.get(event) ?? 0])),
+  }));
+  const [firstStar] = await sql<{ devices: number }[]>`
+    SELECT coalesce(sum(count), 0)::bigint AS devices
+    FROM site_events_daily
+    WHERE event = 'first_star'`;
+  const topStarred = await sql<{ id: string; title: string | null; net: number }[]>`
+    SELECT e.target AS id,
+           (coalesce(sum(e.count) FILTER (WHERE e.event = 'star_add'), 0)
+            - coalesce(sum(e.count) FILTER (WHERE e.event = 'star_remove'), 0))::bigint AS net,
+           p.title
+    FROM site_events_daily e
+    LEFT JOIN publications p ON p.article_id = e.target
+    WHERE e.day >= (now() AT TIME ZONE 'Asia/Taipei')::date - ${windowDays - 1}::int
+      AND e.day <= (now() AT TIME ZONE 'Asia/Taipei')::date
+      AND e.event IN ('star_add', 'star_remove')
+    GROUP BY e.target, p.title
+    HAVING coalesce(sum(e.count) FILTER (WHERE e.event = 'star_add'), 0)
+         - coalesce(sum(e.count) FILTER (WHERE e.event = 'star_remove'), 0) > 0
+    ORDER BY net DESC, e.target
+    LIMIT 20`;
+  return {
+    days: windowDays,
+    totals: totals!,
+    daily,
+    pages,
+    engagement: {
+      totals: SITE_EVENTS.map((event) => ({
+        event,
+        count: engagementDaily.reduce((sum, row) => sum + (row.counts[event] ?? 0), 0),
+      })),
+      daily: engagementDaily,
+      firstStarDevices: firstStar?.devices ?? 0,
+      topStarred,
+    },
+  };
 }
