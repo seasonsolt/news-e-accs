@@ -198,10 +198,20 @@ export function noteExistingStars() {
   if (getStarred().length > 0) writeRaw(KEYS.firstStar, "1");
 }
 
+const firstStarListeners = new Set<() => void>();
+/** Calls `listener` when this device saves its first story. Returns the unsubscribe. */
+export function onFirstStar(listener: () => void): () => void {
+  firstStarListeners.add(listener);
+  return () => { firstStarListeners.delete(listener); };
+}
+
 function recordStarChange(id: string, added: boolean, firstDevice: boolean) {
   if (!ID_PATTERN.test(id)) return;
   recordEngagement(added ? "star_add" : "star_remove", id);
-  if (added && firstDevice && writeRaw(KEYS.firstStar, "1")) recordEngagement("first_star");
+  if (added && firstDevice && writeRaw(KEYS.firstStar, "1")) {
+    recordEngagement("first_star");
+    for (const listener of firstStarListeners) listener();
+  }
 }
 
 export function toggleStar(item: Omit<LocalStarredItem, "savedAt">): boolean {

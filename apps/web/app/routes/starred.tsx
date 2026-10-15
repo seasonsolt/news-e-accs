@@ -123,7 +123,7 @@ export default function StarredPage() {
           <input ref={fileRef} type="file" accept="application/json,.json" className="sr-only" onChange={(e) => doImport(e.target.files?.[0])} />
         </div>
       </header>
-      <p className="rounded-tile border border-line bg-surface px-4 py-2.5 text-[12.5px] text-ink-3"><Text value="收藏只保存在当前浏览器；清除浏览器数据或换设备后不会同步。" /></p>
+      <p className="rounded-tile border border-line bg-surface px-4 py-2.5 text-[12.5px] text-ink-3"><Text value="收藏只保存在当前浏览器，不会在设备间同步；清除浏览器数据会删掉收藏，Safari 在 7 天没打开本站后也可能自动清除。想长期保留请导出备份。" /></p>
       <Presence show={!!notice} enter="anim-notice-in" exit="anim-fade-out" duration={160}>
         <div
           role="status"
@@ -138,7 +138,7 @@ export default function StarredPage() {
       {!mounted ? null : starred.length === 0 ? (
         <div className="mt-3 flex flex-col items-center rounded-card border border-dashed border-line-strong px-6 py-12 text-center">
           <IconBookmark size={20} className="text-ink-4" />
-          <p className="mt-3 text-[13px] text-ink-3"><Text value="还没有收藏内容。点开任意一条内容，在详情页点击收藏即可添加。" /></p>
+          <p className="mt-3 text-[13px] text-ink-3"><Text value="还没有收藏内容。点任意卡片或详情页上的收藏图标即可添加。" /></p>
           <Link to="/" className="mt-4 text-[12.5px] font-medium text-accent hover:text-accent-ink"><Text value="去看精选 →" /></Link>
         </div>
       ) : (

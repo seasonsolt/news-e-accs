@@ -122,12 +122,28 @@ test("the first star on a device is counted once, and an existing list is not a 
   existing.state.noteExistingStars();
   assert.equal(existing.values.get(existing.state.KEYS.firstStar), "1");
   assert.equal(calls.length, 0);
+  let hinted = 0;
+  const stop = existing.state.onFirstStar(() => { hinted += 1; });
   assert.equal(existing.state.toggleStar(star("kept")), false);
   assert.equal(existing.state.toggleStar(star("later")), true);
   assert.deepEqual(bodies(calls), [
     JSON.stringify({ event: "star_remove", target: "kept" }),
     JSON.stringify({ event: "star_add", target: "later" }),
   ]);
+  assert.equal(hinted, 0);
+  stop();
+});
+
+test("the first-star hint fires once, on the first star a device saves", async () => {
+  const { state } = await reader();
+  listen([]);
+  let hinted = 0;
+  const stop = state.onFirstStar(() => { hinted += 1; });
+  state.toggleStar(star("first"));
+  state.toggleStar(star("first"));
+  state.toggleStar(star("second"));
+  assert.equal(hinted, 1);
+  stop();
 });
 
 test("engagement reports are fire-and-forget, skipped during SSR, and count middle clicks on source links", async () => {
