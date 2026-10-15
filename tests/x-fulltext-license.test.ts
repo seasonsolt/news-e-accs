@@ -74,7 +74,9 @@ async function fixture(options: {
   await publishArticle(id, { releasedAt: new Date(Date.now() - 60_000) });
   const [publication] = await sql`SELECT body_mode, eligible FROM publications WHERE article_id = ${id}`;
   assert.equal(publication!.body_mode, options.full && (!options.bodyStatus || options.bodyStatus === "ok") ? "full" : "summary");
-  assert.equal(publication!.eligible, (!!summary || options.shape === "quote-only") && (!options.mode || options.mode === "editorial"));
+  // A textless post stands in for a summary only where pages show it.
+  const postShown = !POLICY.xPostIsFullText || publication!.body_mode === "full";
+  assert.equal(publication!.eligible, (!!summary || (options.shape === "quote-only" && postShown)) && (!options.mode || options.mode === "editorial"));
   return { id, source, key, fact, story, url, summary, main, zh, quoted, quotedZh, media, markers: [main, zh, quoted, quotedZh, media] };
 }
 

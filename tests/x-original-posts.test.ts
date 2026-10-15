@@ -10,6 +10,7 @@ import { upsertMaterial } from "@aihot/backend/content/materials";
 import { analyzeArticle } from "@aihot/backend/editorial/analyze";
 import { publishArticle } from "@aihot/backend/publication/publish";
 import { stopBoss } from "@aihot/backend/jobs/queue";
+import { POLICY } from "@aihot/site";
 import { buildApp } from "../apps/api/src/app.ts";
 
 const source = `original-post-${tag()}`;
@@ -114,4 +115,29 @@ test("real text containing links and a fetched X Article keep their normal writi
     const [p] = await sql`SELECT summary FROM publications WHERE article_id=${id}`;
     assert.equal(p!.summary, "This is the English summary of the actual body.");
   }
+});
+
+test("a textless post the site does not show is neither in the pool nor selected, however high its score", { skip: !POLICY.xPostIsFullText && "this site shows every X post's own text" }, async () => {
+  // e-acc.ai, 2026-10-12: an image-only post from a source without full text was published to Picks
+  // with its own address as the title and no summary, and its post hidden, so readers saw only a URL.
+  const hidden = `${source}-hidden`;
+  await sql`INSERT INTO sources (id,name,kind,tier,participation_mode,site_fulltext,syndicate_fulltext,next_fetch_at)
+    VALUES (${hidden},'Hidden post test','x_search','T1','editorial',false,false,'2100-01-01')`;
+  const url = `https://x.com/fixture/status/hidden-${source}`;
+  const { articleId: id } = await upsertMaterial({ sourceId: hidden, url, title: url, bodyText: "", bodyStatus: "ok", via: "fetch", publishedAt: new Date(),
+    xPost: { tweetId: `hidden-${source}`, authorName: "Fixture", handle: "fixture", text: "",
+      media: [{ kind: "image", url: "https://example.org/screenshot.png", width: 757, height: 549 }] } });
+  await sql`INSERT INTO analyses (article_id,input_revision,origin,relevance,editorial_language,title,summary,score,selected)
+    VALUES (${id},1,'model','pass','en',${url},'',${SELECTING_SCORE},true)`;
+  await sql`UPDATE articles SET grouping_status='complete' WHERE id=${id}`;
+  await publishArticle(id, released());
+  const [p] = await sql`SELECT eligible,selected,selection_candidate,body_mode FROM publications WHERE article_id=${id}`;
+  assert.equal(p!.body_mode, "summary", "the source does not allow its posts to be shown");
+  assert.equal(p!.eligible, false, "nothing readable: no written copy and the post is hidden");
+  assert.equal(p!.selected, false);
+  assert.equal(p!.selection_candidate, false);
+  const pool = (await app.inject({ method: "GET", url: "/api/site/pool" })).body;
+  assert.ok(!pool.includes(id), "not listed in the website pool");
+  const picks = (await app.inject({ method: "GET", url: "/api/v1/items?mode=selected&window=7d&limit=100" })).body;
+  assert.ok(!picks.includes(id), "not in the selection");
 });
