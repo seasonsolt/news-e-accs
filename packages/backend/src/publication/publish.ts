@@ -310,8 +310,11 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
 
   // An undated archive has a readable detail page, but its discovery is not a news timestamp.
   // Explicit imports can retain an editorial decision already published elsewhere. A textless or
-  // link-only post stands in for written copy only where pages show the post itself.
-  const eligible = isPoolEligible({ participationMode: source.participation_mode, relevance, title, summary, originalPost: !!original && showsPost({ channel, body_mode: bodyMode }) })
+  // link-only post stands in for written copy only where pages show the post itself; hidden, its own
+  // links are no summary either, and only an editor's summary lists it.
+  const postShown = !!original && showsPost({ channel, body_mode: bodyMode });
+  const writtenSummary = original && !postShown ? pickString(f.summary, null) : summary;
+  const eligible = isPoolEligible({ participationMode: source.participation_mode, relevance, title, summary: writtenSummary, originalPost: postShown })
     && (!article.backfill || article.published_at !== null || !!options.releasedAt);
   const selectionCandidate = isSelectable(eligible, judgedSelected, source.tier);
   // Scoring nominates a report; a completed identity/value decision admits it to selection.
