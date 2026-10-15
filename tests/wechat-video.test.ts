@@ -190,6 +190,55 @@ test("the voice lexicon and the transcript check leave the subtitle text alone",
   assert.ok(characterErrorRate("Nova 模型发布，推理成本下降一半。", "产品 B 上线") > 0.18);
 });
 
+test("numbers and model names are spoken, and a matching transcript is not a mismatch", () => {
+  const line = "Deep Review 已经审过 16,000 篇。约 2,500 项涨到 30,000 项，成本是 1/300，占 75%，版本 v2 和 5.5，2026 年。";
+  assert.equal(stripMarkup(line), line);
+  assert.equal(subtitles(line, 8).some((cue) => cue.text.includes("16,000")), true, "subtitles keep the written number");
+  assert.equal(forSpeech("已经审过 **16,000**[[停]] 篇，约 2,500 项，超过 30,000 项。"), "已经审过 [breath]一万六千[breath] 篇，约 两千五百 项，超过 三万 项。");
+  assert.equal(forSpeech("16,000"), "一万六千");
+  assert.equal(forSpeech("2,500"), "两千五百");
+  assert.equal(forSpeech("30,000"), "三万");
+  assert.equal(forSpeech("1/300"), "三百分之一");
+  assert.equal(forSpeech("75%"), "百分之七十五");
+  assert.equal(forSpeech("3.5%"), "百分之三点五");
+  assert.equal(forSpeech("5.5"), "五点五");
+  assert.equal(forSpeech("v2"), "V 二");
+  assert.equal(forSpeech("v2.5"), "V 二点五");
+  assert.equal(forSpeech("2026 年"), "二零二六 年");
+  assert.equal(forSpeech("2,000"), "两千");
+  assert.equal(forSpeech("2000"), "二零零零");
+  assert.equal(forSpeech("100%"), "百分之一百");
+  assert.equal(forSpeech("10 项，98 名，3 公里。"), "十 项，九十八 名，三 公里。");
+  assert.equal(forSpeech("2"), "二");
+  assert.equal(forSpeech("20"), "二十");
+  assert.equal(forSpeech("200"), "两百");
+  assert.equal(forSpeech("101"), "一百零一");
+  assert.equal(forSpeech("110"), "一百一十");
+  assert.equal(forSpeech("10500"), "一万零五百");
+  assert.equal(forSpeech("100000"), "十万");
+  assert.equal(forSpeech("1/2"), "二分之一");
+  assert.equal(forSpeech("2026/10/15"), "2026/10/15");
+  assert.equal(forSpeech("HiRO-ACEv2"), "H I R O A C E V 二");
+  assert.equal(forSpeech("X-SHiELD"), "X S H I E L D");
+  assert.equal(forSpeech("Ai2"), "A I 二");
+  assert.equal(forSpeech("GPT-6"), "G P T 六");
+
+  assert.equal(characterErrorRate("已经审过 16,000 篇。", "已经审过16000篇"), 0);
+  assert.equal(characterErrorRate("已经审过 16,000 篇。", "已经审过一万六千篇"), 0);
+  assert.equal(characterErrorRate("约 2,500 项涨到超过 30,000 项。", "约两千五百项涨到超过三万项"), 0);
+  assert.equal(characterErrorRate("成本是 1/300，占 75%。", "成本是三百分之一，占百分之七十五。"), 0);
+  assert.equal(characterErrorRate("版本 5.5 和 v2。", "版本五点五和 V 二。"), 0);
+  assert.equal(characterErrorRate("2026 年公布了 10 项。", "二零二六年公布了十项。"), 0);
+  assert.equal(characterErrorRate("Ai2 的 HiRO-ACEv2 和 X-SHiELD。", "A I 二 的 H I R O A C E V 二 和 X S H I E L D。"), 0);
+  assert.equal(characterErrorRate("Google 公开了 Deep Review。它给论文做技术核查。", "Google公開了DeepReview。它給論文做技術核查。"), 0);
+  const traditional = characterErrorRate(
+    "Google 公开了 Deep Review。它给论文做技术核查。每天可以免费审两次。",
+    "Google公開了DeepReview,他給論文做技術和查,每天可以免費審兩次。",
+  );
+  assert.ok(traditional < 0.18, `traditional transcript looked like a failure: ${traditional}`);
+  assert.ok(characterErrorRate("涨到超过 30,000 项。", "涨到超过三分相像") > 0.18);
+});
+
 test("word times place a subtitle on the pause, and a transcript that does not match falls back to length", () => {
   const line = "Nova 模型发布，推理成本下降一半。";
   const words = [
