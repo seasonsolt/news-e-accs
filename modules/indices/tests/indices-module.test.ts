@@ -126,6 +126,7 @@ test("the index is routed to the api, listed in the sitemap and llms.txt, and re
       for (const dataset of datasets) {
         assert.ok(typeof dataset.description === "string" && dataset.description.trim(), `${prefix}: ${dataset.name} has a description`);
         assert.ok((dataset.creator as { name?: string } | undefined)?.name, `${prefix}: ${dataset.name} has a creator`);
+        assert.equal(dataset.license, "https://creativecommons.org/licenses/by/4.0/", `${prefix}: ${dataset.name} names its license`);
       }
       assert.match(html, /hrefLang="zh-CN"|hreflang="zh-CN"/);
       assert.match(html, /<svg[^>]+role="img"/);
