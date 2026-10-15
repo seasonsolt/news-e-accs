@@ -9,6 +9,7 @@ import { sha256, stableJson } from "../lib/ids.ts";
 import { collapseWhitespace } from "../lib/text.ts";
 import type { XPostData } from "../content/materials.ts";
 import { originalPostCopy } from "../content/posts.ts";
+import { showsPost } from "./items.ts";
 import { itemUrl } from "./links.ts";
 import { pickRepresentative, REPRESENTATIVE_COLUMNS, type RepresentativeIdentity } from "./representative.ts";
 import { enqueue, QUEUES, shutdownSignal } from "../jobs/queue.ts";
@@ -302,9 +303,15 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
   // Material from an isolated source reaches no public surface at all: not even a detail page.
   const visibility = source.participation_mode === "isolated" ? "withdrawn" : (override?.visibility ?? "public");
 
+  const hasXPost = !!article.x_post;
+  const channel = channelOf(source.kind, hasXPost);
+  const hasBody = !!article.body_text || !!article.x_post?.text || !!article.x_post?.media?.length || !!article.x_post?.quoted?.text;
+  const bodyMode = bodyModeOf(source, article.body_status, hasBody);
+
   // An undated archive has a readable detail page, but its discovery is not a news timestamp.
-  // Explicit imports can retain an editorial decision already published elsewhere.
-  const eligible = isPoolEligible({ participationMode: source.participation_mode, relevance, title, summary, originalPost: !!original })
+  // Explicit imports can retain an editorial decision already published elsewhere. A textless or
+  // link-only post stands in for written copy only where pages show the post itself.
+  const eligible = isPoolEligible({ participationMode: source.participation_mode, relevance, title, summary, originalPost: !!original && showsPost({ channel, body_mode: bodyMode }) })
     && (!article.backfill || article.published_at !== null || !!options.releasedAt);
   const selectionCandidate = isSelectable(eligible, judgedSelected, source.tier);
   // Scoring nominates a report; a completed identity/value decision admits it to selection.
@@ -312,10 +319,6 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
   const selected = selectionCandidate && article.grouping_status === "complete"
     && (f.selected === true || article.selection_adds_value !== false);
   const reason = selected ? pickString(f.reason, original ? null : analysis?.reason ?? (editorialLanguage === "zh" ? analysis?.reason_zh : null) ?? null) : null;
-  const hasXPost = !!article.x_post;
-  const channel = channelOf(source.kind, hasXPost);
-  const hasBody = !!article.body_text || !!article.x_post?.text || !!article.x_post?.media?.length || !!article.x_post?.quoted?.text;
-  const bodyMode = bodyModeOf(source, article.body_status, hasBody);
   const syndicate = mayRedistribute(source, bodyMode);
   const originalTitle = (isChineseTitle || editorialLanguage === "en") && title === collapseWhitespace(article.title) ? null : collapseWhitespace(article.title);
 
