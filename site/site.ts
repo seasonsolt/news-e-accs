@@ -80,6 +80,12 @@ export const SITE = {
   },
   /** 抓取信源时报上的名字和版本（User-Agent 里用），不要冒用别的站。 */
   crawlerName: "EaccNewsBot/1.0",
+  /**
+   * Cloudflare Web Analytics 的 token（公开页面加载的信标，无 Cookie）。
+   * 生产环境才加载；开发、测试和本机地址不加载，后台页面也不加载。
+   * 环境变量 CF_WEB_ANALYTICS_TOKEN 优先，设成空字符串就关掉。换成别的站时改成自己的 token。
+   */
+  webAnalyticsToken: "9aa8607e94a5423ab6cf96556830c0e2" as string,
 } as const;
 
 /** 使用规则和隐私说明两页（正文在 pages/ 里）。 */

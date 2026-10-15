@@ -21,6 +21,8 @@ import { DECK_BLEED_SCRIPT } from "./components/shell/Deck";
 import { rememberPage, noteExistingStars, APPEARANCE_BOOT_SCRIPT, MOTION_BOOT_SCRIPT, ONBOARDING_BOOT_SCRIPT, useAppearanceSync } from "./lib/local-state";
 import { apiGet } from "./lib/api.server";
 import { useHydratedFlag } from "./lib/hydration";
+import { isAdminPath, WEB_ANALYTICS_SRC, webAnalyticsAttribute } from "./lib/web-analytics";
+import { webAnalyticsToken } from "./lib/web-analytics.server";
 import { webModules } from "./site-modules";
 import { EmptyArt } from "./features/art/EmptyArt";
 import { NotFoundBoard } from "./features/motion/NotFoundBoard";
@@ -41,6 +43,8 @@ interface SiteMeta {
   timeBounds: TimeMachineBounds | null;
   /** The release rendering this document: once a newer one is deployed, a render error reloads the page (entry.client). */
   release: string | null;
+  /** Set when this process may load Cloudflare Web Analytics. The tag itself is still left off /admin. */
+  webAnalyticsToken: string | null;
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -61,10 +65,27 @@ export async function loader({ request }: Route.LoaderArgs) {
     }).catch(() => ({ changelogVersion: null })),
     FEATURES.timeMachine ? apiGet<TimeMachineBounds>("/api/site/chronicle/bounds", { request, signal: request.signal }).catch(() => null) : null,
   ]);
-  return { locale: requestLocale(request), changelogVersion: meta.changelogVersion, timeBounds, release: process.env.AIHOT_RELEASE ?? null } satisfies SiteMeta;
+  return {
+    locale: requestLocale(request),
+    changelogVersion: meta.changelogVersion,
+    timeBounds,
+    release: process.env.AIHOT_RELEASE ?? null,
+    webAnalyticsToken: webAnalyticsToken(),
+  } satisfies SiteMeta;
 }
 
 export const shouldRevalidate: ShouldRevalidateFunction = ({ currentUrl, nextUrl }) => requestLocale(new Request(currentUrl)) !== requestLocale(new Request(nextUrl));
+
+/**
+ * Cloudflare Web Analytics, on public production pages. Deferred and without `async`, so React leaves
+ * the tag in place instead of hoisting it, and hydration adopts the node without assigning `src` again.
+ * This is the last tag the page renders; the router then writes its loader stream and closes the body.
+ */
+function WebAnalytics({ token }: { token: string | null }) {
+  const { pathname } = useLocation();
+  if (!token || isAdminPath(pathname)) return null;
+  return <script defer src={WEB_ANALYTICS_SRC} data-cf-beacon={webAnalyticsAttribute(token)} suppressHydrationWarning />;
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const at = useAt();
@@ -93,6 +114,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
         <ScrollRestoration getKey={(location) => location.key} />
         <Scripts />
+        <WebAnalytics token={site?.webAnalyticsToken ?? null} />
       </body>
     </html>
   );

@@ -23,6 +23,7 @@
 - `mcpPrefix`：MCP 工具名前缀，比如 `lawhot` 会得到 `lawhot_get_latest`。有人接入以后不要再改。
 - `interfaceVersion`：公开接口（MCP、OpenAPI、`llms.txt`）的版本号，只升不降；改了接口里已有的字段或含义时升主版本。
 - `crawlerName`：抓取信源时报的名字，别用别人的站名。
+- `webAnalyticsToken`：Cloudflare Web Analytics 的 token。生产环境的公开页面在 `</body>` 前加载无 Cookie 的信标；开发、测试和本机地址不加载，后台页面也不加载。环境变量 `CF_WEB_ANALYTICS_TOKEN` 优先，留空就关掉。换成你的站时改成你自己的，或设成空字符串。
 - `contactEmail`：对外联系邮箱（选填），填了就在 `llms.txt` 和给 Agent 的使用说明里写成授权联系方式。
 - `footerNote`：关于页底部的一行小字。默认是一行框架署名“由 AIHOT 开源框架驱动”，可以留也可以删（设成 `null`）。
 - `icp`：中国大陆网站的备案号，填了就显示在页脚。

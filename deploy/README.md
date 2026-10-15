@@ -12,6 +12,7 @@
 
 - news.e-accs.com 只接受带 `EDGE_SECRET` 的请求（也就是经过 Worker 的），其余请求重定向到 e-acc.ai。
 - 服务器的 443 端口给 sing-box 用了，所以走 Tunnel（只出站，不开端口）。
+- Cloudflare Web Analytics 不会在边缘自动插入信标：页面 HTML 经 eacc-edge 和 Tunnel 回源。公开页面由网页在 `</body>` 前自己写上信标（`SITE.webAnalyticsToken`，可用 `CF_WEB_ANALYTICS_TOKEN` 覆盖）。
 - 服务器上不用 Docker：PostgreSQL 17（Debian 自带）、Node 24（`/opt/node24`）、systemd。
 
 一次发布可能涉及三个地方：
