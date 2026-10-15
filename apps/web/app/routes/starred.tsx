@@ -87,7 +87,7 @@ export default function StarredPage() {
     if (!file) return;
     try {
       const report = importBundle(await file.text());
-      recordEngagement("starred_import");
+      if (report.starredAdded + report.readAdded > 0 || report.themeApplied || report.fontApplied) recordEngagement("starred_import");
       setNotice({ kind: report.readFailed ? "error" : "ok", text: tx("导入完成：{0}", reportText(report, tx, locale)) });
     } catch (e) {
       setNotice({ kind: "error", text: e instanceof Error ? e.message : tx("导入失败") });

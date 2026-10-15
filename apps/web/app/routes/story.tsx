@@ -17,7 +17,7 @@ import { beijingDate, beijingTime } from "@aihot/contracts/time";
 import { monthDay, monthDayTime, relativeTime } from "../lib/format";
 import { HeatChart } from "../features/story/HeatChart";
 import { sessionCache } from "../lib/session-cache";
-import { recordOutboundClick } from "../lib/engagement";
+import { outboundLink } from "../lib/engagement";
 import { isReload } from "../lib/restore";
 import { Badge, SelectedBadge } from "../components/ui/Badge";
 import { PillTabs } from "../components/ui/Tabs";
@@ -169,7 +169,7 @@ function SourceAnchor({ name, url, title, className = "" }: { name: string; url?
   }
   if (!href) return <span className={`min-w-0 truncate ${className}`}>{name}</span>;
   return (
-    <a href={href} target="_blank" rel="noopener" onClick={() => recordOutboundClick(href)} aria-label={tx("阅读{0}原文：{1}（新标签页）", name, title ?? href)} className={`min-w-0 truncate hover:text-accent ${className}`}>
+    <a href={href} target="_blank" rel="noopener" {...outboundLink(href)} aria-label={tx("阅读{0}原文：{1}（新标签页）", name, title ?? href)} className={`min-w-0 truncate hover:text-accent ${className}`}>
       {name}
     </a>
   );

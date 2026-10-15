@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { after, test } from "node:test";
 import { closeDb, sql } from "@aihot/backend/db";
 import { siteAnalyticsOverview } from "@aihot/backend/admin/analytics";
-import { normalizeSiteEvent, normalizeSourceDomain } from "@aihot/backend/site/analytics";
+import { normalizeSiteEvent, normalizeSourceDomain, recordSiteEvent } from "@aihot/backend/site/analytics";
 import { buildApp } from "../apps/api/src/app.ts";
 import { tag } from "./setup.ts";
 
@@ -11,11 +11,14 @@ const app = await buildApp();
 const id = `ev${tag()}`;
 const source = `src${tag()}`;
 const domain = `${id}.example`;
+const missing = `missing${tag()}`;
 const at = new Date("2026-01-01T00:00:00Z");
 
 after(async () => {
   await app.close();
-  await sql`DELETE FROM site_events_daily WHERE target IN (${id}, ${domain}) OR event IN ('share_click', 'first_star', 'subscribe_click', 'outbound_click', 'star_add', 'star_remove')`;
+  // Rows with an empty target are shared counters, so this file owns those event names in the test database.
+  await sql`DELETE FROM site_events_daily WHERE target IN (${id}, ${domain}, ${missing}) OR target LIKE ${`%.${id}.example`}
+    OR (target = '' AND event IN ('share_click', 'first_star'))`;
   await sql`DELETE FROM publications WHERE article_id = ${id}`;
   await sql`DELETE FROM articles WHERE id = ${id}`;
   await sql`DELETE FROM sources WHERE id = ${source}`;
@@ -28,6 +31,7 @@ test("interaction targets are reduced to an allowlisted event and a safe value",
   assert.equal(normalizeSiteEvent({ event: "star_add", target: "" }), null);
   assert.equal(normalizeSiteEvent({ event: "star_add", target: "x".repeat(81) }), null);
   assert.deepEqual(normalizeSiteEvent({ event: "first_star" }), { event: "first_star", target: "" });
+  assert.deepEqual(normalizeSiteEvent({ event: "subscribe_submit" }), { event: "subscribe_submit", target: "" });
   assert.equal(normalizeSiteEvent({ event: "first_star", target: id }), null);
   assert.equal(normalizeSiteEvent({ event: "subscribe_click", target: "user@example.com" }), null);
   assert.equal(normalizeSiteEvent({ event: "not_an_event" }), null);
@@ -53,23 +57,23 @@ test("daily interaction counts are anonymous, uncached, and visible only in the 
 
   const added = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "star_add", target: id } });
   const again = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "star_add", target: id } });
-  const beacon = await app.inject({
+  const shared = await app.inject({
     method: "POST",
     url: "/api/site/events",
-    headers: { "content-type": "text/plain;charset=UTF-8" },
-    payload: JSON.stringify({ event: "share_click" }),
+    payload: { event: "share_click" },
   });
   const outbound = await app.inject({
     method: "POST",
     url: "/api/site/events",
     payload: { event: "outbound_click", target: `https://www.${domain}/private/path?token=secret` },
   });
+  const unpublished = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "star_add", target: missing } });
   const removed = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "star_remove", target: id } });
   const unknown = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "page_view", target: "/secret" } });
   const address = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "outbound_click", target: "http://10.1.2.3/a" } });
   const admin = await app.inject({ method: "GET", url: "/api/admin/analytics?days=7" });
 
-  for (const res of [added, again, beacon, outbound, removed, unknown, address]) {
+  for (const res of [added, again, shared, outbound, unpublished, removed, unknown, address]) {
     assert.equal(res.statusCode, 204);
     assert.equal(res.headers["cache-control"], "private, no-store");
     assert.equal(res.headers["cdn-cache-control"], "no-store");
@@ -82,7 +86,8 @@ test("daily interaction counts are anonymous, uncached, and visible only in the 
   assert.equal(stored?.count, 1);
   assert.equal(stored?.target, domain);
   const [leaked] = await sql<{ n: number }[]>`
-    SELECT count(*)::int AS n FROM site_events_daily WHERE target LIKE '%token%' OR target LIKE '%10.1.2.3%' OR event = 'page_view'`;
+    SELECT count(*)::int AS n FROM site_events_daily
+    WHERE target LIKE '%token%' OR target LIKE '%10.1.2.3%' OR target = ${missing} OR event = 'page_view'`;
   assert.equal(leaked?.n, 0);
 
   const summary = await siteAnalyticsOverview(7);
@@ -92,7 +97,7 @@ test("daily interaction counts are anonymous, uncached, and visible only in the 
   const today = summary.engagement.daily.at(-1);
   const top = summary.engagement.topStarred.find((row) => row.id === id);
   assert.equal(summary.engagement.daily.length, 7);
-  assert.equal(summary.engagement.totals.length, 8);
+  assert.equal(summary.engagement.totals.length, 9);
   assert.equal(stars?.count, 2);
   assert.equal(removes?.count, 1);
   assert.equal(shares?.count, 1);
@@ -100,4 +105,22 @@ test("daily interaction counts are anonymous, uncached, and visible only in the 
   assert.equal(summary.engagement.firstStarDevices, 3);
   assert.equal(top?.net, 1);
   assert.equal(top?.title, "互动示例");
+});
+
+test("made-up source domains cannot add more than a day's quota of rows", async () => {
+  const today = sql`(now() AT TIME ZONE 'Asia/Taipei')::date`;
+  const filler = Array.from({ length: 500 }, (_, i) => `f${i}.${id}.example`);
+  await sql`DELETE FROM site_events_daily WHERE day = ${today} AND event = 'outbound_click'`;
+  await sql`INSERT INTO site_events_daily (day, event, target, count)
+    SELECT ${today}, 'outbound_click', t, 1 FROM unnest(${filler}::text[]) AS t`;
+
+  await recordSiteEvent("outbound_click", `new.${id}.example`);
+  await recordSiteEvent("outbound_click", filler[0]!);
+  await recordSiteEvent("outbound_click", "");
+
+  const rows = await sql<{ target: string; count: number }[]>`
+    SELECT target, count FROM site_events_daily
+    WHERE day = ${today} AND event = 'outbound_click' AND target IN (${`new.${id}.example`}, ${filler[0]!}, '')`;
+  assert.deepEqual(Object.fromEntries(rows.map((r) => [r.target, r.count])), { [filler[0]!]: 2, "": 1 });
+  await sql`DELETE FROM site_events_daily WHERE day = ${today} AND event = 'outbound_click' AND target = ''`;
 });

@@ -22,14 +22,15 @@ const EVENT_LABELS: Record<string, string> = {
   star_add: "收藏",
   star_remove: "取消收藏",
   first_star: "首次收藏",
-  subscribe_click: "订阅点击",
+  subscribe_click: "点击订阅入口",
+  subscribe_submit: "提交订阅",
   outbound_click: "打开原文",
   share_click: "分享",
   starred_export: "导出收藏",
   starred_import: "导入收藏",
 };
 
-const EVENT_COLORS = ["var(--accent)", "var(--hot)", "var(--ok)", "var(--amber)", "#3d6b8a", "#6b5b95", "#2f6f6a", "#8a5a44"];
+const EVENT_COLORS = ["var(--accent)", "var(--hot)", "var(--ok)", "var(--amber)", "#3d6b8a", "#6b5b95", "#2f6f6a", "#8a5a44", "#5f7a3a"];
 
 export async function loader({ request }: Route.LoaderArgs) {
   return adminGet<AnalyticsData>(request, `/api/admin/analytics${new URL(request.url).search}`);
