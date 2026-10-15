@@ -2,6 +2,7 @@ import { useTranslate } from "../../lib/i18n";
 import { useState } from "react";
 import type { MediaView } from "@aihot/contracts/site";
 import { Lightbox } from "../../components/ui/Lightbox";
+import { recordOutboundClick } from "../../lib/engagement";
 
 /** A round play mark over a video's still. */
 function PlayMark() {
@@ -46,7 +47,7 @@ export function MediaGallery({ media, postUrl }: { media: MediaView[]; postUrl: 
             />
           );
           return m.kind === "video" ? (
-            <a key={m.url} href={postUrl} target="_blank" rel="noopener noreferrer" aria-label={tx("打开原推播放视频")} className={tile}>
+            <a key={m.url} href={postUrl} target="_blank" rel="noopener noreferrer" onClick={() => recordOutboundClick(postUrl)} aria-label={tx("打开原推播放视频")} className={tile}>
               {img}
               <PlayMark />
             </a>

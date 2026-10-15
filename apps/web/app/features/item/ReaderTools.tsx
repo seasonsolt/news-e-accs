@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Sheet } from "../../components/ui/Sheet";
 import { IconBookmark, IconExternal, IconList, IconShare } from "../../components/icons";
 import { useStar } from "../feed/parts";
+import { recordEngagement, recordOutboundClick } from "../../lib/engagement";
 import { useTranslate } from "../../lib/i18n";
 import type { FeedItemSummary } from "@aihot/contracts/site";
 
@@ -44,7 +45,7 @@ function Tool({ icon, label, onClick, href, pressed }: { icon: ReactNode; label:
   const tx = useTranslate();
   const cls = `flex flex-col items-center justify-center gap-[2px] text-[10.5px] transition-colors active:opacity-50 disabled:opacity-40 ${pressed ? "font-semibold text-accent" : "text-ink-3"}`;
   return href ? (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>
+    <a href={href} target="_blank" rel="noopener noreferrer" onClick={() => recordOutboundClick(href)} className={cls}>
       {icon}
       {tx(label)}
     </a>
@@ -85,7 +86,7 @@ export function ReaderToolbar({ item, originalUrl, originalLabel, onOutline, onS
           }
         />
         {onOutline && <Tool onClick={onOutline} label="目录" icon={<IconList size={22} />} />}
-        <Tool onClick={onShare} label="分享" icon={<IconShare size={22} />} />
+        <Tool onClick={() => { recordEngagement("share_click"); onShare(); }} label="分享" icon={<IconShare size={22} />} />
         {originalUrl ? <Tool href={originalUrl} label={originalLabel} icon={<IconExternal size={22} />} /> : <Tool label={originalLabel} icon={<IconExternal size={22} />} />}
       </div>
     </nav>

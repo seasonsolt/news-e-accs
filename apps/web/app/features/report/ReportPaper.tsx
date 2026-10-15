@@ -10,6 +10,7 @@ import { Text, useLocale, useTranslate } from "../../lib/i18n";
 // and the neighbours; line parts stories, columns and list rows. Nothing is set in solid ink. Stories
 // sit in rows of two whose rules run across the page, each story as tall as its neighbour.
 import { IntentLink } from "../../components/ui/IntentLink";
+import { recordOutboundClick } from "../../lib/engagement";
 import { useState, type ReactNode } from "react";
 
 import type { ReportCitation, ReportDetail, ReportNavigationEntry } from "@aihot/contracts/site";
@@ -83,7 +84,7 @@ function Source({ c, size = 16 }: { c: ReportCitation; size?: number }) {
 function Original({ c, className = "" }: { c: ReportCitation; className?: string }) {
   const tx = useTranslate();
   return (
-    <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" aria-label={tx("阅读{0}原文：{1}（新标签页）", c.sourceName, c.title)} className={`${LINK} text-[12.5px] text-ink-3 ${className}`}><Text value="原文" /><IconArrowUpRight size={12} />
+    <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => recordOutboundClick(c.sourceUrl)} aria-label={tx("阅读{0}原文：{1}（新标签页）", c.sourceName, c.title)} className={`${LINK} text-[12.5px] text-ink-3 ${className}`}><Text value="原文" /><IconArrowUpRight size={12} />
     </a>
   );
 }

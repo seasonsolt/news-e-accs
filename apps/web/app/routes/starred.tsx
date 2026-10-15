@@ -9,6 +9,7 @@ import { Presence } from "../components/ui/Presence";
 import { edgeTtl } from "../lib/api.server";
 import { pageMeta } from "../lib/seo";
 import { exportBundle, importBundle, removeStar, useStarred, type ImportReport } from "../lib/local-state";
+import { recordEngagement } from "../lib/engagement";
 import { fullDateTime } from "../lib/format";
 import { IconBookmark, IconDownload, IconClose } from "../components/icons";
 import { Deck } from "../components/shell/Deck";
@@ -73,6 +74,7 @@ export default function StarredPage() {
   useSaveOnLeave(historyKey, () => null);
 
   const doExport = () => {
+    recordEngagement("starred_export");
     const blob = new Blob([JSON.stringify(exportBundle(), null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -85,6 +87,7 @@ export default function StarredPage() {
     if (!file) return;
     try {
       const report = importBundle(await file.text());
+      recordEngagement("starred_import");
       setNotice({ kind: report.readFailed ? "error" : "ok", text: tx("导入完成：{0}", reportText(report, tx, locale)) });
     } catch (e) {
       setNotice({ kind: "error", text: e instanceof Error ? e.message : tx("导入失败") });
@@ -94,7 +97,10 @@ export default function StarredPage() {
   // Imports from elsewhere that the site's modules offer.
   const importFrom = (run: () => Promise<{ ok: boolean; text: string }>) =>
     run().then(
-      (r) => setNotice({ kind: r.ok ? "ok" : "error", text: r.text }),
+      (r) => {
+        if (r.ok) recordEngagement("starred_import");
+        setNotice({ kind: r.ok ? "ok" : "error", text: r.text });
+      },
       (err: Error) => setNotice({ kind: "error", text: err.message }),
     );
 
