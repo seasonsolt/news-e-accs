@@ -1,11 +1,12 @@
-// The 视频号 edition of 「AI 早报」: a one-minute vertical video of the day's first printed entries, one
-// spoken paragraph each. 视频号 has no API to publish a video, and the server has neither the voice
+// The 视频号 edition of 「AI 早报」: a one-minute vertical video of the day's first printed entries: the
+// first told at length as the day's lead, the rest as one-line quick hits, and a wry last word on any of
+// the day's entries. 视频号 has no API to publish a video, and the server has neither the voice
 // model nor the cycles to render one, so the work is split: the workbench asks for a voice-over script
 // (admin/wechat.ts), the worker writes it here with the model (industry/prompts/wechat-video.md) and the
 // editor may rewrite it, then scripts/wechat-video.ts on the editor's Mac reads it (videoSpec, through
 // the WECHAT_VIDEO_TOKEN route), speaks it with the local voice model, animates it with HyperFrames
 // (scripts/wechat-video-composition.ts) and cuts the mp4 that the editor uploads by hand. The opening,
-// closing and caption are written by rule; only the entries' paragraphs are the model's.
+// closing and caption are written by rule; the entries' paragraphs and the last word are the model's.
 import { z } from "zod";
 import { config } from "../config.ts";
 import { sql } from "../db.ts";
@@ -20,22 +21,38 @@ import { wechatColumn } from "./wechat-column.ts";
 import { wechatComments } from "./wechat-comments.ts";
 import { WECHAT_COLUMN, wechatArticle, type ColumnEntry, type WechatArticle, type WechatEdits, type WechatTheme } from "./wechat.ts";
 
-/** Entries a video speaks: about eight seconds each keeps it near a minute. */
+/** Entries a video speaks: the lead (about 25 seconds) and five quick hits (about 4 seconds each). */
 export const VIDEO_ENTRIES = 6;
-/** The prompt asks for 25–45 characters; anything past this does not fit its eight seconds. */
-const NARRATION_MAX = 70;
-/** Longest an editor may make one spoken paragraph, and the caption (视频号 takes 1,000 characters). */
+/**
+ * The prompt asks for 80–110 characters for the lead, 15–30 for a quick hit, 20–40 for the last word and
+ * up to 12 for a point shown on the lead's card; past these they do not fit their time or their line.
+ */
+const LEAD_MAX = 140;
+const BRIEF_MAX = 40;
+const EGG_MAX = 60;
+const POINT_MAX = 14;
+/** Points the lead's card shows, at most. */
+export const VIDEO_POINTS = 3;
+/** Longest an editor may make one spoken paragraph or a point, and the caption (视频号 takes 1,000 characters). */
 export const VIDEO_LINE_MAX = 300;
+export const VIDEO_POINT_MAX = 20;
 export const VIDEO_CAPTION_MAX = 1000;
 const HASHTAGS = ["#AI", "#人工智能", "#AI早报", "#科技新闻"];
 
 const VERSION = promptVersion("wechat-video");
-const SegmentsSchema = z.object({ segments: z.array(z.object({ n: z.number().int(), narration: z.string() })) });
+const ScriptSchema = z.object({
+  segments: z.array(z.object({ n: z.number().int(), narration: z.string(), points: z.array(z.string()).optional() })),
+  egg: z.object({ n: z.number().int(), line: z.string() }).nullable().optional(),
+});
+/** What the closing joke is introduced with. */
+const EGG_LEAD_IN = "最后来个彩蛋。";
 
 export interface WechatVideoScript {
   opening: string;
-  /** In speaking order, by the column's entry key. */
-  segments: Array<{ key: string; narration: string }>;
+  /** In speaking order, by the column's entry key: the lead (with the points its card shows), then the quick hits. */
+  segments: Array<{ key: string; narration: string; points?: string[] }>;
+  /** The last word, on any entry the column prints; null when none fits. Scripts written before it have none. */
+  egg?: { key: string; narration: string } | null;
   closing: string;
   caption: string;
 }
@@ -60,7 +77,8 @@ export interface WechatVideoSpec {
   opening: string;
   closing: string;
   caption: string;
-  segments: Array<{ key: string; number: number; section: string; sourceName: string; title: string; narration: string; hasImage: boolean }>;
+  segments: Array<{ key: string; number: number; section: string; sourceName: string; title: string; narration: string; points: string[]; hasImage: boolean }>;
+  egg: { key: string; section: string; sourceName: string; title: string; narration: string; hasImage: boolean } | null;
 }
 
 export async function wechatVideo(key: string): Promise<WechatVideoRow | null> {
@@ -86,7 +104,7 @@ export async function printedIssue(key: string): Promise<{ article: WechatArticl
   return { article: wechatArticle(column.report, column.extra, comments, row?.edits ?? {}), issueNumber: column.report.issueNumber };
 }
 
-const spoken = (article: WechatArticle) => article.entries.filter((e) => !e.hidden).slice(0, VIDEO_ENTRIES);
+const printed = (article: WechatArticle) => article.entries.filter((e) => !e.hidden);
 
 const monthDay = (key: string) => {
   const [, m, d] = key.split("-").map(Number) as [number, number, number];
@@ -101,22 +119,27 @@ function clip(s: string, max: number): string {
 /** The script's parts written by rule, for the entries the video speaks. */
 export function ruledParts(key: string, article: WechatArticle, entries: ColumnEntry[]): Omit<WechatVideoScript, "segments"> {
   const headlines = entries.map((e, k) => `${String(k + 1).padStart(2, "0")} ${e.title}`);
+  const plan = entries.length > 1 ? `今天重点说一件事，再快速过 ${entries.length - 1} 条消息。` : "今天说一件事。";
   return {
-    opening: `早上好，这里是 ${WECHAT_COLUMN}。${monthDay(key)}，一分钟听完今天的 ${entries.length} 条 AI 新闻。`,
+    opening: `早上好，这里是 ${WECHAT_COLUMN}。${monthDay(key)}，${plan}`,
     closing: "每条消息的原文出处，在视频下方的完整早报里。明天早上见。",
     caption: clip([`${WECHAT_COLUMN}｜${monthDay(key)}`, ...headlines, "", `完整早报：${article.readMoreUrl}`, "", HASHTAGS.join(" ")].join("\n"), VIDEO_CAPTION_MAX),
   };
 }
 
-/** A paragraph that reads aloud in about ten seconds and names nothing its entry does not; else null. */
-function usable(narration: string | undefined, entry: ColumnEntry): string | null {
-  const text = narration?.replace(/\s+/g, " ").trim();
-  if (!text || Array.from(text).length > NARRATION_MAX || /[!！]/.test(text)) return null;
-  return grounded(text, `${entry.title}\n${entry.body ?? ""}\n${entry.comment ?? ""}`) ? text : null;
+/** Text that fits `max` characters and names nothing its entry does not; else null. */
+function usable(text: string | undefined, entry: ColumnEntry, max: number): string | null {
+  const clean = text?.replace(/\s+/g, " ").trim();
+  if (!clean || Array.from(clean).length > max || /[!！]/.test(clean)) return null;
+  return grounded(clean, `${entry.title}\n${entry.body ?? ""}\n${entry.comment ?? ""}`) ? clean : null;
 }
 
-/** An entry without a usable paragraph is read as its title, and its comment when it has one. */
-const fallback = (entry: ColumnEntry) => [entry.title, entry.comment].filter(Boolean).map((s) => s!.replace(/[。.]$/, "")).join("。") + "。";
+/** A lead without a usable paragraph is read as its title and its comment; a quick hit as its title. */
+const fallback = (entry: ColumnEntry, lead: boolean) =>
+  (lead ? [entry.title, entry.comment] : [entry.title]).filter(Boolean).map((s) => s!.replace(/[。.]$/, "")).join("。") + "。";
+
+/** What the model is shown of an entry: its title, the start of its text and the comment. */
+const brief = (e: ColumnEntry, n: number) => [`${n}. ${e.title}`, clip(e.body ?? "", 400), e.comment ? `点评：${e.comment}` : ""].filter(Boolean).join("\n");
 
 function failure(error: unknown): string {
   if (error instanceof BudgetExceededError) return "模型预算用完了，稍后再试，或在后台「设置 → 预算」里调高。";
@@ -137,20 +160,34 @@ export async function writeWechatVideoScript(job: { date: string; request: strin
   if (!claimed.length) return { status: "superseded" };
   try {
     const issue = await printedIssue(job.date);
-    const entries = issue ? spoken(issue.article) : [];
+    const all = issue ? printed(issue.article) : [];
+    const entries = all.slice(0, VIDEO_ENTRIES);
     if (!issue || !entries.length) throw new Error("这一天没有可以做视频的早报。");
+    const others = all.slice(VIDEO_ENTRIES);
     const model = await modelFor("wechat");
     const res = await chatJson({
       model, purpose: "wechat_video", promptVersion: VERSION, attemptTag: job.request,
-      subject: `wechat-video:${job.date}@${sha256(stableJson(entries.map((e) => [e.key, e.title, e.body, e.comment])))}`,
+      subject: `wechat-video:${job.date}@${sha256(stableJson(all.map((e) => [e.key, e.title, e.body, e.comment])))}`,
       system: promptText("wechat-video"),
-      user: entries.map((e, k) => [`${k + 1}. ${e.title}`, e.body ?? "", e.comment ? `点评：${e.comment}` : ""].filter(Boolean).join("\n")).join("\n\n"),
-      schema: SegmentsSchema, temperature: 0.6, maxTokens: 2000,
+      user: [
+        `视频里的条目（1 是重点，其余是快讯）：\n\n${entries.map((e, k) => brief(e, k + 1)).join("\n\n")}`,
+        others.length ? `彩蛋候选：\n\n${others.map((e, k) => brief(e, VIDEO_ENTRIES + k + 1)).join("\n\n")}` : "",
+      ].filter(Boolean).join("\n\n"),
+      schema: ScriptSchema, temperature: 0.6, maxTokens: 2000,
     });
-    const written = new Map(res.data.segments.map((s) => [s.n, s.narration]));
+    const written = new Map(res.data.segments.map((s) => [s.n, s]));
+    const lead = written.get(1);
+    const eggEntry = res.data.egg ? all[res.data.egg.n - 1] : undefined;
+    const joke = eggEntry && usable(res.data.egg!.line, eggEntry, EGG_MAX);
     const script: WechatVideoScript = {
       ...ruledParts(job.date, issue.article, entries),
-      segments: entries.map((e, k) => ({ key: e.key, narration: usable(written.get(k + 1), e) ?? fallback(e) })),
+      segments: entries.map((e, k) => k === 0
+        ? {
+            key: e.key, narration: usable(lead?.narration, e, LEAD_MAX) ?? fallback(e, true),
+            points: (lead?.points ?? []).flatMap((p) => usable(p.replace(/[。.]$/, ""), e, POINT_MAX) ?? []).slice(0, VIDEO_POINTS),
+          }
+        : { key: e.key, narration: usable(written.get(k + 1)?.narration, e, BRIEF_MAX) ?? fallback(e, false) }),
+      egg: eggEntry && joke ? { key: eggEntry.key, narration: EGG_LEAD_IN + joke } : null,
     };
     const kept = await sql.begin(async (tx) => {
       const updated = await tx`
@@ -170,8 +207,8 @@ export async function writeWechatVideoScript(job: { date: string; request: strin
 
 /**
  * What scripts/wechat-video.ts renders for the day: the stored script over the entries as the column
- * prints them now (edited titles, current order of the script). A paragraph whose entry is gone or
- * hidden since is left out. Null without a finished script.
+ * prints them now (edited titles, current order of the script). A paragraph or last word whose entry is
+ * gone or hidden since is left out. Null without a finished script.
  */
 export async function videoSpec(key: string): Promise<WechatVideoSpec | null> {
   const [row, issue, pictures] = await Promise.all([
@@ -179,15 +216,22 @@ export async function videoSpec(key: string): Promise<WechatVideoSpec | null> {
     sql<{ entry_key: string }[]>`SELECT entry_key FROM wechat_illustrations WHERE report_key = ${key} AND file IS NOT NULL`,
   ]);
   if (!row?.script || !issue) return null;
-  const shown = new Map(issue.article.entries.filter((e) => !e.hidden).map((e) => [e.key, e]));
+  const shown = new Map(printed(issue.article).map((e) => [e.key, e]));
   const withImage = new Set(pictures.map((p) => p.entry_key));
-  const segments = row.script.segments.flatMap((s) => {
-    const entry = shown.get(s.key);
-    return entry && s.narration.trim() ? [{ key: s.key, section: entry.section, sourceName: entry.sourceName, title: entry.title, narration: s.narration.trim(), hasImage: withImage.has(s.key) }] : [];
+  const card = (key: string, narration: string) => {
+    const entry = shown.get(key);
+    return entry && narration.trim()
+      ? { key, section: entry.section, sourceName: entry.sourceName, title: entry.title, narration: narration.trim(), hasImage: withImage.has(key) }
+      : null;
+  };
+  const segments = row.script.segments.flatMap((s, k) => {
+    const c = card(s.key, s.narration);
+    return c ? [{ ...c, points: k === 0 ? (s.points ?? []).filter((p) => p.trim()) : [] }] : [];
   });
   return {
     date: key, issueNumber: issue.issueNumber, theme: issue.article.theme, site: new URL(issue.article.readMoreUrl).host,
     opening: row.script.opening, closing: row.script.closing, caption: row.script.caption,
     segments: segments.map((s, k) => ({ ...s, number: k + 1 })),
+    egg: row.script.egg ? card(row.script.egg.key, row.script.egg.narration) : null,
   };
 }

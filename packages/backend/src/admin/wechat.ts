@@ -14,7 +14,7 @@ import { WECHAT_MIN_ENTRIES, wechatColumn } from "../newsletter/wechat-column.ts
 import { wechatComments } from "../newsletter/wechat-comments.ts";
 import { wechatTopics } from "../newsletter/wechat-topics.ts";
 import { drawingUnavailable, illustrationDir, illustrationJpeg, illustrationSubject, wechatIllustrations, type IllustrationRow } from "../newsletter/wechat-illustrations.ts";
-import { scriptingUnavailable, VIDEO_CAPTION_MAX, VIDEO_ENTRIES, VIDEO_LINE_MAX, wechatVideo, type WechatVideoRow, type WechatVideoScript } from "../newsletter/wechat-video.ts";
+import { scriptingUnavailable, VIDEO_CAPTION_MAX, VIDEO_ENTRIES, VIDEO_LINE_MAX, VIDEO_POINT_MAX, VIDEO_POINTS, wechatVideo, type WechatVideoRow, type WechatVideoScript } from "../newsletter/wechat-video.ts";
 import { saveJpeg } from "../providers/codex.ts";
 import { addWechatDraft, updateWechatDraft, uploadWechatArticleImage, uploadWechatImage, WechatApiError, wechatConfigured, type WechatDraftArticle } from "../providers/wechat-mp.ts";
 import { SITE } from "@aihot/site";
@@ -372,7 +372,10 @@ function line(value: unknown, name: string, max: number): string {
   return value;
 }
 
-/** Replaces the finished script's words with the editor's; its paragraphs stay those of the same entries. */
+/**
+ * Replaces the finished script's words with the editor's; its paragraphs stay those of the same entries
+ * and the last word that of its entry, which the editor may drop.
+ */
 export async function saveWechatVideoScript(date: string, input: { script?: unknown }, actor: string): Promise<{ ok: true }> {
   const key = dateKey(date);
   const s = input.script as Record<string, unknown> | undefined;
@@ -381,10 +384,19 @@ export async function saveWechatVideoScript(date: string, input: { script?: unkn
     const [before] = await tx<{ status: string; script: WechatVideoScript | null }[]>`SELECT status, script FROM wechat_videos WHERE report_key = ${key} FOR UPDATE`;
     // A failed rewrite keeps the script before it, which stays editable; one under way would replace the edits.
     if (!before?.script || before.status === "queued" || before.status === "writing") throw new Conflict("口播稿还没写好，等它写完再改。");
-    const given = new Map((s.segments as Array<Record<string, unknown>>).map((x) => [x?.key, x?.narration]));
+    const given = new Map((s.segments as Array<Record<string, unknown>>).map((x) => [x?.key, x]));
+    const egg = s.egg as Record<string, unknown> | null | undefined;
     const script: WechatVideoScript = {
       opening: line(s.opening, "opening", VIDEO_LINE_MAX),
-      segments: before.script.segments.map((x) => ({ key: x.key, narration: given.has(x.key) ? line(given.get(x.key), "narration", VIDEO_LINE_MAX) : x.narration })),
+      segments: before.script.segments.map((x, k) => {
+        const edit = given.get(x.key);
+        if (!edit) return x;
+        const narration = line(edit.narration, "narration", VIDEO_LINE_MAX);
+        if (k > 0) return { key: x.key, narration };
+        if (!Array.isArray(edit.points) || edit.points.length > VIDEO_POINTS) throw bad(`points must be a list of at most ${VIDEO_POINTS}`);
+        return { key: x.key, narration, points: edit.points.map((p) => line(p, "point", VIDEO_POINT_MAX)) };
+      }),
+      egg: before.script.egg && egg !== null ? { key: before.script.egg.key, narration: egg ? line(egg.narration, "egg", VIDEO_LINE_MAX) : before.script.egg.narration } : null,
       closing: line(s.closing, "closing", VIDEO_LINE_MAX),
       caption: line(s.caption, "caption", VIDEO_CAPTION_MAX),
     };

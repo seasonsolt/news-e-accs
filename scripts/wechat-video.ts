@@ -1,7 +1,7 @@
 // Cuts the 视频号 video of a day's 「AI 早报」 on the editor's Mac: reads the script written and edited in
 // the 公众号 workbench (newsletter/wechat-video.ts) from the site, speaks it with VoxCPM2 on this machine
 // (scripts/wechat-video-tts.py), finds when each word is said (scripts/wechat-video-listen.py), animates
-// the cards and subtitles with HyperFrames (scripts/wechat-video-composition.ts), lays the voice over a
+// the lead, the quick hits, the last word and the subtitles with HyperFrames (scripts/wechat-video-composition.ts), lays the voice over a
 // music bed of its own (scripts/wechat-video-music.py) and joins them into a 1080×1920 mp4, beside the
 // caption to paste into 视频号 and a cover. 视频号 has no upload API: the editor uploads the mp4 in 视频号助手
 // (channels.weixin.qq.com) or on the phone.
@@ -53,6 +53,8 @@ const HYPERFRAMES = "hyperframes@0.8.162";
 const LEAD = 1.8;
 const GAP = 0.7;
 const TAIL = 2.0;
+/** Between one quick hit and the next, which share a card. */
+const BRIEF_GAP = 0.35;
 /** A card arrives this long before its line is spoken. */
 const CUT_AHEAD = 0.45;
 /** A subtitle is at most this many Chinese characters wide, one line at its size. */
@@ -218,16 +220,26 @@ async function main() {
     await copyFile(path.join(HERE, `../assets/og-fonts/noto-sans-sc-${weight}.ttf`), path.join(project, "fonts", `noto-sans-sc-${weight}.ttf`));
   }
   const images: Record<string, string> = {};
-  for (const s of spec.segments.filter((x) => x.hasImage)) {
-    const img = await get(`/api/wechat-video/${date}/illustration.jpg?entry=${encodeURIComponent(s.key)}`);
+  const pictured = [...spec.segments.map((x) => ({ ...x, name: String(x.number).padStart(2, "0") })), ...(spec.egg ? [{ ...spec.egg, name: "egg" }] : [])];
+  for (const x of pictured.filter((p) => p.hasImage)) {
+    if (images[x.key]) continue;
+    const img = await get(`/api/wechat-video/${date}/illustration.jpg?entry=${encodeURIComponent(x.key)}`);
     if (!img.ok) continue;
-    images[s.key] = `images/${String(s.number).padStart(2, "0")}.jpg`;
-    await writeFile(path.join(project, images[s.key]!), Buffer.from(await img.arrayBuffer()));
+    images[x.key] = `images/${x.name}.jpg`;
+    await writeFile(path.join(project, images[x.key]!), Buffer.from(await img.arrayBuffer()));
   }
 
-  // The lines in speaking order: the opening, each entry, the closing.
-  const lines = [spec.opening, ...spec.segments.map((s) => s.narration), spec.closing].map((l) => l.trim());
-  if (lines.some((l) => !l)) fail("口播稿的开场或结尾是空的。");
+  // The lines in speaking order, each with the card it is said over.
+  const [lead, ...briefs] = spec.segments;
+  const said = [
+    { text: spec.opening, card: "opening" },
+    { text: lead!.narration, card: "lead" },
+    ...briefs.map((x) => ({ text: x.narration, card: "briefs" })),
+    ...(spec.egg ? [{ text: spec.egg.narration, card: "egg" }] : []),
+    { text: spec.closing, card: "closing" },
+  ].map((x) => ({ ...x, text: x.text.trim() }));
+  if (said.some((x) => !x.text)) fail("口播稿的开场或结尾是空的。");
+  const lines = said.map((x) => x.text);
   const wavs = lines.map((_, k) => path.join(out, "voice", `${String(k).padStart(3, "0")}.wav`));
   const voiceName = voice.refAudio ? `参考录音 ${path.basename(voice.refAudio)}` : `声音描述「${voice.instruct}」`;
   console.log(`配音：VoxCPM2，${voiceName}，共 ${lines.length} 段（每段约需它时长的 1.5 倍）`);
@@ -239,28 +251,36 @@ async function main() {
   const heard = await venv<{ words: Array<[string, number, number]>; heard: string }>("wechat-video-listen.py",
     { ...LISTEN, lines: lines.map((text, k) => ({ text, wav: wavs[k] })) }, () => {});
 
-  // The timeline: each line's start, the cards cut just before their lines, and the subtitles on the words.
-  const starts = seconds.map((_, k) => LEAD + seconds.slice(0, k).reduce((a, b) => a + b + GAP, 0));
+  // The timeline: each line's start (quick hits follow each other closely), the cards cut just before
+  // their first line, and the subtitles, the lead's points and the quick hits' turns on the words.
+  const gaps = said.map((x, k) => (k === said.length - 1 ? TAIL : x.card === "briefs" && said[k + 1]!.card === "briefs" ? BRIEF_GAP : GAP));
+  const starts = seconds.map((_, k) => LEAD + seconds.slice(0, k).reduce((a, b, j) => a + b + gaps[j]!, 0));
   const duration = starts.at(-1)! + seconds.at(-1)! + TAIL;
-  const cuts = starts.map((s, k) => (k === 0 ? 0 : s - CUT_AHEAD));
-  const scenes = cuts.map((start, k) => ({ start, end: cuts[k + 1] ?? duration }));
+  const firsts = said.flatMap((x, k) => (k === 0 || said[k - 1]!.card !== x.card ? [k] : []));
+  const cuts = firsts.map((k) => (k === 0 ? 0 : starts[k]! - CUT_AHEAD));
+  const scenes = cuts.map((start, j) => ({ start, end: cuts[j + 1] ?? duration }));
+  const timed = lines.map((line, k) => charTimes(line, heard[k]!.words, seconds[k]!));
+  const at = (k: number, index: number) => starts[k]! + timed[k]!.at[index]!;
+  // A point comes up as the sentence it stands for starts (the prompt pairs them in order).
+  const sentences = [0, ...Array.from(lines[1]!.matchAll(/[。！？](?=.)/gu), (m) => Array.from(lines[1]!.slice(0, m.index! + 1)).length)];
+  const points = lead!.points.map((_, j) => at(1, sentences[Math.min(j, sentences.length - 1)]!));
+  const briefSpans = said.flatMap((x, k) => (x.card === "briefs" ? [{ start: starts[k]! - 0.1, end: starts[k]! + seconds[k]! + gaps[k]! - 0.1 }] : []));
   const report: string[] = [];
   const subs: Cut["subtitles"] = [];
   for (const [k, line] of lines.entries()) {
-    const { at, found } = charTimes(line, heard[k]!.words, seconds[k]!);
-    if (found < 0.8) report.push(`第 ${k + 1} 段：字幕只对上 ${Math.round(found * 100)}% 的词，时间可能不准`);
+    if (timed[k]!.found < 0.8) report.push(`第 ${k + 1} 段：字幕只对上 ${Math.round(timed[k]!.found * 100)}% 的词，时间可能不准`);
     for (const problem of misheard(line, heard[k]!.heard)) report.push(`第 ${k + 1} 段：${problem}（听成「${heard[k]!.heard}」）`);
     const parts = subtitles(line);
     for (const [j, part] of parts.entries()) {
       let from = part.from;
       const words = tokens(part.text).map((text) => {
-        const word = { text, at: starts[k]! + at[from]! };
+        const word = { text, at: at(k, from) };
         from += Array.from(text).length;
         return word;
       });
       const next = parts[j + 1];
       const start = words[0]!.at;
-      const end = next ? starts[k]! + at[next.from]! : Math.min(starts[k]! + seconds[k]! + 0.3, scenes[k]!.end);
+      const end = next ? at(k, next.from) : Math.min(starts[k]! + seconds[k]! + 0.3, (starts[k + 1] ?? duration) - 0.05);
       subs.push({ start, end: Math.max(end, start + 0.3), tokens: words });
     }
   }
@@ -269,7 +289,7 @@ async function main() {
   const music = path.join(out, "music.wav");
   await run(python, ["-I", path.join(HERE, "wechat-video-music.py"), JSON.stringify({ seconds: duration, seed: Number(date.replaceAll("-", "")), out: music })]);
   const mix = path.join(out, "sound.m4a");
-  const pads = wavs.map((_, k) => `[${k}:a]aformat=sample_rates=48000:channel_layouts=mono,apad=pad_dur=${k === wavs.length - 1 ? TAIL : GAP}[a${k}]`);
+  const pads = wavs.map((_, k) => `[${k}:a]aformat=sample_rates=48000:channel_layouts=mono,apad=pad_dur=${gaps[k]}[a${k}]`);
   await run("ffmpeg", [
     "-y", "-loglevel", "error", ...wavs.flatMap((w) => ["-i", w]), "-i", music,
     "-filter_complex", [
@@ -284,7 +304,7 @@ async function main() {
   ]);
 
   console.log("渲染画面（HyperFrames）");
-  const cut: Cut = { spec, duration, scenes, subtitles: subs, images };
+  const cut: Cut = { spec, duration, scenes, points, briefs: briefSpans, subtitles: subs, images };
   await writeFile(path.join(project, "index.html"), composition(cut, "fonts"));
   const picture = path.join(out, "picture.mp4");
   await run("npx", ["-y", HYPERFRAMES, "render", project, "-o", picture, "--fps", "30", "--quiet"], { ...process.env, HYPERFRAMES_NO_TELEMETRY: "1" });

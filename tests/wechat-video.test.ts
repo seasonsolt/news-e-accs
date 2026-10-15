@@ -1,5 +1,5 @@
-// The 视频号 edition of 「AI 早报」: the workbench asks for a voice-over script, the worker writes one
-// paragraph per printed entry with the model (a paragraph that names what its entry does not is read as
+// The 视频号 edition of 「AI 早报」: the workbench asks for a voice-over script, the worker writes the lead,
+// the quick hits and a last word with the model (a paragraph that names what its entry does not is read as
 // the entry's title instead), the editor rewrites it, and the Mac reads it with the video token, joined
 // with the entries as the column prints them now. The model is a local stub.
 import { pointModels, stub, tag } from "./setup.ts";
@@ -62,17 +62,17 @@ test("no script is asked for while model calls are off", async () => {
   }
 });
 
-test("the worker writes one paragraph per printed entry, the editor rewrites it, and the Mac reads it with the token", async () => {
+test("the worker writes the lead, the quick hits and a last word, the editor rewrites them, and the Mac reads them with the token", async () => {
   const asked: string[] = [];
   const model = await stub((_hit, req) => {
     const user = (JSON.parse(req.body) as { messages: Array<{ role: string; content: string }> }).messages.find((m) => m.role === "user")!.content;
     asked.push(user);
     const segments = [
-      { n: 1, narration: "Nova 模型发布，推理成本下降一半，用得起的人会更多。" },
+      { n: 1, narration: "Nova 模型发布，推理成本下降一半，用得起的人会更多。", points: ["推理成本下降一半", "售价 199 元", "用得起的人更多。"] },
       { n: 2, narration: "产品 B 上线，价格降到 199 元。" },
-      { n: 3, narration: "行业 C 完成新一轮融资，资金继续流向应用层。" },
     ];
-    return { id: `wv-${T}`, choices: [{ message: { content: JSON.stringify({ segments }) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } };
+    const egg = { n: 2, line: "产品 B 终于上线，等的人可以去吃早饭了。" };
+    return { id: `wv-${T}`, choices: [{ message: { content: JSON.stringify({ segments, egg }) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } };
   });
   pointModels(model.url, ["deepseek-flash"]);
   try {
@@ -89,26 +89,31 @@ test("the worker writes one paragraph per printed entry, the editor rewrites it,
     assert.deepEqual(await writeWechatVideoScript({ date: TODAY, request }), { status: "done" });
     assert.equal(asked.length, 1);
     assert.doesNotMatch(asked[0]!, /行业 C/, "a hidden entry is not spoken");
+    assert.match(asked[0]!, /^视频里的条目（1 是重点，其余是快讯）/);
 
     const { video } = await ready();
     assert.equal(video?.status, "done");
     const script = video!.script!;
     assert.equal(script.segments.length, 2, "the lead and the other printed entry");
-    assert.match(script.opening, /2 条/);
+    assert.match(script.opening, /重点说一件事，再快速过 1 条消息/);
+    assert.deepEqual(script.segments[0]!.points, ["推理成本下降一半", "用得起的人更多"], "a point naming what its entry lacks is dropped");
     assert.equal(script.segments[1]!.narration, "产品 B 上线。", "a figure its entry lacks is not spoken: the title is read instead");
+    assert.deepEqual(script.egg, { key: script.segments[1]!.key, narration: "最后来个彩蛋。产品 B 终于上线，等的人可以去吃早饭了。" });
     assert.match(script.caption, /^AI 早报｜/);
     assert.match(script.caption, /完整早报：https?:\/\/.+\/daily\//);
     const [receipt] = await sql`SELECT r.status, r.purpose FROM receipts r JOIN wechat_videos v ON v.receipt_id = r.id WHERE v.report_key = ${TODAY}`;
     assert.deepEqual([receipt!.status, receipt!.purpose], ["completed", "wechat_video"], "the script is receipted");
 
     await saveWechatVideoScript(TODAY, {
-      script: { ...script, closing: "明天见。", segments: [{ key: script.segments[1]!.key, narration: "编辑改写的一段。" }, { key: "not-an-entry", narration: "x" }] },
+      script: { ...script, closing: "明天见。", segments: [{ key: script.segments[1]!.key, narration: "编辑改写的一段。" }, { key: "not-an-entry", narration: "x" }], egg: { key: "not-an-entry", narration: "编辑改写的彩蛋。" } },
     }, "editor");
     const edited = (await ready()).video!;
     assert.equal(edited.editedBy, "editor");
     assert.equal(edited.script!.segments.length, 2, "the editor rewrites paragraphs but cannot add entries");
     assert.equal(edited.script!.segments[1]!.narration, "编辑改写的一段。");
     assert.equal(edited.script!.segments[0]!.narration, script.segments[0]!.narration, "a paragraph not sent is kept");
+    assert.deepEqual(edited.script!.egg, { key: script.segments[1]!.key, narration: "编辑改写的彩蛋。" }, "the last word keeps its entry");
+    await assert.rejects(saveWechatVideoScript(TODAY, { script: { ...edited.script, segments: [{ key: script.segments[0]!.key, narration: "x", points: ["a", "b", "c", "d"] }] } }, "editor"), /at most 3/);
 
     assert.equal((await app.inject({ method: "GET", url: `/api/wechat-video/${TODAY}` })).statusCode, 401);
     assert.equal((await app.inject({ method: "GET", url: `/api/wechat-video/${TODAY}`, headers: { authorization: "Bearer wrong-token-0123456789" } })).statusCode, 401);
@@ -121,6 +126,13 @@ test("the worker writes one paragraph per printed entry, the editor rewrites it,
     assert.equal(spec.closing, "明天见。");
     assert.equal(spec.site, new URL(config.siteUrl).host, "the closing card names the site");
     assert.deepEqual(spec.segments.map((s: { number: number; title: string }) => [s.number, s.title]), [[1, `头条 ${T}`], [2, "产品 B 上线"]]);
+    assert.deepEqual(spec.segments.map((s: { points: string[] }) => s.points), [["推理成本下降一半", "用得起的人更多"], []], "only the lead shows points");
+    assert.equal(spec.egg.title, "产品 B 上线");
+    assert.equal(spec.egg.narration, "编辑改写的彩蛋。");
+
+    await saveWechatVideoScript(TODAY, { script: { ...(await ready()).video!.script, egg: null } }, "editor");
+    assert.equal((await ready()).video!.script!.egg, null, "the editor may drop the last word");
+    assert.equal((await app.inject({ method: "GET", url: `/api/wechat-video/${TODAY}`, headers: auth })).json().egg, null);
 
     // Hiding an entry after the script was written takes its paragraph out of the video.
     const now = await ready();
@@ -168,26 +180,32 @@ test("the hearing check names what the voice model read wrong", () => {
   assert.match(misheard("训练成本下降一半", "训练时间下降了").join(), /汉字只对上/);
 });
 
-test("the composition has a card per line and a clip per subtitle, its text escaped", () => {
+test("the composition has the lead's card, one card of quick hits, the last word's card and a clip per subtitle, its text escaped", () => {
   const spec: WechatVideoSpec = {
     date: "2026-10-15", issueNumber: 22, theme: "amber", site: "e-acc.ai", opening: "早上好。", closing: "明天见。", caption: "",
     segments: [
-      { key: "a", number: 1, section: "模型", sourceName: "官方博客", title: "A <模型> 发布", narration: "A 模型发布。", hasImage: true },
-      { key: "b", number: 2, section: "产品", sourceName: "媒体", title: "产品 B 上线", narration: "产品 B 上线。", hasImage: false },
+      { key: "a", number: 1, section: "模型", sourceName: "官方博客", title: "A <模型> 发布", narration: "A 模型发布。成本减半。", points: ["成本减半", "用得起"], hasImage: true },
+      { key: "b", number: 2, section: "产品", sourceName: "媒体", title: "产品 B 上线", narration: "产品 B 上线。", points: [], hasImage: false },
+      { key: "c", number: 3, section: "行业", sourceName: "媒体", title: "行业 C 融资", narration: "行业 C 融资。", points: [], hasImage: true },
     ],
+    egg: { key: "b", section: "产品", sourceName: "媒体", title: "产品 B 上线", narration: "最后来个彩蛋。等了好久。", hasImage: false },
   };
   const html = composition({
-    spec, duration: 12,
-    scenes: [{ start: 0, end: 3 }, { start: 3, end: 6 }, { start: 6, end: 9 }, { start: 9, end: 12 }],
+    spec, duration: 20,
+    scenes: [{ start: 0, end: 3 }, { start: 3, end: 9 }, { start: 9, end: 14 }, { start: 14, end: 17 }, { start: 17, end: 20 }],
+    points: [3.5, 6], briefs: [{ start: 9.5, end: 11.5 }, { start: 11.5, end: 13.5 }],
     subtitles: [{ start: 1.8, end: 2.6, tokens: tokens("早上好").map((text, k) => ({ text, at: 1.8 + k * 0.2 })) }],
-    images: { a: "images/01.jpg" },
+    images: { a: "images/01.jpg", c: "images/03.jpg" },
   }, "fonts");
-  assert.equal(html.match(/class="clip scene"/g)?.length, 4);
+  assert.deepEqual([...html.matchAll(/class="clip scene (\w+)"/g)].map((m) => m[1]), ["opening", "lead", "briefs", "egg", "closing"]);
   assert.equal(html.match(/class="clip sub"/g)?.length, 1);
-  assert.match(html, /data-duration="12\.000"/);
+  assert.equal(html.match(/<ul class="points"><li>成本减半<\/li><li>用得起<\/li><\/ul>/g)?.length, 1, "the lead's points");
+  assert.equal(html.match(/class="briefs"/g)?.length, 1);
+  assert.match(html, /<li class="egg"><b>彩蛋<\/b>/, "the title card promises the last word");
+  assert.match(html, /data-duration="20\.000"/);
   assert.match(html, /&lt;模型&gt;/);
   assert.doesNotMatch(html, /undefined/);
-  assert.match(html, /images\/01\.jpg/);
+  assert.match(html, /images\/03\.jpg/, "a quick hit shows its picture small");
   assert.match(html, /e-acc\.ai/);
   assert.deepEqual(tokens("Earth AI 的 3 公里"), ["Earth", " ", "AI", " ", "的", " ", "3", " ", "公", "里"]);
 });

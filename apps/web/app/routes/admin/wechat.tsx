@@ -64,7 +64,9 @@ interface Illustration {
 
 interface VideoScript {
   opening: string;
-  segments: Array<{ key: string; narration: string }>;
+  /** The lead (with the points its card shows), then the quick hits. */
+  segments: Array<{ key: string; narration: string; points?: string[] }>;
+  egg?: { key: string; narration: string } | null;
   closing: string;
   caption: string;
 }
@@ -344,6 +346,8 @@ const drawing = (i: Illustration | undefined) => i?.status === "queued" || i?.st
 const writing = (v: Video | null) => v?.status === "queued" || v?.status === "writing";
 /** Chinese read aloud by the voice model, in characters a second, for the length estimate. */
 const SPOKEN_CHARS_PER_SECOND = 4.2;
+/** Points the lead's card shows, at most (VIDEO_POINTS on the server). */
+const VIDEO_POINTS = 3;
 
 /** A credit's site, as the article prints it. */
 const creditHost = (page: string) => {
@@ -617,15 +621,21 @@ function VideoPanel({ d }: { d: Ready }) {
     if (video?.script && (dirty || video.editedBy) && !window.confirm("重新生成会换掉现在的口播稿（包括改过的地方），继续吗？")) return;
     void run("POST", `/api/admin/wechat/${d.date}/video`, {}, { label: "video", success: "已开始写口播稿，约半分钟" });
   };
-  const save = () => run("PUT", `/api/admin/wechat/${d.date}/video`, { script }, { label: "video-save", success: "已保存口播稿" });
-  const spoken = script ? [script.opening, ...script.segments.filter((s) => { const e = entries.get(s.key); return e && !e.hidden; }).map((s) => s.narration), script.closing] : [];
+  const saved = script && { ...script, segments: script.segments.map((s, k) => (k === 0 ? { ...s, points: (s.points ?? []).map((p) => p.trim()).filter(Boolean) } : s)) };
+  const save = () => run("PUT", `/api/admin/wechat/${d.date}/video`, { script: saved }, { label: "video-save", success: "已保存口播稿" });
+  const shown = (key: string) => { const e = entries.get(key); return !!e && !e.hidden; };
+  const spoken = script
+    ? [script.opening, ...script.segments.filter((s) => shown(s.key)).map((s) => s.narration), ...(script.egg && shown(script.egg.key) ? [script.egg.narration] : []), script.closing]
+    : [];
+  const setSegment = (key: string, change: Partial<VideoScript["segments"][number]>) =>
+    script && setScript({ ...script, segments: script.segments.map((x) => (x.key === key ? { ...x, ...change } : x)) });
   const seconds = Math.round(spoken.reduce((n, t) => n + chars(t.trim()), 0) / SPOKEN_CHARS_PER_SECOND);
   return (
     <div className="flex flex-col gap-5 p-5">
       <div className="rounded-tile bg-bg-sunk p-4 ring-1 ring-line">
         <div className="text-[14px] font-semibold text-ink">{busy ? "正在写口播稿…" : video?.status === "done" ? `口播稿已写好 · 约 ${seconds} 秒` : "视频号竖屏视频"}</div>
         <p className="mt-1 text-[13px] leading-relaxed text-ink-2">
-          按这一期现在的顺序和改动，取前 {d.videoEntries} 条写成一分钟左右的口播稿；改好后在你的 Mac 上合成视频，再到视频号助手或手机上发表（视频号没有发布接口）。
+          按这一期现在的顺序和改动，第 1 条作重点讲透，接下来 {d.videoEntries - 1} 条快讯一句话带过，最后从当天的条目里挑一条当彩蛋，一分钟出头；改好后在你的 Mac 上合成视频，再到视频号助手或手机上发表（视频号没有发布接口）。
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Button tone={video?.script ? "secondary" : "primary"} disabled={!!d.videoUnavailable || busy} busy={pending === "video"} onClick={ask}>
@@ -644,14 +654,40 @@ function VideoPanel({ d }: { d: Ready }) {
             </label>
             {script.segments.map((s, k) => {
               const e = entries.get(s.key);
+              const points = s.points ?? [];
               return (
-                <label key={s.key} className="flex flex-col gap-1.5 text-[12.5px] text-ink-3">
-                  <span className="truncate"><span className="num font-bold text-accent">{String(k + 1).padStart(2, "0")}</span>　{e?.title ?? "（这一条已不在本期）"}{e?.hidden && <span className="text-hot">　已隐藏，不会出现在视频里</span>}</span>
-                  <textarea rows={3} value={s.narration} onChange={(ev) => setScript({ ...script, segments: script.segments.map((x) => (x.key === s.key ? { ...x, narration: ev.target.value } : x)) })}
+                <div key={s.key} className="flex flex-col gap-1.5 text-[12.5px] text-ink-3">
+                  <span className="truncate">
+                    <span className="font-bold text-accent">{k === 0 ? "重点" : `快讯 ${k}`}</span>　{e?.title ?? "（这一条已不在本期）"}
+                    {e?.hidden && <span className="text-hot">　已隐藏，不会出现在视频里</span>}
+                  </span>
+                  <textarea rows={k === 0 ? 4 : 2} aria-label={k === 0 ? "重点口播" : `快讯 ${k} 口播`} value={s.narration} onChange={(ev) => setSegment(s.key, { narration: ev.target.value })}
                     className={`${FIELD} resize-y [field-sizing:content]`} />
-                </label>
+                  {k === 0 && (
+                    <div className="grid gap-1.5 sm:grid-cols-3">
+                      {Array.from({ length: VIDEO_POINTS }, (_, j) => (
+                        <input key={j} aria-label={`画面要点 ${j + 1}`} placeholder={`画面要点 ${j + 1}（12 字内）`} value={points[j] ?? ""}
+                          onChange={(ev) => setSegment(s.key, { points: Array.from({ length: VIDEO_POINTS }, (_, i) => (i === j ? ev.target.value : points[i] ?? "")) })}
+                          className={FIELD} />
+                      ))}
+                    </div>
+                  )}
+                </div>
               );
             })}
+            {script.egg ? (
+              <div className="flex flex-col gap-1.5 text-[12.5px] text-ink-3">
+                <span className="flex items-center justify-between gap-3">
+                  <span className="truncate"><span className="font-bold text-accent">彩蛋</span>　{entries.get(script.egg.key)?.title ?? "（这一条已不在本期）"}
+                    {entries.get(script.egg.key)?.hidden && <span className="text-hot">　已隐藏，不会出现在视频里</span>}</span>
+                  <button type="button" className="shrink-0 font-medium text-accent hover:underline" onClick={() => setScript({ ...script, egg: null })}>不要彩蛋</button>
+                </span>
+                <textarea rows={2} aria-label="彩蛋口播" value={script.egg.narration} onChange={(ev) => setScript({ ...script, egg: { ...script.egg!, narration: ev.target.value } })}
+                  className={`${FIELD} resize-y [field-sizing:content]`} />
+              </div>
+            ) : (
+              <p className="text-[12.5px] text-ink-4">这一期没有彩蛋{video?.script?.egg ? "（保存后生效）" : "：当天没有合适的条目，重新生成可以再挑一次"}。</p>
+            )}
             <label className="flex flex-col gap-1.5 text-[12.5px] text-ink-3">结尾
               <textarea rows={2} value={script.closing} onChange={(ev) => setScript({ ...script, closing: ev.target.value })} className={`${FIELD} resize-y`} />
             </label>
