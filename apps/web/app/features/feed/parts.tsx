@@ -1,4 +1,4 @@
-import { useTranslate } from "../../lib/i18n";
+import { useLocale, useTranslate } from "../../lib/i18n";
 // Small building blocks shared by feed items, detail pages and lists.
 import { useState } from "react";
 import type { FeedItemSummary, MediaView } from "@aihot/contracts/site";
@@ -93,6 +93,29 @@ export function StarButton({ item, size, className = "size-[26px]" }: { item: St
           <IconBookmark size={size ? Math.round(size * 0.6) : 16} filled={on} />
         </span>
       </ClickSpark>
+    </button>
+  );
+}
+
+/** The same toggle as a pill that says what it does (收藏 / 已收藏), for a page's action row. */
+export function StarPill({ item, className = "" }: { item: Starrable; className?: string }) {
+  const locale = useLocale();
+  const { on, toggle, pulse } = useStar(item);
+  // "收藏" is also the name of the saved list ("Saved" in English), so the action has its own words.
+  const label = locale === "en" ? (on ? "Saved" : "Save") : on ? "已收藏" : "收藏";
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={toggle}
+      className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[13px] transition-colors ${on ? "border-accent/40 bg-accent-soft text-accent" : "border-line-strong bg-surface text-ink-2 hover:border-ink-4 hover:text-ink"} ${className}`}
+    >
+      <ClickSpark trigger={pulse} className="flex">
+        <span key={pulse} className={`flex ${pulse ? "anim-bump" : ""}`}>
+          <IconBookmark size={15} filled={on} />
+        </span>
+      </ClickSpark>
+      {label}
     </button>
   );
 }
