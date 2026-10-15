@@ -12,7 +12,7 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { before, after, test } from "node:test";
-import { chromium, webkit, expect, type Browser, type BrowserContextOptions } from "@playwright/test";
+import { chromium, webkit, expect, type Browser, type BrowserContextOptions, type Locator } from "@playwright/test";
 import type { FeedItemSummary, SiteItemDetail, ReportDetail } from "@aihot/contracts/site";
 import { startWebServer, type WebServer } from "./web-server.ts";
 import { KEYS } from "../app/lib/local-state.ts";
@@ -33,6 +33,12 @@ async function readerContext(browser:Browser,options:BrowserContextOptions={}) {
   await context.addInitScript(({key})=>localStorage.setItem(key,'1'),{key:KEYS.onboarded});
   return context;
 }
+// Touch and hover handlers exist only once React has hydrated the link; a slow runner may still be hydrating after load.
+const hydrated=(link:Locator)=>expect.poll(()=>link.evaluate(el=>Object.keys(el).some(key=>key.startsWith('__reactProps$')))).toBe(true);
+// Tall enough that the first card is on screen without scrolling. The router finishes its first load by
+// scrolling back to where that load started, which on a slow runner can pull the page out from under a
+// pointer that Playwright scrolled down to hover.
+const desk={viewport:{width:1280,height:1200}};
 let failing='';
 let ttl=60;
 let web:WebServer;
@@ -116,13 +122,14 @@ test('SSR list and visited query variants return offline without another read',a
 });
 
 test('hover preloads modules without data, moving touches do not, and an unavailable target leaves the current page intact until clicked',async()=>{
-  const context=await readerContext(chrome);const page=await context.newPage();
+  const context=await readerContext(chrome,desk);const page=await context.newPage();
   const requests:string[]=[];
   page.on('request',r=>{if(r.url().includes('.data'))requests.push(r.url());});
   const modules=page.locator('link[rel=modulepreload][href*="/assets/item-"]');
   try{
     await page.goto(origin+'/');
     const link=page.getByRole('link',{name:'性能检查文章',exact:true});
+    await hydrated(link);
     const start=hits.length;
     await link.dispatchEvent('touchstart');await link.dispatchEvent('touchmove');
     await page.waitForTimeout(250);
@@ -136,9 +143,10 @@ test('hover preloads modules without data, moving touches do not, and an unavail
     await link.click();await expect(page.getByText('固定正文',{exact:true})).toBeVisible();
     assert.equal(hits.slice(start).filter(x=>x.startsWith('/api/site/items/')).length,1,'only the actual click reads the article');
     assert.equal(requests.length,1);
-    const fresh=await readerContext(chrome);const freshPage=await fresh.newPage();
+    const fresh=await readerContext(chrome,desk);const freshPage=await fresh.newPage();
     try{
       await freshPage.goto(origin+'/');failing='/api/site/items/navigation-fixture';
+      await hydrated(freshPage.getByRole('link',{name:'性能检查文章',exact:true}));
       const start=hits.length;
       await freshPage.getByRole('link',{name:'性能检查文章',exact:true}).hover();
       await expect(freshPage.locator('link[rel=modulepreload][href*="/assets/item-"]').first()).toBeAttached();
