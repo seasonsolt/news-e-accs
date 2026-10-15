@@ -37,9 +37,10 @@ export function meta({ matches, data }: { matches?: Array<{ id: string; data?: u
         description,
         url: `${siteUrl()}${PATH}`,
         creator: { "@type": "Organization", name: SITE.name, url: siteUrl() },
+        license: "https://creativecommons.org/licenses/by/4.0/",
         ...(data ? { dateModified: data.asOf, temporalCoverage: `${data.tiers.flatMap((t) => t.points)[0]?.date ?? data.asOf}/${data.asOf}` } : {}),
         variableMeasured: ["Blended USD per million tokens (3:1 input:output)", "GPQA Diamond accuracy"],
-        // Google checks a nested Dataset like a top-level one: it needs its own description and creator.
+        // Google checks a nested Dataset like a top-level one: it needs its own description, creator and license.
         isBasedOn: {
           "@type": "Dataset",
           name: "Epoch AI GPQA Diamond benchmark",
