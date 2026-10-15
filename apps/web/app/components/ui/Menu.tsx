@@ -2,7 +2,13 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Presence } from "./Presence";
 
 /** A small dropdown anchored to a trigger; closes on outside click, Escape or choosing an entry. */
-export function Menu({ trigger, label, children }: { trigger: ReactNode; label: string; children: (close: () => void) => ReactNode }) {
+export function Menu({ trigger, label, children, labeled = false }: {
+  trigger: ReactNode;
+  label: string;
+  children: (close: () => void) => ReactNode;
+  /** The trigger shows its own text (a word and a chevron) rather than a single icon. */
+  labeled?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -22,12 +28,12 @@ export function Menu({ trigger, label, children }: { trigger: ReactNode; label: 
     <div ref={ref} className="relative">
       <button
         type="button"
-        aria-label={label}
-        title={label}
+        aria-label={labeled ? undefined : label}
+        title={labeled ? undefined : label}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className={`inline-flex size-8 items-center justify-center rounded-control transition-colors ${open ? "bg-bg-sunk text-ink" : "text-ink-3 hover:bg-bg-sunk hover:text-ink"}`}
+        className={`inline-flex h-8 items-center justify-center rounded-control transition-colors ${labeled ? "gap-1 border border-line px-3 text-[13px]" : "w-8"} ${open ? "bg-bg-sunk text-ink" : "text-ink-3 hover:bg-bg-sunk hover:text-ink"}`}
       >
         {trigger}
       </button>

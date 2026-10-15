@@ -16,6 +16,7 @@ export const KEYS = {
   onboarded: "eacc-onboarded",
   recentSearches: "aihot-recent-searches",
   firstStar: "eacc-first-star",
+  lastBackup: "eacc-last-backup",
 } as const;
 
 const STARRED_LIMIT = 500;
@@ -121,6 +122,7 @@ const subscribeTheme = subscribeKey(KEYS.theme);
 const subscribeFont = subscribeKey(KEYS.font);
 const subscribeChangelog = subscribeKey(KEYS.changelogSeen);
 const subscribeRecentSearches = subscribeKey(KEYS.recentSearches);
+const subscribeLastBackup = subscribeKey(KEYS.lastBackup);
 
 // Snapshot cache so useSyncExternalStore gets stable references between changes.
 const cache = new Map<string, unknown>();
@@ -229,15 +231,35 @@ export function toggleStar(item: Omit<LocalStarredItem, "savedAt">): boolean {
   });
 }
 
-export function removeStar(id: string) {
+/** Removes these stars; returns the ones removed, for restoreStars to undo. */
+export function removeStars(ids: string[]): LocalStarredItem[] {
+  return editLocalData(() => {
+    if (starredUnreadable()) return [];
+    noteExistingStars();
+    const drop = new Set(ids);
+    const list = getStarred();
+    const removed = list.filter((s) => drop.has(s.id));
+    if (removed.length === 0) return [];
+    const saved = writeRaw(KEYS.starred, JSON.stringify(list.filter((s) => !drop.has(s.id))));
+    invalidate(KEYS.starred);
+    if (!saved) return [];
+    for (const s of removed) recordStarChange(s.id, false, false);
+    return removed;
+  });
+}
+
+/** Undoes removeStars: puts the stars back with their saved time, unless the list filled up meanwhile. */
+export function restoreStars(items: LocalStarredItem[]) {
   editLocalData(() => {
     if (starredUnreadable()) return;
-    noteExistingStars();
     const list = getStarred();
-    if (!list.some((s) => s.id === id)) return;
-    const saved = writeRaw(KEYS.starred, JSON.stringify(list.filter((s) => s.id !== id)));
+    const have = new Set(list.map((s) => s.id));
+    const back = items.filter((s) => !have.has(s.id)).slice(0, Math.max(0, STARRED_LIMIT - list.length));
+    if (back.length === 0) return;
+    const next = [...list, ...back].sort((a, b) => Date.parse(b.savedAt) - Date.parse(a.savedAt));
+    const saved = writeRaw(KEYS.starred, JSON.stringify(next));
     invalidate(KEYS.starred);
-    if (saved) recordStarChange(id, false, false);
+    if (saved) for (const s of back) recordStarChange(s.id, true, false);
   });
 }
 
@@ -434,6 +456,17 @@ export function exportBundle(): ExportBundle {
   return { version: 1, starred: getStarred(), read: getReadIds(), theme: pref ?? "auto", font: getFontPreference() ?? "system" };
 }
 
+// last export (the saved page reminds readers to back up when there is none, or it is old)
+export function getLastBackup(): string | null {
+  const v = readRaw(KEYS.lastBackup);
+  return v && isDisplayableDate(v) ? v : null;
+}
+
+export function markBackedUp(at = new Date()) {
+  writeRaw(KEYS.lastBackup, at.toISOString());
+  invalidate(KEYS.lastBackup);
+}
+
 export interface ImportReport {
   starredAdded: number;
   starredSkipped: number;
@@ -556,4 +589,8 @@ export function useChangelogSeen(): string | null {
 const NO_SEARCHES: string[] = [];
 export function useRecentSearches(): string[] {
   return useSyncExternalStore(subscribeRecentSearches, getRecentSearches, () => NO_SEARCHES);
+}
+
+export function useLastBackup(): string | null {
+  return useSyncExternalStore(subscribeLastBackup, getLastBackup, () => null);
 }

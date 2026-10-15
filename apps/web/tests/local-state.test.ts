@@ -54,7 +54,7 @@ test("stored bookmarks with damaged dates remain readable, exportable and remova
   assert.doesNotThrow(() => displayDate(starred[0]!.savedAt));
   assert.strictEqual(state.getStarred(), starred, "React snapshots must stay stable between changes");
   assert.deepEqual(state.exportBundle().starred, starred);
-  state.removeStar("stored");
+  assert.deepEqual(state.removeStars(["stored"]).map((s) => s.id), ["stored"]);
   assert.deepEqual(state.getStarred(), []);
 });
 
@@ -144,6 +144,27 @@ test("the first-star hint fires once, on the first star a device saves", async (
   state.toggleStar(star("second"));
   assert.equal(hinted, 1);
   stop();
+});
+
+test("removed stars come back in their saved order, without duplicates, on undo", async () => {
+  const items = ["c", "b", "a"].map((id, i) => ({ id, title: id, savedAt: `2026-10-0${3 - i}T00:00:00.000Z` }));
+  const { state } = await reader(items);
+  const removed = state.removeStars(["b", "a", "missing"]);
+  assert.deepEqual(removed.map((s) => s.id), ["b", "a"]);
+  assert.deepEqual(state.getStarred().map((s) => s.id), ["c"]);
+  state.toggleStar({ id: "a", title: "a", summary: null, sourceName: "", publishedAt: null, score: null, aiSelected: false });
+  state.restoreStars(removed);
+  assert.deepEqual(state.getStarred().map((s) => s.id), ["a", "c", "b"], "a star saved again meanwhile is not duplicated");
+  assert.equal(state.getStarred().find((s) => s.id === "b")!.savedAt, "2026-10-02T00:00:00.000Z");
+});
+
+test("the last backup time is kept and a damaged value reads as none", async () => {
+  const { state, values } = await reader();
+  assert.equal(state.getLastBackup(), null);
+  state.markBackedUp(new Date("2026-10-01T08:00:00.000Z"));
+  assert.equal(state.getLastBackup(), "2026-10-01T08:00:00.000Z");
+  values.set(state.KEYS.lastBackup, "broken");
+  assert.equal(state.getLastBackup(), null);
 });
 
 test("engagement reports are fire-and-forget, skipped during SSR, and count middle clicks on source links", async () => {
