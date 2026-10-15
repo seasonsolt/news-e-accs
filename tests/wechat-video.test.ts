@@ -10,9 +10,10 @@ import { config } from "@aihot/backend/config";
 import { closeDb, sql } from "@aihot/backend/db";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { requestWechatVideoScript, saveWechatEdits, saveWechatVideoScript, wechatExport } from "@aihot/backend/admin/wechat";
-import { writeWechatVideoScript } from "@aihot/backend/newsletter/wechat-video";
+import { writeWechatVideoScript, type WechatVideoSpec } from "@aihot/backend/newsletter/wechat-video";
 import { buildApp } from "../apps/api/src/app.ts";
-import { subtitles } from "../scripts/wechat-video.ts";
+import { charTimes, misheard, subtitles } from "../scripts/wechat-video.ts";
+import { composition, tokens } from "../scripts/wechat-video-composition.ts";
 
 const T = tag();
 const TODAY = beijingDate(Date.now());
@@ -118,6 +119,7 @@ test("the worker writes one paragraph per printed entry, the editor rewrites it,
     assert.equal(res.headers["cache-control"], "no-store");
     const spec = res.json();
     assert.equal(spec.closing, "明天见。");
+    assert.equal(spec.site, new URL(config.siteUrl).host, "the closing card names the site");
     assert.deepEqual(spec.segments.map((s: { number: number; title: string }) => [s.number, s.title]), [[1, `头条 ${T}`], [2, "产品 B 上线"]]);
 
     // Hiding an entry after the script was written takes its paragraph out of the video.
@@ -130,10 +132,62 @@ test("the worker writes one paragraph per printed entry, the editor rewrites it,
   }
 });
 
-test("a spoken line is cut into one-line subtitles at its punctuation, timed by length", () => {
-  const subs = subtitles("Nova 模型发布，推理成本下降一半，用得起的人会更多。", 6);
-  assert.deepEqual(subs.map((s) => s.text), ["Nova 模型发布", "推理成本下降一半，用得起的人会更多"]);
-  assert.ok(Math.abs(subs.reduce((n, s) => n + s.seconds, 0) - 6) < 1e-9);
-  assert.ok(subtitles("一".repeat(40), 4).every((s) => Array.from(s.text).length <= 18));
-  assert.deepEqual(subtitles("面向公司开放。落地更重要。", 3).map((s) => s.text), ["面向公司开放", "落地更重要"], "a sentence's end starts a new subtitle");
+test("a spoken line is cut into one-line subtitles at its punctuation, each where it starts in the line", () => {
+  const line = "Nova 模型发布，推理成本下降一半，用得起的人会更多。";
+  const subs = subtitles(line);
+  assert.deepEqual(subs.map((s) => s.text), ["Nova 模型发布", "推理成本下降一半", "用得起的人会更多"]);
+  for (const s of subs) assert.equal(Array.from(line).slice(s.from, s.from + Array.from(s.text).length).join(""), s.text);
+  assert.ok(subtitles("一".repeat(40)).every((s) => Array.from(s.text).length <= 16));
+  assert.deepEqual(subtitles("面向公司开放。落地更重要。").map((s) => s.text), ["面向公司开放", "落地更重要"], "a sentence's end starts a new subtitle");
+  assert.deepEqual(subtitles("这里是 AI 早报。10 月 15 日。").map((s) => s.text), ["这里是 AI 早报", "10 月 15 日"]);
+  assert.deepEqual(subtitles("Google 推出 Deep Review，专门审读复杂文档。").map((s) => s.text), ["Google 推出 Deep Review", "专门审读复杂文档"], "letters set narrower than characters");
+  const long = "这是一个很长很长的句子里面有 Character.AI 这个名字出现";
+  assert.deepEqual(subtitles(long).map((s) => s.text), ["这是一个很长很长的句子里面有", "Character.AI 这个名字出现"], "a long phrase is cut in even pieces, not inside a name");
+  assert.deepEqual(subtitles(long).map((s) => s.from), [0, 15]);
+  assert.deepEqual(subtitles("成功率从 71.8% 提到 83%。").map((s) => s.text), ["成功率从 71.8% 提到 83%"], "a dot inside a number does not cut");
+});
+
+test("each character is timed by the aligner's words, and the ones it skips between them", () => {
+  // Punctuation and spaces are not words; a name may come split; a word the text lacks is skipped.
+  const words: Array<[string, number, number]> = [["Character", 0, 0.4], ["AI", 0.5, 0.7], ["破", 0.7, 0.9], ["产", 0.9, 1.1], ["嗯", 1.1, 1.2], ["了", 1.4, 1.6]];
+  const { at, found } = charTimes("Character.AI 破产了。", words, 2);
+  assert.equal(at.length, 17);
+  assert.equal(at[0], 0);
+  assert.equal(at[10], 0.5, "AI after the dot");
+  assert.ok(at[9]! > at[8]! && at[9]! < at[10]!, "the dot falls between its neighbours");
+  assert.equal(at[13], 0.7);
+  assert.equal(at[15], 1.4);
+  assert.ok(at[16]! > 1.4 && at[16]! <= 2, "the full stop after the last word runs to the line's end");
+  assert.equal(found, 5 / 6);
+  assert.deepEqual(charTimes("你好", [], 1).at, [1 / 3, 2 / 3], "with nothing aligned, the line is spread evenly");
+});
+
+test("the hearing check names what the voice model read wrong", () => {
+  assert.deepEqual(misheard("Google 扩大 Earth AI 的访问范围。", "谷歌扩大 2C AI 的访问范围。"), ["没听出「Earth」"], "Google written as 谷歌 was heard");
+  assert.deepEqual(misheard("成功率提到 83%，Character.AI 也一样。", "成功率提到百分之八十三，Character AI 也一样"), [], "numbers are read in words, a dot is not said");
+  assert.match(misheard("训练成本下降一半", "训练时间下降了").join(), /汉字只对上/);
+});
+
+test("the composition has a card per line and a clip per subtitle, its text escaped", () => {
+  const spec: WechatVideoSpec = {
+    date: "2026-10-15", issueNumber: 22, theme: "amber", site: "e-acc.ai", opening: "早上好。", closing: "明天见。", caption: "",
+    segments: [
+      { key: "a", number: 1, section: "模型", sourceName: "官方博客", title: "A <模型> 发布", narration: "A 模型发布。", hasImage: true },
+      { key: "b", number: 2, section: "产品", sourceName: "媒体", title: "产品 B 上线", narration: "产品 B 上线。", hasImage: false },
+    ],
+  };
+  const html = composition({
+    spec, duration: 12,
+    scenes: [{ start: 0, end: 3 }, { start: 3, end: 6 }, { start: 6, end: 9 }, { start: 9, end: 12 }],
+    subtitles: [{ start: 1.8, end: 2.6, tokens: tokens("早上好").map((text, k) => ({ text, at: 1.8 + k * 0.2 })) }],
+    images: { a: "images/01.jpg" },
+  }, "fonts");
+  assert.equal(html.match(/class="clip scene"/g)?.length, 4);
+  assert.equal(html.match(/class="clip sub"/g)?.length, 1);
+  assert.match(html, /data-duration="12\.000"/);
+  assert.match(html, /&lt;模型&gt;/);
+  assert.doesNotMatch(html, /undefined/);
+  assert.match(html, /images\/01\.jpg/);
+  assert.match(html, /e-acc\.ai/);
+  assert.deepEqual(tokens("Earth AI 的 3 公里"), ["Earth", " ", "AI", " ", "的", " ", "3", " ", "公", "里"]);
 });

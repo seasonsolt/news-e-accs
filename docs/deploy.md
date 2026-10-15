@@ -103,6 +103,12 @@ Docker 改完 `.env` 后执行 `docker compose up -d api worker`。本站服务�
 
 日报缺期告警按北京时间的具体日期跟踪，跨午夜不会自动恢复；只有对应日报存在才发恢复通知。新缺期检查最近 7 个日历日（含今天），不早于最早的日报或 reports.compose 运行记录；没有历史记录时只检查今天。已告警的日期即使超出 7 天仍保留，关闭采集/模型或 worker 启动宽限期也不会把缺期当成恢复。旧的 report.daily 状态自动按首次告警时间迁移，保留提醒间隔。出刊后两小时告警、每小时提醒及飞书开关保持不变；无需数据库迁移。自定义 responder 若按旧 `report.daily` 精确匹配，需改为识别 `report.daily:YYYY-MM-DD` 日期键。
 
+#### 视频号视频改版（2026 年 10 月 15 日）
+
+不需要数据库迁移。口播稿的提示词改成每条一个点、25–45 字，讲标题那件事，难念的型号和缩写换成中文说法；一段最长从 90 字收到 70 字，开场改为“一分钟听完今天的 N 条 AI 新闻”。已经写好的口播稿不会重写，要新写法就在工作台里点「重新生成」。读口播稿的接口多了一个 `site` 字段（片尾显示的站点域名），Mac 上的脚本要和服务器一起更新。
+
+Mac 上的合成换了做法：画面改用 HyperFrames（`npx hyperframes@0.8.162`，第一次运行会下载它和它用的 Chrome，要联网）做成动画；字幕按 Qwen3-ForcedAligner 对出的每个词出现并逐词点亮；配上脚本自己合成的背景音乐，人声说话时自动压低；合成后用 Qwen3-ASR 把每段配音听写一遍，念错的名字和对不上的句子写进 `check.txt`，另出一张每张卡片的缩略图 `contact-sheet.jpg`。两个听写模型要先下载到 Mac 上（见下方 [视频号视频](#视频号视频)）。
+
 #### 公众号配图先找后画，点评换口气（2026 年 10 月 14 日）
 
 迁移 `0120` 给 `wechat_illustrations` 加一列 `credit`，只加不删。工作台每条多了「找配图」，工作台顶上多了「没图的都找一张」：worker 先从这条的原文、再从同一事件的其他报道里取第一张够大的图，没有就读这些网页的预览图（og:image），再没有就让 Codex CLI 搜网页（记回执，算在后台预算 `codex-text` 一行里），取搜到的网页的预览图。找来的图在正文里注明“图源”。原文里找图不需要 `CODEX_BIN`；搜网页和 AI 绘图需要它和 `MODEL_CALLS_ENABLED=true`。「公众号点评」的提示词换成了口语、先下判断的写法，并把编辑最近在工作台里改写过的点评（最多 12 条）作为例子一起交给模型；一条点评最长从 60 字放宽到 90 字，提到的公司和产品名只要在当天任何一条里出现过即可。已经写好的点评不会重写。
@@ -382,12 +388,15 @@ v1 默认目标语言仍为中文；英文主稿缺少有效中文 edition 时�
 视频号没有发布视频的接口，服务器上也没有配音模型，所以分两步：服务器上的 worker 写口播稿，编辑的 Mac 合成视频，编辑再手动发表。
 
 1. 服务器 `.env` 里设 `WECHAT_VIDEO_TOKEN`（至少 16 个字符的随机串，比如 `openssl rand -hex 24`），重启 api。
-2. Mac 上装好 ffmpeg（带 libx264），和一个装了 mlx-audio 与 soundfile 的 Python venv，用来跑 VoxCPM2（模型 `mlx-community/VoxCPM2-bf16`，第一次运行前先下载好）。
+2. Mac 上装好 ffmpeg（带 libx264）、Node.js，和一个装了 mlx-audio 与 soundfile 的 Python venv。第一次运行前，用 venv 里的 `hf download <模型>` 把三个模型下载好：配音 `mlx-community/VoxCPM2-bf16`，对字幕 `mlx-community/Qwen3-ForcedAligner-0.6B-8bit`，听写自检 `mlx-community/Qwen3-ASR-1.7B-8bit`（运行时不联网取模型）。画面用 `npx hyperframes@0.8.162` 渲染，第一次运行会下载它和一个 Chrome，脚本已关掉它的匿名统计。
 3. 在 Mac 上仓库目录的 `.env` 里写同一个 `WECHAT_VIDEO_TOKEN`；venv 不在 `~/.local/share/voxcpm2-mlx/venv` 时设 `VOXCPM_PYTHON=<venv 里 python 的路径>`。
-4. 在工作台“视频号”一栏生成并改好口播稿，然后在 Mac 上运行 `npm run wechat-video -- <日期>`。几分钟后，`~/Movies/e-acc-daily/<日期>/` 里会有 mp4（1080×1920）、视频号描述 `caption.txt` 和封面 `cover.png`。
-5. 在视频号助手（channels.weixin.qq.com）或手机上上传 mp4，粘贴描述。
+4. 在工作台“视频号”一栏生成并改好口播稿，然后在 Mac 上运行 `npm run wechat-video -- <日期>`。三四分钟后，`~/Movies/e-acc-daily/<日期>/` 里会有 mp4（1080×1920，一分钟左右）、视频号描述 `caption.txt`、封面 `cover.png`、每张卡片的缩略图 `contact-sheet.jpg` 和自检结果 `check.txt`。
+5. 看一眼自检：配音把名字念错了（比如把一个英文名念成别的词），或者某段听写出来和稿子对不上，`check.txt` 和终端里会列出来。在工作台把那段改成好念的说法，再合成一次。
+6. 在视频号助手（channels.weixin.qq.com）或手机上上传 mp4，粘贴描述。
 
-声音默认按 `VOICE_DESCRIPTION` 的文字描述生成（VoxCPM2 的声音设计），不需要参考录音。要换成某个人的声音，就设 `VOICE_REF_AUDIO=<10–30 秒的清晰录音>` 和 `VOICE_REF_TEXT=<录音的逐字文本>`，而且只能用本人同意使用的录音，不要克隆公众人物或配音演员的声音。其他选填项：`WECHAT_VIDEO_BASE_URL`（默认站点地址）、`VOXCPM_MODEL`、`VOXCPM_TIMESTEPS`（默认 10）。配音约需成片时长的 1.5 倍，一分半的视频大约两三分钟。
+背景音乐由 `scripts/wechat-video-music.py` 现场合成（同一天的视频用同一段旋律），不涉及版权；人声说话时它自动压低，句子之间再回来。
+
+声音默认按 `VOICE_DESCRIPTION` 的文字描述生成（VoxCPM2 的声音设计），不需要参考录音。要换成某个人的声音，就设 `VOICE_REF_AUDIO=<10–30 秒的清晰录音>` 和 `VOICE_REF_TEXT=<录音的逐字文本>`，而且只能用本人同意使用的录音，不要克隆公众人物或配音演员的声音。其他选填项：`WECHAT_VIDEO_BASE_URL`（默认站点地址）、`VOXCPM_MODEL`、`VOXCPM_TIMESTEPS`（默认 10）。配音约需成片时长的 1.5 倍，画面渲染一分多钟。
 
 ### Search Console 周读数
 

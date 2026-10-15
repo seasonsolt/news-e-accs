@@ -1,11 +1,11 @@
-// The 视频号 edition of 「AI 早报」: a 60–90 second vertical video of the day's first printed entries, one
+// The 视频号 edition of 「AI 早报」: a one-minute vertical video of the day's first printed entries, one
 // spoken paragraph each. 视频号 has no API to publish a video, and the server has neither the voice
 // model nor the cycles to render one, so the work is split: the workbench asks for a voice-over script
 // (admin/wechat.ts), the worker writes it here with the model (industry/prompts/wechat-video.md) and the
 // editor may rewrite it, then scripts/wechat-video.ts on the editor's Mac reads it (videoSpec, through
-// the WECHAT_VIDEO_TOKEN route), speaks it with the local voice model, renders the frames
-// (media/wechat-video-frames.ts) and cuts the mp4 that the editor uploads by hand. The opening, closing
-// and caption are written by rule; only the entries' paragraphs are the model's.
+// the WECHAT_VIDEO_TOKEN route), speaks it with the local voice model, animates it with HyperFrames
+// (scripts/wechat-video-composition.ts) and cuts the mp4 that the editor uploads by hand. The opening,
+// closing and caption are written by rule; only the entries' paragraphs are the model's.
 import { z } from "zod";
 import { config } from "../config.ts";
 import { sql } from "../db.ts";
@@ -20,10 +20,10 @@ import { wechatColumn } from "./wechat-column.ts";
 import { wechatComments } from "./wechat-comments.ts";
 import { WECHAT_COLUMN, wechatArticle, type ColumnEntry, type WechatArticle, type WechatEdits, type WechatTheme } from "./wechat.ts";
 
-/** Entries a video speaks: about ten seconds each keeps it under a minute and a half. */
+/** Entries a video speaks: about eight seconds each keeps it near a minute. */
 export const VIDEO_ENTRIES = 6;
-/** The prompt asks for 30–60 characters; anything past this does not fit its ten seconds. */
-const NARRATION_MAX = 90;
+/** The prompt asks for 25–45 characters; anything past this does not fit its eight seconds. */
+const NARRATION_MAX = 70;
 /** Longest an editor may make one spoken paragraph, and the caption (视频号 takes 1,000 characters). */
 export const VIDEO_LINE_MAX = 300;
 export const VIDEO_CAPTION_MAX = 1000;
@@ -55,6 +55,8 @@ export interface WechatVideoSpec {
   date: string;
   issueNumber: number;
   theme: WechatTheme;
+  /** The site's host, said on the closing card. */
+  site: string;
   opening: string;
   closing: string;
   caption: string;
@@ -100,7 +102,7 @@ function clip(s: string, max: number): string {
 export function ruledParts(key: string, article: WechatArticle, entries: ColumnEntry[]): Omit<WechatVideoScript, "segments"> {
   const headlines = entries.map((e, k) => `${String(k + 1).padStart(2, "0")} ${e.title}`);
   return {
-    opening: `早上好，这里是 ${WECHAT_COLUMN}。${monthDay(key)}，${entries.length} 条值得关注的 AI 新闻。`,
+    opening: `早上好，这里是 ${WECHAT_COLUMN}。${monthDay(key)}，一分钟听完今天的 ${entries.length} 条 AI 新闻。`,
     closing: "每条消息的原文出处，在视频下方的完整早报里。明天早上见。",
     caption: clip([`${WECHAT_COLUMN}｜${monthDay(key)}`, ...headlines, "", `完整早报：${article.readMoreUrl}`, "", HASHTAGS.join(" ")].join("\n"), VIDEO_CAPTION_MAX),
   };
@@ -184,7 +186,7 @@ export async function videoSpec(key: string): Promise<WechatVideoSpec | null> {
     return entry && s.narration.trim() ? [{ key: s.key, section: entry.section, sourceName: entry.sourceName, title: entry.title, narration: s.narration.trim(), hasImage: withImage.has(s.key) }] : [];
   });
   return {
-    date: key, issueNumber: issue.issueNumber, theme: issue.article.theme,
+    date: key, issueNumber: issue.issueNumber, theme: issue.article.theme, site: new URL(issue.article.readMoreUrl).host,
     opening: row.script.opening, closing: row.script.closing, caption: row.script.caption,
     segments: segments.map((s, k) => ({ ...s, number: k + 1 })),
   };

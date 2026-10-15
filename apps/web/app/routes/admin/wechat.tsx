@@ -625,7 +625,7 @@ function VideoPanel({ d }: { d: Ready }) {
       <div className="rounded-tile bg-bg-sunk p-4 ring-1 ring-line">
         <div className="text-[14px] font-semibold text-ink">{busy ? "正在写口播稿…" : video?.status === "done" ? `口播稿已写好 · 约 ${seconds} 秒` : "视频号竖屏视频"}</div>
         <p className="mt-1 text-[13px] leading-relaxed text-ink-2">
-          按这一期现在的顺序和改动，取前 {d.videoEntries} 条写成 60–90 秒的口播稿；改好后在你的 Mac 上合成视频，再到视频号助手或手机上发表（视频号没有发布接口）。
+          按这一期现在的顺序和改动，取前 {d.videoEntries} 条写成一分钟左右的口播稿；改好后在你的 Mac 上合成视频，再到视频号助手或手机上发表（视频号没有发布接口）。
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Button tone={video?.script ? "secondary" : "primary"} disabled={!!d.videoUnavailable || busy} busy={pending === "video"} onClick={ask}>
