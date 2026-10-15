@@ -8,7 +8,8 @@ import { proxyBodyImages } from "../media/imgproxy.ts";
 import { sha256 } from "../lib/ids.ts";
 import { textToHtml } from "../content/sanitize.ts";
 import { isChineseBody, ITEM_COLUMNS, ITEM_FROM, seatHolders, showsPost, toItemSummary, xView, type ItemRow } from "./items.ts";
-import { evidenceCondition, listedCondition } from "./scope.ts";
+import { evidenceCondition, listedCondition, ownFactEvidenceCondition } from "./scope.ts";
+import { loadStoriesProse } from "./stories.ts";
 import { hasItemPage } from "./rules.ts";
 import { targetLanguageProse } from "./content-source.ts";
 import { localizePublication } from "./content-language.ts";
@@ -23,6 +24,53 @@ interface DetailRow extends ItemRow {
   tr_html: string | null;
   tr_complete: boolean | null;
   topics: string[];
+}
+
+/** The fact card quotes at most one sentence of this length. */
+const QUOTE_CHARS = 200;
+
+/** One short quote: the evidence's first sentence, or nothing when even that is longer than QUOTE_CHARS. */
+export function shortQuote(text: string | null | undefined): string | null {
+  const t = text?.replace(/\s+/g, " ").trim();
+  if (!t) return null;
+  const first = /^.+?(?:[.!?](?=\s|$)|[。！？])/u.exec(t)?.[0] ?? t;
+  return first.length <= QUOTE_CHARS ? first : null;
+}
+
+const count = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : null);
+
+/**
+ * What analysis already worked out about a public report: its fact (only while the report is still
+ * evidence of it), whether the author is the news's source, an X post's counts at collection, and the
+ * event's digest. Read from stored rows; nothing here calls a model.
+ */
+async function loadContext(row: DetailRow, now: Date): Promise<Pick<ItemDetail, "fact" | "authorRole" | "xCounts"> & { digest: string | null }> {
+  const [r] = await sql<{
+    subject: string | null; action: string | null; object: string | null; occurred_at: Date | null; evidence: string | null;
+    fact_found: boolean; author_role: string | null; raw: Record<string, unknown> | null; story_id: number | null;
+  }[]>`
+    SELECT f.subject, f.action, f.object, f.occurred_at, fa.evidence, f.id IS NOT NULL AS fact_found,
+      an.output->>'authorRole' AS author_role, a.raw, st.id AS story_id
+    FROM publications p JOIN articles a ON a.id = p.article_id
+    LEFT JOIN analyses an ON an.id = p.analysis_id
+    LEFT JOIN stories st ON st.id = p.story_id AND st.merged_into IS NULL
+    LEFT JOIN facts f ON f.id = p.fact_id AND ${ownFactEvidenceCondition()}
+    LEFT JOIN fact_articles fa ON fa.fact_id = f.id AND fa.article_id = p.article_id
+    WHERE p.article_id = ${row.id}`;
+  if (!r) return { fact: null, authorRole: null, xCounts: null, digest: null };
+  const words = [r.subject, r.action, r.object].filter(Boolean).join(" ");
+  // A post the site does not show is full text (rules.ts POLICY): none of it is quoted either.
+  const quote = row.channel === "x" && !showsPost(row) ? null : shortQuote(r.evidence);
+  const fact = r.fact_found && (r.subject || r.action || r.occurred_at || quote)
+    ? { subject: r.subject, action: r.action, object: r.object, occurredAt: r.occurred_at?.toISOString() ?? null, quote,
+        language: /\p{Script=Han}/u.test(words) ? "zh" as const : "en" as const }
+    : null;
+  const raw = r.raw ?? {};
+  const xCounts = row.channel === "x" && [raw.views, raw.favorite, raw.retweet, raw.reply].some((v) => count(v) !== null)
+    ? { views: count(raw.views), favorite: count(raw.favorite), retweet: count(raw.retweet), reply: count(raw.reply), collectedAt: row.discovered_at.toISOString() }
+    : null;
+  const digest = r.story_id === null ? null : (await loadStoriesProse([Number(r.story_id)], now)).get(Number(r.story_id))?.digest ?? null;
+  return { fact, authorRole: r.author_role === "principal" || r.author_role === "relayer" ? r.author_role : null, xCounts, digest };
 }
 
 /** `detail` is the canonical article (exports read it); `item` is what a page of the requested body language shows. */
@@ -138,8 +186,11 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
 
   // The reason goes with the seat; a report yielding it points to the one holding it.
   const sameEvent = (await seatHolders([row], now)).get(row.id) ?? null;
+  const { digest, ...context } = await loadContext(row, now);
   const detail: ItemDetail = {
     ...summary,
+    story: summary.story && digest ? { ...summary.story, digest } : summary.story,
+    ...context,
     x: post,
     ...(sameEvent ? { reason: null, sameEvent } : {}),
     readingMode: "full",

@@ -25,6 +25,7 @@ import { withoutShortLinks } from "../features/item/post-links";
 import { ArticleBody } from "../features/item/ArticleBody";
 import { scrollToAnchor } from "../components/ui/OutlineSheet";
 import { StoryFollowups } from "../features/item/StoryFollowups";
+import { AuthorRoleMark, FactCard, StoryDigest, XCountsLine } from "../features/item/FactCard";
 import { MediaGallery } from "../features/item/MediaGallery";
 import { QuotedPost } from "../features/item/QuotedPost";
 import { IconArrowLeft, IconArrowUpRight, IconCopy, IconDownload, IconExternal, IconImage, IconMenu, IconShare } from "../components/icons";
@@ -253,6 +254,7 @@ export default function ItemPage() {
               </Link>
             )}
             <span className="font-semibold text-ink-2">{isX ? `${item.x!.authorName} · X` : item.source.name}</span>
+            <AuthorRoleMark role={item.authorRole} />
             {byline && <span>· {byline}</span>}
             <span>·</span>
             {!item.publishedAt && <span><Text value="收录于" /></span>}
@@ -260,6 +262,8 @@ export default function ItemPage() {
             <span suppressHydrationWarning>· {tx(relativeTime(publishedIso))}</span>
             {badge && <span className="ml-1 lg:hidden">{badge}</span>}
           </div>
+
+          {item.xCounts && <XCountsLine counts={item.xCounts} />}
 
           <h1 lang={contentHtmlLanguage(item, locale) ?? "und"} className="mt-3 text-balance text-[26px] font-[750] leading-[1.25] tracking-[-0.01em] text-ink lg:text-[34px] lg:leading-[1.2]">
             {item.title}
@@ -284,6 +288,8 @@ export default function ItemPage() {
             {moreMenu}
             {badge && <span className="ml-auto">{badge}</span>}
           </div>
+
+          {item.fact && !summaryOnly && <FactCard fact={item.fact} />}
 
           {summaryText && (!isX || summaryText.replace(/\s+/g, " ").trim() !== item.title) && (
             <section className="mt-8">
@@ -345,6 +351,7 @@ export default function ItemPage() {
           {isX && item.x!.media.length > 0 && <MediaGallery media={item.x!.media} postUrl={item.links.original} />}
           {isX && item.x!.quoted?.text && <QuotedPost quoted={item.x!.quoted} original={lang === "original"} />}
 
+          {item.story?.digest && <StoryDigest digest={item.story.digest} lang={contentHtmlLanguage(item.story, locale) ?? "und"} />}
           {item.story && <StoryFollowups story={item.story} current={{ id: item.id, title: item.title, timelineAt: item.timelineAt }} />}
 
           {(item.topics.length > 0 || item.tags.length > 0) && (

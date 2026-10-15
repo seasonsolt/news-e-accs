@@ -7,7 +7,7 @@ import { pickRepresentative, representativePriority } from "@aihot/backend/publi
 import { loadTimeline } from "@aihot/backend/publication/timeline";
 import { loadStoryFollowups } from "@aihot/backend/publication/followups";
 import { loadGroupReports } from "@aihot/backend/publication/groups";
-import { loadItemDetail } from "@aihot/backend/publication/detail";
+import { loadItemDetail, shortQuote } from "@aihot/backend/publication/detail";
 import { itemAvailability } from "@aihot/backend/publication/availability";
 import { loadStoryDetail, v1HotTopics, v1Story } from "@aihot/backend/publication/stories";
 import { candidates } from "@aihot/backend/reports/edition";
@@ -150,6 +150,44 @@ test("availability brings the category and the first times of the event's other 
   const into = await story("合并目标");
   await sql`UPDATE stories SET merged_into = ${into.storyId} WHERE id = ${g.storyId}`;
   assert.equal((await itemAvailability([saved], now))[saved]!.story, undefined, "a merged event has no page to send readers to");
+});
+
+// The page shows what analysis already stored: the fact, who the author is, an X post's counts.
+test("item detail brings its fact with one short quote, the author's role and X counts at collection", async () => {
+  const media = await source("context", "T2");
+  const g = await story();
+  await sql`UPDATE facts SET occurred_at = '2026-10-14T00:00:00Z' WHERE id = ${g.factId}`;
+  const id = await report(media, g, { title: "Dots 发布", hours: 2 });
+  await sql`UPDATE analyses SET output = output || '{"authorRole":"principal"}' WHERE article_id = ${id}`;
+  const found = await loadItemDetail(id, "zh", now);
+  assert.equal(found.kind, "found");
+  const d = found.kind === "found" ? found.detail : null;
+  assert.deepEqual(d!.fact, { subject: "OpenAI", action: "发布", object: "Dots", occurredAt: "2026-10-14T00:00:00.000Z", quote: "Tasks consume usage.", language: "zh" });
+  assert.equal(d!.authorRole, "principal");
+  assert.equal(d!.xCounts, null, "a web report has no counts");
+
+  // An X post the site does not show is full text: its evidence is not quoted; its counts are numbers.
+  await sql`UPDATE publications SET channel = 'x', body_mode = 'summary' WHERE article_id = ${id}`;
+  await sql`UPDATE articles SET raw = '{"views":23000,"favorite":1200,"retweet":"bad"}' WHERE id = ${id}`;
+  await sql`UPDATE analyses SET output = output || '{"authorRole":"observer"}' WHERE article_id = ${id}`;
+  const x = await loadItemDetail(id, "zh", now);
+  const xd = x.kind === "found" ? x.detail : null;
+  assert.equal(xd!.fact!.quote, null);
+  assert.equal(xd!.authorRole, null, "observers carry no mark");
+  assert.deepEqual(xd!.xCounts, { views: 23000, favorite: 1200, retweet: null, reply: null, collectedAt: at(2).toISOString() });
+
+  // A report that is no longer evidence of its fact shows no fact card.
+  await sql`UPDATE fact_articles SET role = 'mention' WHERE article_id = ${id}`;
+  const mention = await loadItemDetail(id, "zh", now);
+  assert.equal(mention.kind === "found" ? mention.detail.fact : undefined, null);
+});
+
+test("the fact card quotes one sentence of at most 200 characters", () => {
+  assert.equal(shortQuote("  Tasks   consume usage. Later text follows. "), "Tasks consume usage.");
+  assert.equal(shortQuote("任务会消耗额度。后面还有。"), "任务会消耗额度。");
+  assert.equal(shortQuote("v1.5 ships today"), "v1.5 ships today", "a decimal point does not end the sentence");
+  assert.equal(shortQuote(`${"word ".repeat(50)}end.`), null, "a long first sentence is not cut into a misquote");
+  assert.equal(shortQuote(null), null);
 });
 
 // The detail's group badge and its expanded report list must count the same evidence, even while
