@@ -100,6 +100,12 @@ test('story overview, development titles and nested reports are localized; edits
   await saveTranslation(translated(itemSource),'offline-agent','gpt-6-luna',[],true);
   const itemStrip={...strip,storyPublicId:null,title:itemSource.segments.find(s=>s.key==='title')!.text};
   const fallback=await localizePublication({hot:[itemStrip]},'en');assert.equal(fallback.hot[0]!.title,'Orbital accelerator released');
+  // "这件事的进展" and a group's report list name reports by id, title and time only; they still read the requested edition.
+  const followups=(lang:string)=>app.inject({method:'GET',url:`/api/site/stories/${publicId}/followups?lang=${lang}`}).then(r=>r.json().items[0].representative);
+  assert.equal((await followups('en')).title,'Orbital accelerator released');assert.equal((await followups('en')).contentLanguage.status,'translated');
+  assert.equal((await followups('zh')).title,itemStrip.title,'without an edition in the requested language the report keeps its own title');
+  const group=await app.inject({method:'GET',url:`/api/site/groups/fact-${T}/reports?lang=en`});
+  assert.equal(group.statusCode,200);assert.equal(group.json().reports.find((r:any)=>r.id===id).title,'Orbital accelerator released');
   await sql`UPDATE stories SET digest='修改的综述' WHERE id=${story!.id}`;
   const stale=await app.inject({method:'GET',url:`/api/site/stories/${publicId}?lang=en`});
   assert.equal(stale.json().digest,null,'an edited digest is no longer the saved one: it is hidden, not served in either edition');assert.equal(stale.json().contentLanguage.status,'original');
