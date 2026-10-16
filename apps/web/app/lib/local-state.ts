@@ -17,6 +17,8 @@ export const KEYS = {
   recentSearches: "aihot-recent-searches",
   firstStar: "eacc-first-star",
   lastBackup: "eacc-last-backup",
+  /** "2d" or "3d": the reader's choice on the chronicle voyage. Absent means the desktop default. */
+  cosmos: "eacc-cosmos-view",
 } as const;
 
 const STARRED_LIMIT = 500;

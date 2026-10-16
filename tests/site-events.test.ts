@@ -18,7 +18,8 @@ after(async () => {
   await app.close();
   // Rows with an empty target are shared counters, so this file owns those event names in the test database.
   await sql`DELETE FROM site_events_daily WHERE target IN (${id}, ${domain}, ${missing}) OR target LIKE ${`%.${id}.example`}
-    OR (target = '' AND event IN ('share_click', 'first_star'))`;
+    OR target LIKE ${`%${id}%`}
+    OR (target = '' AND event IN ('share_click', 'first_star', 'enter_3d'))`;
   await sql`DELETE FROM publications WHERE article_id = ${id}`;
   await sql`DELETE FROM articles WHERE id = ${id}`;
   await sql`DELETE FROM sources WHERE id = ${source}`;
@@ -36,6 +37,11 @@ test("interaction targets are reduced to an allowlisted event and a safe value",
   assert.equal(normalizeSiteEvent({ event: "subscribe_click", target: "user@example.com" }), null);
   assert.equal(normalizeSiteEvent({ event: "not_an_event" }), null);
   assert.equal(normalizeSiteEvent({ event: "share_click", target: "x".repeat(301) }), null);
+  assert.deepEqual(normalizeSiteEvent({ event: "enter_3d" }), { event: "enter_3d", target: "" });
+  assert.equal(normalizeSiteEvent({ event: "enter_3d", target: id }), null);
+  assert.deepEqual(normalizeSiteEvent({ event: "click_star", target: "big-bang" }), { event: "click_star", target: "big-bang" });
+  assert.equal(normalizeSiteEvent({ event: "click_star", target: "" }), null);
+  assert.equal(normalizeSiteEvent({ event: "click_star", target: "bad id" }), null);
   assert.equal(normalizeSiteEvent(null), null);
   assert.equal(normalizeSourceDomain(`https://user:secret@www.${domain}/path?token=1`), null);
   assert.equal(normalizeSourceDomain(`https://www.${domain}/items/${id}?email=a@b.c`), domain);
@@ -46,7 +52,7 @@ test("interaction targets are reduced to an allowlisted event and a safe value",
 });
 
 test("daily interaction counts are anonymous, uncached, and visible only in the admin summary", async () => {
-  await sql`DELETE FROM site_events_daily WHERE target IN (${id}, ${domain}) OR event IN ('share_click', 'first_star')`;
+  await sql`DELETE FROM site_events_daily WHERE target IN (${id}, ${domain}) OR event IN ('share_click', 'first_star', 'enter_3d') OR (event = 'click_star' AND target = ${id})`;
   await sql`INSERT INTO sources (id, name, kind, tier) VALUES (${source}, ${source}, 'rss', 'T1')`;
   await sql`INSERT INTO articles (id, source_id, identity_key, url, title, discovered_at, timeline_at)
     VALUES (${id}, ${source}, ${id}, ${`https://${domain}/${id}`}, '互动示例', ${at}, ${at})`;
@@ -71,9 +77,12 @@ test("daily interaction counts are anonymous, uncached, and visible only in the 
   const removed = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "star_remove", target: id } });
   const unknown = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "page_view", target: "/secret" } });
   const address = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "outbound_click", target: "http://10.1.2.3/a" } });
+  const entered = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "enter_3d" } });
+  const star = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "click_star", target: id } });
+  const badStar = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "click_star", target: "bad id" } });
   const admin = await app.inject({ method: "GET", url: "/api/admin/analytics?days=7" });
 
-  for (const res of [added, again, shared, outbound, unpublished, removed, unknown, address]) {
+  for (const res of [added, again, shared, outbound, unpublished, removed, unknown, address, entered, star, badStar]) {
     assert.equal(res.statusCode, 204);
     assert.equal(res.headers["cache-control"], "private, no-store");
     assert.equal(res.headers["cdn-cache-control"], "no-store");
@@ -97,8 +106,10 @@ test("daily interaction counts are anonymous, uncached, and visible only in the 
   const today = summary.engagement.daily.at(-1);
   const top = summary.engagement.topStarred.find((row) => row.id === id);
   assert.equal(summary.engagement.daily.length, 7);
-  assert.equal(summary.engagement.totals.length, 9);
+  assert.equal(summary.engagement.totals.length, 11);
   assert.equal(stars?.count, 2);
+  assert.equal(summary.engagement.totals.find((row) => row.event === "enter_3d")?.count, 1);
+  assert.equal(summary.engagement.totals.find((row) => row.event === "click_star")?.count, 1);
   assert.equal(removes?.count, 1);
   assert.equal(shares?.count, 1);
   assert.equal(today?.counts.star_add, 2);
@@ -123,4 +134,21 @@ test("made-up source domains cannot add more than a day's quota of rows", async 
     WHERE day = ${today} AND event = 'outbound_click' AND target IN (${`new.${id}.example`}, ${filler[0]!}, '')`;
   assert.deepEqual(Object.fromEntries(rows.map((r) => [r.target, r.count])), { [filler[0]!]: 2, "": 1 });
   await sql`DELETE FROM site_events_daily WHERE day = ${today} AND event = 'outbound_click' AND target = ''`;
+});
+
+test("made-up milestone ids cannot add more than a day's quota of voyage star clicks", async () => {
+  const today = sql`(now() AT TIME ZONE 'Asia/Taipei')::date`;
+  const filler = Array.from({ length: 400 }, (_, i) => `c${i.toString(36)}${id}`);
+  await sql`DELETE FROM site_events_daily WHERE day = ${today} AND event = 'click_star' AND target LIKE ${`%${id}%`}`;
+  await sql`INSERT INTO site_events_daily (day, event, target, count)
+    SELECT ${today}, 'click_star', t, 1 FROM unnest(${filler}::text[]) AS t`;
+
+  await recordSiteEvent("click_star", `n${id}`);
+  await recordSiteEvent("click_star", filler[0]!);
+
+  const rows = await sql<{ target: string; count: number }[]>`
+    SELECT target, count FROM site_events_daily
+    WHERE day = ${today} AND event = 'click_star' AND target IN (${`n${id}`}, ${filler[0]!})`;
+  assert.deepEqual(Object.fromEntries(rows.map((r) => [r.target, r.count])), { [filler[0]!]: 2 });
+  await sql`DELETE FROM site_events_daily WHERE day = ${today} AND event = 'click_star' AND target LIKE ${`%${id}%`}`;
 });
