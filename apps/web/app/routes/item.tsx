@@ -8,8 +8,8 @@ import { ITEM_COPY, SITE } from "@aihot/site";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { useLoaderData } from "react-router";
 import type { Route } from "./+types/item";
-import type { SiteItemDetail } from "@aihot/contracts/site";
-import { cachedPage, loadOr404 } from "../lib/api.server";
+import type { NextReads as Reads, SiteItemDetail } from "@aihot/contracts/site";
+import { apiGet, cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { breadcrumbLd, newsArticleLd, pageMeta, siteUrl, titled } from "../lib/seo";
 import { fullDateTime, relativeTime } from "../lib/format";
@@ -33,6 +33,7 @@ import { ReadingGear } from "../features/art/ReadingGear";
 import { CATEGORY_ART } from "../features/art/CategoryBanner";
 import { Plate } from "../components/shell/Deck";
 import { CATEGORIES } from "@aihot/industry/taxonomy";
+import { NextReads } from "../components/NextReads";
 
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
@@ -40,8 +41,11 @@ export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 const PosterSheet = lazy(() => import("../features/item/PosterSheet"));
 
 export async function loader({ params, request }: Route.LoaderArgs) {
+  // What to read next is optional: the page renders without it.
+  const next = apiGet<Reads>("/api/site/next-reads", { request, signal: request.signal }).catch(() => null);
   const item = await loadOr404<SiteItemDetail>(`/api/site/items/${encodeURIComponent(params.id)}`, { request, signal: request.signal });
-  return cachedPage(600, { item, alternateEdition: await hasAlternateEdition(`/api/site/items/${encodeURIComponent(params.id)}`, item, request) });
+  const [alternateEdition, nextReads] = await Promise.all([hasAlternateEdition(`/api/site/items/${encodeURIComponent(params.id)}`, item, request), next]);
+  return cachedPage(600, { item, alternateEdition, nextReads });
 }
 
 export function meta({ matches, loaderData, location }: Route.MetaArgs) {
@@ -107,7 +111,7 @@ async function shareOrCopy(item: Pick<SiteItemDetail, "id" | "title">, locale: L
 export default function ItemPage() {
   const tx = useTranslate();
   const locale = useLocale();
-  const { item } = useLoaderData<typeof loader>();
+  const { item, nextReads } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const hasTranslation = item.hasTranslation;
   const lang = item.bodyLanguage;
@@ -383,6 +387,8 @@ export default function ItemPage() {
               </ul>
             </section>
           )}
+
+          <NextReads reads={nextReads} currentStory={item.story?.publicId} />
         </article>
         {showOutline && (
           <aside className="hidden 2xl:block">

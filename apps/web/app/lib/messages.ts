@@ -114,6 +114,8 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "按主题找": "Browse by topic",
   "全部 {0} 个主题": "All {0} topics",
   "正在热议": "Trending now",
+  "继续阅读": "Keep reading",
+  "最新日报": "Latest daily",
   "现在搜索的人比较多，请 {0} 秒以后重试。列表浏览不受影响。": "Search is busy right now. Try again in {0} seconds. Lists remain available.",
   "{0} 秒后可重试": "Retry in {0} seconds",
   "重试这次搜索": "Retry this search",

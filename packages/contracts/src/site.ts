@@ -520,6 +520,12 @@ export interface TopicsResponse {
 }
 
 /** Phone search only needs links, not the topic pages or full hot ranking. */
+/** What to read next at the end of a story or an item: the latest daily and the head of the hot ranking. */
+export interface NextReads {
+  daily: ReportIndexEntry | null;
+  hot: Array<{ rank: number; title: string; storyPublicId: string }>;
+}
+
 export interface SearchSuggestions {
   topics: Array<TopicLink & { group: TopicGroupKey }>;
   hot: Array<{ rank: number; title: string; to: string }>;

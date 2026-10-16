@@ -8,9 +8,10 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode }
 import { IntentLink } from "../components/ui/IntentLink";
 import { useLoaderData, useLocation } from "react-router";
 import type { Route } from "./+types/story";
-import type { StoryDetail, StoryReportView } from "@aihot/contracts/site";
+import type { NextReads as Reads, StoryDetail, StoryReportView } from "@aihot/contracts/site";
 import { SITE } from "@aihot/site";
-import { cachedPage, loadOr404 } from "../lib/api.server";
+import { apiGet, cachedPage, loadOr404 } from "../lib/api.server";
+import { NextReads } from "../components/NextReads";
 import { pageReuse } from "../lib/page-reuse";
 import { breadcrumbLd, clipText, organizationLd, pageMeta, storyArticleLd, storyLd, storyTimes, titled } from "../lib/seo";
 import { beijingDate, beijingTime } from "@aihot/contracts/time";
@@ -35,8 +36,11 @@ export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 export async function loader({ params, request }: Route.LoaderArgs) {
   const path = `/api/site/stories/${encodeURIComponent(params.publicId)}`;
   const search = new URL(request.url).search;
+  // What to read next is optional: the page renders without it.
+  const next = apiGet<Reads>("/api/site/next-reads", { request, signal: request.signal }).catch(() => null);
   const story = await loadOr404<StoryDetail>(path, { request, signal: request.signal, merged: (id) => localePath(`/story/${id}${search}`, requestLocale(request)) });
-  return cachedPage(300, { story, alternateEdition: await hasAlternateEdition(path, story, request) });
+  const [alternateEdition, nextReads] = await Promise.all([hasAlternateEdition(path, story, request), next]);
+  return cachedPage(300, { story, alternateEdition, nextReads });
 }
 
 export function meta({ matches, loaderData }: Route.MetaArgs) {
@@ -224,7 +228,7 @@ const viewCache = sessionCache<{ savedAt: number; filter: Filter; order: Order }
 export default function StoryPage() {
   const tx = useTranslate();
   const locale = useLocale();
-  const { story } = useLoaderData<typeof loader>();
+  const { story, nextReads } = useLoaderData<typeof loader>();
   const entry = useLocation().key;
   const [filter, setFilter] = useState<Filter>(() => viewCache.peek(entry)?.filter ?? "all");
   const [order, setOrder] = useState<Order>(() => viewCache.peek(entry)?.order ?? "desc");
@@ -460,6 +464,8 @@ export default function StoryPage() {
               </ul>
             </Panel>
           )}
+
+          <NextReads reads={nextReads} currentStory={story.publicId} className="order-7 px-1" />
         </div>
 
         <aside className="order-2 flex min-w-0 flex-col gap-4 lg:order-none lg:gap-5">

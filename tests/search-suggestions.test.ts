@@ -51,3 +51,17 @@ test("search carries exactly the existing topic links and five visible hot links
   assert.deepEqual(next.json().hot,entries.slice(1,6).map(e => ({rank:e.rank,title:e.title,to:'/story/'+e.storyPublicId})));
   assert.notEqual(next.headers.etag,first.headers.etag);
 });
+
+test("the end of a story or an item offers the latest daily and the visible head of the hot ranking", async () => {
+  const read = async () => (await app.inject({ method: 'GET', url: '/api/site/next-reads?lang=en' }));
+  const res = await read();
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.headers['cache-control'], 'public, max-age=60, s-maxage=60');
+  const body = res.json() as { daily: { key: string } | null; hot: Array<{ rank: number; title: string; storyPublicId: string }> };
+  const dailies = (await app.inject({ method: 'GET', url: '/api/site/reports/daily?lang=en' })).json() as { items: Array<{ key: string }> };
+  assert.equal(body.daily?.key ?? null, dailies.items[0]?.key ?? null, 'the newest daily in the index');
+  // The same stories, in the same order, as the hot links search offers: withdrawn ones are already gone.
+  const hot = (await app.inject({ method: 'GET', url: '/api/site/search/suggestions?lang=en' })).json().hot as Array<{ rank: number; to: string }>;
+  assert.deepEqual(body.hot.map((h) => `/story/${h.storyPublicId}`), hot.map((h) => h.to));
+  assert.ok(body.hot.every((h) => h.title.length > 0));
+});

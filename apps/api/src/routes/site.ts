@@ -2,7 +2,7 @@
 // Reads through the same public read layer as v1; no cookies are read or set.
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { isCategoryKey, isChannelKey, type CategoryKey, type ChannelKey } from "@aihot/contracts/taxonomy";
-import type { ReportIndexResponse, ReportLatestPage, ReportNavigationResponse, SearchSuggestions, SiteContact, TopicLink } from "@aihot/contracts/site";
+import type { ReportIndexResponse, ReportLatestPage, ReportNavigationResponse, NextReads, SearchSuggestions, SiteContact, TopicLink } from "@aihot/contracts/site";
 import { InvalidCursorError } from "@aihot/backend/lib/cursor";
 import { FEATURES } from "@aihot/industry/features";
 import { exportMarkdown, loadItemDetail } from "@aihot/backend/publication/detail";
@@ -179,6 +179,15 @@ export function registerSite(app: FastifyInstance) {
 
   app.get("/api/site/topics", siteHandler(async (req, reply) => {
     return sendJsonWithEtag(req, reply, await listTopicSummaries(editionLang(req)), { etagPrefix: "topics", cacheControl: "public, max-age=300, s-maxage=300" });
+  }));
+
+  app.get("/api/site/next-reads", siteHandler(async (req, reply) => {
+    const [dailies, strip] = await Promise.all([listReports("daily", 1), loadHotStrip()]);
+    const body: NextReads = {
+      daily: dailies[0] ?? null,
+      hot: (strip ?? []).flatMap((e) => (e.storyPublicId ? [{ rank: e.rank, title: e.title, storyPublicId: e.storyPublicId }] : [])),
+    };
+    return sendJsonWithEtag(req, reply, body, { etagPrefix: "next-reads", cacheControl: "public, max-age=60, s-maxage=60" });
   }));
 
   app.get('/api/site/search/suggestions', siteHandler(async (req, reply) => {
