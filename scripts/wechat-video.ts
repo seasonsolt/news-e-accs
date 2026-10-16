@@ -45,6 +45,8 @@ const voice = {
   refText: process.env.VOICE_REF_TEXT ?? null,
 };
 const LISTEN = { aligner: "mlx-community/Qwen3-ForcedAligner-0.6B-8bit", asr: "mlx-community/Qwen3-ASR-1.7B-8bit" };
+/** How many more times a line the hearing check got wrong is spoken. */
+const RESPEAK = 2;
 /** A cloned voice also copies the pace of its recording; ffmpeg's atempo keeps the pitch. */
 const tempo = Number(process.env.VOICE_TEMPO) || 1;
 /** Pinned: a new HyperFrames may draw the same composition differently. */
@@ -244,26 +246,46 @@ async function main() {
   ].map((x) => ({ ...x, text: x.text.trim() }));
   if (said.some((x) => !x.text)) fail("口播稿的开场或结尾是空的。");
   const lines = said.map((x) => x.text);
-  const wavs = lines.map((_, k) => path.join(out, "voice", `${String(k).padStart(3, "0")}.wav`));
-  const voiceName = voice.refAudio ? `参考录音 ${path.basename(voice.refAudio)}` : `声音描述「${voice.instruct}」`;
-  console.log(`配音：VoxCPM2，${voiceName}，共 ${lines.length} 段（每段约需它时长的 1.5 倍）`);
-  const spoken = await venv<{ seconds: number }>("wechat-video-tts.py", { ...voice, lines: lines.map((text, k) => ({ text, out: wavs[k] })) },
-    (m, k) => console.log(`  配音 ${k}/${lines.length}（${m.seconds.toFixed(1)} 秒）`));
-  let seconds = spoken.map((m) => m.seconds);
-  if (tempo !== 1) {
+  const all = lines.map((_, k) => k);
+  const file = (k: number, attempt: number) => path.join(out, "voice", `${String(k).padStart(3, "0")}${attempt ? `-${attempt + 1}` : ""}.wav`);
+  /** Speaks these lines into this attempt's files: each one's length in seconds. */
+  const speak = async (ks: number[], attempt: number) => {
+    const spoken = await venv<{ seconds: number }>("wechat-video-tts.py", { ...voice, lines: ks.map((k) => ({ text: lines[k], out: file(k, attempt) })) },
+      (m, j) => { if (!attempt) console.log(`  配音 ${j}/${lines.length}（${m.seconds.toFixed(1)} 秒）`); });
+    if (tempo === 1) return spoken.map((m) => m.seconds);
     // atempo's output is not exactly 1/tempo as long, and the timeline adds every line up.
-    seconds = [];
-    for (const wav of wavs) {
+    const seconds: number[] = [];
+    for (const k of ks) {
+      const wav = file(k, attempt);
       await run("ffmpeg", ["-y", "-loglevel", "error", "-i", wav, "-af", `atempo=${tempo}`, `${wav}.tmp.wav`]);
       await rename(`${wav}.tmp.wav`, wav);
       const { stdout } = await promisify(execFile)("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", wav]);
       seconds.push(Number(stdout));
     }
-  }
+    return seconds;
+  };
+  const listen = (ks: number[], attempt: number) => venv<{ words: Array<[string, number, number]>; heard: string }>("wechat-video-listen.py",
+    { ...LISTEN, lines: ks.map((k) => ({ text: lines[k], wav: file(k, attempt) })) }, () => {});
 
+  const voiceName = voice.refAudio ? `参考录音 ${path.basename(voice.refAudio)}` : `声音描述「${voice.instruct}」`;
+  console.log(`配音：VoxCPM2，${voiceName}，共 ${lines.length} 段（每段约需它时长的 1.5 倍）`);
+  const seconds = await speak(all, 0);
   console.log("对齐字幕、听写自检");
-  const heard = await venv<{ words: Array<[string, number, number]>; heard: string }>("wechat-video-listen.py",
-    { ...LISTEN, lines: lines.map((text, k) => ({ text, wav: wavs[k] })) }, () => {});
+  const heard = await listen(all, 0);
+  const wavs = all.map((k) => file(k, 0));
+  // The voice model reads a name differently each time: a line heard wrong is spoken again, and the
+  // reading heard best is kept.
+  const wrong = (k: number, words = heard[k]!.heard) => misheard(lines[k]!, words).length;
+  for (let attempt = 1; attempt <= RESPEAK; attempt++) {
+    const again = all.filter((k) => wrong(k) > 0);
+    if (!again.length) break;
+    console.log(`  重配听错的第 ${again.map((k) => k + 1).join("、")} 段（第 ${attempt + 1} 次）`);
+    const [respoken, reheard] = [await speak(again, attempt), await listen(again, attempt)];
+    for (const [j, k] of again.entries()) {
+      if (wrong(k, reheard[j]!.heard) >= wrong(k)) continue;
+      [seconds[k], heard[k], wavs[k]] = [respoken[j]!, reheard[j]!, file(k, attempt)];
+    }
+  }
 
   // The timeline: each line's start (quick hits follow each other closely), the cards cut just before
   // their first line, and the subtitles, the lead's points and the quick hits' turns on the words.
