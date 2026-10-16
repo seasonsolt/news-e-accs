@@ -12,6 +12,7 @@ import { IconArrowRight, IconHourglass } from "../components/icons";
 import { Capabilities } from "../features/chrono/Capabilities";
 import { ChronicleAxis } from "../features/chrono/ChronicleAxis";
 import { CivilizationGauges } from "../features/chrono/CivilizationGauges";
+import { CosmosStage } from "../features/chrono/CosmosStage";
 import { EraStrip } from "../features/chrono/EraStrip";
 import { MomentList } from "../features/chrono/MomentList";
 import { Observatory } from "../features/chrono/Observatory";
@@ -46,6 +47,7 @@ export default function ChroniclePage() {
   const tx = useTranslate();
   const { chronicle, now, t: initialT } = useLoaderData<typeof loader>();
   const [t, setT] = useState(initialT);
+  const [cosmos, setCosmos] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const bounds = useRouteLoaderData<typeof rootLoader>("root")?.timeBounds;
@@ -66,7 +68,17 @@ export default function ChroniclePage() {
   const links = [{ to: "/", label: tx("精选") }, { to: "/hot", label: tx("热点榜") }, { to: "/daily", label: tx("日报") }];
   return (
     <div className="chronicle-page pb-8 pt-3 lg:pt-0">
-      <Observatory era={era} focus={focus} nearby={nearbyPlates(chronicle.eras, chronicle.milestones, t, now)} label={focus ? tx(timeLabel(focus.t, now, focus.precision, focus.date)) : tx(timeLabel(t, now))} distance={tx(distanceLabel(t, now))} />
+      <Observatory
+        era={era}
+        focus={focus}
+        nearby={nearbyPlates(chronicle.eras, chronicle.milestones, t, now)}
+        label={focus ? tx(timeLabel(focus.t, now, focus.precision, focus.date)) : tx(timeLabel(t, now))}
+        distance={tx(distanceLabel(t, now))}
+        cosmos={cosmos}
+        voyage={FEATURES.cosmos3d ? (
+          <CosmosStage active={cosmos} onActive={setCosmos} eras={chronicle.eras} milestones={chronicle.milestones} metrics={chronicle.metrics} era={era} t={t} now={now} onMove={setT} onCommit={commit} />
+        ) : null}
+      />
       {/* The chronometer docks under the deck and stays at hand while the readouts below scroll by. */}
       <section aria-label={tx("时间导航")} className="chronometer">
         <ChronicleAxis eras={chronicle.eras} milestones={chronicle.milestones} now={now} t={t} onMove={setT} onCommit={commit} />

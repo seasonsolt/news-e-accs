@@ -53,12 +53,16 @@ export async function recordPageView(path: string): Promise<void> {
 /** Allowlisted interaction names. Anything else is dropped and never stored. */
 export const SITE_EVENTS = [
   "star_add", "star_remove", "first_star", "subscribe_click", "subscribe_submit", "outbound_click", "share_click", "starred_export", "starred_import",
+  "enter_3d", "click_star",
 ] as const;
 export type SiteEvent = (typeof SITE_EVENTS)[number];
 
 const SITE_EVENT_SET = new Set<string>(SITE_EVENTS);
 const ITEM_TARGET = new Set<SiteEvent>(["star_add", "star_remove"]);
-const EMPTY_TARGET = new Set<SiteEvent>(["first_star", "subscribe_click", "subscribe_submit", "share_click", "starred_export", "starred_import"]);
+const EMPTY_TARGET = new Set<SiteEvent>(["first_star", "subscribe_click", "subscribe_submit", "share_click", "starred_export", "starred_import", "enter_3d"]);
+/** A chronicle milestone id. Not a publication, so it is checked as an id and capped per day. */
+const MILESTONE_TARGET = new Set<SiteEvent>(["click_star"]);
+const STAR_CLICKS_PER_DAY = 400;
 const ITEM_ID = /^[a-zA-Z0-9_-]{1,80}$/;
 const HOSTNAME = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const IPV4 = /^(?:\d{1,3}\.){3}\d{1,3}$/;
@@ -108,7 +112,7 @@ export function normalizeSiteEvent(body: unknown): { event: SiteEvent; target: s
   const target = typeof raw === "string" ? raw : "";
   const name = event as SiteEvent;
   if (EMPTY_TARGET.has(name)) return target === "" ? { event: name, target: "" } : null;
-  if (ITEM_TARGET.has(name)) return ITEM_ID.test(target) ? { event: name, target } : null;
+  if (ITEM_TARGET.has(name) || MILESTONE_TARGET.has(name)) return ITEM_ID.test(target) ? { event: name, target } : null;
   const domain = normalizeSourceDomain(target);
   return domain === null ? null : { event: "outbound_click", target: domain };
 }
@@ -116,6 +120,7 @@ export function normalizeSiteEvent(body: unknown): { event: SiteEvent; target: s
 /**
  * Adds one to today's counter. Stars count only for published items, and outbound clicks start a new
  * domain row only while today has fewer than DOMAINS_PER_DAY of them, so made-up targets cannot grow the table.
+ * Milestone stars in the chronicle voyage are capped the same way: a real pass touches a few hundred ids.
  */
 export async function recordSiteEvent(event: SiteEvent, target: string): Promise<void> {
   const guard = ITEM_TARGET.has(event)
@@ -123,7 +128,10 @@ export async function recordSiteEvent(event: SiteEvent, target: string): Promise
     : event === "outbound_click" && target !== ""
       ? sql`(EXISTS (SELECT 1 FROM site_events_daily WHERE day = today.day AND event = 'outbound_click' AND target = ${target})
           OR (SELECT count(*) FROM site_events_daily WHERE day = today.day AND event = 'outbound_click') < ${DOMAINS_PER_DAY})`
-      : sql`true`;
+      : event === "click_star"
+        ? sql`(EXISTS (SELECT 1 FROM site_events_daily WHERE day = today.day AND event = 'click_star' AND target = ${target})
+            OR (SELECT count(*) FROM site_events_daily WHERE day = today.day AND event = 'click_star') < ${STAR_CLICKS_PER_DAY})`
+        : sql`true`;
   await sql`
     INSERT INTO site_events_daily (day, event, target, count)
     SELECT today.day, ${event}, ${target}, 1

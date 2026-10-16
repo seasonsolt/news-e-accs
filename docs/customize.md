@@ -119,6 +119,7 @@
 `industry/features.ts` 保留本站的时间机器开关：
 
 - `timeMachine`：全站 `?at=YYYY-MM-DD` 北京日历史切片和 `/chronicle` 四维视角。换行业时，替换 `industry/chronicle/{eras,milestones,metrics}.json`，保持格式、时间排序和来源链接；版画放在 `apps/web/public/media/art/epochs/`，用 `tools/make-art.sh` 转换，再用 `tools/make-depth.py` 生成景深视差用的深度图。没有相应数据时设为 `false`，关闭入口、接口和站点地图。历史切片只读已有记录，不调用模型。
+- `cosmos3d`：`/chronicle` 观测舱里的三维航行。桌面、WebGL2、未要求减少动效时默认打开；手机、无 WebGL2 或减少动效时保持平面时间轴。低配或省流量默认平面，读者仍可用开关打开。设为 `false` 以后加速史页面还在，只是没有三维。三维脚本按需加载，不进首屏。
 
 
 ## 7. 品牌：`site/brand/`

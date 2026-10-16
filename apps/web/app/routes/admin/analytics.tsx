@@ -28,6 +28,8 @@ const EVENT_LABELS: Record<string, string> = {
   share_click: "分享",
   starred_export: "导出收藏",
   starred_import: "导入收藏",
+  enter_3d: "进入三维航行",
+  click_star: "点击三维星标",
 };
 
 const EVENT_COLORS = ["var(--accent)", "var(--hot)", "var(--ok)", "var(--amber)", "#3d6b8a", "#6b5b95", "#2f6f6a", "#8a5a44", "#5f7a3a"];

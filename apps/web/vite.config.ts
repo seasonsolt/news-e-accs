@@ -47,6 +47,8 @@ export default defineConfig({
         codeSplitting: {
           groups: [
             { name: "framework", test: /node_modules[\\/](?:react|react-dom|scheduler|react-router|@react-router|cookie|set-cookie-parser|turbo-stream)[\\/]/, priority: 30 },
+            // The chronicle voyage imports these only from a dynamic chunk. Keep them together and out of the first paint.
+            { name: "cosmos", test: /node_modules[\\/](?:three|@react-three)[\\/]/, priority: 25 },
             { name: "motion", test: /node_modules[\\/](?:motion|framer-motion|motion-dom|motion-utils)[\\/]/, priority: 20 },
             { name: "shared", test: /apps[\\/]web[\\/]app[\\/](?!features[\\/]|routes[\\/])|[\\/](?:industry|site)[\\/]/, minShareCount: 2, priority: 10 },
           ],
