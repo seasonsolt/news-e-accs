@@ -11,13 +11,15 @@
 // Needs ffmpeg (with libx264) on PATH, network for `npx hyperframes` and its Chrome on the first run,
 // WECHAT_VIDEO_TOKEN (the server's value), and a venv with mlx-audio (VOXCPM_PYTHON) holding VoxCPM2,
 // Qwen3-ForcedAligner and Qwen3-ASR. The voice is VOICE_DESCRIPTION in words, or a recording
-// VOICE_REF_AUDIO (with VOICE_REF_TEXT, its transcript) of someone who agreed to have their voice used.
-import { spawn } from "node:child_process";
+// VOICE_REF_AUDIO (with VOICE_REF_TEXT, its transcript) of someone who agreed to have their voice used;
+// VOICE_TEMPO speeds it up (or slows it down) without changing its pitch.
+import { execFile, spawn } from "node:child_process";
 import { createInterface } from "node:readline";
-import { copyFile, mkdir, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import { SITE } from "@aihot/site";
 import { calendarDate } from "@aihot/contracts/time";
 import type { WechatVideoSpec } from "../packages/backend/src/newsletter/wechat-video.ts";
@@ -43,6 +45,8 @@ const voice = {
   refText: process.env.VOICE_REF_TEXT ?? null,
 };
 const LISTEN = { aligner: "mlx-community/Qwen3-ForcedAligner-0.6B-8bit", asr: "mlx-community/Qwen3-ASR-1.7B-8bit" };
+/** A cloned voice also copies the pace of its recording; ffmpeg's atempo keeps the pitch. */
+const tempo = Number(process.env.VOICE_TEMPO) || 1;
 /** Pinned: a new HyperFrames may draw the same composition differently. */
 const HYPERFRAMES = "hyperframes@0.8.162";
 
@@ -245,7 +249,17 @@ async function main() {
   console.log(`配音：VoxCPM2，${voiceName}，共 ${lines.length} 段（每段约需它时长的 1.5 倍）`);
   const spoken = await venv<{ seconds: number }>("wechat-video-tts.py", { ...voice, lines: lines.map((text, k) => ({ text, out: wavs[k] })) },
     (m, k) => console.log(`  配音 ${k}/${lines.length}（${m.seconds.toFixed(1)} 秒）`));
-  const seconds = spoken.map((m) => m.seconds);
+  let seconds = spoken.map((m) => m.seconds);
+  if (tempo !== 1) {
+    // atempo's output is not exactly 1/tempo as long, and the timeline adds every line up.
+    seconds = [];
+    for (const wav of wavs) {
+      await run("ffmpeg", ["-y", "-loglevel", "error", "-i", wav, "-af", `atempo=${tempo}`, `${wav}.tmp.wav`]);
+      await rename(`${wav}.tmp.wav`, wav);
+      const { stdout } = await promisify(execFile)("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", wav]);
+      seconds.push(Number(stdout));
+    }
+  }
 
   console.log("对齐字幕、听写自检");
   const heard = await venv<{ words: Array<[string, number, number]>; heard: string }>("wechat-video-listen.py",

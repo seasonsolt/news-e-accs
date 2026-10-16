@@ -396,7 +396,7 @@ v1 默认目标语言仍为中文；英文主稿缺少有效中文 edition 时�
 
 背景音乐由 `scripts/wechat-video-music.py` 现场合成（同一天的视频用同一段旋律），不涉及版权；人声说话时它自动压低，句子之间再回来。
 
-声音默认按 `VOICE_DESCRIPTION` 的文字描述生成（VoxCPM2 的声音设计），不需要参考录音。要换成某个人的声音，就设 `VOICE_REF_AUDIO=<10–30 秒的清晰录音>` 和 `VOICE_REF_TEXT=<录音的逐字文本>`，而且只能用本人同意使用的录音，不要克隆公众人物或配音演员的声音。其他选填项：`WECHAT_VIDEO_BASE_URL`（默认站点地址）、`VOXCPM_MODEL`、`VOXCPM_TIMESTEPS`（默认 10）。配音约需成片时长的 1.5 倍，画面渲染一分多钟。
+声音默认按 `VOICE_DESCRIPTION` 的文字描述生成（VoxCPM2 的声音设计），不需要参考录音。要换成某个人的声音，就设 `VOICE_REF_AUDIO=<10–30 秒的清晰录音>` 和 `VOICE_REF_TEXT=<录音的逐字文本>`，而且只能用本人同意使用的录音，不要克隆公众人物或配音演员的声音。克隆的声音连录音里的语速也一起学去，录音念得慢时设 `VOICE_TEMPO`（例如 `1.15`）整体提速，音高不变。其他选填项：`WECHAT_VIDEO_BASE_URL`（默认站点地址）、`VOXCPM_MODEL`、`VOXCPM_TIMESTEPS`（默认 10）。配音约需成片时长的 1.5 倍，画面渲染一分多钟。
 
 ### Search Console 周读数
 
