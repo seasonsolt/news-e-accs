@@ -4,6 +4,7 @@
 #   deploy/update.sh <commit>      deploy that pushed commit instead
 #   deploy/update.sh --rollback [<commit>]   switch back to the previous build (or that one)
 #   deploy/update.sh --status      the live build, the services, the last deploys
+#   deploy/update.sh --stats [7|30|90]   the site's own page views and interactions (default 30 days)
 # HOST is the ssh host alias (default "dmit"); SKIP_CI=1 deploys without a passed check (emergencies only).
 set -euo pipefail
 HOST=${HOST:-dmit}
@@ -14,8 +15,9 @@ remote() { ssh -x "$HOST" "bash -s -- $*" <"$HERE/remote.sh"; }
 
 case "${1:-}" in
   --status) remote status; exit ;;
+  --stats) remote stats "${2:-30}"; exit ;;
   --rollback) remote rollback "${2:-}"; exit ;;
-  -*) sed -n '2,7p' "$0"; exit 1 ;;
+  -*) sed -n '2,8p' "$0"; exit 1 ;;
 esac
 
 git -C "$HERE" fetch -q origin

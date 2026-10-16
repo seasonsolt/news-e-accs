@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The server side of deploy/update.sh, which pipes this file over ssh and runs it as root:
-#   remote.sh deploy <sha> | rollback [sha] | status
+#   remote.sh deploy <sha> | rollback [sha] | status | stats [days]
 # Layout (deploy/README.md):
 #   /srv/eacc/repo          git checkout, only fetched from (deploy key of user eacc)
 #   /srv/eacc/builds/<sha>  one installed and built version each; the newest KEEP are kept
@@ -162,9 +162,17 @@ status() {
   tail -n 5 "$LOG" 2>/dev/null | sed 's/^/    /' || true
 }
 
+# Read-only: the admin statistics summary, from the live build and its database.
+stats() {
+  local days=$1
+  [[ $days =~ ^(7|30|90)$ ]] || die "stats takes 7, 30 or 90 days, got '$days'"
+  as_eacc "cd '$APP' && node --env-file=.env scripts/site-stats.ts $days"
+}
+
 case "${1:-}" in
   deploy) deploy "${2:-}" ;;
   rollback) rollback "${2:-}" ;;
   status) status ;;
-  *) die "usage: remote.sh deploy <sha> | rollback [sha] | status" ;;
+  stats) stats "${2:-30}" ;;
+  *) die "usage: remote.sh deploy <sha> | rollback [sha] | status | stats [days]" ;;
 esac
