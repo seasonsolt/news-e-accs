@@ -31,6 +31,8 @@ before(async () => {
       { label: "模型", items: [{ itemId: `wv-${T}-1`, title: "Nova 模型发布", summary: "推理成本下降一半。", sourceName: "官方博客", sourceUrl: "https://example.org/a" }] },
       { label: "产品", items: [{ itemId: `wv-${T}-2`, title: "产品 B 上线", summary: "面向企业开放。", sourceName: "媒体", sourceUrl: "https://example.org/b" }] },
       { label: "行业", items: [{ itemId: `wv-${T}-3`, title: "行业 C 融资", summary: "完成新一轮融资。", sourceName: "媒体", sourceUrl: "https://example.org/c" }] },
+      { label: "其他", items: ["D", "E", "F", "G"].map((x) => ({ itemId: `wv-${T}-${x}`, title: `条目 ${x} 发布`, summary: "细节见原文。", sourceName: "媒体", sourceUrl: `https://example.org/${x}` })) },
+      { label: "趣闻", items: [{ itemId: `wv-${T}-h`, title: "插件 H 上线", summary: "支持中文。", sourceName: "媒体", sourceUrl: "https://example.org/h" }] },
     ],
     flashes: [],
     metrics: {},
@@ -64,14 +66,15 @@ test("no script is asked for while model calls are off", async () => {
 
 test("the worker writes the lead, the quick hits and a last word, the editor rewrites them, and the Mac reads them with the token", async () => {
   const asked: string[] = [];
-  const model = await stub((_hit, req) => {
+  const model = await stub((hit, req) => {
     const user = (JSON.parse(req.body) as { messages: Array<{ role: string; content: string }> }).messages.find((m) => m.role === "user")!.content;
     asked.push(user);
     const segments = [
       { n: 1, narration: "Nova 模型发布，推理成本下降一半，用得起的人会更多。", points: ["推理成本下降一半", "售价 199 元", "用得起的人更多。"] },
       { n: 2, narration: "产品 B 上线，价格降到 199 元。" },
     ];
-    const egg = { n: 2, line: "产品 B 终于上线，等的人可以去吃早饭了。" };
+    // The second time the model jokes about a story the video tells.
+    const egg = hit === 1 ? { n: 7, line: "插件 H 终于上线，等的人可以去吃早饭了。" } : { n: 2, line: "条目 D 终于发布，等的人可以去吃早饭了。" };
     return { id: `wv-${T}`, choices: [{ message: { content: JSON.stringify({ segments, egg }) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } };
   });
   pointModels(model.url, ["deepseek-flash"]);
@@ -80,6 +83,8 @@ test("the worker writes the lead, the quick hits and a last word, the editor rew
     const generated = await ready();
     const third = generated.article.entries[2]!;
     assert.equal(third.title, "行业 C 融资");
+    const last = generated.article.entries[7]!;
+    assert.equal(last.title, "插件 H 上线");
     await saveWechatEdits(TODAY, { revision: generated.revision, edits: { hidden: [third.key] } }, "editor");
 
     const { request } = await requestWechatVideoScript(TODAY, "editor");
@@ -90,15 +95,16 @@ test("the worker writes the lead, the quick hits and a last word, the editor rew
     assert.equal(asked.length, 1);
     assert.doesNotMatch(asked[0]!, /行业 C/, "a hidden entry is not spoken");
     assert.match(asked[0]!, /^视频里的条目（1 是重点，其余是快讯）/);
+    assert.match(asked[0]!, /彩蛋候选：[^]*插件 H/, "the entries after the video's are offered for the last word");
 
     const { video } = await ready();
     assert.equal(video?.status, "done");
     const script = video!.script!;
-    assert.equal(script.segments.length, 2, "the lead and the other printed entry");
-    assert.match(script.opening, /重点说一件事，再快速过 1 条消息/);
+    assert.equal(script.segments.length, 6, "the lead and five quick hits");
+    assert.match(script.opening, /重点说一件事，再快速过 5 条消息/);
     assert.deepEqual(script.segments[0]!.points, ["推理成本下降一半", "用得起的人更多"], "a point naming what its entry lacks is dropped");
     assert.equal(script.segments[1]!.narration, "产品 B 上线。", "a figure its entry lacks is not spoken: the title is read instead");
-    assert.deepEqual(script.egg, { key: script.segments[1]!.key, narration: "最后来个彩蛋。产品 B 终于上线，等的人可以去吃早饭了。" });
+    assert.deepEqual(script.egg, { key: last.key, narration: "最后来个彩蛋。插件 H 终于上线，等的人可以去吃早饭了。" });
     assert.match(script.caption, /^AI 早报｜/);
     assert.match(script.caption, /完整早报：https?:\/\/.+\/daily\//);
     const [receipt] = await sql`SELECT r.status, r.purpose FROM receipts r JOIN wechat_videos v ON v.receipt_id = r.id WHERE v.report_key = ${TODAY}`;
@@ -109,10 +115,10 @@ test("the worker writes the lead, the quick hits and a last word, the editor rew
     }, "editor");
     const edited = (await ready()).video!;
     assert.equal(edited.editedBy, "editor");
-    assert.equal(edited.script!.segments.length, 2, "the editor rewrites paragraphs but cannot add entries");
+    assert.equal(edited.script!.segments.length, 6, "the editor rewrites paragraphs but cannot add entries");
     assert.equal(edited.script!.segments[1]!.narration, "编辑改写的一段。");
     assert.equal(edited.script!.segments[0]!.narration, script.segments[0]!.narration, "a paragraph not sent is kept");
-    assert.deepEqual(edited.script!.egg, { key: script.segments[1]!.key, narration: "编辑改写的彩蛋。" }, "the last word keeps its entry");
+    assert.deepEqual(edited.script!.egg, { key: last.key, narration: "编辑改写的彩蛋。" }, "the last word keeps its entry");
     await assert.rejects(saveWechatVideoScript(TODAY, { script: { ...edited.script, segments: [{ key: script.segments[0]!.key, narration: "x", points: ["a", "b", "c", "d"] }] } }, "editor"), /at most 3/);
 
     assert.equal((await app.inject({ method: "GET", url: `/api/wechat-video/${TODAY}` })).statusCode, 401);
@@ -125,9 +131,10 @@ test("the worker writes the lead, the quick hits and a last word, the editor rew
     const spec = res.json();
     assert.equal(spec.closing, "明天见。");
     assert.equal(spec.site, new URL(config.siteUrl).host, "the closing card names the site");
-    assert.deepEqual(spec.segments.map((s: { number: number; title: string }) => [s.number, s.title]), [[1, `头条 ${T}`], [2, "产品 B 上线"]]);
-    assert.deepEqual(spec.segments.map((s: { points: string[] }) => s.points), [["推理成本下降一半", "用得起的人更多"], []], "only the lead shows points");
-    assert.equal(spec.egg.title, "产品 B 上线");
+    assert.deepEqual(spec.segments.map((s: { number: number; title: string }) => [s.number, s.title]),
+      [[1, `头条 ${T}`], [2, "产品 B 上线"], [3, "条目 D 发布"], [4, "条目 E 发布"], [5, "条目 F 发布"], [6, "条目 G 发布"]]);
+    assert.deepEqual(spec.segments.map((s: { points: string[] }) => s.points), [["推理成本下降一半", "用得起的人更多"], [], [], [], [], []], "only the lead shows points");
+    assert.equal(spec.egg.title, "插件 H 上线");
     assert.equal(spec.egg.narration, "编辑改写的彩蛋。");
 
     await saveWechatVideoScript(TODAY, { script: { ...(await ready()).video!.script, egg: null } }, "editor");
@@ -138,7 +145,12 @@ test("the worker writes the lead, the quick hits and a last word, the editor rew
     const now = await ready();
     await saveWechatEdits(TODAY, { revision: now.revision, edits: { hidden: [third.key, script.segments[0]!.key] } }, "editor");
     const later = (await app.inject({ method: "GET", url: `/api/wechat-video/${TODAY}`, headers: auth })).json();
-    assert.deepEqual(later.segments.map((s: { number: number; title: string }) => [s.number, s.title]), [[1, "产品 B 上线"]]);
+    assert.deepEqual(later.segments.map((s: { number: number; title: string }) => s.title), ["产品 B 上线", "条目 D 发布", "条目 E 发布", "条目 F 发布", "条目 G 发布"]);
+
+    // Asked again, the model's last word is on a story the video tells: there is none.
+    const again = await requestWechatVideoScript(TODAY, "editor");
+    assert.deepEqual(await writeWechatVideoScript({ date: TODAY, request: again.request }), { status: "done" });
+    assert.equal((await ready()).video!.script!.egg, null);
   } finally {
     await model.close();
   }

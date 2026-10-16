@@ -1,6 +1,6 @@
 // The 视频号 edition of 「AI 早报」: a one-minute vertical video of the day's first printed entries: the
-// first told at length as the day's lead, the rest as one-line quick hits, and a wry last word on any of
-// the day's entries. 视频号 has no API to publish a video, and the server has neither the voice
+// first told at length as the day's lead, the rest as one-line quick hits, and a wry last word on one of
+// the day's other entries. 视频号 has no API to publish a video, and the server has neither the voice
 // model nor the cycles to render one, so the work is split: the workbench asks for a voice-over script
 // (admin/wechat.ts), the worker writes it here with the model (industry/prompts/wechat-video.md) and the
 // editor may rewrite it, then scripts/wechat-video.ts on the editor's Mac reads it (videoSpec, through
@@ -177,7 +177,8 @@ export async function writeWechatVideoScript(job: { date: string; request: strin
     });
     const written = new Map(res.data.segments.map((s) => [s.n, s]));
     const lead = written.get(1);
-    const eggEntry = res.data.egg ? all[res.data.egg.n - 1] : undefined;
+    // The last word is one more story, not a joke on one the video has just told.
+    const eggEntry = res.data.egg && res.data.egg.n > entries.length ? all[res.data.egg.n - 1] : undefined;
     const joke = eggEntry && usable(res.data.egg!.line, eggEntry, EGG_MAX);
     const script: WechatVideoScript = {
       ...ruledParts(job.date, issue.article, entries),
