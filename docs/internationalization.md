@@ -52,7 +52,7 @@ web RSS discovery、页脚、More 与 Agent RSS 地址使用真实 versioned end
 
 ## 邮件
 
-迁移 `0043_newsletter_languages.sql` 保存订阅 language 和 `language_preference_known`。新订阅省略语言时为 en；既有记录在迁移时补成 zh 且 preference unknown，因为当时没有注册页面语言可回填，不能据此推断本人曾经选择中文。表单提交的 `language` 只接受 en 或 zh，不读 Accept-Language。同一地址从另一种语言的页面再次订阅会更新这条记录，并在已确认且未退订时把 Resend 联系人移到对应 segment。确认邮件、确认链接与加入 segment 使用更新后的语言；同一语言的 cooldown 内重试不另发信，换语言会再发。没有欢迎信。退订是日报里的 Resend 链接，没有单独的站内偏好页。
+迁移 `0043_newsletter_languages.sql` 保存订阅 language 和 `language_preference_known`。新订阅省略语言时为 en；既有记录在迁移时补成 zh 且 preference unknown，因为当时没有注册页面语言可回填，不能据此推断本人曾经选择中文。表单提交的 `language` 只接受 en 或 zh，不读 Accept-Language。同一地址从另一种语言的页面再次订阅只把这次的语言记到 `pending_language`（`0123` 增加的可空列，不改已有行；`0124` 加 NOT VALID 检查，`0125` 验证），并再发一封该语言的确认信。点确认之前，`language` 和 Resend 分组不变；点确认才更新 language、记为已知偏好、加入新分组并移出另一个。移出失败会撤销刚加入的分组，不改数据库。已经退订的地址也要等这次确认，提交表单不会在 Resend 里重新订阅。同一语言的 cooldown 内重试不另发信。没有欢迎信。退订是日报里的 Resend 链接，没有单独的站内偏好页。
 
 `RESEND_SEGMENT_ID` 用于中文，英文需独立 `RESEND_SEGMENT_ID_EN`，两者不得相同；缺少/相同配置失败关闭，不退回旧中文名单。每种语言独立确认目标报告就绪，再按 `(report_key,language)` claim 发送；旧 `newsletter_sends` 的任何 claim 阻止两种语言再发该期。未就绪的语言跳过并记 `newsletter edition skipped` 日志，不改发另一种语言，也不 claim，当天稍后的检查会再试；失败/unknown 保持既有不自动重发保障，迟到的历史报告不发邮件。英文原稿可先发送，中文等待自己的完整 edition；不发送混合报告。report citations 是经过许可/撤回投影的报告快照，其语言继承完整报告的已验证状态，不与当前 story/article 文案比较；关联事件改名或报告编辑摘要不同不会阻止就绪报告发送。
 

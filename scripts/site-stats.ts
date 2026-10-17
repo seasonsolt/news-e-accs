@@ -49,9 +49,14 @@ function formatSubscribeFunnel(funnel: Funnel): string[] {
   return lines;
 }
 
+/** The page-view summary and the subscribe funnel both keep 7, 30 or 90 and treat anything else as 30. */
+function statsWindow(days: number): number {
+  return days === 7 || days === 30 || days === 90 ? days : 30;
+}
+
 if (import.meta.main) {
   try {
-    const days = Number(process.argv[2]) || 30;
+    const days = statsWindow(Number(process.argv[2]) || 30);
     console.log(formatSiteStats(await siteAnalyticsOverview(days), await subscribeFunnel(days)));
   } finally {
     await closeDb();

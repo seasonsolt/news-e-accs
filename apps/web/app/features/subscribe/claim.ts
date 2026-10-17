@@ -1,4 +1,5 @@
-// Once per page view. A remount of the same view (Strict Mode, a parent re-render) does not count again.
+// Once per pathname in this document. A remount (Strict Mode, a parent re-render) does not count again,
+// and neither does a later visit to the same path until the page is loaded again.
 import type { SubscribeSource } from "@aihot/contracts/subscribe";
 
 const seen = new Set<string>();

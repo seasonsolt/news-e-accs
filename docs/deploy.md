@@ -342,8 +342,9 @@ v1 默认目标语言仍为中文；英文主稿缺少有效中文 edition 时�
 
 新邮件订阅的 `language` 只接受 `en` 或 `zh`，来自页面：表单提交 JSON 的 `language`，省略时按无前缀页面记为英文。不读 `Accept-Language`。
 迁移 `0043_newsletter_languages.sql` 给已有行补上 `language`：当时没有记下注册页面，所以既有地址补成 `zh`，`language_preference_known=false`，只表示这是补上的默认，不是读者选过中文。
-同一地址再次从另一种语言的页面订阅会改掉这条记录的语言，并记为已知偏好。已经确认且未退订的联系人会先加入新的 Resend segment，再从原来的 segment 移除，因此下一封日报跟着新语言走；已经退订的地址只改记录，点新的确认信之后才回到名单。同一语言在 10 分钟内再提交不另发确认信；换语言会再发一封该语言的确认信。
-确认信的主题、正文、按钮和链接（`/subscribe` 或 `/zh/subscribe`）使用记录中的语言。确认页就是这封信打开的订阅页，语言跟链接走。没有单独的欢迎信，也没有站内偏好页；退订仍是每封日报里 Resend 的一键退订链接，链接文字随这封日报的语言。worker 每天读一次 Resend 的联系人，把退订的地址记到 `newsletter_subscribers.unsubscribed_at`，后台的订阅数不再算它们；读者重新确认或在 Resend 里恢复订阅时清掉。
+同一地址再次从另一种语言的页面订阅，把这次的语言记在 `pending_language`，并另发一封该语言的确认信。点开这封信之前，`language` 和 Resend 分组都不变，下一封日报仍按原来的语言；点确认之后才改 `language`、记为已知偏好、加入新分组并移出另一个分组。移出失败时会把刚加入的分组也移出，数据库不改。已经退订的地址同样要等这次确认：确认成功后才清掉退订并只留在新分组，提交表单不会在 Resend 里重新订阅。同一语言在 10 分钟内再提交不另发确认信。
+迁移 `0123_newsletter_pending_language.sql` 只增加可空列 `pending_language`，不改已有行。`0124` 给它加上 `NOT VALID` 检查（只允许 `en` 或 `zh`），`0125` 再验证这条检查。
+确认信的主题、正文、按钮和链接（`/subscribe` 或 `/zh/subscribe`）使用这次请求的语言。确认页就是这封信打开的订阅页，语言跟链接走。没有单独的欢迎信，也没有站内偏好页；退订仍是每封日报里 Resend 的一键退订链接，链接文字随这封日报的语言。worker 每天读一次 Resend 的联系人，把退订的地址记到 `newsletter_subscribers.unsubscribed_at`，后台的订阅数不再算它们；读者重新确认或在 Resend 里恢复订阅时清掉。
 
 `RESEND_SEGMENT_ID` 保留为中文分组；英文必须单独设置 `RESEND_SEGMENT_ID_EN`。两个 ID 必须不同，缺失
 英文分组时不回退到中文分组。启用前必须在 Resend 核对分组成员互斥，旧联系人没有误入英文分组；本迁移不访问或更改

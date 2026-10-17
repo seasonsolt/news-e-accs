@@ -37,24 +37,55 @@ const EMAIL = `Reader.${T}@Example.org`;
 const TODAY = beijingDate(Date.now());
 
 interface Hit { method: string; path: string; body: any; idempotencyKey: string | undefined }
+interface StubContact { unsubscribed: boolean; segments: Set<string> }
 const hits: Hit[] = [];
 /** Contacts the stub knows, and what the next broadcast answers. */
-const contacts = new Set<string>();
+const contacts = new Map<string, StubContact>();
 let broadcastAnswer: () => unknown = () => ({ object: "broadcast", id: `bc-${T}` });
+/** Segment id whose removal answers 500, so a move can be rolled back. */
+let rejectSegmentDelete: string | null = null;
 
 const resend = await stub((_n, req) => {
   const path = new URL(req.url, "http://stub").pathname;
   const body = req.body ? JSON.parse(req.body) : null;
   hits.push({ method: req.method, path, body, idempotencyKey: req.headers["idempotency-key"] as string | undefined });
   if (req.method === "POST" && path === "/emails") return { id: `em-${hits.length}` };
-  const contact = /^\/contacts\/([^/]+)$/.exec(path);
-  if (req.method === "PATCH" && contact) return contacts.has(decodeURIComponent(contact[1]!)) ? { object: "contact", id: "c1" } : new Reply(404, { name: "not_found", message: "Contact not found" });
+  const segment = /^\/contacts\/([^/]+)\/segments\/([^/]+)$/.exec(path);
+  if (segment) {
+    const email = decodeURIComponent(segment[1]!).toLowerCase();
+    const id = decodeURIComponent(segment[2]!);
+    const contact = contacts.get(email);
+    if (req.method === "POST") {
+      if (!contact) return new Reply(404, { name: "not_found", message: "Contact not found" });
+      if (contact.segments.has(id)) return new Reply(409, { name: "conflict", message: "Contact already in segment" });
+      contact.segments.add(id);
+      return { id };
+    }
+    if (req.method === "DELETE") {
+      if (rejectSegmentDelete === id) return new Reply(500, { name: "application_error", message: "try later" });
+      if (!contact?.segments.has(id)) return new Reply(404, { name: "not_found", message: "Contact not in segment" });
+      contact.segments.delete(id);
+      return { id: "removed" };
+    }
+  }
+  const contactPath = /^\/contacts\/([^/]+)$/.exec(path);
+  if (contactPath) {
+    const email = decodeURIComponent(contactPath[1]!).toLowerCase();
+    const contact = contacts.get(email);
+    if (req.method === "GET") return contact ? { object: "contact", id: "c1", email, unsubscribed: contact.unsubscribed } : new Reply(404, { name: "not_found", message: "Contact not found" });
+    if (req.method === "PATCH") {
+      if (!contact) return new Reply(404, { name: "not_found", message: "Contact not found" });
+      if (body?.unsubscribed === false) contact.unsubscribed = false;
+      return { object: "contact", id: "c1" };
+    }
+  }
   if (req.method === "POST" && path === "/contacts") {
-    contacts.add(body.email);
+    contacts.set(String(body.email).toLowerCase(), {
+      unsubscribed: body.unsubscribed === true,
+      segments: new Set((body.segments ?? []).map((item: { id: string }) => item.id)),
+    });
     return { object: "contact", id: "c1" };
   }
-  if (req.method === "POST" && /^\/contacts\/[^/]+\/segments\//.test(path)) return new Reply(409, { name: "conflict", message: "Contact already in segment" });
-  if (req.method === "DELETE" && /^\/contacts\/[^/]+\/segments\//.test(path)) return { id: "removed" };
   if (req.method === "POST" && path === "/broadcasts") return broadcastAnswer();
   return new Reply(404, { name: "not_found", message: "unknown endpoint" });
 });
@@ -134,11 +165,13 @@ test("signing up stores the address pending and mails one confirmation per coold
   assert.ok(mails[0]!.idempotencyKey?.startsWith("newsletter-confirm:"));
   assert.match(mails[0]!.body.html, /拖到「主要」/, "the letter tells Gmail readers how to move it out of Promotions");
   assert.match(mails[0]!.body.text, /拖到「主要」/);
+  assert.equal(hits.slice(before).some((h) => h.path.startsWith("/contacts")), false, "signing up does not touch the list");
 
   // Asking again in the same language answers the same and mails nothing more.
   assert.deepEqual(await subscribe({ email: EMAIL.toUpperCase(), language: "zh", ...visitor }), { ok: true });
   assert.equal(hits.slice(before).filter((h) => h.path === "/emails").length, 1);
-  assert.equal((await sql`SELECT language FROM newsletter_subscribers WHERE email = ${EMAIL.toLowerCase()}`)[0]!.language, "zh");
+  assert.equal((await sql`SELECT language, pending_language FROM newsletter_subscribers WHERE email = ${EMAIL.toLowerCase()}`)[0]!.language, "zh");
+  assert.equal((await sql`SELECT pending_language FROM newsletter_subscribers WHERE email = ${EMAIL.toLowerCase()}`)[0]!.pending_language, null);
 });
 
 test("with no confirmed reader yet, the day is not claimed", async () => {
@@ -153,10 +186,17 @@ test("confirming subscribes the contact in the segment, and confirming again re-
   await assert.rejects(confirm("x".repeat(43)), (e: unknown) => e instanceof NewsletterRejected && e.status === 404);
   const token = await tokenOf();
 
+  const encoded = encodeURIComponent(EMAIL.toLowerCase());
   const first = since();
   assert.deepEqual(await confirm(token), { ok: true });
   const created = hits.slice(first).find((h) => h.method === "POST" && h.path === "/contacts");
   assert.deepEqual(created?.body, { email: EMAIL.toLowerCase(), unsubscribed: false, segments: [{ id: "seg-test" }] }, "a new contact is created in the segment");
+  assert.deepEqual(hits.slice(first).map((h) => `${h.method} ${h.path}`), [
+    `GET /contacts/${encoded}`,
+    "POST /contacts",
+    `DELETE /contacts/${encoded}/segments/seg-en-test`,
+    `PATCH /contacts/${encoded}`,
+  ], "unsubscribe is cleared only after the other edition is left");
   const [row] = await sql<{ status: string }[]>`SELECT status FROM newsletter_subscribers WHERE token = ${token}`;
   assert.equal(row?.status, "confirmed");
 
@@ -164,8 +204,13 @@ test("confirming subscribes the contact in the segment, and confirming again re-
   const again = since();
   assert.deepEqual(await confirm(token), { ok: true });
   const calls = hits.slice(again).map((h) => `${h.method} ${h.path}`);
-  assert.deepEqual(calls, [`PATCH /contacts/${encodeURIComponent(EMAIL.toLowerCase())}`, `POST /contacts/${encodeURIComponent(EMAIL.toLowerCase())}/segments/seg-test`]);
-  assert.deepEqual(hits[again]!.body, { unsubscribed: false });
+  assert.deepEqual(calls, [
+    `GET /contacts/${encoded}`,
+    `POST /contacts/${encoded}/segments/seg-test`,
+    `DELETE /contacts/${encoded}/segments/seg-en-test`,
+    `PATCH /contacts/${encoded}`,
+  ]);
+  assert.deepEqual(hits.slice(again).find((h) => h.method === "PATCH")!.body, { unsubscribed: false });
 });
 
 test("the admin newsletter overview summarizes and lists subscription records", async () => {
@@ -760,7 +805,7 @@ test("a broadcast in doubt is left unknown and not sent again", async () => {
 });
 
 
-test("new subscriptions default English, and signing up again from the other edition switches language and list", async () => {
+test("new subscriptions default English, and a language change waits for the confirmation click", async () => {
   const email = `english-${T}@example.org`.toLowerCase();
   const visitorEn = { ip: "198.51.100.230", userAgent: `english-${T}` };
   assert.equal(subscribeLanguage(undefined), "en");
@@ -768,8 +813,10 @@ test("new subscriptions default English, and signing up again from the other edi
   assert.throws(() => subscribeLanguage("fr"), (e: unknown) => e instanceof NewsletterRejected && e.status === 400);
   const before = since();
   await subscribe({ email, ...visitorEn });
-  const [row] = await sql`SELECT token, language, language_preference_known FROM newsletter_subscribers WHERE email = ${email}`;
+  const [row] = await sql<{ token: string; language: string; pending_language: string | null; language_preference_known: boolean }[]>`
+    SELECT token, language, pending_language, language_preference_known FROM newsletter_subscribers WHERE email = ${email}`;
   assert.equal(row!.language, "en");
+  assert.equal(row!.pending_language, null);
   assert.equal(row!.language_preference_known, true);
   const mail = hits.slice(before).find(hit => hit.path === "/emails")!;
   assert.match(mail.body.html, /<html lang="en">/);
@@ -778,26 +825,64 @@ test("new subscriptions default English, and signing up again from the other edi
   assert.match(mail.body.text, /Confirm your subscription/);
   assert.match(mail.body.html, new RegExp(`/subscribe\\?token=${row!.token}`));
   assert.doesNotMatch(mail.body.html, /\/zh\/subscribe/);
+  assert.equal(hits.slice(before).some(hit => hit.path.startsWith("/contacts")), false);
   const switched = since();
   await subscribe({ email, language: "zh", ...visitorEn });
   assert.equal(hits.slice(switched).filter(hit => hit.path === "/emails").length, 1, "a language change sends a new confirmation inside the cooldown");
+  assert.equal(hits.slice(switched).some(hit => hit.path.startsWith("/contacts")), false, "the list does not move until the link is opened");
+  const [pending] = await sql<{ token: string; language: string; pending_language: string | null }[]>`
+    SELECT token, language, pending_language FROM newsletter_subscribers WHERE email = ${email}`;
+  assert.equal(pending!.language, "en", "the active language stays until confirm");
+  assert.equal(pending!.pending_language, "zh");
+  assert.notEqual(pending!.token, row!.token);
   const chinese = hits.slice(switched).find(hit => hit.path === "/emails")!;
   assert.match(chinese.body.html, /<html lang="zh-CN">/);
   assert.match(chinese.body.subject, /确认订阅/);
-  assert.match(chinese.body.html, /\/zh\/subscribe\?token=/);
-  assert.equal((await sql`SELECT language, language_preference_known FROM newsletter_subscribers WHERE email = ${email}`)[0]!.language, "zh");
+  assert.match(chinese.body.html, new RegExp(`/zh/subscribe\\?token=${pending!.token}`));
+  await assert.rejects(confirm(row!.token), (e: unknown) => e instanceof NewsletterRejected && e.status === 404, "the retired letter cannot confirm");
   const first = since();
-  await confirm(row!.token);
+  await confirm(pending!.token);
   assert.deepEqual(hits.slice(first).find(hit => hit.path === "/contacts")!.body.segments, [{ id: "seg-test" }]);
+  assert.deepEqual([...(contacts.get(email)?.segments ?? [])], ["seg-test"]);
+  assert.equal((await sql`SELECT language, pending_language FROM newsletter_subscribers WHERE email = ${email}`)[0]!.language, "zh");
   const back = since();
   await subscribe({ email, language: "en", ...visitorEn });
-  assert.equal((await sql`SELECT language FROM newsletter_subscribers WHERE email = ${email}`)[0]!.language, "en");
-  const moved = hits.slice(back);
-  assert.ok(moved.some(hit => hit.method === "POST" && hit.path === `/contacts/${encodeURIComponent(email)}/segments/seg-en-test`));
-  assert.ok(moved.some(hit => hit.method === "DELETE" && hit.path === `/contacts/${encodeURIComponent(email)}/segments/seg-test`));
-  const english = moved.find(hit => hit.path === "/emails")!;
+  const [held] = await sql<{ token: string; language: string; pending_language: string | null }[]>`
+    SELECT token, language, pending_language FROM newsletter_subscribers WHERE email = ${email}`;
+  assert.equal(held!.language, "zh");
+  assert.equal(held!.pending_language, "en");
+  const requested = hits.slice(back);
+  assert.equal(requested.some(hit => hit.path.startsWith("/contacts")), false, "a confirmed reader is not moved or re-subscribed before the click");
+  const english = requested.find(hit => hit.path === "/emails")!;
   assert.match(english.body.subject, /Confirm your/);
   assert.doesNotMatch(english.body.html, /\/zh\/subscribe/);
+  await confirm(held!.token);
+  assert.deepEqual([...(contacts.get(email)?.segments ?? [])], ["seg-en-test"]);
+  assert.equal((await sql`SELECT language, pending_language FROM newsletter_subscribers WHERE email = ${email}`)[0]!.language, "en");
+  assert.equal((await sql`SELECT pending_language FROM newsletter_subscribers WHERE email = ${email}`)[0]!.pending_language, null);
+});
+
+test("a failed segment removal puts the contact back and leaves the stored language", async () => {
+  const email = `rollback-${T}@example.org`.toLowerCase();
+  await subscribe({ email, language: "zh", ip: "198.51.100.232", userAgent: `rollback-${T}` });
+  const [row] = await sql<{ token: string }[]>`SELECT token FROM newsletter_subscribers WHERE email = ${email}`;
+  await confirm(row!.token);
+  assert.deepEqual([...(contacts.get(email)?.segments ?? [])], ["seg-test"]);
+  await subscribe({ email, language: "en", ip: "198.51.100.232", userAgent: `rollback-${T}` });
+  const [pending] = await sql<{ token: string }[]>`SELECT token FROM newsletter_subscribers WHERE email = ${email}`;
+  rejectSegmentDelete = "seg-test";
+  try {
+    await assert.rejects(confirm(pending!.token), (e: unknown) => e instanceof NewsletterRejected && e.status === 503);
+  } finally {
+    rejectSegmentDelete = null;
+  }
+  assert.deepEqual([...(contacts.get(email)?.segments ?? [])], ["seg-test"], "the new segment is removed when the old one cannot be left");
+  const [kept] = await sql<{ language: string; pending_language: string | null; status: string }[]>`
+    SELECT language, pending_language, status FROM newsletter_subscribers WHERE email = ${email}`;
+  assert.deepEqual([kept!.language, kept!.pending_language, kept!.status], ["zh", "en", "confirmed"]);
+  await confirm(pending!.token);
+  assert.deepEqual([...(contacts.get(email)?.segments ?? [])], ["seg-en-test"]);
+  assert.equal((await sql`SELECT language, pending_language FROM newsletter_subscribers WHERE email = ${email}`)[0]!.language, "en");
 });
 
 test("English reports wait without claiming, then send the stored complete edition once", async () => {
@@ -849,21 +934,60 @@ test("legacy wildcard claims block either language, and missing/equal English se
 });
 
 
-test("signing up again from an English page replaces a legacy Chinese row and mails English", async () => {
+test("signing up again from an English page mails English and applies it when the link is opened", async () => {
   const email = `legacy-${T}@example.org`.toLowerCase();
   const token = "l".repeat(43);
   await sql`INSERT INTO newsletter_subscribers (email, token, language, language_preference_known)
     VALUES (${email}, ${token}, 'zh', false)`;
   const start = since();
   await subscribe({ email, language: "en", ip: "198.51.100.231", userAgent: `legacy-${T}` });
-  const [row] = await sql`SELECT language, language_preference_known FROM newsletter_subscribers WHERE email = ${email}`;
-  assert.equal(row!.language, "en");
-  assert.equal(row!.language_preference_known, true);
+  const [row] = await sql<{ token: string; language: string; pending_language: string | null; language_preference_known: boolean }[]>`
+    SELECT token, language, pending_language, language_preference_known FROM newsletter_subscribers WHERE email = ${email}`;
+  assert.equal(row!.language, "zh");
+  assert.equal(row!.pending_language, "en");
+  assert.equal(row!.language_preference_known, false);
+  assert.equal(hits.slice(start).some(hit => hit.path.startsWith("/contacts")), false);
   const mail = hits.slice(start).find(hit => hit.path === "/emails")!;
   assert.match(mail.body.html, /<html lang="en">/);
   assert.match(mail.body.subject, /Confirm your/);
-  assert.match(mail.body.html, new RegExp(`/subscribe\\?token=${token}`));
+  assert.match(mail.body.html, new RegExp(`/subscribe\\?token=${row!.token}`));
   assert.doesNotMatch(mail.body.html, /\/zh\/subscribe/);
+  await confirm(row!.token);
+  const [done] = await sql<{ language: string; pending_language: string | null; language_preference_known: boolean }[]>`
+    SELECT language, pending_language, language_preference_known FROM newsletter_subscribers WHERE email = ${email}`;
+  assert.equal(done!.language, "en");
+  assert.equal(done!.pending_language, null);
+  assert.equal(done!.language_preference_known, true);
+  assert.deepEqual([...(contacts.get(email)?.segments ?? [])], ["seg-en-test"]);
+});
+
+test("an unsubscribed reader stays off the list until the new confirmation is opened", async () => {
+  const email = `unsub-${T}@example.org`.toLowerCase();
+  const token = "u".repeat(43);
+  await sql`INSERT INTO newsletter_subscribers (email, token, status, language, language_preference_known, confirmed_at, unsubscribed_at)
+    VALUES (${email}, ${token}, 'confirmed', 'zh', true, now(), now())`;
+  contacts.set(email, { unsubscribed: true, segments: new Set(["seg-test"]) });
+  const start = since();
+  await subscribe({ email, language: "en", ip: "198.51.100.233", userAgent: `unsub-${T}` });
+  assert.equal(hits.slice(start).some(hit => hit.path.startsWith("/contacts")), false);
+  assert.equal(contacts.get(email)!.unsubscribed, true);
+  const [pending] = await sql<{ token: string; language: string; pending_language: string | null; unsubscribed_at: Date | null }[]>`
+    SELECT token, language, pending_language, unsubscribed_at FROM newsletter_subscribers WHERE email = ${email}`;
+  assert.equal(pending!.language, "zh");
+  assert.equal(pending!.pending_language, "en");
+  assert.ok(pending!.unsubscribed_at);
+  await confirm(pending!.token);
+  const calls = hits.slice(start).filter(hit => hit.path.startsWith("/contacts"));
+  const patchAt = calls.findIndex(hit => hit.method === "PATCH");
+  const deleteAt = calls.findIndex(hit => hit.method === "DELETE" && hit.path.endsWith("/segments/seg-test"));
+  assert.ok(deleteAt >= 0 && patchAt > deleteAt, "unsubscribe is cleared after the old segment is left");
+  assert.equal(contacts.get(email)!.unsubscribed, false);
+  assert.deepEqual([...(contacts.get(email)?.segments ?? [])], ["seg-en-test"]);
+  const [done] = await sql<{ language: string; pending_language: string | null; unsubscribed_at: Date | null }[]>`
+    SELECT language, pending_language, unsubscribed_at FROM newsletter_subscribers WHERE email = ${email}`;
+  assert.equal(done!.language, "en");
+  assert.equal(done!.pending_language, null);
+  assert.equal(done!.unsubscribed_at, null);
 });
 
 

@@ -43,6 +43,15 @@ test("every subscribe form posts the page locale", async () => {
   assert.match(cta, /const locale = useLocale\(\)/);
   assert.match(cta, /requestSubscribe\(email, locale\)/);
   assert.match(home, /<Link to="\/subscribe"/);
+  assert.match(onboarding, /function finish\(dismiss: boolean\)/);
+  assert.match(onboarding, /if \(dismiss\) recordSubscribe\("subscribe_dismiss"/);
+  assert.match(onboarding, /先不订阅，直接看新闻 →"\), false, true\)/);
+  assert.doesNotMatch(onboarding, /先去看看今天的新闻"\), true, true\)/);
+  const view = readFileSync(new URL("features/subscribe/useSubscribeView.ts", root), "utf8");
+  assert.match(view, /useLocation\(\)\.pathname/);
+  assert.match(cta, /useLocation\(\)\.pathname/);
+  assert.doesNotMatch(view, /useLocation\(\)\.key/);
+  assert.doesNotMatch(cta, /useLocation\(\)\.key/);
   const bodies: unknown[] = [];
   const original = globalThis.fetch;
   globalThis.fetch = async (_url, init) => {

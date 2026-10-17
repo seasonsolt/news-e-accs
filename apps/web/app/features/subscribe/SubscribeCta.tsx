@@ -130,7 +130,7 @@ function EmailForm({ id, source, email, setEmail, phase, formRef, onPhase, class
 function StickyBar({ source, sample, inline }: { source: InlineSource; sample?: { to: string; date?: string }; inline: RefObject<HTMLFormElement | null> }) {
   const tx = useTranslate();
   const locale = useLocale();
-  const pageKey = useLocation().key;
+  const pageKey = useLocation().pathname;
   const [email, setEmail] = useState("");
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [shown, setShown] = useState(false);

@@ -69,38 +69,65 @@ export async function sendEmail(mail: { to: string; subject: string; html: strin
   return String(r.json?.id ?? "");
 }
 
-/**
- * Makes a confirmed address a subscribed contact in the newsletter segment, whether it is new, was
- * unsubscribed through an earlier issue's link, or is already there (confirming twice is harmless).
- */
-export async function subscribeContact(email: string, language: DistributionLanguage = "zh"): Promise<void> {
+function segmentId(language: DistributionLanguage): string {
   const segment = newsletterSegment(language);
   if (!segment) throw new ResendError("Distinct newsletter segment is not configured", null, false);
+  return segment;
+}
+
+/**
+ * Adds the address to this edition's segment. A missing contact is created already subscribed,
+ * because it has never been on a list. An existing contact is left unsubscribed if it was: clearing
+ * that flag is a separate step, after the segment membership is the one we want.
+ */
+export async function addContactToSegment(email: string, language: DistributionLanguage): Promise<void> {
+  const segment = segmentId(language);
   const path = `/contacts/${encodeURIComponent(email)}`;
-  const updated = await call("PATCH", path, { unsubscribed: false });
-  if (updated.status === 404) {
+  const existing = await call("GET", path);
+  if (existing.status === 404) {
     const created = await call("POST", "/contacts", { email, unsubscribed: false, segments: [{ id: segment }] });
     if (created.status !== 200 && created.status !== 201) fail("create contact", created);
     return;
   }
-  if (updated.status !== 200) fail("update contact", updated);
+  if (existing.status !== 200) fail("get contact", existing);
   const joined = await call("POST", `${path}/segments/${encodeURIComponent(segment)}`);
   // A contact already in the segment is answered as a conflict; that is the state we want.
   if (joined.status !== 200 && joined.status !== 201 && joined.status !== 409) fail("add contact to segment", joined);
 }
 
-/**
- * Moves a confirmed contact from one edition's segment to the other. They are added to the new
- * segment first, so a failed removal leaves them on the list they just chose rather than on none.
- */
-export async function moveContact(email: string, from: DistributionLanguage, to: DistributionLanguage): Promise<void> {
-  if (from === to) return;
-  await subscribeContact(email, to);
-  const previous = newsletterSegment(from);
-  if (!previous) return;
-  const removed = await call("DELETE", `/contacts/${encodeURIComponent(email)}/segments/${encodeURIComponent(previous)}`);
+/** Takes the address out of this edition's segment. Not being a member (404) is already the result we want. */
+export async function removeContactFromSegment(email: string, language: DistributionLanguage): Promise<void> {
+  const segment = newsletterSegment(language);
+  if (!segment) return;
+  const removed = await call("DELETE", `/contacts/${encodeURIComponent(email)}/segments/${encodeURIComponent(segment)}`);
   if (removed.status === 200 || removed.status === 204 || removed.status === 404) return;
   fail("remove contact from segment", removed);
+}
+
+/** Clears the contact-wide unsubscribe flag. Call only after segment membership is already correct. */
+export async function clearContactUnsubscribe(email: string): Promise<void> {
+  const updated = await call("PATCH", `/contacts/${encodeURIComponent(email)}`, { unsubscribed: false });
+  if (updated.status !== 200) fail("update contact", updated);
+}
+
+/**
+ * Puts the address on this edition's segment and takes it off the other. The unsubscribe flag is
+ * not touched. If leaving the old segment fails, the new membership is removed and the error is
+ * rethrown, so a failed move does not leave the address on both lists.
+ */
+export async function assignEdition(email: string, language: DistributionLanguage): Promise<void> {
+  const other: DistributionLanguage = language === "en" ? "zh" : "en";
+  await addContactToSegment(email, language);
+  try {
+    await removeContactFromSegment(email, other);
+  } catch (error) {
+    try {
+      await removeContactFromSegment(email, language);
+    } catch (undo) {
+      console.error(JSON.stringify({ level: "error", msg: "newsletter segment rollback failed", language, error: String(undo).slice(0, 300) }));
+    }
+    throw error;
+  }
 }
 
 /**

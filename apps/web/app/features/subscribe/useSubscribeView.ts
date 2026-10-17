@@ -1,4 +1,5 @@
-// subscribe_view fires once per page view, and only when the control is actually on screen.
+// subscribe_view fires once per pathname for this document, and only when the control is actually on screen.
+// Chronicle replaces ?t= without leaving the page; location.key changed on every drag and counted again.
 // A fixed overlay that covers another control (the home button, under the first-visit film) does not count.
 import { useEffect, type RefObject } from "react";
 import { useLocation } from "react-router";
@@ -15,7 +16,7 @@ function visibleEnough(rect: { height: number; width: number }): boolean {
 
 export function useSubscribeView(ref: RefObject<Element | null>, source: SubscribeSource, enabled = true) {
   const locale = useLocale();
-  const pageKey = useLocation().key;
+  const pageKey = useLocation().pathname;
   useEffect(() => {
     const node = ref.current;
     if (!enabled || !node || typeof IntersectionObserver === "undefined") return;

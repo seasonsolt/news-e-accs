@@ -121,14 +121,15 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
   useEffect(() => {
     if (mode !== "overlay") return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && document.documentElement.hasAttribute("data-onboarding") && !manifesto.current?.open) close();
+      if (e.key === "Escape" && document.documentElement.hasAttribute("data-onboarding") && !manifesto.current?.open) finish(true);
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [mode]);
 
-  function close() {
-    recordSubscribe("subscribe_dismiss", "home_overlay", locale);
+  // Only leaving without subscribing is a dismiss. The buttons after a sent or confirmed letter just close the film.
+  function finish(dismiss: boolean) {
+    if (dismiss) recordSubscribe("subscribe_dismiss", "home_overlay", locale);
     markOnboarded();
     video.current?.pause();
   }
@@ -166,12 +167,12 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
   }, [mode, token]);
 
   // Leaving for the news: the overlay just closes; the page links home.
-  const toNews = (label: string, primary = false) => {
+  const toNews = (label: string, primary = false, dismiss = false) => {
     const cls = primary
       ? "inline-flex h-11 items-center rounded-full bg-gradient-to-br from-[#f0c56a] via-[#d9a441] to-[#9a5b1f] px-7 text-[15px] font-semibold text-[#1a1208] shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition-transform duration-200 hover:scale-[1.03]"
       : "text-[14px] text-[#f6ead2]/80 underline decoration-[#f6ead2]/30 underline-offset-4 transition-colors hover:text-[#f6ead2] hover:decoration-[#f6ead2]/70";
     return mode === "overlay" ? (
-      <button type="button" onClick={close} className={cls}>
+      <button type="button" onClick={() => finish(dismiss)} className={cls}>
         {label}
       </button>
     ) : (
@@ -274,7 +275,7 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
             <div className="mt-1 flex flex-wrap items-center justify-center gap-3">
               <button type="button" onClick={() => manifesto.current?.showModal()} className="steam-shine relative h-10 overflow-hidden rounded-full border border-[#f6ead2]/35 bg-[#f6ead2]/12 px-8 text-[14px] font-semibold text-[#f6ead2] backdrop-blur-md transition-colors hover:bg-[#f6ead2]/20"><Text value="宣言 Manifesto" /></button>
             </div>
-            <div className="mt-2">{toNews(tx("先不订阅，直接看新闻 →"))}</div>
+            <div className="mt-2">{toNews(tx("先不订阅，直接看新闻 →"), false, true)}</div>
           </>
         )}
       </div>
