@@ -90,6 +90,20 @@ export async function subscribeContact(email: string, language: DistributionLang
 }
 
 /**
+ * Moves a confirmed contact from one edition's segment to the other. They are added to the new
+ * segment first, so a failed removal leaves them on the list they just chose rather than on none.
+ */
+export async function moveContact(email: string, from: DistributionLanguage, to: DistributionLanguage): Promise<void> {
+  if (from === to) return;
+  await subscribeContact(email, to);
+  const previous = newsletterSegment(from);
+  if (!previous) return;
+  const removed = await call("DELETE", `/contacts/${encodeURIComponent(email)}/segments/${encodeURIComponent(previous)}`);
+  if (removed.status === 200 || removed.status === 204 || removed.status === 404) return;
+  fail("remove contact from segment", removed);
+}
+
+/**
  * Every contact with whether it is unsubscribed, a hundred a page. Unsubscribing is per contact in
  * Resend, through any issue's link, so it covers both editions' segments.
  */

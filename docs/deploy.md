@@ -340,15 +340,15 @@ v1 默认目标语言仍为中文；英文主稿缺少有效中文 edition 时�
 分享图 `?lang=en|zh` 默认英文。Markdown helper 默认英文，缺失正文 edition 会明确提示而不是混入其他语言。
 新增 `/feed/v2/` 或其他顶层入口发布前需要核对入口仓库 `edge/src/route.mjs` 的转发配置。
 
-新邮件订阅默认英文，可提交 `language=zh`（JSON 字段）选择中文。既有订阅记录保持中文发送，
-`language_preference_known=false` 仅表示兼容策略，不表示读者已选择中文。再次订阅和重试保持原记录语言；
-目前不通过重复订阅变更偏好，避免同一联系人进入两个分组。需要偏好变更时，应单独实现经过确认的分组迁移流程。
-确认链接和邮件内容使用记录中的语言，退订继续由 Resend 的一键退订链接处理。worker 每天读一次 Resend 的联系人，把退订的地址记到 `newsletter_subscribers.unsubscribed_at`，后台的订阅数不再算它们；读者重新确认或在 Resend 里恢复订阅时清掉。
+新邮件订阅的 `language` 只接受 `en` 或 `zh`，来自页面：表单提交 JSON 的 `language`，省略时按无前缀页面记为英文。不读 `Accept-Language`。
+迁移 `0043_newsletter_languages.sql` 给已有行补上 `language`：当时没有记下注册页面，所以既有地址补成 `zh`，`language_preference_known=false`，只表示这是补上的默认，不是读者选过中文。
+同一地址再次从另一种语言的页面订阅会改掉这条记录的语言，并记为已知偏好。已经确认且未退订的联系人会先加入新的 Resend segment，再从原来的 segment 移除，因此下一封日报跟着新语言走；已经退订的地址只改记录，点新的确认信之后才回到名单。同一语言在 10 分钟内再提交不另发确认信；换语言会再发一封该语言的确认信。
+确认信的主题、正文、按钮和链接（`/subscribe` 或 `/zh/subscribe`）使用记录中的语言。确认页就是这封信打开的订阅页，语言跟链接走。没有单独的欢迎信，也没有站内偏好页；退订仍是每封日报里 Resend 的一键退订链接，链接文字随这封日报的语言。worker 每天读一次 Resend 的联系人，把退订的地址记到 `newsletter_subscribers.unsubscribed_at`，后台的订阅数不再算它们；读者重新确认或在 Resend 里恢复订阅时清掉。
 
 `RESEND_SEGMENT_ID` 保留为中文分组；英文必须单独设置 `RESEND_SEGMENT_ID_EN`。两个 ID 必须不同，缺失
 英文分组时不回退到中文分组。启用前必须在 Resend 核对分组成员互斥，旧联系人没有误入英文分组；本迁移不访问或更改
-线上分组。`NEWSLETTER_ENABLED=false` 时不发送任何邮件。英文日报只有完整目标 edition 可用时才领取发送权；
-缺失或混合版本等待之后的定时检查。原 `newsletter_sends` 记录阻止同一期任何语言重发；新增
+线上分组。`NEWSLETTER_ENABLED=false` 时不发送任何邮件。某一语言的日报只有完整目标 edition 可用时才领取发送权。
+英文版缺失或正文仍是中文时跳过这一期的英文，打一条 `newsletter edition skipped` 日志，不改发中文、也不在信里夹一句说明；中文缺失同样跳过，不改发英文。当天稍后的检查（08:00 起每 10 分钟）会再试，直到窗口结束。原 `newsletter_sends` 记录阻止同一期任何语言重发；新增
 `newsletter_language_sends` 按期号和语言去重，`unknown` 状态保留人工核查，不自动重试。后台旧发送统计仍只读
 原发送表，语言分组统计需要后续接入新表。上线英文主稿后必须保留兼容新语言与新 claim 表的回滚版本，不并行运行旧邮件 worker。
 

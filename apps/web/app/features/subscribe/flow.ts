@@ -1,7 +1,7 @@
 // The newsletter form's one request, and the anonymous funnel counts that go with it.
 // Double opt-in is unchanged: 202 means a confirmation letter was accepted, not that the reader is subscribed.
 import { subscribeErrorReason, subscribeEventTarget, type SubscribeErrorReason, type SubscribeFunnelEvent, type SubscribeLocale, type SubscribeSource } from "@aihot/contracts/subscribe";
-import { recordEngagement } from "../../lib/engagement";
+import { recordEngagement } from "../../lib/engagement.ts";
 import type { Locale } from "../../lib/locale";
 
 export interface SubscribeFailure {

@@ -9,7 +9,7 @@ import { config } from "../config.ts";
 import { sql } from "../db.ts";
 import { feedbackSourceHash } from "../operations/feedback.ts";
 import { siteUrl } from "../publication/links.ts";
-import { ResendError, resendConfigured, sendEmail, subscribeContact } from "../providers/resend.ts";
+import { moveContact, ResendError, resendConfigured, sendEmail, subscribeContact } from "../providers/resend.ts";
 import { distributionLanguage, type DistributionLanguage } from "../publication/distribution.ts";
 import { confirmationMail } from "./mail.ts";
 
@@ -51,32 +51,58 @@ export function normalizeEmail(raw: string): string | null {
 
 export const confirmUrl = (token: string, language: DistributionLanguage = "en"): string => siteUrl(`${language === "zh" ? "/zh" : ""}/subscribe?token=${token}`);
 
+/**
+ * Locale from the subscribe body. Omitted means English, the page default for an unprefixed URL.
+ * Accept-Language is not an input: the form sends the page's locale.
+ */
+export function subscribeLanguage(value: unknown): DistributionLanguage {
+  try { return distributionLanguage(value); }
+  catch { throw new NewsletterRejected(400, "invalid_request", "language must be en or zh."); }
+}
+
 export async function subscribe(input: { email: string; ip: string; userAgent: string; language?: DistributionLanguage }): Promise<{ ok: true }> {
   const email = normalizeEmail(input.email);
   if (!email) throw new NewsletterRejected(400, "invalid_request", "邮箱格式不正确。");
-  let language: DistributionLanguage;
-  try { language = distributionLanguage(input.language); } catch { throw new NewsletterRejected(400, "invalid_request", "language must be en or zh."); }
+  const language = subscribeLanguage(input.language);
   if (!config.newsletterEnabled) assertOpen(language);
   const source = feedbackSourceHash(input.ip, input.userAgent);
   const [banned] = await sql`SELECT 1 FROM feedback_bans WHERE source_hash = ${source}`;
   if (banned) throw new NewsletterRejected(403, "forbidden", "暂时无法订阅。");
   rateLimit(source);
 
+  const [previous] = await sql<{ id: string; language: DistributionLanguage; status: string; unsubscribed_at: Date | null; language_preference_known: boolean }[]>`
+    SELECT id, language, status, unsubscribed_at, language_preference_known FROM newsletter_subscribers WHERE email = ${email}`;
+  const switching = !!previous && previous.language !== language;
+  // Refuse a language we cannot deliver before replacing the stored one.
+  if (switching) assertOpen(language);
+
   const [row] = await sql<{ id: string; token: string; confirm_sent_at: Date | null; language: DistributionLanguage }[]>`
     INSERT INTO newsletter_subscribers (email, token, source_hash, language, language_preference_known)
     VALUES (${email}, ${randomBytes(32).toString("base64url")}, ${source}, ${language}, true)
-    ON CONFLICT (email) DO UPDATE SET updated_at = now()
+    ON CONFLICT (email) DO UPDATE SET language = EXCLUDED.language, language_preference_known = true, updated_at = now()
     RETURNING id, token, confirm_sent_at, language`;
-  // Re-signup is not a preference change: token, language and cooldown belong to the stored request.
+  // An active subscriber who signs up again from the other edition moves lists now, so the next
+  // digest matches the page. Someone who already unsubscribed stays off the list until they confirm.
+  if (switching && previous!.status === "confirmed" && previous!.unsubscribed_at === null) {
+    try {
+      await moveContact(email, previous!.language, language);
+    } catch (error) {
+      await sql`UPDATE newsletter_subscribers SET language = ${previous!.language}, language_preference_known = ${previous!.language_preference_known}, updated_at = now() WHERE id = ${row!.id}`;
+      console.error(JSON.stringify({ level: "error", msg: "newsletter language move failed", error: String(error).slice(0, 300) }));
+      throw new NewsletterRejected(503, "temporarily_unavailable", "暂时无法切换语言，请稍后再试。", 60);
+    }
+  }
   assertOpen(row!.language);
-  if (row!.confirm_sent_at && Date.now() - row!.confirm_sent_at.getTime() < RESEND_COOLDOWN_MS) return { ok: true };
+  // Same language inside the cooldown answers without another letter. A language change sends the
+  // confirmation in the new language even inside that window.
+  if (!switching && row!.confirm_sent_at && Date.now() - row!.confirm_sent_at.getTime() < RESEND_COOLDOWN_MS) return { ok: true };
   const [{ n }] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM newsletter_subscribers WHERE confirm_sent_at > now() - interval '1 day'`;
   if (n >= DAILY_LETTERS) throw new NewsletterRejected(429, "rate_limited", "今天订阅的人太多了，请明天再试。", 3600);
 
   const mail = confirmationMail(confirmUrl(row!.token, row!.language), row!.language);
   try {
-    // One letter per address per cooldown window, even if two requests race past the check above.
-    await sendEmail({ to: email, ...mail, idempotencyKey: `newsletter-confirm:${row!.id}:${Math.floor(Date.now() / RESEND_COOLDOWN_MS)}` });
+    // One letter per address per cooldown window per language, even if two requests race past the check above.
+    await sendEmail({ to: email, ...mail, idempotencyKey: `newsletter-confirm:${row!.id}:${row!.language}:${Math.floor(Date.now() / RESEND_COOLDOWN_MS)}` });
   } catch (error) {
     console.error(JSON.stringify({ level: "error", msg: "newsletter confirmation failed", error: String(error).slice(0, 300) }));
     throw new NewsletterRejected(503, "temporarily_unavailable", "确认邮件暂时发不出去，请稍后再试。", error instanceof ResendError && error.retryable ? 60 : 3600);

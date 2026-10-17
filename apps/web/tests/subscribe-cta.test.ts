@@ -6,7 +6,9 @@ import { after, before, test } from "node:test";
 import { parseHTML } from "linkedom";
 import type { FeedItemSummary, ReportCitation, ReportDetail, ReportKind, SiteItemDetail } from "@aihot/contracts/site";
 import { subscribeErrorReason } from "@aihot/contracts/subscribe";
+import { readFileSync } from "node:fs";
 import { claimSubscribeView } from "../app/features/subscribe/claim.ts";
+import { requestSubscribe } from "../app/features/subscribe/flow.ts";
 import { startWebServer, type WebServer } from "./web-server.ts";
 
 const at = "2026-10-04T00:00:00.000Z";
@@ -29,6 +31,34 @@ const report = (kind: ReportKind): ReportDetail => ({
   lead: { title: "本期已验证的重要变化", leadParagraph: "本期的导读与依据。" }, leadItemId: item.id, overview: null,
   highlights: [citation()], sections: [{ label: "模型", summary: null, items: [citation()] }], flashes: [], cover: null,
   metrics: {}, readingMinutes: 4, prev: kind === "daily" ? "2026-10-03" : null, next: null,
+});
+
+test("every subscribe form posts the page locale", async () => {
+  const root = new URL("../app/", import.meta.url);
+  const onboarding = readFileSync(new URL("features/onboarding/Onboarding.tsx", root), "utf8");
+  const cta = readFileSync(new URL("features/subscribe/SubscribeCta.tsx", root), "utf8");
+  const home = readFileSync(new URL("routes/home.tsx", root), "utf8");
+  assert.match(onboarding, /const locale = useLocale\(\)/);
+  assert.match(onboarding, /requestSubscribe\(email, locale\)/);
+  assert.match(cta, /const locale = useLocale\(\)/);
+  assert.match(cta, /requestSubscribe\(email, locale\)/);
+  assert.match(home, /<Link to="\/subscribe"/);
+  const bodies: unknown[] = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = async (_url, init) => {
+    bodies.push(JSON.parse(String(init?.body)));
+    return new Response("{}", { status: 202 });
+  };
+  try {
+    assert.equal(await requestSubscribe("reader@example.com", "en"), null);
+    assert.equal(await requestSubscribe("reader@example.com", "zh"), null);
+  } finally {
+    globalThis.fetch = original;
+  }
+  assert.deepEqual(bodies, [
+    { email: "reader@example.com", language: "en" },
+    { email: "reader@example.com", language: "zh" },
+  ]);
 });
 
 test("a subscribe view is counted once per page view, and a failure reason stays a class", () => {

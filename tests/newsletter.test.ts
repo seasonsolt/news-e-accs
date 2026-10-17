@@ -10,7 +10,7 @@ import { config } from "@aihot/backend/config";
 import { closeDb, sql } from "@aihot/backend/db";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { newsletterOverview } from "@aihot/backend/admin/newsletter";
-import { confirm, NewsletterRejected, subscribe } from "@aihot/backend/newsletter/subscribe";
+import { confirm, NewsletterRejected, subscribe, subscribeLanguage } from "@aihot/backend/newsletter/subscribe";
 import { loadReport } from "@aihot/backend/publication/reports";
 import { localizePublication } from "@aihot/backend/publication/content-language";
 import { publishArticle } from "@aihot/backend/publication/publish";
@@ -54,6 +54,7 @@ const resend = await stub((_n, req) => {
     return { object: "contact", id: "c1" };
   }
   if (req.method === "POST" && /^\/contacts\/[^/]+\/segments\//.test(path)) return new Reply(409, { name: "conflict", message: "Contact already in segment" });
+  if (req.method === "DELETE" && /^\/contacts\/[^/]+\/segments\//.test(path)) return { id: "removed" };
   if (req.method === "POST" && path === "/broadcasts") return broadcastAnswer();
   return new Reply(404, { name: "not_found", message: "unknown endpoint" });
 });
@@ -126,14 +127,18 @@ test("signing up stores the address pending and mails one confirmation per coold
   const mails = hits.slice(before).filter((h) => h.path === "/emails");
   assert.equal(mails.length, 1);
   assert.deepEqual(mails[0]!.body.to, [EMAIL.toLowerCase()]);
-  assert.match(mails[0]!.body.html, new RegExp(`/subscribe\\?token=${await tokenOf()}`), "the letter links the confirm page with the token");
+  assert.match(mails[0]!.body.subject, /确认订阅/);
+  assert.match(mails[0]!.body.html, /<html lang="zh-CN">/);
+  assert.match(mails[0]!.body.html, /确认订阅/);
+  assert.match(mails[0]!.body.html, new RegExp(`/zh/subscribe\\?token=${await tokenOf()}`), "the Chinese letter opens the Chinese confirm page");
   assert.ok(mails[0]!.idempotencyKey?.startsWith("newsletter-confirm:"));
   assert.match(mails[0]!.body.html, /拖到「主要」/, "the letter tells Gmail readers how to move it out of Promotions");
   assert.match(mails[0]!.body.text, /拖到「主要」/);
 
-  // Asking again at once answers the same and mails nothing more.
-  assert.deepEqual(await subscribe({ email: EMAIL.toUpperCase(), language: "en", ...visitor }), { ok: true });
+  // Asking again in the same language answers the same and mails nothing more.
+  assert.deepEqual(await subscribe({ email: EMAIL.toUpperCase(), language: "zh", ...visitor }), { ok: true });
   assert.equal(hits.slice(before).filter((h) => h.path === "/emails").length, 1);
+  assert.equal((await sql`SELECT language FROM newsletter_subscribers WHERE email = ${EMAIL.toLowerCase()}`)[0]!.language, "zh");
 });
 
 test("with no confirmed reader yet, the day is not claimed", async () => {
@@ -186,7 +191,9 @@ test("today's report goes out as one broadcast, once", async () => {
   assert.match(broadcast.body.subject, new RegExp(`头条 ${T}`));
   assert.match(broadcast.body.html, /\{\{\{RESEND_UNSUBSCRIBE_URL\}\}\}/, "every issue carries the unsubscribe link");
   assert.match(broadcast.body.html, /导语 &lt;b&gt;不&lt;\/b&gt;是 HTML。/, "report text is escaped");
-  assert.match(broadcast.body.html, new RegExp(`/items/nl-${T}-1`));
+  assert.match(broadcast.body.html, new RegExp(`/zh/daily/${TODAY}`));
+  assert.match(broadcast.body.html, new RegExp(`/zh/items/nl-${T}-1`));
+  assert.match(broadcast.body.html, /退订/);
   assert.match(broadcast.body.text, /【产品】/);
   assert.match(broadcast.body.html, /拖到「主要」/, "every issue repeats the Primary-tab hint");
   for (const attr of broadcast.body.html.match(/style="[^"]*"/g) ?? []) assert.match(attr, /;"$|[a-z0-9)%]"$/, `style attribute cut short: ${attr.slice(0, 80)}`);
@@ -753,9 +760,12 @@ test("a broadcast in doubt is left unknown and not sent again", async () => {
 });
 
 
-test("new subscriptions default English, confirm into its distinct segment, and keep stored preference on resend", async () => {
+test("new subscriptions default English, and signing up again from the other edition switches language and list", async () => {
   const email = `english-${T}@example.org`.toLowerCase();
   const visitorEn = { ip: "198.51.100.230", userAgent: `english-${T}` };
+  assert.equal(subscribeLanguage(undefined), "en");
+  assert.equal(subscribeLanguage("zh"), "zh");
+  assert.throws(() => subscribeLanguage("fr"), (e: unknown) => e instanceof NewsletterRejected && e.status === 400);
   const before = since();
   await subscribe({ email, ...visitorEn });
   const [row] = await sql`SELECT token, language, language_preference_known FROM newsletter_subscribers WHERE email = ${email}`;
@@ -764,19 +774,45 @@ test("new subscriptions default English, confirm into its distinct segment, and 
   const mail = hits.slice(before).find(hit => hit.path === "/emails")!;
   assert.match(mail.body.html, /<html lang="en">/);
   assert.match(mail.body.subject, /Confirm your/);
+  assert.match(mail.body.html, /Confirm subscription/);
   assert.match(mail.body.text, /Confirm your subscription/);
+  assert.match(mail.body.html, new RegExp(`/subscribe\\?token=${row!.token}`));
+  assert.doesNotMatch(mail.body.html, /\/zh\/subscribe/);
+  const switched = since();
   await subscribe({ email, language: "zh", ...visitorEn });
-  assert.equal(hits.slice(before).filter(hit => hit.path === "/emails").length, 1, "opposite-language retry shares the stored cooldown");
+  assert.equal(hits.slice(switched).filter(hit => hit.path === "/emails").length, 1, "a language change sends a new confirmation inside the cooldown");
+  const chinese = hits.slice(switched).find(hit => hit.path === "/emails")!;
+  assert.match(chinese.body.html, /<html lang="zh-CN">/);
+  assert.match(chinese.body.subject, /确认订阅/);
+  assert.match(chinese.body.html, /\/zh\/subscribe\?token=/);
+  assert.equal((await sql`SELECT language, language_preference_known FROM newsletter_subscribers WHERE email = ${email}`)[0]!.language, "zh");
   const first = since();
   await confirm(row!.token);
-  assert.deepEqual(hits.slice(first).find(hit => hit.path === "/contacts")!.body.segments, [{ id: "seg-en-test" }]);
-  await confirm(row!.token);
+  assert.deepEqual(hits.slice(first).find(hit => hit.path === "/contacts")!.body.segments, [{ id: "seg-test" }]);
+  const back = since();
+  await subscribe({ email, language: "en", ...visitorEn });
   assert.equal((await sql`SELECT language FROM newsletter_subscribers WHERE email = ${email}`)[0]!.language, "en");
+  const moved = hits.slice(back);
+  assert.ok(moved.some(hit => hit.method === "POST" && hit.path === `/contacts/${encodeURIComponent(email)}/segments/seg-en-test`));
+  assert.ok(moved.some(hit => hit.method === "DELETE" && hit.path === `/contacts/${encodeURIComponent(email)}/segments/seg-test`));
+  const english = moved.find(hit => hit.path === "/emails")!;
+  assert.match(english.body.subject, /Confirm your/);
+  assert.doesNotMatch(english.body.html, /\/zh\/subscribe/);
 });
 
 test("English reports wait without claiming, then send the stored complete edition once", async () => {
   const before = since();
-  assert.deepEqual(await sendDailyIssue(TODAY, "en"), { status: "skipped", reason: "edition not ready" });
+  const logs: string[] = [];
+  const original = console.log;
+  console.log = (...args: unknown[]) => { logs.push(args.map(String).join(" ")); };
+  try {
+    assert.deepEqual(await sendDailyIssue(TODAY, "en"), { status: "skipped", reason: "edition not ready" });
+  } finally {
+    console.log = original;
+  }
+  assert.match(logs.join("\n"), /newsletter edition skipped/);
+  assert.match(logs.join("\n"), /"language":"en"/);
+  assert.match(logs.join("\n"), /edition not ready/);
   assert.equal((await sql`SELECT 1 FROM newsletter_language_sends WHERE report_key = ${TODAY} AND language = 'en'`).length, 0);
   assert.equal(since(), before);
   const entry = await currentContent("report", `daily:${TODAY}`);
@@ -791,6 +827,8 @@ test("English reports wait without claiming, then send the stored complete editi
   assert.match(broadcast.body.html, /<html lang="en">/);
   assert.match(broadcast.body.subject, /Daily briefing/);
   assert.match(broadcast.body.text, /Today's important developments/);
+  assert.match(broadcast.body.html, new RegExp(`/daily/${TODAY}`));
+  assert.doesNotMatch(broadcast.body.html, /\/zh\/daily/);
   assert.match(broadcast.body.html, /Unsubscribe/);
   assert.doesNotMatch(broadcast.body.text, /头条|导语|模型|产品/);
   assert.deepEqual(await sendDailyIssue(TODAY, "en"), { status: "already" });
@@ -811,19 +849,21 @@ test("legacy wildcard claims block either language, and missing/equal English se
 });
 
 
-test("legacy subscriber language is retained without inventing a known preference", async () => {
+test("signing up again from an English page replaces a legacy Chinese row and mails English", async () => {
   const email = `legacy-${T}@example.org`.toLowerCase();
-  const token = 'l'.repeat(43);
+  const token = "l".repeat(43);
   await sql`INSERT INTO newsletter_subscribers (email, token, language, language_preference_known)
     VALUES (${email}, ${token}, 'zh', false)`;
   const start = since();
   await subscribe({ email, language: "en", ip: "198.51.100.231", userAgent: `legacy-${T}` });
   const [row] = await sql`SELECT language, language_preference_known FROM newsletter_subscribers WHERE email = ${email}`;
-  assert.equal(row!.language, "zh");
-  assert.equal(row!.language_preference_known, false);
+  assert.equal(row!.language, "en");
+  assert.equal(row!.language_preference_known, true);
   const mail = hits.slice(start).find(hit => hit.path === "/emails")!;
-  assert.match(mail.body.html, /<html lang="zh-CN">/);
-  assert.match(mail.body.html, /\/zh\/subscribe\?token=/);
+  assert.match(mail.body.html, /<html lang="en">/);
+  assert.match(mail.body.subject, /Confirm your/);
+  assert.match(mail.body.html, new RegExp(`/subscribe\\?token=${token}`));
+  assert.doesNotMatch(mail.body.html, /\/zh\/subscribe/);
 });
 
 
