@@ -115,14 +115,34 @@ export async function confirm(token: string): Promise<{ ok: true }> {
   if (!row) throw new NewsletterRejected(404, "not_found", "确认链接无效，请重新订阅。");
   const language = row.pending_language ?? row.language;
   assertOpen(language);
-  try {
-    // Join the requested edition and leave the other before anyone is marked subscribed. A failed
-    // removal undoes the join, and a failed unsubscribe-clear leaves the row unchanged for a retry.
-    await assignEdition(row.email, language);
-    await clearContactUnsubscribe(row.email);
-  } catch (error) {
+  const unavailable = (error: unknown) => {
     console.error(JSON.stringify({ level: "error", msg: "newsletter confirm failed", error: String(error).slice(0, 300) }));
-    throw new NewsletterRejected(503, "temporarily_unavailable", "暂时无法完成确认，请稍后再点一次。", 60);
+    return new NewsletterRejected(503, "temporarily_unavailable", "暂时无法完成确认，请稍后再点一次。", 60);
+  };
+  // Join the requested edition and leave the other before anyone is marked subscribed. A failed
+  // removal undoes only a join made here, and the row stays unchanged for a retry.
+  let joined;
+  try {
+    joined = await assignEdition(row.email, language);
+  } catch (error) {
+    throw unavailable(error);
+  }
+  // A contact created just now is already subscribed.
+  if (joined !== "created") {
+    try {
+      await clearContactUnsubscribe(row.email);
+    } catch (error) {
+      // The row keeps its language, so the segments go back to it: the next digest is counted and
+      // sent by that language, and a reader who never clicks again still gets the edition the row names.
+      if (language !== row.language) {
+        try {
+          await assignEdition(row.email, row.language);
+        } catch (undo) {
+          console.error(JSON.stringify({ level: "error", msg: "newsletter segment rollback failed", language: row.language, error: String(undo).slice(0, 300) }));
+        }
+      }
+      throw unavailable(error);
+    }
   }
   await sql`UPDATE newsletter_subscribers
     SET language = ${language}, pending_language = NULL, language_preference_known = true,

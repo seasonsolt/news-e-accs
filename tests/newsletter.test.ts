@@ -44,6 +44,8 @@ const contacts = new Map<string, StubContact>();
 let broadcastAnswer: () => unknown = () => ({ object: "broadcast", id: `bc-${T}` });
 /** Segment id whose removal answers 500, so a move can be rolled back. */
 let rejectSegmentDelete: string | null = null;
+/** When set, clearing a contact's unsubscribe flag answers 500. */
+let rejectContactPatch = false;
 
 const resend = await stub((_n, req) => {
   const path = new URL(req.url, "http://stub").pathname;
@@ -74,6 +76,7 @@ const resend = await stub((_n, req) => {
     const contact = contacts.get(email);
     if (req.method === "GET") return contact ? { object: "contact", id: "c1", email, unsubscribed: contact.unsubscribed } : new Reply(404, { name: "not_found", message: "Contact not found" });
     if (req.method === "PATCH") {
+      if (rejectContactPatch) return new Reply(500, { name: "application_error", message: "try later" });
       if (!contact) return new Reply(404, { name: "not_found", message: "Contact not found" });
       if (body?.unsubscribed === false) contact.unsubscribed = false;
       return { object: "contact", id: "c1" };
@@ -194,9 +197,7 @@ test("confirming subscribes the contact in the segment, and confirming again re-
   assert.deepEqual(hits.slice(first).map((h) => `${h.method} ${h.path}`), [
     `GET /contacts/${encoded}`,
     "POST /contacts",
-    `DELETE /contacts/${encoded}/segments/seg-en-test`,
-    `PATCH /contacts/${encoded}`,
-  ], "unsubscribe is cleared only after the other edition is left");
+  ], "a contact created now is on no other edition and already subscribed");
   const [row] = await sql<{ status: string }[]>`SELECT status FROM newsletter_subscribers WHERE token = ${token}`;
   assert.equal(row?.status, "confirmed");
 
@@ -883,6 +884,43 @@ test("a failed segment removal puts the contact back and leaves the stored langu
   await confirm(pending!.token);
   assert.deepEqual([...(contacts.get(email)?.segments ?? [])], ["seg-en-test"]);
   assert.equal((await sql`SELECT language, pending_language FROM newsletter_subscribers WHERE email = ${email}`)[0]!.language, "en");
+});
+
+test("a failed removal on a repeated confirmation keeps the edition the reader is already on", async () => {
+  const email = `reconfirm-${T}@example.org`.toLowerCase();
+  await subscribe({ email, language: "zh", ip: "198.51.100.233", userAgent: `reconfirm-${T}` });
+  const [row] = await sql<{ token: string }[]>`SELECT token FROM newsletter_subscribers WHERE email = ${email}`;
+  await confirm(row!.token);
+  assert.deepEqual([...(contacts.get(email)?.segments ?? [])], ["seg-test"]);
+  rejectSegmentDelete = "seg-en-test";
+  try {
+    await assert.rejects(confirm(row!.token), (e: unknown) => e instanceof NewsletterRejected && e.status === 503);
+  } finally {
+    rejectSegmentDelete = null;
+  }
+  assert.deepEqual([...(contacts.get(email)?.segments ?? [])], ["seg-test"], "a membership the reader already had is not rolled back");
+  const [kept] = await sql<{ language: string; status: string }[]>`SELECT language, status FROM newsletter_subscribers WHERE email = ${email}`;
+  assert.deepEqual([kept!.language, kept!.status], ["zh", "confirmed"]);
+});
+
+test("a failed unsubscribe-clear after a move puts the segments back to the stored language", async () => {
+  const email = `patch-${T}@example.org`.toLowerCase();
+  await subscribe({ email, language: "zh", ip: "198.51.100.234", userAgent: `patch-${T}` });
+  const [row] = await sql<{ token: string }[]>`SELECT token FROM newsletter_subscribers WHERE email = ${email}`;
+  await confirm(row!.token);
+  await subscribe({ email, language: "en", ip: "198.51.100.234", userAgent: `patch-${T}` });
+  const [pending] = await sql<{ token: string }[]>`SELECT token FROM newsletter_subscribers WHERE email = ${email}`;
+  rejectContactPatch = true;
+  try {
+    await assert.rejects(confirm(pending!.token), (e: unknown) => e instanceof NewsletterRejected && e.status === 503);
+  } finally {
+    rejectContactPatch = false;
+  }
+  assert.deepEqual([...(contacts.get(email)?.segments ?? [])], ["seg-test"], "Resend matches the row's language again");
+  const [kept] = await sql<{ language: string; pending_language: string | null }[]>`SELECT language, pending_language FROM newsletter_subscribers WHERE email = ${email}`;
+  assert.deepEqual([kept!.language, kept!.pending_language], ["zh", "en"]);
+  await confirm(pending!.token);
+  assert.deepEqual([...(contacts.get(email)?.segments ?? [])], ["seg-en-test"]);
 });
 
 test("English reports wait without claiming, then send the stored complete edition once", async () => {
