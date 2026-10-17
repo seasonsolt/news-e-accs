@@ -1,4 +1,5 @@
 import { SITE } from "@aihot/site";
+import { SUBSCRIBE_FUNNEL_EVENTS, SUBSCRIBE_SOURCES, type SubscribeFunnelEvent, type SubscribeSource } from "@aihot/contracts/subscribe";
 import type { Route } from "./+types/analytics";
 import { LineChart } from "../../features/admin/charts";
 import { num } from "../../features/admin/format";
@@ -23,7 +24,12 @@ const EVENT_LABELS: Record<string, string> = {
   star_remove: "取消收藏",
   first_star: "首次收藏",
   subscribe_click: "点击订阅入口",
+  subscribe_view: "订阅入口出现",
   subscribe_submit: "提交订阅",
+  subscribe_success: "订阅被接受",
+  subscribe_error: "订阅失败",
+  subscribe_confirmed: "确认订阅",
+  subscribe_dismiss: "跳过或关掉订阅",
   outbound_click: "打开原文",
   share_click: "分享",
   starred_export: "导出收藏",
@@ -31,16 +37,40 @@ const EVENT_LABELS: Record<string, string> = {
 };
 
 const EVENT_COLORS = ["var(--accent)", "var(--hot)", "var(--ok)", "var(--amber)", "#3d6b8a", "#6b5b95", "#2f6f6a", "#8a5a44", "#5f7a3a"];
+const CHART_EVENTS = new Set(["star_add", "star_remove", "first_star", "subscribe_click", "subscribe_submit", "outbound_click", "share_click", "starred_export", "starred_import"]);
+
+const SOURCE_LABELS: Record<SubscribeSource, string> = {
+  home_overlay: "首页引导",
+  home_button: "首页按钮",
+  subscribe_page: "订阅页",
+  daily_inline: "日报页",
+  item_inline: "单条页",
+  chronicle_inline: "加速史",
+  sticky_mobile: "手机底部条",
+};
+
+interface FunnelCount { event: string; source: string; locale: string; reason: string; count: number }
+interface SubscribeFunnel {
+  days: number;
+  daily: Array<{ day: string; counts: FunnelCount[] }>;
+  totals: FunnelCount[];
+}
 
 export async function loader({ request }: Route.LoaderArgs) {
-  return adminGet<AnalyticsData>(request, `/api/admin/analytics${new URL(request.url).search}`);
+  const search = new URL(request.url).search;
+  const [overview, funnel] = await Promise.all([
+    adminGet<AnalyticsData>(request, `/api/admin/analytics${search}`),
+    adminGet<SubscribeFunnel>(request, `/api/admin/analytics/subscribe${search}`),
+  ]);
+  return { overview, funnel };
 }
 
 export const meta: Route.MetaFunction = () => [{ title: `访问统计 · ${SITE.name} 后台` }];
 
-export default function AnalyticsAdmin({ loaderData: d }: Route.ComponentProps) {
+export default function AnalyticsAdmin({ loaderData }: Route.ComponentProps) {
+  const d = loaderData.overview;
   const average = d.days ? Math.round(d.totals.views / d.days) : 0;
-  const interactions = d.engagement.totals.reduce((sum, row) => sum + row.count, 0);
+  const interactions = d.engagement.totals.reduce((sum, row) => sum + (CHART_EVENTS.has(row.event) ? row.count : 0), 0);
   return (
     <AdminPage title="访问统计" subtitle="按天聚合的页面访问和互动次数，不统计独立访客；不保存 IP、Cookie、访客 ID、查询参数或单次访问记录。原文点击只保留来源域名。">
       <div className="mb-4">
@@ -81,7 +111,7 @@ export default function AnalyticsAdmin({ loaderData: d }: Route.ComponentProps) 
       <Card title={`近 ${d.days} 天互动趋势`}>
         <LineChart
           labels={d.engagement.daily.map((x) => x.day.slice(5))}
-          series={d.engagement.totals.map((row, i) => ({
+          series={d.engagement.totals.filter((row) => CHART_EVENTS.has(row.event)).map((row, i) => ({
             key: row.event,
             label: EVENT_LABELS[row.event] ?? row.event,
             color: EVENT_COLORS[i] ?? "var(--accent)",
@@ -121,6 +151,65 @@ export default function AnalyticsAdmin({ loaderData: d }: Route.ComponentProps) 
           ]}
         />
       </Card>
+      <FunnelCard funnel={loaderData.funnel} />
     </AdminPage>
   );
+}
+
+function FunnelCard({ funnel }: { funnel: SubscribeFunnel }) {
+  const rows = pivot(funnel.totals);
+  const errors = funnel.totals.filter((row) => row.event === "subscribe_error" && row.count > 0);
+  return (
+    <>
+      <h2 className="mb-3 mt-8 text-[15px] font-semibold text-ink">订阅漏斗</h2>
+      <Card title={`近 ${funnel.days} 天，按入口和语言`} pad={false}>
+        <p className="px-4 pt-3 text-[12.5px] leading-relaxed text-ink-4">只累计次数。失败原因是类别（例如当天确认信上限 cap，或服务暂不可用 503），不含邮箱。按天的明细在 GET /api/admin/analytics/subscribe。</p>
+        <DataTable
+          rows={rows}
+          rowKey={(row) => `${row.source}:${row.locale}`}
+          empty="所选时间范围内没有订阅漏斗记录"
+          columns={[
+            { key: "source", label: "入口", render: (row) => SOURCE_LABELS[row.source as SubscribeSource] ?? row.source },
+            { key: "locale", label: "语言", render: (row) => row.locale === "zh" ? "中文" : "英文" },
+            ...SUBSCRIBE_FUNNEL_EVENTS.map((event) => ({
+              key: event,
+              label: EVENT_LABELS[event] ?? event,
+              align: "right" as const,
+              render: (row: FunnelRow) => num(row.counts[event] ?? 0),
+            })),
+          ]}
+        />
+      </Card>
+      {errors.length > 0 && (
+        <Card className="mt-5" title="失败原因" pad={false}>
+          <DataTable
+            rows={errors}
+            rowKey={(row) => `${row.source}:${row.locale}:${row.reason}`}
+            columns={[
+              { key: "source", label: "入口", render: (row) => SOURCE_LABELS[row.source as SubscribeSource] ?? row.source },
+              { key: "locale", label: "语言", render: (row) => row.locale === "zh" ? "中文" : "英文" },
+              { key: "reason", label: "原因", render: (row) => row.reason },
+              { key: "count", label: "次数", align: "right", render: (row) => num(row.count) },
+            ]}
+          />
+        </Card>
+      )}
+    </>
+  );
+}
+
+interface FunnelRow { source: string; locale: string; counts: Partial<Record<SubscribeFunnelEvent, number>> }
+
+function pivot(totals: FunnelCount[]): FunnelRow[] {
+  const map = new Map<string, FunnelRow>();
+  for (const source of SUBSCRIBE_SOURCES) for (const locale of ["zh", "en"] as const) {
+    map.set(`${source}:${locale}`, { source, locale, counts: {} });
+  }
+  for (const row of totals) {
+    const slot = map.get(`${row.source}:${row.locale}`);
+    if (!slot) continue;
+    const event = row.event as SubscribeFunnelEvent;
+    slot.counts[event] = (slot.counts[event] ?? 0) + row.count;
+  }
+  return [...map.values()].filter((row) => Object.values(row.counts).some((count) => count > 0));
 }

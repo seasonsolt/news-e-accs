@@ -12,7 +12,8 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { SITE } from "@aihot/site";
 
 import { markOnboarded } from "../../lib/local-state";
-import { recordEngagement } from "../../lib/engagement";
+import { recordSubscribe, requestConfirm, requestSubscribe } from "../subscribe/flow";
+import { useSubscribeView } from "../subscribe/useSubscribeView";
 import { useMotionAllowed } from "../motion/preferences";
 import { BrassSheen } from "../motion/BrassSheen";
 import { DecryptedText } from "../motion/react-bits/DecryptedText";
@@ -31,17 +32,6 @@ const MANIFESTO: Array<[string, string]> = [
 
 type Phase = { kind: "idle" } | { kind: "sending" } | { kind: "sent"; email: string } | { kind: "confirmed" } | { kind: "error"; message: string };
 
-async function post(path: string, body: Record<string, string>): Promise<string | null> {
-  try {
-    const res = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-    if (res.ok) return null;
-    const problem = await res.json().catch(() => ({}));
-    return typeof problem.detail === "string" ? problem.detail : "暂时无法完成，请稍后再试。";
-  } catch {
-    return "网络好像断了，请稍后再试。";
-  }
-}
-
 /**
  * `overlay`: the front page's first-visit screen, closed by subscribing or skipping. `page`: /subscribe,
  * where `token` (from the confirmation letter) is confirmed on arrival, with a button to try again.
@@ -56,6 +46,9 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
   const manifesto = useRef<HTMLDialogElement>(null);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [email, setEmail] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
+  const confirming = mode === "page" && !!token;
+  useSubscribeView(formRef, mode === "overlay" ? "home_overlay" : "subscribe_page", !confirming);
   // Visibility still gates the wordmark sheen; CSS owns the poster's pre-hydration first frame.
   const [shown, setShown] = useState(mode === "page");
 
@@ -135,24 +128,34 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
   }, [mode]);
 
   function close() {
+    recordSubscribe("subscribe_dismiss", "home_overlay", locale);
     markOnboarded();
     video.current?.pause();
   }
 
   async function subscribe(e: FormEvent) {
     e.preventDefault();
-    recordEngagement("subscribe_submit");
+    const source = mode === "overlay" ? "home_overlay" : "subscribe_page";
+    recordSubscribe("subscribe_submit", source, locale);
     setPhase({ kind: "sending" });
-    const error = await post("/api/site/newsletter/subscribe", { email, language: locale });
-    if (error) return setPhase({ kind: "error", message: error });
+    const error = await requestSubscribe(email, locale);
+    if (error) {
+      recordSubscribe("subscribe_error", source, locale, error.reason);
+      return setPhase({ kind: "error", message: error.detail });
+    }
+    recordSubscribe("subscribe_success", source, locale);
     setPhase({ kind: "sent", email: email.trim() });
     markOnboarded();
   }
 
   async function confirmToken() {
     setPhase({ kind: "sending" });
-    const error = await post("/api/site/newsletter/confirm", { token: token ?? "" });
-    if (error) return setPhase({ kind: "error", message: error });
+    const error = await requestConfirm(token ?? "");
+    if (error) {
+      recordSubscribe("subscribe_error", "subscribe_page", locale, error.reason);
+      return setPhase({ kind: "error", message: error.detail });
+    }
+    recordSubscribe("subscribe_confirmed", "subscribe_page", locale);
     setPhase({ kind: "confirmed" });
     markOnboarded();
   }
@@ -178,7 +181,6 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
     );
   };
 
-  const confirming = mode === "page" && !!token;
   // The front page's own h1 is the news; the overlay's name is a second-level heading there.
   const Title = mode === "page" ? "h1" : "h2";
   const card = (
@@ -228,11 +230,11 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
             >
               {phase.kind === "sending" ? tx("确认中…") : tx("确认订阅")}
             </button>
-            {phase.kind === "error" && <p role="alert" className="text-[14px] text-[#ffb89a] [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">{phase.message}</p>}
+            {phase.kind === "error" && <p role="alert" className="text-[14px] text-[#ffb89a] [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">{tx(phase.message)}</p>}
           </div>
         ) : (
           <>
-            <form className="relative w-full max-w-md" onSubmit={subscribe}>
+            <form ref={formRef} className="relative w-full max-w-md" onSubmit={subscribe}>
               <label htmlFor={`onboarding-email-${mode}`} className="sr-only"><Text value="邮箱地址" /></label>
               <input
                 id={`onboarding-email-${mode}`}
@@ -265,7 +267,7 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
                 </button>
               </ClickSpark>
             </form>
-            {phase.kind === "error" && <p role="alert" className="-mt-2 text-[14px] text-[#ffb89a] [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">{phase.message}</p>}
+            {phase.kind === "error" && <p role="alert" className="-mt-2 text-[14px] text-[#ffb89a] [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">{tx(phase.message)}</p>}
 
             <p className="max-w-xl text-pretty text-[16px] font-medium leading-[1.45] text-[#f6ead2]/92 [text-shadow:0_1px_12px_rgba(0,0,0,0.6)] lg:text-[19px]"><Text value="每天一封 AI 圈值得看的几件事：模型发布、价格变动、算力扩张。免费，随时一键退订。" /></p>
 

@@ -1,4 +1,5 @@
 import type { ModulePage } from "@aihot/contracts/modules";
+import { parseSubscribeTarget, SUBSCRIBE_FUNNEL_EVENTS, subscribeEventTarget, type SubscribeFunnelEvent } from "@aihot/contracts/subscribe";
 import { MODULES } from "@aihot/site/modules";
 import { sql } from "../db.ts";
 
@@ -52,13 +53,16 @@ export async function recordPageView(path: string): Promise<void> {
 
 /** Allowlisted interaction names. Anything else is dropped and never stored. */
 export const SITE_EVENTS = [
-  "star_add", "star_remove", "first_star", "subscribe_click", "subscribe_submit", "outbound_click", "share_click", "starred_export", "starred_import",
+  "star_add", "star_remove", "first_star", "subscribe_click",
+  ...SUBSCRIBE_FUNNEL_EVENTS,
+  "outbound_click", "share_click", "starred_export", "starred_import",
 ] as const;
 export type SiteEvent = (typeof SITE_EVENTS)[number];
 
 const SITE_EVENT_SET = new Set<string>(SITE_EVENTS);
 const ITEM_TARGET = new Set<SiteEvent>(["star_add", "star_remove"]);
-const EMPTY_TARGET = new Set<SiteEvent>(["first_star", "subscribe_click", "subscribe_submit", "share_click", "starred_export", "starred_import"]);
+const EMPTY_TARGET = new Set<SiteEvent>(["first_star", "subscribe_click", "share_click", "starred_export", "starred_import"]);
+const FUNNEL_EVENT = new Set<string>(SUBSCRIBE_FUNNEL_EVENTS);
 const ITEM_ID = /^[a-zA-Z0-9_-]{1,80}$/;
 const HOSTNAME = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const IPV4 = /^(?:\d{1,3}\.){3}\d{1,3}$/;
@@ -108,6 +112,11 @@ export function normalizeSiteEvent(body: unknown): { event: SiteEvent; target: s
   const target = typeof raw === "string" ? raw : "";
   const name = event as SiteEvent;
   if (EMPTY_TARGET.has(name)) return target === "" ? { event: name, target: "" } : null;
+  if (FUNNEL_EVENT.has(name)) {
+    const parsed = parseSubscribeTarget(name, target);
+    const stored = parsed && subscribeEventTarget(name as SubscribeFunnelEvent, parsed);
+    return stored ? { event: name, target: stored } : null;
+  }
   if (ITEM_TARGET.has(name)) return ITEM_ID.test(target) ? { event: name, target } : null;
   const domain = normalizeSourceDomain(target);
   return domain === null ? null : { event: "outbound_click", target: domain };

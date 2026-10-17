@@ -2,6 +2,7 @@ import { localePath, requestLocale } from "../lib/locale";
 import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE } from "@aihot/site";
+import { useRef } from "react";
 import { redirect, useLoaderData, useRouteLoaderData } from "react-router";
 import type { Route } from "./+types/home";
 import type { TimelineResponse } from "@aihot/contracts/site";
@@ -13,6 +14,7 @@ import { Deck } from "../components/shell/Deck";
 import { KardashevMeter } from "../features/chrono/KardashevMeter";
 import type { loader as rootLoader } from "../root";
 import { Onboarding } from "../features/onboarding/Onboarding";
+import { useSubscribeView } from "../features/subscribe/useSubscribeView";
 import { recordEngagement } from "../lib/engagement";
 import { CategoryBanner } from "../features/art/CategoryBanner";
 import { Timeline } from "../features/feed/Timeline";
@@ -59,6 +61,7 @@ function TodayLabel({ at }: { at?: string | null }) {
 
 export default function Home() {
   const tx = useTranslate();
+  const subscribeLink = useRef<HTMLSpanElement>(null);
   const { data, filters } = useLoaderData<typeof loader>();
   const root = useRouteLoaderData<typeof rootLoader>("root");
   const k = root?.timeBounds?.kardashev ?? null;
@@ -66,6 +69,7 @@ export default function Home() {
   // by the boot script); everyone else, crawlers included, reads the news below.
   const front = filters.channel === "all" && !filters.category && !filters.tag && !filters.at;
   const filtered = !!(filters.tag || filters.category || filters.channel !== "all");
+  useSubscribeView(subscribeLink, "home_button", front);
   return (
     <div className="pb-6">
       {front && <Onboarding mode="overlay" />}
@@ -82,7 +86,9 @@ export default function Home() {
           aside={k !== null && <KardashevMeter k={k} />}
         >
           <div className="flex flex-wrap gap-3">
-            <Link to="/subscribe" onClick={() => recordEngagement("subscribe_click")} className="deck-button is-primary"><Text value="订阅每日 08:00 日报" /></Link>
+            <span ref={subscribeLink} className="inline-flex">
+              <Link to="/subscribe" onClick={() => recordEngagement("subscribe_click")} className="deck-button is-primary"><Text value="订阅每日 08:00 日报" /></Link>
+            </span>
             <Link to="/chronicle" className="deck-button"><Text value="打开加速史" /></Link>
             {webModules().flatMap((m) => m.home?.links ?? []).map((l) => <Link key={l.to} to={l.to} className="deck-button"><Text value={l.label} /></Link>)}
           </div>

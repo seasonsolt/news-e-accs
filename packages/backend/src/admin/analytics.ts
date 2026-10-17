@@ -1,3 +1,4 @@
+import { parseSubscribeTarget, SUBSCRIBE_ERROR_REASONS, SUBSCRIBE_FUNNEL_EVENTS, SUBSCRIBE_SOURCES } from "@aihot/contracts/subscribe";
 import { sql } from "../db.ts";
 import { SITE_EVENTS } from "../site/analytics.ts";
 
@@ -82,5 +83,64 @@ export async function siteAnalyticsOverview(days = 30) {
       firstStarDevices: firstStar?.devices ?? 0,
       topStarred,
     },
+  };
+}
+
+export interface SubscribeFunnelCount {
+  event: string;
+  source: string;
+  locale: string;
+  /** Empty except for subscribe_error, which stores cap, 503, rate, invalid, forbidden or network. */
+  reason: string;
+  count: number;
+}
+
+/**
+ * Daily subscribe funnel. Rows that are not an allowlisted source, locale and reason are dropped,
+ * so a stray address cannot be returned. No subscriber data is read.
+ */
+export async function subscribeFunnel(days = 30) {
+  const windowDays = [7, 30, 90].includes(days) ? days : 30;
+  const events = [...SUBSCRIBE_FUNNEL_EVENTS];
+  const rows = await sql<{ day: string; event: string | null; target: string | null; count: number | null }[]>`
+    WITH bounds AS (
+      SELECT (now() AT TIME ZONE 'Asia/Taipei')::date - ${windowDays - 1}::int AS start_day,
+             (now() AT TIME ZONE 'Asia/Taipei')::date AS end_day
+    ), dates AS (
+      SELECT (bounds.start_day + series.n)::date AS day
+      FROM bounds CROSS JOIN LATERAL generate_series(0, ${windowDays - 1}::int) AS series(n)
+    ), hits AS (
+      SELECT day, event, target, count
+      FROM site_events_daily CROSS JOIN bounds
+      WHERE day >= bounds.start_day AND day <= bounds.end_day
+        AND event = ANY(${events}::text[])
+    )
+    SELECT to_char(dates.day, 'YYYY-MM-DD') AS day, hits.event, hits.target, hits.count::bigint AS count
+    FROM dates LEFT JOIN hits USING (day)
+    ORDER BY dates.day, hits.event, hits.target`;
+  const byDay = new Map<string, SubscribeFunnelCount[]>();
+  for (const row of rows) {
+    let slot = byDay.get(row.day);
+    if (!slot) byDay.set(row.day, slot = []);
+    if (!row.event || row.target == null || row.count == null) continue;
+    const parsed = parseSubscribeTarget(row.event, row.target);
+    if (!parsed) continue;
+    slot.push({ event: row.event, source: parsed.source, locale: parsed.locale, reason: parsed.reason, count: row.count });
+  }
+  const daily = [...byDay.entries()].map(([day, counts]) => ({ day, counts }));
+  const totals = new Map<string, SubscribeFunnelCount>();
+  for (const day of daily) for (const count of day.counts) {
+    const key = `${count.event}\n${count.source}\n${count.locale}\n${count.reason}`;
+    const existing = totals.get(key);
+    if (existing) existing.count += count.count;
+    else totals.set(key, { ...count });
+  }
+  return {
+    days: windowDays,
+    events: SUBSCRIBE_FUNNEL_EVENTS,
+    sources: SUBSCRIBE_SOURCES,
+    reasons: SUBSCRIBE_ERROR_REASONS,
+    daily,
+    totals: [...totals.values()],
   };
 }

@@ -21,6 +21,7 @@ import { Kicker } from "../../components/ui/Kicker";
 import type { OutlineEntry } from "../../components/ui/OutlineSheet";
 import { SourceAvatar } from "../../components/ui/SourceAvatar";
 import { ReadingGear } from "../art/ReadingGear";
+import { SubscribeCta } from "../subscribe/SubscribeCta";
 import { Deck } from "../../components/shell/Deck";
 import { KIND_LABEL, MOTTO, dateLine, headline, issueNumber, metricItems, neighbourLabel, reportPath, shortDay } from "./format";
 
@@ -532,6 +533,13 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
           </Link>
         </p>
       </footer>
+      {daily && (
+        <SubscribeCta
+          source="daily_inline"
+          sample={{ to: report.prev ? reportPath("daily", report.prev) : "/daily/archive", date: report.prev ?? undefined }}
+          sticky
+        />
+      )}
     </article>
   );
 }
