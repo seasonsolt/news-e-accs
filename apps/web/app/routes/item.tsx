@@ -34,6 +34,7 @@ import { CATEGORY_ART } from "../features/art/CategoryBanner";
 import { Plate } from "../components/shell/Deck";
 import { CATEGORIES } from "@aihot/industry/taxonomy";
 import { NextReads } from "../components/NextReads";
+import { SubscribeCta } from "../features/subscribe/SubscribeCta";
 
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
@@ -389,6 +390,11 @@ export default function ItemPage() {
           )}
 
           <NextReads reads={nextReads} currentStory={item.story?.publicId} />
+          <SubscribeCta
+            source="item_inline"
+            sample={nextReads?.daily ? { to: `/daily/${nextReads.daily.key}`, date: nextReads.daily.key } : { to: "/daily" }}
+            sticky
+          />
         </article>
         {showOutline && (
           <aside className="hidden 2xl:block">

@@ -108,16 +108,17 @@ api 自己的响应带 `app`。`x-eacc-edge-cache: HIT` 时这些是缓存那一
 
 ### 邮件订阅（Resend）
 
-首页第一次访问会看到订阅引导页（可以跳过），`/subscribe` 是它的独立页面。流程：填邮箱 → 中文确认邮件 →
-点确认 → 每天日报生成后（08:00 起每 10 分钟检查一次）群发一封。退订由 Resend 的链接处理。
+首页第一次访问会看到订阅引导页（可以跳过），首页按钮和「更多」里的 `/subscribe` 仍在。日报、单条和加速史读完后也有同一个订阅表单；手机上滑过大约六成、且文末表单不在屏幕里时，底部会出现一条可关掉的订阅条，关掉与否只记在这台浏览器里。这些入口都把当前页面的语言（`/zh` 为中文，其余为英文）和邮箱一起提交。确认信按这次提交的页面语言发送。已经在收某一种语言的地址，要等点开确认信，保存的语言和 Resend 分组才会换成这次的语言；在此之前日报仍是原来的语言。流程仍是：填邮箱 → 确认邮件 → 点确认 → 每天日报生成后（08:00 起每 10 分钟检查一次）按语言各群发一封。某一语言的日报还没备好就跳过该语言并写日志，不改发另一种语言。退订由每封日报里 Resend 的链接处理。
+
+订阅漏斗（看到、提交、接受、失败原因、确认、跳过，按入口和中/英文）在 `GET /api/admin/analytics/subscribe?days=7`（7、30 或 90；其他值按 30 天），和 `/api/admin/analytics` 同一套管理员登录，不返回邮箱。`deploy/update.sh --stats` 会打出同一份汇总。
 
 开通步骤：
 1. 在 Resend 注册并建一个 **Full access** 的 API key。
 2. 在 Resend 添加发信域名 `news.e-accs.com`，把它给出的 DNS 记录（DKIM、SPF 的 MX 和 TXT）加到 Cloudflare 的
    e-accs.com 区域（都在 `news` 子域名下，不影响主域名收信），等验证通过。
-3. 在 Resend 建一个 segment（例如 “news.e-accs.com 日报”），记下它的 ID。
-4. 在 `/srv/eacc/.env` 里填 `RESEND_API_KEY`、`RESEND_SEGMENT_ID`，把 `NEWSLETTER_ENABLED` 改成 `true`，
-   然后重启 api 和 worker。
+3. 在 Resend 建两个 segment（中文、英文各一个），记下它们的 ID。两个 ID 不能相同。
+4. 在 `/srv/eacc/.env` 里填 `RESEND_API_KEY`、`RESEND_SEGMENT_ID`（中文）、`RESEND_SEGMENT_ID_EN`（英文），把 `NEWSLETTER_ENABLED` 改成 `true`，
+   然后重启 api 和 worker。英文分组缺失时不把英文读者并进中文分组。
 
 发送记录在表 `newsletter_sends`（每天一行）；状态是 `unknown` 的那天可能发出了也可能没有，去 Resend 后台核对，
 不会自动重发。订阅者在表 `newsletter_subscribers`。

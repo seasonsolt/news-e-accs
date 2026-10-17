@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { after, test } from "node:test";
 import { closeDb, sql } from "@aihot/backend/db";
 import { siteAnalyticsOverview } from "@aihot/backend/admin/analytics";
-import { normalizeSiteEvent, normalizeSourceDomain, recordSiteEvent } from "@aihot/backend/site/analytics";
+import { subscribeErrorReason, subscribeEventTarget } from "@aihot/contracts/subscribe";
+import { subscribeFunnel } from "@aihot/backend/admin/analytics";
+import { SITE_EVENTS, normalizeSiteEvent, normalizeSourceDomain, recordSiteEvent } from "@aihot/backend/site/analytics";
 import { buildApp } from "../apps/api/src/app.ts";
 import { tag } from "./setup.ts";
 
@@ -31,9 +33,21 @@ test("interaction targets are reduced to an allowlisted event and a safe value",
   assert.equal(normalizeSiteEvent({ event: "star_add", target: "" }), null);
   assert.equal(normalizeSiteEvent({ event: "star_add", target: "x".repeat(81) }), null);
   assert.deepEqual(normalizeSiteEvent({ event: "first_star" }), { event: "first_star", target: "" });
-  assert.deepEqual(normalizeSiteEvent({ event: "subscribe_submit" }), { event: "subscribe_submit", target: "" });
+  assert.equal(normalizeSiteEvent({ event: "subscribe_submit" }), null);
+  assert.deepEqual(normalizeSiteEvent({ event: "subscribe_submit", target: "daily_inline:zh" }), { event: "subscribe_submit", target: "daily_inline:zh" });
+  assert.equal(normalizeSiteEvent({ event: "subscribe_submit", target: "user@example.com" }), null);
+  assert.equal(normalizeSiteEvent({ event: "subscribe_view", target: "not_a_source:zh" }), null);
+  assert.equal(normalizeSiteEvent({ event: "subscribe_view", target: "daily_inline:zh:cap" }), null);
+  assert.equal(normalizeSiteEvent({ event: "subscribe_error", target: "daily_inline:zh" }), null);
+  assert.deepEqual(normalizeSiteEvent({ event: "subscribe_error", target: "item_inline:en:503" }), { event: "subscribe_error", target: "item_inline:en:503" });
+  assert.equal(normalizeSiteEvent({ event: "subscribe_error", target: "item_inline:en:user@example.com" }), null);
   assert.equal(normalizeSiteEvent({ event: "first_star", target: id }), null);
   assert.equal(normalizeSiteEvent({ event: "subscribe_click", target: "user@example.com" }), null);
+  assert.equal(subscribeErrorReason(429, { retryAfter: 3600 }), "cap");
+  assert.equal(subscribeErrorReason(429, { retryAfter: 60 }), "rate");
+  assert.equal(subscribeErrorReason(503, {}), "503");
+  assert.equal(subscribeErrorReason(0), "network");
+  assert.equal(subscribeEventTarget("subscribe_error", { source: "daily_inline", locale: "zh", reason: "" }), null);
   assert.equal(normalizeSiteEvent({ event: "not_an_event" }), null);
   assert.equal(normalizeSiteEvent({ event: "share_click", target: "x".repeat(301) }), null);
   assert.equal(normalizeSiteEvent(null), null);
@@ -97,7 +111,7 @@ test("daily interaction counts are anonymous, uncached, and visible only in the 
   const today = summary.engagement.daily.at(-1);
   const top = summary.engagement.topStarred.find((row) => row.id === id);
   assert.equal(summary.engagement.daily.length, 7);
-  assert.equal(summary.engagement.totals.length, 9);
+  assert.equal(summary.engagement.totals.length, SITE_EVENTS.length);
   assert.equal(stars?.count, 2);
   assert.equal(removes?.count, 1);
   assert.equal(shares?.count, 1);
@@ -123,4 +137,49 @@ test("made-up source domains cannot add more than a day's quota of rows", async 
     WHERE day = ${today} AND event = 'outbound_click' AND target IN (${`new.${id}.example`}, ${filler[0]!}, '')`;
   assert.deepEqual(Object.fromEntries(rows.map((r) => [r.target, r.count])), { [filler[0]!]: 2, "": 1 });
   await sql`DELETE FROM site_events_daily WHERE day = ${today} AND event = 'outbound_click' AND target = ''`;
+});
+
+test("the subscribe funnel counts source, locale and failure reason, and never an address", async () => {
+  const events = ["subscribe_view", "subscribe_submit", "subscribe_success", "subscribe_error", "subscribe_confirmed", "subscribe_dismiss"];
+  const targets = ["daily_inline:zh", "item_inline:en", "home_overlay:zh", "sticky_mobile:en", "daily_inline:zh:cap", "item_inline:en:503", "user@example.com"];
+  const today = sql`(now() AT TIME ZONE 'Asia/Taipei')::date`;
+  await sql`DELETE FROM site_events_daily WHERE event = ANY(${events}::text[]) AND target = ANY(${targets}::text[])`;
+  try {
+    const accepted = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "subscribe_view", target: "daily_inline:zh" } });
+    const again = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "subscribe_view", target: "daily_inline:zh" } });
+    const submitted = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "subscribe_submit", target: "daily_inline:zh" } });
+    const ok = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "subscribe_success", target: "daily_inline:zh" } });
+    const cap = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "subscribe_error", target: "daily_inline:zh:cap" } });
+    const down = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "subscribe_error", target: "item_inline:en:503" } });
+    const address = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "subscribe_submit", target: "user@example.com" } });
+    const bare = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "subscribe_submit" } });
+    const admin = await app.inject({ method: "GET", url: "/api/admin/analytics/subscribe?days=7" });
+    for (const res of [accepted, again, submitted, ok, cap, down, address, bare]) assert.equal(res.statusCode, 204);
+    assert.equal(admin.statusCode, 401, "the funnel uses the same admin session as the other statistics");
+
+    await sql`INSERT INTO site_events_daily (day, event, target, count) VALUES (${today}, 'subscribe_submit', 'user@example.com', 4)`;
+    const funnel = await subscribeFunnel(7);
+    const text = JSON.stringify(funnel);
+    assert.equal(text.includes("@"), false);
+    assert.equal(text.includes("example.com"), false);
+    const view = funnel.totals.find((row) => row.event === "subscribe_view" && row.source === "daily_inline" && row.locale === "zh");
+    const submit = funnel.totals.find((row) => row.event === "subscribe_submit" && row.source === "daily_inline" && row.locale === "zh");
+    const success = funnel.totals.find((row) => row.event === "subscribe_success" && row.source === "daily_inline");
+    const capped = funnel.totals.find((row) => row.event === "subscribe_error" && row.reason === "cap");
+    const failed = funnel.totals.find((row) => row.event === "subscribe_error" && row.reason === "503");
+    assert.equal(funnel.days, 7);
+    assert.equal(funnel.daily.length, 7);
+    assert.equal(view?.count, 2);
+    assert.equal(view?.reason, "");
+    assert.equal(submit?.count, 1);
+    assert.equal(success?.count, 1);
+    assert.equal(capped?.source, "daily_inline");
+    assert.equal(capped?.locale, "zh");
+    assert.equal(failed?.source, "item_inline");
+    assert.equal(failed?.locale, "en");
+    const todayRow = funnel.daily.at(-1);
+    assert.equal(todayRow?.counts.find((row) => row.event === "subscribe_view")?.count, 2);
+  } finally {
+    await sql`DELETE FROM site_events_daily WHERE event = ANY(${events}::text[]) AND target = ANY(${targets}::text[])`;
+  }
 });

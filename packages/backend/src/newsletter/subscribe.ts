@@ -9,7 +9,7 @@ import { config } from "../config.ts";
 import { sql } from "../db.ts";
 import { feedbackSourceHash } from "../operations/feedback.ts";
 import { siteUrl } from "../publication/links.ts";
-import { ResendError, resendConfigured, sendEmail, subscribeContact } from "../providers/resend.ts";
+import { assignEdition, clearContactUnsubscribe, ResendError, resendConfigured, sendEmail } from "../providers/resend.ts";
 import { distributionLanguage, type DistributionLanguage } from "../publication/distribution.ts";
 import { confirmationMail } from "./mail.ts";
 
@@ -51,33 +51,56 @@ export function normalizeEmail(raw: string): string | null {
 
 export const confirmUrl = (token: string, language: DistributionLanguage = "en"): string => siteUrl(`${language === "zh" ? "/zh" : ""}/subscribe?token=${token}`);
 
+/**
+ * Locale from the subscribe body. Omitted means English, the page default for an unprefixed URL.
+ * Accept-Language is not an input: the form sends the page's locale.
+ */
+export function subscribeLanguage(value: unknown): DistributionLanguage {
+  try { return distributionLanguage(value); }
+  catch { throw new NewsletterRejected(400, "invalid_request", "language must be en or zh."); }
+}
+
 export async function subscribe(input: { email: string; ip: string; userAgent: string; language?: DistributionLanguage }): Promise<{ ok: true }> {
   const email = normalizeEmail(input.email);
   if (!email) throw new NewsletterRejected(400, "invalid_request", "邮箱格式不正确。");
-  let language: DistributionLanguage;
-  try { language = distributionLanguage(input.language); } catch { throw new NewsletterRejected(400, "invalid_request", "language must be en or zh."); }
-  if (!config.newsletterEnabled) assertOpen(language);
+  const language = subscribeLanguage(input.language);
   const source = feedbackSourceHash(input.ip, input.userAgent);
   const [banned] = await sql`SELECT 1 FROM feedback_bans WHERE source_hash = ${source}`;
   if (banned) throw new NewsletterRejected(403, "forbidden", "暂时无法订阅。");
   rateLimit(source);
+  assertOpen(language);
 
-  const [row] = await sql<{ id: string; token: string; confirm_sent_at: Date | null; language: DistributionLanguage }[]>`
-    INSERT INTO newsletter_subscribers (email, token, source_hash, language, language_preference_known)
-    VALUES (${email}, ${randomBytes(32).toString("base64url")}, ${source}, ${language}, true)
-    ON CONFLICT (email) DO UPDATE SET updated_at = now()
-    RETURNING id, token, confirm_sent_at, language`;
-  // Re-signup is not a preference change: token, language and cooldown belong to the stored request.
-  assertOpen(row!.language);
-  if (row!.confirm_sent_at && Date.now() - row!.confirm_sent_at.getTime() < RESEND_COOLDOWN_MS) return { ok: true };
+  const [previous] = await sql<{ token: string; language: DistributionLanguage; pending_language: DistributionLanguage | null; confirm_sent_at: Date | null; updated_at: Date }[]>`
+    SELECT token, language, pending_language, confirm_sent_at, updated_at FROM newsletter_subscribers WHERE email = ${email}`;
+  // The letter, and the language confirm() will apply, is this request. The active language and the
+  // Resend segments stay as they are until the link is opened.
+  const previousRequest = previous ? (previous.pending_language ?? previous.language) : null;
+  const changed = previousRequest !== language;
+  // A crash after the pending write and before confirm_sent_at still owes this letter.
+  const pendingUnmailed = !!previous?.pending_language && previous.pending_language === language
+    && !!previous.confirm_sent_at && previous.confirm_sent_at < previous.updated_at;
+  const cooling = !changed && !pendingUnmailed && !!previous?.confirm_sent_at && Date.now() - previous.confirm_sent_at.getTime() < RESEND_COOLDOWN_MS;
+  if (cooling) return { ok: true };
   const [{ n }] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM newsletter_subscribers WHERE confirm_sent_at > now() - interval '1 day'`;
   if (n >= DAILY_LETTERS) throw new NewsletterRejected(429, "rate_limited", "今天订阅的人太多了，请明天再试。", 3600);
 
-  const mail = confirmationMail(confirmUrl(row!.token, row!.language), row!.language);
+  // A different request retires the previous link, so an older letter cannot apply a language it did not offer.
+  const token = changed || !previous ? randomBytes(32).toString("base64url") : previous.token;
+  const [row] = await sql<{ id: string; token: string; language: DistributionLanguage; pending_language: DistributionLanguage | null }[]>`
+    INSERT INTO newsletter_subscribers (email, token, source_hash, language, language_preference_known, pending_language)
+    VALUES (${email}, ${token}, ${source}, ${language}, true, NULL)
+    ON CONFLICT (email) DO UPDATE SET
+      pending_language = CASE WHEN newsletter_subscribers.language = ${language} THEN NULL ELSE ${language} END,
+      token = ${token},
+      updated_at = now()
+    RETURNING id, token, language, pending_language`;
+  const requested = row!.pending_language ?? row!.language;
+  const mail = confirmationMail(confirmUrl(row!.token, requested), requested);
   try {
-    // One letter per address per cooldown window, even if two requests race past the check above.
-    await sendEmail({ to: email, ...mail, idempotencyKey: `newsletter-confirm:${row!.id}:${Math.floor(Date.now() / RESEND_COOLDOWN_MS)}` });
+    // One letter per address per cooldown window per language, even if two requests race past the check above.
+    await sendEmail({ to: email, ...mail, idempotencyKey: `newsletter-confirm:${row!.id}:${requested}:${Math.floor(Date.now() / RESEND_COOLDOWN_MS)}` });
   } catch (error) {
+    if (previous) await sql`UPDATE newsletter_subscribers SET pending_language = ${previous.pending_language}, token = ${previous.token}, updated_at = now() WHERE email = ${email}`;
     console.error(JSON.stringify({ level: "error", msg: "newsletter confirmation failed", error: String(error).slice(0, 300) }));
     throw new NewsletterRejected(503, "temporarily_unavailable", "确认邮件暂时发不出去，请稍后再试。", error instanceof ResendError && error.retryable ? 60 : 3600);
   }
@@ -87,15 +110,43 @@ export async function subscribe(input: { email: string; ip: string; userAgent: s
 
 export async function confirm(token: string): Promise<{ ok: true }> {
   if (!/^[A-Za-z0-9_-]{43}$/.test(token)) throw new NewsletterRejected(404, "not_found", "确认链接无效，请重新订阅。");
-  const [row] = await sql<{ id: string; email: string; language: DistributionLanguage }[]>`SELECT id, email, language FROM newsletter_subscribers WHERE token = ${token}`;
+  const [row] = await sql<{ id: string; email: string; language: DistributionLanguage; pending_language: DistributionLanguage | null }[]>`
+    SELECT id, email, language, pending_language FROM newsletter_subscribers WHERE token = ${token}`;
   if (!row) throw new NewsletterRejected(404, "not_found", "确认链接无效，请重新订阅。");
-  assertOpen(row.language);
-  try {
-    await subscribeContact(row.email, row.language);
-  } catch (error) {
+  const language = row.pending_language ?? row.language;
+  assertOpen(language);
+  const unavailable = (error: unknown) => {
     console.error(JSON.stringify({ level: "error", msg: "newsletter confirm failed", error: String(error).slice(0, 300) }));
-    throw new NewsletterRejected(503, "temporarily_unavailable", "暂时无法完成确认，请稍后再点一次。", 60);
+    return new NewsletterRejected(503, "temporarily_unavailable", "暂时无法完成确认，请稍后再点一次。", 60);
+  };
+  // Join the requested edition and leave the other before anyone is marked subscribed. A failed
+  // removal undoes only a join made here, and the row stays unchanged for a retry.
+  let joined;
+  try {
+    joined = await assignEdition(row.email, language);
+  } catch (error) {
+    throw unavailable(error);
   }
-  await sql`UPDATE newsletter_subscribers SET status = 'confirmed', confirmed_at = coalesce(confirmed_at, now()), unsubscribed_at = NULL, updated_at = now() WHERE id = ${row.id}`;
+  // A contact created just now is already subscribed.
+  if (joined !== "created") {
+    try {
+      await clearContactUnsubscribe(row.email);
+    } catch (error) {
+      // The row keeps its language, so the segments go back to it: the next digest is counted and
+      // sent by that language, and a reader who never clicks again still gets the edition the row names.
+      if (language !== row.language) {
+        try {
+          await assignEdition(row.email, row.language);
+        } catch (undo) {
+          console.error(JSON.stringify({ level: "error", msg: "newsletter segment rollback failed", language: row.language, error: String(undo).slice(0, 300) }));
+        }
+      }
+      throw unavailable(error);
+    }
+  }
+  await sql`UPDATE newsletter_subscribers
+    SET language = ${language}, pending_language = NULL, language_preference_known = true,
+        status = 'confirmed', confirmed_at = coalesce(confirmed_at, now()), unsubscribed_at = NULL, updated_at = now()
+    WHERE id = ${row.id}`;
   return { ok: true };
 }

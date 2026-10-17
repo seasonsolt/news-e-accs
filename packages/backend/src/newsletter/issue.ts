@@ -38,7 +38,13 @@ export async function sendDailyIssue(date = calendarDate(Date.now(), config.repo
   if (legacy) return { status: "already" };
   const report = await localizePublication(source, language);
   const gap = editionGap(report, language);
-  if (gap) return { status: "skipped", reason: gap };
+  // A missing edition is not replaced with the other language. The day stays unclaimed and the next
+  // check (every 10 minutes through the morning) tries again. Skipping is logged so a quiet English
+  // morning is visible.
+  if (gap) {
+    console.log(JSON.stringify({ level: "info", msg: "newsletter edition skipped", date, language, reason: gap }));
+    return { status: "skipped", reason: gap };
+  }
   // Nobody to mail yet: leave the day unclaimed, so a reader who confirms later this morning still gets it.
   const [{ n }] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM newsletter_subscribers WHERE status = 'confirmed' AND unsubscribed_at IS NULL AND language = ${language}`;
   if (n === 0) return { status: "no_subscribers" };
@@ -46,6 +52,7 @@ export async function sendDailyIssue(date = calendarDate(Date.now(), config.repo
   const [claimed] = await sql`INSERT INTO newsletter_language_sends (report_key, language, status) VALUES (${date}, ${language}, 'sending') ON CONFLICT (report_key, language) DO NOTHING RETURNING report_key`;
   if (!claimed) return { status: "already" };
   if (issueSections(report).length === 0) {
+    console.log(JSON.stringify({ level: "info", msg: "newsletter edition skipped", date, language, reason: "empty report" }));
     await sql`UPDATE newsletter_language_sends SET status = 'skipped', response = 'empty report' WHERE report_key = ${date} AND language = ${language}`;
     return { status: "skipped", reason: "empty report" };
   }

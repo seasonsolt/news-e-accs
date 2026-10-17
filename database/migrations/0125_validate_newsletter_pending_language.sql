@@ -1,0 +1,1 @@
+ALTER TABLE newsletter_subscribers VALIDATE CONSTRAINT newsletter_subscribers_pending_language_check;

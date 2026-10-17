@@ -1,6 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { confirm, NewsletterRejected, subscribe } from "@aihot/backend/newsletter/subscribe";
-import { distributionLanguage } from "@aihot/backend/publication/distribution";
+import { confirm, NewsletterRejected, subscribe, subscribeLanguage } from "@aihot/backend/newsletter/subscribe";
 import { sendProblem } from "../http/respond.ts";
 
 function field(body: unknown, key: string): string {
@@ -17,9 +16,8 @@ function fail(req: FastifyRequest, reply: FastifyReply, error: unknown, what: st
 export function registerNewsletter(app: FastifyInstance) {
   app.post("/api/site/newsletter/subscribe", { bodyLimit: 4 * 1024 }, async (req, reply) => {
     try {
-      let language;
-      try { language = distributionLanguage((req.body as { language?: unknown } | null)?.language); }
-      catch { throw new NewsletterRejected(400, "invalid_request", "language must be en or zh."); }
+      // The form sends the page locale. Accept-Language is not read.
+      const language = subscribeLanguage((req.body as { language?: unknown } | null)?.language);
       const ip = String(req.headers["x-real-ip"] ?? req.ip ?? "");
       const result = await subscribe({ language, email: field(req.body, "email"), ip, userAgent: String(req.headers["user-agent"] ?? "") });
       return reply.header("Cache-Control", "no-store").code(202).send(result);

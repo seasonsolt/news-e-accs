@@ -14,6 +14,7 @@ export const KEYS = {
   changelogSeen: "aihot-changelog-seen-version",
   feedbackDraft: "aihot-feedback-draft-v1",
   onboarded: "eacc-onboarded",
+  subscribeBar: "eacc-subscribe-bar-dismissed",
   recentSearches: "aihot-recent-searches",
   firstStar: "eacc-first-star",
   lastBackup: "eacc-last-backup",
@@ -344,6 +345,15 @@ export const MOTION_BOOT_SCRIPT = `(function(){try{if(localStorage.getItem('${KE
 export function markOnboarded() {
   writeRaw(KEYS.onboarded, new Date().toISOString());
   document.documentElement.removeAttribute("data-onboarding");
+}
+
+/** The phone subscribe bar was closed on this device. The choice stays in the browser and is not uploaded. */
+export function subscribeBarDismissed(): boolean {
+  return readRaw(KEYS.subscribeBar) !== null;
+}
+
+export function dismissSubscribeBar() {
+  writeRaw(KEYS.subscribeBar, new Date().toISOString());
 }
 
 /**
