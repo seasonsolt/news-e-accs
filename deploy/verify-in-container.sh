@@ -13,6 +13,7 @@ node --test --test-concurrency=1 apps/web/tests/*.test.ts
 export DATABASE_URL=postgres://verify:local-verification-only@db:5432/smoke_ci
 PGPASSWORD=local-verification-only createdb -h db -U verify smoke_ci
 export COLLECT_ENABLED=false MODEL_CALLS_ENABLED=false NODE_ENV=production
+export ADMIN_PASSWORD=local-smoke-password-0123456789
 node scripts/migrate.ts
 node scripts/seed.ts
 pids=()
@@ -23,7 +24,8 @@ node apps/worker/src/main.ts > /tmp/worker.log 2>&1 & pids+=("$!")
 node apps/web/server.ts > /tmp/web.log 2>&1 & pids+=("$!")
 ready=false
 for ((i=0; i<60; i++)); do
-  if curl -fsS http://127.0.0.1:3000/api/health >/dev/null; then ready=true; break; fi
+  for pid in "${pids[@]}"; do kill -0 "$pid" 2>/dev/null || break 2; done
+  if curl -fsS http://127.0.0.1:3000/api/health >/dev/null 2>&1; then ready=true; break; fi
   sleep 1
 done
 if ! $ready || ! node scripts/smoke.ts --base http://127.0.0.1:3000 || ! node scripts/mcp-check.ts http://127.0.0.1:3000/api/mcp; then
