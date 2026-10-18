@@ -29,7 +29,7 @@
 ## 新闻站发布
 
 ```bash
-git push                      # 只部署已推送、且 GitHub 检查通过的提交
+git push origin HEAD:main     # 低风险改动本地验证后直接推送 main
 deploy/update.sh              # 部署 origin/main
 deploy/update.sh <提交>        # 部署指定提交
 deploy/update.sh --status     # 当前版本、服务状态、最近几次部署
@@ -37,8 +37,33 @@ deploy/update.sh --stats [7|30|90]  # 首方页面访问和互动次数（与后
 deploy/update.sh --rollback   # 切回上一个版本；--rollback <提交> 切到指定版本
 ```
 
-`update.sh` 在本机运行：确认提交在 origin/main 上、GitHub 检查已通过，然后把 `deploy/remote.sh`
-通过 ssh（主机别名 `dmit`，可用 `HOST=` 覆盖）交给服务器执行。紧急情况下可用 `SKIP_CI=1` 跳过检查。
+`update.sh` 在本机运行：确认提交在 origin/main 上，读取当前生产版本作为迁移检查基线，
+调用 `deploy/verify.sh <目标提交> <当前生产提交>` 验证。全部通过后，才通过 ssh
+（主机别名 `dmit`，可用 `HOST=` 覆盖）把 `deploy/remote.sh` 交给服务器执行。检查不能跳过。
+
+### 不消耗 GitHub Actions 分钟的本地验证
+
+本机需要 Git、Docker Engine / Docker Desktop / OrbStack、Docker Compose v2；发布另需已有的 SSH 权限。
+不需要购买 runner 或新增云服务器，使用现有电脑的 CPU、内存、磁盘和网络。GitHub 自动 Actions 工作流已移除。
+首次会下载 Node 24、PostgreSQL 17 和浏览器依赖，后续复用 Docker 构建缓存。
+
+```bash
+# 提交后、推送前可以独立验证；第二个参数是上一个发布版本（不是目标自身）。
+deploy/verify.sh HEAD <上一个发布提交>
+# 推送后的正式发布仍自动验证精确提交，无需 GitHub CI 状态或 gh CLI。
+deploy/update.sh
+```
+
+验证器在临时目录克隆精确提交，不读取工作区的 `.env`、未提交文件或个人模型凭证。
+独立 PostgreSQL 容器不映射主机端口，结束后连同测试数据一起清理。依次执行迁移安全检查、
+类型检查、生产构建、全部后端测试、Chromium/WebKit 前端测试，再启动 API、worker、web
+执行全站 smoke 与 MCP 检查。测试只使用本地 stub；smoke 时采集、模型和推送均关闭。
+验证失败不会触碰线上服务，也不会签发可复用或过期的“通过凭证”。
+
+此流程验证 systemd 生产站的代码与服务行为；Docker 打包本身仍可按 `docs/deploy.md`
+在本机执行 `docker compose up -d --build` 验证，不再为每次改字或换图重复跑容器部署测试。
+升级 `@playwright/test` 时同步修改 `deploy/verify.Dockerfile` 中的浏览器版本。
+旧 `SKIP_CI` 变量不再生效。首次安装一个尚无发布记录的服务器，先按“从零重建”建立版本基线。
 
 服务器上的步骤：
 

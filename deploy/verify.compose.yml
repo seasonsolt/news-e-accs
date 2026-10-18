@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: verify
+      POSTGRES_PASSWORD: local-verification-only
+      POSTGRES_DB: release_ci
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U verify -d release_ci]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    # No published ports or persistent production data.
+    tmpfs:
+      - /var/lib/postgresql/data
+  check:
+    build:
+      context: ..
+      dockerfile: deploy/verify.Dockerfile
+    init: true
+    shm_size: 1gb
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://verify:local-verification-only@db:5432/release_ci
+      SITE_URL: http://127.0.0.1:3000
+      API_BASE_URL: http://127.0.0.1:3001
+      SESSION_SECRET: local-verification-session-0123456789abcdef
+      IMG_PROXY_SIGN_SECRET: local-verification-image-0123456789abcdef
+      AIHOT_CREDENTIALS_DIR: /nonexistent-test-credentials
+      AIHOT_DATA_DIR: /tmp/release-data
+      FEISHU_CONTENT_PUSH_ENABLED: 'false'
+      FEISHU_INTERNAL_ENABLED: 'false'
+      INDEXNOW_SUBMIT_ENABLED: 'false'
+      WECHAT_DRAFT_ENABLED: 'false'
+      NEWSLETTER_ENABLED: 'false'
+      SEARCH_CONSOLE_ENABLED: 'false'
+      VERIFY_BASE: ${VERIFY_BASE:?Set the previous release commit}
+    volumes:
+      - ../:/source:ro
+      - work:/work
+    command: [bash, -c, 'cp -a /source/. /work/ && exec bash deploy/verify-in-container.sh']
+volumes:
+  work:
+
