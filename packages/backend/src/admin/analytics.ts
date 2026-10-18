@@ -2,6 +2,13 @@ import { parseSubscribeTarget, SUBSCRIBE_ERROR_REASONS, SUBSCRIBE_FUNNEL_EVENTS,
 import { sql } from "../db.ts";
 import { SITE_EVENTS } from "../site/analytics.ts";
 
+async function eventFirstDays(events: readonly string[]): Promise<Record<string, string | null>> {
+  const rows = await sql<{ event: string; day: string }[]>`
+    SELECT event, to_char(min(day), 'YYYY-MM-DD') AS day FROM site_events_daily
+    WHERE event = ANY(${[...events]}::text[]) GROUP BY event`;
+  return Object.fromEntries(events.map((event) => [event, rows.find((r) => r.event === event)?.day ?? null]));
+}
+
 export async function siteAnalyticsOverview(days = 30) {
   const windowDays = [7, 30, 90].includes(days) ? days : 30;
   const daily = await sql<{ day: string; views: number }[]>`
@@ -46,9 +53,10 @@ export async function siteAnalyticsOverview(days = 30) {
     if (!slot) countsByDay.set(row.day, slot = new Map());
     slot.set(row.event, row.count);
   }
+  const firstDays = await eventFirstDays(SITE_EVENTS);
   const engagementDaily = daily.map((row) => ({
     day: row.day,
-    counts: Object.fromEntries(SITE_EVENTS.map((event) => [event, countsByDay.get(row.day)?.get(event) ?? 0])),
+    counts: Object.fromEntries(SITE_EVENTS.map((event) => [event, firstDays[event] && row.day >= firstDays[event]! ? countsByDay.get(row.day)?.get(event) ?? 0 : null])),
   }));
   const [firstStar] = await sql<{ devices: number }[]>`
     SELECT coalesce(sum(count), 0)::bigint AS devices
@@ -75,6 +83,7 @@ export async function siteAnalyticsOverview(days = 30) {
     daily,
     pages,
     engagement: {
+      firstDays,
       totals: SITE_EVENTS.map((event) => ({
         event,
         count: engagementDaily.reduce((sum, row) => sum + (row.counts[event] ?? 0), 0),
@@ -137,6 +146,7 @@ export async function subscribeFunnel(days = 30) {
   }
   return {
     days: windowDays,
+    firstDays: await eventFirstDays(SUBSCRIBE_FUNNEL_EVENTS),
     events: SUBSCRIBE_FUNNEL_EVENTS,
     sources: SUBSCRIBE_SOURCES,
     reasons: SUBSCRIBE_ERROR_REASONS,

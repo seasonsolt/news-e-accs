@@ -24,10 +24,10 @@ export default function PosterSheet({ id, title, open, onClose }: { id: string; 
   }, [open]);
 
   async function share() {
-    recordEngagement("share_click");
     try {
       const blob = await (await fetch(src)).blob();
       await navigator.share({ files: [new File([blob], `${SITE.mcpPrefix}-${id}.png`, { type: "image/png" })], title });
+      recordEngagement("share_click");
     } catch {
       // cancelled or unsupported: saving stays available
     }

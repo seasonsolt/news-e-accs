@@ -2,9 +2,20 @@
 // a reason. The target never carries an address.
 
 export const SUBSCRIBE_SOURCES = [
-  "home_overlay", "home_button", "subscribe_page", "daily_inline", "item_inline", "chronicle_inline", "sticky_mobile",
+  "home_overlay", "home_button", "subscribe_page", "daily_inline", "item_inline", "chronicle_inline", "sticky_mobile", "story_inline", "concept",
 ] as const;
 export type SubscribeSource = (typeof SUBSCRIBE_SOURCES)[number];
+
+export function subscribeSource(value: unknown): SubscribeSource | null {
+  return typeof value === "string" && (SUBSCRIBE_SOURCES as readonly string[]).includes(value) ? value as SubscribeSource : null;
+}
+
+export interface SubscribeConfirmation {
+  ok: true;
+  first: boolean;
+  language: SubscribeLocale;
+  source: SubscribeSource | null;
+}
 
 export const SUBSCRIBE_FUNNEL_EVENTS = [
   "subscribe_view", "subscribe_submit", "subscribe_success", "subscribe_error", "subscribe_confirmed", "subscribe_dismiss",

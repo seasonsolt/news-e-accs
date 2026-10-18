@@ -1,6 +1,7 @@
+import { shareOrCopy } from "../features/item/share.ts";
 import { hasAlternateEdition } from "../lib/edition-meta.server";
 import { contentHtmlLanguage, bodyLocale } from "../lib/content-language";
-import { localePath, type Locale } from "../lib/locale";
+import { localePath } from "../lib/locale";
 import { Link, useNavigate } from "../lib/navigation";
 import { ContentLanguage } from "../components/ContentLanguage";
 import { localeFromMatches, translate, Text, useTranslate, useLocale } from "../lib/i18n";
@@ -14,7 +15,7 @@ import { pageReuse } from "../lib/page-reuse";
 import { breadcrumbLd, newsArticleLd, pageMeta, siteUrl, titled } from "../lib/seo";
 import { fullDateTime, relativeTime } from "../lib/format";
 import { markRead } from "../lib/local-state";
-import { recordEngagement, outboundLink } from "../lib/engagement";
+import { outboundLink } from "../lib/engagement";
 import { SameEventBadge, SelectedBadge } from "../components/ui/Badge";
 import { shownScore } from "../components/ui/Score";
 import { PillTabs } from "../components/ui/Tabs";
@@ -95,19 +96,6 @@ function inWeChat(): boolean {
   return typeof navigator !== "undefined" && /MicroMessenger/i.test(navigator.userAgent);
 }
 
-async function shareOrCopy(item: Pick<SiteItemDetail, "id" | "title">, locale: Locale): Promise<"shared" | "copied" | null> {
-  const url = `${siteUrl()}${localePath(`/items/${item.id}`, locale)}`;
-  try {
-    if (navigator.share && matchMedia("(pointer: coarse)").matches) {
-      await navigator.share({ title: item.title, url });
-      return "shared";
-    }
-    await navigator.clipboard.writeText(`${item.title}\n${url}`);
-    return "copied";
-  } catch {
-    return null;
-  }
-}
 
 export default function ItemPage() {
   const tx = useTranslate();
@@ -131,8 +119,7 @@ export default function ItemPage() {
     setPosterOpen(true);
   };
   const share = async () => {
-    recordEngagement("share_click");
-    const r = await shareOrCopy(item, locale);
+    const r = await shareOrCopy(item.title, `${siteUrl()}${localePath(`/items/${item.id}`, locale)}`);
     if (r === "copied") setToast(tx("链接已复制"));
   };
 

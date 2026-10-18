@@ -9,6 +9,8 @@ import { localePath } from "../../lib/locale";
 // the link do not run it), with the button kept for a retry. Everything moving here is decoration and
 // stops under prefers-reduced-motion.
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import type { SubscribeSource } from "@aihot/contracts/subscribe";
+import type { ReportDetail, ReportLatestPage } from "@aihot/contracts/site";
 import { SITE } from "@aihot/site";
 
 import { markOnboarded } from "../../lib/local-state";
@@ -36,7 +38,7 @@ type Phase = { kind: "idle" } | { kind: "sending" } | { kind: "sent"; email: str
  * `overlay`: the front page's first-visit screen, closed by subscribing or skipping. `page`: /subscribe,
  * where `token` (from the confirmation letter) is confirmed on arrival, with a button to try again.
  */
-export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; token?: string | null }) {
+export function Onboarding({ mode, token = null, source: pageSource = "subscribe_page" }: { mode: "overlay" | "page"; token?: string | null; source?: SubscribeSource }) {
   const tx = useTranslate();
   const locale = useLocale();
   const motionAllowed = useMotionAllowed();
@@ -47,8 +49,10 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [email, setEmail] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
+  const source = mode === "overlay" ? "home_overlay" : pageSource;
+  const [daily, setDaily] = useState<ReportDetail | null>(null);
   const confirming = mode === "page" && !!token;
-  useSubscribeView(formRef, mode === "overlay" ? "home_overlay" : "subscribe_page", !confirming);
+  useSubscribeView(formRef, source, !confirming);
   // Visibility still gates the wordmark sheen; CSS owns the poster's pre-hydration first frame.
   const [shown, setShown] = useState(mode === "page");
 
@@ -136,10 +140,9 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
 
   async function subscribe(e: FormEvent) {
     e.preventDefault();
-    const source = mode === "overlay" ? "home_overlay" : "subscribe_page";
     recordSubscribe("subscribe_submit", source, locale);
     setPhase({ kind: "sending" });
-    const error = await requestSubscribe(email, locale);
+    const error = await requestSubscribe(email, locale, source);
     if (error) {
       recordSubscribe("subscribe_error", source, locale, error.reason);
       return setPhase({ kind: "error", message: error.detail });
@@ -151,13 +154,18 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
 
   async function confirmToken() {
     setPhase({ kind: "sending" });
-    const error = await requestConfirm(token ?? "");
-    if (error) {
+    const result = await requestConfirm(token ?? "");
+    if ("reason" in result) {
+      const error = result;
       recordSubscribe("subscribe_error", "subscribe_page", locale, error.reason);
       return setPhase({ kind: "error", message: error.detail });
     }
-    recordSubscribe("subscribe_confirmed", "subscribe_page", locale);
     setPhase({ kind: "confirmed" });
+    if (mode === "page") {
+      void fetch(`/api/site/reports/daily/latest-page?lang=${result.language}`)
+        .then(async (res) => res.ok ? (await res.json() as ReportLatestPage).report : null)
+        .then(setDaily).catch(() => setDaily(null));
+    }
     markOnboarded();
   }
 
@@ -216,7 +224,27 @@ export function Onboarding({ mode, token = null }: { mode: "overlay" | "page"; t
         ) : phase.kind === "confirmed" ? (
           <>
             <Notice title={tx("订阅成功")} body={tx("所选语言的日报就绪后会送到你的邮箱，每一封信的末尾都可以一键退订。用 Gmail 的话，第一封日报如果在「推广」里，把它拖到「主要」，以后就都在收件箱最前面了。")}>
-              {toNews(tx("去看今天的新闻"), true)}
+              {mode === "page" ? (
+                // The latest issue in the confirmed language: what the first letter will look like.
+                <div className="flex w-full flex-col items-center gap-4">
+                  {daily && (
+                    <div className="w-full rounded-[20px] border border-[#f6ead2]/25 bg-[#1a120a]/45 px-5 py-4 text-left backdrop-blur-md">
+                      <p className="mono text-[11px] uppercase tracking-[0.2em] text-[#e8c98a]"><Text value="最近一期日报" /> · {daily.key}</p>
+                      <p className="mt-1.5 text-[17px] font-semibold leading-snug">{daily.lead?.title ?? daily.title}</p>
+                      <ul className="mt-2 space-y-1.5 text-[14px] leading-snug text-[#f6ead2]/80">
+                        {daily.highlights.slice(0, 3).map((item, i) => <li key={i}>· {item.title}</li>)}
+                      </ul>
+                    </div>
+                  )}
+                  <Link
+                    to={daily ? `/daily/${daily.key}` : "/daily"}
+                    onClick={() => markOnboarded()}
+                    className="inline-flex h-11 items-center rounded-full bg-gradient-to-br from-[#f0c56a] via-[#d9a441] to-[#9a5b1f] px-7 text-[15px] font-semibold text-[#1a1208] shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition-transform duration-200 hover:scale-[1.03]"
+                  >
+                    {tx("阅读这期日报")}
+                  </Link>
+                </div>
+              ) : toNews(tx("去看今天的新闻"), true)}
             </Notice>
             <TearTicket date={new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())} />
           </>

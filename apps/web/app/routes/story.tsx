@@ -11,6 +11,7 @@ import type { Route } from "./+types/story";
 import type { NextReads as Reads, StoryDetail, StoryReportView } from "@aihot/contracts/site";
 import { SITE } from "@aihot/site";
 import { apiGet, cachedPage, loadOr404 } from "../lib/api.server";
+import { SubscribeCta } from "../features/subscribe/SubscribeCta";
 import { NextReads } from "../components/NextReads";
 import { pageReuse } from "../lib/page-reuse";
 import { breadcrumbLd, clipText, organizationLd, pageMeta, storyArticleLd, storyLd, storyTimes, titled } from "../lib/seo";
@@ -442,6 +443,8 @@ export default function StoryPage() {
               </p>
             )}
           </Panel>
+
+          <div className="order-4"><SubscribeCta source="story_inline" sticky sample={{ to: "/daily" }} /></div>
 
           {observed && (
             <Panel id={SECTIONS.heat} title={tx("本事件热度走势")} className="order-5">

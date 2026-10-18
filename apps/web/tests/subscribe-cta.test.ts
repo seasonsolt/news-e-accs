@@ -3,12 +3,13 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { after, before, test } from "node:test";
+import { chromium } from "@playwright/test";
 import { parseHTML } from "linkedom";
 import type { FeedItemSummary, ReportCitation, ReportDetail, ReportKind, SiteItemDetail } from "@aihot/contracts/site";
-import { subscribeErrorReason } from "@aihot/contracts/subscribe";
+import { subscribeErrorReason, subscribeSource, SUBSCRIBE_SOURCES } from "@aihot/contracts/subscribe";
 import { readFileSync } from "node:fs";
 import { claimSubscribeView } from "../app/features/subscribe/claim.ts";
-import { requestSubscribe } from "../app/features/subscribe/flow.ts";
+import { requestConfirm, requestSubscribe } from "../app/features/subscribe/flow.ts";
 import { startWebServer, type WebServer } from "./web-server.ts";
 
 const at = "2026-10-04T00:00:00.000Z";
@@ -39,9 +40,9 @@ test("every subscribe form posts the page locale", async () => {
   const cta = readFileSync(new URL("features/subscribe/SubscribeCta.tsx", root), "utf8");
   const home = readFileSync(new URL("routes/home.tsx", root), "utf8");
   assert.match(onboarding, /const locale = useLocale\(\)/);
-  assert.match(onboarding, /requestSubscribe\(email, locale\)/);
+  assert.match(onboarding, /requestSubscribe\(email, locale, source\)/);
   assert.match(cta, /const locale = useLocale\(\)/);
-  assert.match(cta, /requestSubscribe\(email, locale\)/);
+  assert.match(cta, /requestSubscribe\(email, locale, source\)/);
   assert.match(home, /<Link to="\/subscribe"/);
   assert.match(onboarding, /function finish\(dismiss: boolean\)/);
   assert.match(onboarding, /if \(dismiss\) recordSubscribe\("subscribe_dismiss"/);
@@ -59,14 +60,14 @@ test("every subscribe form posts the page locale", async () => {
     return new Response("{}", { status: 202 });
   };
   try {
-    assert.equal(await requestSubscribe("reader@example.com", "en"), null);
-    assert.equal(await requestSubscribe("reader@example.com", "zh"), null);
+    assert.equal(await requestSubscribe("reader@example.com", "en", "concept"), null);
+    assert.equal(await requestSubscribe("reader@example.com", "zh", "story_inline"), null);
   } finally {
     globalThis.fetch = original;
   }
   assert.deepEqual(bodies, [
-    { email: "reader@example.com", language: "en" },
-    { email: "reader@example.com", language: "zh" },
+    { email: "reader@example.com", language: "en", source: "concept" },
+    { email: "reader@example.com", language: "zh", source: "story_inline" },
   ]);
 });
 
@@ -84,6 +85,12 @@ const api = createServer((req, res) => {
   const url = new URL(req.url ?? "/", "http://local");
   res.setHeader("Content-Type", "application/json");
   const send = (value: unknown) => res.end(JSON.stringify(value));
+  if (url.pathname === "/api/site/stories/subscribe-story") return send({
+    publicId: "subscribe-story", title: "事件标题", status: "active", reportCount: 0, sourceCount: 0,
+    firstReportAt: at, latestAt: at, digest: "事件综述", digestUpdatedAt: null, summary: null, excerpt: null, latest: null,
+    whyHot: { participants48h: 0, newParticipants6h: 0, recentReports24h: 0, observationComplete: true, rank: null, heat: null },
+    developments: [], officialReports: [], timeline: [], heat: [], related: [], topics: [], latestReport: null,
+  });
   if (url.pathname === "/api/site/meta") return send({ changelogVersion: null });
   if (url.pathname === `/api/site/items/${item.id}`) return send(detail);
   if (url.pathname === "/api/site/next-reads") return send({ daily: { key: "2026-10-04", issueNumber: 12, title: "测试刊物", count: 2 }, hot: [] });
@@ -142,4 +149,80 @@ test("daily and item pages render the subscribe form after the piece, and weekly
 
   const weekly = await page("/weekly");
   assert.doesNotMatch(weekly.html, /data-subscribe-cta/);
+});
+
+
+test("confirmation only reports the backend's first transition with its source and language", async () => {
+  const original = globalThis.fetch;
+  const oldWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  Object.defineProperty(globalThis, "window", { value: {}, configurable: true });
+  const events: unknown[] = [];
+  let first = true;
+  globalThis.fetch = async (url, init) => {
+    if (url === "/api/site/events") {
+      events.push(JSON.parse(String(init?.body)));
+      return new Response(null, { status: 204 });
+    }
+    return Response.json({ ok: true, first, language: "zh", source: "concept" });
+  };
+  try {
+    await requestConfirm("token");
+    first = false;
+    await requestConfirm("token");
+    assert.deepEqual(events, [{ event: "subscribe_confirmed", target: "concept:zh" }]);
+  } finally {
+    globalThis.fetch = original;
+    if (oldWindow) Object.defineProperty(globalThis, "window", oldWindow);
+    else Reflect.deleteProperty(globalThis, "window");
+  }
+});
+
+test("concept subscription and latest sample keep the page language", async () => {
+  for (const prefix of ["", "/zh"]) {
+    const { html } = await page(`${prefix}/what-is-eacc`);
+    const { document } = parseHTML(html);
+    assert.ok(document.querySelector(`a[href="${prefix}/subscribe?from=concept"]`));
+    assert.ok(document.querySelector(`a[href="${prefix}/daily/2026-10-04"]`));
+  }
+});
+
+
+test("story pages offer the daily subscription after the timeline", async () => {
+  for (const prefix of ["", "/zh"]) {
+    const { html } = await page(`${prefix}/story/subscribe-story`);
+    const cta = ctaOf(html, "story_inline");
+    assert.equal(cta.querySelector("a")?.getAttribute("href"), `${prefix}/daily`);
+    assert.ok(html.includes('id="event-reports"'));
+    assert.ok(html.indexOf('id="event-reports"') < html.indexOf('data-subscribe-cta="story_inline"'));
+  }
+});
+
+test("confirmed page delivers the confirmed language's daily and tolerates a missing issue", async () => {
+  const browser = await chromium.launch({ channel: "chromium" });
+  try {
+    const tab = await browser.newPage();
+    let available = true;
+    const languages: string[] = [];
+    await tab.route("**/api/site/newsletter/confirm", (route) => route.fulfill({ json: { ok: true, first: false, language: "zh", source: "concept" } }));
+    await tab.route("**/api/site/reports/daily/latest-page?*", (route) => {
+      languages.push(new URL(route.request().url()).searchParams.get("lang")!);
+      return route.fulfill({ json: { report: available ? { ...report("daily"), highlights: Array.from({ length: 5 }, () => citation()) } : null, index: [] } });
+    });
+    // The letter links the confirmation page in the requested language (confirmUrl), so the page locale matches.
+    await tab.goto(`${web.origin}/zh/subscribe?token=test`);
+    await tab.locator('a[href="/zh/daily/2026-10-04"]').waitFor();
+    assert.equal(await tab.locator('[role="status"] li').count(), 3);
+    assert.equal(await tab.locator('[role="status"]').getByText("本期已验证的重要变化").count(), 1);
+    available = false;
+    await tab.reload();
+    await tab.locator('[role="status"] a[href="/zh/daily"]').waitFor();
+    assert.equal(await tab.locator('[role="status"] li').count(), 0);
+    assert.ok(languages.length >= 2 && languages.every((language) => language === "zh"));
+  } finally { await browser.close(); }
+});
+
+
+test("subscribe from parameters accept only the source whitelist", () => {
+  for (const source of SUBSCRIBE_SOURCES) assert.equal(subscribeSource(source), source);
+  for (const value of [null, undefined, "", "private@example.org", "CONCEPT", {}, ["concept"]]) assert.equal(subscribeSource(value), null);
 });

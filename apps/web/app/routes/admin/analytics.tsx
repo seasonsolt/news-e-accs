@@ -13,7 +13,8 @@ interface AnalyticsData {
   pages: Array<{ path: string; views: number }>;
   engagement: {
     totals: Array<{ event: string; count: number }>;
-    daily: Array<{ day: string; counts: Record<string, number> }>;
+    daily: Array<{ day: string; counts: Record<string, number | null> }>;
+    firstDays: Record<string, string | null>;
     firstStarDevices: number;
     topStarred: Array<{ id: string; title: string | null; net: number }>;
   };
@@ -31,7 +32,7 @@ const EVENT_LABELS: Record<string, string> = {
   subscribe_confirmed: "确认订阅",
   subscribe_dismiss: "跳过或关掉订阅",
   outbound_click: "打开原文",
-  share_click: "分享",
+  share_click: "分享（完成）",
   starred_export: "导出收藏",
   starred_import: "导入收藏",
 };
@@ -47,11 +48,14 @@ const SOURCE_LABELS: Record<SubscribeSource, string> = {
   item_inline: "单条页",
   chronicle_inline: "加速史",
   sticky_mobile: "手机底部条",
+  story_inline: "事件页",
+  concept: "概念页",
 };
 
 interface FunnelCount { event: string; source: string; locale: string; reason: string; count: number }
 interface SubscribeFunnel {
   days: number;
+  firstDays: Record<string, string | null>;
   daily: Array<{ day: string; counts: FunnelCount[] }>;
   totals: FunnelCount[];
 }
@@ -110,12 +114,13 @@ export default function AnalyticsAdmin({ loaderData }: Route.ComponentProps) {
       </div>
       <Card title={`近 ${d.days} 天互动趋势`}>
         <LineChart
+          missing="未采集"
           labels={d.engagement.daily.map((x) => x.day.slice(5))}
           series={d.engagement.totals.filter((row) => CHART_EVENTS.has(row.event)).map((row, i) => ({
             key: row.event,
             label: EVENT_LABELS[row.event] ?? row.event,
             color: EVENT_COLORS[i] ?? "var(--accent)",
-            values: d.engagement.daily.map((day) => day.counts[row.event] ?? 0),
+            values: d.engagement.daily.map((day) => day.counts[row.event] ?? null),
           }))}
           height={220}
         />
@@ -127,7 +132,8 @@ export default function AnalyticsAdmin({ loaderData }: Route.ComponentProps) {
           empty="所选时间范围内没有互动"
           columns={[
             { key: "event", label: "操作", render: (x) => EVENT_LABELS[x.event] ?? x.event },
-            { key: "count", label: "次数", align: "right", render: (x) => num(x.count) },
+            { key: "since", label: "采集起点", render: (x) => d.engagement.firstDays[x.event] ? `自 ${d.engagement.firstDays[x.event]} 起有数据` : "未采集" },
+            { key: "count", label: "次数", align: "right", render: (x) => d.engagement.firstDays[x.event] ? num(x.count) : "未采集" },
           ]}
         />
       </Card>
@@ -162,6 +168,7 @@ function FunnelCard({ funnel }: { funnel: SubscribeFunnel }) {
   return (
     <>
       <h2 className="mb-3 mt-8 text-[15px] font-semibold text-ink">订阅漏斗</h2>
+      <p className="mb-3 text-xs text-ink-4">{SUBSCRIBE_FUNNEL_EVENTS.map((event) => `${EVENT_LABELS[event]}：${funnel.firstDays[event] ? `自 ${funnel.firstDays[event]} 起有数据` : "未采集"}`).join("；")}。更早日期为未采集。</p>
       <Card title={`近 ${funnel.days} 天，按入口和语言`} pad={false}>
         <p className="px-4 pt-3 text-[12.5px] leading-relaxed text-ink-4">只累计次数。失败原因是类别（例如当天确认信上限 cap，或服务暂不可用 503），不含邮箱。按天的明细在 GET /api/admin/analytics/subscribe。</p>
         <DataTable
@@ -175,7 +182,7 @@ function FunnelCard({ funnel }: { funnel: SubscribeFunnel }) {
               key: event,
               label: EVENT_LABELS[event] ?? event,
               align: "right" as const,
-              render: (row: FunnelRow) => num(row.counts[event] ?? 0),
+              render: (row: FunnelRow) => funnel.firstDays[event] && funnel.firstDays[event]! <= (funnel.daily.at(-1)?.day ?? "") ? num(row.counts[event] ?? 0) : "未采集",
             })),
           ]}
         />

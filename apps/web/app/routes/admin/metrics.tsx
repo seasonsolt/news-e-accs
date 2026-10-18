@@ -15,6 +15,7 @@ interface WeeklyReading {
   subscribers: number;
   signups: number;
   confirmations: number;
+  confirmationsBySource: Array<{ source: string | null; count: number }>;
   search: { clicks: number; impressions: number; inspected: number; indexed: number; sections: Record<string, SectionReading> } | null;
 }
 interface MetricsData { weeks: number; rows: WeeklyReading[]; searchConsole: { enabled: boolean } }
@@ -77,6 +78,7 @@ export default function MetricsAdmin({ loaderData: d }: Route.ComponentProps) {
             ...shown.map((s) => ({ key: `s-${s}`, label: label(s), align: "right" as const, render: (r: WeeklyReading) => num(r.sections[s] ?? 0) })),
             { key: "other", label: "其他", align: "right", render: (r) => num(Object.entries(r.sections).filter(([s]) => !shown.includes(s)).reduce((n, [, v]) => n + v, 0)) },
             { key: "subscribers", label: "订阅", align: "right", className: "whitespace-nowrap", render: (r) => <span title={`新登记 ${r.signups}，新确认 ${r.confirmations}`}>{num(r.subscribers)}{r.confirmations ? <span className="text-ink-3"> +{r.confirmations}</span> : null}</span> },
+            { key: "sources", label: "首次确认来源", render: (r) => r.confirmationsBySource.map((s) => `${s.source ?? "未知"} ${s.count}`).join("；") || "—" },
             { key: "impressions", label: "展示", align: "right", render: (r) => (r.search ? num(r.search.impressions) : "—") },
             { key: "clicks", label: "点击", align: "right", render: (r) => (r.search ? num(r.search.clicks) : "—") },
             { key: "indexed", label: "收录", align: "right", className: "whitespace-nowrap", render: (r) => (r.search ? `${num(r.search.indexed)} / ${num(r.search.inspected)}` : "—") },
