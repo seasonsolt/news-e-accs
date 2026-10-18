@@ -12,6 +12,7 @@ import type { ServerBuild } from "react-router";
 import { isApiOwned, resolveRedirect } from "@aihot/contracts/http-policy";
 import { BROWSER_MAX_SECONDS } from "./app/lib/api.server.ts";
 import { proxyToApi } from "./app/lib/api-proxy.server.ts";
+import { compressResponse } from "./app/lib/compress.server.ts";
 import { logError } from "./app/lib/errors.server.ts";
 import { serverTiming, withTiming } from "./app/lib/timing.server.ts";
 
@@ -202,6 +203,7 @@ async function handle(req: import("node:http").IncomingMessage, res: import("nod
   const pathname = qi >= 0 ? raw.slice(0, qi) : raw;
   const search = qi >= 0 ? raw.slice(qi) : "";
   const edge = fromEdge(req);
+  compressResponse(req, res);
   const host = String(req.headers.host ?? "").split(":")[0]!.toLowerCase();
   if (!edge && PUBLIC_ORIGIN && LEGACY_HOSTS.has(host)) {
     res.writeHead(301, { Location: `${PUBLIC_ORIGIN}${LEGACY_PATHS[pathname] ?? pathname}${search}`, "Cache-Control": "public, max-age=86400" });
