@@ -8,7 +8,7 @@ import { ACCESS, EDITION_TIMES, POLICY, SITE } from "@aihot/site";
 import { siteUrl } from "./links.ts";
 import { sql } from "../db.ts";
 import { serverModules, type LlmsLines } from "../modules.ts";
-import { topicGroups, TOPICS, topicPageCounts } from "./topics.ts";
+import { topicGroups, TOPICS, topicDiscovery } from "./topics.ts";
 
 /**
  * Discovery only needs to know whether an entry exists, not count its entire history, and which topics are
@@ -20,7 +20,7 @@ export async function loadLlmsAvailability() {
       SELECT EXISTS (SELECT 1 FROM reports WHERE kind = 'daily') AS "hasDailies",
              EXISTS (SELECT 1 FROM reports WHERE kind = 'weekly') AS "hasWeekly",
              EXISTS (SELECT 1 FROM reports WHERE kind = 'monthly') AS "hasMonthly"`,
-    topicPageCounts(new Date()),
+    topicDiscovery(new Date()),
     Promise.all(serverModules().map(async (m) => (await m.llms?.()) ?? {})),
   ]);
   const indexed = new Set(counts.filter((c) => c.indexable).map((c) => c.slug));

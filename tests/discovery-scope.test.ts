@@ -4,7 +4,7 @@ import { tag } from "./setup.ts";
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
 import { sql, closeDb } from "@aihot/backend/db";
-import { topicPageCounts } from "@aihot/backend/publication/topics";
+import { topicDiscovery } from "@aihot/backend/publication/topics";
 import { loadLlmsAvailability } from "@aihot/backend/publication/llms";
 import { randomUUID } from "node:crypto";
 import { buildApp } from "../apps/api/src/app.ts";
@@ -22,7 +22,7 @@ test("llms and sitemap build from current topic scope rather than a cached direc
     await sql`INSERT INTO publications (article_id,source_id,title,summary,url,timeline_at,discovered_at,sort_at,selected,eligible,visible_after,tags,channel,category)
       VALUES (${id},${source},'MiniMax 发布模型','Summary',${`https://example.org/${id}`},now(),now(),now(),true,true,now() - interval '1 minute',ARRAY['entity:minimax'],'news','ai-models')`;
   }
-  assert.equal((await topicPageCounts()).find((topic) => topic.slug === "minimax")!.indexable, true);
+  assert.equal((await topicDiscovery()).find((topic) => topic.slug === "minimax")!.indexable, true);
   const listed = (await loadLlmsAvailability()).topics.find((topic) => topic.slug === "minimax");
   assert.ok(listed && !/\p{Script=Han}/u.test(listed.name + listed.definition), "llms.txt describes topics in English");
   await sql`UPDATE publications SET visibility = 'withdrawn' WHERE source_id = ${source}`;

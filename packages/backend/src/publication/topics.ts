@@ -287,16 +287,15 @@ export async function listTopicSummaries(lang: Lang = "zh"): Promise<TopicsRespo
   return { groups: topicGroups(lang), topics: TOPICS.map((t) => summarize(t, index.bySlug.get(t.slug)!, index.at, brands, live, lang)) };
 }
 
-export interface TopicCount {
+export interface TopicDiscovery {
   slug: string;
-  pages: number;
   indexable: boolean;
   /** Content identity includes removed reports and module contributions, not just the latest arrival. */
   revision?: string;
 }
 
-/** For discovery: every topic's pages and their current content identity. */
-export async function topicPageCounts(now?: Date, revisions = false): Promise<TopicCount[]> {
+/** For discovery: whether each topic's first page is indexable, and its current content identity. */
+export async function topicDiscovery(now?: Date, revisions = false): Promise<TopicDiscovery[]> {
   const index = await topicIndex(now);
   const brands = revisions ? await companyBrands() : null;
   return TOPICS.map((t) => {
@@ -312,7 +311,6 @@ export async function topicPageCounts(now?: Date, revisions = false): Promise<To
     }
     return {
       slug: t.slug,
-      pages: Math.max(1, Math.ceil(seats.length / TOPIC_PAGE_SIZE)),
       indexable: isIndexable(seats.length, recentCount(seats, index.at)),
       ...(revision ? { revision } : {}),
     };

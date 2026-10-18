@@ -15,7 +15,7 @@ import { cached, SHARED_ONLY } from "../lib/cache.ts";
 import { escapeXml } from "../lib/text.ts";
 import { siteUrl } from "./links.ts";
 import { evidenceCondition, listedCondition, selectedCondition, storyReportCondition } from "./scope.ts";
-import { topicPageCounts } from "./topics.ts";
+import { topicDiscovery } from "./topics.ts";
 import { serverModules, type SitemapEntry } from "../modules.ts";
 
 const MAX_URLS = 45_000;
@@ -39,7 +39,7 @@ const MAX_NEWS = 1000;
  */
 const CHINESE_PAGES = new Set(["/", "/all", "/hot", "/topics", "/agent", "/about", "/changelog", "/chronicle", "/what-is-eacc", "/eacc-vs-dacc", "/eacc-glossary"]);
 function hasChineseMirror(loc: string): boolean {
-  return CHINESE_PAGES.has(loc) || /^\/topics\/[^/]+(?:\/page\/\d+)?$/.test(loc)
+  return CHINESE_PAGES.has(loc) || /^\/topics\/[^/]+$/.test(loc)
     || MODULES.some((m) => m.localizedPaths?.some((pattern) => pattern.test(loc)));
 }
 
@@ -68,7 +68,7 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
         SELECT value #>> '{}' FROM jsonb_path_query(r.content, '$.**.itemId') AS cited(value))
     ) citations ON true ORDER BY r.kind, r.key DESC`;
   const reportRevision = (kind: string) => sha256(stableJson(reports.filter((r) => r.kind === kind)));
-  const topics = await topicPageCounts(at, !limits);
+  const topics = await topicDiscovery(at, !limits);
   entries.push(
     { loc: "/", revision: activity?.selected ?? "", changefreq: "hourly", priority: 1 },
     { loc: "/all", revision: activity?.listed ?? "", changefreq: "hourly", priority: 0.9 },
@@ -89,11 +89,9 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
   if (FEATURES.timeMachine) entries.push({ loc: "/chronicle", changefreq: "weekly", priority: 0.5 });
   if (FEATURES.eaccConcepts) for (const loc of ["/what-is-eacc", "/eacc-vs-dacc", "/eacc-glossary"]) entries.push({ loc, changefreq: "monthly", priority: 0.7 });
   for (const r of reports) entries.push({ loc: `/${r.kind}/${r.key}`, lastmod: r.t, revision: r.revision, changefreq: "monthly", priority: 0.6 });
-  for (const t of topics) {
-    if (!t.indexable) continue;
-    entries.push({ loc: `/topics/${t.slug}`, revision: t.revision, changefreq: "daily", priority: 0.6 });
-    for (let p = 2; p <= t.pages; p++) entries.push({ loc: `/topics/${t.slug}/page/${p}`, revision: t.revision, changefreq: "weekly", priority: 0.3 });
-  }
+  // Later topic pages stay indexable and linked from the first one; discovery lists only that first
+  // page, so the inventory does not grow with every twenty reports.
+  for (const t of topics) if (t.indexable) entries.push({ loc: `/topics/${t.slug}`, revision: t.revision, changefreq: "daily", priority: 0.6 });
   // A story needs listed evidence of its own. Its identity follows current readable reports as well
   // as the digest, so a correction or regrouping is visible even when latest_at does not advance.
   const stories = await sql<{ public_id: string; revision: string; title: string; editorial_language: string; created_at: Date }[]>`

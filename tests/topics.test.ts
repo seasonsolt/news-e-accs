@@ -9,6 +9,7 @@
 // - withdrawn or not yet released articles appear in a list or a count;
 // - an article or story page names a topic its reports do not belong to;
 // - a topic without content has no page, or an unknown slug or a page past the end has one;
+// - discovery lists a topic's later pages, so the sitemap grows with every twenty reports;
 // - the English edition names topics, their groups or the topic chips of a page in Chinese.
 import { tag } from "./setup.ts";
 import assert from "node:assert/strict";
@@ -19,6 +20,7 @@ import { upsertMaterial } from "@aihot/backend/content/materials";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { publishArticle } from "@aihot/backend/publication/publish";
 import { TOPICS, loadTopicPage, listTopicSummaries, topicsOfStory } from "@aihot/backend/publication/topics";
+import { loadDiscoveryEntries } from "@aihot/backend/publication/sitemap";
 import { buildApp } from "../apps/api/src/app.ts";
 
 const T = tag();
@@ -153,6 +155,16 @@ test("every topic has a page; unknown topics and pages past the end have none", 
   const body = JSON.parse(index.body) as { groups: Array<{ key: string }>; topics: Array<{ slug: string }> };
   assert.deepEqual(body.groups.map((g) => g.key), ["company", "field", "genre"]);
   assert.deepEqual(body.topics.map((t) => t.slug).sort(), TOPICS.map((t) => t.slug).sort(), "the index lists every topic");
+});
+
+test("discovery lists a topic's first page only; later pages still exist", async () => {
+  for (let i = 0; i < 25; i++) await report({ at: hoursAgo(2 + i), title: `DeepSeek 更新 ${i} ${T}`, subjects: ["deepseek"] });
+  const first = await page("deepseek");
+  assert.ok(first.topic.indexable && first.pageCount >= 2, "an indexable topic with a second page");
+  assert.ok((await page("deepseek", 2)).items.length > 0);
+  const locs = (await loadDiscoveryEntries(new Date())).map((e) => e.loc);
+  for (const loc of ["/topics/deepseek", "/zh/topics/deepseek"]) assert.ok(locs.includes(loc), loc);
+  assert.deepEqual(locs.filter((loc) => /^(\/zh)?\/topics\/[^/]+\/page\//.test(loc)), []);
 });
 
 test("the English edition names topics in English everywhere a reader sees them", async () => {
