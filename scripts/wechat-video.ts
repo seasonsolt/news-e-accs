@@ -1,4 +1,4 @@
-// Cuts the 视频号 video of a day's 「AI 早报」 on the editor's Mac: reads the script written and edited in
+// Cuts the 视频号 video of a day's 「AI 早报」 on the editor's machine: reads the script written and edited in
 // the 公众号 workbench (newsletter/wechat-video.ts) from the site, speaks it with VoxCPM2 on this machine
 // (scripts/wechat-video-tts.py), finds when each word is said (scripts/wechat-video-listen.py), animates
 // the lead, the quick hits, the last word and the subtitles with HyperFrames (scripts/wechat-video-composition.ts), lays the voice over a
@@ -6,11 +6,13 @@
 // caption to paste into 视频号 and a cover. 视频号 has no upload API: the editor uploads the mp4 in 视频号助手
 // (channels.weixin.qq.com) or on the phone.
 //
-//   npm run wechat-video -- [YYYY-MM-DD] [--base https://e-acc.ai] [--out <folder>]
+//   npm run wechat-video -- [YYYY-MM-DD] [--base https://e-acc.ai] [--out <folder>] [--on <ssh host>]
 //
 // Needs ffmpeg (with libx264) on PATH, network for `npx hyperframes` and its Chrome on the first run,
-// WECHAT_VIDEO_TOKEN (the server's value), and a venv with mlx-audio (VOXCPM_PYTHON) holding VoxCPM2,
-// Qwen3-ForcedAligner and Qwen3-ASR. The voice is VOICE_DESCRIPTION in words, or a recording
+// WECHAT_VIDEO_TOKEN (the server's value), and a venv (VOXCPM_PYTHON) holding VoxCPM2, Qwen3-ForcedAligner
+// and Qwen3-ASR: with mlx-audio on Apple silicon, with the voxcpm and qwen-asr packages on an NVIDIA GPU.
+// `--on` (or WECHAT_VIDEO_HOST) cuts it on another machine set up the same way, with a checkout of this
+// repository at WECHAT_VIDEO_HOST_DIR, and brings the video back here. The voice is VOICE_DESCRIPTION in words, or a recording
 // VOICE_REF_AUDIO (with VOICE_REF_TEXT, its transcript) of someone who agreed to have their voice used;
 // VOICE_TEMPO speeds it up (or slows it down) without changing its pitch.
 import { execFile, spawn } from "node:child_process";
@@ -37,14 +39,18 @@ const base = (arg("--base") ?? process.env.WECHAT_VIDEO_BASE_URL ?? SITE.default
 const out = expand(arg("--out") ?? path.join("~/Movies/e-acc-daily", date));
 const token = process.env.WECHAT_VIDEO_TOKEN;
 const python = expand(process.env.VOXCPM_PYTHON ?? "~/.local/share/voxcpm2-mlx/venv/bin/python");
+/** Apple silicon runs the mlx-community conversions of the models; elsewhere, an NVIDIA GPU runs the originals. */
+const MLX = process.platform === "darwin";
 const voice = {
-  model: process.env.VOXCPM_MODEL ?? "mlx-community/VoxCPM2-bf16",
+  model: process.env.VOXCPM_MODEL ?? (MLX ? "mlx-community/VoxCPM2-bf16" : "openbmb/VoxCPM2"),
   timesteps: Number(process.env.VOXCPM_TIMESTEPS) || 10,
   instruct: process.env.VOICE_DESCRIPTION ?? "沉稳清晰的普通话男声，语速适中，新闻播报风格",
   refAudio: process.env.VOICE_REF_AUDIO ? expand(process.env.VOICE_REF_AUDIO) : null,
   refText: process.env.VOICE_REF_TEXT ?? null,
 };
-const LISTEN = { aligner: "mlx-community/Qwen3-ForcedAligner-0.6B-8bit", asr: "mlx-community/Qwen3-ASR-1.7B-8bit" };
+const LISTEN = MLX
+  ? { aligner: "mlx-community/Qwen3-ForcedAligner-0.6B-8bit", asr: "mlx-community/Qwen3-ASR-1.7B-8bit" }
+  : { aligner: "Qwen/Qwen3-ForcedAligner-0.6B", asr: "Qwen/Qwen3-ASR-1.7B" };
 /** How many more times a line the hearing check got wrong is spoken. */
 const RESPEAK = 2;
 /** A cloned voice also copies the pace of its recording; ffmpeg's atempo keeps the pitch. */
@@ -209,7 +215,34 @@ export function misheard(text: string, heard: string): string[] {
   return problems;
 }
 
+/**
+ * Cuts the video on `host` over ssh, with that machine's checkout brought to origin/main and its own .env,
+ * and copies what it made (not its working files) into `out`.
+ */
+async function onHost(host: string) {
+  const dir = process.env.WECHAT_VIDEO_HOST_DIR ?? "news-e-accs";
+  const there = `Movies/e-acc-daily/${date}`;
+  console.log(`在 ${host} 上合成（${dir}）`);
+  const remote = `cd ${dir} && git pull -q --ff-only && npm run -s wechat-video -- ${date} --base ${base} --out ~/${there}`;
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn("ssh", ["-x", host, `bash -lc ${JSON.stringify(remote)}`], { stdio: ["ignore", "inherit", "inherit"] });
+    child.on("error", reject);
+    child.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`${host} 上合成失败（${code}）`))));
+  });
+  await mkdir(out, { recursive: true });
+  await new Promise<void>((resolve, reject) => {
+    const pack = spawn("ssh", ["-x", host, `tar -C ${there} --exclude voice -cf - .`], { stdio: ["ignore", "pipe", "inherit"] });
+    const unpack = spawn("tar", ["-C", out, "-xf", "-"], { stdio: ["pipe", "inherit", "inherit"] });
+    pack.stdout.pipe(unpack.stdin);
+    unpack.on("error", reject);
+    unpack.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`从 ${host} 取回视频失败（${code}）`))));
+  });
+  console.log(`\n已取回：${out}`);
+}
+
 async function main() {
+  const host = arg("--on") ?? process.env.WECHAT_VIDEO_HOST;
+  if (host) return onHost(host);
   if (!token) fail("没有 WECHAT_VIDEO_TOKEN：写进 .env，值和服务器上的一样。");
   console.log(`读取 ${date} 的口播稿（${base}）`);
   const res = await get(`/api/wechat-video/${date}`);

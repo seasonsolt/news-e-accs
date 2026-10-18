@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Speaks the lines of a 视频号 「AI 早报」 video with VoxCPM2 on Apple silicon (mlx-audio).
+"""Speaks the lines of a 视频号 「AI 早报」 video with VoxCPM2: on Apple silicon with mlx-audio (an
+mlx-community model), on an NVIDIA GPU with the voxcpm package (openbmb/VoxCPM2).
 
-Run by scripts/wechat-video.ts with the Python of a venv that has mlx-audio and soundfile; it loads the
+Run by scripts/wechat-video.ts with the Python of a venv that has one of them and soundfile; it loads the
 model once and speaks every line. Reads one JSON request on stdin:
 
   {"model": "mlx-community/VoxCPM2-bf16", "timesteps": 10,
@@ -24,8 +25,20 @@ def main() -> None:
     sys.stdout = sys.stderr
     request = json.load(sys.stdin)
 
-    import numpy as np
     import soundfile as sf
+
+    speak, sample_rate = (mlx if request["model"].startswith("mlx-community/") else cuda)(request)
+    for line in request["lines"]:
+        audio = speak(line["text"])
+        if audio.size == 0:
+            raise RuntimeError(f"no audio for: {line['text'][:40]}")
+        sf.write(line["out"], audio, sample_rate)
+        print(json.dumps({"out": line["out"], "seconds": audio.size / sample_rate}), file=protocol, flush=True)
+    print(json.dumps({"done": True}), file=protocol, flush=True)
+
+
+def mlx(request: dict):
+    import numpy as np
     from mlx_audio.tts.utils import load_model
 
     model = load_model(request["model"])
@@ -39,14 +52,30 @@ def main() -> None:
     elif request.get("instruct"):
         voice["instruct"] = request["instruct"]
 
-    for line in request["lines"]:
-        chunks = [np.array(r.audio) for r in model.generate(text=line["text"], **voice)]
-        audio = np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.float32)
-        if audio.size == 0:
-            raise RuntimeError(f"no audio for: {line['text'][:40]}")
-        sf.write(line["out"], audio, model.sample_rate)
-        print(json.dumps({"out": line["out"], "seconds": audio.size / model.sample_rate}), file=protocol, flush=True)
-    print(json.dumps({"done": True}), file=protocol, flush=True)
+    def speak(text: str):
+        chunks = [np.array(r.audio) for r in model.generate(text=text, **voice)]
+        return np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.float32)
+
+    return speak, model.sample_rate
+
+
+def cuda(request: dict):
+    import os
+
+    from voxcpm import VoxCPM
+
+    model = VoxCPM.from_pretrained(request["model"], load_denoiser=False, local_files_only=os.environ.get("HF_HUB_OFFLINE") == "1")
+    voice: dict = {"inference_timesteps": int(request.get("timesteps") or 10)}
+    instruct = ""
+    if request.get("refAudio"):
+        voice["reference_wav_path"] = request["refAudio"]
+        if request.get("refText"):
+            voice["prompt_wav_path"] = request["refAudio"]
+            voice["prompt_text"] = request["refText"]
+    elif request.get("instruct"):
+        # The voxcpm package takes the voice's description in brackets before the text.
+        instruct = f"({request['instruct']})"
+    return (lambda text: model.generate(text=instruct + text, **voice)), model.tts_model.sample_rate
 
 
 if __name__ == "__main__":

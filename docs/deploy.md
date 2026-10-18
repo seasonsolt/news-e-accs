@@ -390,12 +390,14 @@ v1 默认目标语言仍为中文；英文主稿缺少有效中文 edition 时�
 
 ### 视频号视频
 
-视频号没有发布视频的接口，服务器上也没有配音模型，所以分两步：服务器上的 worker 写口播稿，编辑的 Mac 合成视频，编辑再手动发表。
+视频号没有发布视频的接口，服务器上也没有配音模型，所以分两步：服务器上的 worker 写口播稿，编辑的电脑合成视频，编辑再手动发表。合成可以在 Apple 芯片的 Mac 上跑（mlx-audio），也可以在带 NVIDIA 显卡的 Linux 机器上跑（voxcpm 和 qwen-asr 两个包，8 GB 显存够用），脚本按系统选模型。
 
 1. 服务器 `.env` 里设 `WECHAT_VIDEO_TOKEN`（至少 16 个字符的随机串，比如 `openssl rand -hex 24`），重启 api。
 2. Mac 上装好 ffmpeg（带 libx264）、Node.js，和一个装了 mlx-audio 与 soundfile 的 Python venv。第一次运行前，用 venv 里的 `hf download <模型>` 把三个模型下载好：配音 `mlx-community/VoxCPM2-bf16`，对字幕 `mlx-community/Qwen3-ForcedAligner-0.6B-8bit`，听写自检 `mlx-community/Qwen3-ASR-1.7B-8bit`（运行时不联网取模型）。画面用 `npx hyperframes@0.8.162` 渲染，第一次运行会下载它和一个 Chrome，脚本已关掉它的匿名统计。
-3. 在 Mac 上仓库目录的 `.env` 里写同一个 `WECHAT_VIDEO_TOKEN`；venv 不在 `~/.local/share/voxcpm2-mlx/venv` 时设 `VOXCPM_PYTHON=<venv 里 python 的路径>`。
-4. 在工作台“视频号”一栏生成并改好口播稿。重点自动取这一期里热榜排名最高的那条（热榜上一条都没有时，取工作台里排在最前的），其余按工作台的顺序。然后在 Mac 上运行 `npm run wechat-video -- <日期>`。三四分钟后，`~/Movies/e-acc-daily/<日期>/` 里会有 mp4（1080×1920，一分钟出头）、视频号描述 `caption.txt`、封面 `cover.png`、每张卡片的缩略图 `contact-sheet.jpg` 和自检结果 `check.txt`。
+   用 NVIDIA 显卡的 Linux 机器时，venv 里装 `voxcpm`、`qwen-asr`、soundfile 和 scipy（带 CUDA 的 PyTorch），模型换成原版：`openbmb/VoxCPM2`、`Qwen/Qwen3-ForcedAligner-0.6B`、`Qwen/Qwen3-ASR-1.7B`。
+3. 在合成用的机器上仓库目录的 `.env` 里写同一个 `WECHAT_VIDEO_TOKEN`；venv 不在 `~/.local/share/voxcpm2-mlx/venv` 时设 `VOXCPM_PYTHON=<venv 里 python 的路径>`；用参考录音时把录音也放到那台机器上。
+   合成放在另一台机器上、在 Mac 上发起时，那台机器按上面装好、仓库克隆好（git 能拉 origin），Mac 的 `.env` 设 `WECHAT_VIDEO_HOST=<ssh 主机名>`（仓库不在它主目录的 `news-e-accs` 时再设 `WECHAT_VIDEO_HOST_DIR`），或者每次加 `--on <ssh 主机名>`：脚本在那台机器上把仓库更新到 origin/main、用它自己的 `.env` 合成，再把成片拷回 Mac 的输出目录（配音的中间文件不拷）。
+4. 在工作台“视频号”一栏生成并改好口播稿。重点自动取这一期里热榜排名最高的那条（热榜上一条都没有时，取工作台里排在最前的），其余按工作台的顺序。然后运行 `npm run wechat-video -- <日期>`。三四分钟后，`~/Movies/e-acc-daily/<日期>/` 里会有 mp4（1080×1920，一分钟出头）、视频号描述 `caption.txt`、封面 `cover.png`、每张卡片的缩略图 `contact-sheet.jpg` 和自检结果 `check.txt`。
 5. 看一眼自检：配音把名字念错了（比如把一个英文名念成别的词），或者某段听写出来和稿子对不上，脚本会先把这段重配，最多再配两次，留下听写最准的一次；还不对的列在 `check.txt` 和终端里。在工作台把那段改成好念的说法（国内公司用中文名），再合成一次。
 6. 在视频号助手（channels.weixin.qq.com）或手机上上传 mp4，粘贴描述。
 
