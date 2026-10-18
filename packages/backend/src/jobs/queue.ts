@@ -14,6 +14,8 @@ let boss: PgBoss | null = null;
 let starting: Promise<PgBoss> | null = null;
 
 export interface JobData {
+  "media.render": { requestJson: string; deadline: number };
+  "media.image": JobData["media.render"];
   "content.analyze": { articleId: string; attemptTag?: string };
   "content.extract-body": { articleId: string };
   "events.group": { articleId: string; signalOnly?: boolean };
@@ -21,7 +23,7 @@ export interface JobData {
   "sources.fetch": { sourceId: string; force?: boolean };
   "sources.fetch-x": { key: string; sourceIds: string[] };
   "sources.mp": { sourceId: string; reason?: "schedule" | "manual" };
-  "notify.selected": { articleId: string; attempt?: number };
+  "notify.selected": { articleId: string; attempt?: number; warmAttempt?: number };
   "publication.republish-source": { sourceId: string };
   "media.prepare": { articleId: string } | { url: string; mode: string };
   "wechat.illustrate": { date: string; entry: string; request: string; subject: string; mode: "find" | "draw"; kept: string | null };
@@ -30,6 +32,8 @@ export interface JobData {
 export type QueueName = keyof JobData;
 
 export const QUEUES = {
+  renderMedia: "media.render",
+  prepareImage: "media.image",
   analyze: "content.analyze",
   extractBody: "content.extract-body",
   group: "events.group",
@@ -48,6 +52,8 @@ export type QueueOptions = NonNullable<Parameters<PgBoss["createQueue"]>[1]>;
 
 /** Queue definitions in one place; created on first use by any process. */
 const QUEUE_OPTIONS: Record<QueueName, QueueOptions> = {
+  [QUEUES.prepareImage]: { policy: "short", retryLimit: 0, expireInSeconds: 30, retentionSeconds: 60, deleteAfterSeconds: 60 },
+  [QUEUES.renderMedia]: { policy: "short", retryLimit: 0, expireInSeconds: 30, retentionSeconds: 60, deleteAfterSeconds: 60 },
   [QUEUES.analyze]: { policy: "short", retryLimit: 4, retryDelay: 30, retryBackoff: true, expireInSeconds: 600 },
   [QUEUES.extractBody]: { policy: "short", retryLimit: 2, retryDelay: 120, expireInSeconds: 300 },
   [QUEUES.group]: { policy: "short", retryLimit: 4, retryDelay: 20, retryBackoff: true, expireInSeconds: 600 },

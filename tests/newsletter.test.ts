@@ -8,7 +8,7 @@ import { after, before, test } from "node:test";
 import { beijingDate, addDays } from "@aihot/contracts/time";
 import { config } from "@aihot/backend/config";
 import { closeDb, sql } from "@aihot/backend/db";
-import { stopBoss } from "@aihot/backend/jobs/queue";
+import { getBoss, stopBoss } from "@aihot/backend/jobs/queue";
 import { newsletterOverview } from "@aihot/backend/admin/newsletter";
 import { confirm, NewsletterRejected, subscribe, subscribeLanguage } from "@aihot/backend/newsletter/subscribe";
 import { loadReport } from "@aihot/backend/publication/reports";
@@ -104,6 +104,7 @@ const since = () => hits.length;
 const tokenOf = async () => (await sql<{ token: string }[]>`SELECT token FROM newsletter_subscribers WHERE email = ${EMAIL.toLowerCase()}`)[0]!.token;
 
 before(async () => {
+  await (await import("@aihot/backend/jobs/media")).registerMediaJobs(await getBoss());
   await sql`DELETE FROM newsletter_sends WHERE report_key = ${TODAY}`;
   await sql`DELETE FROM newsletter_language_sends WHERE report_key = ${TODAY}`;
   await sql`DELETE FROM reports WHERE kind = 'daily' AND key = ${TODAY}`;

@@ -4,12 +4,12 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { beijingDate } from "@aihot/contracts/time";
 import { localizePublication } from "@aihot/backend/publication/content-language";
 import { distributionCategory, distributionLanguage, editionPath, editionReady, type DistributionLanguage } from "@aihot/backend/publication/distribution";
-import { loadItemOgCard, loadItemShare } from "@aihot/backend/publication/og";
+import { loadItemOgCard, loadItemShare, loadStoryOgCard } from "@aihot/backend/publication/og";
 import { loadReport, type ReportKind } from "@aihot/backend/publication/reports";
 import { findTopic, TOPIC_GROUPS, TOPICS, topicText } from "@aihot/backend/publication/topics";
-import { loadStoryDetail, resolveStory } from "@aihot/backend/publication/stories";
-import { ogEtag, renderOg, type OgCard } from "@aihot/backend/media/og";
-import { posterEtag, renderPoster, type Poster } from "@aihot/backend/media/poster";
+import { resolveStory } from "@aihot/backend/publication/stories";
+import { ogEtag, posterEtag, type OgCard, type Poster } from "@aihot/backend/media/cards";
+import { requestOg, requestPoster } from "@aihot/backend/media/request";
 import { CARDS, ITEM_COPY, REPORTS, SITE, subjectAfter, withSubject } from "@aihot/site";
 import { config } from "@aihot/backend/config";
 
@@ -58,7 +58,7 @@ async function send(req: FastifyRequest, reply: FastifyReply, card: OgCard, maxA
   const tag = `"og-${ogEtag(card)}"`;
   reply.header("ETag", tag).header("Cache-Control", cacheControl);
   if (String(req.headers["if-none-match"] ?? "").split(",").some((t) => t.trim().replace(/^W\//, "") === tag)) return reply.code(304).send();
-  return reply.type("image/png").send((await renderOg(card)).png);
+  return reply.type("image/png").send(await requestOg(card));
 }
 
 function notFound(reply: FastifyReply) {
@@ -104,7 +104,7 @@ export function registerOg(app: FastifyInstance) {
     const tag = `"poster-${posterEtag(poster)}"`;
     reply.header("ETag", tag).header("Cache-Control", CONTENT_IMAGE_CACHE);
     if (String(req.headers["if-none-match"] ?? "").split(",").some((t) => t.trim().replace(/^W\//, "") === tag)) return reply.code(304).send();
-    return reply.type("image/png").send((await renderPoster(poster)).png);
+    return reply.type("image/png").send(await requestPoster(poster));
   }));
 
   app.get("/og/reports/:kind/:file", languageHandler(async (req, reply, lang) => {
@@ -136,15 +136,8 @@ export function registerOg(app: FastifyInstance) {
     if (!file.endsWith(".png")) return notFound(reply);
     const found = await resolveStory(file.slice(0, -4));
     if (found.kind !== "found") return notFound(reply);
-    const source = await loadStoryDetail(found.storyId);
-    const s = source ? await localizePublication(source, lang) : null;
-    if (!s || !editionReady(s, lang)) return notFound(reply);
-    return send(req, reply, {
-      kicker: lang === "en" ? (s.whyHot.rank ? `Hot topic #${s.whyHot.rank}` : "Story") : (s.whyHot.rank ? `热点第 ${s.whyHot.rank} · 事件` : "事件"),
-      title: s.title,
-      subtitle: s.latest ?? s.digest,
-      meta: lang === "en" ? `${s.sourceCount} sources · ${s.reportCount} reports` : `${s.sourceCount} 个来源 · ${s.reportCount} 篇报道`,
-      accent: s.whyHot.rank ? "hot" : "teal",
-    }, 3600, CONTENT_IMAGE_CACHE);
+    const card = await loadStoryOgCard(found.storyId, lang);
+    if (!card) return notFound(reply);
+    return send(req, reply, card, 3600, CONTENT_IMAGE_CACHE);
   }));
 }

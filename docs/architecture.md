@@ -37,6 +37,8 @@ flowchart LR
 
 这些模块边界由 `tests/architecture.test.ts` 检查；调整边界时同时更新约定与检查。站点身份和每一步的模型从 `site/` 读，行业分类和提示词从 `industry/` 读，代码里不写死某个站的值。
 
+公开图片、分享图、手机海报和公众号封面的冷计算通过 `media.image` / `media.render` 交给 worker，API 只校验公开范围/签名或管理员权限、提交有界任务并读共享缓存；不允许在公开媒体请求失败时回到 API 渲染。缓存身份/读取在 `media/cards.ts`、`media/cache.ts`，API 请求协调在 `media/request.ts`，实际处理在 `jobs/media.ts`。跨进程任务保留原始 JSON 文本，确保既有内容指纹不受 JSONB 字段排序影响。启动和媒体请求（包括后台封面）的图像库隔离由真实独立进程测试检查。反馈截图等低频写入校验另行迁移。
+
 ## 目录
 
 | 位置 | 内容 |
