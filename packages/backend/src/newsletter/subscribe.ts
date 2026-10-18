@@ -27,7 +27,7 @@ export class NewsletterRejected extends Error {
 }
 
 /** A second letter to the same address waits this long (a reader who lost the first can ask again). */
-const RESEND_COOLDOWN_MS = 10 * 60_000;
+export const RESEND_COOLDOWN_MS = 10 * 60_000;
 /** Confirmation letters per rolling day; Resend's free plan allows 100 one-off letters a day. */
 const DAILY_LETTERS = 90;
 
@@ -61,16 +61,26 @@ export function subscribeLanguage(value: unknown): DistributionLanguage {
   catch { throw new NewsletterRejected(400, "invalid_request", "language must be en or zh."); }
 }
 
+export async function checkSubscribeRequest(ip: string, userAgent: string, language: DistributionLanguage): Promise<string> {
+  const source = feedbackSourceHash(ip, userAgent);
+  const [banned] = await sql`SELECT 1 FROM feedback_bans WHERE source_hash = ${source}`;
+  if (banned) throw new NewsletterRejected(403, "forbidden", "暂时无法订阅。");
+  rateLimit(source);
+  assertOpen(language);
+  return source;
+}
+
+export async function checkDailyLetters(additional = 0): Promise<void> {
+  const [{ n }] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM newsletter_subscribers WHERE confirm_sent_at > now() - interval '1 day'`;
+  if (n + additional >= DAILY_LETTERS) throw new NewsletterRejected(429, "rate_limited", "今天订阅的人太多了，请明天再试。", 3600);
+}
+
 export async function subscribe(input: { email: string; ip: string; userAgent: string; language?: DistributionLanguage; source?: unknown }): Promise<{ ok: true }> {
   const email = normalizeEmail(input.email);
   if (!email) throw new NewsletterRejected(400, "invalid_request", "邮箱格式不正确。");
   const language = subscribeLanguage(input.language);
   const signupSource = subscribeSource(input.source);
-  const source = feedbackSourceHash(input.ip, input.userAgent);
-  const [banned] = await sql`SELECT 1 FROM feedback_bans WHERE source_hash = ${source}`;
-  if (banned) throw new NewsletterRejected(403, "forbidden", "暂时无法订阅。");
-  rateLimit(source);
-  assertOpen(language);
+  const source = await checkSubscribeRequest(input.ip, input.userAgent, language);
 
   const [previous] = await sql<{ token: string; language: DistributionLanguage; pending_language: DistributionLanguage | null; confirm_sent_at: Date | null; updated_at: Date }[]>`
     SELECT token, language, pending_language, confirm_sent_at, updated_at FROM newsletter_subscribers WHERE email = ${email}`;
@@ -86,8 +96,7 @@ export async function subscribe(input: { email: string; ip: string; userAgent: s
     await sql`UPDATE newsletter_subscribers SET signup_source = coalesce(signup_source, ${signupSource}) WHERE email = ${email}`;
     return { ok: true };
   }
-  const [{ n }] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM newsletter_subscribers WHERE confirm_sent_at > now() - interval '1 day'`;
-  if (n >= DAILY_LETTERS) throw new NewsletterRejected(429, "rate_limited", "今天订阅的人太多了，请明天再试。", 3600);
+  await checkDailyLetters();
 
   // A different request retires the previous link, so an older letter cannot apply a language it did not offer.
   const token = changed || !previous ? randomBytes(32).toString("base64url") : previous.token;

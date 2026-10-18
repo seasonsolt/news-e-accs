@@ -1,3 +1,5 @@
+import { featuredProduct } from "@aihot/industry/products";
+import { Link } from "../../lib/navigation";
 import { Text, useTranslate } from "../../lib/i18n";
 // The observation deck: the era's plate fills a dark stage and the moment is read out large over it; the
 // chronometer docks along its foot. Standing on a milestone that has its own plate (drawn in the look of
@@ -42,6 +44,7 @@ export function Observatory({ era, focus, nearby, label, distance }: { era: Chro
         <h2 className="observatory-era">{moment ? moment.title : era.title}</h2>
         <p className="observatory-summary">{moment ? moment.detail : era.summary}</p>
         <p className="observatory-style"><Text value="画风 ·" />{moment ? (moment.artStyle ?? era.artStyle) : era.artStyle}</p>
+        {featuredProduct()?.url && <Link to={featuredProduct()!.url!} className="mt-3 inline-flex text-sm text-[#e8c98a]"><Text value="设为 4K 壁纸 →" /></Link>}
       </header>
     </section>
   );

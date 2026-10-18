@@ -1,3 +1,4 @@
+import { featuredProduct } from "@aihot/industry/products";
 import { localePath, requestLocale } from "../lib/locale";
 import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
@@ -92,6 +93,7 @@ export default function Home() {
             <Link to="/chronicle" className="deck-button"><Text value="打开加速史" /></Link>
             {webModules().flatMap((m) => m.home?.links ?? []).map((l) => <Link key={l.to} to={l.to} className="deck-button"><Text value={l.label} /></Link>)}
           </div>
+          {featuredProduct()?.url && <Link to={featuredProduct()!.url!} className="mt-3 inline-flex text-sm text-[#e8c98a]"><Text value="设为 4K 壁纸 →" /></Link>}
         </Deck>
       )}
 

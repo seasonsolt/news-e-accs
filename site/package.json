@@ -15,6 +15,7 @@
   "dependencies": {
     "@aihot/leaderboard": "*",
     "@aihot/indices": "*",
-    "@aihot/story-depth": "*"
+    "@aihot/story-depth": "*",
+    "@aihot/wallpaper": "*"
   }
 }

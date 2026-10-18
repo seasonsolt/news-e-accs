@@ -1,6 +1,20 @@
-// Products awaiting release: name, introduction and logo only. Add links once a product is publicly launched.
+// Products and projects, with links when publicly available.
 // Logos live in apps/web/public/media/products/; a product without one shows its initial.
-export const PRODUCTS = [
+export interface Product {
+  slug: string;
+  logo?: string;
+  name: string;
+  kind: { en: string; zh: string };
+  description: { en: string; zh: string };
+  url?: string;
+  status?: "live" | "soon";
+}
+export const PRODUCTS: readonly Product[] = [
+  {
+    slug: "wallpaper", name: "4K Wallpaper", url: "/products/wallpaper", status: "live",
+    kind: { en: "Daily 4K wallpaper", zh: "每日 4K 壁纸" },
+    description: { en: "A new desktop and phone wallpaper every day. Confirm your newsletter subscription for 100 credits.", zh: "每天一张桌面和手机壁纸，确认邮件订阅即可领取 100 积分（每张 10 积分）。" },
+  },
   {
     slug: "twin",
     logo: "/media/products/twin.svg",
@@ -49,4 +63,8 @@ export const PRODUCTS = [
       zh: "面向 K12 教育的 AI 应用，为教师与学生提供专门的学习工作空间。",
     },
   },
-] as const;
+];
+
+export function featuredProduct() {
+  return PRODUCTS.find((product) => product.status === "live" && product.url);
+}

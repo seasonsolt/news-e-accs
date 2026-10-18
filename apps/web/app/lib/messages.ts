@@ -18,6 +18,8 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "四维视角": "Four-dimensional view",
   "加速史": "Acceleration",
   "打开加速史": "Explore the acceleration",
+  "设为 4K 壁纸 →": "Get it as a 4K wallpaper →",
+  "领取 4K 壁纸（送 100 积分）": "Get 4K wallpapers (100 credits included)",
   "翻开加速史": "Open the acceleration timeline",
   "加速史：从大爆炸到智能体时代的 AI 与文明时间线": "Acceleration: an AI and civilization timeline from the Big Bang to the agent era",
   "更多": "More",

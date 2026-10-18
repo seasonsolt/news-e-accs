@@ -23,7 +23,7 @@ export function esc(s: string): string {
   return s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 }
 
-function frame(inner: string, footer: string, language: DistributionLanguage = "zh"): string {
+export function frame(inner: string, footer: string, language: DistributionLanguage = "zh"): string {
   return `<!doctype html><html lang="${language === "en" ? "en" : "zh-CN"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:${C.page};">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.page};"><tr><td align="center" style="padding:28px 12px;">
@@ -36,7 +36,7 @@ ${inner}
 </td></tr></table></body></html>`;
 }
 
-function button(href: string, label: string): string {
+export function button(href: string, label: string): string {
   return `<a href="${esc(href)}" style="display:inline-block;padding:12px 26px;border-radius:999px;background:${C.accent};color:#ffffff;font-family:${SANS};font-size:15px;font-weight:600;text-decoration:none;">${esc(label)}</a>`;
 }
 

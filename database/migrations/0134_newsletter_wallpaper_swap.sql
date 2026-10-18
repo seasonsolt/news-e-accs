@@ -1,0 +1,1 @@
+ALTER TABLE newsletter_subscribers DROP CONSTRAINT IF EXISTS newsletter_signup_source_check;

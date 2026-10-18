@@ -224,6 +224,10 @@
 
 # 壁纸（4K）
 
+所有生产壁纸带 `e-acc.ai` 水印：裁切后、颗粒前添加，使用 `assets/og-fonts/noto-sans-sc-700.ttf`，白色 55% 不透明、黑色 35% 阴影偏移 2px。桌面右下角字号 44px，距右边、下边各 64px；手机底部居中字号 56px，距底边 260px。预览从已带水印的桌面版生成。`WATERMARK=0` 仅用于自查；生产上传保持默认开启，服务器不添加水印。
+
+运行 `tools/make-wallpaper.sh` 后，在 `/admin/wallpapers` 上传 `<name>-desktop.jpg`、`<name>-phone.jpg` 和 `<name>-preview.webp` 三个文件，填写北京上线日期及中英文标题。预览由桌面版经 `cwebp -q 72 -resize 1600 0` 生成；可以提前上传未来日期。
+
 用途：订阅壁纸，每天一张，桌面版 3840×2160，手机版 2160×3840。ChatGPT 网页版出图一般是 1536×1024，所以在本机用 `tools/make-wallpaper.sh` 放大成 4K。
 
 ## 怎么画
