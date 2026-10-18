@@ -1,7 +1,7 @@
 // Outward HTTP behaviour, defined once: CORS, the public interface version, redirects and which process
-// owns a path, the engine's and then those of the site's modules. The API server and the web server both
+// owns a path, the engine's, then those of the site's modules, then the site's own redirects. The API server and the web server both
 // read this module.
-import { ABOUT, POLICY, SITE } from "@aihot/site";
+import { ABOUT, POLICY, REDIRECTS, SITE } from "@aihot/site";
 import { MODULES } from "@aihot/site/modules";
 
 /** CORS for /api/v1/* and /openapi-v1.json. */
@@ -140,7 +140,7 @@ const ENGINE_API_PATHS: RegExp[] = [
 let built: { redirects: RedirectRule[]; apiPaths: RegExp[] } | null = null;
 function tables() {
   built ??= {
-    redirects: [...ENGINE_REDIRECTS, ...MODULES.flatMap((m) => m.redirects ?? [])],
+    redirects: [...ENGINE_REDIRECTS, ...MODULES.flatMap((m) => m.redirects ?? []), ...REDIRECTS],
     apiPaths: [...ENGINE_API_PATHS, ...MODULES.flatMap((m) => m.apiPaths ?? [])],
   };
   return built;

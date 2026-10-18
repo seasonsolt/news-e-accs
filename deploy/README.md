@@ -5,26 +5,39 @@
 ## 架构
 
 ```
-读者 ─▶ e-acc.ai（Cloudflare Worker eacc-edge，按路径分流）
-          ├─▶ 新闻站：news.e-accs.com ─ Cloudflare Tunnel ─▶ DMIT 服务器 127.0.0.1:3000（本仓库）
-          └─▶ 其余路径：Cloudflare Pages 静态站（仓库 seasonsolt/e-acc.ai）
+读者 ─▶ e-acc.ai（Cloudflare Worker eacc-edge，代码在 deploy/edge/）
+          └─▶ news.e-accs.com ─ Cloudflare Tunnel ─▶ DMIT 服务器 127.0.0.1:3000（本仓库）
 ```
+
+- Worker 把所有请求带上 `EDGE_SECRET` 转给新闻站，匿名请求的公开响应（源站给了 `public` 和 `s-maxage`）放进边缘缓存，响应头 `x-eacc-edge-cache: HIT|MISS`。带后台或登录 cookie 的请求、`/api`（`/api/site/*` 和图片代理除外）、`/admin`、`/starred`、`/feedback` 不进缓存。
+- 2026-10 以前，e-acc.ai 的价格、计算器、时间线等工具页由另一个仓库 seasonsolt/e-acc.ai 的 Cloudflare Pages 静态站提供。下线后价格页由模型榜模块接管（`/pricing`），其余旧地址的跳转写在 `site/site.ts` 的 `REDIRECTS`。
 
 - news.e-accs.com 只接受带 `EDGE_SECRET` 的请求（也就是经过 Worker 的），其余请求重定向到 e-acc.ai。
 - 服务器的 443 端口给 sing-box 用了，所以走 Tunnel（只出站，不开端口）。
 - Cloudflare Web Analytics 的信标由 Cloudflare 在边缘自动插入所有 HTML 页面（包括后台），网页自己不再写这段脚本，否则访问会被计两次。
 - 服务器上不用 Docker：PostgreSQL 17（Debian 自带）、Node 24（`/opt/node24`）、systemd。
 
-一次发布可能涉及三个地方：
+一次发布可能涉及两个地方：
 
 | 发布什么 | 怎么发布 | 怎么回滚 |
 |---|---|---|
 | 新闻站（本仓库） | `deploy/update.sh` | `deploy/update.sh --rollback` |
-| 入口 Worker（`e-acc.ai/edge`） | `cd edge && cf deploy --secrets-file <含 EDGE_SECRET 的文件>` | Cloudflare 后台 Workers → eacc-edge → Deployments，或 `npx wrangler rollback <版本 ID>` |
-| Pages 静态站（`e-acc.ai`） | 推送到 main 自动发布 | Cloudflare 后台 Pages → eacc → 选旧部署回滚 |
+| 入口 Worker（`deploy/edge/`） | 见下面“入口 Worker 发布” | Cloudflare 后台 Workers → eacc-edge → Deployments，或 `npx wrangler rollback <版本 ID>` |
 
-**新闻站新增顶层路由**（比如 `/products`）时，必须同时把它加进 `e-acc.ai` 仓库 `edge/src/route.mjs` 的
-`NEWS_SECTIONS`（单个路径如 `/llms-full.txt` 加进 `NEWS_EXACT`）并发布 Worker，否则这个路径会落到 Pages，返回 404。先发布新闻站，再发布 Worker。
+新增顶层路由不用改 Worker：所有路径都会转给新闻站。
+
+### 入口 Worker 发布
+
+只有改了 `deploy/edge/` 才需要发布。发布前必须带上 `EDGE_SECRET`：漏掉它，新闻站会把每个请求重定向回 e-acc.ai，整站不可用。
+它的值是服务器 `/srv/eacc/.env` 里的 `EDGE_SECRET=`，写进权限 600 的临时文件，发布后删掉：
+
+```bash
+cd deploy/edge && npm ci && npm test
+npx cf deploy --dry-run --secrets-file <临时文件>   # 确认 bindings 里有 env.EDGE_SECRET
+npx cf deploy --secrets-file <临时文件>
+```
+
+发布后几秒内仍可能有请求落到旧版本。
 
 ## 新闻站发布
 

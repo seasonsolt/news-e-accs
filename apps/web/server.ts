@@ -33,8 +33,6 @@ const CLIENT_DIR = path.resolve(import.meta.dirname, "build/client");
 const EDGE_SECRET = process.env.EDGE_SECRET ? Buffer.from(process.env.EDGE_SECRET) : null;
 const LEGACY_HOSTS = new Set((process.env.LEGACY_HOSTS || "").split(",").map((h) => h.trim().toLowerCase()).filter(Boolean));
 const PUBLIC_ORIGIN = (process.env.SITE_URL || "").replace(/\/+$/, "");
-/** Old addresses whose content moved when the site did. /feed.xml is the edge's own feed now. */
-const LEGACY_PATHS: Record<string, string> = { "/feed.xml": "/feed/picks.xml" };
 
 function fromEdge(req: import("node:http").IncomingMessage): boolean {
   const given = req.headers["x-eacc-edge"];
@@ -206,7 +204,7 @@ async function handle(req: import("node:http").IncomingMessage, res: import("nod
   compressResponse(req, res);
   const host = String(req.headers.host ?? "").split(":")[0]!.toLowerCase();
   if (!edge && PUBLIC_ORIGIN && LEGACY_HOSTS.has(host)) {
-    res.writeHead(301, { Location: `${PUBLIC_ORIGIN}${LEGACY_PATHS[pathname] ?? pathname}${search}`, "Cache-Control": "public, max-age=86400" });
+    res.writeHead(301, { Location: `${PUBLIC_ORIGIN}${pathname}${search}`, "Cache-Control": "public, max-age=86400" });
     return res.end();
   }
   // The edge's secret goes no further than this process.

@@ -1,6 +1,7 @@
 // 站点身份和读者看得到的文案。换成你的行业时，先改这个文件。
 // 网页和后端都读它；改完重新构建（docker compose up --build）即可生效。
 // 域名不在这里：部署时用环境变量 SITE_URL 设置。
+import type { RedirectRule } from "@aihot/contracts/http-policy";
 
 /**
  * 日报、周报、月报什么时候出（北京时间，HH:mm）：日报收这个时间之前的 24 小时，周报在每个自然周之后的周一出，
@@ -259,6 +260,19 @@ export const CARDS: Record<string, { kicker: string; title: string; subtitle: st
   feedback: { kicker: "反馈", title: "告诉我们哪里可以更好", subtitle: "内容、功能、接入，或来源方的更正与下架请求。" },
   agent: { kicker: "Agent 接入", title: `把 ${SITE.name} 接进你的 Agent`, subtitle: "MCP、RSS、API 三种方式，匿名只读，无需 API Key。" },
 };
+
+/**
+ * 这个站自己的旧地址（选填），排在框架和模块的跳转之后匹配。规则格式见 packages/contracts/src/http-policy.ts。
+ * 下面是 2026-10 下线的 e-acc.ai 静态站（Cloudflare Pages）留下的已收录地址；价格页和计算器由模型榜模块接管。
+ */
+export const REDIRECTS: RedirectRule[] = [
+  { match: "exact", path: "/timeline", status: 301, location: "/chronicle" },
+  { match: "exact", path: "/api", status: 301, location: "/agent", why: "the retired API and RSS page" },
+  { match: "exact", path: "/terminal", status: 301, location: "/" },
+  { match: "exact", path: "/sitemap-news.xml", status: 301, location: "/sitemap.xml", why: "the edge's merged sitemap index listed it" },
+  { match: "exact", path: "/sitemap-tools.xml", status: 410 },
+  { match: "regex", path: "^/api/(benchmark|latest-frontier|timeline)\\.json$", status: 410 },
+];
 
 /** 公开接口的访问约定里随部署而变的几处：给 Agent 的使用说明、llms.txt 会写。 */
 export const ACCESS = {

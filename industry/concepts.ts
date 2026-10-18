@@ -239,7 +239,7 @@ const WHAT_IS: ConceptPage = {
       This site is an instrument panel, not a membership card: a
       <a href="/">daily feed of what actually shipped</a>, the
       <a href="/chronicle">frontier release timeline</a> and a
-      <a href="/calculator">token cost calculator</a>. Draw your own conclusions —
+      <a href="/pricing#calculator">token cost calculator</a>. Draw your own conclusions —
       preferably from data.
     </p>`,
     },

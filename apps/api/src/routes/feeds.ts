@@ -30,7 +30,8 @@ export function registerFeeds(app: FastifyInstance) {
       return feedError(reply);
     }
   };
-  // /feed.xml is e-acc.ai's acceleration-log feed once this site is served there; picks live at /feed/picks.xml.
+  // Both are the picks feed: readers of the retired e-acc.ai static site's /feed.xml land here too, and
+  // /feed/picks.xml is where earlier news.e-accs.com subscribers were sent.
   app.get("/feed/picks.xml", item("selected"));
   app.get("/feed.xml", item("selected"));
   app.get("/feed/full.xml", item("selected-full"));

@@ -184,7 +184,7 @@ const WHAT_IS: ConceptPage = {
       html: `
     <p>
       这个网站是一块仪表盘，而不是一张会员卡：一份<a href="/zh">每天真正发布了什么的精选</a>、
-      <a href="/zh/chronicle">AI 加速史</a>，以及一个<a href="/calculator">token 成本计算器</a>。结论请自己下——最好是从数据里得出。
+      <a href="/zh/chronicle">AI 加速史</a>，以及一个<a href="/zh/pricing#calculator">token 成本计算器</a>。结论请自己下——最好是从数据里得出。
     </p>`,
     },
   ],
@@ -414,7 +414,7 @@ const GLOSSARY: ConceptPage = {
         { href: "/zh/what-is-eacc", label: "什么是 e/acc：起源、信念与批评" },
         { href: "/zh/eacc-vs-dacc", label: "e/acc 与 d/acc：两种加速主义对比" },
         { href: "/zh/chronicle", label: "AI 加速史" },
-        { href: "/pricing", label: "前沿智能到底要花多少钱（英文）" },
+        { href: "/zh/pricing", label: "前沿智能到底要花多少钱" },
       ],
     },
   ],

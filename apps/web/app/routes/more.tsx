@@ -52,7 +52,7 @@ const GROUPS: Array<{ title: string; rows: Row[] }> = [
     rows: [
       // The modules' tools first, then the site's own tool pages.
       ...webModules().flatMap((m) => m.tools ?? []).map((t) => ({ to: t.to, label: t.label, icon: t.icon })),
-      ...TOOLS.map((t) => ({ to: t.to, label: t.label, icon: <t.icon size={18} />, document: t.document })),
+      ...TOOLS.map((t) => ({ to: t.to, label: t.label, icon: <t.icon size={18} /> })),
     ],
   },
   {
@@ -89,7 +89,7 @@ export default function MorePage() {
           <Group key={g.title} title={tx(g.title)}>
             {g.rows.map((r) => (
               <li key={r.to}>
-                <Link to={r.document ? r.to : withAt(r.to, at)} reloadDocument={r.document} className="flex h-[50px] items-center gap-3 px-4 text-[15px] font-medium text-ink transition-colors active:bg-bg-sunk lg:hover:bg-bg-sunk">
+                <Link to={withAt(r.to, at)} className="flex h-[50px] items-center gap-3 px-4 text-[15px] font-medium text-ink transition-colors active:bg-bg-sunk lg:hover:bg-bg-sunk">
                   <span className="text-ink-3">{r.icon}</span>
                   <span className="flex flex-1 items-center gap-2">{tx(r.label)}{r.to === "/changelog" && changelogDot && <span className="size-1.5 rounded-full bg-hot" aria-label={tx("有新的更新")} />}</span>
                   <IconChevronRight size={16} className="text-ink-4" />

@@ -46,8 +46,6 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "有新的更新": "New updates",
   "{0} 首页": "{0} home",
   "模型价格": "Model pricing",
-  "成本计算器": "Cost calculator",
-  "加速时间线": "Acceleration timeline",
   "什么是 e/acc": "What is e/acc?",
   "Tibo重置监控": "Tibo reset monitor",
   "模型": "Models",
