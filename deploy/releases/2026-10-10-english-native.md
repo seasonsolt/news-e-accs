@@ -25,3 +25,5 @@ Evidence files: `/tmp/eacc-release-42ddd17/{deploy.log,edge-deploy.log,public-ch
 ## Operational limits and rollback
 
 Real model editorial quality and ongoing edition completion need monitoring. New English segment starts empty; old contacts are not migrated or emailed by this release. Report timezone remains unchanged. No claim that Search Console indexing/rankings were observed. Application schemas are additive, but do not operate the old and new newsletter workers concurrently; historical old wildcard and new per-language claims differ. Any rollback must evaluate new English-main rows and language-send claims before switching to a pre-compatibility build. Standard production rollback is only through deploy/update.sh; do not hand-edit deployed builds or systemd.
+
+> 后续清理：Coding Plan 工具在 2026-10-18 的改动中退役；上文保留 2026-10-10 当时的验证事实，当前升级说明见 [部署文档](../../docs/deploy.md#2026-10-18移除旧站配置生成器)。

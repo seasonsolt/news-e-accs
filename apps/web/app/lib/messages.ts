@@ -43,7 +43,6 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "跳到正文": "Skip to content",
   "有新的更新": "New updates",
   "{0} 首页": "{0} home",
-  "Coding Plan 选择器": "Coding plan selector",
   "模型价格": "Model pricing",
   "成本计算器": "Cost calculator",
   "加速时间线": "Acceleration timeline",

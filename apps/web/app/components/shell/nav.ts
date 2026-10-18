@@ -25,7 +25,6 @@ export interface NavItem {
 
 /** e-acc.ai's tool pages, which the edge serves from the static site next to this one. */
 export const TOOLS: NavItem[] = [
-  { to: "/coding-plan", label: "Coding Plan 选择器", icon: IconPlug, document: true },
   { to: "/pricing", label: "模型价格", icon: IconChart, document: true },
   { to: "/calculator", label: "成本计算器", icon: IconGrid, document: true },
   // The acceleration timeline moved into this site's four-dimensional view (/chronicle) when the time machine is on.
