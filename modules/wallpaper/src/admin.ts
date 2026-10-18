@@ -6,6 +6,7 @@ import { config } from "@aihot/backend/config";
 import { sql } from "@aihot/backend/db";
 import { audit } from "@aihot/backend/audit";
 import { beijingDate } from "@aihot/contracts/time";
+import { put, remote } from "./store.ts";
 export const directory = () => path.join(config.dataDir, "uploads", "wallpapers");
 const invalid = (message: string) => Object.assign(new Error(message), { statusCode: 400 });
 export async function upload(body: unknown, actor: string) {
@@ -24,7 +25,10 @@ export async function upload(body: unknown, actor: string) {
     files[kind] = { name: `${kind}-${createHash("sha256").update(bytes).digest("hex")}.${kind === "preview" ? "webp" : "jpg"}`, bytes };
   }
   await mkdir(directory(), { recursive: true });
-  for (const file of Object.values(files)) await writeFile(path.join(directory(), file.name), file.bytes);
+  for (const [kind, file] of Object.entries(files)) {
+    if (kind !== "preview" && remote()) await put(file.name, file.bytes);
+    else await writeFile(path.join(directory(), file.name), file.bytes);
+  }
   const [row] = await sql`INSERT INTO wallpapers (day, title_zh, title_en, desktop_file, phone_file, preview_file)
     VALUES (${input.day}, ${input.titleZh}, ${input.titleEn}, ${files.desktop!.name}, ${files.phone!.name}, ${files.preview!.name})
     ON CONFLICT (day) DO UPDATE SET title_zh = EXCLUDED.title_zh, title_en = EXCLUDED.title_en,

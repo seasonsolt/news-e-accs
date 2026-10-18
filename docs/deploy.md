@@ -64,7 +64,7 @@ MCP 默认接受 `SITE_URL` 的主机以及 `localhost`、`127.0.0.1`、`[::1]`�
 
 ### 每日 4K 壁纸模块
 
-迁移 0130–0135 新增 `wallpapers`、`wallpaper_keys`、`wallpaper_downloads`，并先添加、验证订阅来源约束 v2 后删除旧约束，允许 `wallpaper` 来源；不会删除已有订阅数据。上传文件位于 `dataDir/uploads/wallpapers/`，已在 uploads 备份范围内，恢复时数据库和文件一起恢复。
+迁移 0130–0135 新增 `wallpapers`、`wallpaper_keys`、`wallpaper_downloads`，并先添加、验证订阅来源约束 v2 后删除旧约束，允许 `wallpaper` 来源；不会删除已有订阅数据。配置了 `WALLPAPER_STORE_*`（见 `.env.example`）时，桌面和手机原图上传到那个私有存储桶，下载在验 key、扣积分后 302 跳转到 5 分钟有效的签名链接，原图流量不经过服务器；这些原图不在本机 uploads 备份里，由存储桶保存。没配置时原图和预览都在 `dataDir/uploads/wallpapers/`，已在 uploads 备份范围内。预览始终在本机，响应带 `s-maxage`，由入口 Worker 缓存。配置存储桶前已经上传到本机的原图不会自动搬走，需要重新上传那几天。
 
 上线前在入口仓库 `edge/src/route.mjs` 确认 `/products/*`（及中文产品页）按前缀转发到新闻站，且凭 key 的响应遵守 `private, no-store`。本仓库不包含该入口文件。发布后在 `/admin/wallpapers` 上传第一张生产壁纸的桌面、手机和预览文件；服务器不调用模型或放大图片。回滚旧程序不会删除这三张表或上传文件。
 

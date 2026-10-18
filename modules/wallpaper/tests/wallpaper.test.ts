@@ -122,8 +122,36 @@ test("public list and immutable previews expose no subscriber data or future dat
   assert.equal(res.statusCode, 200); assert.ok(res.headers.etag);
   assert.ok(res.json().every((w: any) => w.day <= today && Object.keys(w).sort().join() === "day,id,preview,title"));
   const preview = await app.inject(res.json()[0].preview);
-  assert.equal(preview.statusCode, 200); assert.equal(preview.headers["cache-control"], "public, max-age=31536000, immutable");
+  assert.equal(preview.statusCode, 200); assert.equal(preview.headers["cache-control"], "public, max-age=31536000, s-maxage=31536000, immutable");
   assert.equal((await app.inject("/products/wallpaper/preview/desktop-test.jpg")).statusCode, 404);
+});
+
+test("with an object store, 4K files go to the bucket and charged downloads redirect to a short signed link", async () => {
+  const puts: { url: string; authorization: string }[] = [];
+  const bucket = await stub((_hit, req) => { assert.equal(req.method, "PUT"); puts.push({ url: req.url, authorization: String(req.headers.authorization) }); return {}; });
+  Object.assign(process.env, { WALLPAPER_STORE_ENDPOINT: bucket.url, WALLPAPER_STORE_BUCKET: "eacc-wallpapers", WALLPAPER_STORE_ACCESS_KEY_ID: "test-access", WALLPAPER_STORE_SECRET_ACCESS_KEY: "test-secret" });
+  try {
+    const day = addDays(today, -20);
+    assert.equal((await upload(day)).statusCode, 200);
+    const [row] = await sql`SELECT desktop_file, phone_file, preview_file FROM wallpapers WHERE day = ${day}`;
+    assert.deepEqual(puts.map((p) => p.url).sort(), [`/eacc-wallpapers/${row!.desktop_file}`, `/eacc-wallpapers/${row!.phone_file}`].sort());
+    assert.ok(puts.every((p) => p.authorization.startsWith("AWS4-HMAC-SHA256 Credential=test-access/") && p.authorization.includes("/auto/s3/aws4_request")));
+    assert.equal((await app.inject(`/products/wallpaper/preview/${row!.preview_file}`)).statusCode, 200, "previews stay on the server");
+    const s = await subscriber();
+    const { key } = (await claim({ token: s.token })).json();
+    const res = await app.inject(`/products/wallpaper/${day}/phone.jpg?key=${key}`);
+    assert.equal(res.statusCode, 302); assert.equal(res.headers["cache-control"], "private, no-store");
+    const location = new URL(String(res.headers.location));
+    assert.equal(`${location.origin}${location.pathname}`, `${bucket.url}/eacc-wallpapers/${row!.phone_file}`);
+    assert.equal(location.searchParams.get("X-Amz-Expires"), "300"); assert.match(location.searchParams.get("X-Amz-Signature")!, /^[a-f0-9]{64}$/);
+    assert.equal(location.searchParams.get("response-content-disposition"), `inline; filename="e-acc-wallpaper-${day}-phone.jpg"`);
+    assert.equal((await app.inject(`/api/site/wallpaper/me?key=${key}`)).json().credits, 90);
+    assert.equal((await app.inject(`/products/wallpaper/${day}/desktop.jpg?key=${key}`)).statusCode, 302);
+    assert.equal((await app.inject(`/api/site/wallpaper/me?key=${key}`)).json().credits, 90);
+  } finally {
+    for (const k of ["WALLPAPER_STORE_ENDPOINT", "WALLPAPER_STORE_BUCKET", "WALLPAPER_STORE_ACCESS_KEY_ID", "WALLPAPER_STORE_SECRET_ACCESS_KEY"]) delete process.env[k];
+    await bucket.close();
+  }
 });
 
 test("MCP registers wallpaper_today and its answer contains only public metadata", async () => {

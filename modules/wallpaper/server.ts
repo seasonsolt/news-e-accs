@@ -13,6 +13,7 @@ import { charge, keyOwner } from "./src/keys.ts";
 import { claimEmail, claimToken } from "./src/claim.ts";
 import { wallpapers, downloadWallpaper } from "./src/publication.ts";
 import { directory, upload, remove, adminList } from "./src/admin.ts";
+import { link, remote } from "./src/store.ts";
 import type { FastifyReply, FastifyRequest } from "fastify";
 const privateCache = "private, no-store";
 const fail = (req: FastifyRequest, reply: FastifyReply, error: unknown) => {
@@ -44,7 +45,7 @@ export default defineServerModule({
     app.get("/products/wallpaper/preview/:file", (req, reply) => {
       const file = field(req.params, "file");
       if (!/^preview-[a-f0-9]{64}\.webp$/.test(file)) return reply.code(404).send();
-      return sendFile(req, reply, path.join(directory(), file), { cacheControl: "public, max-age=31536000, immutable" });
+      return sendFile(req, reply, path.join(directory(), file), { cacheControl: "public, max-age=31536000, s-maxage=31536000, immutable" });
     });
     app.get("/products/wallpaper/:day/:kind", async (req, reply) => {
       reply.header("Cache-Control", privateCache);
@@ -55,10 +56,16 @@ export default defineServerModule({
         const wallpaper = await downloadWallpaper(field(req.params, "day"));
         if (!wallpaper) return reply.code(404).send();
         const cut = kind === "desktop.jpg" ? "desktop" : "phone";
-        const file = path.join(directory(), wallpaper[`${cut}_file`]);
+        const name = wallpaper[`${cut}_file`];
+        const filename = `e-acc-wallpaper-${wallpaper.day}-${cut}.jpg`;
+        if (remote()) {
+          await charge(owner.subscriber_id, wallpaper.id);
+          return reply.redirect(link(name, filename), 302);
+        }
+        const file = path.join(directory(), name);
         try { await access(file); } catch { return reply.code(404).send(); }
         await charge(owner.subscriber_id, wallpaper.id);
-        reply.header("Content-Disposition", `inline; filename="e-acc-wallpaper-${wallpaper.day}-${cut}.jpg"`);
+        reply.header("Content-Disposition", `inline; filename="${filename}"`);
         return await sendFile(req, reply, file, { cacheControl: privateCache });
       } catch (error) { return fail(req, reply, error); }
     });
