@@ -49,7 +49,7 @@ async function call(
   return result;
 }
 
-await client.connect(new StreamableHTTPClientTransport(url));
+await client.connect(new StreamableHTTPClientTransport(url, { requestInit: { headers: { "X-MCP-Usage": "check" } } }));
 try {
   const info = client.getServerVersion?.();
   console.log("server:", JSON.stringify(info));

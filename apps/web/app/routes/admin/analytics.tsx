@@ -2,7 +2,7 @@ import { SITE } from "@aihot/site";
 import { SUBSCRIBE_FUNNEL_EVENTS, SUBSCRIBE_SOURCES, type SubscribeFunnelEvent, type SubscribeSource } from "@aihot/contracts/subscribe";
 import type { Route } from "./+types/analytics";
 import { LineChart } from "../../features/admin/charts";
-import { num } from "../../features/admin/format";
+import { bj, num } from "../../features/admin/format";
 import { AdminPage, Card, DataTable, FilterChips, Stat } from "../../features/admin/ui";
 import { adminGet } from "../../lib/admin.server";
 
@@ -11,6 +11,12 @@ interface AnalyticsData {
   totals: { views: number; paths: number };
   daily: Array<{ day: string; views: number }>;
   pages: Array<{ path: string; views: number }>;
+  mcp: {
+    totals: { calls: number; successes: number; errors: number; initializes: number; discoveries: number; checks: number; activeDays: number; averageMs: number; maxMs: number; lastCallAt: string | null };
+    daily: Array<{ day: string; calls: number; successes: number }>;
+    tools: Array<{ tool: string; calls: number; successes: number; errors: number; averageMs: number; maxMs: number; lastCallAt: string }>;
+    errors: Array<{ outcome: string; calls: number }>;
+  };
   engagement: {
     totals: Array<{ event: string; count: number }>;
     daily: Array<{ day: string; counts: Record<string, number | null> }>;
@@ -73,6 +79,7 @@ export const meta: Route.MetaFunction = () => [{ title: `访问统计 · ${SITE.
 
 export default function AnalyticsAdmin({ loaderData }: Route.ComponentProps) {
   const d = loaderData.overview;
+  const m = d.mcp;
   const average = d.days ? Math.round(d.totals.views / d.days) : 0;
   const interactions = d.engagement.totals.reduce((sum, row) => sum + (CHART_EVENTS.has(row.event) ? row.count : 0), 0);
   return (
@@ -158,6 +165,42 @@ export default function AnalyticsAdmin({ loaderData }: Route.ComponentProps) {
         />
       </Card>
       <FunnelCard funnel={loaderData.funnel} />
+      <section className="mt-8" aria-labelledby="mcp-usage-title">
+        <h2 id="mcp-usage-title" className="mb-2 text-lg font-semibold">MCP 使用统计</h2>
+        <p className="mb-4 text-sm text-ink-2">实际使用以工具调用为准，初始化和工具发现请求单独计数。统计从部署后开始，保留 90 天；不统计独立用户，不保存 IP、客户端名称、参数或结果正文。</p>
+        <p className="mb-4 text-sm text-ink-2">自带契约检查和 smoke 标记为检查流量，不计入调用量。匿名第三方客户端与机器人无法区分；重试每次计数。成功率按工具结果计算，HTTP 200 的业务错误也计为失败。</p>
+        <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-3">
+          <Stat label="MCP 工具调用" value={num(m.totals.calls)} />
+          <Stat label="工具成功率" value={m.totals.calls ? `${num(m.totals.successes / m.totals.calls * 100, 1)}%` : "—"} />
+          <Stat label="有调用的天数" value={`${num(m.totals.activeDays)} / ${d.days}`} />
+          <Stat label="初始化请求" value={num(m.totals.initializes)} />
+          <Stat label="工具发现请求" value={num(m.totals.discoveries)} />
+          <Stat label="工具平均耗时" value={m.totals.calls ? `${num(m.totals.averageMs)} ms` : "—"} />
+        </div>
+        <p className="mb-4 text-sm text-ink-2">最近调用：{bj(m.totals.lastCallAt, true)} · 最长耗时：{m.totals.calls ? `${num(m.totals.maxMs)} ms` : "—"} · 已排除检查请求：{num(m.totals.checks)}</p>
+        <Card title={`近 ${d.days} 天 MCP 工具调用趋势`}>
+          <LineChart labels={m.daily.map((x) => x.day.slice(5))} series={[
+            { key: "calls", label: "工具调用", color: "var(--accent)", values: m.daily.map((x) => x.calls) },
+            { key: "successes", label: "成功调用", color: "var(--ok)", values: m.daily.map((x) => x.successes) },
+          ]} height={220} />
+        </Card>
+        <Card className="mt-5" title="MCP 工具排行" pad={false}>
+          <DataTable rows={m.tools} rowKey={(x) => x.tool} empty="所选时间范围内没有 MCP 工具调用" columns={[
+            { key: "tool", label: "工具", render: (x) => <span className="font-mono text-xs">{x.tool === "__unknown__" ? "未知工具（请求被拒绝）" : x.tool}</span> },
+            { key: "calls", label: "调用", align: "right", render: (x) => num(x.calls) },
+            { key: "successes", label: "成功率", align: "right", render: (x) => `${num(x.successes / x.calls * 100, 1)}%` },
+            { key: "errors", label: "失败", align: "right", render: (x) => num(x.errors) },
+            { key: "averageMs", label: "平均 / 最长 ms", align: "right", render: (x) => `${num(x.averageMs)} / ${num(x.maxMs)}` },
+            { key: "lastCallAt", label: "最近调用", render: (x) => bj(x.lastCallAt) },
+          ]} />
+        </Card>
+        <Card className="mt-5" title="MCP 调用错误" pad={false}>
+          <DataTable rows={m.errors} rowKey={(x) => x.outcome} empty="所选时间范围内没有 MCP 调用错误" columns={[
+            { key: "outcome", label: "错误类型", render: (x) => x.outcome },
+            { key: "calls", label: "次数", align: "right", render: (x) => num(x.calls) },
+          ]} />
+        </Card>
+      </section>
     </AdminPage>
   );
 }

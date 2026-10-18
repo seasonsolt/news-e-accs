@@ -4,6 +4,7 @@ import type { IncomingMessage } from "node:http";
 import { OAUTH_PROBE_PATHS, resolveRedirect } from "@aihot/contracts/http-policy";
 import { sql } from "@aihot/backend/db";
 import { MediaBusyError } from "@aihot/backend/media/capacity";
+import { recordMcpUsage } from "@aihot/backend/site/mcp-analytics";
 import { logError } from "@aihot/backend/lib/log-error";
 import { serverModules } from "@aihot/backend/modules";
 import { registerSite } from "./routes/site.ts";
@@ -109,7 +110,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   registerMedia(app);
   registerFeeds(app);
   registerStatic(app);
-  registerMcp(app);
+  registerMcp(app, recordMcpUsage);
   for (const m of serverModules()) m.http?.(app);
   registerV1Fallbacks(app);
 

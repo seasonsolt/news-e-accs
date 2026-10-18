@@ -6,6 +6,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { createMcpHandler, McpServer, type McpHttpHandler } from "@modelcontextprotocol/server";
 import { z } from "zod";
+import { MCP_OUTCOMES, type McpOutcome, type McpUsage } from "@aihot/backend/site/mcp-analytics";
 import { POLICY, SITE } from "@aihot/site";
 import { PUBLIC_INTERFACE_VERSION } from "@aihot/contracts/http-policy";
 import { MCP_TOOL_NAMES as T, mcpToolName } from "@aihot/contracts/mcp";
@@ -34,7 +35,16 @@ const USES = [
 ];
 
 const abilities = () => serverModules().flatMap((m) => m.agent?.abilities ?? []);
-const requestLog = new AsyncLocalStorage<FastifyRequest["log"]>();
+const requestLog = new AsyncLocalStorage<{ log: FastifyRequest["log"]; outcome?: McpOutcome }>();
+
+function observedResult(result: ReturnType<typeof ok> | ReturnType<typeof fail>) {
+  const observation = requestLog.getStore();
+  if (observation) {
+    const code = "isError" in result ? result.structuredContent.error.code : null;
+    observation.outcome = code === null ? "success" : MCP_OUTCOMES.includes(code as McpOutcome) ? code as McpOutcome : "tool_error";
+  }
+  return result;
+}
 
 function instructions(): string {
   const uses = [...USES, ...abilities().map((a) => `${mcpToolName(a.mcp.tool)} ${a.mcp.use}`)];
@@ -68,14 +78,14 @@ function fail(code: string, message: string) {
 function safe<A>(tool: string, run: (args: A) => Promise<ReturnType<typeof ok> | ReturnType<typeof fail>>) {
   return async (args: A) => {
     try {
-      return await run(args);
+      return observedResult(await run(args));
     } catch (error) {
-      if (error instanceof EditionUnavailableError) return fail("edition_unavailable", "The requested stored edition is not ready. Retry later or request the other language.");
-      if (error instanceof SearchBusyError) return fail("busy", "Search is busy; retry later.");
-      const log = requestLog.getStore();
+      if (error instanceof EditionUnavailableError) return observedResult(fail("edition_unavailable", "The requested stored edition is not ready. Retry later or request the other language."));
+      if (error instanceof SearchBusyError) return observedResult(fail("busy", "Search is busy; retry later."));
+      const log = requestLog.getStore()?.log;
       if (log) log.error({ err: error, tool }, "mcp tool failed");
       else console.error(JSON.stringify({ level: "error", msg: "mcp tool failed", tool, err: logError(error) }));
-      return fail("internal_error", `${SITE.name} could not complete this request; retry later.`);
+      return observedResult(fail("internal_error", `${SITE.name} could not complete this request; retry later.`));
     }
   };
 }
@@ -353,7 +363,7 @@ function allowedOrigin(origin: string | undefined, hosts: string[]): boolean {
 // Browser clients on the site or on a local development address (the MCP inspector): a 204 preflight,
 // and the protocol headers and the site's usage-policy headers readable on responses.
 const CORS_METHODS = "POST, GET, DELETE, OPTIONS";
-const CORS_HEADERS = "Content-Type, Accept, MCP-Protocol-Version, MCP-Session-Id, Last-Event-ID, MCP-Method, MCP-Name";
+const CORS_HEADERS = "Content-Type, Accept, MCP-Protocol-Version, MCP-Session-Id, Last-Event-ID, MCP-Method, MCP-Name, X-MCP-Usage";
 const CORS_EXPOSE = ["MCP-Protocol-Version", "MCP-Session-Id", "Link", ...Object.keys(POLICY.terms.headers ?? {})].join(", ");
 
 function corsHeaders(reply: FastifyReply, origin: string | undefined) {
@@ -377,7 +387,21 @@ function respond(reply: FastifyReply, res: Response) {
   return reply.send(res.body);
 }
 
-export function registerMcp(app: FastifyInstance) {
+// The application supplies the durable recorder; isolated protocol tests can exercise the transport without a database.
+export function registerMcp(app: FastifyInstance, recordUsage?: (event: McpUsage) => Promise<void>) {
+  const observations = new WeakMap<FastifyRequest, { log: FastifyRequest["log"]; outcome?: McpOutcome; event: Omit<McpUsage, "durationMs" | "outcome"> }>();
+  const knownTools = new Set([...Object.values(T), ...abilities().map((a) => mcpToolName(a.mcp.tool))]);
+  const record = async (req: FastifyRequest, reply: FastifyReply) => {
+    const observation = observations.get(req);
+    if (!recordUsage || !observation) return;
+    // onResponse runs after the JSON or SSE body has been sent. Counting never copies/buffers the answer.
+    const outcome = reply.statusCode >= 400 ? "rejected" : observation.outcome ?? (observation.event.operation === "tools/call" ? "rejected" : "success");
+    try {
+      await recordUsage({ ...observation.event, outcome, durationMs: Math.max(0, reply.elapsedTime) });
+    } catch (err) {
+      req.log.error({ err }, "mcp usage could not be recorded");
+    }
+  };
   const hosts = serverModules().flatMap((m) => m.hosts ?? []);
   const allowed = allowedHosts(hosts);
   const options = { legacy: "stateless", maxRequestBodySize: MAX_REQUEST_BODY_SIZE } as const;
@@ -413,6 +437,12 @@ export function registerMcp(app: FastifyInstance) {
       return reply.code(404).type("application/json").send({ jsonrpc: "2.0", id, error: { code: -32601, message: "Method not found" } });
     }
 
+    const rpc = message as { jsonrpc?: unknown; id?: unknown; method?: unknown; params?: { name?: unknown } } | null;
+    if (rpc?.jsonrpc === "2.0" && (typeof rpc.id === "number" || typeof rpc.id === "string") &&
+        (rpc.method === "initialize" || rpc.method === "tools/list" || rpc.method === "tools/call")) {
+      const tool = rpc.method === "tools/call" ? (typeof rpc.params?.name === "string" && knownTools.has(rpc.params.name) ? rpc.params.name : "__unknown__") : "";
+      observations.set(req, { log: req.log, event: { operation: rpc.method, tool, isCheck: req.headers["x-mcp-usage"] === "check" } });
+    }
     const headers = new Headers();
     for (const [k, v] of Object.entries(req.headers)) {
       if (v === undefined || k === "content-length" || k === "host") continue;
@@ -425,7 +455,7 @@ export function registerMcp(app: FastifyInstance) {
     const request = new Request(`${config.siteUrl}${(req.raw.url ?? "/api/mcp")}`, { method: req.method, headers, body, signal: gone.signal });
     const parsed = req.method === "POST" && typeof req.body === "object" ? { parsedBody: req.body } : undefined;
     try {
-      return respond(reply, await requestLog.run(req.log, () => handlerFor(requestNotice("mcp", req)).fetch(request, parsed)));
+      return respond(reply, await requestLog.run(observations.get(req) ?? { log: req.log }, () => handlerFor(requestNotice("mcp", req)).fetch(request, parsed)));
     } catch (error) {
       req.log.error({ err: error }, "mcp error");
       return reply.code(500).type("application/json").send({ jsonrpc: "2.0", error: { code: -32603, message: "Internal error" }, id: null });
@@ -434,7 +464,7 @@ export function registerMcp(app: FastifyInstance) {
 
   // parsedBody skips the SDK's byte limit, so enforce it before Fastify parses or copies the body.
   app.route({
-    method: ["GET", "POST", "DELETE"], url: "/api/mcp", bodyLimit: MAX_REQUEST_BODY_SIZE, handler: serve,
+    method: ["GET", "POST", "DELETE"], url: "/api/mcp", bodyLimit: MAX_REQUEST_BODY_SIZE, handler: serve, onResponse: record,
     errorHandler: (error, req, reply) => {
       if ((error as { code?: string }).code !== "FST_ERR_CTP_BODY_TOO_LARGE") throw error;
       if (allowedOrigin(req.headers.origin, hosts)) corsHeaders(reply, req.headers.origin);
