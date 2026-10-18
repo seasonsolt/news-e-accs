@@ -1,4 +1,5 @@
 import { localeFromMatches, Text } from "../lib/i18n";
+import { subscribeSource } from "@aihot/contracts/subscribe";
 import { SITE } from "@aihot/site";
 import { useSearchParams } from "react-router";
 import { Onboarding } from "../features/onboarding/Onboarding";
@@ -18,7 +19,7 @@ export default function Subscribe() {
   const token = params.get("token");
   return (
     <div className="pt-3 lg:pt-0">
-      <Onboarding mode="page" token={token} />
+      <Onboarding mode="page" token={token} source={subscribeSource(params.get("from")) ?? "subscribe_page"} />
       {SITE.contactEmail && !token && (
         <p className="text-center text-[13px] text-ink-4">
           <Text value="赞助日报、商务合作：" />

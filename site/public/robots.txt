@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /api/v1/
 Allow: /api/mcp
+Allow: /api/site/indices/cost-of-intelligence.csv
 Disallow: /api/
 Disallow: /admin/
 Disallow: /starred

@@ -11,7 +11,8 @@ import { FEATURES } from "@aihot/industry/features";
 import { SITE } from "@aihot/site";
 import { anchorOf, CONCEPT_PAGES, EACC_ENTITY, type ConceptPage } from "@aihot/industry/concepts";
 import { CONCEPT_PAGES_ZH } from "@aihot/industry/concepts-zh";
-import { cachedPage } from "../lib/api.server";
+import type { NextReads } from "@aihot/contracts/site";
+import { apiGet, cachedPage } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { useTranslate } from "../lib/i18n";
 import { breadcrumbLd, pageMeta, siteUrl } from "../lib/seo";
@@ -28,13 +29,14 @@ const pageOf = (lang: Lang, slug: Slug): ConceptPage => (lang === "zh" ? CONCEPT
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 
-export function loader({ request }: Route.LoaderArgs) {
+export async function loader({ request }: Route.LoaderArgs) {
   // A client-side navigation asks for /<slug>.data; the page's own address is that without the suffix.
   const { pathname } = new URL(request.url);
   const lang = pathLocale(pathname);
   const slug = publicPath(pathname).replace(/^\/+|\/+$/g, "") as Slug;
   if (!FEATURES.eaccConcepts || !Object.hasOwn(CONCEPT_PAGES, slug)) throw data({ message: "not_found" }, { status: 404 });
-  return cachedPage(300, { slug, lang });
+  const next = await apiGet<NextReads>("/api/site/next-reads", { request, signal: request.signal }).catch(() => null);
+  return cachedPage(300, { slug, lang, daily: next?.daily ?? null });
 }
 
 function structuredData(page: ConceptPage, lang: Lang) {
@@ -91,6 +93,7 @@ const TEXT = {
     ctaTitle: "Get the e/acc daily briefing",
     ctaBody: "A few AI stories worth reading, every day: model releases, price changes and compute expansion. Free, with one-click unsubscribe. Choose the English or Chinese edition.",
     ctaButton: "Subscribe",
+    ctaSample: "Read the latest issue",
   },
   zh: {
     htmlLang: "zh-CN",
@@ -101,12 +104,13 @@ const TEXT = {
     ctaTitle: "订阅 e/acc 每日简报",
     ctaBody: "每天一封 AI 圈值得看的几件事：模型发布、价格变动、算力扩张。免费，随时一键退订，可选择英文版或中文版。",
     ctaButton: "订阅",
+    ctaSample: "看看最近一期",
   },
 } as const;
 
 export default function Concept() {
   const tx = useTranslate();
-  const { slug, lang } = useLoaderData<typeof loader>();
+  const { slug, lang, daily } = useLoaderData<typeof loader>();
   const page = pageOf(lang, slug);
   const t = TEXT[lang];
   // Each block's anchor and name: the heading's own for sections and link lists, the FAQ's and terms' fixed.
@@ -185,7 +189,8 @@ export default function Concept() {
           <aside className="mt-12 border-t border-line pt-6">
             <p className="text-[15px] font-semibold text-ink">{t.ctaTitle}</p>
             <p className="mt-1 text-[14px] leading-relaxed text-ink-3">{t.ctaBody}</p>
-            <Link to="/subscribe" onClick={() => recordEngagement("subscribe_click")} className="deck-button is-primary mt-4 inline-flex">{t.ctaButton}</Link>
+            <Link to="/subscribe?from=concept" onClick={() => recordEngagement("subscribe_click")} className="deck-button is-primary mt-4 inline-flex">{t.ctaButton}</Link>
+            {daily && <Link to={`/daily/${daily.key}`} className="ml-4 text-[14px] text-accent underline decoration-accent/35 underline-offset-[3px] hover:decoration-accent">{t.ctaSample} · {daily.key}</Link>}
           </aside>
         </article>
       </ArticleLayout>

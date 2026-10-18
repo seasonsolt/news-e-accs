@@ -1,4 +1,5 @@
 // What /api/site/indices/* returns; the web pages read these shapes.
+export const COST_OF_INTELLIGENCE_TOOL = "get_cost_of_intelligence";
 
 /** One step of a tier's line: from `date` the cheapest model at or above the threshold cost `price`. */
 export interface CoiPoint {

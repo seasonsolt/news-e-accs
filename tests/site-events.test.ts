@@ -183,3 +183,17 @@ test("the subscribe funnel counts source, locale and failure reason, and never a
     await sql`DELETE FROM site_events_daily WHERE event = ANY(${events}::text[]) AND target = ANY(${targets}::text[])`;
   }
 });
+
+
+test("event collection starts at its first recorded day, outside the selected window too", async () => {
+  await sql`DELETE FROM site_events_daily WHERE event IN ('share_click', 'subscribe_confirmed')`;
+  await sql`INSERT INTO site_events_daily (day, event, target, count) VALUES
+    ((now() AT TIME ZONE 'Asia/Taipei')::date - 2, 'share_click', '', 1),
+    ((now() AT TIME ZONE 'Asia/Taipei')::date - 40, 'subscribe_confirmed', 'concept:en', 1)`;
+  const summary = await siteAnalyticsOverview(7);
+  assert.equal(summary.engagement.daily[0]!.counts.share_click, null);
+  assert.equal(summary.engagement.daily.at(-1)!.counts.share_click, 0);
+  assert.equal(summary.engagement.firstDays.share_click, summary.engagement.daily.at(-3)!.day);
+  const funnel = await subscribeFunnel(7);
+  assert.ok(funnel.firstDays.subscribe_confirmed! < funnel.daily[0]!.day);
+});

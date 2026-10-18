@@ -1,3 +1,4 @@
+import { COST_OF_INTELLIGENCE_TOOL } from "./contracts.ts";
 import { z } from "zod";
 import { defineServerModule } from "@aihot/backend/modules";
 import { siteUrl } from "@aihot/backend/publication/links";
@@ -17,7 +18,7 @@ export default defineServerModule({
       etagPrefix: "agent-cost-of-intelligence",
       cacheControl: "public, max-age=300, s-maxage=600, stale-while-revalidate=3600",
       mcp: {
-        tool: "get_cost_of_intelligence",
+        tool: COST_OF_INTELLIGENCE_TOOL,
         use: "for how fast the price of a fixed AI capability falls",
         description: "The cost-of-intelligence index: for each GPQA Diamond threshold, the cheapest first-party API price (blended USD per million tokens) at which a model at or above it could be bought, how many times cheaper it has become, and how many months the price takes to halve.",
         input: z.object({}),

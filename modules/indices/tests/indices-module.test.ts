@@ -128,6 +128,15 @@ test("the index is routed to the api, listed in the sitemap and llms.txt, and re
         assert.ok((dataset.creator as { name?: string } | undefined)?.name, `${prefix}: ${dataset.name} has a creator`);
         assert.equal(dataset.license, "https://creativecommons.org/licenses/by/4.0/", `${prefix}: ${dataset.name} names its license`);
       }
+      const distribution = datasets.find((d) => d.distribution)?.distribution as { contentUrl: string };
+      const csvPath = new URL(distribution.contentUrl).pathname;
+      const robots = await app.inject("/robots.txt");
+      assert.equal(robots.statusCode, 200);
+      const rules = [...robots.body.matchAll(/^(Allow|Disallow):\s*(\S+)/gm)].map((m) => ({ allow: m[1] === "Allow", path: m[2]! }));
+      const allowed = (path: string) => rules.filter((r) => path.startsWith(r.path)).sort((a, b) => b.path.length - a.path.length || Number(b.allow) - Number(a.allow))[0]?.allow ?? true;
+      assert.equal(allowed(csvPath), true);
+      assert.equal(allowed("/api/site/indices/cost-of-intelligence"), false);
+      assert.equal(allowed("/api/site/reports/daily/latest-page"), false);
       assert.match(html, /hrefLang="zh-CN"|hreflang="zh-CN"/);
       assert.match(html, /<svg[^>]+role="img"/);
       assert.ok(html.includes("Test CNY model"), `${prefix}: the steps table names the model`);
@@ -136,6 +145,16 @@ test("the index is routed to the api, listed in the sitemap and llms.txt, and re
     for (const prefix of ["", "/zh"]) {
       assert.match(await (await fetch(`${web.origin}${prefix || "/"}`)).text(), new RegExp(`href="${prefix}/index/cost-of-intelligence"`), `${prefix || "/"}: the front page links the index`);
     }
+    const listing = await app.inject({ method: "POST", url: "/api/mcp",
+      headers: { host: "localhost", "content-type": "application/json", accept: "application/json, text/event-stream" },
+      payload: { jsonrpc: "2.0", id: 1, method: "tools/list", params: {} } });
+    assert.equal(listing.statusCode, 200);
+    const body = listing.body.startsWith("{") ? listing.body : listing.body.split("\n").find((line) => line.startsWith("data:"))!.slice(5);
+    const tools = JSON.parse(body).result.tools.map((t: { name: string }) => t.name).sort();
+    const agent = await (await fetch(`${web.origin}/agent?tab=mcp`)).text();
+    const cells = [...agent.matchAll(/<tr[^>]*>\s*<td[^>]*>(.*?)<\/td>/gs)].map((m) => m[1]!.replace(/<[^>]+>/g, "").trim());
+    assert.deepEqual(cells.filter((name) => name.startsWith("eacc_")).sort(), tools);
+    assert.ok(agent.includes('href="/api/v1/agent/cost-of-intelligence"'));
     assert.equal(web.logs().includes("error"), false, web.logs());
   } finally {
     await web.stop();
