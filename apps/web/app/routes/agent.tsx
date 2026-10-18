@@ -29,8 +29,9 @@ const TRACKS: AgentTrack[] = [
 const FIRST = TRACKS[0]!.key;
 const tabKey = (key: string | null) => key && TRACKS.some(t => t.key === key) ? key : FIRST;
 const hrefOf = (key: string) => (key === FIRST ? "/agent" : `/agent?tab=${key}`);
-/** How many ways, as the copy counts them ("四种方式"). */
-const WAYS = ["零", "一", "两", "三", "四", "五", "六"][TRACKS.length];
+/** How many ways, as the copy counts them ("四种方式"): the numeral, and the counted word the translation fills. */
+const WAYS = ["零", "一", "两", "三", "四", "五", "六"][TRACKS.length]!;
+const WAY_COUNT = ["零种", "一种", "两种", "三种", "四种", "五种", "六种"][TRACKS.length]!;
 
 /** The modules' sections at the end of a panel. */
 const BLOCKS = AGENT_PARTS.flatMap((p) => p.blocks ?? []);
@@ -45,10 +46,19 @@ const anchorHref = (id: string) => `${hrefOf(ANCHORS.get(id)!)}#${id}`;
 const RESOURCES: Array<[label: string, href: string, note: string]> = [
   ["llms.txt", "/llms.txt", "给大模型读的站点说明"],
   ["llms-full.txt", "/llms-full.txt", "最近 7 天的日报和当前热点，附事件页与原文链接"],
-  ["Agent 使用说明", "/api/v1/agent", `Agent 读了就能查${GUIDE_CLIENTS ? `，${GUIDE_CLIENTS} 用的也是它` : ""}`],
-  ["OpenAPI 3.1", "/openapi-v1.json", `REST API 的完整定义 · ${V}`],
+  ["Agent 使用说明", "/api/v1/agent", "Agent 读了就能查"],
+  ["OpenAPI 3.1", "/openapi-v1.json", "REST API 的完整定义 · {0}"],
   ...AGENT_PARTS.flatMap((p) => p.resources ?? []),
 ];
+
+/** Resource captions that name a version or the guide's clients fill those in the reader's language. */
+function resourceCaption(tx: (message: string, ...values: Array<unknown>) => string, href: string, note: string) {
+  if (href === "/api/v1/agent") {
+    const clients = GUIDE_CLIENTS.map((name) => tx(name)).join(tx("、"));
+    return clients ? tx("Agent 读了就能查，{0} 用的也是它", clients) : tx("Agent 读了就能查");
+  }
+  return href === "/openapi-v1.json" ? tx(note, V) : tx(note);
+}
 
 const BANNERS = AGENT_PARTS.flatMap((p) => (p.Banner ? [p.Banner] : []));
 /** The tag's value: a hook, called on every render. */
@@ -155,7 +165,7 @@ export default function AgentPage() {
             <a key={h} href={h} target={h.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" className="group flex items-start gap-2 rounded-control px-2 py-2 transition-colors hover:bg-bg-sunk">
               <span className="min-w-0 flex-1">
                 <span className="block text-[13.5px] text-ink-2 group-hover:text-ink">{tx(l)}</span>
-                <span className="mt-0.5 block text-[12px] text-ink-4">{tx(note)}</span>
+                <span className="mt-0.5 block text-[12px] text-ink-4">{resourceCaption(tx, h, note)}</span>
               </span>
               <IconArrowUpRight size={13} className="mt-1 shrink-0 text-ink-4" />
             </a>
@@ -173,7 +183,7 @@ export default function AgentPage() {
 
   return (
     <>
-    <Deck compact label={tx("Agent 接入")} title={tx("把 {0} 接进你的 Agent", SITE.name)} description={tx("{0}{1}种方式读的是同一份数据：精选、热点、日报、周报和月报，按你用的工具选一种就行。全部匿名只读，不用注册，也不用 API Key。", `${TRACKS.map((t) => t.short).join("、")} `, WAYS)} />
+    <Deck compact label={tx("Agent 接入")} title={tx("把 {0} 接进你的 Agent", SITE.name)} description={tx("{0} {1}方式读的是同一份数据：精选、热点、日报、周报和月报，按你用的工具选一种就行。全部匿名只读，不用注册，也不用 API Key。", TRACKS.map((t) => tx(t.short)).join(tx("、")), tx(WAY_COUNT))} />
     <div className="h-6" />
     <ReadingLayout aside={aside}>
       <header>
