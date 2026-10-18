@@ -15,6 +15,7 @@ export VERIFY_BASE=$base
 compose=(docker compose -p "$project" -f "$scratch/source/deploy/verify.compose.yml")
 cleanup() {
   "${compose[@]}" down --volumes --remove-orphans >/dev/null 2>&1 || true
+  docker image rm "$project-check" >/dev/null 2>&1 || true
   rm -rf "$scratch"
 }
 trap cleanup EXIT

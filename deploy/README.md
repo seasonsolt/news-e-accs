@@ -63,7 +63,7 @@ deploy/update.sh
 此流程验证 systemd 生产站的代码与服务行为；Docker 打包本身仍可按 `docs/deploy.md`
 在本机执行 `docker compose up -d --build` 验证，不再为每次改字或换图重复跑容器部署测试。
 升级 `@playwright/test` 时同步修改 `deploy/verify.Dockerfile` 中的浏览器版本。
-旧 `SKIP_CI` 变量不再生效。首次安装一个尚无发布记录的服务器，先按“从零重建”建立版本基线。
+旧 `SKIP_CI` 变量不再生效。此发布入口要求已有可识别的生产版本；没有基线时会停止，不会自行略过迁移检查。
 
 服务器上的步骤：
 
