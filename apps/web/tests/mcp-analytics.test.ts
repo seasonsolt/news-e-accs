@@ -49,7 +49,6 @@ test("MCP usage shows outcomes and preserves the selected time window on desktop
       await expect(page).toHaveURL(/days=90/);
       await expect(section.getByText("1 / 90", { exact: true })).toBeVisible();
       assert.ok(windows.includes(90));
-      await section.screenshot({ path: `/private/tmp/eacc-mcp-admin-${viewport.width}.png` });
       assert.deepEqual(errors, []);
     } finally { await page.close(); }
   }
