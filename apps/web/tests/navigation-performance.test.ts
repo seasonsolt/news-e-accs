@@ -103,7 +103,8 @@ test('SSR list and visited query variants return offline without another read',a
   const page=await context.newPage();
   try{
     await page.goto(origin+'/');
-    await expect(page.getByRole('link',{name:'性能检查文章',exact:true})).toBeVisible();
+    // This exercises client history/cache, so wait for hydration before leaving the SSR page.
+    await hydrated(page.getByRole('link',{name:'性能检查文章',exact:true}));
     await page.getByRole('link',{name:'性能检查文章',exact:true}).click();
     await expect(page.getByText('固定正文',{exact:true})).toBeVisible();
     await context.setOffline(true);
