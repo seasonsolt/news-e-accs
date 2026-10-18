@@ -15,6 +15,7 @@ import { promptText, promptVersion } from "../editorial/prompts.ts";
 import { sha256, stableJson } from "../lib/ids.ts";
 import { logError } from "../lib/log-error.ts";
 import { chatJson } from "../providers/llm.ts";
+import { latestHotRanking } from "../publication/hot.ts";
 import { BudgetExceededError, completeReceipt, ReceiptBusyError, ReceiptUnknownError } from "../providers/receipts.ts";
 import { grounded } from "../reports/compose.ts";
 import { wechatColumn } from "./wechat-column.ts";
@@ -106,6 +107,22 @@ export async function printedIssue(key: string): Promise<{ article: WechatArticl
 
 const printed = (article: WechatArticle) => article.entries.filter((e) => !e.hidden);
 
+/**
+ * The entries with the one whose event stands highest on the hot list first: the video's lead is the
+ * day's most talked-about story, whatever its place in the column. The others keep the column's order.
+ */
+async function hottestFirst(entries: ColumnEntry[]): Promise<ColumnEntry[]> {
+  const ranking = await latestHotRanking();
+  if (!ranking?.entries.length || !entries.length) return entries;
+  const rows = await sql<{ article_id: string; story_id: string }[]>`
+    SELECT article_id, story_id FROM publications WHERE article_id = ANY(${entries.map((e) => e.key)}::text[]) AND story_id IS NOT NULL`;
+  const storyOf = new Map(rows.map((r) => [r.article_id, Number(r.story_id)]));
+  const rankOf = new Map(ranking.entries.map((e) => [e.storyId, e.rank]));
+  const rank = (e: ColumnEntry) => rankOf.get(storyOf.get(e.key) ?? -1) ?? Infinity;
+  const hottest = entries.reduce((best, e) => (rank(e) < rank(best) ? e : best));
+  return rank(hottest) === Infinity ? entries : [hottest, ...entries.filter((e) => e !== hottest)];
+}
+
 const monthDay = (key: string) => {
   const [, m, d] = key.split("-").map(Number) as [number, number, number];
   return `${m} 月 ${d} 日`;
@@ -160,7 +177,7 @@ export async function writeWechatVideoScript(job: { date: string; request: strin
   if (!claimed.length) return { status: "superseded" };
   try {
     const issue = await printedIssue(job.date);
-    const all = issue ? printed(issue.article) : [];
+    const all = issue ? await hottestFirst(printed(issue.article)) : [];
     const entries = all.slice(0, VIDEO_ENTRIES);
     if (!issue || !entries.length) throw new Error("这一天没有可以做视频的早报。");
     const others = all.slice(VIDEO_ENTRIES);

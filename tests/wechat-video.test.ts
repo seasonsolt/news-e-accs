@@ -4,12 +4,14 @@
 // with the entries as the column prints them now. The model is a local stub.
 import { pointModels, stub, tag } from "./setup.ts";
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
 import { beijingDate } from "@aihot/contracts/time";
 import { config } from "@aihot/backend/config";
 import { closeDb, sql } from "@aihot/backend/db";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { requestWechatVideoScript, saveWechatEdits, saveWechatVideoScript, wechatExport } from "@aihot/backend/admin/wechat";
+import type { HotEntry } from "@aihot/backend/events/hot";
 import { writeWechatVideoScript, type WechatVideoSpec } from "@aihot/backend/newsletter/wechat-video";
 import { buildApp } from "../apps/api/src/app.ts";
 import { charTimes, misheard, subtitles } from "../scripts/wechat-video.ts";
@@ -152,6 +154,43 @@ test("the worker writes the lead, the quick hits and a last word, the editor rew
     assert.deepEqual(await writeWechatVideoScript({ date: TODAY, request: again.request }), { status: "done" });
     assert.equal((await ready()).video!.script!.egg, null);
   } finally {
+    await model.close();
+  }
+});
+
+test("the lead is the printed entry whose story stands highest on the hot list", async () => {
+  const model = await stub(() => ({ id: `wv-hot-${T}`, choices: [{ message: { content: JSON.stringify({ segments: [], egg: null }) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } }));
+  pointModels(model.url, ["deepseek-flash"]);
+  const at = new Date(Date.now() - 60_000);
+  const source = `wv-hot-${T}`;
+  try {
+    await sql`INSERT INTO sources (id,name,kind,tier,participation_mode,next_fetch_at) VALUES (${source},'Hot','rss','T1','editorial','2100-01-01')`;
+    // A story per item: one the column does not print, then two entries the video tells (one hidden first).
+    const entries: HotEntry[] = [];
+    for (const [rank, item] of [`wv-hot-${T}`, `wv-${T}-D`, `wv-${T}-2`].entries()) {
+      const title = `Hot ${rank + 1}`;
+      const [story] = await sql<{ id: number; public_id: string }[]>`INSERT INTO stories (public_id,title) VALUES (${randomUUID()},${title}) RETURNING id,public_id`;
+      const [fact] = await sql<{ id: number }[]>`INSERT INTO facts (public_id,story_id,title) VALUES (${randomUUID()},${story!.id},${title}) RETURNING id`;
+      await sql`INSERT INTO articles (id,source_id,identity_key,url,title,discovered_at,timeline_at)
+        VALUES (${item},${source},${item},${`https://example.org/${item}`},${title},${at},${at}) ON CONFLICT (id) DO NOTHING`;
+      await sql`INSERT INTO fact_articles (fact_id,article_id,role) VALUES (${fact!.id},${item},'report')`;
+      await sql`INSERT INTO publications (article_id,source_id,title,url,timeline_at,discovered_at,sort_at,body_mode,eligible,channel,story_id,fact_id)
+        VALUES (${item},${source},${title},${`https://example.org/${item}`},${at},${at},${at},'summary',true,'news',${story!.id},${fact!.id})`;
+      entries.push({ rank: rank + 1, storyId: story!.id, storyPublicId: story!.public_id, title, heat: 10, trend: "flat", trendPct: 0, badges: [],
+        participantCount: 0, sourceCount: 1, signalCount: 0, reportCount: 1, sourceNames: ["Hot"], latestAt: at.toISOString(), firstReportAt: at.toISOString(),
+        representativeItemId: item, representativeUrl: `https://example.org/${item}`, representativeSource: "Hot", participants: [] });
+    }
+    await sql`INSERT INTO hot_rankings (computed_at,rule_version,entries,published) VALUES (now(),${source},${sql.json(entries as never)},true)`;
+
+    const { request } = await requestWechatVideoScript(TODAY, "editor");
+    assert.deepEqual(await writeWechatVideoScript({ date: TODAY, request }), { status: "done" });
+    const { article, video } = await ready();
+    const title = new Map(article.entries.map((e) => [e.key, e.title]));
+    assert.deepEqual(video!.script!.segments.map((s) => title.get(s.key)), ["条目 D 发布", "产品 B 上线", "条目 E 发布", "条目 F 发布", "条目 G 发布", "插件 H 上线"],
+      "the hottest printed entry leads, the rest keep the column's order");
+    assert.match(video!.script!.caption, /\n01 条目 D 发布\n02 产品 B 上线/);
+  } finally {
+    await sql`DELETE FROM hot_rankings WHERE rule_version = ${source}`;
     await model.close();
   }
 });
