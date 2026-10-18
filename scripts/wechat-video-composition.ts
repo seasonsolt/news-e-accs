@@ -233,14 +233,14 @@ D.scenes.forEach((s, k) => {
   const scene = "#scene-" + k;
   const kind = D.kinds[k];
   const long = s.end - s.start;
-  // Each card rises in and leaves upward, the next one arriving on the same line of motion.
-  tl.fromTo(scene + " .stage", { y: 80, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power3.out" }, s.start);
+  // Each card rises in and leaves upward, the next one arriving on the same line of motion. The first is
+  // whole from the first frame, which 视频号 shows before the video plays.
+  if (k > 0) tl.fromTo(scene + " .stage", { y: 80, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, ease: "power3.out" }, s.start);
   if (k < last) tl.to(scene + " .stage", { y: -80, opacity: 0, duration: 0.3, ease: "power2.in" }, s.end - 0.3);
   tl.fromTo(scene + " .push", { scale: 1 }, { scale: 1.02, duration: long, ease: "none" }, s.start);
   if (kind === "opening") {
-    tl.fromTo(scene + " .column .tk", { yPercent: 60, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.5, ease: "power3.out", stagger: 0.06 }, 0.1);
-    tl.fromTo(scene + " .date", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.6, ease: "power2.inOut" }, 0.35);
-    tl.fromTo(scene + " .heads li", { x: -50, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power2.out", stagger: 0.08 }, 0.7);
+    tl.fromTo(scene + " .date", { scale: 1 }, { scale: 1.05, duration: 0.35, ease: "sine.inOut", yoyo: true, repeat: 1, transformOrigin: "left center" }, 0.3);
+    tl.fromTo(scene + " .heads li", { opacity: 0.45 }, { opacity: 1, duration: 0.3, ease: "power2.out", stagger: 0.12 }, 0.4);
   } else if (kind === "lead") {
     tl.fromTo(scene + " .badge", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2)" }, s.start + 0.05);
     tl.fromTo(scene + " .meta", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power2.out" }, s.start + 0.2);
