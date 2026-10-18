@@ -8,7 +8,6 @@ import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import sharp from "sharp";
 import { config } from "../config.ts";
 import { shutdownSignal } from "../lib/shutdown.ts";
 import { paidRequest, ProviderRejectedError } from "./receipts.ts";
@@ -67,6 +66,7 @@ async function newestImage(dir: string): Promise<string | null> {
 
 /** A picture as the article prints it: at most WIDTH wide, JPEG, saved under `dir` by its content. */
 export async function saveJpeg(image: Buffer, dir: string): Promise<{ file: string; width: number; height: number; bytes: number }> {
+  const { default: sharp } = await import("sharp");
   const { data, info } = await sharp(image, { limitInputPixels: 64_000_000 })
     .rotate().resize({ width: WIDTH, withoutEnlargement: true }).flatten({ background: "#ffffff" })
     .jpeg({ quality: 82, mozjpeg: true }).toBuffer({ resolveWithObject: true });

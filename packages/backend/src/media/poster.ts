@@ -1,24 +1,13 @@
 // Share posters (1080×1440 PNG) for articles, made for phones: saved from the page or long-pressed in
 // chat apps. Same font pipeline as the share cards; the QR code opens the article on the site.
-import { createHash } from "node:crypto";
+import { posterEtag, type Poster } from "./cards.ts";
+export { posterEtag, POSTER_TEMPLATE_VERSION, type Poster } from "./cards.ts";
 import { renderSVG } from "uqr";
 import { SITE } from "@aihot/site";
 import { brandMark, clamp, h, nameMark, renderPng, SITE_HOST, type Node } from "./og.ts";
 
-export const POSTER_TEMPLATE_VERSION = "poster-2026-10-10.editions";
 const WIDTH = 1080;
 const HEIGHT = 1440;
-
-export interface Poster {
-  language?: "en" | "zh";
-  url: string;
-  kicker: string;
-  title: string;
-  summary: string | null;
-  source: string;
-  date: string;
-  score: number | null;
-}
 
 const INK = "#2a1f16";
 const ACCENT = "#955418";
@@ -75,10 +64,6 @@ async function tree(p: Poster): Promise<Node> {
       h("div", { display: "flex", justifyContent: "center", marginTop: 40, fontSize: 24, color: "#8f7c64" }, `${SITE.name} · ${en ? SITE.tagline : "追踪 AI 进展的新闻日报"}`),
     ].filter(Boolean),
   );
-}
-
-export function posterEtag(p: Poster): string {
-  return createHash("sha256").update(POSTER_TEMPLATE_VERSION).update(JSON.stringify(p)).digest("hex").slice(0, 24);
 }
 
 /** PNG bytes for a poster, from the disk cache when this exact poster was rendered before. */

@@ -8,6 +8,7 @@ import { toFeedItemSummary } from "../publication/items.ts";
 import { loadItemOgCard } from "../publication/og.ts";
 import { renderOg } from "./og.ts";
 import { logError } from "../lib/log-error.ts";
+import { MediaBusyError } from "./capacity.ts";
 
 /** The (source, mode) pairs the proxy URLs in these public answers point at. */
 export function proxiedRenditions(answers: unknown[]): Array<{ url: string; mode: string }> {
@@ -30,7 +31,9 @@ export async function prepareArticleMedia(articleId: string): Promise<{ renditio
     try {
       const image = await produceImage(url, mode);
       if (image.type === "image/gif") animatedSaved += await convertAnimated(url, mode);
-    } catch {
+    } catch (error) {
+      // Capacity recovers: let media.prepare use its existing bounded queue retry.
+      if (error instanceof MediaBusyError) throw error;
       // The request path tries again (and answers 502) if the source is still unavailable.
       failed += 1;
     }
@@ -54,6 +57,7 @@ export async function warmShareImage(articleId: string): Promise<boolean> {
     }
     return warmed;
   } catch (error) {
+    if (error instanceof MediaBusyError) throw error;
     console.warn(JSON.stringify({ level: "warn", msg: "share image preparation failed", articleId, err: logError(error) }));
     return false;
   }

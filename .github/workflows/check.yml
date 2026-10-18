@@ -114,13 +114,14 @@ jobs:
           MODEL_CALLS_ENABLED: "false"
         run: |
           node apps/api/src/main.ts > "$RUNNER_TEMP/api.log" 2>&1 &
+          node apps/worker/src/main.ts > "$RUNNER_TEMP/worker.log" 2>&1 &
           (cd apps/web && NODE_ENV=production exec node server.ts) > "$RUNNER_TEMP/web.log" 2>&1 &
           for i in $(seq 1 60); do curl -fsS -o /dev/null http://127.0.0.1:3000/api/health 2>/dev/null && break; sleep 1; done
           node scripts/smoke.ts --base http://127.0.0.1:3000
           node scripts/mcp-check.ts http://127.0.0.1:3000/api/mcp
       - name: Server logs
         if: failure() && matrix.shard == 1
-        run: tail -n 60 "$RUNNER_TEMP/api.log" "$RUNNER_TEMP/web.log" 2>/dev/null || true
+        run: tail -n 60 "$RUNNER_TEMP/api.log" "$RUNNER_TEMP/web.log" "$RUNNER_TEMP/worker.log" 2>/dev/null || true
 
   docker:
     runs-on: ubuntu-latest

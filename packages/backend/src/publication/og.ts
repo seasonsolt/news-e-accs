@@ -3,11 +3,14 @@
 import { beijingDate } from '@aihot/contracts/time';
 import type { CategoryKey } from '@aihot/contracts/taxonomy';
 import { ITEM_COPY, withSubject } from '@aihot/site';
-import type { OgCard } from '../media/og.ts';
+import type { OgCard } from '../media/cards.ts';
 import { localizePublication } from './content-language.ts';
 import { distributionCategory, editionReady, type DistributionLanguage } from './distribution.ts';
 import { sql } from '../db.ts';
 import { HEADER_SOURCE_LANGUAGE } from './items.ts';
+import { loadStoryProse } from './stories.ts';
+import { latestHotRanking } from './hot.ts';
+import { storyReportCondition } from './scope.ts';
 import { hasItemPage, publicSourceName } from './rules.ts';
 
 export async function loadItemShare(id: string, lang: DistributionLanguage = "en") {
@@ -38,5 +41,29 @@ export async function loadItemOgCard(id: string, lang: DistributionLanguage = "e
     subtitle: item.summary,
     meta: `${item.source.name} · ${beijingDate(item.timelineAt)}`,
     badge: item.selected && item.score !== null && ITEM_COPY.showScore ? { value: String(Math.round(item.score)), label: lang === "en" ? "Editorial score" : "精选评分" } : null,
+  };
+}
+
+/** Event card metadata: canonical edition identity, counts and rank, without heat/related/topic/module details. */
+export async function loadStoryOgCard(storyId: number, lang: DistributionLanguage = "en"): Promise<OgCard | null> {
+  const source = await loadStoryProse(storyId);
+  if (!source) return null;
+  const story = await localizePublication(source, lang);
+  if (!editionReady(story, lang)) return null;
+  const [[counts], ranking] = await Promise.all([
+    sql<{ sources: number; reports: number }[]>`
+      SELECT count(DISTINCT p.source_id)::int AS sources, count(DISTINCT p.article_id)::int AS reports
+      FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id JOIN publications p ON p.article_id = fa.article_id
+      JOIN sources s ON s.id = p.source_id
+      WHERE f.story_id = ${storyId} AND ${storyReportCondition(new Date())}`,
+    latestHotRanking(),
+  ]);
+  const rank = ranking?.entries.find((e) => e.storyId === storyId)?.rank ?? null;
+  return {
+    kicker: lang === "en" ? (rank ? `Hot topic #${rank}` : "Story") : (rank ? `热点第 ${rank} · 事件` : "事件"),
+    title: story.title,
+    subtitle: story.latest ?? story.digest,
+    meta: lang === "en" ? `${counts!.sources} sources · ${counts!.reports} reports` : `${counts!.sources} 个来源 · ${counts!.reports} 篇报道`,
+    accent: rank ? "hot" : "teal",
   };
 }

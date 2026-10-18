@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { IncomingMessage } from "node:http";
 import { OAUTH_PROBE_PATHS, resolveRedirect } from "@aihot/contracts/http-policy";
 import { sql } from "@aihot/backend/db";
+import { MediaBusyError } from "@aihot/backend/media/capacity";
 import { logError } from "@aihot/backend/lib/log-error";
 import { serverModules } from "@aihot/backend/modules";
 import { registerSite } from "./routes/site.ts";
@@ -120,6 +121,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   app.setErrorHandler((error, req, reply) => {
+    if (error instanceof MediaBusyError) {
+      return sendProblem(req, reply, { status: 503, code: "temporarily_unavailable", detail: "Media processing is busy; try again later.", retryAfter: error.retryAfter });
+    }
     const status = (error as { statusCode?: number }).statusCode ?? 500;
     if (status === 400 || status === 413 || status === 415) {
       // A malformed or oversized request is the client's: one line, no stack trace in the error log.

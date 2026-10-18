@@ -2,22 +2,10 @@
 // date and issue number in its left square, which is the 1:1 crop shown where the list is square.
 // Rendered like the share images (og.ts), on the deck the article opens with in the issue's theme, and
 // cached on disk by content.
-import { createHash } from "node:crypto";
+import { WECHAT_COVER, wechatCoverEtag, type WechatCover } from "./cards.ts";
+export { WECHAT_COVER, WECHAT_COVER_SQUARE, WECHAT_COVER_WIDE, wechatCoverEtag, type WechatCover } from "./cards.ts";
 import { clamp, h, nameMark, renderPng, SITE_HOST } from "./og.ts";
-import { WECHAT_COLUMN, WECHAT_THEMES, type WechatTheme } from "../newsletter/wechat.ts";
-
-const TEMPLATE_VERSION = "wechat-cover-2026-10-12.1";
-export const WECHAT_COVER = { width: 1175, height: 500 } as const;
-/** The left square as the draft API's crop fractions (x1_y1_x2_y2). */
-export const WECHAT_COVER_SQUARE = `0_0_${(WECHAT_COVER.height / WECHAT_COVER.width).toFixed(6)}_1`;
-export const WECHAT_COVER_WIDE = "0_0_1_1";
-
-export interface WechatCover {
-  date: string;
-  issueNumber: number;
-  headline: string;
-  theme: WechatTheme;
-}
+import { WECHAT_COLUMN, WECHAT_THEMES } from "../newsletter/wechat.ts";
 
 function tree(cover: WechatCover) {
   const C = WECHAT_THEMES[cover.theme].palette;
@@ -52,10 +40,6 @@ function tree(cover: WechatCover) {
       ]),
     ],
   ));
-}
-
-export function wechatCoverEtag(cover: WechatCover): string {
-  return createHash("sha256").update(TEMPLATE_VERSION).update(JSON.stringify(cover)).digest("hex").slice(0, 24);
 }
 
 /** PNG bytes of a cover, from the disk cache when this exact cover was rendered before. */

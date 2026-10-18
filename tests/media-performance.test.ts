@@ -16,6 +16,7 @@ process.env.MODEL_CALLS_ENABLED = "false";
 const { produceImage } = await import("@aihot/backend/media/images");
 const { renderOg } = await import("@aihot/backend/media/og");
 const { renderPoster } = await import("@aihot/backend/media/poster");
+await (await import("@aihot/backend/jobs/media")).registerMediaJobs(await (await import("@aihot/backend/jobs/queue")).getBoss());
 const { xView } = await import("@aihot/backend/publication/items");
 
 let imageHits = 0;
@@ -27,14 +28,17 @@ const frames = await sharp({ create: { width: 160, height: 1200, channels: 3, ba
 const animatedGif = await sharp(frames, { raw: { width: 160, height: 1200, channels: 3, pageHeight: 120 } }).gif({ loop: 0, delay: Array(10).fill(90) }).toBuffer();
 const tinyGif = await sharp(Buffer.from([255, 0, 0, 0, 0, 255]), { raw: { width: 1, height: 2, channels: 3, pageHeight: 1 } }).gif({ loop: 2, delay: [80, 160] }).toBuffer();
 // Inflate the two image descriptors only: metadata exceeds the decode budget without actually
-// allocating hundreds of millions of pixels in this test (or on an HTTP request).
+// allocating a large decoded animation in this test (or on an HTTP request).
 const overBudgetGif = Buffer.from(tinyGif);
 const descriptor = Buffer.from([44, 0, 0, 0, 0, 1, 0, 1, 0]);
 for (let at = overBudgetGif.indexOf(descriptor); at !== -1; at = overBudgetGif.indexOf(descriptor, at + 9)) {
-  overBudgetGif.writeUInt16LE(11000, at + 5);
-  overBudgetGif.writeUInt16LE(11000, at + 7);
+  overBudgetGif.writeUInt16LE(2100, at + 5);
+  overBudgetGif.writeUInt16LE(2100, at + 7);
 }
+const heldOrigins = new Map<string, { seen: ReturnType<typeof Promise.withResolvers<void>>; release: ReturnType<typeof Promise.withResolvers<void>> }>();
 const server = createServer(async (req, res) => {
+  const held = heldOrigins.get(req.url ?? "");
+  if (held) { held.seen.resolve(); await held.release.promise; }
   if (req.url === "/anim.gif") { animationHits++; res.writeHead(200, { "content-type": "image/gif" }); return res.end(animatedGif); }
   if (req.url === "/tiny.gif") { res.writeHead(200, { "content-type": "image/gif" }); return res.end(tinyGif); }
   if (req.url === "/over-budget.gif") { res.writeHead(200, { "content-type": "image/gif" }); return res.end(overBudgetGif); }
@@ -110,6 +114,31 @@ test("cached oversized SVGs use current renditions without downloading them agai
 
 // SVG can be much smaller over HTTP than its disk size, and its intrinsic display width is
 // independent of a bitmap's pixel count. Neither may regress just to change the image format.
+test("API readers send a mismatched legacy WebP MIME to worker for metadata repair", async () => {
+  const { default: Fastify } = await import("fastify");
+  const { registerMedia } = await import("../apps/api/src/routes/media.ts");
+  const { proxiedImage } = await import("@aihot/backend/media/imgproxy");
+  const { imageCacheFile, readPreparedImage } = await import("@aihot/backend/media/cache");
+  const url = `${base}/legacy-mime-repair`;
+  const file = imageCacheFile(url, "full");
+  const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><rect width="200" height="100" fill="#176b75"/></svg>');
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(file, svg);
+  await writeFile(`${file}.type`, "image/webp");
+  assert.equal(await readPreparedImage(url, "full"), null);
+  const before = imageHits;
+  const app = Fastify(); registerMedia(app);
+  try {
+    const response = await app.inject(proxiedImage(url, "full")!);
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.headers["content-type"], "image/svg+xml");
+    assert.deepEqual(response.rawPayload, svg);
+    assert.equal(await readFile(`${file}.type`, "utf8"), "image/svg+xml");
+    assert.deepEqual(await readPreparedImage(url, "full"), { body: svg, type: "image/svg+xml" });
+    assert.equal(imageHits, before, "metadata repair must not refetch an existing original");
+  } finally { await app.close(); }
+});
+
 test("SVG preparation retains compact transfer and intrinsic display size", async () => {
   const { resizeImage } = await import("@aihot/backend/media/images");
   const compactTransfer = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="1920" height="1080" fill="#176b75"/><desc>${"compressible metadata ".repeat(10000)}</desc></svg>`);
@@ -438,4 +467,142 @@ test("video pages mislabeled as images are excluded across ingestion and public 
     assert.match(decodeURIComponent(html), /i\.ytimg\.com\/vi\/example\/hqdefault\.jpg/);
   }
   assert.doesNotMatch(proxyBodyImages(`<video src="https://example.org/video.mp4" poster="${pages[1]}"></video>`), /poster=/);
+});
+
+// Decoder overload must not corrupt caches or prevent already prepared images from being served.
+test("decoder overload returns uncached 503s and preserves warm reads", async () => {
+  const { mediaCapacity, MediaBusyError } = await import("@aihot/backend/media/capacity");
+  const { signature } = await import("@aihot/backend/media/imgproxy");
+  const { buildApp } = await import("../apps/api/src/app.ts");
+  const app = await buildApp();
+  const warmUrl = `${base}/warm-capacity`;
+  const image = await produceImage(warmUrl, "card");
+  const card = { kicker: "capacity", title: "Already rendered" };
+  const share = await renderOg(card);
+  const gate = Promise.withResolvers<void>();
+  const jobs = Array.from({ length: 10 }, (_, i) => mediaCapacity.run(async () => { if (i < 2) await gate.promise; }));
+  try {
+    assert.equal(mediaCapacity.snapshot().running, 2);
+    assert.equal(mediaCapacity.snapshot().queued, 8);
+    const hits = imageHits;
+    const coldUrl = `${base}/refused-capacity`;
+    await assert.rejects(produceImage(coldUrl, "card"), MediaBusyError);
+    await assert.rejects(renderOg({ kicker: "capacity", title: "Cannot render yet" }), MediaBusyError);
+    assert.deepEqual(await produceImage(warmUrl, "card"), image);
+    assert.deepEqual(await renderOg(card), share);
+    const exp = String(Math.ceil(Date.now() / 1000) + 3600);
+    const params = new URLSearchParams({ u: coldUrl, mode: "card", exp, sig: signature(coldUrl, "card", exp) });
+    for (const url of [`/api/img-proxy?${params}`, "/og/pages/all.png?lang=en"]) {
+      const response = await app.inject(url);
+      assert.equal(response.statusCode, 503);
+      assert.equal(response.headers["retry-after"], "5");
+      assert.equal(response.headers["cache-control"], "no-store");
+    }
+    assert.equal(imageHits, hits + 1, "downloaded original is reused while decoder capacity is full");
+  } finally {
+    gate.resolve();
+    await Promise.all(jobs);
+    await app.close();
+  }
+  assert.equal(mediaCapacity.snapshot().running, 0);
+  assert.equal(mediaCapacity.snapshot().queued, 0);
+  assert.ok((await produceImage(`${base}/refused-capacity`, "card")).body.length, "the same key recovers after capacity is released");
+});
+
+test("raster-only consumers retain a hard pixel ceiling", async () => {
+  const { crc32 } = await import("node:zlib");
+  const { rasterImage } = await import("@aihot/backend/media/images");
+  const oversized = Buffer.from(png);
+  // Rewrite the PNG's IHDR and checksum only: 25 million input pixels without allocating them.
+  oversized.writeUInt32BE(5000, 16);
+  oversized.writeUInt32BE(5000, 20);
+  oversized.writeUInt32BE(crc32(oversized.subarray(12, 29)), 29);
+  await assert.rejects(rasterImage(oversized, "image/png", "card"), /pixel limit/);
+});
+
+
+test("large real JPEG and PNG photographs remain displayable and cached without a server decode", async () => {
+  const { default: Fastify } = await import("fastify");
+  const { registerMedia } = await import("../apps/api/src/routes/media.ts");
+  const { proxiedImage } = await import("@aihot/backend/media/imgproxy");
+  // The review's common 6000×4000 photograph: exercise actual valid compressed bytes.
+  const photograph = sharp({ create: { width: 6000, height: 4000, channels: 3, background: "#176b75" } });
+  const jpeg = await photograph.clone().jpeg().toBuffer();
+  const largePng = await photograph.png().toBuffer();
+  let hits = 0;
+  const photos = createServer((req, res) => {
+    hits++;
+    const isJpeg = req.url === "/photo.jpg";
+    res.writeHead(200, { "content-type": isJpeg ? "image/jpeg" : "application/octet-stream" });
+    res.end(isJpeg ? jpeg : largePng);
+  });
+  await new Promise<void>((resolve) => photos.listen(0, "127.0.0.1", resolve));
+  const app = Fastify();
+  registerMedia(app);
+  try {
+    for (const [name, type, bytes] of [["photo.jpg", "image/jpeg", jpeg], ["photo.png", "image/png", largePng]] as const) {
+      const url = proxiedImage(`http://127.0.0.1:${(photos.address() as { port: number }).port}/${name}`, "card")!;
+      const first = await app.inject(url);
+      assert.equal(first.statusCode, 200);
+      assert.equal(first.headers["content-type"], type);
+      assert.deepEqual(first.rawPayload, bytes);
+      const second = await app.inject({ url, headers: { "if-none-match": String(first.headers.etag) } });
+      assert.equal(second.statusCode, 304);
+      assert.notEqual(first.headers["cache-control"], "no-store");
+    }
+    assert.equal(hits, 2, "each original is fetched once, including the conditional cache read");
+  } finally {
+    await app.close();
+    photos.closeAllConnections();
+    await new Promise<void>((resolve) => photos.close(() => resolve()));
+  }
+});
+
+test("two slow origins leave decoders free for an unrelated image and cold share card", async () => {
+  const { mediaCapacity, originalCapacity } = await import("@aihot/backend/media/capacity");
+  const paths = ["/slow-origin-1", "/slow-origin-2"];
+  for (const path of paths) heldOrigins.set(path, { seen: Promise.withResolvers<void>(), release: Promise.withResolvers<void>() });
+  const jobs = paths.map((path) => produceImage(`${base}${path}`, "card"));
+  try {
+    await Promise.all(paths.map((path) => heldOrigins.get(path)!.seen.promise));
+    assert.equal(originalCapacity.snapshot().running, 2);
+    assert.equal(mediaCapacity.snapshot().running, 0, "network waits own no decoder");
+    assert.ok((await renderOg({ kicker: "slow origins", title: "Unrelated cold card" })).png.length);
+    assert.ok((await produceImage(`${base}/fast-independent`, "card")).body.length);
+    assert.equal(originalCapacity.snapshot().running, 2, "both slow originals are still waiting");
+  } finally {
+    for (const path of paths) heldOrigins.get(path)!.release.resolve();
+    await Promise.all(jobs);
+    for (const path of paths) heldOrigins.delete(path);
+  }
+});
+
+test("downloaded originals waiting for decoders stay within their reserved byte budget", async () => {
+  const { mediaCapacity, originalCapacity } = await import("@aihot/backend/media/capacity");
+  const { imageMemoryStats } = await import("@aihot/backend/media/images");
+  const { setTimeout: delay } = await import("node:timers/promises");
+  const gate = Promise.withResolvers<void>();
+  const decoders = [mediaCapacity.run(() => gate.promise), mediaCapacity.run(() => gate.promise)];
+  const before = imageHits;
+  const images = Array.from({ length: 4 }, (_, i) => produceImage(`${base}/byte-budget-${i}`, "card"));
+  let fifth: Promise<unknown> | undefined;
+  try {
+    for (let i = 0; i < 200 && imageMemoryStats().processingOriginalBytes < png.length * 4; i++) await delay(10);
+    assert.equal(imageMemoryStats().processingOriginalBytes, png.length * 4);
+    assert.equal(imageMemoryStats().originalReservedBytes, 60 * 1024 * 1024);
+    assert.equal(mediaCapacity.snapshot().queued, 4);
+    fifth = produceImage(`${base}/byte-budget-fifth`, "card");
+    for (let i = 0; i < 100 && !originalCapacity.snapshot().queued; i++) await delay(10);
+    assert.equal(originalCapacity.snapshot().queued, 1);
+    assert.equal(imageHits, before + 4, "the fifth download waits before allocating an original");
+    assert.ok(imageMemoryStats().processingOriginalBytes <= imageMemoryStats().originalReservedBytes);
+  } finally {
+    gate.resolve();
+    await Promise.all([...decoders, ...images, fifth]);
+  }
+  assert.equal(imageMemoryStats().processingOriginalBytes, 0);
+  assert.equal(imageMemoryStats().originalReservedBytes, 0);
+  await assert.rejects(produceImage(`${base}/binary-error`, "card"));
+  assert.equal(imageMemoryStats().processingOriginalBytes, 0, "decode failures release the original bytes too");
+  assert.equal(imageMemoryStats().originalReservedBytes, 0);
 });
