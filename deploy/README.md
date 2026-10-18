@@ -10,7 +10,8 @@
 ```
 
 - Worker 把所有请求带上 `EDGE_SECRET` 转给新闻站，匿名请求的公开响应（源站给了 `public` 和 `s-maxage`）放进边缘缓存，响应头 `x-eacc-edge-cache: HIT|MISS`。带后台或登录 cookie 的请求、`/api`（`/api/site/*` 和图片代理除外）、`/admin`、`/starred`、`/feedback` 不进缓存。
-- 2026-10 以前，e-acc.ai 的价格、计算器、时间线等工具页由另一个仓库 seasonsolt/e-acc.ai 的 Cloudflare Pages 静态站提供。下线后价格页由模型榜模块接管（`/pricing`），其余旧地址的跳转写在 `site/site.ts` 的 `REDIRECTS`。
+- 根域名 e-acc.ai 的 DNS 是一条代理开启的占位记录 `AAAA 100::`，只用来让 Worker 路由 `e-acc.ai/*` 生效，不能删，也不能关代理（MX、TXT 记录照常）。
+- 2026-10 以前，e-acc.ai 的价格、计算器、时间线等工具页由另一个仓库 seasonsolt/e-acc.ai 的 Cloudflare Pages 静态站提供。2026-10-18 下线：仓库已归档，Pages 项目已删除；价格页由模型榜模块接管（`/pricing`），其余旧地址的跳转写在 `site/site.ts` 的 `REDIRECTS`。
 
 - news.e-accs.com 只接受带 `EDGE_SECRET` 的请求（也就是经过 Worker 的），其余请求重定向到 e-acc.ai。
 - 服务器的 443 端口给 sing-box 用了，所以走 Tunnel（只出站，不开端口）。
