@@ -74,6 +74,7 @@ export async function siteAnalyticsOverview(days = 30) {
     totals: totals!,
     daily,
     pages,
+    mcp: await mcpAnalyticsOverview(windowDays),
     engagement: {
       totals: SITE_EVENTS.map((event) => ({
         event,
@@ -142,5 +143,55 @@ export async function subscribeFunnel(days = 30) {
     reasons: SUBSCRIBE_ERROR_REASONS,
     daily,
     totals: [...totals.values()],
+  };
+}
+
+/** Aggregate only the fixed MCP dimensions; never infer people/sessions from anonymous exchanges. */
+export async function mcpAnalyticsOverview(days = 30) {
+  const windowDays = [7, 30, 90].includes(days) ? days : 30;
+  const rows = await sql<{ operation: string; tool: string; outcome: string; is_check: boolean; calls: number; duration_ms: number; max_duration_ms: number; last_seen_at: Date }[]>`
+    SELECT operation, tool, outcome, is_check, sum(calls)::bigint AS calls,
+           sum(duration_ms) AS duration_ms, max(max_duration_ms) AS max_duration_ms, max(last_seen_at) AS last_seen_at
+    FROM mcp_usage_daily
+    WHERE day BETWEEN (now() AT TIME ZONE 'Asia/Taipei')::date - ${windowDays - 1}::int AND (now() AT TIME ZONE 'Asia/Taipei')::date
+    GROUP BY operation, tool, outcome, is_check`;
+  const daily = await sql<{ day: string; calls: number; successes: number }[]>`
+    WITH dates AS (
+      SELECT (now() AT TIME ZONE 'Asia/Taipei')::date - series.n AS day
+      FROM generate_series(0, ${windowDays - 1}::int) AS series(n)
+    )
+    SELECT to_char(d.day, 'YYYY-MM-DD') AS day,
+           coalesce(sum(u.calls), 0)::bigint AS calls,
+           coalesce(sum(u.calls) FILTER (WHERE u.outcome = 'success'), 0)::bigint AS successes
+    FROM dates d LEFT JOIN mcp_usage_daily u ON u.day = d.day AND NOT u.is_check AND u.operation = 'tools/call'
+    GROUP BY d.day ORDER BY d.day`;
+  const totals = { calls: 0, successes: 0, errors: 0, initializes: 0, discoveries: 0, checks: 0, activeDays: daily.filter((r) => r.calls > 0).length, averageMs: 0, maxMs: 0, lastCallAt: null as string | null };
+  const tools = new Map<string, { tool: string; calls: number; successes: number; errors: number; averageMs: number; maxMs: number; lastCallAt: string }>();
+  const errors = new Map<string, number>();
+  let durationMs = 0;
+  for (const r of rows) {
+    if (r.is_check) { totals.checks += r.calls; continue; }
+    if (r.operation === 'initialize') { totals.initializes += r.calls; continue; }
+    if (r.operation === 'tools/list') { totals.discoveries += r.calls; continue; }
+    if (r.operation !== 'tools/call') continue;
+    const lastCallAt = r.last_seen_at.toISOString();
+    const tool = tools.get(r.tool) ?? { tool: r.tool, calls: 0, successes: 0, errors: 0, averageMs: 0, maxMs: 0, lastCallAt };
+    tool.calls += r.calls;
+    tool.averageMs += r.duration_ms;
+    tool.maxMs = Math.max(tool.maxMs, r.max_duration_ms);
+    if (lastCallAt > tool.lastCallAt) tool.lastCallAt = lastCallAt;
+    if (r.outcome === 'success') { tool.successes += r.calls; totals.successes += r.calls; }
+    else { tool.errors += r.calls; totals.errors += r.calls; errors.set(r.outcome, (errors.get(r.outcome) ?? 0) + r.calls); }
+    tools.set(r.tool, tool);
+    totals.calls += r.calls;
+    durationMs += r.duration_ms;
+    totals.maxMs = Math.max(totals.maxMs, r.max_duration_ms);
+    if (!totals.lastCallAt || lastCallAt > totals.lastCallAt) totals.lastCallAt = lastCallAt;
+  }
+  totals.averageMs = totals.calls ? durationMs / totals.calls : 0;
+  return {
+    totals, daily,
+    tools: [...tools.values()].map((t) => ({ ...t, averageMs: t.averageMs / t.calls })).sort((a, b) => b.calls - a.calls || a.tool.localeCompare(b.tool)),
+    errors: [...errors].map(([outcome, calls]) => ({ outcome, calls })).sort((a, b) => b.calls - a.calls || a.outcome.localeCompare(b.outcome)),
   };
 }

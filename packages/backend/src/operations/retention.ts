@@ -33,6 +33,7 @@ export async function dailyRetention(now = new Date()) {
   // The modules' periods first (their aggregates before their deletions, as the engine's).
   const modules: Record<string, unknown> = {};
   for (const m of serverModules()) if (m.retention) Object.assign(modules, await m.retention(now));
+  const mcpUsage = await sql`DELETE FROM mcp_usage_daily WHERE day < (${now}::timestamptz AT TIME ZONE 'Asia/Taipei')::date - 89`;
   const leases = await sql`DELETE FROM delivery_leases WHERE expires_at < ${now}`;
   // Scheduled-task history: 30 days (failures 90) is enough for the runs view.
   const runs = await sql`DELETE FROM job_runs WHERE started_at < ${new Date(now.getTime() - 30 * 86400_000)} AND (status IS DISTINCT FROM 'failed' OR started_at < ${new Date(now.getTime() - 90 * 86400_000)})`;
@@ -45,6 +46,7 @@ export async function dailyRetention(now = new Date()) {
   const prunedCache = (await removeOlderThan(path.join(config.dataDir, "imgcache"), monthMs, now.getTime())) + (await removeOlderThan(path.join(config.dataDir, "ogcache"), monthMs, now.getTime()));
   return {
     ...modules,
+    deletedMcpUsage: mcpUsage.count,
     deletedLeases: leases.count,
     deletedJobRuns: runs.count,
     deletedScreenshots,

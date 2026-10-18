@@ -52,7 +52,7 @@ for (const [path, type] of MACHINE) await check(path, (res) => (type.test(res.he
 // MCP: the handshake answers with the site's server name.
 const mcp = await fetch(`${base}/api/mcp`, {
   method: "POST",
-  headers: { "content-type": "application/json", accept: "application/json, text/event-stream" },
+  headers: { "content-type": "application/json", accept: "application/json, text/event-stream", "x-mcp-usage": "check" },
   body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "smoke", version: "1" } } }),
 }).then((r) => r.text()).catch((e) => String(e));
 const mcpOk = mcp.includes(`"name":"${SITE.mcpPrefix}"`);
