@@ -26,6 +26,7 @@ export function Observatory({ era, focus, nearby, label, distance }: { era: Chro
       {/* Kept mounted across plates: it flies from one to the next. */}
       <DepthLayer src={plate.src} at={plate.at} nearby={nearby} />
       <div className="observatory-shade" aria-hidden="true" />
+      {featuredProduct()?.url && <Link to={featuredProduct()!.url!} className="observatory-wallpaper"><Text value="设为 4K 壁纸 →" /></Link>}
       <header className="observatory-readout">
         <p className="observatory-kicker">
           <span><Text value="加速史" /></span>
@@ -44,7 +45,6 @@ export function Observatory({ era, focus, nearby, label, distance }: { era: Chro
         <h2 className="observatory-era">{moment ? moment.title : era.title}</h2>
         <p className="observatory-summary">{moment ? moment.detail : era.summary}</p>
         <p className="observatory-style"><Text value="画风 ·" />{moment ? (moment.artStyle ?? era.artStyle) : era.artStyle}</p>
-        {featuredProduct()?.url && <Link to={featuredProduct()!.url!} className="mt-3 inline-flex text-sm text-[#e8c98a]"><Text value="设为 4K 壁纸 →" /></Link>}
       </header>
     </section>
   );

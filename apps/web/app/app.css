@@ -1136,6 +1136,10 @@ html { scrollbar-gutter: stable; }
 .observatory-kicker { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font: 500 11.5px/1 var(--font-mono); letter-spacing: .12em; color: var(--brass); }
 .observatory-forecast { padding: 3px 6px; border: 1px dashed var(--brass); border-radius: 4px; letter-spacing: .04em; }
 .observatory-chip { padding: 3px 7px; border-radius: 4px; background: rgb(217 164 65 / .18); letter-spacing: .04em; color: var(--brass-hi); }
+/* The featured product's way in (industry/products.ts): a brass tag in the plate's top corner, clear of the readout. */
+.observatory-wallpaper { position: absolute; top: 16px; right: 16px; z-index: 2; padding: 6px 12px; border: 1px solid rgb(217 164 65 / .45); border-radius: 999px; background: rgb(21 17 13 / .55); backdrop-filter: blur(6px); font: 12px var(--font-mono); letter-spacing: .04em; color: var(--brass-hi); transition: background 200ms var(--ease-out-quart); }
+.observatory-wallpaper:hover { background: rgb(217 164 65 / .22); }
+@media (min-width: 961px) { .observatory-wallpaper { top: 24px; right: 28px; } }
 .observatory-time { margin-top: 10px; font-family: var(--font-display); font-weight: 400; line-height: .9; color: var(--deck-ink); text-shadow: 0 2px 30px rgb(0 0 0 / .45); }
 .observatory-time-figure { font-size: clamp(68px, 12vw, 136px); letter-spacing: -.02em; }
 .observatory-time-unit { margin-inline: .06em; font-size: clamp(26px, 4vw, 44px); color: rgb(244 236 220 / .82); }
