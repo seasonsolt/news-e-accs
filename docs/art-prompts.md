@@ -221,3 +221,25 @@
 | `text-to-video` | 生成式视频 | A restrained contemporary editing workstation, single monitor showing a cinematic sailboat moving across a golden lake. Beneath the main scene just three large sequential frame thumbnails showing the same boat moving left to right, a short clean timeline bar. Soft cinematic lighting, no wall of screens, no lettering, no film perforations. |
 | `realtime-voice-vision` | 实时语音与视觉 | Close editorial scene of a hand holding a smartphone in a naturally lit room, phone showing one smooth large blue audio waveform and a small live camera view of the room's potted plant. Human conversation and seeing together, broad clean UI, warm skin tones, pale teal background, no text or logos. |
 | `reasoning-model` | 推理模型 | A calm contemplative desk: a single large notebook with three spacious connected reasoning steps depicted as simple diagrams, a pencil, and a monitor showing a clean geometric proof triangle. One amber lamp illuminates a deliberate path from problem to solution. Beautiful painterly photographic realism, no tiny equations, no dense numbers, no maze or glowing brain. |
+
+# 壁纸（4K）
+
+用途：订阅壁纸，每天一张，桌面版 3840×2160，手机版 2160×3840。ChatGPT 网页版出图一般是 1536×1024，所以在本机用 `tools/make-wallpaper.sh` 放大成 4K。
+
+## 怎么画
+
+1. 在 ChatGPT 里画 **横版 3:2（1536×1024）**，人工生成、人工保存。订阅版条款不允许用脚本自动操作 ChatGPT。
+2. 桌面版会裁掉上下各约 8%，手机版只保留横向中间约 37% 宽的竖条。主体放在画面中部，左右两侧也要能单独成画。
+3. 不要文字、字母、数字、logo 和水印。
+
+## 放大
+
+1. 第一次使用前，从 [Real-ESRGAN 发布页](https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0) 下载 `realesrgan-ncnn-vulkan-20220424-macos.zip`，解压到不在仓库里的目录，例如 `~/Applications/realesrgan/`。
+2. 运行：
+   ```bash
+   REALESRGAN=~/Applications/realesrgan/realesrgan-ncnn-vulkan tools/make-wallpaper.sh ~/Desktop/今天的图.png
+   ```
+   输出 `<文件名>-desktop.jpg` 和 `<文件名>-phone.jpg` 到 `~/Desktop/eacc-wallpaper/`。M1 Max 上一张约 30 秒。
+3. 可调参数：`GRAIN`（颗粒强度，默认 4，0 为关闭）；`FOCUS_X`（手机版保留哪一段，0 最左，1 最右，默认 0.5）。
+
+只用 `realesrgan-x4plus` 模型（BSD-3，可以商用）。Upscayl 里的 4x-UltraSharp 和 Remacri 是 CC BY-NC-SA，不能商用；其他模型没写许可证，也不要用。
