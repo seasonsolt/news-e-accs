@@ -123,7 +123,7 @@ interface RunView {
 export class NoLeaderboardRun extends Error {}
 
 // Cached runs stay language-neutral; reader copy is applied to each response without mutating them.
-let cached: { view: RunView; checkedAt: number } | null = null;
+let cached: { view: RunView; checkedAt: number; pricesAt: string } | null = null;
 let loading: Promise<RunView> | null = null;
 
 /** The latest published run, or (the time machine) the one in effect at `asOf`. */
@@ -134,7 +134,13 @@ async function latestRunId(asOf: Date | null = null): Promise<string | null> {
   return row?.id ?? null;
 }
 
-// Past runs never change: a few are kept by id, apart from the live one.
+/** When an official price last changed: the daily price check writes them between runs. */
+async function pricesChangedAt(): Promise<string> {
+  const [row] = await sql<{ at: Date | null }[]>`SELECT max(updated_at) AS at FROM lb_prices WHERE kind = 'official'`;
+  return row?.at?.toISOString() ?? "";
+}
+
+// Past runs never change (their prices are the current ones, reloaded with the live run): a few are kept by id.
 const pastViews = new Map<string, Promise<RunView>>();
 
 /** The latest published run, re-checked at most once a minute; `asOf` reads the run in effect then. */
@@ -158,14 +164,15 @@ export async function runView(asOf: Date | null = null): Promise<RunView> {
 }
 
 async function refreshRunView(): Promise<RunView> {
-  const id = await latestRunId();
+  const [id, pricesAt] = await Promise.all([latestRunId(), pricesChangedAt()]);
   if (!id) throw new NoLeaderboardRun("no published leaderboard run");
-  if (cached && cached.view.info.id === id) {
+  if (cached && cached.view.info.id === id && cached.pricesAt === pricesAt) {
     cached.checkedAt = Date.now();
     return cached.view;
   }
+  if (cached && cached.pricesAt !== pricesAt) pastViews.clear();
   const view = await buildRunView(id);
-  cached = { view, checkedAt: Date.now() };
+  cached = { view, checkedAt: Date.now(), pricesAt };
   return view;
 }
 

@@ -36,9 +36,17 @@ export interface ScoredModel {
   score: number;
 }
 
-/** The current official price (lb_prices), verified on `verifiedOn`. */
+/** The current official price (lb_prices), in effect since `since` (or, if it predates the daily check, by the day it was verified). */
 export interface CurrentPrice extends Omit<PriceEntry, "from" | "verified"> {
-  verifiedOn: string | null;
+  since: string | null;
+}
+
+/** A price change the leaderboard's daily check wrote (lb_price_checks), with the price it replaced. */
+export interface CheckedChange {
+  slug: string;
+  on: string;
+  price: Omit<PriceEntry, "slug" | "from" | "verified">;
+  previous: { currency: "USD" | "CNY"; input: number; output: number } | null;
 }
 
 export interface CoiInput {
@@ -55,6 +63,21 @@ export function readPriceHistory(file = PRICE_HISTORY_FILE): PriceEntry[] {
   return raw.prices;
 }
 
+/**
+ * The dated history with the daily check's changes added. A model with no dated price before its first
+ * change also gets the price that change replaced, from its release.
+ */
+export function withCheckedChanges(history: PriceEntry[], changes: CheckedChange[], releasedOn: Map<string, string | null>): PriceEntry[] {
+  const out = [...history];
+  for (const c of [...changes].sort((a, b) => a.on.localeCompare(b.on))) {
+    const released = releasedOn.get(c.slug);
+    const earlier = out.some((p) => p.slug === c.slug && p.from < c.on);
+    if (!earlier && c.previous && released && released < c.on) out.push({ slug: c.slug, from: released, ...c.previous, source: c.price.source, verified: true });
+    out.push({ slug: c.slug, from: c.on, ...c.price, verified: true });
+  }
+  return out;
+}
+
 const blended = (input: number, output: number) => (3 * input + output) / 4;
 
 /**
@@ -68,7 +91,7 @@ function timeline(model: ScoredModel, history: PriceEntry[], current: CurrentPri
   const last = own.at(-1);
   if (!last) return model.releasedOn ? [{ ...current, from: model.releasedOn, verified: true }] : [];
   const changed = last.currency !== current.currency || last.input !== current.input || last.output !== current.output;
-  if (changed && current.verifiedOn && current.verifiedOn > last.from) own.push({ ...current, from: current.verifiedOn, verified: true });
+  if (changed && current.since && current.since > last.from) own.push({ ...current, from: current.since, verified: true });
   return own;
 }
 
@@ -165,12 +188,19 @@ async function load(): Promise<CostOfIntelligence> {
         GROUP BY m.id`
     : [];
   const current = await sql<CurrentPrice[]>`
-    SELECT m.slug, p.currency, p.input::float8 AS input, p.output::float8 AS output, p.source_url AS source, to_char(p.verified_on, 'YYYY-MM-DD') AS "verifiedOn"
+    SELECT m.slug, p.currency, p.input::float8 AS input, p.output::float8 AS output, p.source_url AS source, to_char(coalesce(p.since, p.verified_on), 'YYYY-MM-DD') AS since
     FROM lb_prices p JOIN lb_models m ON m.id = p.model_id
     WHERE p.kind = 'official' AND p.input IS NOT NULL AND p.output IS NOT NULL`;
   const [fx] = await sql<{ rate: number; as_of: string }[]>`
     SELECT rate::float8 AS rate, to_char(as_of, 'YYYY-MM-DD') AS as_of FROM fx_rates WHERE pair = 'USD/CNY' ORDER BY as_of DESC LIMIT 1`;
-  const result = computeCostOfIntelligence({ today: beijingDate(new Date()), models, history: readPriceHistory(), current, usdCny: fx?.rate ?? null });
+  const changes = await sql<CheckedChange[]>`
+    SELECT m.slug, to_char(c.checked_on, 'YYYY-MM-DD') AS on,
+      json_build_object('currency', c.currency, 'input', c.input::float8, 'output', c.output::float8, 'source', c.source_url) AS price,
+      CASE WHEN c.previous ? 'input' AND c.previous ? 'output' THEN jsonb_build_object('currency', c.previous->'currency', 'input', c.previous->'input', 'output', c.previous->'output') END AS previous
+    FROM lb_price_checks c JOIN lb_models m ON m.id = c.model_id
+    WHERE c.outcome = 'changed' AND c.input IS NOT NULL AND c.output IS NOT NULL`;
+  const history = withCheckedChanges(readPriceHistory(), changes, new Map(models.map((m) => [m.slug, m.releasedOn])));
+  const result = computeCostOfIntelligence({ today: beijingDate(new Date()), models, history, current, usdCny: fx?.rate ?? null });
   return {
     ...result,
     fx: fx ? { rate: fx.rate, asOf: fx.as_of } : null,

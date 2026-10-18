@@ -1,6 +1,6 @@
 // Official API prices (lb_prices kind='official'), kept as a dated file in seeds. Each refresh
 // fills in the models that have no price yet; scripts/import-leaderboard-prices.ts rewrites them all
-// from a newer file.
+// from a newer file. The daily check (price-check.ts) keeps them current after that.
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -25,12 +25,14 @@ export async function importOfficialPrices(opts: { file?: string; overwrite?: bo
       continue;
     }
     const res = opts.overwrite
-      ? await sql`INSERT INTO lb_prices (model_id, kind, currency, input, output, cached_input, source_url, verified_on)
-                  VALUES (${model.id}, 'official', ${currency}, ${input}, ${output}, ${cached}, ${url}, ${seed.verifiedOn})
+      ? await sql`INSERT INTO lb_prices (model_id, kind, currency, input, output, cached_input, source_url, verified_on, since)
+                  VALUES (${model.id}, 'official', ${currency}, ${input}, ${output}, ${cached}, ${url}, ${seed.verifiedOn}, ${seed.verifiedOn})
                   ON CONFLICT (model_id, kind) DO UPDATE SET currency = EXCLUDED.currency, input = EXCLUDED.input, output = EXCLUDED.output,
-                    cached_input = EXCLUDED.cached_input, source_url = EXCLUDED.source_url, verified_on = EXCLUDED.verified_on, updated_at = now()`
-      : await sql`INSERT INTO lb_prices (model_id, kind, currency, input, output, cached_input, source_url, verified_on)
-                  VALUES (${model.id}, 'official', ${currency}, ${input}, ${output}, ${cached}, ${url}, ${seed.verifiedOn})
+                    cached_input = EXCLUDED.cached_input, source_url = EXCLUDED.source_url, verified_on = EXCLUDED.verified_on, updated_at = now(),
+                    since = CASE WHEN (lb_prices.currency, lb_prices.input, lb_prices.output) IS DISTINCT FROM (EXCLUDED.currency, EXCLUDED.input, EXCLUDED.output)
+                      THEN EXCLUDED.since ELSE coalesce(lb_prices.since, lb_prices.verified_on) END`
+      : await sql`INSERT INTO lb_prices (model_id, kind, currency, input, output, cached_input, source_url, verified_on, since)
+                  VALUES (${model.id}, 'official', ${currency}, ${input}, ${output}, ${cached}, ${url}, ${seed.verifiedOn}, ${seed.verifiedOn})
                   ON CONFLICT (model_id, kind) DO NOTHING`;
     written += res.count;
   }
