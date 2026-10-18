@@ -57,18 +57,18 @@ function picture(src: string | undefined, label: string): string {
   return src ? `<div class="pic"><img src="${esc(src)}" alt=""></div>` : `<div class="pic none"><span>${esc(label)}</span></div>`;
 }
 
-function opening(spec: WechatVideoSpec): string {
+/** The opening: the day's lead in large type, which is also the cover and the frame 视频号 shows first. */
+function opening(spec: WechatVideoSpec, image: string | undefined): string {
   const [, m, d] = spec.date.split("-");
   const [lead, ...briefs] = spec.segments;
+  const n = Array.from(lead!.title).length;
+  const rest = [briefs.length ? `还有 ${briefs.length} 条快讯` : "", spec.egg ? "彩蛋最后见" : ""].filter(Boolean).join(" · ");
   return `<div class="stage push">
-      <div class="kicker">第 ${spec.issueNumber} 期</div>
-      <h1 class="column">${spans(WECHAT_COLUMN, "tk")}</h1>
-      <div class="date">${m}.${d}</div>
-      <ol class="heads">
-        <li class="lead"><b>重点</b><span>${esc(lead!.title)}</span></li>
-        ${briefs.map((s, k) => `<li><b>${pad(k + 1)}</b><span>${esc(s.title)}</span></li>`).join("")}
-        ${spec.egg ? `<li class="egg"><b>彩蛋</b><span>最后见</span></li>` : ""}
-      </ol>
+      <div class="masthead"><b>${esc(WECHAT_COLUMN)}</b><span class="date">${m}.${d}</span><span class="kicker">第 ${spec.issueNumber} 期</span></div>
+      <div class="row"><span class="badge">今日重点</span></div>
+      <h1 class="hero" style="font-size:${n <= 22 ? 92 : n <= 34 ? 80 : 68}px">${esc(lead!.title)}</h1>
+      ${image ? `<div class="pic"><img src="${esc(image)}" alt=""></div>` : `<div class="spacer"></div>`}
+      ${rest ? `<div class="rest">${rest}</div>` : ""}
     </div>`;
 }
 
@@ -118,7 +118,7 @@ export function composition(cut: Cut, fonts: string): string {
   const t = (n: number) => n.toFixed(3);
   const [lead, ...briefs] = spec.segments;
   const cards: Array<{ kind: string; html: string }> = [
-    { kind: "opening", html: opening(spec) },
+    { kind: "opening", html: opening(spec, cut.images[lead!.key]) },
     { kind: "lead", html: leadCard(lead!, cut.images[lead!.key]) },
     ...(briefs.length ? [{ kind: "briefs", html: briefsCard(briefs, cut.images) }] : []),
     ...(spec.egg ? [{ kind: "egg", html: eggCard(spec.egg, cut.images[spec.egg.key]) }] : []),
@@ -171,15 +171,13 @@ body { margin: 0; background: var(--deck); color: var(--ink); font-family: "Noto
 .scene { position: absolute; inset: 0; }
 .stage { position: absolute; left: 60px; right: 60px; top: ${SAFE_TOP + 140}px; bottom: ${SAFE_BOTTOM + 200}px; display: flex; flex-direction: column; transform-origin: 50% 30%; }
 .tk { display: inline-block; }
-.kicker { font-size: 38px; letter-spacing: 8px; color: var(--dim); }
-.column { margin: 20px 0 0; font-size: 140px; line-height: 1.05; font-weight: 700; letter-spacing: 6px; }
-.date { margin-top: 12px; font-size: 200px; line-height: 1; font-weight: 700; color: var(--hi); }
-.heads { list-style: none; margin: 44px 0 0; padding: 30px 0 0; border-top: 3px solid var(--brass); }
-.heads li { display: flex; font-size: 34px; line-height: 1.4; margin-top: 12px; color: var(--dim); }
-.heads li:first-child { margin-top: 0; }
-.heads li.lead { font-size: 42px; font-weight: 700; color: var(--ink); margin-bottom: 10px; }
-.heads b { width: 100px; flex-shrink: 0; color: var(--heat); }
-.heads span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.masthead { display: flex; align-items: baseline; margin-bottom: 40px; padding-bottom: 28px; border-bottom: 3px solid var(--brass); }
+.masthead b { font-size: 64px; letter-spacing: 4px; }
+.date { margin-left: 24px; font-size: 64px; font-weight: 700; color: var(--hi); }
+.kicker { margin-left: auto; font-size: 34px; letter-spacing: 6px; color: var(--dim); }
+.hero { margin: 30px 0 0; line-height: 1.25; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.spacer { flex: 1; }
+.rest { margin-top: 30px; font-size: 40px; font-weight: 700; letter-spacing: 2px; color: var(--hi); }
 .row { display: flex; align-items: center; }
 .badge { padding: 8px 26px; border-radius: 14px; background: var(--heat); color: var(--deck); font-size: 44px; font-weight: 700; letter-spacing: 6px; }
 .count { margin-left: 24px; font-size: 38px; color: var(--dim); letter-spacing: 4px; }
@@ -239,8 +237,8 @@ D.scenes.forEach((s, k) => {
   if (k < last) tl.to(scene + " .stage", { y: -80, opacity: 0, duration: 0.3, ease: "power2.in" }, s.end - 0.3);
   tl.fromTo(scene + " .push", { scale: 1 }, { scale: 1.02, duration: long, ease: "none" }, s.start);
   if (kind === "opening") {
-    tl.fromTo(scene + " .date", { scale: 1 }, { scale: 1.05, duration: 0.35, ease: "sine.inOut", yoyo: true, repeat: 1, transformOrigin: "left center" }, 0.3);
-    tl.fromTo(scene + " .heads li", { opacity: 0.45 }, { opacity: 1, duration: 0.3, ease: "power2.out", stagger: 0.12 }, 0.4);
+    tl.fromTo(scene + " .badge", { scale: 1 }, { scale: 1.08, duration: 0.35, ease: "sine.inOut", yoyo: true, repeat: 1, transformOrigin: "left center" }, 0.3);
+    tl.fromTo(scene + " .pic img", { scale: 1 }, { scale: 1.1, duration: long, ease: "none" }, 0);
   } else if (kind === "lead") {
     tl.fromTo(scene + " .badge", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(2)" }, s.start + 0.05);
     tl.fromTo(scene + " .meta", { x: -30, opacity: 0 }, { x: 0, opacity: 1, duration: 0.4, ease: "power2.out" }, s.start + 0.2);

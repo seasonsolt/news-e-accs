@@ -213,7 +213,8 @@ test("the composition has the lead's card, one card of quick hits, the last word
   assert.equal(html.match(/class="clip sub"/g)?.length, 1);
   assert.equal(html.match(/<ul class="points"><li>成本减半<\/li><li>用得起<\/li><\/ul>/g)?.length, 1, "the lead's points");
   assert.equal(html.match(/class="briefs"/g)?.length, 1);
-  assert.match(html, /<li class="egg"><b>彩蛋<\/b>/, "the title card promises the last word");
+  assert.match(html, /<h1 class="hero"[^>]*>A &lt;模型&gt; 发布<\/h1>/, "the first frame is the lead's title");
+  assert.match(html, /<div class="rest">还有 2 条快讯 · 彩蛋最后见<\/div>/, "and promises the rest");
   assert.match(html, /data-duration="20\.000"/);
   assert.match(html, /&lt;模型&gt;/);
   assert.doesNotMatch(html, /undefined/);
