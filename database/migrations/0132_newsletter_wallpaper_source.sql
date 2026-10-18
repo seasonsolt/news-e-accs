@@ -1,0 +1,1 @@
+ALTER TABLE newsletter_subscribers ADD CONSTRAINT newsletter_signup_source_check_v2 CHECK (signup_source IN ('home_overlay', 'home_button', 'subscribe_page', 'daily_inline', 'item_inline', 'chronicle_inline', 'sticky_mobile', 'story_inline', 'concept', 'wallpaper')) NOT VALID;

@@ -1,0 +1,30 @@
+import { defineWebModule } from "@aihot/web/modules";
+export const messages = {
+  "Daily 4K wallpaper": "每日 4K 壁纸",
+  "A new 4K wallpaper every day. Subscribe for 100 credits (10 credits per wallpaper).": "每天一张 4K 壁纸，订阅即送 100 积分（每张 10 积分）。",
+  "No wallpaper yet. Check back soon.": "第一张壁纸即将上线，敬请期待。",
+  "Email address": "邮箱地址",
+  "Get my wallpaper link": "领取壁纸链接",
+  "Subscribers receive a link; new readers receive a confirmation email first.": "已订阅的会收到链接邮件，未订阅的会先收到确认邮件。",
+  "Please check your email.": "请查收邮件。",
+  "Please try again later.": "暂时无法完成，请稍后再试。",
+  "Your link is invalid or your subscription is inactive. Request a new link below.": "链接无效或订阅已停用，请在下方重新领取。",
+  "Wallpapers available": "还能下载的壁纸张数",
+  "Credits remaining": "剩余积分",
+  "Desktop": "下载桌面版",
+  "Phone": "下载手机版",
+  "Daily automatic updates": "每天自动更新",
+  "Copy": "复制",
+  "Copied": "已复制",
+  "This link grants access to your credits. Do not share it.": "这条链接等于你的额度，请不要分享。",
+  "Request a new link": "换一条链接",
+  "Not enough credits for a new wallpaper. Thank you for your support.": "积分已经用完，感谢支持。",
+  "Archive": "往期图库",
+  "The first download of each day costs 10 credits. Both sizes and repeat downloads of that day are included.": "第一次下载某一天扣 10 积分；同一天的两种尺寸和重复下载不再扣费。",
+  "iOS Shortcuts: Get Contents of URL → Set Wallpaper. Create a daily personal automation for 7 AM and choose Run Immediately.": "iOS 快捷指令：获取 URL 内容 → 设定墙纸。个人自动化设为每天早上 7 点，选择立即运行。",
+  "macOS Shortcuts: Get Contents of URL → Set Desktop Picture. Schedule it daily; confirm the action names on your system version.": "macOS 快捷指令：获取 URL 内容 → 设定桌面图片，设置每日运行；需在你的系统版本上确认动作名称。",
+};
+export default defineWebModule({ name: "wallpaper", messages: { zh: messages }, admin: { content: [
+  { to: "/admin/wallpapers", label: "壁纸 · 领取人数", count: "wallpaperKeys", tone: "accent" },
+  { to: "/admin/wallpapers", label: "壁纸 · 今日下载", count: "wallpaperDownloads", tone: "accent" },
+] } });

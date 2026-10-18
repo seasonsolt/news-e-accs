@@ -1,3 +1,4 @@
+import { featuredProduct } from "@aihot/industry/products";
 import { Link } from "../../lib/navigation";
 import { Text, useLocale, useTranslate } from "../../lib/i18n";
 import { localePath } from "../../lib/locale";
@@ -227,6 +228,7 @@ export function Onboarding({ mode, token = null, source: pageSource = "subscribe
               {mode === "page" ? (
                 // The latest issue in the confirmed language: what the first letter will look like.
                 <div className="flex w-full flex-col items-center gap-4">
+                  {token && featuredProduct()?.url && <Link to={{ pathname: featuredProduct()!.url!, hash: `token=${encodeURIComponent(token)}` }} className="rounded-full border border-[#f6ead2]/40 px-5 py-3"><Text value="领取 4K 壁纸（送 100 积分）" /></Link>}
                   {daily && (
                     <div className="w-full rounded-[20px] border border-[#f6ead2]/25 bg-[#1a120a]/45 px-5 py-4 text-left backdrop-blur-md">
                       <p className="mono text-[11px] uppercase tracking-[0.2em] text-[#e8c98a]"><Text value="最近一期日报" /> · {daily.key}</p>

@@ -56,6 +56,7 @@ const SOURCE_LABELS: Record<SubscribeSource, string> = {
   sticky_mobile: "手机底部条",
   story_inline: "事件页",
   concept: "概念页",
+  wallpaper: "壁纸产品页",
 };
 
 interface FunnelCount { event: string; source: string; locale: string; reason: string; count: number }
