@@ -50,7 +50,7 @@ for c in "desktop|3840|2160|0.5" "phone|2160|3840|$FOCUS_X"; do
     fi
     watermark=",drawtext=fontfile='$FONT':text='e-acc.ai':fontcolor=white@0.55:fontsize=$fontsize:x=$mark_x:y=$mark_y:shadowcolor=black@0.35:shadowx=2:shadowy=2"
   fi
-  ffmpeg -loglevel error -y -i "$TMP/x4.png" \
+  ffmpeg -nostdin -loglevel error -y -i "$TMP/x4.png" \
     -vf "scale=$w:$h:force_original_aspect_ratio=increase:flags=lanczos,crop=$w:$h:(iw-$w)*$fx:(ih-$h)/2$watermark$grain" \
     -q:v 2 "$OUT/$name-$cut.jpg"
 done
