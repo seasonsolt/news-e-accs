@@ -955,6 +955,38 @@ html { scrollbar-gutter: stable; }
 .deck { position: relative; isolation: isolate; overflow: hidden; margin-inline: calc(50% - var(--page-width, 100vw) / 2); margin-top: -16px; padding: 56px 0 40px; background: var(--deck); color: var(--deck-ink); }
 .deck.is-compact { padding: 28px 0 30px; }
 @media (min-width: 961px) { .deck { padding: 88px 0 48px; } .deck.is-compact { padding: 40px 0 36px; } }
+/* The homepage keeps a full-bleed photograph around a bounded reading column. */
+.home-page { max-width: 1200px; margin-inline: auto; }
+.home-page > .deck { padding: 28px 0; }
+.home-page .deck-inner { max-width: 1264px; }
+.home-page .deck-plate { object-position: 65% 62%; }
+.home-page .deck-shade { background: linear-gradient(90deg, rgb(10 8 6 / .88), rgb(10 8 6 / .25) 70%), linear-gradient(0deg, rgb(10 8 6 / .85), transparent 65%); }
+.home-page .deck-title { font-size: clamp(32px, 4vw, 48px); }
+.home-page .deck-desc { max-width: 34rem; font-size: 14px; line-height: 1.7; }
+.home-page .deck-foot { margin-top: 20px; }
+.home-page .kardashev-meter { width: 272px; padding: 16px 18px; }
+.home-page .kardashev-meter-figure { font-size: 72px; }
+.home-page .kardashev-meter-bar { height: 8px; margin-top: 12px; }
+@media (min-width: 961px) {
+  .home-page > .deck { padding: 36px 0 28px; }
+  .home-page > .deck.is-compact { padding: 24px 0; }
+  .home-page .deck-copy { flex-basis: 360px; max-width: 36rem; }
+}
+@media (max-width: 960px) {
+  .home-page .deck-plate { object-position: 88% 62%; }
+  .home-page .deck-row { gap: 20px; }
+  .home-page .deck-aside { width: 100%; }
+  .home-page .kardashev-meter { width: 100%; display: grid; grid-template-columns: 1fr auto; column-gap: 16px; padding: 12px 14px; }
+  .home-page .kardashev-meter-head { grid-column: 1; flex-wrap: wrap; column-gap: 12px; }
+  .home-page .kardashev-meter-reading { grid-column: 2; grid-row: 1 / 4; align-self: center; margin: 0; gap: 6px; }
+  .home-page .kardashev-meter-figure { font-size: 44px; }
+  .home-page .kardashev-meter-of { font-size: 11px; }
+  .home-page .kardashev-meter-bar { grid-column: 1; margin-top: 8px; height: 5px; }
+  .home-page .kardashev-meter-scale { grid-column: 1; font-size: 9px; margin-top: 5px; }
+  .home-page .kardashev-meter-note { grid-column: 1; font-size: 11px; margin-top: 8px; }
+  .home-page .kardashev-meter-go { grid-column: 2; align-self: end; text-align: right; font-size: 11px; margin-top: 8px; }
+  .home-page .deck-button { min-height: 44px; padding-inline: 14px; font-size: 13px; }
+}
 /* An item page's band: the category plate cut to a strip under the top bar, in place of a deck. */
 .item-band { position: relative; isolation: isolate; overflow: hidden; margin-inline: calc(50% - var(--page-width, 100vw) / 2); margin-top: -16px; height: 10px; background: var(--deck); }
 @media (min-width: 961px) { .item-band { height: 14px; } }

@@ -71,13 +71,13 @@ export default function Home() {
   const filtered = !!(filters.tag || filters.category || filters.channel !== "all");
   useSubscribeView(subscribeLink, "home_button", front);
   return (
-    <div className="pb-6">
+    <div className="home-page pb-6">
       {front && <Onboarding mode="overlay" />}
       {filtered ? (
-        <Deck compact art="epochs/agents" label={tx("精选")} kicker={<TodayLabel at={filters.at} />} title={filters.tag ? `#${filters.tag}` : tx("精选")} />
+        <Deck compact art="home-intelligence" label={tx("精选")} kicker={<TodayLabel at={filters.at} />} title={filters.tag ? `#${filters.tag}` : tx("精选")} />
       ) : (
         <Deck
-          art="epochs/agents"
+          art="home-intelligence"
           label={tx("精选")}
           heading={tx(SITE.homeHeading)}
           kicker={<><TodayLabel at={filters.at} /><Text value="· 智能体时代" /></>}

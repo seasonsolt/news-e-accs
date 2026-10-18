@@ -37,7 +37,7 @@ export function Plate({ src, alt = "", className }: { src: string; alt?: string;
 }
 
 export function Deck({ art, label, heading, kicker, title, titleId, description, aside, children, compact = false, night = false }: {
-  /** Path under /media/art/ without the width suffix: "hot", "epochs/agents". */
+  /** Path under /media/art/ without the width suffix: "hot", "epochs/agents-workflow". */
   art?: string;
   /** The band's accessible name (the page's name). */
   label: string;
