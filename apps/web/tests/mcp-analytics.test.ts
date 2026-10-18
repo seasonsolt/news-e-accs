@@ -14,12 +14,12 @@ const api = createServer((req, res) => {
   if (url.pathname === "/api/site/meta") return res.end(JSON.stringify({ changelogVersion: null }));
   if (url.pathname === "/api/admin/me") return res.end(JSON.stringify({ name: "MCP 统计检查", csrf: "fixture", dev: true }));
   if (url.pathname === "/api/admin/nav-counts") return res.end(JSON.stringify({}));
-  if (url.pathname === "/api/admin/analytics/subscribe") return res.end(JSON.stringify({ days: Number(url.searchParams.get("days")) || 30, daily: [], totals: [] }));
+  if (url.pathname === "/api/admin/analytics/subscribe") return res.end(JSON.stringify({ days: Number(url.searchParams.get("days")) || 30, daily: [], totals: [], firstDays: {} }));
   if (url.pathname === "/api/admin/analytics") {
     const days = Number(url.searchParams.get("days")) || 30;
     windows.push(days);
     const calls = empty ? 0 : 20;
-    return res.end(JSON.stringify({ days, totals: { views: 30, paths: 1 }, daily: [{ day: "2026-10-18", views: 30 }], pages: [{ path: "/agent", views: 30 }], engagement: { totals: [], daily: [], firstStarDevices: 0, topStarred: [] }, mcp: {
+    return res.end(JSON.stringify({ days, totals: { views: 30, paths: 1 }, daily: [{ day: "2026-10-18", views: 30 }], pages: [{ path: "/agent", views: 30 }], engagement: { totals: [], daily: [], firstStarDevices: 0, topStarred: [], firstDays: {} }, mcp: {
       totals: { calls, successes: empty ? 0 : 15, errors: empty ? 0 : 5, initializes: 10, discoveries: 8, checks: 9, activeDays: empty ? 0 : 1, averageMs: 42, maxMs: 100, lastCallAt: empty ? null : "2026-10-18T00:00:00.000Z" },
       daily: [{ day: "2026-10-18", calls, successes: empty ? 0 : 15 }],
       tools: empty ? [] : [{ tool: "eacc_get_latest", calls: 20, successes: 15, errors: 5, averageMs: 42, maxMs: 100, lastCallAt: "2026-10-18T00:00:00.000Z" }],
