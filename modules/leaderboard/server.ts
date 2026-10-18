@@ -47,13 +47,19 @@ export default defineServerModule({
   },
   async llms() {
     const [published] = await sql`SELECT 1 FROM lb_runs WHERE status = 'published' LIMIT 1`;
-    return { pages: published ? [`- [Model leaderboard](${siteUrl("/leaderboard")})`] : [] };
+    return {
+      pages: published ? [
+        `- [Model leaderboard](${siteUrl("/leaderboard")})`,
+        `- [LLM API pricing](${siteUrl("/pricing")}): official API prices of the leaderboard's models in USD per million tokens (input, output, cached input), with a cost calculator`,
+      ] : [],
+    };
   },
   sitemap: {
     pages: [
       { loc: "/leaderboard", changefreq: "daily", priority: 0.8 },
       { loc: "/leaderboard/sources", changefreq: "weekly", priority: 0.5 },
       { loc: "/leaderboard/rules", changefreq: "monthly", priority: 0.4 },
+      { loc: "/pricing", changefreq: "weekly", priority: 0.7 },
       ...LEADERBOARD_PUBLIC_BOARDS.filter((key) => key !== "overall").map((key) => ({ loc: `/leaderboard/category/${key}`, changefreq: "daily", priority: 0.6 })),
     ],
     async entries() {

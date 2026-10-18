@@ -248,6 +248,24 @@ export interface LbSourceDetail {
   rowsNote: string | null;
 }
 
+/** Every model of the latest run that has an official price, cheapest input first. */
+export interface LbPricingRow {
+  model: LbModelRef;
+  /** Overall board rank, when the model is on the board. */
+  rank: number | null;
+  hasPage: boolean;
+  price: LbPrice;
+  /** Per million tokens in USD (CNY list prices converted at the run's rate); null when not convertible. */
+  usd: { input: number | null; output: number | null; cached: number | null };
+}
+
+export interface LbPricingResponse {
+  run: LbRunInfo;
+  /** The latest date any listed price was checked against its official page. */
+  verifiedOn: string | null;
+  rows: LbPricingRow[];
+}
+
 export interface LbFetchOverview {
   at: string;
   sources: Array<{ key: string; ok: boolean; at: string; lastOkAt: string | null; changed?: boolean; rows?: number; error?: string }>;

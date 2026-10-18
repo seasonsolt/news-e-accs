@@ -282,6 +282,64 @@ test("stored prose translates on reads while model names and persisted rows stay
   }
 });
 
+// Extra official prices for the pricing tests, removed again so the other responses keep their bytes.
+async function withPricedModels(fn: () => Promise<void>) {
+  await sql`INSERT INTO lb_prices (model_id, kind, currency, input, output, cached_input, source_url, verified_on) VALUES
+    (${ids[1]}, 'official', 'CNY', 8, 16, null, 'https://example.org/cny', '1999-01-05'),
+    (${ids[30]}, 'official', 'USD', 1, 20, 0.1, 'https://example.org/unranked', '1999-01-01'),
+    (${ids[2]}, 'official', 'USD', null, 1, null, null, null)`;
+  invalidateLeaderboard();
+  try {
+    await fn();
+  } finally {
+    await sql`DELETE FROM lb_prices WHERE kind = 'official' AND model_id = ANY(${[ids[1], ids[30], ids[2]]})`;
+    invalidateLeaderboard();
+  }
+}
+
+test("pricing lists every priced model in USD, cheapest input first, with page and rank", async () => {
+  await withPricedModels(async () => {
+    const response = await app.inject("/api/site/leaderboard/pricing?lang=en");
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.headers["cache-control"], "public, max-age=120, s-maxage=300, stale-while-revalidate=600");
+    const body = response.json();
+    assert.deepEqual(Object.keys(body).sort(), ["rows", "run", "verifiedOn"]);
+    assert.equal(body.run.id, liveRun);
+    assert.equal(body.run.fx.sourceName, "European Central Bank");
+    assert.equal(body.verifiedOn, "1999-01-05");
+    assert.deepEqual(body.rows.map((r: { model: { slug: string } }) => r.model.slug), [slugs[1], slugs[30], slugs[0], slugs[2]]);
+    const [cny, unranked, usd, unpriced] = body.rows;
+    assert.deepEqual(cny.usd, { input: 1, output: 2, cached: null }, "CNY converts at the run's rate of 8");
+    assert.deepEqual([cny.price.currency, cny.price.input, cny.price.inputCny], ["CNY", 8, 8]);
+    assert.deepEqual([cny.rank, cny.hasPage], [2, true]);
+    assert.deepEqual([unranked.rank, unranked.hasPage, unranked.usd.output], [null, false, 20]);
+    assert.deepEqual([usd.rank, usd.hasPage, usd.usd], [1, true, { input: 2, output: 10, cached: 0.2 }]);
+    assert.deepEqual(unpriced.usd, { input: null, output: 1, cached: null });
+    assert.equal(cny.model.brand.src, "/model-providers/openai.svg");
+    const zh = await app.inject("/api/site/leaderboard/pricing?lang=zh");
+    assert.equal(zh.json().run.fx.sourceName, "欧洲央行");
+    assert.equal((await app.inject("/api/site/leaderboard/pricing")).body, zh.body, "default remains Chinese");
+    assert.notEqual(zh.headers.etag, response.headers.etag);
+    assert.equal((await app.inject({ url: "/api/site/leaderboard/pricing?lang=en", headers: { "if-none-match": response.headers.etag } })).statusCode, 304);
+    for (const query of ["lang=fr", "lang=en&lang=zh"]) assert.equal((await app.inject(`/api/site/leaderboard/pricing?${query}`)).statusCode, 400, query);
+  });
+  assert.deepEqual((await app.inject("/api/site/leaderboard/pricing")).json().rows.map((r: { model: { slug: string } }) => r.model.slug), [slugs[0]]);
+});
+
+test("pricing is discoverable and the retired Pages addresses redirect", async () => {
+  const { followsTime } = await import(new URL("../../../apps/web/app/features/chrono/at.ts", import.meta.url).href);
+  const { localePath } = await import(new URL("../../../apps/web/app/lib/locale.ts", import.meta.url).href);
+  const urls = (await loadDiscoveryEntries()).map((e) => e.loc);
+  for (const loc of ["/pricing", "/zh/pricing"]) assert.equal(urls.filter((u) => u === loc).length, 1, loc);
+  assert.match(llmsTxt(await loadLlmsAvailability()), /\[LLM API pricing\]\([^\n]+\/pricing\)/);
+  assert.equal(followsTime("/pricing"), false);
+  assert.equal(localePath("/pricing#calculator", "zh"), "/zh/pricing#calculator");
+  assert.deepEqual(resolveRedirect("/calculator", "?x=1"), { status: 301, location: "/pricing#calculator", headers: {} });
+  assert.deepEqual(resolveRedirect("/zh/calculator", ""), { status: 301, location: "/zh/pricing#calculator", headers: {} });
+  assert.deepEqual(resolveRedirect("/benchmark", ""), { status: 301, location: "/leaderboard/category/coding", headers: {} });
+  assert.equal(resolveRedirect("/pricing", ""), null);
+});
+
 test("every restored logo is served with its bytes, type and legacy cache lifetime", async () => {
   const { readdir, readFile } = await import("node:fs/promises");
   for (const dir of ["model-providers", "leaderboard-sources"]) {
@@ -324,7 +382,7 @@ test("built pages keep both language URLs, layout, history and the default share
     res.end(response.rawPayload);
   }), { COLLECT_ENABLED: "false", MODEL_CALLS_ENABLED: "false", FEISHU_INTERNAL_ENABLED: "false" });
   try {
-    for (const path of ["/leaderboard", ...categoryKeys.map((key) => `/leaderboard/category/${key}`), "/leaderboard/sources", "/leaderboard/sources/livebench-coding", "/leaderboard/rules", `/leaderboard/${slugs[0]}`]) {
+    for (const path of ["/leaderboard", ...categoryKeys.map((key) => `/leaderboard/category/${key}`), "/leaderboard/sources", "/leaderboard/sources/livebench-coding", "/leaderboard/rules", `/leaderboard/${slugs[0]}`, "/pricing"]) {
       for (const prefix of ["", "/zh"]) {
         const response = await fetch(web.origin + prefix + path);
         assert.equal(response.status, 200, prefix + path);
@@ -366,6 +424,63 @@ test("built pages keep both language URLs, layout, history and the default share
     assert.ok(toolsHtml.includes('href="/zh/leaderboard"'));
     assert.ok(toolsHtml.includes("模型榜"));
     assert.equal((await fetch(`${web.origin}/zh/leaderboard/category/missing`)).status, 404);
+
+    await withPricedModels(async () => {
+      for (const prefix of ["", "/zh"]) {
+        const response = await fetch(`${web.origin}${prefix}/pricing`);
+        assert.equal(response.status, 200, prefix);
+        const html = await response.text();
+        const title = prefix ? "大模型 API 价格对比 2026：全部模型" : "LLM API Pricing Comparison 2026 — All Models";
+        assert.ok(html.includes(`<title>${title}</title>`), prefix);
+        assert.match(html, prefix ? /对比 4 个大模型[^"]+1999-01-05/ : /name="description" content="Compare official API prices for 4 LLMs[^"]+1999-01-05/);
+        for (const i of [0, 1, 2, 30]) assert.ok(html.includes(`>Stored model ${i}<`), `${prefix} row ${i}`);
+        assert.ok(html.includes(`href="${prefix}/leaderboard/${slugs[1]}"`), "a model with a page links to it");
+        assert.equal(html.includes(`/leaderboard/${slugs[30]}"`), false, "a model without a page is not linked");
+        assert.ok(html.includes("https://example.org/cny"));
+        assert.ok(html.includes(prefix ? "标价 ¥8" : "List ¥8"), "CNY rows keep their list price");
+        assert.ok(html.includes('id="calculator"'), prefix);
+        const calculator = html.slice(html.indexOf('id="calculator"'));
+        // Default preset, 1K in / 500 out, 1,000 requests: cheapest first, server-rendered.
+        const order = [1, 0, 30, 2].map((i) => calculator.indexOf(`>Stored model ${i}<`));
+        assert.ok(order.every((at, k) => at > 0 && (k === 0 || at > order[k - 1]!)), `${prefix} calculator rows are cheapest first: ${order}`);
+        for (const cost of ["$0.002", "$2", "$0.007", "$7", "$0.011", "$11"]) assert.ok(calculator.includes(`>${cost}<`), `${prefix} ${cost}`);
+        const ld = [...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].flatMap((m) => [JSON.parse(m[1]!)].flat());
+        const dataset = ld.find((x: { "@type"?: string }) => x["@type"] === "Dataset");
+        assert.ok(dataset, prefix);
+        for (const field of ["name", "description", "url", "dateModified"]) assert.ok(typeof dataset[field] === "string" && dataset[field].length > 0, `${prefix} Dataset.${field}`);
+        assert.equal(dataset.name, title);
+        assert.equal(dataset.url, `${web.origin}${prefix}/pricing`);
+        assert.equal(dataset.dateModified, "1999-01-05");
+        assert.equal(dataset.isAccessibleForFree, true);
+        assert.equal(dataset.creator["@type"], "Organization");
+        for (const field of ["name", "url"]) assert.ok(typeof dataset.creator[field] === "string" && dataset.creator[field].length > 0, `${prefix} creator.${field}`);
+        const crumbs = ld.find((x: { "@type"?: string }) => x["@type"] === "BreadcrumbList");
+        assert.deepEqual(crumbs.itemListElement.map((c: { item: string }) => c.item), [`${web.origin}${prefix}/leaderboard`, `${web.origin}${prefix}/pricing`]);
+        for (const c of crumbs.itemListElement) assert.ok(c.name.length > 0);
+      }
+    });
+
+    for (const [path, location] of [["/calculator", "/pricing#calculator"], ["/zh/calculator", "/zh/pricing#calculator"], ["/benchmark", "/leaderboard/category/coding"]]) {
+      const response = await fetch(web.origin + path, { redirect: "manual" });
+      assert.deepEqual([response.status, response.headers.get("location")], [301, location], path);
+    }
+    // Retired Pages leaf URLs: give two models the mapped slugs, one with a page (rank 1) and one without (rank 31).
+    try {
+      await sql`UPDATE lb_models SET slug = 'kimi-k-3' WHERE id = ${ids[0]}`;
+      await sql`UPDATE lb_models SET slug = 'grok-4-6' WHERE id = ${ids[30]}`;
+      invalidateLeaderboard();
+      for (const prefix of ["", "/zh"]) {
+        for (const [legacy, location] of [["kimi-k3", "/leaderboard/kimi-k-3"], ["grok-4-6", "/pricing"], ["gemini-2-5-flash", "/pricing"], ["gpt-5-5", "/pricing"]]) {
+          const response = await fetch(`${web.origin}${prefix}/pricing/${legacy}`, { redirect: "manual" });
+          assert.deepEqual([response.status, response.headers.get("location")], [301, prefix + location], prefix + legacy);
+        }
+        assert.equal((await fetch(`${web.origin}${prefix}/pricing/not-a-model`, { redirect: "manual" })).status, 404, prefix);
+      }
+    } finally {
+      await sql`UPDATE lb_models SET slug = ${slugs[0]} WHERE id = ${ids[0]}`;
+      await sql`UPDATE lb_models SET slug = ${slugs[30]} WHERE id = ${ids[30]}`;
+      invalidateLeaderboard();
+    }
     assert.equal(web.logs().includes("TypeError"), false, web.logs());
   } finally { await web.stop(); }
 });

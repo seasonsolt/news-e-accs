@@ -12,6 +12,8 @@ import type {
   LbModelDetail,
   LbModelRef,
   LbPrice,
+  LbPricingResponse,
+  LbPricingRow,
   LbRunInfo,
   LbSourceDetail,
   LbSourceRow,
@@ -583,6 +585,31 @@ export async function loadRulesData(lang: LeaderboardLanguage = "zh"): Promise<L
       .map((s) => registrySource(s.key, lang)?.source.name ?? s.key),
   }));
   return { run: runInfo(view.info, lang), budgets, anchors: view.anchors };
+}
+
+/** Official prices of every model in the latest run, in USD per million tokens, cheapest input first. */
+export async function loadPricing(lang: LeaderboardLanguage = "zh"): Promise<LbPricingResponse> {
+  const view = await runView();
+  const rate = view.info.fx?.rate ?? null;
+  const toUsd = (v: number | null, currency: LbPrice["currency"]) => (v == null ? null : currency === "USD" ? v : rate ? v / rate : null);
+  const overall = view.boards.get("overall");
+  const rows: LbPricingRow[] = [];
+  for (const [modelId, price] of view.prices) {
+    const m = view.modelsById.get(modelId);
+    if (!m) continue;
+    const entry = overall?.bySlug.get(m.slug);
+    rows.push({
+      model: modelRef(view, m),
+      rank: entry && entry.rank <= BOARD_LIMIT ? entry.rank : null,
+      hasPage: view.pageSlugs.has(m.slug),
+      price,
+      usd: { input: toUsd(price.input, price.currency), output: toUsd(price.output, price.currency), cached: toUsd(price.cached, price.currency) },
+    });
+  }
+  const ascending = (a: number | null, b: number | null) => (a === b ? 0 : a === null ? 1 : b === null ? -1 : a - b);
+  rows.sort((a, b) => ascending(a.usd.input, b.usd.input) || ascending(a.usd.output, b.usd.output) || a.model.name.localeCompare(b.model.name, "en"));
+  const verified = rows.map((r) => r.price.verifiedOn).filter((d): d is string => !!d).sort();
+  return { run: runInfo(view.info, lang), verifiedOn: verified.at(-1) ?? null, rows };
 }
 
 /** Public leaderboard URLs for the sitemap. */

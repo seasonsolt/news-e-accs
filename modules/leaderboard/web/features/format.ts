@@ -8,6 +8,20 @@ export function yuan(v: number | null | undefined): string {
   return `¥${n.toLocaleString("en-US", { maximumFractionDigits: 6 })}`;
 }
 
+/** USD with the same precision rule as `yuan`. */
+export function usd(v: number | null | undefined): string {
+  if (v == null || !Number.isFinite(v)) return "—";
+  const n = v >= 0.1 ? Number(v.toFixed(2)) : Number(v.toPrecision(3));
+  return `$${n.toLocaleString("en-US", { maximumFractionDigits: 6 })}`;
+}
+
+/** 1000 → "1K", 500000 → "500K", 2000000 → "2M". */
+export function tokensShort(n: number): string {
+  if (n >= 1e6) return `${Number((n / 1e6).toFixed(2))}M`;
+  if (n >= 1e3) return `${Number((n / 1e3).toFixed(1))}K`;
+  return String(n);
+}
+
 export function listPrice(v: number | null, currency: LbPrice["currency"]): string {
   if (v == null) return "—";
   return currency === "USD" ? `$${Number(v.toPrecision(6))}` : yuan(v);
