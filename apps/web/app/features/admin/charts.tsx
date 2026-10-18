@@ -37,7 +37,7 @@ function Legend({ series }: { series: Array<{ key: string; label: string; color:
   );
 }
 
-export function LineChart({ labels, series, height = 200, format = (v: number) => num(v) }: { labels: string[]; series: ChartSeries[]; height?: number; format?: (v: number) => string }) {
+export function LineChart({ labels, series, height = 200, format = (v: number) => num(v), missing = "—" }: { labels: string[]; series: ChartSeries[]; height?: number; format?: (v: number) => string; missing?: string }) {
   const entrance = useEntrance();
   const [hover, setHover] = useState<number | null>(null);
   const max = useMemo(() => niceMax(Math.max(0, ...series.flatMap((s) => s.values.filter((v): v is number => v !== null)))), [series]);
@@ -107,7 +107,7 @@ export function LineChart({ labels, series, height = 200, format = (v: number) =
             {series.map((s) => (
               <div key={s.key} className="flex items-center justify-between gap-3 text-ink-2">
                 <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full" style={{ background: s.color }} />{s.label}</span>
-                <span className="num">{s.values[hover] === null || s.values[hover] === undefined ? "—" : format(s.values[hover]!)}</span>
+                <span className="num">{s.values[hover] === null || s.values[hover] === undefined ? missing : format(s.values[hover]!)}</span>
               </div>
             ))}
           </div>

@@ -19,7 +19,7 @@ export function registerNewsletter(app: FastifyInstance) {
       // The form sends the page locale. Accept-Language is not read.
       const language = subscribeLanguage((req.body as { language?: unknown } | null)?.language);
       const ip = String(req.headers["x-real-ip"] ?? req.ip ?? "");
-      const result = await subscribe({ language, email: field(req.body, "email"), ip, userAgent: String(req.headers["user-agent"] ?? "") });
+      const result = await subscribe({ language, source: field(req.body, "source"), email: field(req.body, "email"), ip, userAgent: String(req.headers["user-agent"] ?? "") });
       return reply.header("Cache-Control", "no-store").code(202).send(result);
     } catch (error) {
       return fail(req, reply, error, "subscribe");

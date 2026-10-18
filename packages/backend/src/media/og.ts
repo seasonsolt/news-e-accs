@@ -2,26 +2,16 @@
 // as paths, so rasterising with sharp needs no system fonts. Output is cached on disk by content.
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { createHash, randomUUID } from "node:crypto";
-import satori from "satori";
-import sharp from "sharp";
+import { randomUUID } from "node:crypto";
+import { mediaCapacity } from "./capacity.ts";
 import { config, REPO_ROOT } from "../config.ts";
 import { SITE } from "@aihot/site";
 
-export const OG_TEMPLATE_VERSION = "og-2026-09-29.eacc1";
+import { ogEtag, type OgCard } from "./cards.ts";
+export { ogEtag, OG_TEMPLATE_VERSION, type OgCard } from "./cards.ts";
 const WIDTH = 1200;
 const HEIGHT = 630;
 const CACHE_DIR = path.join(config.dataDir, "ogcache");
-
-export interface OgCard {
-  kicker: string;
-  title: string;
-  subtitle?: string | null;
-  meta?: string | null;
-  /** Small emphasised figure on the right (e.g. an item score). */
-  badge?: { value: string; label: string } | null;
-  accent?: "teal" | "hot" | "amber";
-}
 
 let fontsPromise: Promise<Array<{ name: string; data: Buffer; weight: 400 | 700; style: "normal" }>> | null = null;
 
@@ -158,17 +148,16 @@ async function render(file: string, size: { width: number; height: number }, tre
   } catch {
     // not cached yet
   }
-  const svg = await satori(await tree() as never, { ...size, fonts: await fonts() });
-  const png = await sharp(Buffer.from(svg)).png(OG_PNG).toBuffer();
-  await mkdir(CACHE_DIR, { recursive: true });
-  const tmp = `${file}.${process.pid}.${randomUUID()}.tmp`;
-  await writeFile(tmp, png);
-  await rename(tmp, file);
-  return png;
-}
-
-export function ogEtag(card: OgCard): string {
-  return createHash("sha256").update(OG_TEMPLATE_VERSION).update(JSON.stringify(card)).digest("hex").slice(0, 24);
+  return mediaCapacity.run(async () => {
+    const [{ default: satori }, { default: sharp }] = await Promise.all([import("satori"), import("sharp")]);
+    const svg = await satori(await tree() as never, { ...size, fonts: await fonts() });
+    const png = await sharp(Buffer.from(svg)).png(OG_PNG).toBuffer();
+    await mkdir(CACHE_DIR, { recursive: true });
+    const tmp = `${file}.${process.pid}.${randomUUID()}.tmp`;
+    await writeFile(tmp, png);
+    await rename(tmp, file);
+    return png;
+  });
 }
 
 /** PNG bytes for a card, from the disk cache when this exact card was rendered before. */

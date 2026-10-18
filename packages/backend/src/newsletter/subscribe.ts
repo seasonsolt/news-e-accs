@@ -4,6 +4,7 @@
 // reader's behalf.
 // Abuse control: the feedback form's source hash and bans, a per-source limit, one letter per address
 // per cooldown, and a daily ceiling below the provider's free allowance.
+import { subscribeSource, type SubscribeConfirmation, type SubscribeSource } from "@aihot/contracts/subscribe";
 import { randomBytes } from "node:crypto";
 import { config } from "../config.ts";
 import { sql } from "../db.ts";
@@ -60,10 +61,11 @@ export function subscribeLanguage(value: unknown): DistributionLanguage {
   catch { throw new NewsletterRejected(400, "invalid_request", "language must be en or zh."); }
 }
 
-export async function subscribe(input: { email: string; ip: string; userAgent: string; language?: DistributionLanguage }): Promise<{ ok: true }> {
+export async function subscribe(input: { email: string; ip: string; userAgent: string; language?: DistributionLanguage; source?: unknown }): Promise<{ ok: true }> {
   const email = normalizeEmail(input.email);
   if (!email) throw new NewsletterRejected(400, "invalid_request", "邮箱格式不正确。");
   const language = subscribeLanguage(input.language);
+  const signupSource = subscribeSource(input.source);
   const source = feedbackSourceHash(input.ip, input.userAgent);
   const [banned] = await sql`SELECT 1 FROM feedback_bans WHERE source_hash = ${source}`;
   if (banned) throw new NewsletterRejected(403, "forbidden", "暂时无法订阅。");
@@ -80,16 +82,20 @@ export async function subscribe(input: { email: string; ip: string; userAgent: s
   const pendingUnmailed = !!previous?.pending_language && previous.pending_language === language
     && !!previous.confirm_sent_at && previous.confirm_sent_at < previous.updated_at;
   const cooling = !changed && !pendingUnmailed && !!previous?.confirm_sent_at && Date.now() - previous.confirm_sent_at.getTime() < RESEND_COOLDOWN_MS;
-  if (cooling) return { ok: true };
+  if (cooling) {
+    await sql`UPDATE newsletter_subscribers SET signup_source = coalesce(signup_source, ${signupSource}) WHERE email = ${email}`;
+    return { ok: true };
+  }
   const [{ n }] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM newsletter_subscribers WHERE confirm_sent_at > now() - interval '1 day'`;
   if (n >= DAILY_LETTERS) throw new NewsletterRejected(429, "rate_limited", "今天订阅的人太多了，请明天再试。", 3600);
 
   // A different request retires the previous link, so an older letter cannot apply a language it did not offer.
   const token = changed || !previous ? randomBytes(32).toString("base64url") : previous.token;
   const [row] = await sql<{ id: string; token: string; language: DistributionLanguage; pending_language: DistributionLanguage | null }[]>`
-    INSERT INTO newsletter_subscribers (email, token, source_hash, language, language_preference_known, pending_language)
-    VALUES (${email}, ${token}, ${source}, ${language}, true, NULL)
+    INSERT INTO newsletter_subscribers (email, token, source_hash, language, language_preference_known, pending_language, signup_source)
+    VALUES (${email}, ${token}, ${source}, ${language}, true, NULL, ${signupSource})
     ON CONFLICT (email) DO UPDATE SET
+      signup_source = coalesce(newsletter_subscribers.signup_source, EXCLUDED.signup_source),
       pending_language = CASE WHEN newsletter_subscribers.language = ${language} THEN NULL ELSE ${language} END,
       token = ${token},
       updated_at = now()
@@ -108,7 +114,7 @@ export async function subscribe(input: { email: string; ip: string; userAgent: s
   return { ok: true };
 }
 
-export async function confirm(token: string): Promise<{ ok: true }> {
+export async function confirm(token: string): Promise<SubscribeConfirmation> {
   if (!/^[A-Za-z0-9_-]{43}$/.test(token)) throw new NewsletterRejected(404, "not_found", "确认链接无效，请重新订阅。");
   const [row] = await sql<{ id: string; email: string; language: DistributionLanguage; pending_language: DistributionLanguage | null }[]>`
     SELECT id, email, language, pending_language FROM newsletter_subscribers WHERE token = ${token}`;
@@ -144,9 +150,15 @@ export async function confirm(token: string): Promise<{ ok: true }> {
       throw unavailable(error);
     }
   }
-  await sql`UPDATE newsletter_subscribers
-    SET language = ${language}, pending_language = NULL, language_preference_known = true,
-        status = 'confirmed', confirmed_at = coalesce(confirmed_at, now()), unsubscribed_at = NULL, updated_at = now()
-    WHERE id = ${row.id}`;
-  return { ok: true };
+  // The conditional write claims the first confirmation atomically, including concurrent link opens.
+  return await sql.begin(async (tx) => {
+    const first = await tx`UPDATE newsletter_subscribers SET confirmed_at = now()
+      WHERE id = ${row.id} AND confirmed_at IS NULL RETURNING id`;
+    const [confirmed] = await tx<{ language: DistributionLanguage; signup_source: SubscribeSource | null }[]>`
+      UPDATE newsletter_subscribers
+      SET language = ${language}, pending_language = NULL, language_preference_known = true,
+          status = 'confirmed', unsubscribed_at = NULL, updated_at = now()
+      WHERE id = ${row.id} RETURNING language, signup_source`;
+    return { ok: true as const, first: first.length > 0, language: confirmed!.language, source: confirmed!.signup_source };
+  });
 }

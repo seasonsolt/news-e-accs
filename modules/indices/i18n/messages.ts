@@ -39,4 +39,8 @@ export const CHINESE: Readonly<Record<string, string>> = {
   "Capability is GPQA Diamond accuracy as measured by Epoch AI, taking each model's best configuration. Price is the first-party API list price per million tokens: standard tier, cache-miss input, shortest context, no launch promotions or batch discounts. Input and output are blended 3:1.": "能力用 Epoch AI 测的 GPQA Diamond 正确率，每个模型取最好的配置。价格是第一方官方 API 每百万 token 的标价：标准档、缓存未命中的输入价、最短上下文档，不含首发优惠和批量折扣。输入和输出按 3:1 混合。",
   "On every date a model launched or a price changed, each line takes the cheapest model at or above its threshold. The halving time is a least-squares fit of log price against months, with the line read on the first of every month.": "在每个有模型发布或价格变动的日期，每条线取分数达到该档的模型里最便宜的那个。减半时间是对数价格随月份的最小二乘拟合，每月 1 日取一次线上的值。",
   "What it does not say": "它说明不了什么",
+  "How fast the price of a fixed AI capability falls": "同样的 AI 能力降价有多快",
+  "How much cheaper has AI become?": "AI 现在比以前便宜了多少？",
+  "AI capability prices and halving times": "各能力档的价格和减半时间",
+  "Once a week": "每周一次",
 };

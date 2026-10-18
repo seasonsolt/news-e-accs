@@ -9,7 +9,8 @@ import { audit, Conflict } from "../audit.ts";
 import { config } from "../config.ts";
 import { sql, type Tx } from "../db.ts";
 import { enqueue, QUEUES } from "../jobs/queue.ts";
-import { renderWechatCover, WECHAT_COVER_SQUARE, WECHAT_COVER_WIDE, wechatCoverEtag, type WechatCover } from "../media/wechat-cover.ts";
+import { WECHAT_COVER_SQUARE, WECHAT_COVER_WIDE, wechatCoverEtag, type WechatCover } from "../media/cards.ts";
+import { requestWechatCover } from "../media/request.ts";
 import { WECHAT_MIN_ENTRIES, wechatColumn } from "../newsletter/wechat-column.ts";
 import { wechatComments } from "../newsletter/wechat-comments.ts";
 import { wechatTopics } from "../newsletter/wechat-topics.ts";
@@ -153,7 +154,7 @@ const EMPTY_IMAGES = createHash("sha256").update("").digest("hex").slice(0, 16);
 /** The issue's cover as PNG bytes; null when the day has no column to cover. */
 export async function wechatCoverPng(date: string): Promise<Buffer | null> {
   const found = await issue(dateKey(date));
-  return found.status === "ready" ? (await renderWechatCover(found.cover)).png : null;
+  return found.status === "ready" ? await requestWechatCover(found.cover) : null;
 }
 
 const bad = (message: string) => Object.assign(new Error(message), { statusCode: 400 });
@@ -430,7 +431,7 @@ export async function pushWechatDraft(date: string, actor: string): Promise<{ ac
   try {
     coverId = row.push?.coverEtag === etag
       ? row.push.coverMediaId
-      : await uploadWechatImage((await renderWechatCover(cover)).png, `ai-zaobao-${key}.png`);
+      : await uploadWechatImage(await requestWechatCover(cover), `ai-zaobao-${key}.png`);
     // The body prints its pictures from the 公众号's own addresses; each picture is uploaded once.
     const images = new Map<string, string>();
     for (const e of found.article.entries) {

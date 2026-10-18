@@ -11,7 +11,7 @@ import { isPhone } from "../../components/shell/screens";
 import { claimSubscribeView, useSubscribeView } from "./useSubscribeView";
 import { recordSubscribe, requestSubscribe } from "./flow";
 
-type InlineSource = Extract<SubscribeSource, "daily_inline" | "item_inline" | "chronicle_inline">;
+type InlineSource = Extract<SubscribeSource, "daily_inline" | "item_inline" | "chronicle_inline" | "story_inline">;
 type Phase = { kind: "idle" } | { kind: "sending" } | { kind: "sent"; email: string } | { kind: "error"; message: string };
 
 const FIELD = "h-12 w-full rounded-full border border-line bg-bg px-4 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-4 focus:border-accent";
@@ -90,7 +90,7 @@ function EmailForm({ id, source, email, setEmail, phase, formRef, onPhase, class
     e.preventDefault();
     recordSubscribe("subscribe_submit", source, locale);
     onPhase({ kind: "sending" });
-    const error = await requestSubscribe(email, locale);
+    const error = await requestSubscribe(email, locale, source);
     if (error) {
       recordSubscribe("subscribe_error", source, locale, error.reason);
       onPhase({ kind: "error", message: error.detail });

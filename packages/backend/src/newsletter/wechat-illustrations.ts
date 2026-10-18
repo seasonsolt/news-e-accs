@@ -9,7 +9,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import * as cheerio from "cheerio";
-import sharp from "sharp";
 import { z } from "zod";
 import { config } from "../config.ts";
 import { sql } from "../db.ts";
@@ -160,6 +159,7 @@ async function usablePicture(url: string): Promise<Buffer | null> {
   try {
     const res = await guardedFetch(url, { timeoutMs: 20_000, maxBytes: 16 * 1024 * 1024, headers: { accept: "image/avif,image/webp,image/png,image/jpeg,image/*;q=0.8" } });
     if (res.status !== 200) return null;
+    const { default: sharp } = await import("sharp");
     const meta = await sharp(res.body, { limitInputPixels: 64_000_000 }).metadata();
     const width = meta.width ?? 0;
     const height = meta.pageHeight ?? meta.height ?? 0;

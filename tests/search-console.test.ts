@@ -118,5 +118,11 @@ test("the weekly readings put views by section, subscribers and Search Console o
   assert.deepEqual([last.search?.clicks, last.search?.impressions, last.search?.inspected, last.search?.indexed], [12, 340, 2, 1]);
   assert.equal(readings.rows[2]!.search, null);
 
+  assert.ok(last.confirmationsBySource.some((s) => s.source === null && s.count >= 1));
+  await sql`UPDATE newsletter_subscribers SET signup_source = 'concept', unsubscribed_at = now() WHERE email = ${email}`;
+  const afterUnsubscribe = (await weeklyReadings(4, now)).rows[1]!;
+  assert.equal(afterUnsubscribe.confirmations, last.confirmations);
+  assert.ok(afterUnsubscribe.confirmationsBySource.some((s) => s.source === "concept" && s.count >= 1));
+
   assert.equal((await app.inject("/api/admin/metrics")).statusCode, 401, "the readings are for the admin only");
 });

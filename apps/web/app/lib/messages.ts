@@ -371,6 +371,8 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "订阅成功": "Subscribed",
   "所选语言的日报就绪后会送到你的邮箱，每一封信的末尾都可以一键退订。用 Gmail 的话，第一封日报如果在「推广」里，把它拖到「主要」，以后就都在收件箱最前面了。": "The daily arrives when its edition is ready. Every email includes an unsubscribe link. In Gmail, move the first briefing from Promotions to Primary if needed.",
   "去看今天的新闻": "Read today's news",
+  "最近一期日报": "Latest issue",
+  "阅读这期日报": "Read this issue",
   "最后一步：确认订阅": "Last step: confirm subscription",
   "日报。": "daily briefing.",
   "确认中…": "Confirming…",

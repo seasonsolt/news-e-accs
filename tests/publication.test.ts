@@ -13,7 +13,7 @@ import { closeDb, sql } from "@aihot/backend/db";
 import { overrideFields, setVisibility } from "@aihot/backend/admin/content";
 import { updateSource } from "@aihot/backend/admin/sources";
 import { upsertMaterial } from "@aihot/backend/content/materials";
-import { stopBoss } from "@aihot/backend/jobs/queue";
+import { getBoss, stopBoss } from "@aihot/backend/jobs/queue";
 import { publishArticle, republishSource } from "@aihot/backend/publication/publish";
 import { computeHotRanking } from "@aihot/backend/events/hot";
 import { latestHotRanking } from "@aihot/backend/publication/hot";
@@ -25,6 +25,7 @@ const SOURCE = `test-publication-${T}`;
 const BODY = `FULLTEXT-${T} `.repeat(40);
 const REPORT_KEY = `2099-12-${String(10 + Math.floor(Math.random() * 19))}`;
 const app = await buildApp();
+await (await import("@aihot/backend/jobs/media")).registerMediaJobs(await getBoss());
 
 before(async () => {
   await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, site_fulltext, syndicate_fulltext, next_fetch_at)

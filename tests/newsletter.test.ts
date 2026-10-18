@@ -8,7 +8,7 @@ import { after, before, test } from "node:test";
 import { beijingDate, addDays } from "@aihot/contracts/time";
 import { config } from "@aihot/backend/config";
 import { closeDb, sql } from "@aihot/backend/db";
-import { stopBoss } from "@aihot/backend/jobs/queue";
+import { getBoss, stopBoss } from "@aihot/backend/jobs/queue";
 import { newsletterOverview } from "@aihot/backend/admin/newsletter";
 import { confirm, NewsletterRejected, subscribe, subscribeLanguage } from "@aihot/backend/newsletter/subscribe";
 import { loadReport } from "@aihot/backend/publication/reports";
@@ -104,6 +104,7 @@ const since = () => hits.length;
 const tokenOf = async () => (await sql<{ token: string }[]>`SELECT token FROM newsletter_subscribers WHERE email = ${EMAIL.toLowerCase()}`)[0]!.token;
 
 before(async () => {
+  await (await import("@aihot/backend/jobs/media")).registerMediaJobs(await getBoss());
   await sql`DELETE FROM newsletter_sends WHERE report_key = ${TODAY}`;
   await sql`DELETE FROM newsletter_language_sends WHERE report_key = ${TODAY}`;
   await sql`DELETE FROM reports WHERE kind = 'daily' AND key = ${TODAY}`;
@@ -191,7 +192,7 @@ test("confirming subscribes the contact in the segment, and confirming again re-
 
   const encoded = encodeURIComponent(EMAIL.toLowerCase());
   const first = since();
-  assert.deepEqual(await confirm(token), { ok: true });
+  assert.deepEqual(await confirm(token), { ok: true, first: true, language: "zh", source: null });
   const created = hits.slice(first).find((h) => h.method === "POST" && h.path === "/contacts");
   assert.deepEqual(created?.body, { email: EMAIL.toLowerCase(), unsubscribed: false, segments: [{ id: "seg-test" }] }, "a new contact is created in the segment");
   assert.deepEqual(hits.slice(first).map((h) => `${h.method} ${h.path}`), [
@@ -203,7 +204,7 @@ test("confirming subscribes the contact in the segment, and confirming again re-
 
   // Later (say after an unsubscribe link): the contact is marked subscribed and kept in the segment.
   const again = since();
-  assert.deepEqual(await confirm(token), { ok: true });
+  assert.deepEqual(await confirm(token), { ok: true, first: false, language: "zh", source: null });
   const calls = hits.slice(again).map((h) => `${h.method} ${h.path}`);
   assert.deepEqual(calls, [
     `GET /contacts/${encoded}`,
@@ -1095,4 +1096,46 @@ test('grouped-story report snapshot citations send in both languages without com
     if(storyId) { await sql`DELETE FROM facts WHERE story_id=${storyId}`; await sql`DELETE FROM stories WHERE id=${storyId}`; }
     await sql`DELETE FROM sources WHERE id=${source}`;
   }
+});
+
+
+test("signup sources are allowlisted, filled once, and retained on resubscription", async () => {
+  const email = `sources-${T}@example.org`;
+  const visitor = { ip: `sources-${T}`, userAgent: "test" };
+  await subscribe({ email, ...visitor, source: "private@example.org" });
+  let [row] = await sql`SELECT signup_source, token FROM newsletter_subscribers WHERE email = ${email}`;
+  assert.equal(row!.signup_source, null);
+  await subscribe({ email, ...visitor, source: "concept" });
+  await subscribe({ email, ...visitor, source: "story_inline" });
+  [row] = await sql`SELECT signup_source, token FROM newsletter_subscribers WHERE email = ${email}`;
+  assert.equal(row!.signup_source, "concept", "cooldown requests can fill but cannot overwrite the first source");
+  const results = await Promise.all([confirm(row!.token), confirm(row!.token)]);
+  assert.deepEqual(results.map((r) => r.first).sort(), [false, true]);
+  assert.ok(results.every((r) => r.language === "en" && r.source === "concept"));
+  await sql`UPDATE newsletter_subscribers SET unsubscribed_at = now(), confirm_sent_at = now() - interval '1 day' WHERE email = ${email}`;
+  await subscribe({ email, ...visitor, source: "daily_inline" });
+  assert.equal((await confirm(row!.token)).first, false);
+  const [saved] = await sql`SELECT signup_source FROM newsletter_subscribers WHERE email = ${email}`;
+  assert.equal(saved!.signup_source, "concept");
+});
+
+test("newsletter HTTP accepts only allowlisted sources and returns confirmation attribution", async () => {
+  const { default: Fastify } = await import("fastify");
+  const { registerNewsletter } = await import("../apps/api/src/routes/newsletter.ts");
+  const app = Fastify();
+  registerNewsletter(app);
+  try {
+    for (const [suffix, source, expected] of [["valid", "story_inline", "story_inline"], ["invalid", "private@example.org", null], ["missing", undefined, null]] as const) {
+      const email = `http-${suffix}-${T}@example.org`;
+      const res = await app.inject({ method: "POST", url: "/api/site/newsletter/subscribe", headers: { "x-real-ip": suffix }, payload: { email, source, language: "zh" } });
+      assert.equal(res.statusCode, 202, res.body);
+      const [row] = await sql`SELECT signup_source, token FROM newsletter_subscribers WHERE email = ${email}`;
+      assert.equal(row!.signup_source, expected);
+      const confirmed = await app.inject({ method: "POST", url: "/api/site/newsletter/confirm", payload: { token: row!.token } });
+      assert.equal(confirmed.statusCode, 200);
+      assert.deepEqual(confirmed.json(), { ok: true, first: true, language: "zh", source: expected });
+      const reopened = await app.inject({ method: "POST", url: "/api/site/newsletter/confirm", payload: { token: row!.token } });
+      assert.equal(reopened.json().first, false);
+    }
+  } finally { await app.close(); }
 });
