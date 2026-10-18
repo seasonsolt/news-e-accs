@@ -234,3 +234,25 @@
 阶段图生成提示词：
 
 > Distinct illustrative photograph for AI agents, 2025 onward. Landscape 3:2, contemporary large-format night photography, dark indigo and copper amber. A three-quarter view of a workstation with three monitors: abstract structured code and test results, browser research documents and figures, and a finished report with a completion checklist. The keyboard is unoccupied. A person standing behind the desk at far right reviews the report on a tablet, hands away from the keyboard. Screens convey autonomous computer work followed by human verification. Quiet workspace, glass partitions, warm desk lamp, dark blue window. Keep the left 40 percent dark for the year and era overlays. Cluster screens around x=65%, y=45% for desktop and phone crops. No giant industrial landscape, humanoid robots, holograms, glowing brains, close-up faces, flames, cooling towers, logos, readable text or watermarks. Standalone image, not a website mockup.
+
+# 壁纸（4K）
+
+用途：订阅壁纸，每天一张，桌面版 3840×2160，手机版 2160×3840。ChatGPT 网页版出图一般是 1536×1024，所以在本机用 `tools/make-wallpaper.sh` 放大成 4K。
+
+## 怎么画
+
+1. 在 ChatGPT 里画 **横版 3:2（1536×1024）**，人工生成、人工保存。订阅版条款不允许用脚本自动操作 ChatGPT。
+2. 桌面版会裁掉上下各约 8%，手机版只保留横向中间约 37% 宽的竖条。主体放在画面中部，左右两侧也要能单独成画。
+3. 不要文字、字母、数字、logo 和水印。
+
+## 放大
+
+1. 第一次使用前，从 [Real-ESRGAN 发布页](https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0) 下载 `realesrgan-ncnn-vulkan-20220424-macos.zip`，解压到不在仓库里的目录，例如 `~/Applications/realesrgan/`。
+2. 运行：
+   ```bash
+   REALESRGAN=~/Applications/realesrgan/realesrgan-ncnn-vulkan tools/make-wallpaper.sh ~/Desktop/今天的图.png
+   ```
+   输出 `<文件名>-desktop.jpg` 和 `<文件名>-phone.jpg` 到 `~/Desktop/eacc-wallpaper/`。M1 Max 上一张约 30 秒。
+3. 可调参数：`GRAIN`（颗粒强度，默认 4，0 为关闭）；`FOCUS_X`（手机版保留哪一段，0 最左，1 最右，默认 0.5）。
+
+只用 `realesrgan-x4plus` 模型（BSD-3，可以商用）。Upscayl 里的 4x-UltraSharp 和 Remacri 是 CC BY-NC-SA，不能商用；其他模型没写许可证，也不要用。
