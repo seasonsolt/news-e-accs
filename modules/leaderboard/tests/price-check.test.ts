@@ -38,6 +38,9 @@ test("a reading counts only with a verbatim quote that states every number", () 
   assert.deepEqual(backedPrice(reading({ per: 1000, input: 1000, output: 1000, quote: "Cache 1,000 per 1K" }), text), { price: usd(1_000_000, 1_000_000) });
   assert.deepEqual(backedPrice(reading({ input: 0.75, output: 4, quote: "Input 0, 75 $ per 1M | Output $3.750" }), text), { problem: "4 not in the quote" });
   assert.deepEqual(backedPrice(reading({ input: 0.75, output: 3.75, quote: "Input $0.75 | Output $3.75" }), text), { problem: "quote not on the page" });
+  assert.deepEqual(backedPrice(reading({ input: 0.75, output: 3.75, quote: "Alpha 1 | Input 0, 75 $\n...\nOutput $3.750" }), text), { price: usd(0.75, 3.75) }, "parts left out with ...");
+  assert.deepEqual(backedPrice(reading({ input: 0.75, output: 3.75, quote: "Output $3.750 … Input 0, 75 $" }), text), { problem: "quote not on the page" }, "the parts in page order");
+  assert.deepEqual(backedPrice(reading({ input: 0.75, output: 3.75, quote: " ... " }), text), { problem: "quote not on the page" });
   assert.deepEqual(backedPrice(reading({ input: 1, output: 2, per: 1e9, quote: "Alpha 1" }), text), { problem: "incomplete reading" });
   assert.deepEqual(backedPrice(reading({ found: false }), text), { problem: "not found on the page" });
 });

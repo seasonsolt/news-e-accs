@@ -113,6 +113,18 @@ export const PageReading = z.object({
 export type ModelReading = z.infer<typeof PageReading>["models"][number];
 
 const squash = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
+
+/** The quote occurs on the page; one that skips text with "..." or "…" occurs as those parts, in order. */
+function onPage(text: string, quote: string): boolean {
+  const page = squash(text);
+  let from = 0;
+  for (const part of quote.split(/\.\.\.|…/).map(squash).filter(Boolean)) {
+    const at = page.indexOf(part, from);
+    if (at < 0) return false;
+    from = at + part.length;
+  }
+  return from > 0;
+}
 const PER = new Set([1, 1000, 1_000_000]);
 
 /** The numbers a passage writes, read with a comma as either a decimal or a thousands separator (0,75 · 1,000). */
@@ -133,7 +145,7 @@ export function backedPrice(reading: ModelReading | undefined, text: string): { 
   if (!reading?.found) return { problem: "not found on the page" };
   const { currency, per, input, output, cached, quote } = reading;
   if (!currency || per === null || !PER.has(per) || input === null || output === null) return { problem: "incomplete reading" };
-  if (!quote || quote.length > 1500 || !squash(text).includes(squash(quote))) return { problem: "quote not on the page" };
+  if (!quote || quote.length > 1500 || !onPage(text, quote)) return { problem: "quote not on the page" };
   const stated = numbersIn(quote);
   for (const n of [input, output, cached]) {
     if (n !== null && (!(n >= 0) || !stated.some((s) => Math.abs(s - n) < 1e-9))) return { problem: `${n} not in the quote` };
