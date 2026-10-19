@@ -11,7 +11,7 @@ export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown
 export default function Products() {
   const locale = useLocale();
   return <>
-    <Deck compact label={locale === "en" ? "Products" : "产品目录"}
+    <Deck compact art="cat-products" label={locale === "en" ? "Products" : "产品目录"}
       title={locale === "en" ? "Built to accelerate." : "为加速而创造。"}
       description={locale === "en" ? "Upcoming products and projects from e/acc." : "e/acc 即将发布的产品与项目。"} />
     <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
