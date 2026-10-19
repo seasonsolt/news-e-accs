@@ -1,7 +1,7 @@
 // The observatory's depth: the plate redrawn in WebGL over its <img>, each pixel displaced by its depth
 // (an offline map, <slug>-depth.webp from tools/make-depth.py, white = near) against the pointer, so
 // near and far slide apart and the plate reads as a window. A touchscreen gets a slow drift instead.
-// The plate is cut by depth into rigid layers that slide against each other with the pointer.
+// Near surfaces cover far ones at their edges, and every surface keeps in one piece as it slides.
 // Changing plates is a jump: the current one accelerates into streaks along the rays from the vanishing
 // point, a white-hot flash covers the cut, and the next arrives streaking and slows to rest; going back in
 // time plays the jump in reverse. A plate without a depth map is one flat layer (no parallax, still the jump).
@@ -45,15 +45,24 @@ uniform vec2 uPointer;
 uniform float uStrength, uFocus, uWarp;
 varying vec2 vUv;
 const vec2 VANISH = vec2(0.5, 0.55);
-// Rigid layers, like a multiplane camera: depth cut into four cards, each shifted whole against the
-// pointer. A pixel shows the nearest card that covers it, so edges stay hard instead of bending.
+// Occlusion search: march the sight line from the nearest depth to the farthest and stop at the first
+// surface it meets, refined between the last two steps. Each point moves by its own depth, so a surface
+// spanning many depths stays in one piece (cutting depth into cards tore such surfaces where a cut ran
+// through them), and the nearest surface wins at an edge, so edges stay hard instead of rippling.
+const int STEPS = 24;
 vec2 layered(sampler2D depth, vec2 uv) {
-  for (int i = 0; i < 4; i++) {
-    float k = float(3 - i);
-    vec2 p = uv + uPointer * uStrength * ((k + 0.5) / 4.0 - uFocus);
-    if (min(floor(texture2D(depth, p).r * 4.0), 3.0) == k) return p;
+  vec2 travel = uPointer * uStrength;
+  float before = 1.0;
+  float gap = texture2D(depth, uv + travel * (1.0 - uFocus)).r - 1.0;
+  if (gap >= 0.0) return uv + travel * (1.0 - uFocus);
+  for (int i = 1; i <= STEPS; i++) {
+    float d = 1.0 - float(i) / float(STEPS);
+    float next = texture2D(depth, uv + travel * (d - uFocus)).r - d;
+    if (next >= 0.0) return uv + travel * (mix(d, before, next / (next - gap)) - uFocus);
+    before = d;
+    gap = next;
   }
-  return uv + uPointer * uStrength * (0.125 - uFocus);
+  return uv - travel * uFocus;
 }
 // The plate at a given speed: magnified toward the vanishing point and smeared along the rays from it.
 vec3 plate(sampler2D img, sampler2D depth, vec4 cover, float speed) {
