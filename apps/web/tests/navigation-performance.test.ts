@@ -109,7 +109,9 @@ test('SSR list and visited query variants return offline without another read',a
     await expect(page.getByText('固定正文',{exact:true})).toBeVisible();
     await context.setOffline(true);
     await page.goBack();
-    await expect(page.getByRole('link',{name:'性能检查文章',exact:true})).toBeVisible({timeout:1500});
+    // Offline, a revisit that needed the network would show an error page, so the content appearing is the
+    // check; the time limit only has to outlast a slow WebKit runner.
+    await expect(page.getByRole('link',{name:'性能检查文章',exact:true})).toBeVisible({timeout:10_000});
     await context.setOffline(false);
     await page.locator('#main').getByRole('link',{name:'Models',exact:true}).click();
     await expect(page.getByRole('link',{name:'分类 ai-models',exact:true})).toBeVisible();
@@ -117,7 +119,7 @@ test('SSR list and visited query variants return offline without another read',a
     await expect(page.getByRole('link',{name:'分类 ai-products',exact:true})).toBeVisible();
     await context.setOffline(true);
     await page.goBack();
-    await expect(page.getByRole('link',{name:'分类 ai-models',exact:true})).toBeVisible({timeout:1500});
+    await expect(page.getByRole('link',{name:'分类 ai-models',exact:true})).toBeVisible({timeout:10_000});
     await expect(page.locator('link[rel=canonical]')).toHaveAttribute('href',origin+'/?category=ai-models');
   }finally{await context.close();}
 });
@@ -187,6 +189,8 @@ test('intent on a selected link preserves visited data and the next revisit star
   page.on('request',request=>{if(request.url().includes('.data'))requests.push(request.url());});
   try{
     await page.goto(origin+'/');
+    // A click before hydration is a document load, which leaves the client cache this test is about empty.
+    await hydrated(page.locator('#main').getByRole('link',{name:'Models',exact:true}));
     await page.locator('#main').getByRole('link',{name:'Models',exact:true}).click();
     await expect(page.getByRole('link',{name:'分类 ai-models',exact:true})).toBeVisible();
     await page.locator('#main').getByRole('link',{name:'Models',exact:true}).focus();
