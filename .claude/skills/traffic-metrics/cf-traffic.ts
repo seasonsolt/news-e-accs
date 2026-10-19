@@ -18,8 +18,11 @@ const { values: args } = parseArgs({
   },
 });
 
-/** A person rarely opens more than this many full pages from one browser in a day without ever navigating in-app. */
+/** A person rarely opens more than this many full pages from one browser in a day without navigating in-app. */
 const MAX_FULL_LOADS = 15;
+/** Above that, a person navigates in-app at least once per this many further full loads; a crawler that renders
+ * JavaScript reloads nearly every page (Chrome/145 Mac on 10-18: 278 loads, 2 navigations). */
+const LOADS_PER_NAV = 10;
 const SESSION_GAP_MS = 30 * 60_000;
 const ROW_LIMIT = 10_000;
 const BOT_WORDS = /bot|crawl|spider|slurp|headless|preview|fetch|scan|monitor|python|curl|wget|go-http|axios|node|java\/|compatible;/i;
@@ -148,9 +151,9 @@ for (const day of days) {
 // Only a signed-in admin gets a 200 from the admin API or an admin page's data; that browser is left out of every day.
 const owner = new Set(perDay.flatMap((d) => [...d.ua].filter(([, s]) => s.owner > 0).map(([agent]) => agent)));
 // A person opened a page and ran the page's code (the view beacon, scripts or an in-app navigation), without
-// the many full loads and no navigation of a crawler that renders JavaScript.
+// the many full loads and few navigations of a crawler that renders JavaScript.
 const isPerson = (s: UaDay) => s.beacon + s.pages + s.navs > 0 && (s.beacon > 0 || s.assets > 0 || s.navs > 0)
-  && (s.pages <= MAX_FULL_LOADS || s.navs > 0);
+  && (s.pages <= MAX_FULL_LOADS || (s.navs > 0 && s.navs * LOADS_PER_NAV >= s.pages - MAX_FULL_LOADS));
 
 const seen = new Set<string>();
 const daily = perDay.map(({ day, ua, sessions }) => {

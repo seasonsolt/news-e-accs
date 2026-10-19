@@ -26,7 +26,7 @@ Search Console 链接（`breakdown` 可换 `page`、`query`、`date`，`num_of_d
 以“当天的一个 User-Agent”为一个访客：
 
 - 排除：已验证爬虫、UA 带 bot/crawl/spider/headless/preview/compatible 等字样的、站长本人（拿到过后台 API 200 的浏览器，整个窗口都排除）。
-- 算作人：打开过页面，并且跑了页面代码（发过浏览信标 `/api/site/analytics`、加载过 `/assets/`，或有站内跳转 `.data`），并且当天整页加载不超过 15 次，超过的必须有站内跳转。
+- 算作人：打开过页面，并且跑了页面代码（发过浏览信标 `/api/site/analytics`、加载过 `/assets/`，或有站内跳转 `.data`），并且当天整页加载不超过 15 次，超过的必须有站内跳转，并且超出 15 次的部分每 10 次至少 1 次跳转。
 - PV：发过信标的用信标次数，否则用整页加载加站内跳转。
 - 会话：同一访客两次浏览间隔超过 30 分钟就算新会话；只有一次浏览的会话算跳出。
 - 回访：窗口内更早某天出现过的同一 UA。窗口第一天恒为 0；浏览器升级会换 UA，所以偏低。
@@ -67,6 +67,7 @@ Search Console 链接（`breakdown` 可换 `page`、`query`、`date`，`num_of_d
 
 - 不跑 JS 的冒充浏览器：Chrome/142 Mac（一天打同一篇日报 294 次）、iPhone OS 13_2_3。
 - 跑 JS 但从不站内跳转：Chrome/130、Chrome/133，以及 10-12 灌了 6,000 多次信标的那一批。
+- 跑 JS、偶尔站内跳转：Chrome/145 Mac（`Chrome/145.0.0.0 Safari/537.36`），间歇爆发，10-13 整页加载 68 次，10-18 整页加载 278 次、信标 280 次而只有 2 次跳转，还取了 12 次 `/llms.txt`；当天曾把 PV 从约 87 抬到 367。
 - 监控类：Chrome/94.0.4606.81 只打首页；Chrome/135.1.0 反复打一篇文章。
 - 未验证的 PerplexityBot：10-08 到 10-11 一周约 15.5 万次请求。
 - 扫描器：用最常见的安卓 Chrome UA 扫 `/forgot-password`、`/.env` 之类，返回 404，不计入 PV，但会和真实读者共用一个 UA。
