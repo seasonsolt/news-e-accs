@@ -1,17 +1,18 @@
 // The index chart as a 1200×630 PNG (/index/cost-of-intelligence.png) for other sites to embed and for
 // the page's share card. The source line is drawn into the image, so it keeps its attribution when copied.
-// Lines are an SVG image; the labels are text laid out by the share-card renderer (its fonts, no system ones).
+// Lines are laid in matchsticks like the page's (../matchsticks.ts), as an SVG image; the labels are text laid out by the share-card renderer (its fonts, no system ones).
 import { createHash } from "node:crypto";
 import { h, renderPng, SITE_HOST, type Node } from "@aihot/backend/media/og";
 import type { CostOfIntelligence } from "../contracts.ts";
+import { FLAME, HEAD_INSET, matchShapes, runsThrough, sticksAlong, tierColor } from "../matchsticks.ts";
 
 export const CHART_PATH = "/index/cost-of-intelligence.png";
 /** Bumped when the drawing changes, so cached PNGs of the same data are drawn again. */
-const TEMPLATE = 1;
+const TEMPLATE = 2;
 const WIDTH = 1200;
 const HEIGHT = 630;
-/** The page's colours: hotter as the capability rises. */
-const COLORS = ["#b08a4a", "#d9a441", "#ff8a3d", "#e0481a"];
+/** Matches drawn a little larger than on the page, for an image usually shown scaled down. */
+const SCALE = 1.25;
 const INK = "#2a1f16";
 const MUTED = "#6f5d48";
 const GRID = "#e6dccb";
@@ -58,18 +59,36 @@ function tree(data: CostOfIntelligence, lang: ChartLanguage): Node {
 
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">`;
   for (const v of decades) svg += `<line x1="${L}" x2="${R}" y1="${y(v)}" y2="${y(v)}" stroke="${GRID}" stroke-width="1.5"/>`;
+  const attrs = (shape: Record<string, unknown>) => Object.entries(shape).map(([k, v]) => `${k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}="${v}"`).join(" ");
+  const fire = FLAME.fire.map(([offset, color, opacity]) => `<stop offset="${offset}" stop-color="${color}" stop-opacity="${opacity}"/>`).join("");
+  svg += `<defs><radialGradient id="glow"><stop offset="0" stop-color="${FLAME.glowColor}" stop-opacity="0.55"/><stop offset="1" stop-color="${FLAME.glowColor}" stop-opacity="0"/></radialGradient><linearGradient id="fire" x1="0" x2="0" y1="1" y2="0">${fire}</linearGradient></defs>`;
   data.tiers.forEach((tier, i) => {
     if (!tier.points.length) return;
-    const color = COLORS[i % COLORS.length]!;
-    let d = "";
-    tier.points.forEach((p, j) => (d += j === 0 ? `M${x(p.date)},${y(p.price)}` : `H${x(p.date)}V${y(p.price)}`));
-    svg += `<path d="${d}H${R}" fill="none" stroke="${color}" stroke-width="4"/>`;
-    for (const p of tier.points) svg += `<circle cx="${x(p.date)}" cy="${y(p.price)}" r="6" fill="${p.verified ? color : BG}" stroke="${color}" stroke-width="3"/>`;
+    const corners: Array<[number, number]> = [];
+    tier.points.forEach((p, j) => {
+      if (j > 0) corners.push([x(p.date), corners.at(-1)![1]]);
+      corners.push([x(p.date), y(p.price)]);
+    });
+    corners.push([R, corners.at(-1)![1]]);
+    for (const run of runsThrough(corners)) {
+      svg += `<g transform="translate(${run.x} ${run.y}) rotate(${run.angle}) scale(${SCALE})">`;
+      for (const stick of sticksAlong(run.len / SCALE)) {
+        const { stick: body, grain, head, shine } = matchShapes(stick, tierColor(i));
+        svg += `<rect ${attrs(body)}/><rect ${attrs(grain)}/>`;
+        if (head) svg += `<ellipse ${attrs(head)}/>`;
+        if (shine) svg += `<ellipse ${attrs(shine)}/>`;
+      }
+      svg += "</g>";
+    }
+    for (const p of tier.points) if (!p.verified) svg += `<circle cx="${x(p.date)}" cy="${y(p.price)}" r="5" fill="${BG}" stroke="${tierColor(i)}" stroke-width="3"/>`;
+    // Today's end: the last match is lit.
+    const [ex, ey] = corners.at(-1)!;
+    svg += `<g transform="translate(${ex - HEAD_INSET * SCALE} ${ey - 2.5 * SCALE}) scale(${SCALE})"><circle cx="${FLAME.glow.cx}" cy="${FLAME.glow.cy}" r="${FLAME.glow.r}" fill="url(#glow)"/><path d="${FLAME.outer}" fill="url(#fire)"/><path d="${FLAME.inner}" fill="${FLAME.core}" opacity="0.85"/></g>`;
   });
   svg += "</svg>";
 
   // End labels at their line's last price, pushed apart so none overlap.
-  const labels = data.tiers.flatMap((tier, i) => (tier.points.length ? [{ tier, color: COLORS[i % COLORS.length]!, top: y(tier.points.at(-1)!.price) - 14 }] : [])).sort((a, b) => a.top - b.top);
+  const labels = data.tiers.flatMap((tier, i) => (tier.points.length ? [{ tier, color: tierColor(i), top: y(tier.points.at(-1)!.price) - 14 }] : [])).sort((a, b) => a.top - b.top);
   for (let j = 1; j < labels.length; j++) labels[j]!.top = Math.max(labels[j]!.top, labels[j - 1]!.top + 30);
   const overflow = labels.length ? labels.at(-1)!.top - (B - 10) : 0;
   if (overflow > 0) for (const label of labels) label.top -= overflow;
@@ -81,7 +100,12 @@ function tree(data: CostOfIntelligence, lang: ChartLanguage): Node {
     text({ left: 56, top: 100, width: WIDTH - 112, fontSize: 19, color: MUTED }, copy.subtitle),
     ...decades.map((v) => text({ left: 0, top: y(v) - 13, width: L - 14, justifyContent: "flex-end", fontSize: 19, color: MUTED }, usd(v))),
     ...years.map((year) => text({ left: x(`${year}-01-01`) - 40, top: B + 12, width: 80, justifyContent: "center", fontSize: 19, color: MUTED }, year)),
-    ...labels.map(({ tier, color, top }) => text({ left: R + 12, top, fontSize: 20, fontWeight: 700, color }, `≥${pct(tier.threshold)} ${usd(tier.points.at(-1)!.price)}`)),
+    // A head-coloured dot keeps the label legible on the light ground (the lighter heads are too pale as text).
+    ...labels.map(({ tier, color, top }) => h("div", { display: "flex", position: "absolute", alignItems: "center", left: R + 22, top, fontSize: 20 }, [
+      h("div", { width: 12, height: 12, borderRadius: 6, backgroundColor: color, marginRight: 8 }),
+      h("div", { display: "flex", fontWeight: 700, color: INK, marginRight: 6 }, `≥${pct(tier.threshold)}`),
+      h("div", { display: "flex", color: MUTED }, usd(tier.points.at(-1)!.price)),
+    ])),
     text({ left: 56, top: HEIGHT - 44, fontSize: 19, fontWeight: 700, color: INK }, `${SITE_HOST}/index/cost-of-intelligence`),
     text({ right: 56, top: HEIGHT - 44, fontSize: 17, color: MUTED }, copy.source(data.asOf)),
   ]);

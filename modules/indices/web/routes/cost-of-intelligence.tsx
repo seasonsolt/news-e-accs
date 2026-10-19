@@ -5,13 +5,14 @@ import { SITE } from "@aihot/site";
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLoaderData } from "react-router";
 import type { CoiPoint, CoiTier, CostOfIntelligence } from "@aihot/indices/contracts";
+import { FLAME, HEAD_INSET, matchShapes, runsThrough, sticksAlong, tierColor, type Stick } from "@aihot/indices/matchsticks";
 import { loadOr404 } from "@aihot/web/lib/api.server";
 import { localeFromMatches, Text, translate, useLocale, useTranslate } from "@aihot/web/lib/i18n";
 import { localePath } from "@aihot/web/lib/locale";
 import { breadcrumbLd, pageMeta, siteUrl } from "@aihot/web/lib/seo";
 import { useEntrance } from "@aihot/web/lib/hydration";
 import { useMotionAllowed } from "@aihot/web/features/motion/preferences";
-import { CodeBlock } from "@aihot/web/features/agent/CodeBlock";
+import { CodeBlock, CopyButton } from "@aihot/web/features/agent/CodeBlock";
 import { Deck } from "@aihot/web/components/shell/Deck";
 import { Badge } from "@aihot/web/components/ui/Badge";
 import { PillTabs } from "@aihot/web/components/ui/Tabs";
@@ -22,9 +23,7 @@ const CSV = "/api/site/indices/cost-of-intelligence.csv";
 /** The chart as an image (backend/chart.ts): English unless ?lang=zh. */
 const CHART = "/index/cost-of-intelligence.png";
 const chartPath = (locale: string) => (locale === "zh" ? `${CHART}?lang=zh` : CHART);
-/** Hotter as the capability rises; the same as the image's (backend/chart.ts). */
-const COLORS = ["#b08a4a", "#d9a441", "#ff8a3d", "#e0481a"];
-const color = (i: number) => COLORS[i % COLORS.length]!;
+const color = tierColor;
 
 export async function loader({ request }: { request: Request }) {
   return loadOr404<CostOfIntelligence>("/api/site/indices/cost-of-intelligence", { request, signal: request.signal });
@@ -138,58 +137,14 @@ function stepAt(tier: CoiTier, date: string): CoiPoint | null {
   return found;
 }
 
-/** A matchstick's length, the gap between two laid end to end, and the shortest broken stub worth drawing. */
-const MATCH = 52;
-const GAP = 2.5;
-const STUB = 8;
-const WOOD = "#dcb87e";
-const WOOD_EDGE = "#a47c43";
-
-/** A straight run of a stepped line, in pixels: from (x, y), `len` long, at `angle` degrees (0 right, 90 down, −90 up). */
-type Run = { x: number; y: number; len: number; angle: number };
-
-function runsThrough(vertices: Array<[number, number]>): Run[] {
-  const out: Run[] = [];
-  for (let j = 1; j < vertices.length; j++) {
-    const [ax, ay] = vertices[j - 1]!;
-    const [bx, by] = vertices[j]!;
-    const len = Math.hypot(bx - ax, by - ay);
-    if (len >= 1) out.push({ x: ax, y: ay, len, angle: (Math.atan2(by - ay, bx - ax) * 180) / Math.PI });
-  }
-  return out;
-}
-
-/**
- * Matches laid end to end along a run, heads forward. Whole matches stretch by a few pixels to close a
- * small remainder; a larger one becomes a headless broken stub at the start; a run too short for a
- * match gets one short match (or a stub).
- */
-function sticksAlong(len: number): Array<{ at: number; len: number; head: boolean }> {
-  const n = Math.floor((len + GAP) / (MATCH + GAP));
-  if (n === 0) return len >= 20 ? [{ at: 0, len, head: true }] : len >= STUB / 2 ? [{ at: 0, len, head: false }] : [];
-  const rest = len - (n * MATCH + (n - 1) * GAP);
-  const out: Array<{ at: number; len: number; head: boolean }> = [];
-  let at = 0;
-  let size = MATCH;
-  if (rest >= STUB + GAP) {
-    out.push({ at: 0, len: rest - GAP, head: false });
-    at = rest;
-  } else size = MATCH + rest / n;
-  for (let k = 0; k < n; k++, at += size + GAP) out.push({ at, len: size, head: true });
-  return out;
-}
-
-function Match({ at, len, head, tint }: { at: number; len: number; head: boolean; tint: string }) {
+function Match({ stick, tint }: { stick: Stick; tint: string }) {
+  const { stick: body, grain, head, shine } = matchShapes(stick, tint);
   return (
     <>
-      <rect x={at} y={-2.4} width={Math.max(1, len - (head ? 5 : 0))} height={4.8} rx={1.4} fill={WOOD} stroke={WOOD_EDGE} strokeWidth={0.7} />
-      <rect x={at + 1} y={-1.6} width={Math.max(0, len - (head ? 8 : 2))} height={1} rx={0.5} fill="#fff" opacity={0.3} />
-      {head && (
-        <>
-          <ellipse cx={at + len - 5.6} cy={0} rx={6.2} ry={4.5} fill={tint} stroke="rgb(0 0 0 / .22)" strokeWidth={0.7} />
-          <ellipse cx={at + len - 7.2} cy={-1.5} rx={2.3} ry={1.2} fill="#fff" opacity={0.45} />
-        </>
-      )}
+      <rect {...body} />
+      <rect {...grain} />
+      {head && <ellipse {...head} />}
+      {shine && <ellipse {...shine} />}
     </>
   );
 }
@@ -199,18 +154,16 @@ function Flame({ id, flicker }: { id: string; flicker: boolean }) {
   return (
     <g>
       <defs>
-        <radialGradient id={`${id}-glow`}><stop offset="0" stopColor="#ff9a3c" stopOpacity="0.55" /><stop offset="1" stopColor="#ff9a3c" stopOpacity="0" /></radialGradient>
+        <radialGradient id={`${id}-glow`}><stop offset="0" stopColor={FLAME.glowColor} stopOpacity="0.55" /><stop offset="1" stopColor={FLAME.glowColor} stopOpacity="0" /></radialGradient>
         <linearGradient id={`${id}-fire`} x1="0" x2="0" y1="1" y2="0">
-          <stop offset="0" stopColor="#ff4d12" />
-          <stop offset="0.45" stopColor="#ff9a2e" />
-          <stop offset="1" stopColor="#ffe28a" stopOpacity="0.85" />
+          {FLAME.fire.map(([offset, stopColor, stopOpacity]) => <stop key={offset} offset={offset} stopColor={stopColor} stopOpacity={stopOpacity} />)}
         </linearGradient>
       </defs>
-      <circle cx={0} cy={-12} r={22} fill={`url(#${id}-glow)`} />
+      <circle {...FLAME.glow} fill={`url(#${id}-glow)`} />
       <g>
         {flicker && <animateTransform attributeName="transform" type="scale" values="1 1;0.9 1.08;1.05 0.94;0.96 1.04;1 1" dur="1.1s" repeatCount="indefinite" />}
-        <path d="M0,-2 C-7.5,-8 -6.5,-17 0,-29 C6.5,-17 7.5,-8 0,-2Z" fill={`url(#${id}-fire)`} />
-        <path d="M0,-4 C-3.4,-8 -3.1,-13 0,-18 C3.1,-13 3.4,-8 0,-4Z" fill="#fff6cf" opacity={0.85} />
+        <path d={FLAME.outer} fill={`url(#${id}-fire)`} />
+        <path d={FLAME.inner} fill={FLAME.core} opacity={0.85} />
       </g>
     </g>
   );
@@ -365,11 +318,11 @@ function Chart({ data, focus, onFocus }: { data: CostOfIntelligence; focus: stri
               <svg key={tier.key} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className={`absolute inset-0 size-full overflow-visible ${entrance ? "anim-reveal" : ""}`} style={{ opacity: dim(tier.key), filter: "drop-shadow(0 1px 1.2px rgb(40 20 0 / .35))", transition: "opacity .25s" }} aria-hidden="true">
                 {runs.map((run, r) => (
                   <g key={r} transform={`translate(${run.x} ${run.y}) rotate(${run.angle})`}>
-                    {sticksAlong(run.len).map((stick) => <Match key={stick.at} {...stick} tint={color(i)} />)}
+                    {sticksAlong(run.len).map((stick) => <Match key={stick.at} stick={stick} tint={color(i)} />)}
                   </g>
                 ))}
                 {/* Today's end: the last match is lit. */}
-                <g transform={`translate(${ex - 5.6} ${ey - 2.5})`}><Flame id={`${wash}-flame-${i}`} flicker={flicker} /></g>
+                <g transform={`translate(${ex - HEAD_INSET} ${ey - 2.5})`}><Flame id={`${wash}-flame-${i}`} flicker={flicker} /></g>
               </svg>
             );
           })}
@@ -505,15 +458,15 @@ function StepsTable({ tier }: { tier: CoiTier }) {
 }
 
 /** One quotable sentence per tier, with its numbers and dates. */
-function findings(tx: (message: string, ...values: unknown[]) => string, tiers: CoiTier[]): string[] {
-  return tiers.flatMap((tier) => {
+function findings(tx: (message: string, ...values: unknown[]) => string, tiers: CoiTier[]): Array<{ i: number; text: string }> {
+  return tiers.flatMap((tier, i) => {
     const first = tier.points[0];
     const now = tier.points.at(-1);
     if (!first || !now || !tier.ratio) return [];
     const args = [tier.reference, pct(tier.threshold), usd(first.price), first.date, usd(now.price), now.model.name, ratioText(tier.ratio)];
-    return [tier.halvingMonths
+    return [{ i, text: tier.halvingMonths
       ? tx("Capability at GPQA Diamond ≥ {1} ({0} level) cost {2} per million tokens on {3} and costs {4} now ({5}): {6}× cheaper, halving about every {7} months.", ...args, tier.halvingMonths.toFixed(1))
-      : tx("Capability at GPQA Diamond ≥ {1} ({0} level) cost {2} per million tokens on {3} and costs {4} now ({5}): {6}× cheaper.", ...args)];
+      : tx("Capability at GPQA Diamond ≥ {1} ({0} level) cost {2} per million tokens on {3} and costs {4} now ({5}): {6}× cheaper.", ...args) }];
   });
 }
 
@@ -525,24 +478,37 @@ function CiteAndEmbed({ data, url }: { data: CostOfIntelligence; url: string }) 
   const title = tx("The cost of intelligence");
   const embed = `<a href="${url}"><img src="${image}" alt="${title}: ${tx("Cheapest price per million tokens by GPQA threshold, log scale")}" width="1200" height="630"></a>\n<p>${tx("Source")}: <a href="${url}">${SITE.name}, ${title}</a> (CC BY 4.0)</p>`;
   const citation = `${SITE.name}. (${data.asOf.slice(0, 4)}). ${title}. ${tx("Retrieved {0}, from {1}", data.asOf, url)}`;
+  const lines = findings(tx, data.tiers);
   return (
     <section id="cite" className="mt-12 scroll-mt-6">
       <SectionHead eyebrow="CITE AND EMBED" title={tx("Use these numbers")} sub={tx("The index is free to quote, chart and republish under CC BY 4.0: credit it with a link to this page. The GPQA Diamond scores it rests on are Epoch AI's, also CC BY 4.0.")} />
-      <div className="mt-5 grid gap-x-8 gap-y-6 lg:grid-cols-2">
-        <div className="min-w-0">
-          <h3 className="text-[14px] font-semibold text-ink"><Text value="Key figures" /></h3>
-          <CodeBlock code={findings(tx, data.tiers).join("\n\n")} title={tx("Updated {0}", data.asOf)} wrap className="mt-2.5" />
-          <h3 className="mt-6 text-[14px] font-semibold text-ink"><Text value="Citation" /></h3>
-          <CodeBlock code={citation} wrap className="mt-2.5" />
+      <div className="card mt-5 overflow-hidden">
+        <div className="flex items-center justify-between gap-3 border-b border-line-soft px-4 py-2.5 lg:px-5">
+          <h3 className="text-[13.5px] font-semibold text-ink"><Text value="Key figures" /><span className="num ml-2 text-[12px] font-normal text-ink-4">{tx("Updated {0}", data.asOf)}</span></h3>
+          <CopyButton text={lines.map((l) => l.text).join("\n\n")} />
         </div>
-        <div className="min-w-0">
-          <h3 className="text-[14px] font-semibold text-ink"><Text value="Embed the chart" /></h3>
-          <a href={chartPath(locale)} className="mt-2.5 block overflow-hidden rounded-card border border-line">
-            <img src={chartPath(locale)} alt={tx("Cheapest price per million tokens by GPQA threshold, log scale")} width={1200} height={630} loading="lazy" className="h-auto w-full" />
-          </a>
-          <CodeBlock code={embed} lang="HTML" wrap className="mt-3" />
-        </div>
+        <ul className="divide-y divide-line-soft">
+          {lines.map(({ i, text }) => (
+            <li key={i} className="flex gap-3 px-4 py-3 text-[13.5px] leading-relaxed text-ink-2 lg:px-5">
+              <span className="mt-[7px]"><Swatch i={i} /></span>
+              <span>{text}</span>
+            </li>
+          ))}
+        </ul>
       </div>
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        <figure className="flex flex-col overflow-hidden rounded-card border border-line bg-surface">
+          <div className="flex items-center justify-between gap-3 border-b border-line-soft px-4 py-2">
+            <figcaption className="text-[12px] text-ink-4">{tx("Chart image · PNG 1200 × 630")}</figcaption>
+            <a href={chartPath(locale)} target="_blank" rel="noopener" className="inline-flex h-7 items-center gap-1 rounded-mark border border-line bg-surface px-2 text-[12px] text-ink-3 transition-colors hover:border-line-strong hover:text-ink"><IconExternal size={13} /><Text value="Open" /></a>
+          </div>
+          <div className="grid flex-1 place-items-center bg-bg-sunk/60 p-3 dark:bg-bg-muted/40">
+            <img src={chartPath(locale)} alt={tx("Cheapest price per million tokens by GPQA threshold, log scale")} width={1200} height={630} loading="lazy" className="h-auto w-full rounded-mark shadow-[0_1px_3px_rgb(0_0_0_/_.08)]" />
+          </div>
+        </figure>
+        <CodeBlock code={embed} title={tx("Embed the chart (HTML)")} wrap className="flex flex-col [&>pre]:flex-1" />
+      </div>
+      <CodeBlock code={citation} title={tx("Citation (APA)")} wrap className="mt-5" />
     </section>
   );
 }

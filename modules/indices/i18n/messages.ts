@@ -45,8 +45,6 @@ export const CHINESE: Readonly<Record<string, string>> = {
   "Use these numbers": "引用这些数据",
   "The index is free to quote, chart and republish under CC BY 4.0: credit it with a link to this page. The GPQA Diamond scores it rests on are Epoch AI's, also CC BY 4.0.": "指数按 CC BY 4.0 许可，可以自由引用、作图和转载，请注明出处并链接到本页。它所依据的 GPQA Diamond 分数来自 Epoch AI，同样是 CC BY 4.0。",
   "Key figures": "关键数字",
-  "Embed the chart": "嵌入图表",
-  "Citation": "引用格式",
   "Embed or cite this chart": "嵌入或引用这张图",
   "Index · updated {0}": "指数 · 更新于 {0}",
   "{0}-level capability, cheaper than in {1}": "{0} 水平的能力，比 {1} 时便宜",
@@ -57,4 +55,8 @@ export const CHINESE: Readonly<Record<string, string>> = {
   "The cheapest model at or above the threshold from each date on, with its official list price and where it was checked.": "从每个日期起，分数达到该档的模型里最便宜的那个，附官方标价和核对出处。",
   "Threshold": "档位",
   "Change": "变化",
+  "Embed the chart (HTML)": "嵌入图表（HTML）",
+  "Citation (APA)": "引用格式（APA）",
+  "Chart image · PNG 1200 × 630": "图表图片 · PNG 1200 × 630",
+  "Open": "打开",
 };
