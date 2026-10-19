@@ -26,15 +26,15 @@ export function meta({ matches, loaderData }: MetaArgs<typeof loader>) {
     title,
     rawTitle: true,
     description: verifiedOn
-      ? tx("对比 {0} 个大模型的官方 API 价格：每百万 Token 的输入、输出与缓存输入价格（美元），最近一次于 {1} 对照官方价格页核对，附调用成本计算器。", rows.length, verifiedOn)
-      : tx("对比 {0} 个大模型的官方 API 价格：每百万 Token 的输入、输出与缓存输入价格（美元），附调用成本计算器。", rows.length),
+      ? tx("对比 {0} 个大模型的 API 价格：每百万 Token 的输入、输出与缓存输入价格（美元），取自 OpenRouter，最近一次更新于 {1}，附调用成本计算器。", rows.length, verifiedOn)
+      : tx("对比 {0} 个大模型的 API 价格：每百万 Token 的输入、输出与缓存输入价格（美元），附调用成本计算器。", rows.length),
     path: "/pricing",
     jsonLd: [
       {
         "@context": "https://schema.org",
         "@type": "Dataset",
         name: title,
-        description: tx("{0} 个大模型的官方 API 价格（输入、输出与缓存输入，每百万 Token），以美元列出，并附厂商官方价格页链接。", rows.length),
+        description: tx("{0} 个大模型的 API 价格（输入、输出与缓存输入，每百万 Token），以美元列出，取自 OpenRouter 公开模型列表，并附每个价格的来源链接。", rows.length),
         url: `${siteUrl()}/pricing`,
         creator: { "@type": "Organization", name: SITE.name, url: siteUrl() },
         isAccessibleForFree: true,
@@ -82,7 +82,7 @@ function PriceTable({ rows }: { rows: LbPricingRow[] }) {
             <th className="py-2 pl-3 text-right font-medium"><Text value="缓存输入" /></th>
             <th className="py-2 pl-3 text-right font-medium"><Text value="综合排名" /></th>
             <th className="py-2 pl-3 text-right font-medium"><Text value="核对日期" /></th>
-            <th className="py-2 pl-3 text-right font-medium"><Text value="官方来源" /></th>
+            <th className="py-2 pl-3 text-right font-medium"><Text value="价格来源" /></th>
           </tr>
         </thead>
         <tbody>
@@ -103,13 +103,10 @@ function PriceTable({ rows }: { rows: LbPricingRow[] }) {
               <UsdCell value={r.usd.output} list={r.price.output} currency={r.price.currency} />
               <UsdCell value={r.usd.cached} list={r.price.cached} currency={r.price.currency} />
               <td className="num py-2.5 pl-3 text-right align-top text-ink-3">{r.rank !== null ? `#${r.rank}` : "—"}</td>
-              <td className="num py-2.5 pl-3 text-right align-top text-ink-4">
-                {r.price.verifiedOn ?? "—"}
-                {r.price.unlistedOn && <span className="block font-sans text-[11px] text-ink-4"><Text value="官方页已不再列出" /></span>}
-              </td>
+              <td className="num py-2.5 pl-3 text-right align-top text-ink-4">{r.price.verifiedOn ?? "—"}</td>
               <td className="py-2.5 pl-3 text-right align-top">
                 {r.price.officialUrl ? (
-                  <a href={r.price.officialUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-ink-3 hover:text-accent"><Text value="官方来源" /><IconExternal size={12} /></a>
+                  <a href={r.price.officialUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-ink-3 hover:text-accent"><Text value="价格来源" /><IconExternal size={12} /></a>
                 ) : "—"}
               </td>
             </tr>
@@ -210,12 +207,12 @@ export default function PricingPage() {
         label={tx("API 价格")}
         kicker={<Link to="/leaderboard" className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /><Text value="返回模型前沿" /></Link>}
         title={tx("大模型 API 价格对比 2026：全部模型")}
-        description={tx("{0} 个模型的官方 API 价格，统一换算为美元 / 每百万 Token。", rows.length)}
+        description={tx("{0} 个模型的 API 价格，统一换算为美元 / 每百万 Token。", rows.length)}
       />
       <section className="mt-6 max-w-[720px] space-y-2 text-[13.5px] leading-relaxed text-ink-3">
-        <p><Text value="价格取各家厂商公布的标准按量付费档，单位为每百万 Token；输入价格按未命中缓存计算，批量接口和限时优惠不计入。以人民币标价的模型按本轮汇率折算为美元。" /></p>
+        <p><Text value="价格取自 OpenRouter 公开模型列表的标准按量付费价，单位为每百万 Token；输入价格按未命中缓存计算，批量接口不计入。OpenRouter 的价格有时来自第三方托管商，可能和厂商官方价不同。OpenRouter 上没有的模型保留厂商官方价，以人民币标价的按本轮汇率折算为美元。" /></p>
         <p>
-          {verifiedOn ? tx("价格对照各家官方价格页核对，最近一次在 {0}，每行的核对日期见表格。", verifiedOn) : tx("价格尚待对照官方价格页核对。")}
+          {verifiedOn ? tx("价格随模型榜每天更新四次，最近一次在 {0}，每行的核对日期见表格。", verifiedOn) : tx("价格尚未更新。")}
           {run.fx && ` ${tx("汇率：1 美元 = {0} 元（{1}，{2}）。", run.fx.rate, run.fx.sourceName, run.fx.asOf)}`}
         </p>
         <Link to="/leaderboard" className="inline-flex items-center gap-1 text-[13px] font-medium text-accent hover:text-accent-ink"><Text value="查看模型榜排名" /><IconArrowRight size={13} /></Link>

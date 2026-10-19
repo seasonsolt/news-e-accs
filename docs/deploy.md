@@ -62,6 +62,10 @@ MCP 默认接受 `SITE_URL` 的主机以及 `localhost`、`127.0.0.1`、`[::1]`�
 
 ### 更新
 
+### 模型价格改用 OpenRouter
+
+模型榜的价格不再读各家官方价格页，改为每次刷新（`leaderboard.round`，需要 `COLLECT_ENABLED=true`）取 OpenRouter 公开模型列表的价格，不调用模型；OpenRouter 上没有的模型保留原价格。迁移 0139 删除 `lb_price_checks`（2026-10-19 起每日核对的读数记录，删除后不可恢复），0140 删除 `lb_prices.since`（价格生效日），0141 删除 `lb_prices.unlisted_on`。定时任务 `leaderboard.prices` 和模型步骤 `priceCheck`（`PRICE_CHECK_MODEL`）随之移除，worker 启动时自动清掉旧的定时任务。第一次刷新会把 OpenRouter 列出的模型（包括原来以人民币标价的）换成它的美元价。智能成本指数不再读 `lb_prices`，当前价改读模型榜的官方价种子文件；种子文件之后才有官方价的模型，要在 `modules/indices/seeds/price-history.json` 加一条才会计入。
+
 ### 每日 4K 壁纸模块
 
 迁移 0130–0135 新增 `wallpapers`、`wallpaper_keys`、`wallpaper_downloads`，并先添加、验证订阅来源约束 v2 后删除旧约束，允许 `wallpaper` 来源；不会删除已有订阅数据。配置了 `WALLPAPER_STORE_*`（见 `.env.example`）时，桌面和手机原图上传到那个私有存储桶，下载在验 key、扣积分后 302 跳转到 5 分钟有效的签名链接，原图流量不经过服务器；这些原图不在本机 uploads 备份里，由存储桶保存。没配置时原图和预览都在 `dataDir/uploads/wallpapers/`，已在 uploads 备份范围内。预览始终在本机，响应带 `s-maxage`，由入口 Worker 缓存。配置存储桶前已经上传到本机的原图不会自动搬走，需要重新上传那几天。

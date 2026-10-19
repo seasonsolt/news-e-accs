@@ -24,17 +24,18 @@ const cny = createId();
 
 before(async () => {
   await app.ready();
-  // gpt-4-0314 takes its launch price from seeds/price-history.json; the other has only a current CNY price.
+  // gpt-4-0314 takes its launch price from seeds/price-history.json; glm-5-3-flash has only its official CNY
+  // price in the leaderboard's seed file. Its live leaderboard price (from OpenRouter) is not read.
   await sql`INSERT INTO lb_models (id, slug, name, provider, released_at) VALUES
     (${gpt4}, 'gpt-4-0314', 'GPT-4 (0314)', 'OpenAI', '2023-03-14T00:00Z'),
-    (${cny}, 'coi-test-cny', 'Test CNY model', 'Test', '2024-05-01T00:00Z')`;
+    (${cny}, 'glm-5-3-flash', 'Test CNY model', 'Test', '2024-05-01T00:00Z')`;
   const snapshot = createId();
   await sql`INSERT INTO lb_snapshots (id, source_key, source_name, fetched_at, license, attribution_url)
     VALUES (${snapshot}, 'epoch-gpqa', 'Epoch GPQA Diamond', '2026-10-10T00:00Z', 'CC BY 4.0', 'https://epoch.ai/benchmarks/gpqa-diamond')`;
   for (const [model, config, score] of [[gpt4, "default", 0.36], [cny, "low", 0.4], [cny, "high", 0.62]] as const) {
     await sql`INSERT INTO lb_scores (id, snapshot_id, model_id, configuration_key, metric_key, raw_score) VALUES (${createId()}, ${snapshot}, ${model}, ${config}, 'epoch-gpqa', ${score})`;
   }
-  await sql`INSERT INTO lb_prices (model_id, kind, currency, input, output, source_url, verified_on) VALUES (${cny}, 'official', 'CNY', 1, 2, 'https://example.org/cny', '2026-09-26')`;
+  await sql`INSERT INTO lb_prices (model_id, kind, currency, input, output, source_url, verified_on) VALUES (${cny}, 'official', 'USD', 0.01, 0.01, 'https://openrouter.ai/z-ai/glm-5.3-flash', '2026-10-19')`;
   await sql`INSERT INTO fx_rates (as_of, pair, rate, source_name) VALUES ('2026-10-09', 'USD/CNY', 7, '欧洲央行')`;
 });
 after(async () => {
@@ -62,9 +63,9 @@ test("the index API steps from GPT-4's launch price to the cheaper CNY model, an
   assert.equal(response.statusCode, 200);
   const body = response.json() as CostOfIntelligence;
   const low = body.tiers.find((t) => t.key === "gpqa-35")!;
-  assert.deepEqual(low.points.map((p) => [p.date, p.model.slug, Number(p.price.toFixed(4))]), [["2023-03-14", "gpt-4-0314", 37.5], ["2024-05-01", "coi-test-cny", 0.1786]]);
-  assert.equal(low.ratio !== null && Math.round(low.ratio), 210);
-  assert.deepEqual(body.tiers.find((t) => t.key === "gpqa-50")!.points.map((p) => [p.model.slug, p.score]), [["coi-test-cny", 0.62]], "a model counts with its best configuration");
+  assert.deepEqual(low.points.map((p) => [p.date, p.model.slug, Number(p.price.toFixed(4))]), [["2023-03-14", "gpt-4-0314", 37.5], ["2024-05-01", "glm-5-3-flash", 0.1857]]);
+  assert.equal(low.ratio !== null && Math.round(low.ratio), 202);
+  assert.deepEqual(body.tiers.find((t) => t.key === "gpqa-50")!.points.map((p) => [p.model.slug, p.score]), [["glm-5-3-flash", 0.62]], "a model counts with its best configuration");
   assert.equal(body.modelCount, 2);
   assert.deepEqual(body.fx, { rate: 7, asOf: "2026-10-09" });
   assert.equal(body.gpqa.url, "https://epoch.ai/benchmarks/gpqa-diamond");
@@ -76,14 +77,14 @@ test("the index API steps from GPT-4's launch price to the cheaper CNY model, an
   const lines = csv.body.trim().split("\n");
   assert.match(lines[0]!, /^tier,gpqa_threshold,date,blended_usd_per_mtok,model,/);
   assert.equal(lines.length, 1 + body.tiers.reduce((n, t) => n + t.points.length, 0));
-  assert.ok(lines.includes("gpqa-35,0.35,2024-05-01,0.1786,Test CNY model,Test,0.6200,CNY,1,2,true,https://example.org/cny"));
+  assert.ok(lines.includes("gpqa-35,0.35,2024-05-01,0.1857,Test CNY model,Test,0.6200,CNY,0.8,2.8,true,https://www.bigmodel.cn/pricing"));
 });
 
 test("agents read the index as Markdown at its own address and as an MCP tool, and the guide names it", async () => {
   const markdown = await app.inject("/api/v1/agent/cost-of-intelligence");
   assert.equal(markdown.statusCode, 200);
   assert.match(String(markdown.headers["content-type"]), /^text\/markdown/);
-  assert.match(markdown.body, /\| ≥ 35%（GPT-4） \| 2023-03-14 GPT-4 \(0314\) \$37\.50 \| 2024-05-01 Test CNY model \$0\.18 \| 210 倍 \|/);
+  assert.match(markdown.body, /\| ≥ 35%（GPT-4） \| 2023-03-14 GPT-4 \(0314\) \$37\.50 \| 2024-05-01 Test CNY model \$0\.19 \| 202 倍 \|/);
   assert.match(markdown.body, /## 回答提示/);
   assert.match(markdown.body, /\/api\/site\/indices\/cost-of-intelligence\.csv/);
   assert.match((await app.inject("/api/v1/agent")).body, /智能成本指数[\s\S]*\/api\/v1\/agent\/cost-of-intelligence/);
@@ -99,7 +100,7 @@ test("agents read the index as Markdown at its own address and as an MCP tool, a
   assert.notEqual(called.isError, true, JSON.stringify(called));
   assert.match(called.content[0].text, /智能成本指数/);
   const low = called.structuredContent.tiers.find((t: { threshold: number }) => t.threshold === 0.35);
-  assert.deepEqual([low.first.model.slug, low.current.model.slug, Math.round(low.ratio)], ["gpt-4-0314", "coi-test-cny", 210]);
+  assert.deepEqual([low.first.model.slug, low.current.model.slug, Math.round(low.ratio)], ["gpt-4-0314", "glm-5-3-flash", 202]);
 });
 
 test("the index is routed to the api, listed in the sitemap and llms.txt, and rendered in both editions", async () => {

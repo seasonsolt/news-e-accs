@@ -39,8 +39,6 @@ export interface LbPrice {
   cached: number | null;
   officialUrl: string | null;
   verifiedOn: string | null;
-  /** Set when the daily check has not found the model on its official page for three days in a row. */
-  unlistedOn?: string;
 }
 
 export interface LbFx {

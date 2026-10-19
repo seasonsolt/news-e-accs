@@ -6,8 +6,8 @@
 
 对 GPQA Diamond 的四个档（35%、50%、75%、90%），画出每个日期能买到的最便宜的第一方官方 API 价格（输入、输出按 3:1 混合，每百万 token，美元）。页首给出每档首次达到时的价格是现在的几倍，以及对数线性拟合得出的“每几个月减半”。
 
-- **数据**：GPQA 分数读模型榜最新的 `epoch-gpqa` 快照，每个模型取各配置的最高分；当前价读 `lb_prices`（`kind = 'official'`）；人民币按 `fx_rates` 最新的 USD/CNY 折算。历史价格在 `seeds/price-history.json`，每条有生效日期、官方出处和是否已核验。模型榜每日价格核对写入的变动（`lb_price_checks`）也算作历史，第一次变动前的价格从发布日起算。当前价和历史最后一条不同时，按它的生效日（`lb_prices.since`，没有时用核验日期）算作一次降价；没有历史的模型，当前价从发布日起算。
-- **不建表**：读取时现算，进程内缓存 10 分钟。新模型同时有官方价和 GPQA 分就自动并入；模型榜核对到的降价自动计入，更早的降价在 `price-history.json` 加一条并附出处。
+- **数据**：GPQA 分数读模型榜最新的 `epoch-gpqa` 快照，每个模型取各配置的最高分；当前价读模型榜的官方价种子文件 `modules/leaderboard/seeds/lb-official-prices-2026-09-26.json`，不读 `lb_prices`（模型榜的价格取自 OpenRouter，有时是第三方托管商的价，不能当作官方降价）；人民币按 `fx_rates` 最新的 USD/CNY 折算。历史价格在 `seeds/price-history.json`，每条有生效日期、官方出处和是否已核验。当前价和历史最后一条不同时，按种子文件的核验日期算作一次降价；没有历史的模型，当前价从发布日起算。
+- **不建表**：读取时现算，进程内缓存 10 分钟。新模型的官方价和以后的降价都在 `price-history.json` 加一条并附出处；有 GPQA 分的模型就并入。
 - **出口**：页面 `/index/cost-of-intelligence`（`/zh` 镜像），`/api/site/indices/cost-of-intelligence`（JSON），`/api/site/indices/cost-of-intelligence.csv`（每一级一行，带出处）；给 Agent 的 `/api/v1/agent/cost-of-intelligence`（中文 Markdown，Agent 说明页列出）和 MCP 工具 `get_cost_of_intelligence`（`backend/agent.ts`）；sitemap 和 llms.txt 各一条；首页开头和模型榜的“关于价格”有入口；页面带 Dataset 结构化数据，指数数据以 CC BY 4.0 许可，所依据的 GPQA 分数署名 Epoch AI（CC BY 4.0）。图表是服务端渲染的 SVG，不用前端图表库；读者打开页面不触发模型调用。
 - **未核验的价格**在图上是空心点，表格里标“待核验”。
 

@@ -1,11 +1,11 @@
 // The four-times-a-day leaderboard refresh: fetch every upstream source (each on its own — a failing
 // source keeps its last snapshot, which the method carries forward), store the snapshots whose content
-// changed, update the USD/CNY rate used for prices and fill in the official prices of models that have
-// none yet, then run the method round, which publishes only when the evidence changed.
+// changed, update the USD/CNY rate used for prices, fill in seed prices for models that have none and take
+// OpenRouter's prices (prices.ts), then run the method round, which publishes only when the evidence changed.
 import { sql } from "@aihot/backend/db";
 import { guardedFetch } from "@aihot/backend/lib/http-fetch";
 import { runLeaderboardRound, type RoundResult } from "../method/run.ts";
-import { importOfficialPrices } from "../prices.ts";
+import { importOfficialPrices, refreshPrices } from "../prices.ts";
 import { FETCHERS } from "./index.ts";
 import { storeSnapshot } from "./store.ts";
 import type { FetchResult } from "./types.ts";
@@ -86,7 +86,8 @@ export async function refreshFx(): Promise<{ asOf: string; rate: number }> {
 export async function refreshLeaderboard(): Promise<{ sources: { ok: number; changed: string[]; failed: Array<{ key: string; error?: string }> }; fx: unknown; prices: unknown; round: Pick<RoundResult, "status" | "runId" | "reason"> }> {
   const states = await fetchSources();
   const fx = await refreshFx().catch((e: Error) => ({ error: e.message }));
-  const prices = await importOfficialPrices().catch((e: Error) => ({ error: e.message }));
+  const seeded = await importOfficialPrices().catch((e: Error) => ({ error: e.message }));
+  const prices = "error" in seeded ? seeded : await refreshPrices().catch((e: Error) => ({ error: e.message }));
   const round = await runLeaderboardRound();
   const entries = Object.entries(states);
   return {
@@ -96,7 +97,7 @@ export async function refreshLeaderboard(): Promise<{ sources: { ok: number; cha
       failed: entries.filter(([, s]) => !s.ok).map(([key, s]) => ({ key, error: s.error })),
     },
     fx,
-    prices: "error" in prices ? prices : { written: prices.written },
+    prices,
     round: { status: round.status, runId: round.runId, reason: round.reason },
   };
 }

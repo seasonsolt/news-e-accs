@@ -337,13 +337,12 @@ export default function LeaderboardModelPage() {
                   </span>
                 )}
                 {price.officialUrl && (
-                  <a href={price.officialUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 text-accent hover:text-accent-ink"><Text value="厂商官方价格" /><IconArrowUpRight size={12} />
+                  <a href={price.officialUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 text-accent hover:text-accent-ink"><Text value="价格来源" /><IconArrowUpRight size={12} />
                   </a>
                 )}
-                {price.unlistedOn && <span className="text-ink-4"><Text value="官方页已不再列出" /></span>}
               </span>
             ) : (
-              tx("尚未核到厂商官网价格")
+              tx("暂无价格")
             )
           }
         >

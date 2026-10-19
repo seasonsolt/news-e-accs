@@ -432,7 +432,7 @@ test("built pages keep both language URLs, layout, history and the default share
         const html = await response.text();
         const title = prefix ? "大模型 API 价格对比 2026：全部模型" : "LLM API Pricing Comparison 2026 — All Models";
         assert.ok(html.includes(`<title>${title}</title>`), prefix);
-        assert.match(html, prefix ? /对比 4 个大模型[^"]+1999-01-05/ : /name="description" content="Compare official API prices for 4 LLMs[^"]+1999-01-05/);
+        assert.match(html, prefix ? /对比 4 个大模型[^"]+1999-01-05/ : /name="description" content="Compare API prices for 4 LLMs[^"]+OpenRouter[^"]+1999-01-05/);
         for (const i of [0, 1, 2, 30]) assert.ok(html.includes(`>Stored model ${i}<`), `${prefix} row ${i}`);
         assert.ok(html.includes(`href="${prefix}/leaderboard/${slugs[1]}"`), "a model with a page links to it");
         assert.equal(html.includes(`/leaderboard/${slugs[30]}"`), false, "a model without a page is not linked");

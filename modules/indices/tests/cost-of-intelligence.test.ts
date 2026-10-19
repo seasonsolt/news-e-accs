@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
-import { computeCostOfIntelligence, halvingMonths, readPriceHistory, withCheckedChanges, type CoiInput, type PriceEntry, type ScoredModel } from "../backend/cost-of-intelligence.ts";
+import { computeCostOfIntelligence, halvingMonths, OFFICIAL_PRICE_FILE, readOfficialPrices, readPriceHistory, type CoiInput, type PriceEntry, type ScoredModel } from "../backend/cost-of-intelligence.ts";
 
 const model = (slug: string, score: number, releasedOn: string | null = null): ScoredModel => ({ slug, name: slug.toUpperCase(), provider: null, releasedOn, score });
 const price = (slug: string, from: string, input: number, output: number, extra: Partial<PriceEntry> = {}): PriceEntry =>
@@ -38,10 +38,10 @@ test("current prices extend the history; a model without history has its current
     models: [model("a", 0.4), model("same", 0.4), model("fresh", 0.4, "2024-03-01"), model("undated", 0.4)],
     history: [price("a", "2023-01-01", 10, 10), price("same", "2023-01-01", 20, 20)],
     current: [
-      { slug: "a", currency: "USD", input: 6, output: 6, source: null, since: "2024-09-26" },
-      { slug: "same", currency: "USD", input: 20, output: 20, source: null, since: "2024-09-26" },
-      { slug: "fresh", currency: "USD", input: 8, output: 8, source: null, since: "2024-09-26" },
-      { slug: "undated", currency: "USD", input: 0.01, output: 0.01, source: null, since: "2024-09-26" },
+      { slug: "a", currency: "USD", input: 6, output: 6, source: null, verifiedOn: "2024-09-26" },
+      { slug: "same", currency: "USD", input: 20, output: 20, source: null, verifiedOn: "2024-09-26" },
+      { slug: "fresh", currency: "USD", input: 8, output: 8, source: null, verifiedOn: "2024-09-26" },
+      { slug: "undated", currency: "USD", input: 0.01, output: 0.01, source: null, verifiedOn: "2024-09-26" },
     ],
   };
   assert.deepEqual(steps(input, "gpqa-35"), [["2023-01-01", "a", 10], ["2024-03-01", "fresh", 8], ["2024-09-26", "a", 6]]);
@@ -72,7 +72,9 @@ test("the price history names known models, in date order, with official https s
   const history = readPriceHistory();
   const seeds = path.resolve(import.meta.dirname, "../../leaderboard/seeds");
   const directory = readdirSync(seeds).filter((f) => f.startsWith("lb-models-")).sort().at(-1)!;
-  const known = new Set((JSON.parse(readFileSync(path.join(seeds, directory), "utf8")) as { models: unknown[][] }).models.map((m) => m[0] as string));
+  // Models released after the directory file was cut.
+  const later = ["gemini-4-argon", "claude-haiku-5-5"];
+  const known = new Set([...(JSON.parse(readFileSync(path.join(seeds, directory), "utf8")) as { models: unknown[][] }).models.map((m) => m[0] as string), ...later]);
   const raw = JSON.parse(readFileSync(path.resolve(import.meta.dirname, "../seeds/price-history.json"), "utf8")) as { prices: Array<Record<string, unknown>> };
   const bySlug = new Map<string, Array<Record<string, unknown>>>();
   for (const entry of raw.prices) {
@@ -96,12 +98,14 @@ test("the price history names known models, in date order, with official https s
   assert.equal(history.length, raw.prices.length);
 });
 
-test("the history takes the leaderboard price check's changes, with the replaced price from release", () => {
-  const change = (slug: string, on: string, input: number, previous: number | null) => ({
-    slug, on, price: { currency: "USD" as const, input, output: input, source: "https://example.org" },
-    previous: previous === null ? null : { currency: "USD" as const, input: previous, output: previous },
-  });
-  const history = [{ slug: "dated", from: "2024-01-01", currency: "USD" as const, input: 9, output: 9, source: null, verified: true }];
-  const out = withCheckedChanges(history, [change("dated", "2026-10-02", 5, 9), change("new", "2026-10-03", 1, 2), change("new", "2026-10-05", 0.5, 1)], new Map([["dated", "2023-01-01"], ["new", "2026-01-01"]]));
-  assert.deepEqual(out.map((p) => [p.slug, p.from, p.input]), [["dated", "2024-01-01", 9], ["dated", "2026-10-02", 5], ["new", "2026-01-01", 2], ["new", "2026-10-03", 1], ["new", "2026-10-05", 0.5]]);
+test("current prices are the official ones in the leaderboard's seed file, not its live prices", () => {
+  const leaderboard = readFileSync(path.resolve(import.meta.dirname, "../../leaderboard/backend/prices.ts"), "utf8");
+  assert.ok(leaderboard.includes(`"../seeds/${path.basename(OFFICIAL_PRICE_FILE)}"`), "the leaderboard's PRICE_FILE");
+  const current = readOfficialPrices();
+  assert.ok(current.length > 20);
+  for (const p of current) {
+    assert.match(p.source!, /^https:\/\//, p.slug);
+    assert.ok(!p.source!.includes("openrouter.ai"), `${p.slug}: not an official source`);
+    assert.ok(p.input >= 0 && p.output >= 0 && p.verifiedOn, p.slug);
+  }
 });
