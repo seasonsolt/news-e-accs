@@ -9,6 +9,7 @@
 - **数据**：GPQA 分数读模型榜最新的 `epoch-gpqa` 快照，每个模型取各配置的最高分；当前价读模型榜的官方价种子文件 `modules/leaderboard/seeds/lb-official-prices-2026-09-26.json`，不读 `lb_prices`（模型榜的价格取自 OpenRouter，有时是第三方托管商的价，不能当作官方降价）；人民币按 `fx_rates` 最新的 USD/CNY 折算。历史价格在 `seeds/price-history.json`，每条有生效日期、官方出处和是否已核验。当前价和历史最后一条不同时，按种子文件的核验日期算作一次降价；没有历史的模型，当前价从发布日起算。
 - **不建表**：读取时现算，进程内缓存 10 分钟。新模型的官方价和以后的降价都在 `price-history.json` 加一条并附出处；有 GPQA 分的模型就并入。
 - **出口**：页面 `/index/cost-of-intelligence`（`/zh` 镜像），`/api/site/indices/cost-of-intelligence`（JSON），`/api/site/indices/cost-of-intelligence.csv`（每一级一行，带出处）；给 Agent 的 `/api/v1/agent/cost-of-intelligence`（中文 Markdown，Agent 说明页列出）和 MCP 工具 `get_cost_of_intelligence`（`backend/agent.ts`）；sitemap 和 llms.txt 各一条；首页开头和模型榜的“关于价格”有入口；页面带 Dataset 结构化数据，指数数据以 CC BY 4.0 许可，所依据的 GPQA 分数署名 Epoch AI（CC BY 4.0）。图表是服务端渲染的 SVG，不用前端图表库；读者打开页面不触发模型调用。
+- **引用与嵌入**：图表另有 1200×630 的 PNG `/index/cost-of-intelligence.png`（`?lang=zh` 为中文版，`backend/chart.ts`），图里印着页面地址、更新日期和许可，复制出去也带着出处；它也是页面的分享图。页面末尾的“引用这些数据”（`#cite`）给出每档一句可直接引用的关键数字、嵌入图表的 HTML（图片链回本页并署名 CC BY 4.0）和引用格式。PNG 按数据、语言和模板版本缓存在分享图的磁盘缓存里；改了画法就把 `TEMPLATE` 加一。
 - **未核验的价格**在图上是空心点，表格里标“待核验”。
 
 模块之间不互相导入：模型榜的数据通过数据库读取。

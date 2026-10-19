@@ -80,6 +80,21 @@ test("the index API steps from GPT-4's launch price to the cheaper CNY model, an
   assert.ok(lines.includes("gpqa-35,0.35,2024-05-01,0.1857,Test CNY model,Test,0.6200,CNY,0.8,2.8,true,https://www.bigmodel.cn/pricing"));
 });
 
+test("the chart is a PNG beside the page, in English unless asked for Chinese, and answers 304 when unchanged", async () => {
+  const en = await app.inject("/index/cost-of-intelligence.png");
+  assert.equal(en.statusCode, 200);
+  assert.equal(en.headers["content-type"], "image/png");
+  assert.equal(en.headers["access-control-allow-origin"], "*");
+  assert.equal(en.headers["cache-control"], "public, max-age=300, s-maxage=600, stale-while-revalidate=3600");
+  assert.deepEqual([...en.rawPayload.subarray(0, 8)], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  assert.deepEqual([en.rawPayload.readUInt32BE(16), en.rawPayload.readUInt32BE(20)], [1200, 630], "the share-card size");
+  const zh = await app.inject("/index/cost-of-intelligence.png?lang=zh");
+  assert.equal(zh.statusCode, 200);
+  assert.notEqual(zh.headers.etag, en.headers.etag);
+  assert.equal((await app.inject({ url: "/index/cost-of-intelligence.png", headers: { "if-none-match": String(en.headers.etag) } })).statusCode, 304);
+  assert.equal((await app.inject("/index/cost-of-intelligence.png?lang=fr")).statusCode, 400);
+});
+
 test("agents read the index as Markdown at its own address and as an MCP tool, and the guide names it", async () => {
   const markdown = await app.inject("/api/v1/agent/cost-of-intelligence");
   assert.equal(markdown.statusCode, 200);
@@ -108,6 +123,7 @@ test("the index is routed to the api, listed in the sitemap and llms.txt, and re
   assert.equal(normalizePagePath("/zh/index/cost-of-intelligence"), "/zh/index/cost-of-intelligence");
   assert.equal(isApiOwned("/api/site/indices/cost-of-intelligence.csv"), true);
   assert.equal(isApiOwned("/index/cost-of-intelligence"), false);
+  assert.equal(isApiOwned("/index/cost-of-intelligence.png"), true);
   assert.ok((await loadDiscoveryEntries()).some((e) => e.loc === "/index/cost-of-intelligence"));
   assert.match(llmsTxt(await loadLlmsAvailability()), /\[Cost of intelligence\]\([^\n]+\/index\/cost-of-intelligence\)/);
 
@@ -142,6 +158,14 @@ test("the index is routed to the api, listed in the sitemap and llms.txt, and re
       assert.match(html, /<svg[^>]+role="img"/);
       assert.ok(html.includes("Test CNY model"), `${prefix}: the steps table names the model`);
       assert.ok(html.includes("/api/site/indices/cost-of-intelligence.csv"));
+      assert.equal(allowed("/index/cost-of-intelligence.png"), true, "crawlers may fetch the chart");
+      const chart = prefix ? "/index/cost-of-intelligence.png?lang=zh" : "/index/cost-of-intelligence.png";
+      assert.ok(html.includes(`property="og:image" content="${web.origin}${chart.replace("?", "?").replace("&", "&amp;")}"`), `${prefix}: the chart is the share image`);
+      assert.ok(html.includes('id="cite"'), prefix);
+      // Key figures: GPT-4 at launch → the CNY model now, 202× (see the API test above).
+      assert.ok(html.includes(prefix ? "GPT-4 水平的能力（GPQA Diamond ≥ 35%）在 2023-03-14 每百万 token 要 $37.50，现在只要 $0.19（Test CNY model），便宜了 202 倍" : "Capability at GPQA Diamond ≥ 35% (GPT-4 level) cost $37.50 per million tokens on 2023-03-14 and costs $0.19 now (Test CNY model): 202× cheaper"), prefix);
+      assert.ok(html.includes(`&lt;img src=&quot;${web.origin}${chart}&quot;`), `${prefix}: the embed code points at the chart`);
+      assert.ok(html.includes(`&lt;a href=&quot;${web.origin}${prefix}/index/cost-of-intelligence&quot;&gt;`), `${prefix}: and links back to the page`);
     }
     for (const prefix of ["", "/zh"]) {
       assert.match(await (await fetch(`${web.origin}${prefix || "/"}`)).text(), new RegExp(`href="${prefix}/index/cost-of-intelligence"`), `${prefix || "/"}: the front page links the index`);

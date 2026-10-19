@@ -8,10 +8,14 @@ import { localeFromMatches, Text, translate, useLocale, useTranslate } from "@ai
 import { localePath } from "@aihot/web/lib/locale";
 import { breadcrumbLd, pageMeta, siteUrl } from "@aihot/web/lib/seo";
 import { AsideCard, ReadingLayout } from "@aihot/web/components/ui/Page";
+import { CodeBlock } from "@aihot/web/features/agent/CodeBlock";
 import { Deck } from "@aihot/web/components/shell/Deck";
 
 const PATH = "/index/cost-of-intelligence";
 const CSV = "/api/site/indices/cost-of-intelligence.csv";
+/** The chart as an image (backend/chart.ts): English unless ?lang=zh. */
+const CHART = "/index/cost-of-intelligence.png";
+const chartPath = (locale: string) => (locale === "zh" ? `${CHART}?lang=zh` : CHART);
 /** Hotter as the capability rises. */
 const COLORS = ["#b08a4a", "#d9a441", "#ff8a3d", "#e0481a"];
 
@@ -28,6 +32,7 @@ export function meta({ matches, data }: { matches?: Array<{ id: string; data?: u
     title,
     description,
     path: PATH,
+    image: chartPath(locale),
     jsonLd: [
       breadcrumbLd([{ name: title, path: PATH }]),
       {
@@ -183,6 +188,47 @@ function Steps({ tier }: { tier: CoiTier }) {
   );
 }
 
+const ratioText = (ratio: number) => (ratio >= 10 ? ratio.toFixed(0) : ratio.toFixed(1));
+
+/** One quotable sentence per tier, with its numbers and dates. */
+function findings(tx: (message: string, ...values: unknown[]) => string, tiers: CoiTier[]): string[] {
+  return tiers.flatMap((tier) => {
+    const first = tier.points[0];
+    const now = tier.points.at(-1);
+    if (!first || !now || !tier.ratio) return [];
+    const args = [tier.reference, pct(tier.threshold), usd(first.price), first.date, usd(now.price), now.model.name, ratioText(tier.ratio)];
+    return [tier.halvingMonths
+      ? tx("Capability at GPQA Diamond ≥ {1} ({0} level) cost {2} per million tokens on {3} and costs {4} now ({5}): {6}× cheaper, halving about every {7} months.", ...args, tier.halvingMonths.toFixed(1))
+      : tx("Capability at GPQA Diamond ≥ {1} ({0} level) cost {2} per million tokens on {3} and costs {4} now ({5}): {6}× cheaper.", ...args)];
+  });
+}
+
+/** What another site needs to quote or embed the index, with the attribution CC BY asks for. */
+function CiteAndEmbed({ data, url }: { data: CostOfIntelligence; url: string }) {
+  const tx = useTranslate();
+  const locale = useLocale();
+  const image = `${siteUrl()}${chartPath(locale)}`;
+  const title = tx("The cost of intelligence");
+  const embed = `<a href="${url}"><img src="${image}" alt="${title}: ${tx("Cheapest price per million tokens by GPQA threshold, log scale")}" width="1200" height="630"></a>\n<p>${tx("Source")}: <a href="${url}">${SITE.name}, ${title}</a> (CC BY 4.0)</p>`;
+  const citation = `${SITE.name}. (${data.asOf.slice(0, 4)}). ${title}. ${tx("Retrieved {0}, from {1}", data.asOf, url)}`;
+  return (
+    <section id="cite" className="mt-10 scroll-mt-24">
+      <Eyebrow>CITE AND EMBED</Eyebrow>
+      <h2 className="mt-2 text-[20px] font-bold text-ink"><Text value="Use these numbers" /></h2>
+      <p className="mt-2 max-w-[64em] text-[13px] leading-[1.8] text-ink-3"><Text value="The index is free to quote, chart and republish under CC BY 4.0: credit it with a link to this page. The GPQA Diamond scores it rests on are Epoch AI's, also CC BY 4.0." /></p>
+      <h3 className="mt-5 text-[14px] font-semibold text-ink"><Text value="Key figures" /></h3>
+      <CodeBlock code={findings(tx, data.tiers).join("\n\n")} title={tx("Updated {0}", data.asOf)} wrap className="mt-2" />
+      <h3 className="mt-5 text-[14px] font-semibold text-ink"><Text value="Embed the chart" /></h3>
+      <a href={chartPath(locale)} className="mt-2 block overflow-hidden rounded-card border border-line">
+        <img src={chartPath(locale)} alt={tx("Cheapest price per million tokens by GPQA threshold, log scale")} width={1200} height={630} loading="lazy" className="h-auto w-full" />
+      </a>
+      <CodeBlock code={embed} lang="HTML" wrap className="mt-3" />
+      <h3 className="mt-5 text-[14px] font-semibold text-ink"><Text value="Citation" /></h3>
+      <CodeBlock code={citation} wrap className="mt-2" />
+    </section>
+  );
+}
+
 const LIMITS = [
   "Prices are per token, not per task: reasoning models spend far more tokens on the same job.",
   "Each model takes the score of its best configuration, which may also be the one that spends the most tokens.",
@@ -208,6 +254,7 @@ export default function CostOfIntelligencePage() {
       </AsideCard>
       <AsideCard title={tx("Cite")}>
         <p className="text-[12px] leading-[1.7] text-ink-3">{`${SITE.name}, “${tx("The cost of intelligence")}”, ${url}, ${data.asOf}. ${tx("GPQA Diamond scores: Epoch AI, CC BY 4.0.")}`}</p>
+        <a href="#cite" className="mt-2 inline-block text-[12px] text-accent hover:text-accent-ink"><Text value="Key figures and embed code" /></a>
       </AsideCard>
     </>
   );
@@ -224,7 +271,10 @@ export default function CostOfIntelligencePage() {
         <Eyebrow>CHEAPEST PRICE · LOG SCALE</Eyebrow>
         <h2 className="mt-2 text-[20px] font-bold text-ink"><Text value="USD per million tokens, blended 3:1 input to output" /></h2>
         <div className="mt-4"><Chart data={data} /></div>
-        <p className="mt-2 text-[12px] leading-[1.7] text-ink-4"><Text value="Hollow dots are launch prices still awaiting a check against an archived vendor page." /></p>
+        <p className="mt-2 text-[12px] leading-[1.7] text-ink-4">
+          <Text value="Hollow dots are launch prices still awaiting a check against an archived vendor page." />{" "}
+          <a href="#cite" className="text-accent hover:text-accent-ink"><Text value="Embed or cite this chart" /></a>
+        </p>
       </section>
 
       <section className="mt-10">
@@ -249,6 +299,8 @@ export default function CostOfIntelligencePage() {
           {LIMITS.map((line) => <li key={line}><Text value={line} /></li>)}
         </ul>
       </section>
+
+      <CiteAndEmbed data={data} url={url} />
     </ReadingLayout>
   );
 }

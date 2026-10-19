@@ -5,6 +5,6 @@ const pages: ModulePage[] = [{ path: "index/cost-of-intelligence", file: "web/ro
 export default defineModule({
   name: "indices",
   pages: [...pages, ...pages.map((p) => ({ ...p, path: `zh/${p.path}`, id: `zh-${p.id}` }))],
-  apiPaths: [/^\/api\/site\/indices\//],
+  apiPaths: [/^\/api\/site\/indices\//, /^\/index\/cost-of-intelligence\.png$/],
   localizedPaths: [/^\/index\/cost-of-intelligence$/],
 });
