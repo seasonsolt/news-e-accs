@@ -7,6 +7,7 @@ import { sendFile } from "../../apps/api/src/routes/static.ts";
 import { registerLeaderboard } from "./api/leaderboard.ts";
 import { fetchOverview } from "./backend/admin.ts";
 import { refreshLeaderboard } from "./backend/fetch/refresh.ts";
+import { storyModels } from "./backend/mentions.ts";
 import { runLeaderboardRound } from "./backend/method/run.ts";
 import { comparePairs, leaderboardUrls } from "./backend/publication.ts";
 import { LEADERBOARD_PUBLIC_BOARDS } from "./taxonomy.ts";
@@ -34,6 +35,7 @@ export default defineServerModule({
     if (!published) await boss.send("cron.leaderboard.round", {}, { singletonKey: "first-round" });
   },
   admin: { runs: fetchOverview },
+  storyPage: (storyId) => storyModels(storyId),
   async alerts(now) {
     // A leaderboard source keeps its last snapshot while failing.
     const [lb] = await sql<{ value: { sources?: Record<string, { ok: boolean; lastOkAt: string | null; error?: string }> } }[]>`SELECT value FROM settings WHERE key = 'leaderboard.fetch'`;

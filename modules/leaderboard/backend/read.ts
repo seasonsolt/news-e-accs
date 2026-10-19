@@ -22,6 +22,7 @@ import type {
   LbSourcesResponse,
   LbSourceSummary,
   LbStability,
+  LbStoryModels,
 } from "@aihot/leaderboard/contracts";
 import { sql } from "@aihot/backend/db";
 import {
@@ -635,11 +636,25 @@ function comparable(view: RunView, slug: string): { m: ModelRow; row: LbPricingR
   return row.usd.input !== null && row.usd.output !== null ? { m, row } : null;
 }
 
-function featuredSlugs(view: RunView): string[] {
+export function featuredSlugs(view: RunView): string[] {
   return (view.boards.get("overall")?.entries ?? [])
     .filter((e) => e.rank <= BOARD_LIMIT && comparable(view, e.slug))
     .slice(0, COMPARE_TOP)
     .map((e) => e.slug);
+}
+
+/** The models with a page in the latest run, with their overall rank and USD prices when priced. */
+export async function pageModels(): Promise<{ view: RunView; models: LbStoryModels["models"] }> {
+  const view = await runView();
+  const models = [...view.pageSlugs].flatMap((slug) => {
+    const m = view.models.get(slug);
+    if (!m) return [];
+    const price = view.prices.get(m.id);
+    const row = price ? pricingRow(view, m, price) : null;
+    const entry = view.boards.get("overall")?.bySlug.get(slug);
+    return [{ model: modelRef(view, m), rank: entry && entry.rank <= BOARD_LIMIT ? entry.rank : null, usd: row?.usd ?? null }];
+  });
+  return { view, models };
 }
 
 export const comparePair = (a: string, b: string) => [a, b].sort().join("-vs-");

@@ -277,6 +277,13 @@ export interface LbCompareSide {
   related: Array<{ pair: string; model: LbModelRef }>;
 }
 
+/** The models a story names (the story page's part), each with its overall rank and USD prices. */
+export interface LbStoryModels {
+  models: Array<{ model: LbModelRef; rank: number | null; usd: LbPricingRow["usd"] | null }>;
+  /** The comparison page of the first two featured models it names. */
+  compare: string | null;
+}
+
 export interface LbCompareResponse {
   run: LbRunInfo;
   /** The pair as the page's address: both slugs in alphabetical order, joined by "-vs-". */

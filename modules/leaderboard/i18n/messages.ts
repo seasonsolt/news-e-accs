@@ -284,6 +284,11 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "更多价格对比": "More price comparisons",
   "热门模型价格对比": "Popular model price comparisons",
   "综合榜前列模型两两对比每次调用的成本。": "Cost per request for pairs of the overall leaderboard's top models.",
+  "提到的模型": "Models in this story",
+  "综合榜第 {0}": "#{0} overall",
+  "每百万 Token 输入 {0} / 输出 {1}": "{0} input / {1} output per million tokens",
+  "对比两者的 API 价格": "Compare their API prices",
+  "全部模型的 API 价格": "API prices of all models",
 };
 
 export const CHINESE: Readonly<Record<string, string>> = {

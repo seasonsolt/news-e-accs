@@ -352,6 +352,22 @@ test("two priced models compare under one address; only the featured pairs are l
   });
 });
 
+test("a story page names the leaderboard models its story mentions", async () => {
+  const { storyModels } = await import("../backend/mentions.ts");
+  await withPricedModels(async () => {
+    const [story] = await sql<{ id: number }[]>`INSERT INTO stories (public_id, title, digest) VALUES (gen_random_uuid(), 'Stored model 1 beats Stored model 0', 'Also Stored model 30, which has no page.') RETURNING id`;
+    const [quiet] = await sql<{ id: number }[]>`INSERT INTO stories (public_id, title) VALUES (gen_random_uuid(), 'Nothing about models') RETURNING id`;
+    try {
+      const part = await storyModels(story!.id);
+      assert.deepEqual(part!.models.map((m) => [m.model.slug, m.rank, m.usd?.input]), [[slugs[1], 2, 1], [slugs[0], 1, 2]], "by first mention; only models with a page");
+      assert.equal(part!.compare, `${slugs[0]}-vs-${slugs[1]}`);
+      assert.equal(await storyModels(quiet!.id), null);
+    } finally {
+      await sql`DELETE FROM stories WHERE id = ANY(${[story!.id, quiet!.id]})`;
+    }
+  });
+});
+
 test("pricing is discoverable and the retired Pages addresses redirect", async () => {
   const { followsTime } = await import(new URL("../../../apps/web/app/features/chrono/at.ts", import.meta.url).href);
   const { localePath } = await import(new URL("../../../apps/web/app/lib/locale.ts", import.meta.url).href);
