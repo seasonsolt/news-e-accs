@@ -340,10 +340,11 @@ test("two priced models compare under one address; only the featured pairs are l
     assert.deepEqual([a.row.usd, b.row.usd], [{ input: 2, output: 10, cached: 0.2 }, { input: 1, output: 2, cached: null }]);
     assert.deepEqual(a.boards.map((x: { key: string; rank: number | null }) => [x.key, x.rank]).slice(0, 1), [["overall", 1]]);
     assert.ok(a.boards.every((x: { name: string; href: string }) => x.name && x.href.startsWith("/leaderboard")));
-    assert.deepEqual(a.related.map((r: { pair: string }) => r.pair), [pair], "its other featured pairs");
+    assert.deepEqual(a.related, [], "its other featured pairs, not this one: there are none with two featured models");
     assert.equal((await app.inject(`/api/site/leaderboard/pricing/compare/${slugs[1]}-vs-${slugs[0]}`)).json().pair, pair, "either order names the same pair");
     const unfeatured = (await app.inject(`/api/site/leaderboard/pricing/compare/${slugs[0]}-vs-${slugs[30]}`)).json();
     assert.deepEqual([unfeatured.featured, unfeatured.sides[1].related], [false, []]);
+    assert.deepEqual(unfeatured.sides[0].related.map((r: { pair: string }) => r.pair), [pair], "a featured side links its featured pairs");
     for (const missing of [`${slugs[0]}-vs-${slugs[2]}`, `${slugs[0]}-vs-${slugs[0]}`, `${slugs[0]}-vs-nope`, slugs[0]]) {
       assert.equal((await app.inject(`/api/site/leaderboard/pricing/compare/${missing}`)).statusCode, 404, missing);
     }
@@ -512,7 +513,7 @@ test("built pages keep both language URLs, layout, history and the default share
         assert.equal(page.includes('name="robots"'), false, `${prefix} a featured pair is indexable`);
         assert.ok(page.includes(`rel="canonical" href="${web.origin}${prefix}/pricing/compare/${pair}"`), prefix);
         // Chat message, 1K in / 500 out: model 0 at $2/$10 costs $0.007, model 1 at $1/$2 costs $0.002.
-        assert.ok(page.includes(prefix ? "Stored model 1 每次 $0.002，Stored model 0 每次 $0.007，前者便宜约 3.5 倍" : "Stored model 1 costs $0.002 per request and Stored model 0 costs $0.007: about 3.5× cheaper"), prefix);
+        assert.ok(page.includes(prefix ? "Stored model 1 每次 $0.002，Stored model 0 每次 $0.007，前者便宜约 3.5 倍" : "Stored model 1 costs $0.002 per request and Stored model 0 costs $0.007, so Stored model 1 is about 3.5× cheaper"), prefix);
         assert.ok(page.includes(prefix ? "Stored model 1 便宜 3.5 倍" : "Stored model 1 is 3.5× cheaper"), prefix);
         assert.ok(page.includes(prefix ? "标价 ¥8" : "List ¥8"), `${prefix} the CNY side keeps its list price`);
         assert.ok(page.includes(`href="${prefix}/leaderboard/${slugs[0]}"`) && page.includes(`href="${prefix}/pricing#calculator"`), prefix);

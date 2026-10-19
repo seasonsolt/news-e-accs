@@ -261,7 +261,7 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "leaderboard.status.reference_only": "For reference only",
   "leaderboard.status.awaiting": "Awaiting results",
   "按一次聊天消息（{0} 输入、{1} 输出）计算，两者每次都是 {2}。": "For a chat message ({0} input, {1} output), both cost {2} per request.",
-  "按一次聊天消息（{0} 输入、{1} 输出）计算，{2} 每次 {3}，{4} 每次 {5}，前者便宜约 {6} 倍。": "For a chat message ({0} input, {1} output), {2} costs {3} per request and {4} costs {5}: about {6}× cheaper.",
+  "按一次聊天消息（{0} 输入、{1} 输出）计算，{2} 每次 {3}，{4} 每次 {5}，前者便宜约 {6} 倍。": "For a chat message ({0} input, {1} output), {2} costs {3} per request and {4} costs {5}, so {2} is about {6}× cheaper.",
   "综合榜上 {0} 排第 {1}，{2} 排第 {3}。": "On the overall leaderboard {0} ranks #{1} and {2} ranks #{3}.",
   "综合榜上 {0} 排第 {1}，{2} 不在榜单前列。": "On the overall leaderboard {0} ranks #{1}; {2} is not in the top of the board.",
   "{0} 与 {1} API 价格对比": "{0} vs {1} API pricing",

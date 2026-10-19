@@ -273,7 +273,7 @@ export interface LbCompareSide {
   contextWindowTokens: number | null;
   /** Rank on each public board, null when the model is not in its top. */
   boards: Array<{ key: LeaderboardBoardKey; name: string; href: string; rank: number | null }>;
-  /** Its other indexable comparisons. */
+  /** Its other indexable comparisons, without this one. */
   related: Array<{ pair: string; model: LbModelRef }>;
 }
 

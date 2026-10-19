@@ -679,7 +679,7 @@ export async function loadComparison(pair: string, lang: LeaderboardLanguage = "
   found.sort((x, y) => (x.m.slug < y.m.slug ? -1 : 1));
   const featured = featuredSlugs(view);
   const tabs = boardTabs(lang);
-  const side = ({ m, row }: (typeof found)[number]): LbCompareSide => ({
+  const side = ({ m, row }: (typeof found)[number], other: string): LbCompareSide => ({
     row,
     contextWindowTokens: m.context_window_tokens,
     boards: tabs.map((t) => {
@@ -687,14 +687,14 @@ export async function loadComparison(pair: string, lang: LeaderboardLanguage = "
       return { ...t, rank: e && e.rank <= BOARD_LIMIT ? e.rank : null };
     }),
     related: featured.includes(m.slug)
-      ? featured.filter((s) => s !== m.slug).map((s) => ({ pair: comparePair(m.slug, s), model: modelRef(view, view.models.get(s)!) }))
+      ? featured.filter((s) => s !== m.slug && s !== other).map((s) => ({ pair: comparePair(m.slug, s), model: modelRef(view, view.models.get(s)!) }))
       : [],
   });
   return {
     run: runInfo(view.info, lang),
     pair: comparePair(found[0].m.slug, found[1].m.slug),
     featured: featured.includes(found[0].m.slug) && featured.includes(found[1].m.slug),
-    sides: [side(found[0]), side(found[1])],
+    sides: [side(found[0], found[1].m.slug), side(found[1], found[0].m.slug)],
   };
 }
 

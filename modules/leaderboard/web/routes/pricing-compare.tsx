@@ -116,7 +116,7 @@ function SpecTable({ sides }: { sides: LbCompareResponse["sides"] }) {
           <Row label="输出">{sides.map((s) => <PriceCell key={s.row.model.slug} side={s} field="output" />)}</Row>
           <Row label="缓存输入">{sides.map((s) => <PriceCell key={s.row.model.slug} side={s} field="cached" />)}</Row>
           <Row label="厂商">{sides.map((s) => <td key={s.row.model.slug} className="py-2.5 pl-3 text-right text-ink-2">{s.row.model.provider ?? "—"}</td>)}</Row>
-          <Row label="上下文窗口">{sides.map((s) => <td key={s.row.model.slug} className="num py-2.5 pl-3 text-right text-ink-2">{s.contextWindowTokens ? tx(tokensWan(s.contextWindowTokens)) : "—"}</td>)}</Row>
+          {sides.some((s) => s.contextWindowTokens) && <Row label="上下文窗口">{sides.map((s) => <td key={s.row.model.slug} className="num py-2.5 pl-3 text-right text-ink-2">{s.contextWindowTokens ? tx(tokensWan(s.contextWindowTokens)) : "—"}</td>)}</Row>}
           <Row label="上线日期">{sides.map((s) => <td key={s.row.model.slug} className="num py-2.5 pl-3 text-right text-ink-2">{s.row.model.releasedAt ?? "—"}</td>)}</Row>
           {sides[0].boards.map((board, i) => (
             <tr key={board.key} className="border-b border-line-soft last:border-0">
