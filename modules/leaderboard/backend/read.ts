@@ -229,8 +229,8 @@ async function buildRunView(runId: string): Promise<RunView> {
     for (const e of boards.get(key)?.entries ?? []) if (e.rank <= BOARD_LIMIT) pageSlugs.add(e.slug);
   }
 
-  const priceRows = await sql<{ model_id: string; currency: "CNY" | "USD"; input: number | null; output: number | null; cached_input: number | null; source_url: string | null; verified_on: Date | null }[]>`
-    SELECT model_id, currency, input, output, cached_input, source_url, verified_on FROM lb_prices WHERE kind = 'official' AND model_id = ANY(${modelIds})`;
+  const priceRows = await sql<{ model_id: string; currency: "CNY" | "USD"; input: number | null; output: number | null; cached_input: number | null; source_url: string | null; verified_on: Date | null; unlisted_on: Date | null }[]>`
+    SELECT model_id, currency, input, output, cached_input, source_url, verified_on, unlisted_on FROM lb_prices WHERE kind = 'official' AND model_id = ANY(${modelIds})`;
   const rate = info.fx?.rate ?? null;
   const toCny = (v: number | null, currency: string) => (v == null ? null : currency === "CNY" ? v : rate ? v * rate : null);
   const prices = new Map<string, LbPrice>(
@@ -246,6 +246,7 @@ async function buildRunView(runId: string): Promise<RunView> {
         cachedCny: toCny(p.cached_input, p.currency),
         officialUrl: p.source_url,
         verifiedOn: p.verified_on ? p.verified_on.toISOString().slice(0, 10) : null,
+        ...(p.unlisted_on ? { unlistedOn: p.unlisted_on.toISOString().slice(0, 10) } : {}),
       },
     ]),
   );

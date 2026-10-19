@@ -112,6 +112,9 @@ export const PageReading = z.object({
 });
 export type ModelReading = z.infer<typeof PageReading>["models"][number];
 
+/** The page was read and does not list the model (not: the page could not be read). */
+export const NOT_FOUND = "not found on the page";
+
 const squash = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
 
 /** The quote occurs on the page; one that skips text with "..." or "…" occurs as those parts, in order. */
@@ -142,7 +145,7 @@ function numbersIn(quote: string): number[] {
  * page text and every number appears in it. Otherwise the reason it is not.
  */
 export function backedPrice(reading: ModelReading | undefined, text: string): { price: Price } | { problem: string } {
-  if (!reading?.found) return { problem: "not found on the page" };
+  if (!reading?.found) return { problem: NOT_FOUND };
   const { currency, per, input, output, cached, quote } = reading;
   if (!currency || per === null || !PER.has(per) || input === null || output === null) return { problem: "incomplete reading" };
   if (!quote || quote.length > 1500 || !onPage(text, quote)) return { problem: "quote not on the page" };

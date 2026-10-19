@@ -12,7 +12,7 @@ import { config } from "@aihot/backend/config";
 import { installModules } from "@aihot/backend/modules";
 import { checkPrices, priceProblems } from "../backend/price-check.ts";
 import { backedPrice, decide, excerpt, pageText, routerIndex, routerMatch, type ModelReading, type Price } from "../backend/price-sources.ts";
-import { invalidateLeaderboard } from "../backend/read.ts";
+import { invalidateLeaderboard, loadPricing } from "../backend/read.ts";
 import { LEADERBOARD_PUBLIC_BOARDS } from "../taxonomy.ts";
 
 process.env.COLLECT_ENABLED = "true";
@@ -73,22 +73,25 @@ test("a new price needs OpenRouter or a second day; a missing one needs OpenRout
   assert.equal(decide(usd(3, 15), null, null, { outcome: "held", price: usd(3, 15) }), "held");
 });
 
-// The live run: six models on the public boards; the vendor serves one pricing page and OpenRouter's list.
-const models = ["alpha-1", "beta-2", "gamma-3", "delta-4", "eps-5", "zeta-6"].map((slug) => ({ slug, id: createId() }));
-const [alpha, beta, gamma, delta, eps, zeta] = models;
+// The live run: eight models on the public boards; the vendor serves its main pricing page, an older
+// model page (/old) that lists none of them, and OpenRouter's list.
+const models = ["alpha-1", "beta-2", "gamma-3", "delta-4", "eps-5", "zeta-6", "eta-7", "theta-8"].map((slug) => ({ slug, id: createId() }));
+const [alpha, beta, gamma, delta, eps, zeta, eta, theta] = models;
 let pageHtml = "";
+let thetaListed = false;
 const vendor = createServer((req, res) => {
   if (req.url === "/models") {
-    const listed = { "alpha-1": ["0.000002", "0.00001"], "beta-2": ["0.000003", "0.000015"], "eps-5": ["0.000001", "0.000002"], "zeta-6": ["0.000005", "0.000005"] };
+    const listed = { "alpha-1": ["0.000002", "0.00001"], "beta-2": ["0.000003", "0.000015"], "eps-5": ["0.000001", "0.000002"], "zeta-6": ["0.000005", "0.000005"], "eta-7": ["0.000002", "0.000002"] };
     const data = [...Object.entries(listed).map(([slug, [prompt, completion]]) => ({ id: `vendor/${slug}`, pricing: { prompt, completion } })),
       ...Array.from({ length: 60 }, (_, i) => ({ id: `filler/m-${i}`, pricing: { prompt: "0.000001", completion: "0.000001" } }))];
     res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ data }));
-  } else res.writeHead(req.url === "/pricing" ? 200 : 404, { "content-type": "text/html" }).end(pageHtml);
+  } else if (req.url === "/old") res.writeHead(200, { "content-type": "text/html" }).end("<p>Older models</p>");
+  else res.writeHead(req.url === "/pricing" ? 200 : 404, { "content-type": "text/html" }).end(pageHtml);
 });
 await new Promise<void>((resolve) => vendor.listen(0, "127.0.0.1", () => resolve()));
 const base = `http://127.0.0.1:${(vendor.address() as { port: number }).port}`;
 
-// The model reads what the page says; for delta it quotes a passage that is not on the page.
+// The model reads what the page says (nothing on /old); for delta it quotes a passage that is not on the page.
 const asked: Array<{ page: string; models: string[] }> = [];
 const provider = await stub((_hit, req) => {
   const user = JSON.parse(JSON.parse(req.body).messages.at(-1).content) as { page: string; models: Array<{ slug: string }> };
@@ -100,8 +103,11 @@ const provider = await stub((_hit, req) => {
     "delta-4": { input: 12, output: 36, quote: "Delta 4 | ¥12 | ¥36" },
     "eps-5": { input: 1, output: 2, quote: "Eps 5 | $1 | $2" },
     "zeta-6": { input: 4, output: 4, quote: "Zeta 6 | $4 | $4" },
+    "eta-7": { input: 2, output: 2, quote: "Eta 7 | $2 | $2" },
+    ...(thetaListed ? { "theta-8": { input: 5, output: 5, quote: "Theta 8 | $5 | $5" } } : {}),
   };
-  const content = { models: user.models.map((m) => reading({ slug: m.slug, ...rows[m.slug] })) };
+  const read = (slug: string) => (user.page.endsWith("/pricing") && rows[slug] ? reading({ slug, ...rows[slug] }) : reading({ slug, found: false }));
+  const content = { models: user.models.map((m) => read(m.slug)) };
   return { choices: [{ message: { content: JSON.stringify(content) } }], usage: { prompt_tokens: 100, completion_tokens: 50 } };
 });
 pointModels(provider.url, ["deepseek-flash"]);
@@ -121,20 +127,26 @@ async function fixture() {
     (${alpha.id}, 'official', 'USD', 2, 10, 0.2, ${`${base}/pricing`}, '2026-09-26'),
     (${beta.id}, 'official', 'USD', 4, 20, 0.4, ${`${base}/pricing`}, '2026-09-26'),
     (${gamma.id}, 'official', 'USD', 1, 5, null, ${`${base}/pricing`}, '2026-09-26'),
-    (${delta.id}, 'official', 'CNY', 12, 36, null, ${`${base}/pricing`}, '2026-09-26')`;
+    (${delta.id}, 'official', 'CNY', 12, 36, null, ${`${base}/pricing`}, '2026-09-26'),
+    (${eta.id}, 'official', 'USD', 2, 2, null, ${`${base}/old`}, '2026-09-26'),
+    (${theta.id}, 'official', 'USD', 5, 5, null, ${`${base}/old`}, '2026-09-26')`;
   invalidateLeaderboard();
 }
 
 const prices = async () => Object.fromEntries((await sql<{ slug: string; p: string }[]>`
   SELECT m.slug, concat_ws(' ', p.currency, p.input::float8, p.output::float8, p.cached_input::float8, to_char(p.verified_on, 'MM-DD'), to_char(p.since, 'MM-DD')) AS p
   FROM lb_prices p JOIN lb_models m ON m.id = p.model_id WHERE p.kind = 'official' AND m.slug = ANY(${models.map((m) => m.slug)})`).map((r) => [r.slug, r.p]));
+const sourceOf = async (id: string) => (await sql<{ url: string }[]>`SELECT source_url AS url FROM lb_prices WHERE model_id = ${id}`)[0]!.url;
+const unlisted = async () => (await sql<{ slug: string; on: string }[]>`
+  SELECT m.slug, to_char(p.unlisted_on, 'MM-DD') AS on FROM lb_prices p JOIN lb_models m ON m.id = p.model_id WHERE p.unlisted_on IS NOT NULL`).map((r) => `${r.slug} ${r.on}`);
 const checks = async (day: string) => Object.fromEntries((await sql<{ slug: string; outcome: string }[]>`
   SELECT m.slug, c.outcome FROM lb_price_checks c JOIN lb_models m ON m.id = c.model_id WHERE c.checked_on = ${day}`).map((r) => [r.slug, r.outcome]));
 
 test("the daily check re-verifies, writes confirmed changes and new prices, and holds the rest", async () => {
   await fixture();
-  pageHtml = `<table>${["Alpha 1 | $2.00 | $10.00 | $0.20", "Beta 2 | $3 | $15", "Gamma 3 | $0.8 | $4", "Eps 5 | $1 | $2", "Zeta 6 | $4 | $4"]
-    .map((row) => `<tr>${row.split(" | ").map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("")}</table>`;
+  const table = (rows: string[]) => `<table>${rows.map((row) => `<tr>${row.split(" | ").map((cell) => `<td>${cell}</td>`).join("")}</tr>`).join("")}</table>`;
+  const listedRows = ["Alpha 1 | $2.00 | $10.00 | $0.20", "Beta 2 | $3 | $15", "Gamma 3 | $0.8 | $4", "Eps 5 | $1 | $2", "Zeta 6 | $4 | $4", "Eta 7 | $2 | $2"];
+  pageHtml = table(listedRows);
   const options = { routerUrl: `${base}/models`, pages: { vendor: `${base}/pricing` } };
 
   config.modelCallsEnabled = false;
@@ -142,15 +154,23 @@ test("the daily check re-verifies, writes confirmed changes and new prices, and 
   config.modelCallsEnabled = true;
 
   const day1 = await checkPrices({ ...options, today: "2026-10-01" });
-  assert.deepEqual(day1, { pages: 1, router: true, outcomes: { same: 1, changed: 1, added: 1, held: 2, unread: 1 }, unmatched: 0 });
-  assert.deepEqual(asked, [{ page: `${base}/pricing`, models: models.map((m) => m.slug).sort() }], "one call reads every model listed on the page");
-  assert.deepEqual(await checks("2026-10-01"), { "alpha-1": "same", "beta-2": "changed", "gamma-3": "held", "delta-4": "unread", "eps-5": "added", "zeta-6": "held" });
+  assert.deepEqual(day1, { pages: 3, router: true, outcomes: { same: 2, changed: 1, added: 1, held: 2, unread: 2 }, unmatched: 0 });
+  assert.deepEqual(asked, [
+    { page: `${base}/pricing`, models: ["alpha-1", "beta-2", "delta-4", "eps-5", "gamma-3", "zeta-6"] },
+    { page: `${base}/old`, models: ["eta-7", "theta-8"] },
+    { page: `${base}/pricing`, models: ["eta-7", "theta-8"] },
+  ], "one call per page; the models /old does not list are looked for on the vendor's page (eta by OpenRouter's id, theta by host)");
+  assert.deepEqual(await checks("2026-10-01"), { "alpha-1": "same", "beta-2": "changed", "gamma-3": "held", "delta-4": "unread", "eps-5": "added", "zeta-6": "held", "eta-7": "same", "theta-8": "unread" });
+  assert.equal(await sourceOf(eta.id), `${base}/pricing`, "found on the vendor's page, which becomes its source");
+  assert.equal(await sourceOf(theta.id), `${base}/old`);
   assert.deepEqual(await prices(), {
     "alpha-1": "USD 2 10 0.2 10-01 09-26",
     "beta-2": "USD 3 15 10-01 10-01",
     "gamma-3": "USD 1 5 09-26",
     "delta-4": "CNY 12 36 09-26",
     "eps-5": "USD 1 2 10-01 10-01",
+    "eta-7": "USD 2 2 10-01 09-26",
+    "theta-8": "USD 5 5 09-26",
   });
   const [betaCheck] = await sql<{ previous: unknown; openrouter: unknown; quote: string }[]>`SELECT previous, openrouter, quote FROM lb_price_checks WHERE model_id = ${beta.id}`;
   assert.deepEqual(betaCheck, { previous: usd(4, 20, 0.4), openrouter: { id: "vendor/beta-2", input: 3, output: 15, cached: null }, quote: "Beta 2 | $3 | $15" });
@@ -158,15 +178,16 @@ test("the daily check re-verifies, writes confirmed changes and new prices, and 
     ["gamma-3", "held", "differs from the current price; not confirmed by OpenRouter or a previous day"],
     ["zeta-6", "held", "OpenRouter lists a different price"],
     ["delta-4", "unread", "quote not on the page"],
+    ["theta-8", "unread", "not found on the page"],
   ]);
   const findings = await leaderboard.alerts!(Date.parse("2026-10-01T12:00:00+08:00"));
   assert.equal(findings[0]?.key, "leaderboard.prices");
-  assert.match(findings[0]!.title, /3 个/);
+  assert.match(findings[0]!.title, /4 个/);
 
   // The second day reads gamma's new price again: confirmed. A missing price is never confirmed by days.
   const day2 = await checkPrices({ ...options, today: "2026-10-02" });
-  assert.deepEqual((day2 as { outcomes: unknown }).outcomes, { same: 3, changed: 1, added: 0, held: 1, unread: 1 });
-  assert.deepEqual(await checks("2026-10-02"), { "alpha-1": "same", "beta-2": "same", "gamma-3": "changed", "delta-4": "unread", "eps-5": "same", "zeta-6": "held" });
+  assert.deepEqual((day2 as { outcomes: unknown }).outcomes, { same: 4, changed: 1, added: 0, held: 1, unread: 2 });
+  assert.deepEqual(await checks("2026-10-02"), { "alpha-1": "same", "beta-2": "same", "gamma-3": "changed", "delta-4": "unread", "eps-5": "same", "zeta-6": "held", "eta-7": "same", "theta-8": "unread" });
   assert.equal((await prices())["gamma-3"], "USD 0.8 4 10-02 10-02");
 
   // A second run the same day keeps the change on record (the indices read it as history).
@@ -174,9 +195,24 @@ test("the daily check re-verifies, writes confirmed changes and new prices, and 
   assert.equal((await checks("2026-10-02"))["gamma-3"], "changed");
   assert.equal((await priceProblems("2026-10-05")).length, 0, "problems older than a day are not reported");
 
-  // A failing page leaves every price as it was and records why.
+  // A failing page leaves every price as it was and records why; it does not count towards "no longer
+  // listed", but theta's own page has not listed it for a third day: marked, and left out of the alert.
   pageHtml = "";
   const day3 = await checkPrices({ routerUrl: `${base}/missing`, pages: options.pages, today: "2026-10-03" });
-  assert.deepEqual(day3, { pages: 1, router: false, outcomes: { same: 0, changed: 0, added: 0, held: 0, unread: 5 }, unmatched: 1 });
+  assert.deepEqual(day3, { pages: 3, router: false, outcomes: { same: 0, changed: 0, added: 0, held: 0, unread: 7 }, unmatched: 1 });
   assert.equal((await prices())["alpha-1"], "USD 2 10 0.2 10-02 09-26");
+  assert.deepEqual(await unlisted(), ["theta-8 10-03"]);
+  assert.ok(!(await priceProblems("2026-10-03")).some((p) => p.slug === "theta-8"));
+  invalidateLeaderboard();
+  const rows = new Map((await loadPricing("en")).rows.map((r) => [r.model.slug, r.price]));
+  assert.equal(rows.get("theta-8")?.unlistedOn, "2026-10-03");
+  assert.ok(!("unlistedOn" in rows.get("alpha-1")!), "only marked prices carry the field");
+
+  // Found again on the vendor's page: the mark clears and the page becomes its source.
+  thetaListed = true;
+  pageHtml = table([...listedRows, "Theta 8 | $5 | $5"]);
+  await checkPrices({ ...options, today: "2026-10-04" });
+  assert.equal((await checks("2026-10-04"))["theta-8"], "same");
+  assert.deepEqual(await unlisted(), []);
+  assert.equal(await sourceOf(theta.id), `${base}/pricing`);
 });

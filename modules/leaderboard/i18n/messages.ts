@@ -91,6 +91,7 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "缓存": "Cached",
   "原价": "Original price",
   "厂商官方价格": "Vendor's official pricing",
+  "官方页已不再列出": "No longer listed on the official page",
   "尚未核到厂商官网价格": "Official vendor price not verified yet",
   "每一项成绩，都有来处。": "Every result has a source.",
   "下面是该模型的公开汇总成绩。展开可查看运行配置与采用方式。": "Public results for this model. Expand to inspect configuration and adoption rules.",

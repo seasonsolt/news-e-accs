@@ -1,6 +1,6 @@
 # 模型榜（`/leaderboard`）
 
-从 `dfa187f` 的模型榜移入本站模块，直接使用保留的 `lb_models`、`lb_aliases`、`lb_runs`、`lb_snapshots`、`lb_scores`、`lb_rankings`、`lb_prices`、`fx_rates` 表和历史记录，不重写既有数据。模块自己的迁移在 `migrations/`：每日价格核对的记录表 `lb_price_checks`，和 `lb_prices.since`（价格生效日）。
+从 `dfa187f` 的模型榜移入本站模块，直接使用保留的 `lb_models`、`lb_aliases`、`lb_runs`、`lb_snapshots`、`lb_scores`、`lb_rankings`、`lb_prices`、`fx_rates` 表和历史记录，不重写既有数据。模块自己的迁移在 `migrations/`：每日价格核对的记录表 `lb_price_checks`，`lb_prices.since`（价格生效日）和 `lb_prices.unlisted_on`（标为官方页已不再列出的日子）。
 
 把多家公开评测（Artificial Analysis、LMArena、LiveBench、Epoch、EQ-Bench、Vals 等）的成绩放在一起，算出一个尽量不和已知成绩冲突的完整排名，另有编程、推理、知识、专业办公分类榜。方法对读者公开：
 
@@ -41,7 +41,7 @@ modules/leaderboard/
 │   ├── admin.ts
 │   ├── directory.ts
 │   ├── prices.ts              # 种子价格文件的导入
-│   ├── price-check.ts         # 每日官方价格核对
+│   ├── price-check.ts         # 每日官方价格核对、改查厂商主价格页、不再列出的标记
 │   ├── price-sources.ts       # 页面文本、OpenRouter、原文摘录校验与写入规则
 │   ├── publication.ts
 │   ├── read.ts
@@ -57,7 +57,7 @@ modules/leaderboard/
 ├── assets/
 │   ├── leaderboard-sources/
 │   └── model-providers/
-├── migrations/                # lb_price_checks、lb_prices.since
+├── migrations/                # lb_price_checks、lb_prices.since、lb_prices.unlisted_on
 ├── seeds/                     # 旧版本模型名录与官方价格文件
 ├── scripts/
 │   ├── lb-round.ts
@@ -89,6 +89,7 @@ modules/leaderboard/
 
 - 最新一轮里有价格的模型，按各自的官方价格页分组，每页抓一次（英文版），交给 `priceCheck` 模型读出列出模型的标准按量价格，并附一段页面原文。代码核对这段原文确实在页面上、每个数字都在原文里，否则记为没读到，不写。
 - 读出的价格和现价相同：只把核对日期改成当天。不同：OpenRouter 公开模型列表（`/api/v1/models`，不需要密钥）的同一模型价格相差在 1% 以内，或前一天的核对已读到同样的新价格，才写入，生效日记为当天；否则保留原价，记为待确认。
+- 模型自己的价格页读到了、但页上没有这个模型时，再到该厂商的主价格页（`PROVIDER_PAGES`，按 OpenRouter 的厂商或原页面的域名找）找；在那里读到了就照常判断，并把价格出处改成这一页。两处都连续三天没有列出的，标为“官方页已不再列出”：价格保留，价格页和模型页上注明，不再告警；以后哪天又读到，标记自动去掉。页面打不开或没有文字不算没有列出。
 - 公开榜上没有价格的模型：在 OpenRouter 找到同一模型和厂商，到 `price-sources.ts` 的 `PROVIDER_PAGES` 里该厂商的价格页读价，和 OpenRouter 一致才补上；不一致记为待确认。找不到的跳过。
 - 每次读数都记在 `lb_price_checks`，变动保留被替换的价格；智能成本指数把这些变动当作价格历史。待确认和没读到的，当天由模块告警列出（`later`，进每日摘要）。官方页需要浏览器脚本才显示价格的（如 bigmodel.cn），把价格的出处换成能直接读到的页面。
 - 需要 `COLLECT_ENABLED=true` 和 `MODEL_CALLS_ENABLED=true`；每页一次模型调用，经过回执和预算熔断。
@@ -109,4 +110,4 @@ node --env-file=.env modules/leaderboard/scripts/lb-fetch-check.ts [source-key .
 
 有意跳过 `/leaderboard` 的专属 OG 图片卡：各榜页回退到本站默认分享图。另一个有意跳过项是上述自动名录种子导入。模块使用引擎现有 BrandMark；评测署名中的站名改为读取 `SITE.name`，总榜元数据原先的字面占位符也改为实际站名。后台运行 API 的模块数据位于 `modules.leaderboard`；来源表显示方式不变。采集开关按当前引擎的安全阀规则，只有 `COLLECT_ENABLED=true` 才抓取（旧版在未配置时也抓取）。旧告警级别 `digest` 对应当前引擎的 `later`，仍进入每日摘要。
 
-其余适配是导入路径、包位置、React Router 通用参数类型，以及首次计算、导航、语言和时间机器的通用插口。`highs@1.15.3`、`hyparquet@1.31.1` 与旧版相同。移植时已有库表和 SQL 不改；之后新增的只有上面价格核对的一张表和一列。
+其余适配是导入路径、包位置、React Router 通用参数类型，以及首次计算、导航、语言和时间机器的通用插口。`highs@1.15.3`、`hyparquet@1.31.1` 与旧版相同。移植时已有库表和 SQL 不改；之后新增的只有上面价格核对的一张表和两列。

@@ -103,7 +103,10 @@ function PriceTable({ rows }: { rows: LbPricingRow[] }) {
               <UsdCell value={r.usd.output} list={r.price.output} currency={r.price.currency} />
               <UsdCell value={r.usd.cached} list={r.price.cached} currency={r.price.currency} />
               <td className="num py-2.5 pl-3 text-right align-top text-ink-3">{r.rank !== null ? `#${r.rank}` : "—"}</td>
-              <td className="num py-2.5 pl-3 text-right align-top text-ink-4">{r.price.verifiedOn ?? "—"}</td>
+              <td className="num py-2.5 pl-3 text-right align-top text-ink-4">
+                {r.price.verifiedOn ?? "—"}
+                {r.price.unlistedOn && <span className="block font-sans text-[11px] text-ink-4"><Text value="官方页已不再列出" /></span>}
+              </td>
               <td className="py-2.5 pl-3 text-right align-top">
                 {r.price.officialUrl ? (
                   <a href={r.price.officialUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-ink-3 hover:text-accent"><Text value="官方来源" /><IconExternal size={12} /></a>
