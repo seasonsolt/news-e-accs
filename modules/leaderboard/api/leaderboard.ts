@@ -1,7 +1,7 @@
 // First-party leaderboard endpoints (/api/site/leaderboard*). Read-only views of the latest published run.
 import type { FastifyInstance } from "fastify";
 import { LEADERBOARD_PUBLIC_BOARDS, type LeaderboardBoardKey } from "@aihot/leaderboard/taxonomy";
-import { loadBoard, loadModel, loadPricing, loadRulesData, loadSource, loadSources, NoLeaderboardRun } from "../backend/publication.ts";
+import { loadBoard, loadComparison, loadModel, loadPricing, loadRulesData, loadSource, loadSources, NoLeaderboardRun } from "../backend/publication.ts";
 import { beijingDayEnd } from "@aihot/contracts/time";
 import { looseQuery, sendJsonWithEtag, sendProblem } from "../../../apps/api/src/http/respond.ts";
 import { PAST_SLICE_CACHE, parseAt, siteHandler } from "../../../apps/api/src/routes/site.ts";
@@ -63,6 +63,13 @@ export function registerLeaderboard(app: FastifyInstance) {
   app.get("/api/site/leaderboard/pricing", guarded(async (req, reply) => {
     const lang = looseQuery(req).lang === "en" ? "en" : "zh";
     return sendJsonWithEtag(req, reply, await loadPricing(lang), { etagPrefix: `lb-pricing-${lang}`, cacheControl: CACHE });
+  }));
+
+  app.get("/api/site/leaderboard/pricing/compare/:pair", guarded(async (req, reply) => {
+    const lang = looseQuery(req).lang === "en" ? "en" : "zh";
+    const body = await loadComparison((req.params as { pair: string }).pair, lang);
+    if (!body) return notFound(req, reply);
+    return sendJsonWithEtag(req, reply, body, { etagPrefix: `lb-compare-${lang}`, cacheControl: CACHE });
   }));
 
   app.get("/api/site/leaderboard/rules", guarded(async (req, reply) => {

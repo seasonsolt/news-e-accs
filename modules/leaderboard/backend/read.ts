@@ -5,6 +5,8 @@ import { LEADERBOARD_PUBLIC_BOARDS, type LeaderboardBoardKey } from "@aihot/lead
 import type {
   LbBoardEntry,
   LbBoardResponse,
+  LbCompareResponse,
+  LbCompareSide,
   LbComparison,
   LbConfidence,
   LbEvidenceGroup,
@@ -594,29 +596,91 @@ export async function loadRulesData(lang: LeaderboardLanguage = "zh"): Promise<L
   return { run: runInfo(view.info, lang), budgets, anchors: view.anchors };
 }
 
+function pricingRow(view: RunView, m: ModelRow, price: LbPrice): LbPricingRow {
+  const rate = view.info.fx?.rate ?? null;
+  const toUsd = (v: number | null) => (v == null ? null : price.currency === "USD" ? v : rate ? v / rate : null);
+  const entry = view.boards.get("overall")?.bySlug.get(m.slug);
+  return {
+    model: modelRef(view, m),
+    rank: entry && entry.rank <= BOARD_LIMIT ? entry.rank : null,
+    hasPage: view.pageSlugs.has(m.slug),
+    price,
+    usd: { input: toUsd(price.input), output: toUsd(price.output), cached: toUsd(price.cached) },
+  };
+}
+
 /** Official prices of every model in the latest run, in USD per million tokens, cheapest input first. */
 export async function loadPricing(lang: LeaderboardLanguage = "zh"): Promise<LbPricingResponse> {
   const view = await runView();
-  const rate = view.info.fx?.rate ?? null;
-  const toUsd = (v: number | null, currency: LbPrice["currency"]) => (v == null ? null : currency === "USD" ? v : rate ? v / rate : null);
-  const overall = view.boards.get("overall");
   const rows: LbPricingRow[] = [];
   for (const [modelId, price] of view.prices) {
     const m = view.modelsById.get(modelId);
-    if (!m) continue;
-    const entry = overall?.bySlug.get(m.slug);
-    rows.push({
-      model: modelRef(view, m),
-      rank: entry && entry.rank <= BOARD_LIMIT ? entry.rank : null,
-      hasPage: view.pageSlugs.has(m.slug),
-      price,
-      usd: { input: toUsd(price.input, price.currency), output: toUsd(price.output, price.currency), cached: toUsd(price.cached, price.currency) },
-    });
+    if (m) rows.push(pricingRow(view, m, price));
   }
   const ascending = (a: number | null, b: number | null) => (a === b ? 0 : a === null ? 1 : b === null ? -1 : a - b);
   rows.sort((a, b) => ascending(a.usd.input, b.usd.input) || ascending(a.usd.output, b.usd.output) || a.model.name.localeCompare(b.model.name, "en"));
   const verified = rows.map((r) => r.price.verifiedOn).filter((d): d is string => !!d).sort();
-  return { run: runInfo(view.info, lang), verifiedOn: verified.at(-1) ?? null, rows };
+  return { run: runInfo(view.info, lang), verifiedOn: verified.at(-1) ?? null, rows, featured: featuredSlugs(view) };
+}
+
+/** How many of the overall board's best priced models get indexable comparison pages with each other. */
+export const COMPARE_TOP = 15;
+
+/** A priced model's row, when both its input and output convert to USD. */
+function comparable(view: RunView, slug: string): { m: ModelRow; row: LbPricingRow } | null {
+  const m = view.models.get(slug);
+  const price = m && view.prices.get(m.id);
+  if (!m || !price) return null;
+  const row = pricingRow(view, m, price);
+  return row.usd.input !== null && row.usd.output !== null ? { m, row } : null;
+}
+
+function featuredSlugs(view: RunView): string[] {
+  return (view.boards.get("overall")?.entries ?? [])
+    .filter((e) => e.rank <= BOARD_LIMIT && comparable(view, e.slug))
+    .slice(0, COMPARE_TOP)
+    .map((e) => e.slug);
+}
+
+export const comparePair = (a: string, b: string) => [a, b].sort().join("-vs-");
+
+/** Every indexable comparison page, for the sitemap. */
+export async function comparePairs(): Promise<string[]> {
+  const featured = featuredSlugs(await runView());
+  return featured.flatMap((a, i) => featured.slice(i + 1).map((b) => comparePair(a, b)));
+}
+
+/** Two priced models side by side; `pair` may name them in either order. Null unless both have USD prices. */
+export async function loadComparison(pair: string, lang: LeaderboardLanguage = "zh"): Promise<LbCompareResponse | null> {
+  const view = await runView();
+  // A slug may itself contain "-vs-": try each split.
+  let found: [NonNullable<ReturnType<typeof comparable>>, NonNullable<ReturnType<typeof comparable>>] | null = null;
+  for (let at = pair.indexOf("-vs-"); at > 0 && !found; at = pair.indexOf("-vs-", at + 1)) {
+    const a = comparable(view, pair.slice(0, at));
+    const b = comparable(view, pair.slice(at + 4));
+    if (a && b && a.m.slug !== b.m.slug) found = [a, b];
+  }
+  if (!found) return null;
+  found.sort((x, y) => (x.m.slug < y.m.slug ? -1 : 1));
+  const featured = featuredSlugs(view);
+  const tabs = boardTabs(lang);
+  const side = ({ m, row }: (typeof found)[number]): LbCompareSide => ({
+    row,
+    contextWindowTokens: m.context_window_tokens,
+    boards: tabs.map((t) => {
+      const e = view.boards.get(t.key)?.bySlug.get(m.slug);
+      return { ...t, rank: e && e.rank <= BOARD_LIMIT ? e.rank : null };
+    }),
+    related: featured.includes(m.slug)
+      ? featured.filter((s) => s !== m.slug).map((s) => ({ pair: comparePair(m.slug, s), model: modelRef(view, view.models.get(s)!) }))
+      : [],
+  });
+  return {
+    run: runInfo(view.info, lang),
+    pair: comparePair(found[0].m.slug, found[1].m.slug),
+    featured: featured.includes(found[0].m.slug) && featured.includes(found[1].m.slug),
+    sides: [side(found[0]), side(found[1])],
+  };
 }
 
 /** Public leaderboard URLs for the sitemap. */

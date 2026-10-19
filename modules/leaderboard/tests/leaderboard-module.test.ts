@@ -303,7 +303,8 @@ test("pricing lists every priced model in USD, cheapest input first, with page a
     assert.equal(response.statusCode, 200);
     assert.equal(response.headers["cache-control"], "public, max-age=120, s-maxage=300, stale-while-revalidate=600");
     const body = response.json();
-    assert.deepEqual(Object.keys(body).sort(), ["rows", "run", "verifiedOn"]);
+    assert.deepEqual(Object.keys(body).sort(), ["featured", "rows", "run", "verifiedOn"]);
+    assert.deepEqual(body.featured, [slugs[0], slugs[1]], "ranked models with USD prices, best rank first");
     assert.equal(body.run.id, liveRun);
     assert.equal(body.run.fx.sourceName, "European Central Bank");
     assert.equal(body.verifiedOn, "1999-01-05");
@@ -324,6 +325,31 @@ test("pricing lists every priced model in USD, cheapest input first, with page a
     for (const query of ["lang=fr", "lang=en&lang=zh"]) assert.equal((await app.inject(`/api/site/leaderboard/pricing?${query}`)).statusCode, 400, query);
   });
   assert.deepEqual((await app.inject("/api/site/leaderboard/pricing")).json().rows.map((r: { model: { slug: string } }) => r.model.slug), [slugs[0]]);
+});
+
+test("two priced models compare under one address; only the featured pairs are listed", async () => {
+  await withPricedModels(async () => {
+    const pair = `${slugs[0]}-vs-${slugs[1]}`;
+    const response = await app.inject(`/api/site/leaderboard/pricing/compare/${pair}?lang=en`);
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.headers["cache-control"], "public, max-age=120, s-maxage=300, stale-while-revalidate=600");
+    const body = response.json();
+    assert.deepEqual([body.pair, body.featured], [pair, true]);
+    const [a, b] = body.sides;
+    assert.deepEqual([a.row.model.slug, b.row.model.slug], [slugs[0], slugs[1]]);
+    assert.deepEqual([a.row.usd, b.row.usd], [{ input: 2, output: 10, cached: 0.2 }, { input: 1, output: 2, cached: null }]);
+    assert.deepEqual(a.boards.map((x: { key: string; rank: number | null }) => [x.key, x.rank]).slice(0, 1), [["overall", 1]]);
+    assert.ok(a.boards.every((x: { name: string; href: string }) => x.name && x.href.startsWith("/leaderboard")));
+    assert.deepEqual(a.related.map((r: { pair: string }) => r.pair), [pair], "its other featured pairs");
+    assert.equal((await app.inject(`/api/site/leaderboard/pricing/compare/${slugs[1]}-vs-${slugs[0]}`)).json().pair, pair, "either order names the same pair");
+    const unfeatured = (await app.inject(`/api/site/leaderboard/pricing/compare/${slugs[0]}-vs-${slugs[30]}`)).json();
+    assert.deepEqual([unfeatured.featured, unfeatured.sides[1].related], [false, []]);
+    for (const missing of [`${slugs[0]}-vs-${slugs[2]}`, `${slugs[0]}-vs-${slugs[0]}`, `${slugs[0]}-vs-nope`, slugs[0]]) {
+      assert.equal((await app.inject(`/api/site/leaderboard/pricing/compare/${missing}`)).statusCode, 404, missing);
+    }
+    const urls = (await loadDiscoveryEntries()).map((e) => e.loc);
+    assert.deepEqual(urls.filter((u) => u.includes("/pricing/compare/")), [`/pricing/compare/${pair}`, `/zh/pricing/compare/${pair}`]);
+  });
 });
 
 test("pricing is discoverable and the retired Pages addresses redirect", async () => {
@@ -457,6 +483,30 @@ test("built pages keep both language URLs, layout, history and the default share
         const crumbs = ld.find((x: { "@type"?: string }) => x["@type"] === "BreadcrumbList");
         assert.deepEqual(crumbs.itemListElement.map((c: { item: string }) => c.item), [`${web.origin}${prefix}/leaderboard`, `${web.origin}${prefix}/pricing`]);
         for (const c of crumbs.itemListElement) assert.ok(c.name.length > 0);
+        const pair = `${slugs[0]}-vs-${slugs[1]}`;
+        assert.ok(html.includes(`href="${prefix}/pricing/compare/${pair}"`), `${prefix} the pricing page links its popular comparisons`);
+
+        const reversed = await fetch(`${web.origin}${prefix}/pricing/compare/${slugs[1]}-vs-${slugs[0]}`, { redirect: "manual" });
+        assert.deepEqual([reversed.status, reversed.headers.get("location")], [301, `${prefix}/pricing/compare/${pair}`], prefix);
+        const compare = await fetch(`${web.origin}${prefix}/pricing/compare/${pair}`);
+        assert.equal(compare.status, 200, prefix);
+        const page = await compare.text();
+        const compareTitle = prefix ? "Stored model 0 与 Stored model 1 API 价格对比 2026：每次调用成本" : "Stored model 0 vs Stored model 1 API Pricing 2026: Cost per Request Compared";
+        assert.ok(page.includes(`<title>${compareTitle}</title>`), prefix);
+        assert.equal(page.includes('name="robots"'), false, `${prefix} a featured pair is indexable`);
+        assert.ok(page.includes(`rel="canonical" href="${web.origin}${prefix}/pricing/compare/${pair}"`), prefix);
+        // Chat message, 1K in / 500 out: model 0 at $2/$10 costs $0.007, model 1 at $1/$2 costs $0.002.
+        assert.ok(page.includes(prefix ? "Stored model 1 每次 $0.002，Stored model 0 每次 $0.007，前者便宜约 3.5 倍" : "Stored model 1 costs $0.002 per request and Stored model 0 costs $0.007: about 3.5× cheaper"), prefix);
+        assert.ok(page.includes(prefix ? "Stored model 1 便宜 3.5 倍" : "Stored model 1 is 3.5× cheaper"), prefix);
+        assert.ok(page.includes(prefix ? "标价 ¥8" : "List ¥8"), `${prefix} the CNY side keeps its list price`);
+        assert.ok(page.includes(`href="${prefix}/leaderboard/${slugs[0]}"`) && page.includes(`href="${prefix}/pricing#calculator"`), prefix);
+        const compareLd = [...page.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].flatMap((m) => [JSON.parse(m[1]!)].flat());
+        const compareCrumbs = compareLd.find((x: { "@type"?: string }) => x["@type"] === "BreadcrumbList");
+        assert.deepEqual(compareCrumbs.itemListElement.map((c: { item: string }) => c.item), [`${web.origin}${prefix}/leaderboard`, `${web.origin}${prefix}/pricing`, `${web.origin}${prefix}/pricing/compare/${pair}`]);
+        for (const c of compareCrumbs.itemListElement) assert.ok(c.name.length > 0);
+        const unfeatured = await (await fetch(`${web.origin}${prefix}/pricing/compare/${slugs[0]}-vs-${slugs[30]}`)).text();
+        assert.ok(unfeatured.includes('name="robots" content="noindex, follow"'), `${prefix} other pairs are not indexed`);
+        assert.equal((await fetch(`${web.origin}${prefix}/pricing/compare/${slugs[0]}-vs-nope`)).status, 404, prefix);
       }
     });
 

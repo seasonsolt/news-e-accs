@@ -6,6 +6,7 @@ const pages: ModulePage[] = [
   { path: "leaderboard/rules", file: "web/routes/leaderboard-rules.tsx", id: "leaderboard-rules" },
   { path: "leaderboard/:slug", file: "web/routes/leaderboard-model.tsx", id: "leaderboard-model" },
   { path: "pricing", file: "web/routes/pricing.tsx", id: "pricing" },
+  { path: "pricing/compare/:pair", file: "web/routes/pricing-compare.tsx", id: "pricing-compare" },
   { path: "pricing/:slug", file: "web/routes/pricing-legacy.tsx", id: "pricing-legacy" },
 ];
 const boards: ModulePage[] = [
@@ -31,6 +32,6 @@ export default defineModule({
     { match: "exact", path: "/benchmark", status: 301, location: "/leaderboard/category/coding", why: "retired e-acc.ai Pages benchmark" },
   ],
   apiPaths: [/^\/api\/site\/leaderboard\//, /^\/(model-providers|leaderboard-sources)\//],
-  localizedPaths: [/^\/leaderboard(?:\/.*)?$/, /^\/pricing$/],
+  localizedPaths: [/^\/leaderboard(?:\/.*)?$/, /^\/pricing(?:\/compare\/[^/]+)?$/],
   timePaths: [/^\/leaderboard(?:\/|$)/],
 });

@@ -8,7 +8,7 @@ import { registerLeaderboard } from "./api/leaderboard.ts";
 import { fetchOverview } from "./backend/admin.ts";
 import { refreshLeaderboard } from "./backend/fetch/refresh.ts";
 import { runLeaderboardRound } from "./backend/method/run.ts";
-import { leaderboardUrls } from "./backend/publication.ts";
+import { comparePairs, leaderboardUrls } from "./backend/publication.ts";
 import { LEADERBOARD_PUBLIC_BOARDS } from "./taxonomy.ts";
 
 const collecting = process.env.COLLECT_ENABLED === "true";
@@ -64,8 +64,10 @@ export default defineServerModule({
     ],
     async entries() {
       const fixed = new Set(["/leaderboard", "/leaderboard/sources", "/leaderboard/rules"]);
-      return (await leaderboardUrls()).filter((loc) => !fixed.has(loc) && !loc.startsWith("/leaderboard/category/"))
+      const models = (await leaderboardUrls()).filter((loc) => !fixed.has(loc) && !loc.startsWith("/leaderboard/category/"))
         .map((loc) => ({ loc, changefreq: "weekly", priority: 0.4 }));
+      const pairs = await comparePairs().catch(() => []);
+      return [...models, ...pairs.map((pair) => ({ loc: `/pricing/compare/${pair}`, changefreq: "weekly", priority: 0.4 }))];
     },
   },
 });

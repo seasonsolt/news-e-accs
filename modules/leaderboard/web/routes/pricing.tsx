@@ -10,6 +10,7 @@ import { breadcrumbLd, pageMeta, siteUrl } from "@aihot/web/lib/seo";
 import { BrandMark } from "@aihot/web/components/BrandMark";
 import { Deck } from "@aihot/web/components/shell/Deck";
 import { listPrice, tokensShort, usd } from "../features/format";
+import { PRESETS, requestCost } from "../features/pricing";
 import { IconArrowLeft, IconArrowRight, IconExternal } from "@aihot/web/components/icons";
 
 export async function loader({ request }: { request: Request }) {
@@ -52,11 +53,6 @@ export function headers() {
   return { "Cache-Control": "public, max-age=0, s-maxage=600, stale-while-revalidate=600" };
 }
 
-const PRESETS = [
-  { key: "chat", label: "聊天消息", input: 1_000, output: 500 },
-  { key: "document", label: "长文档", input: 100_000, output: 2_000 },
-  { key: "agent", label: "Agent 会话", input: 500_000, output: 50_000 },
-] as const;
 const DEFAULT_REQUESTS = 1_000;
 
 function UsdCell({ value, list, currency }: { value: number | null; list: number | null; currency: LbPricingRow["price"]["currency"] }) {
@@ -144,7 +140,7 @@ function Calculator({ rows }: { rows: LbPricingRow[] }) {
   const [output, setOutput] = useState<number>(PRESETS[0].output);
   const [requests, setRequests] = useState(DEFAULT_REQUESTS);
   const costs = rows
-    .map((r) => ({ r, perRequest: r.usd.input !== null && r.usd.output !== null ? (input * r.usd.input + output * r.usd.output) / 1e6 : null }))
+    .map((r) => ({ r, perRequest: requestCost(r, input, output) }))
     .sort((a, b) => (a.perRequest === b.perRequest ? 0 : a.perRequest === null ? 1 : b.perRequest === null ? -1 : a.perRequest - b.perRequest));
   return (
     <section id="calculator" className="mt-12 scroll-mt-6">
@@ -196,9 +192,33 @@ function Calculator({ rows }: { rows: LbPricingRow[] }) {
   );
 }
 
+/** How many of the featured models' pairs the pricing page links; each comparison page links the rest. */
+const LINKED_TOP = 6;
+
+function PopularComparisons({ rows, featured }: { rows: LbPricingRow[]; featured: string[] }) {
+  const tx = useTranslate();
+  const names = new Map(rows.map((r) => [r.model.slug, r.model.name]));
+  const top = featured.slice(0, LINKED_TOP);
+  const pairs = top.flatMap((a, i) => top.slice(i + 1).map((b) => [a, b] as const));
+  if (!pairs.length) return null;
+  return (
+    <section className="mt-12">
+      <h2 className="text-[17px] font-bold text-ink"><Text value="热门模型价格对比" /></h2>
+      <p className="mt-1 text-[12.5px] text-ink-3"><Text value="综合榜前列模型两两对比每次调用的成本。" /></p>
+      <ul className="mt-4 grid gap-x-6 gap-y-1.5 text-[13px] sm:grid-cols-2">
+        {pairs.map(([a, b]) => (
+          <li key={`${a}:${b}`}>
+            <Link to={`/pricing/compare/${[a, b].sort().join("-vs-")}`} className="text-ink-3 hover:text-accent">{tx("{0} 与 {1}", names.get(a), names.get(b))}</Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export default function PricingPage() {
   const tx = useTranslate();
-  const { rows, verifiedOn, run } = useLoaderData<typeof loader>();
+  const { rows, verifiedOn, run, featured } = useLoaderData<typeof loader>();
   return (
     <div className="pb-12">
       <Deck
@@ -225,6 +245,8 @@ export default function PricingPage() {
       </section>
 
       <Calculator rows={rows} />
+
+      <PopularComparisons rows={rows} featured={featured} />
     </div>
   );
 }

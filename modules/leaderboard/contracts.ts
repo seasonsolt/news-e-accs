@@ -264,6 +264,26 @@ export interface LbPricingResponse {
   /** The latest date any listed price was checked against its official page. */
   verifiedOn: string | null;
   rows: LbPricingRow[];
+  /** Slugs of the models whose pairs have indexable comparison pages, best overall rank first. */
+  featured: string[];
+}
+
+export interface LbCompareSide {
+  row: LbPricingRow;
+  contextWindowTokens: number | null;
+  /** Rank on each public board, null when the model is not in its top. */
+  boards: Array<{ key: LeaderboardBoardKey; name: string; href: string; rank: number | null }>;
+  /** Its other indexable comparisons. */
+  related: Array<{ pair: string; model: LbModelRef }>;
+}
+
+export interface LbCompareResponse {
+  run: LbRunInfo;
+  /** The pair as the page's address: both slugs in alphabetical order, joined by "-vs-". */
+  pair: string;
+  /** Whether the page is indexable: both models are among the featured ones. */
+  featured: boolean;
+  sides: [LbCompareSide, LbCompareSide];
 }
 
 export interface LbFetchOverview {

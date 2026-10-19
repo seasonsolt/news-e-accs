@@ -7,13 +7,15 @@
 - `/leaderboard/rules`：排名怎么算（共识方法 v16，加权不完整 Kemeny 排序）。
 - `/leaderboard/sources`、`/leaderboard/sources/:key`：每个评测来源测什么、状态如何、是否参与排名。
 - `/leaderboard/:slug`：公开前 30 名模型的排名、价格、稳定性与原始证据。
+- `/pricing`：最新一轮所有有价格的模型的 API 价格表（美元 / 每百万 Token）和成本计算器；`/calculator` 永久跳转到 `/pricing#calculator`，旧 Pages 站的 `/pricing/<slug>` 跳到模型页或价格表。
+- `/pricing/compare/<a>-vs-<b>`：两个模型的价格、各榜排名和三种典型用量下的每次调用成本。两个 slug 按字母顺序排列，反过来写的地址永久跳转过去。综合榜前列、有美元价的前 15 个模型（`COMPARE_TOP`）两两之间的页面可收录并列入 sitemap，价格表页链接其中前 6 个模型的组合，每个对比页链接两边各自的其他组合；其他有价格的组合也能打开，但标 `noindex`。
 - `/leaderboard/category/:key`：四类专项榜。`overall` 返回 404，`aesthetics`、`writing` 临时跳转总榜；`/leaderboard/methodology` 永久跳转来源页。
 
 保留 `/zh/leaderboard…` 镜像、`?at=YYYY-MM-DD` 的北京日边界、历史榜与实时榜的独立缓存。价格为当前价格（见下文“名录、价格与工具”），人民币标价按所读计算轮次的汇率折算；价格表有改动时，缓存的轮次在一分钟内重新读取。页面只读已发布结果，不发起采集或模型调用。
 
 ## 中英文版本
 
-五类 `/api/site/leaderboard/*` 读取接口接受 `lang=en|zh`，省略时仍返回原有中文。英文数据在 `i18n/en.json`，按榜单、来源、分组、证据预算、状态和配置等稳定 id 覆盖中文文案；署名等动态句子在读取代码中保留双语模板。已存轮次的预算名、汇率来源、配置标签和选择说明只在读取时翻译，模型、机构和上游型号专名保留，不改数据库记录。
+七个 `/api/site/leaderboard/*` 读取接口接受 `lang=en|zh`，省略时仍返回原有中文。英文数据在 `i18n/en.json`，按榜单、来源、分组、证据预算、状态和配置等稳定 id 覆盖中文文案；署名等动态句子在读取代码中保留双语模板。已存轮次的预算名、汇率来源、配置标签和选择说明只在读取时翻译，模型、机构和上游型号专名保留，不改数据库记录。
 
 网页文案在 `i18n/messages.ts`，通过通用 `WebModule.messages` 插口注册中英文字典。评测状态使用模块自己的 message key，不覆盖引擎事件的同名状态。标题、描述和结构化数据使用同一套翻译，canonical 与 alternate 由引擎 `pageMeta` 生成。
 
@@ -68,7 +70,7 @@ modules/leaderboard/
 |---|---|
 | `module.ts` 的 `pages`、`redirects`、`apiPaths` | 原网页地址与布局、旧地址跳转、API 和两组 Logo 地址 |
 | `module.ts` 的 `localizedPaths` | 模块自己声明的 `/zh` 镜像，用于语言切换与链接 |
-| `server.ts` 的 `http` | 五个 `/api/site/leaderboard/*` 读取接口；静态 Logo 通过引擎 `sendFile` 返回类型、ETag、缓存头与 404 |
+| `server.ts` 的 `http` | 七个 `/api/site/leaderboard/*` 读取接口；静态 Logo 通过引擎 `sendFile` 返回类型、ETag、缓存头与 404 |
 | `schedules`、`workerStarted` | 四次每日计算与新站首次计算 |
 | `admin.runs`、`alerts` | `leaderboard.fetch` 运行状态、失败来源表与超过 26 小时未成功的告警 |
 | `llms`、`sitemap` | 有公开轮次才列出 llms.txt 链接；固定榜页、全部来源页与公开前 30 名模型页进入 sitemap |
