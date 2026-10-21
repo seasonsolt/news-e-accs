@@ -1,5 +1,6 @@
 import { defineWebModule } from "@aihot/web/modules";
 export const messages = {
+  "Phone scenes are AI previews. Downloads contain only the wallpaper.": "手机场景为 AI 效果示意，下载文件仅包含壁纸。",
   "Daily 4K wallpaper": "每日 4K 壁纸",
   "A new 4K wallpaper every day. Subscribe for 100 credits (10 credits per wallpaper).": "每天一张 4K 壁纸，订阅即送 100 积分（每张 10 积分）。",
   "No wallpaper yet. Check back soon.": "第一张壁纸即将上线，敬请期待。",

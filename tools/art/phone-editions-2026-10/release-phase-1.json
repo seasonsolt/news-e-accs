@@ -1,0 +1,1774 @@
+{
+  "phase": 1,
+  "date": "2026-10-21",
+  "count": 93,
+  "items": [
+    {
+      "id": 1,
+      "day": "2026-10-18",
+      "title_zh": "大爆炸",
+      "title_en": "The Big Bang",
+      "desktop_file": "desktop-c007f5eacfc3ff05ea2f350a8e3a31468c484cf81cad5ad64853907e56b44d02.jpg",
+      "phone_file": "phone-ace2a83537cd51c6d4a911870594766c4c2c4139715553fa0a4a14fc9dd5b3b6.jpg",
+      "preview_file": "preview-d02a868347f626690b08fae3fd161d548999e12c14259dfa653cdbab96cdb491.webp",
+      "phone": {
+        "file": "phone-30ae28132da5edac8102edcc23da168d52b8b4268bb7c64909fae46e9e93e594.jpg",
+        "sha256": "30ae28132da5edac8102edcc23da168d52b8b4268bb7c64909fae46e9e93e594",
+        "bytes": 1611960
+      },
+      "preview": {
+        "file": "preview-995023bee4c94369f1478e991a9ec76f43e0b9760ead006d830b78b1c8c788ad.webp",
+        "sha256": "995023bee4c94369f1478e991a9ec76f43e0b9760ead006d830b78b1c8c788ad",
+        "bytes": 251076
+      }
+    },
+    {
+      "id": 2,
+      "day": "2026-10-19",
+      "title_zh": "第一代恒星与星系",
+      "title_en": "First Stars and Galaxies",
+      "desktop_file": "desktop-b1feaf5af0dd9a67bb9dca25c915c98470855ab2ee7cf320ccc3468fe57c4107.jpg",
+      "phone_file": "phone-654c8272d056b3c198e54bc41b9f1561f3f65d5aaae6fd05e38c48555931e798.jpg",
+      "preview_file": "preview-50436ac075f5eaff7d9151c85141fabbad05bb9d2f7668a205e356e7e3d9f567.webp",
+      "phone": {
+        "file": "phone-70b22b9d01c290934057d16fffa4fc2dbd4f6baadea611cc21e3c6bd695794d3.jpg",
+        "sha256": "70b22b9d01c290934057d16fffa4fc2dbd4f6baadea611cc21e3c6bd695794d3",
+        "bytes": 1715570
+      },
+      "preview": {
+        "file": "preview-d5c7ded5a7f4d2e99b9480195401304f9ced41551ce3ba7dd35102186707a87a.webp",
+        "sha256": "d5c7ded5a7f4d2e99b9480195401304f9ced41551ce3ba7dd35102186707a87a",
+        "bytes": 261120
+      }
+    },
+    {
+      "id": 3,
+      "day": "2026-10-20",
+      "title_zh": "太阳系形成",
+      "title_en": "Formation of the Solar System",
+      "desktop_file": "desktop-314de45f90ba88362c5b5cf0eab08d0897086fdc241c8df2fc497ed206ba0afc.jpg",
+      "phone_file": "phone-33c1a7628370d96a160946567cdbf812e7ce279c48d4278dbd80ebec74ab639e.jpg",
+      "preview_file": "preview-2b9bd920553ed2db3b655fa40fe165f45a52ceafa620d7b1b84c76e97f05ce98.webp",
+      "phone": {
+        "file": "phone-27c71540e8c5bb346b641b366c8a291c9265b940845abc97763ad3ae366c4d02.jpg",
+        "sha256": "27c71540e8c5bb346b641b366c8a291c9265b940845abc97763ad3ae366c4d02",
+        "bytes": 3637518
+      },
+      "preview": {
+        "file": "preview-56a86c5c8f0a1587718451e19a2516881a0a8122918ba2f00c9c7a969cca4cf0.webp",
+        "sha256": "56a86c5c8f0a1587718451e19a2516881a0a8122918ba2f00c9c7a969cca4cf0",
+        "bytes": 298382
+      }
+    },
+    {
+      "id": 4,
+      "day": "2026-10-21",
+      "title_zh": "地球生命起源",
+      "title_en": "Origin of Life on Earth",
+      "desktop_file": "desktop-3f393d1008412195b9f3c7a5d004219b3603ea507776fb048a218387bfb49013.jpg",
+      "phone_file": "phone-5b38b0bedd1f045be3017fc6198b16fa56b3d6fb5b515c9b3b4fea22b1841e9f.jpg",
+      "preview_file": "preview-21d5ecceb56b21735f7f58e3d8eb6294216030882d23533ef3e08c114cf649c1.webp",
+      "phone": {
+        "file": "phone-2a1b03e53e735c5cf08707de9054cd7d48f114496d271f430c9ab5e48dbc5b6f.jpg",
+        "sha256": "2a1b03e53e735c5cf08707de9054cd7d48f114496d271f430c9ab5e48dbc5b6f",
+        "bytes": 3128443
+      },
+      "preview": {
+        "file": "preview-424bf663800243b2f3090fde548de1394286bde3162347b9b00bfc3e21c9f2e2.webp",
+        "sha256": "424bf663800243b2f3090fde548de1394286bde3162347b9b00bfc3e21c9f2e2",
+        "bytes": 334978
+      }
+    },
+    {
+      "id": 138,
+      "day": "2026-10-22",
+      "title_zh": "齿轮中的计算",
+      "title_en": "Computing in Brass",
+      "desktop_file": "desktop-1faa812321f9106fbf2a8b1a0ef0d771c7f31e674b9e4cc40c1a89d4ec3d90fa.jpg",
+      "phone_file": "phone-b5915a752b1ac29823628587e581cf1bca447a62241a39c1205c34d283e099c8.jpg",
+      "preview_file": "preview-a737eb6c9a70d0d8c913e624c595902b084aa1958d877a25f23ebacc7f2d0a77.webp",
+      "phone": {
+        "file": "phone-f2d2de5e42cf205e1f2b84f454603e86be1901342f9de367c8cb8177f0450836.jpg",
+        "sha256": "f2d2de5e42cf205e1f2b84f454603e86be1901342f9de367c8cb8177f0450836",
+        "bytes": 4512701
+      },
+      "preview": {
+        "file": "preview-dac8f7103ed40a5c43ffeeb877bf23e359f3f8aa576d2a4f892f2e09c26eed7f.webp",
+        "sha256": "dac8f7103ed40a5c43ffeeb877bf23e359f3f8aa576d2a4f892f2e09c26eed7f",
+        "bytes": 307706
+      }
+    },
+    {
+      "id": 139,
+      "day": "2026-10-23",
+      "title_zh": "生命的双螺旋",
+      "title_en": "The Double Helix of Life",
+      "desktop_file": "desktop-6ffa0b72fb7e84da5f49ddcb88e9ee61c43e49b01c30db47adde2a43843d438b.jpg",
+      "phone_file": "phone-5b8a37916b0bf7e93c29140719070120cb99b6ec7d9d2a65015f18f60ad39a1b.jpg",
+      "preview_file": "preview-6aa3debb60f6010dea9fc5b45f697a9480b1fd6f95697d75464ca430c1ba5254.webp",
+      "phone": {
+        "file": "phone-555222c6abf250072adf8cdb0fc9ee073b54103c5e93a4dd801ebd9710643278.jpg",
+        "sha256": "555222c6abf250072adf8cdb0fc9ee073b54103c5e93a4dd801ebd9710643278",
+        "bytes": 2232783
+      },
+      "preview": {
+        "file": "preview-d543299205b659befdc5567d2465060a9236703c89f8c928bf2e8b777e226bd8.webp",
+        "sha256": "d543299205b659befdc5567d2465060a9236703c89f8c928bf2e8b777e226bd8",
+        "bytes": 278184
+      }
+    },
+    {
+      "id": 140,
+      "day": "2026-10-24",
+      "title_zh": "望向宇宙黎明",
+      "title_en": "Looking toward Cosmic Dawn",
+      "desktop_file": "desktop-ca781d9dcad53b8eede9f3364573cc0cd3a96cee941646b48099040a8ad83825.jpg",
+      "phone_file": "phone-0b28a2285851bf9e3a4eaf335e8dc2380c700701adf76b15d100d3bb59d05afd.jpg",
+      "preview_file": "preview-f0fc07806310ee7c80aacc38afbb554d0663cafe60ab9b52e6c589949c86ad64.webp",
+      "phone": {
+        "file": "phone-4e2df8ca98b496cb0cff91cd3cdd73ef255498957df8a1ce6dd43f612925cfb0.jpg",
+        "sha256": "4e2df8ca98b496cb0cff91cd3cdd73ef255498957df8a1ce6dd43f612925cfb0",
+        "bytes": 1805965
+      },
+      "preview": {
+        "file": "preview-37f93aa5589f7e3e57f437dca671cd71cdbf85a8d2e049156b3ca2aa8495abed.webp",
+        "sha256": "37f93aa5589f7e3e57f437dca671cd71cdbf85a8d2e049156b3ca2aa8495abed",
+        "bytes": 258596
+      }
+    },
+    {
+      "id": 8,
+      "day": "2026-10-25",
+      "title_zh": "火的驯服",
+      "title_en": "Taming Fire",
+      "desktop_file": "desktop-217b750a5d55b3141f7c2c75dfa96f56e974d57aebc7e2fee99ab1ca83b0adf3.jpg",
+      "phone_file": "phone-934d19779d448da68ac378ae999fd4b2a25a58bd10b5165ba6bd3d13d62874d7.jpg",
+      "preview_file": "preview-0cd218a9355cef512b51212c9b27e3d0f3a8f0408f1dde72dfdec7f2177ebe06.webp",
+      "phone": {
+        "file": "phone-3d2f2729a9d9666e35a65e06a44f0aa4190ea35d35c100370b86f3af2d9e5265.jpg",
+        "sha256": "3d2f2729a9d9666e35a65e06a44f0aa4190ea35d35c100370b86f3af2d9e5265",
+        "bytes": 3063430
+      },
+      "preview": {
+        "file": "preview-97f205099fb74e2b1c13d045989596bf1b36d6d5d9e60cc8b49838404743b971.webp",
+        "sha256": "97f205099fb74e2b1c13d045989596bf1b36d6d5d9e60cc8b49838404743b971",
+        "bytes": 295358
+      }
+    },
+    {
+      "id": 9,
+      "day": "2026-10-26",
+      "title_zh": "智人与语言",
+      "title_en": "Homo sapiens and Language",
+      "desktop_file": "desktop-6b8e2211c204d6e54cc2cadf2491cf1fd172b0e23c6934060bda4b7f459404ee.jpg",
+      "phone_file": "phone-34930f517191cf819bbaacb1500090f99141aa28e5128791765f6276d08a832e.jpg",
+      "preview_file": "preview-fa018cc15cf1cdfa00b1eb0eea251a107d4d765a3abaad60e3a42a5740361531.webp",
+      "phone": {
+        "file": "phone-851d55a9c7c3c810499d95ac810b41e50b4fa340c0de5f3e721387d20e877cf0.jpg",
+        "sha256": "851d55a9c7c3c810499d95ac810b41e50b4fa340c0de5f3e721387d20e877cf0",
+        "bytes": 3645079
+      },
+      "preview": {
+        "file": "preview-63a9e4e3f781590b89168b0fdf5470f28a1acc6be84e323f871ce3284b4fed74.webp",
+        "sha256": "63a9e4e3f781590b89168b0fdf5470f28a1acc6be84e323f871ce3284b4fed74",
+        "bytes": 373190
+      }
+    },
+    {
+      "id": 10,
+      "day": "2026-10-27",
+      "title_zh": "认知革命与洞穴艺术",
+      "title_en": "Cognitive Revolution and Cave Art",
+      "desktop_file": "desktop-0331727d5086e12d4fe5e8a5e1d565dd9e0a03ee20b701ebe86171a4c5094d44.jpg",
+      "phone_file": "phone-0db4531a8a746279d3dda830b5d813e0c7fcf5cec9bd38a1642d72bf879707ff.jpg",
+      "preview_file": "preview-57e1960b35fb1cd5384168ea37772012b0dbe72823139409510dab59215ed87b.webp",
+      "phone": {
+        "file": "phone-f63eb5456da69029344960eeb964b2f0ca8ac5607daf2950c3a64c4eb7344290.jpg",
+        "sha256": "f63eb5456da69029344960eeb964b2f0ca8ac5607daf2950c3a64c4eb7344290",
+        "bytes": 3049455
+      },
+      "preview": {
+        "file": "preview-b6e50fe2a74800d6288deeaa3cdb4d66c62046ff2c3e653006c4a9d668e6c180.webp",
+        "sha256": "b6e50fe2a74800d6288deeaa3cdb4d66c62046ff2c3e653006c4a9d668e6c180",
+        "bytes": 364878
+      }
+    },
+    {
+      "id": 11,
+      "day": "2026-10-28",
+      "title_zh": "最早的石器",
+      "title_en": "The Earliest Stone Tools",
+      "desktop_file": "desktop-5bc770f1726716d057a534d376b694fd09e8374d55071fea3dcc1f51bdbc04bf.jpg",
+      "phone_file": "phone-dcc515ea5b7c26bd55fdd1c052ad3f2e9ff5a417ed96eabbbad4cdaa3743b180.jpg",
+      "preview_file": "preview-7911baaa810ad5d6eecfbe04bb2f2d8ed1e5206ff996b157696b6d68e3ae79a4.webp",
+      "phone": {
+        "file": "phone-0a6cc4e5e734b30133d5120c79a11eed143f3f7a4a6bc3f05ba47c64374af0ec.jpg",
+        "sha256": "0a6cc4e5e734b30133d5120c79a11eed143f3f7a4a6bc3f05ba47c64374af0ec",
+        "bytes": 2591136
+      },
+      "preview": {
+        "file": "preview-341c6b3237596d8b05caac118d6dac1d577d0ced50a9bef96723287d0a00025a.webp",
+        "sha256": "341c6b3237596d8b05caac118d6dac1d577d0ced50a9bef96723287d0a00025a",
+        "bytes": 329078
+      }
+    },
+    {
+      "id": 12,
+      "day": "2026-10-29",
+      "title_zh": "用火",
+      "title_en": "Control of Fire",
+      "desktop_file": "desktop-797a62154df72ee1b17f69d0c28a53c3a7fc0466b282953e0b57f08b3a1d937d.jpg",
+      "phone_file": "phone-cc2c7e16dacfa5705f0c1295afa8ec49b06454b4f392e73799a456c73c0002ec.jpg",
+      "preview_file": "preview-654b7836061e229370fcfb5217e96f0af35043a832cdb5a21dc07a82771adbd4.webp",
+      "phone": {
+        "file": "phone-bf2f64aa520e1a69ba183c62b1d5fb9892ffac59a4441d471c293d3e55173ce6.jpg",
+        "sha256": "bf2f64aa520e1a69ba183c62b1d5fb9892ffac59a4441d471c293d3e55173ce6",
+        "bytes": 3051527
+      },
+      "preview": {
+        "file": "preview-b16853ea285aeae279f6218d8c2083cad8b4cca6690b1796c90e2160a4a6729d.webp",
+        "sha256": "b16853ea285aeae279f6218d8c2083cad8b4cca6690b1796c90e2160a4a6729d",
+        "bytes": 340396
+      }
+    },
+    {
+      "id": 13,
+      "day": "2026-10-30",
+      "title_zh": "最古老的叙事画",
+      "title_en": "The Oldest Narrative Painting",
+      "desktop_file": "desktop-d97a5661c0117ea3b7f9fe70224e3eb01d8c9d157292c94f1061bd5dbbb43d31.jpg",
+      "phone_file": "phone-da633de34b96057b60051d513a3b5dcc53653d70104e443124412db50c793334.jpg",
+      "preview_file": "preview-81d74629e2a675ef9467d216e1abb4f77810ad6e6303dafa975c1f010779afc8.webp",
+      "phone": {
+        "file": "phone-2302a134faa5835991c0607617edad3fa0ac331b58fd373524ac5dfb55d0ab37.jpg",
+        "sha256": "2302a134faa5835991c0607617edad3fa0ac331b58fd373524ac5dfb55d0ab37",
+        "bytes": 2751216
+      },
+      "preview": {
+        "file": "preview-250511c6c34b0302ebc8a60c95e3f81ffc0a4278cf06d23902724bea37df6f1b.webp",
+        "sha256": "250511c6c34b0302ebc8a60c95e3f81ffc0a4278cf06d23902724bea37df6f1b",
+        "bytes": 344452
+      }
+    },
+    {
+      "id": 14,
+      "day": "2026-10-31",
+      "title_zh": "农业革命",
+      "title_en": "The Agricultural Revolution",
+      "desktop_file": "desktop-4ac88952a6818b89f153301a9c7cb76c2dcfe070c73bd517d4f769bcf044435b.jpg",
+      "phone_file": "phone-cfdc7d2a81b3ce21f94e3af55a7adf78de100f50d67d7fef496362ce2d59dc8e.jpg",
+      "preview_file": "preview-48386256bd2ab9ab418bf3b401bd3fcbc8d4a2ff6a39c26a1e00f8ac8e17c371.webp",
+      "phone": {
+        "file": "phone-73a818717c993f3a090f4a8d82f4117d809ca818af829f94381001dfff541179.jpg",
+        "sha256": "73a818717c993f3a090f4a8d82f4117d809ca818af829f94381001dfff541179",
+        "bytes": 3480266
+      },
+      "preview": {
+        "file": "preview-6860c87bfc88f91c94f71e3a6126e07928eda7e4309347a1385f96c48ec415a3.webp",
+        "sha256": "6860c87bfc88f91c94f71e3a6126e07928eda7e4309347a1385f96c48ec415a3",
+        "bytes": 349552
+      }
+    },
+    {
+      "id": 15,
+      "day": "2026-11-01",
+      "title_zh": "农业起源",
+      "title_en": "The Origins of Agriculture",
+      "desktop_file": "desktop-4046cb410cbfe81b75bc5e05260571b203323dcbddf07f6d9969bc5b2217b767.jpg",
+      "phone_file": "phone-5ae5b6463bdc0d0bc446f4cd3d667de3c518b3babfbf1c310d464efc1fed02ba.jpg",
+      "preview_file": "preview-d1d96c6fd4cfb4c8231bb85324fc24f61c8f7f1b9d0c153231d3c7d9b82a678e.webp",
+      "phone": {
+        "file": "phone-ad944600d2bf0b0da1f61b16c8f831cca6b6baecab53fd09d76b4f8d8dd95ae1.jpg",
+        "sha256": "ad944600d2bf0b0da1f61b16c8f831cca6b6baecab53fd09d76b4f8d8dd95ae1",
+        "bytes": 3598565
+      },
+      "preview": {
+        "file": "preview-5a85eb83bce09ff9517c83d65dc73e8f7b76636805e2d7bc19950265171794a3.webp",
+        "sha256": "5a85eb83bce09ff9517c83d65dc73e8f7b76636805e2d7bc19950265171794a3",
+        "bytes": 356986
+      }
+    },
+    {
+      "id": 16,
+      "day": "2026-11-02",
+      "title_zh": "城市与文字",
+      "title_en": "Cities and Writing",
+      "desktop_file": "desktop-6ec9ea164c6882709595254fba6dea594e97e687498a02a92a6026f90999a021.jpg",
+      "phone_file": "phone-51c2fa084a10012e989521af975075bcf7a8bb46618dd842c822fd2fc7fed931.jpg",
+      "preview_file": "preview-dd49a95cd58d8310ef663e58c5b4983bf3cabd953c5320c7bd04e3d1669d699d.webp",
+      "phone": {
+        "file": "phone-7a9f71e719904ef532b2de5f566b7f959fa622563140ec388ad0d58d8e7239ae.jpg",
+        "sha256": "7a9f71e719904ef532b2de5f566b7f959fa622563140ec388ad0d58d8e7239ae",
+        "bytes": 3544274
+      },
+      "preview": {
+        "file": "preview-77173d58e12daed1de632179d7960076f82f1a52c22c9578ff5e18687b3bf0e5.webp",
+        "sha256": "77173d58e12daed1de632179d7960076f82f1a52c22c9578ff5e18687b3bf0e5",
+        "bytes": 354390
+      }
+    },
+    {
+      "id": 17,
+      "day": "2026-11-03",
+      "title_zh": "轮子",
+      "title_en": "The Wheel",
+      "desktop_file": "desktop-90c1c13379d09bf3d86d7da6dbb3393ce4fd69f2db24c5c01e9a8158192989df.jpg",
+      "phone_file": "phone-0f3a1dcf518f89755d7590da040b96d6568c0e1e58ae434184902235562c7696.jpg",
+      "preview_file": "preview-1d082def5d70cd8c39da7808f0039185747bd2c4b5134469fb9d7cd28a481c3e.webp",
+      "phone": {
+        "file": "phone-838ce4113191ee99bdb97d752b4db8511fe608baf3ff8a87d503a12e5342aac2.jpg",
+        "sha256": "838ce4113191ee99bdb97d752b4db8511fe608baf3ff8a87d503a12e5342aac2",
+        "bytes": 3447239
+      },
+      "preview": {
+        "file": "preview-ffa7cfd070ce47ec157ab2ae5c6131e80746f28fc5ca3cb57764b595975c7b52.webp",
+        "sha256": "ffa7cfd070ce47ec157ab2ae5c6131e80746f28fc5ca3cb57764b595975c7b52",
+        "bytes": 380284
+      }
+    },
+    {
+      "id": 18,
+      "day": "2026-11-04",
+      "title_zh": "青铜时代",
+      "title_en": "The Bronze Age",
+      "desktop_file": "desktop-3fb17924bf162a2fed5dd8fad0f5c9a7d8e07a1e1277a6700db3c1a69ebe209f.jpg",
+      "phone_file": "phone-3bc6b41843b6d6ebe4bfe6a476e311054050bb6f280eb3a75f20c0a2583fa165.jpg",
+      "preview_file": "preview-d5439fa6ad03841e85da01834136f1968b3c755ed4d84147897a6122f5d2bc13.webp",
+      "phone": {
+        "file": "phone-ad7afaa73d65e5d5c00e3d9eb1f9ef1f1f12e5e8fa18981c073b1148d4012885.jpg",
+        "sha256": "ad7afaa73d65e5d5c00e3d9eb1f9ef1f1f12e5e8fa18981c073b1148d4012885",
+        "bytes": 4535476
+      },
+      "preview": {
+        "file": "preview-24387d48a51b3558571672f088cb3a66a2bd26ed3b5f94e125cb7a654e071b6c.webp",
+        "sha256": "24387d48a51b3558571672f088cb3a66a2bd26ed3b5f94e125cb7a654e071b6c",
+        "bytes": 408374
+      }
+    },
+    {
+      "id": 19,
+      "day": "2026-11-05",
+      "title_zh": "楔形文字",
+      "title_en": "Cuneiform",
+      "desktop_file": "desktop-3faf8161a595b3c1e861f22417826b0d4d817b0196b6315fadf4066cc41c5fd4.jpg",
+      "phone_file": "phone-015d92f90c517a5838fce7e1c4bf5a3e1c6d3369fe1bee02610b74f34355fb65.jpg",
+      "preview_file": "preview-3bee9a1c3d274ea165a3adfa59d221b91137c6ea45cedec154353090f65caec2.webp",
+      "phone": {
+        "file": "phone-23f09a5e1e7f65e2b226d0eef0bd2a94c23a37ad2d1003cc9770a4d7ea0b6ddf.jpg",
+        "sha256": "23f09a5e1e7f65e2b226d0eef0bd2a94c23a37ad2d1003cc9770a4d7ea0b6ddf",
+        "bytes": 2655364
+      },
+      "preview": {
+        "file": "preview-4a3f11ab749df85266857b1ffa6a7b99e78755ee102851b9ae1120bafa2d6841.webp",
+        "sha256": "4a3f11ab749df85266857b1ffa6a7b99e78755ee102851b9ae1120bafa2d6841",
+        "bytes": 289114
+      }
+    },
+    {
+      "id": 20,
+      "day": "2026-11-06",
+      "title_zh": "铁器、字母与铸币",
+      "title_en": "Iron, Alphabets and Coinage",
+      "desktop_file": "desktop-bdd2390da754c67e44e2e9ba078e751fc0071bdba2826992c642220a9bcff51c.jpg",
+      "phone_file": "phone-1db1ccca659e60996c380047bb3077745f902af4f611257fb45f186c72a476bd.jpg",
+      "preview_file": "preview-634935b2775c15d8264fab5b786bff71c05cafab6d2b3d6e47d778f10cd5ec3e.webp",
+      "phone": {
+        "file": "phone-ca6b78fc1735cc0920d69f574f375c424786bb98a7cc712b2d76231d17e6488a.jpg",
+        "sha256": "ca6b78fc1735cc0920d69f574f375c424786bb98a7cc712b2d76231d17e6488a",
+        "bytes": 4185909
+      },
+      "preview": {
+        "file": "preview-bc1c4822cb2233c26467e6cf8d42491774a17272afe64b3f9443dc7e68331506.webp",
+        "sha256": "bc1c4822cb2233c26467e6cf8d42491774a17272afe64b3f9443dc7e68331506",
+        "bytes": 415556
+      }
+    },
+    {
+      "id": 21,
+      "day": "2026-11-07",
+      "title_zh": "腓尼基字母",
+      "title_en": "The Phoenician Alphabet",
+      "desktop_file": "desktop-efa83d5f67700551f229eac47e0c58c6b2601d92cd692093770b1097ba301241.jpg",
+      "phone_file": "phone-f0f44715b161e9650ae412e954e3221650e2630af01947b45ad3693f49cb926b.jpg",
+      "preview_file": "preview-d2a7b484137b03d0c127677c70a7d2d58be4202ad168484bd47688a09e7f1d28.webp",
+      "phone": {
+        "file": "phone-95e484fbfa7044f09d9d64c2217ca21a63329c44b581472518870ea0cb5e2ec2.jpg",
+        "sha256": "95e484fbfa7044f09d9d64c2217ca21a63329c44b581472518870ea0cb5e2ec2",
+        "bytes": 3441965
+      },
+      "preview": {
+        "file": "preview-9d4dcdb30630d43ffa46f3bd4a68dfb2463b5ea7291b65d516fdba712b044cd7.webp",
+        "sha256": "9d4dcdb30630d43ffa46f3bd4a68dfb2463b5ea7291b65d516fdba712b044cd7",
+        "bytes": 372582
+      }
+    },
+    {
+      "id": 22,
+      "day": "2026-11-08",
+      "title_zh": "轴心时代",
+      "title_en": "The Axial Age",
+      "desktop_file": "desktop-16a60ef5d2c27ecd11ba7696610662fccac7a1a9266184b632bd79b7c22003c8.jpg",
+      "phone_file": "phone-17dda8df3b74ebdca59f4272d21c27e56c8149d35edc44cf6e72d1c8eee992ab.jpg",
+      "preview_file": "preview-c9b42335aacea15028bb64db48f2d75bb2077cb9ec58b992e39fabefe6c23954.webp",
+      "phone": {
+        "file": "phone-494142f008c927aef4062f351813d50ecfd0b711ebfd58d9ac367a9b65b5faac.jpg",
+        "sha256": "494142f008c927aef4062f351813d50ecfd0b711ebfd58d9ac367a9b65b5faac",
+        "bytes": 2654728
+      },
+      "preview": {
+        "file": "preview-fbc93e88d4a74959445a405ccfd0386834cde03437deed7928fdf2621315ec1a.webp",
+        "sha256": "fbc93e88d4a74959445a405ccfd0386834cde03437deed7928fdf2621315ec1a",
+        "bytes": 276888
+      }
+    },
+    {
+      "id": 23,
+      "day": "2026-11-09",
+      "title_zh": "铸币",
+      "title_en": "Coinage",
+      "desktop_file": "desktop-7e00ff325bf4de84257de05902c0c7943bc0f0bf1000254ba74a99bc0a643538.jpg",
+      "phone_file": "phone-257188d4b9870090d9de7a3ef8f0eb82cf57936ac465a0400ed4cde08dc19824.jpg",
+      "preview_file": "preview-4cf33473c448723f35147cbddeb1b4ef141fd67ad78bc08fe18b5e742e238133.webp",
+      "phone": {
+        "file": "phone-78a6e50eb996828366f5a8d8da78f7fbb69d61c5c7fb1c4f2a4d963a5ca74172.jpg",
+        "sha256": "78a6e50eb996828366f5a8d8da78f7fbb69d61c5c7fb1c4f2a4d963a5ca74172",
+        "bytes": 2356164
+      },
+      "preview": {
+        "file": "preview-3da0a84d9fbbd487714dbb59c54ac1176895830defb44b4dbbeeda8bb4585450.webp",
+        "sha256": "3da0a84d9fbbd487714dbb59c54ac1176895830defb44b4dbbeeda8bb4585450",
+        "bytes": 300884
+      }
+    },
+    {
+      "id": 24,
+      "day": "2026-11-10",
+      "title_zh": "水车",
+      "title_en": "The Waterwheel",
+      "desktop_file": "desktop-dde49d61a5d430a0d19e7108a2692002702d20b199dc3603c1e6c1473482e814.jpg",
+      "phone_file": "phone-e7d29eece29ee45d29c0b2d511e178a16f811b9296c73752070ba94e5255a73f.jpg",
+      "preview_file": "preview-83ea30490baa1b25aabbc21536877ccf35a3a2887fbccb91b74a8b61cc2fe036.webp",
+      "phone": {
+        "file": "phone-49f99c8235fd12ef7d5367d01582e75240e7357dba7f12e68c9d7df1c22ae3b0.jpg",
+        "sha256": "49f99c8235fd12ef7d5367d01582e75240e7357dba7f12e68c9d7df1c22ae3b0",
+        "bytes": 3430435
+      },
+      "preview": {
+        "file": "preview-1973e4d61853163076f6919b54550e5c100d0a9f42db5f23682c1dffb0147ac6.webp",
+        "sha256": "1973e4d61853163076f6919b54550e5c100d0a9f42db5f23682c1dffb0147ac6",
+        "bytes": 329902
+      }
+    },
+    {
+      "id": 25,
+      "day": "2026-11-11",
+      "title_zh": "蔡伦改进造纸",
+      "title_en": "Cai Lun Improves Papermaking",
+      "desktop_file": "desktop-3ee734b9c7f3cdadb5d351989cf58404af728ac966628a5d86ea807d9d4ad8f5.jpg",
+      "phone_file": "phone-17b8e4402897a9b1b06240658d432033bc3841c5cbecfb5424a189a56c7569ab.jpg",
+      "preview_file": "preview-87a9dfc58b90c27c25a10af2ab1eb61aaa2010ca6f47f4091c90b28e4b33608b.webp",
+      "phone": {
+        "file": "phone-02ec6729f853b09cd6e88b601e3e3541ba7e1c73ec12a1e65bdb782fa2b9f4ca.jpg",
+        "sha256": "02ec6729f853b09cd6e88b601e3e3541ba7e1c73ec12a1e65bdb782fa2b9f4ca",
+        "bytes": 2986520
+      },
+      "preview": {
+        "file": "preview-d53da58670c13e68597731759e0e60c60eda6eb806253bd67106639f34487344.webp",
+        "sha256": "d53da58670c13e68597731759e0e60c60eda6eb806253bd67106639f34487344",
+        "bytes": 284150
+      }
+    },
+    {
+      "id": 26,
+      "day": "2026-11-12",
+      "title_zh": "中世纪与丝路",
+      "title_en": "The Middle Ages and the Silk Road",
+      "desktop_file": "desktop-1fc60835c56460186addbd3f6ba5df4a5923c9b996d4beba6f7074d3b2da264d.jpg",
+      "phone_file": "phone-b09c75ce83b087d8695cc47bb158f9f7ef4b7d74ed595f13c894951d19cc51b1.jpg",
+      "preview_file": "preview-2f67807d03f020e281fd35d712866798f0be4f9fb5541f50aaa62ad755f4e0d5.webp",
+      "phone": {
+        "file": "phone-dfa38e5700601a10549204f46e3e8bc208b7b10749173c10e1dee1562186bdea.jpg",
+        "sha256": "dfa38e5700601a10549204f46e3e8bc208b7b10749173c10e1dee1562186bdea",
+        "bytes": 3818175
+      },
+      "preview": {
+        "file": "preview-79621be969af8aef5b6e31b6aacd41ccb2b6395320e51694086069354349a56a.webp",
+        "sha256": "79621be969af8aef5b6e31b6aacd41ccb2b6395320e51694086069354349a56a",
+        "bytes": 420386
+      }
+    },
+    {
+      "id": 27,
+      "day": "2026-11-13",
+      "title_zh": "风车",
+      "title_en": "The Windmill",
+      "desktop_file": "desktop-e7e8bb6cea93ae31503b55dcaef2c86fb914ca4d81792962c6f3faefab130125.jpg",
+      "phone_file": "phone-81bdd766037cf081a8cfa1246c50935caade45048dbac051559e00fe03e1ae76.jpg",
+      "preview_file": "preview-4aa567eb7eff73d8dff044cd1a8a0150922d5b35e651aa513312ea52958cee50.webp",
+      "phone": {
+        "file": "phone-2c739dad3e64d2f524f3d31c72d2916d8689d49a5437aaffac877af6277e6e3c.jpg",
+        "sha256": "2c739dad3e64d2f524f3d31c72d2916d8689d49a5437aaffac877af6277e6e3c",
+        "bytes": 4353522
+      },
+      "preview": {
+        "file": "preview-4e198356cec6bb242068bd5f64c73bab55f487a9cab91c7046cdbcadf65f35ab.webp",
+        "sha256": "4e198356cec6bb242068bd5f64c73bab55f487a9cab91c7046cdbcadf65f35ab",
+        "bytes": 361414
+      }
+    },
+    {
+      "id": 28,
+      "day": "2026-11-14",
+      "title_zh": "火药用于战争",
+      "title_en": "Gunpowder in Warfare",
+      "desktop_file": "desktop-686c13830c9f613de2622bd87c6fd0f610a7bb0224d64e410aadff2f1b2bb52b.jpg",
+      "phone_file": "phone-defb84c56c02845d6e11a809e0ac173ea48c847d77a5e9f962d08ca6f7a1f1c8.jpg",
+      "preview_file": "preview-50194b81f1c20bcf3300c9578c56a1fbc28f50983e270a08ef3998c03eb68c49.webp",
+      "phone": {
+        "file": "phone-d34e43765a30c05ff6fb56c554147a1a8113d48e2f9d0ff5ee08a5b9f6343aa3.jpg",
+        "sha256": "d34e43765a30c05ff6fb56c554147a1a8113d48e2f9d0ff5ee08a5b9f6343aa3",
+        "bytes": 2970644
+      },
+      "preview": {
+        "file": "preview-2099f1c8cfc96d680ea0d4ec025ad6e60a0b27bfd1610d5851792d98c7e6531a.webp",
+        "sha256": "2099f1c8cfc96d680ea0d4ec025ad6e60a0b27bfd1610d5851792d98c7e6531a",
+        "bytes": 262520
+      }
+    },
+    {
+      "id": 29,
+      "day": "2026-11-15",
+      "title_zh": "活字印刷",
+      "title_en": "Movable Type",
+      "desktop_file": "desktop-9e13534f5c312ca89c6a40fb3839f7a568df9027274fa5ce89a485f2da020cc1.jpg",
+      "phone_file": "phone-7ed3f26d931db042bc7793fc256660516ccbef8553eb36525b81276fb25ccb74.jpg",
+      "preview_file": "preview-a26e3a845ced78c37d6cfed163cb23dad958313a424eda440cf43c4dbf066202.webp",
+      "phone": {
+        "file": "phone-6b348b22a12eb4d80757a9b03c1f6d131bc00ac3b033d276666b47bf9fc70d71.jpg",
+        "sha256": "6b348b22a12eb4d80757a9b03c1f6d131bc00ac3b033d276666b47bf9fc70d71",
+        "bytes": 2930044
+      },
+      "preview": {
+        "file": "preview-acd6a125422a5d7075b584b44225f80ba3e438336622e970c78bce5600c4dfa0.webp",
+        "sha256": "acd6a125422a5d7075b584b44225f80ba3e438336622e970c78bce5600c4dfa0",
+        "bytes": 282724
+      }
+    },
+    {
+      "id": 30,
+      "day": "2026-11-16",
+      "title_zh": "磁针指南针",
+      "title_en": "The Magnetic Compass",
+      "desktop_file": "desktop-cc47fbc7410892afaf56ed80069296c4e88dd840a04fd477c880c4a0a1affe3c.jpg",
+      "phone_file": "phone-4853d66d58ea39b6305296db8d4ea15ca9e6366b16a11bd3c253d99581f0fa2e.jpg",
+      "preview_file": "preview-2f93b672829bb740f5c88e9c32e1f454b2b9e8260e22c135cf09065d8de53a73.webp",
+      "phone": {
+        "file": "phone-64ee5a3fceba42454a28ef45ca13a62535a0cc42da0afac32d45d9507acfebb8.jpg",
+        "sha256": "64ee5a3fceba42454a28ef45ca13a62535a0cc42da0afac32d45d9507acfebb8",
+        "bytes": 2765400
+      },
+      "preview": {
+        "file": "preview-e29311706d15a50ffe5f2cdaa8d24fda1a4db164b44a77965c9058615a88277f.webp",
+        "sha256": "e29311706d15a50ffe5f2cdaa8d24fda1a4db164b44a77965c9058615a88277f",
+        "bytes": 280474
+      }
+    },
+    {
+      "id": 31,
+      "day": "2026-11-17",
+      "title_zh": "印刷术",
+      "title_en": "The Printing Press",
+      "desktop_file": "desktop-b7f20814c00270094da980d5e327be3f2f2e24a7ee3d9b39c659a02678bc2049.jpg",
+      "phone_file": "phone-46a7086d0fbfd373cf202a929496521680ea300cbb6b7d0e4e1f0702526fb70e.jpg",
+      "preview_file": "preview-b7da7e96670a8125add8678213c4cbee3b848c1e322e59d4466a9afa0a1e76eb.webp",
+      "phone": {
+        "file": "phone-201f227eb00cebde65aab135f1613a72e33fdd45b1a9483df02e3bd797fd4800.jpg",
+        "sha256": "201f227eb00cebde65aab135f1613a72e33fdd45b1a9483df02e3bd797fd4800",
+        "bytes": 3877243
+      },
+      "preview": {
+        "file": "preview-e10a4fba1585062f4791d64fb6e18e07b88a58f5da65fc6219347b545d03c1b4.webp",
+        "sha256": "e10a4fba1585062f4791d64fb6e18e07b88a58f5da65fc6219347b545d03c1b4",
+        "bytes": 330098
+      }
+    },
+    {
+      "id": 32,
+      "day": "2026-11-18",
+      "title_zh": "古腾堡印刷机",
+      "title_en": "The Gutenberg Press",
+      "desktop_file": "desktop-68babe0751881712bdd4ad3866b64e3c556af300a0ed48fbb2bfd2bc64167a5e.jpg",
+      "phone_file": "phone-04eaaf61b1f6cc0d3d9d3a11a572adfa6768c41c1eccf7d5e6326f5556443423.jpg",
+      "preview_file": "preview-5ede6073308fa5e9432fce00c9cbf06aa7c284bd891c77dddb73c4cec5d5a7b8.webp",
+      "phone": {
+        "file": "phone-910e0c84c74dcb09c288759dd474952cbbc8752f56cf1724e4eab4a37e7383e7.jpg",
+        "sha256": "910e0c84c74dcb09c288759dd474952cbbc8752f56cf1724e4eab4a37e7383e7",
+        "bytes": 4458537
+      },
+      "preview": {
+        "file": "preview-73a0285269f3f6f08226fefcedd1cf3b8bcd8438a860e66a89e1bcd4906cb664.webp",
+        "sha256": "73a0285269f3f6f08226fefcedd1cf3b8bcd8438a860e66a89e1bcd4906cb664",
+        "bytes": 366284
+      }
+    },
+    {
+      "id": 33,
+      "day": "2026-11-19",
+      "title_zh": "科学革命",
+      "title_en": "The Scientific Revolution",
+      "desktop_file": "desktop-f52450efdff11892c9bc19f228f4c14a0baa052ed576f798766ecb19b2b7f6d9.jpg",
+      "phone_file": "phone-a15348bc9830f454f6922232fcc153b0e1f99a2a9876431d060960b482a0db26.jpg",
+      "preview_file": "preview-591c7d5cdb244304df0e5b8cc596c750eb3d99c26b67bcf089ea6a48f59f5b94.webp",
+      "phone": {
+        "file": "phone-231ea5128f6fe985c675b35cb6f45e92a1cba3776fccecbf574b8da68ac55b1e.jpg",
+        "sha256": "231ea5128f6fe985c675b35cb6f45e92a1cba3776fccecbf574b8da68ac55b1e",
+        "bytes": 3639365
+      },
+      "preview": {
+        "file": "preview-bb9c94770c46737eed159997872a09cc2ed5d0e0e54cee8558688232df7828a5.webp",
+        "sha256": "bb9c94770c46737eed159997872a09cc2ed5d0e0e54cee8558688232df7828a5",
+        "bytes": 344324
+      }
+    },
+    {
+      "id": 34,
+      "day": "2026-11-20",
+      "title_zh": "伽利略用望远镜观天",
+      "title_en": "Galileo Turns a Telescope to the Sky",
+      "desktop_file": "desktop-f6b98968b2c9bfba7313cc4e9ca6e7c518cf4c13de18b13a305584e44fc5b9b6.jpg",
+      "phone_file": "phone-6454cd328d2cf4397790de88771d47955667275e7c8b412258c3d2992b8a2735.jpg",
+      "preview_file": "preview-8996f45464d8c2161297331e9e692ee4b30657479cb6ab8308df22f1eb3c7f49.webp",
+      "phone": {
+        "file": "phone-6533e6d03d96bbf9f84cce7c649571411ed6df61753dff1471c71b5c06fe99e2.jpg",
+        "sha256": "6533e6d03d96bbf9f84cce7c649571411ed6df61753dff1471c71b5c06fe99e2",
+        "bytes": 2976023
+      },
+      "preview": {
+        "file": "preview-4ca1b9f9280a10406d469fff74479f7fe5a118a9ddb0c78cc015cc83066ba45f.webp",
+        "sha256": "4ca1b9f9280a10406d469fff74479f7fe5a118a9ddb0c78cc015cc83066ba45f",
+        "bytes": 325750
+      }
+    },
+    {
+      "id": 35,
+      "day": "2026-11-21",
+      "title_zh": "焦炭炼铁",
+      "title_en": "Coke Smelting of Iron",
+      "desktop_file": "desktop-547fe2673ee78a206caad9e88798c2ecc6ca5f7a6de1727551e3c9537abde7bd.jpg",
+      "phone_file": "phone-3282d65f8c5b2ffd5b1a4b0d729b6eae36861b5c5ecbf1bcd3da2a13baf028a1.jpg",
+      "preview_file": "preview-7bc3c1bd7668060d978f5d3de0fe8edc68c800e2fcb8c4be7a7ed9f621032404.webp",
+      "phone": {
+        "file": "phone-04f674d6234390e9559260f5210e408677ac2396c91f51e69ee4a7668ffbe641.jpg",
+        "sha256": "04f674d6234390e9559260f5210e408677ac2396c91f51e69ee4a7668ffbe641",
+        "bytes": 3442319
+      },
+      "preview": {
+        "file": "preview-1d9d7cc99db60d49a4d20fb108b659439ea0f93995f93c927f46e8d80a7ebf38.webp",
+        "sha256": "1d9d7cc99db60d49a4d20fb108b659439ea0f93995f93c927f46e8d80a7ebf38",
+        "bytes": 335864
+      }
+    },
+    {
+      "id": 36,
+      "day": "2026-11-22",
+      "title_zh": "纽科门蒸汽机",
+      "title_en": "The Newcomen Steam Engine",
+      "desktop_file": "desktop-49c5e833b949d0f9720321ca142133866cbfd86b308ad9c02e22dfcd210f65f9.jpg",
+      "phone_file": "phone-270d671af02fdb9242cb2b762cc407e781e0f8aa504b2f23e90bd91a1fb58f59.jpg",
+      "preview_file": "preview-4d2df572b3f9ad40aeccb203bee6d753f7caff8fee35399c68172e6c1c025464.webp",
+      "phone": {
+        "file": "phone-0d35147a9a7309f9d70e7d20a01fbefabd89d503fff504cce432fd0f6533ea4c.jpg",
+        "sha256": "0d35147a9a7309f9d70e7d20a01fbefabd89d503fff504cce432fd0f6533ea4c",
+        "bytes": 4234664
+      },
+      "preview": {
+        "file": "preview-45abc5d63d19fc7a0ed8e38008dfc466fc9dea0f07dd569e1d92e3d16bd1c308.webp",
+        "sha256": "45abc5d63d19fc7a0ed8e38008dfc466fc9dea0f07dd569e1d92e3d16bd1c308",
+        "bytes": 367620
+      }
+    },
+    {
+      "id": 37,
+      "day": "2026-11-23",
+      "title_zh": "蒸汽时代",
+      "title_en": "The Age of Steam",
+      "desktop_file": "desktop-3e19b05c3cdfc46ee6085d93ffeef82c28dc5a3fc3c9ad5a6a42e80c6b63adb9.jpg",
+      "phone_file": "phone-4b7f23a9d2325c25ce4a404efabde0171d12c41ab3ae9aad88acb7d8ed036ffe.jpg",
+      "preview_file": "preview-a85bc3fcec3aeda8c576d6aa6bad0675e06d588941793f3faf8bbb6f6c904d79.webp",
+      "phone": {
+        "file": "phone-f69c8c714dd84c0924b775595c00888b0d43af199d772792834073506095a7b9.jpg",
+        "sha256": "f69c8c714dd84c0924b775595c00888b0d43af199d772792834073506095a7b9",
+        "bytes": 3750871
+      },
+      "preview": {
+        "file": "preview-3e8031ecf1fe096c9f4cab682be018a604aca676e8d161a7f1588eb68d2917e4.webp",
+        "sha256": "3e8031ecf1fe096c9f4cab682be018a604aca676e8d161a7f1588eb68d2917e4",
+        "bytes": 338620
+      }
+    },
+    {
+      "id": 38,
+      "day": "2026-11-24",
+      "title_zh": "瓦特分离式冷凝器",
+      "title_en": "Watt's Separate Condenser",
+      "desktop_file": "desktop-1c63630aa46b869e796fb7e6338ed829fbc681f8df061882e1b56eaee8b94843.jpg",
+      "phone_file": "phone-99f7ee22eaddd41952b1d1393b25ae94d12e3ac43d7d773a706d7bb19c5611ff.jpg",
+      "preview_file": "preview-5f6957d757a2259f317cf5362237faf66166f2326a05fbef0ba9e62d5b293671.webp",
+      "phone": {
+        "file": "phone-0d5681803aa617bd2624c03a3bd727a07963667f81a495a9f143c5ea2c47270c.jpg",
+        "sha256": "0d5681803aa617bd2624c03a3bd727a07963667f81a495a9f143c5ea2c47270c",
+        "bytes": 2934572
+      },
+      "preview": {
+        "file": "preview-07111c19c21bf8919ffa88c5040d325dc30d90ad271da7f5ac4340c5518610c6.webp",
+        "sha256": "07111c19c21bf8919ffa88c5040d325dc30d90ad271da7f5ac4340c5518610c6",
+        "bytes": 289272
+      }
+    },
+    {
+      "id": 39,
+      "day": "2026-11-25",
+      "title_zh": "牛痘接种",
+      "title_en": "Cowpox Inoculation",
+      "desktop_file": "desktop-08ae68a53073ba42b32740a51c3d3d71c1871954dab62751e43f6e5c0736433d.jpg",
+      "phone_file": "phone-0559e7cf3e0b0422f3a5b5d3e357da0733b6a5c89d268c63c46da7fb74267649.jpg",
+      "preview_file": "preview-651edba3d2b8393c33c911cdae08f13c56f7403aeee6c66bce9a00312f496bd0.webp",
+      "phone": {
+        "file": "phone-050ef9cfaaaf8be6399e3177aad76454a19575fecad13ff3613581260b66895d.jpg",
+        "sha256": "050ef9cfaaaf8be6399e3177aad76454a19575fecad13ff3613581260b66895d",
+        "bytes": 2879475
+      },
+      "preview": {
+        "file": "preview-e61ea6a53761d6e53aeca8c8ec5809f4b46dbfdb7399e4c8d9e7a270bf86581a.webp",
+        "sha256": "e61ea6a53761d6e53aeca8c8ec5809f4b46dbfdb7399e4c8d9e7a270bf86581a",
+        "bytes": 318244
+      }
+    },
+    {
+      "id": 40,
+      "day": "2026-11-26",
+      "title_zh": "伏打电堆",
+      "title_en": "The Voltaic Pile",
+      "desktop_file": "desktop-435321ccd8903218e461751290dad2b94e26327b56b8c284a6b318cb134c993b.jpg",
+      "phone_file": "phone-201d278d399d5ae8c92776cb67de088dd91c395e06e9852b16fc01c6c838f6c1.jpg",
+      "preview_file": "preview-85313c884c45c1a5d06b99edb52b6a50b3de1edfe715e23b9f39d99d1ea0d89f.webp",
+      "phone": {
+        "file": "phone-2e49f2f545b87373bceda0f11db927da3d43754f38f564038656193d9b283995.jpg",
+        "sha256": "2e49f2f545b87373bceda0f11db927da3d43754f38f564038656193d9b283995",
+        "bytes": 3080063
+      },
+      "preview": {
+        "file": "preview-05e3eb3ea368a7b267ceb2e51a0842b33ea849dbc5c6298209277c6e3e863a86.webp",
+        "sha256": "05e3eb3ea368a7b267ceb2e51a0842b33ea849dbc5c6298209277c6e3e863a86",
+        "bytes": 267482
+      }
+    },
+    {
+      "id": 41,
+      "day": "2026-11-27",
+      "title_zh": "城际铁路开通",
+      "title_en": "The First Intercity Railway",
+      "desktop_file": "desktop-1f1b1aa63883f385d77d6262005d5a194d3156aa19886f4fc9fe4ce1de235ee2.jpg",
+      "phone_file": "phone-f7c43971c8b739d3e2d7794f7d83f676bf16ce6e1ddefb2769776745963a5880.jpg",
+      "preview_file": "preview-04652d4dc59608388cb8248482e7354de151a88ed24e662c5891f7b1332286a5.webp",
+      "phone": {
+        "file": "phone-03cc070f6715b3415658c0b07f336671b0874a9b35e81a1c8d41d731f081f3d2.jpg",
+        "sha256": "03cc070f6715b3415658c0b07f336671b0874a9b35e81a1c8d41d731f081f3d2",
+        "bytes": 3481462
+      },
+      "preview": {
+        "file": "preview-aa08d65edfdb0453fbf0b04f26d6c012f7392c04c01c7101732e096538aaff0b.webp",
+        "sha256": "aa08d65edfdb0453fbf0b04f26d6c012f7392c04c01c7101732e096538aaff0b",
+        "bytes": 344430
+      }
+    },
+    {
+      "id": 42,
+      "day": "2026-11-28",
+      "title_zh": "电磁感应",
+      "title_en": "Electromagnetic Induction",
+      "desktop_file": "desktop-6277664a17a9396fb0631c65a751cbe41921288f66961096bb4c4483464a8e0e.jpg",
+      "phone_file": "phone-cd84fe7a59074f56006031367eacdbfd2e217865c90b24b53cc0f9cc47120a9e.jpg",
+      "preview_file": "preview-99958b6993aa739f39d249ee35506b3fc8fffe1b630a2de3c13fe6c6129a7493.webp",
+      "phone": {
+        "file": "phone-86a1a15c2bdb2854819be991e0d205ee3688a3d3d4e536f0165cfae08a3ddee9.jpg",
+        "sha256": "86a1a15c2bdb2854819be991e0d205ee3688a3d3d4e536f0165cfae08a3ddee9",
+        "bytes": 3186479
+      },
+      "preview": {
+        "file": "preview-bbf23872c07465e8288809b0cd9eeb36e84b7dfe1348ee835a57461b22153a10.webp",
+        "sha256": "bbf23872c07465e8288809b0cd9eeb36e84b7dfe1348ee835a57461b22153a10",
+        "bytes": 295274
+      }
+    },
+    {
+      "id": 43,
+      "day": "2026-11-29",
+      "title_zh": "摄影术公布",
+      "title_en": "Photography Unveiled",
+      "desktop_file": "desktop-69bb08bdb130e15d43b0c6dbd7b51ebedfd52fc66846c2d5b845dba7dce9d8cc.jpg",
+      "phone_file": "phone-a7ef6884b47053ee31fc5a0b1b3051f9dd27eb7b284e9e55c2f5d892fb78a159.jpg",
+      "preview_file": "preview-e386678ca4983dd5c18dfcf555b4a0e064a0029735ac5607cddd9f32f2591b9f.webp",
+      "phone": {
+        "file": "phone-84ffed55494b30a1188507d31790cc02da6a89b5ac45532b180930ecd57a184b.jpg",
+        "sha256": "84ffed55494b30a1188507d31790cc02da6a89b5ac45532b180930ecd57a184b",
+        "bytes": 2236042
+      },
+      "preview": {
+        "file": "preview-037d154739a256651267d4454b5058445dedfeaf1fdac7f34b41940b1d105395.webp",
+        "sha256": "037d154739a256651267d4454b5058445dedfeaf1fdac7f34b41940b1d105395",
+        "bytes": 216342
+      }
+    },
+    {
+      "id": 44,
+      "day": "2026-11-30",
+      "title_zh": "电报线路开通",
+      "title_en": "The Telegraph Line Opens",
+      "desktop_file": "desktop-a410c179af6b2caa1479748e21e152b1e1528e4032b4064751a6a63d42f8b29c.jpg",
+      "phone_file": "phone-ccc1063921e5d8cbc3603dcf9b5b0bf7f9ac0dea3360b65c560e6d6da1a41fad.jpg",
+      "preview_file": "preview-a52af317b785bd837db2dbe6011c4f6621ee7ce75a03784656439c1353350ba1.webp",
+      "phone": {
+        "file": "phone-2ca0e01c0acfade254175fa95fc761df3690f61d1b8132d508f025ef4da12d57.jpg",
+        "sha256": "2ca0e01c0acfade254175fa95fc761df3690f61d1b8132d508f025ef4da12d57",
+        "bytes": 2786379
+      },
+      "preview": {
+        "file": "preview-fa6d5cdbf25c89a886dad58518a29ab35cf7b9a1d044c93facbb42fd430a6f67.webp",
+        "sha256": "fa6d5cdbf25c89a886dad58518a29ab35cf7b9a1d044c93facbb42fd430a6f67",
+        "bytes": 340160
+      }
+    },
+    {
+      "id": 45,
+      "day": "2026-12-01",
+      "title_zh": "德雷克油井",
+      "title_en": "The Drake Well",
+      "desktop_file": "desktop-c437e95a522ba391b634409d9141092fe49bdde0ca812f75d2e2ad67d6ef0c6b.jpg",
+      "phone_file": "phone-3498475a0984f1c65c7522ddef4d8c9b0b3ce87930f7649cd24cdc2d9028bf4d.jpg",
+      "preview_file": "preview-25acc13bed9255a365cb8d1d6fcc2b96c267d1482649053d352ef74c6e864f99.webp",
+      "phone": {
+        "file": "phone-a11635b5cab088362a0cc85fcda43996cf0cf04d8c5d8723ab47ac85105b0f27.jpg",
+        "sha256": "a11635b5cab088362a0cc85fcda43996cf0cf04d8c5d8723ab47ac85105b0f27",
+        "bytes": 2435247
+      },
+      "preview": {
+        "file": "preview-74eb41f063da9f8caba1c8afc5050a23a46ab5458cc21a7550b23487c120c0d3.webp",
+        "sha256": "74eb41f063da9f8caba1c8afc5050a23a46ab5458cc21a7550b23487c120c0d3",
+        "bytes": 293972
+      }
+    },
+    {
+      "id": 46,
+      "day": "2026-12-02",
+      "title_zh": "电话",
+      "title_en": "The Telephone",
+      "desktop_file": "desktop-6e7b0bd7bae9bb2351c829ed996be60ca1a294bbf3659513181663f16c02ddf6.jpg",
+      "phone_file": "phone-23c629d802ea28904699112a2a85f3202cd7b92fc7f0167dd68eb51c1b2e3895.jpg",
+      "preview_file": "preview-cd894fe687a73289c80a1e6f61764c061f3ffbaa14893cf48360c0f39b4bc447.webp",
+      "phone": {
+        "file": "phone-2e14278ec20e1340ef6c99140d4f0228960d4c00e455142058de13abfd7f46ea.jpg",
+        "sha256": "2e14278ec20e1340ef6c99140d4f0228960d4c00e455142058de13abfd7f46ea",
+        "bytes": 3596957
+      },
+      "preview": {
+        "file": "preview-f12005d755c3f399fed0c38c169e5f27a145e49f617b6e3c353cde0b564c6786.webp",
+        "sha256": "f12005d755c3f399fed0c38c169e5f27a145e49f617b6e3c353cde0b564c6786",
+        "bytes": 270860
+      }
+    },
+    {
+      "id": 47,
+      "day": "2026-12-03",
+      "title_zh": "电气时代",
+      "title_en": "The Electrical Age",
+      "desktop_file": "desktop-1514b32b4c6039d210ea23729a3fef7fd9e296077ab70e887b8050e9117df9d2.jpg",
+      "phone_file": "phone-3f352d9f42b1ffca71f9ecb891cb867f6118c98f26ef41907fe0e37105c5657b.jpg",
+      "preview_file": "preview-ca5623fbd8f7d39c26be0f30023f0c2d0507b7fa77c65e86afddc79556c1e438.webp",
+      "phone": {
+        "file": "phone-2f959e9c2dee9431949e759c0419f88f2ec3f5a48c29b5063046cdeb0552d253.jpg",
+        "sha256": "2f959e9c2dee9431949e759c0419f88f2ec3f5a48c29b5063046cdeb0552d253",
+        "bytes": 2993847
+      },
+      "preview": {
+        "file": "preview-1bc70b325185790df66e37ff93be53807a9d0faab8fa42af2af456e67ec8f443.webp",
+        "sha256": "1bc70b325185790df66e37ff93be53807a9d0faab8fa42af2af456e67ec8f443",
+        "bytes": 358888
+      }
+    },
+    {
+      "id": 48,
+      "day": "2026-12-04",
+      "title_zh": "实用电灯",
+      "title_en": "The Practical Light Bulb",
+      "desktop_file": "desktop-93b8f549912bad9a8f956c3e43e9a2a642e2cce46002945bd50f5cf8ce3b0e67.jpg",
+      "phone_file": "phone-a3298e0d988c78c4672a6a2752e2a9c35d202f89b711c3d8d8f21432e370444b.jpg",
+      "preview_file": "preview-1f58e31aa7cffd7444bb1e62b8b1543961d582585124632cb47f751c34993218.webp",
+      "phone": {
+        "file": "phone-038ae9c35f6c0c28375233f1847b4252f294842d5a918402e3064ddcd68040b2.jpg",
+        "sha256": "038ae9c35f6c0c28375233f1847b4252f294842d5a918402e3064ddcd68040b2",
+        "bytes": 4441823
+      },
+      "preview": {
+        "file": "preview-13ffc303217e649fb52300e46de04756b71b1bdfdab2b992087eb5851ae213c8.webp",
+        "sha256": "13ffc303217e649fb52300e46de04756b71b1bdfdab2b992087eb5851ae213c8",
+        "bytes": 306638
+      }
+    },
+    {
+      "id": 49,
+      "day": "2026-12-05",
+      "title_zh": "第一座商业电站",
+      "title_en": "The First Commercial Power Station",
+      "desktop_file": "desktop-c8170212befdc1b94c1a92cdbe4dfcce277a8036efff117443578a401cab3d5c.jpg",
+      "phone_file": "phone-88709a6d71d448c6392f86429b7b533f47c8facdbbce0dd332f0bfd0f70c833b.jpg",
+      "preview_file": "preview-f5bd1799150261afbc2dfb5fae14902b56a957397fd5fe57ea6f0aea3c199cbc.webp",
+      "phone": {
+        "file": "phone-c65fff1aa3dea31cbebdfb47cb8ee9667bd3f45ee2a074965a88eafe2c84496a.jpg",
+        "sha256": "c65fff1aa3dea31cbebdfb47cb8ee9667bd3f45ee2a074965a88eafe2c84496a",
+        "bytes": 3929057
+      },
+      "preview": {
+        "file": "preview-14edfe98e1b0ed52a01afcef4323d7c7e7e41b6f4c05064ff2a992f575ad6b41.webp",
+        "sha256": "14edfe98e1b0ed52a01afcef4323d7c7e7e41b6f4c05064ff2a992f575ad6b41",
+        "bytes": 313236
+      }
+    },
+    {
+      "id": 50,
+      "day": "2026-12-06",
+      "title_zh": "汽车",
+      "title_en": "The Automobile",
+      "desktop_file": "desktop-028702dd0535d14d5986ef4c16d9895dfd30c85e4eec044820260a481c242fa9.jpg",
+      "phone_file": "phone-059d53fab5c656738b468931cde1b2cd648e11b9078b96f905ef9248d7116487.jpg",
+      "preview_file": "preview-c24b3fe1f6df7cb03fc9b183aac1fca7c2faed6f6e31f267eb4c88ad81be27cf.webp",
+      "phone": {
+        "file": "phone-aab9b8dfc775f539d42565715a215a27bebb7a4f149d0ce5820c4f346b18f565.jpg",
+        "sha256": "aab9b8dfc775f539d42565715a215a27bebb7a4f149d0ce5820c4f346b18f565",
+        "bytes": 3818953
+      },
+      "preview": {
+        "file": "preview-7b138a518c950af1ef797c1c7ee65d646380e8aef0f0e2db1e20aebc10796277.webp",
+        "sha256": "7b138a518c950af1ef797c1c7ee65d646380e8aef0f0e2db1e20aebc10796277",
+        "bytes": 328448
+      }
+    },
+    {
+      "id": 51,
+      "day": "2026-12-07",
+      "title_zh": "跨大西洋无线电",
+      "title_en": "Transatlantic Radio",
+      "desktop_file": "desktop-8743438f8c92089d17c8aa1f69243f5c4189f370fc6b90aae053c0920ac67f84.jpg",
+      "phone_file": "phone-22ff1abeedef2a65281b10f247326af2a208e42cf0e3dd9f3f5918b992fe97f1.jpg",
+      "preview_file": "preview-205c04bb38ff427044fc7351307ea80d39267eb5e25eb97b98d35a9141c7ed07.webp",
+      "phone": {
+        "file": "phone-d2706cffe67403ef7862adb2fd62dd947cd922007ffd34cbd427fe04e74efac4.jpg",
+        "sha256": "d2706cffe67403ef7862adb2fd62dd947cd922007ffd34cbd427fe04e74efac4",
+        "bytes": 2291160
+      },
+      "preview": {
+        "file": "preview-ca910581e5bafa3aeb3124e94ee85282419ec92e7aab01dde70e530cb6d37f86.webp",
+        "sha256": "ca910581e5bafa3aeb3124e94ee85282419ec92e7aab01dde70e530cb6d37f86",
+        "bytes": 290144
+      }
+    },
+    {
+      "id": 52,
+      "day": "2026-12-08",
+      "title_zh": "内燃机与航空",
+      "title_en": "Internal Combustion and Flight",
+      "desktop_file": "desktop-836d398756ec41615186f92cf8495706db10b4de772d337362be0fc6ac8b2ad0.jpg",
+      "phone_file": "phone-49dddb4471cf3bce101c889883996c1f09123bed18fb62fd10908c2f9c5fcc50.jpg",
+      "preview_file": "preview-911485f90407f7f85fc1a3fb539f4a384f45599ab5950d85cd097315a2bfaaf2.webp",
+      "phone": {
+        "file": "phone-b52fd84b64addd497aef332dcf3e4c78cd9ae6c354b726c37cf0c3f4eaa2c9b2.jpg",
+        "sha256": "b52fd84b64addd497aef332dcf3e4c78cd9ae6c354b726c37cf0c3f4eaa2c9b2",
+        "bytes": 2057737
+      },
+      "preview": {
+        "file": "preview-c711d99def0f19b0c768495ca47d9289496f38126d69144857a9ea3c584857d3.webp",
+        "sha256": "c711d99def0f19b0c768495ca47d9289496f38126d69144857a9ea3c584857d3",
+        "bytes": 293868
+      }
+    },
+    {
+      "id": 53,
+      "day": "2026-12-09",
+      "title_zh": "动力飞行",
+      "title_en": "Powered Flight",
+      "desktop_file": "desktop-fac72057b9d644e2e08dac2a0e2137a48f06731f06088e8711bb786857b5ce68.jpg",
+      "phone_file": "phone-b83106cb21564a908bec609d1d3cd2667c9d7ac6ac24133ccabf9e5c8ea6eeb8.jpg",
+      "preview_file": "preview-661b201daada32f57b2d22dd8a0d13d9a40bf0ba8cd64e31e4093fe1c6fa3226.webp",
+      "phone": {
+        "file": "phone-788ee0cd71fb44a78187d4a1284d63a5271858f0edc3ba425013138deafebaca.jpg",
+        "sha256": "788ee0cd71fb44a78187d4a1284d63a5271858f0edc3ba425013138deafebaca",
+        "bytes": 1608278
+      },
+      "preview": {
+        "file": "preview-0bf95f07571e181b1ebc89aa8248b1ae5abe4c40ac682eec8edc56d2c1393c59.webp",
+        "sha256": "0bf95f07571e181b1ebc89aa8248b1ae5abe4c40ac682eec8edc56d2c1393c59",
+        "bytes": 234426
+      }
+    },
+    {
+      "id": 54,
+      "day": "2026-12-10",
+      "title_zh": "移动装配线",
+      "title_en": "The Moving Assembly Line",
+      "desktop_file": "desktop-af11f53e4f875cfab1f9bb2c20addf1212aa820c3258266198ef96d6a55b2391.jpg",
+      "phone_file": "phone-14558064729f3c53551ad1364c5d3ce6c674f1e332f063befb804d51e3148329.jpg",
+      "preview_file": "preview-c713920b3a6fb2a2d733ef4f6f30b1cc8f6f0b9287676e6a8c4b981a72d3ebd8.webp",
+      "phone": {
+        "file": "phone-7c665891a65937633c79866c99c5b5b682b2d7abe0e6ade53c81aea67da71713.jpg",
+        "sha256": "7c665891a65937633c79866c99c5b5b682b2d7abe0e6ade53c81aea67da71713",
+        "bytes": 2633377
+      },
+      "preview": {
+        "file": "preview-fd7f1fba8303a7a1f098c7f350f0d48fbdf9cb4a1d4fb52d33ddafb2c3af5f59.webp",
+        "sha256": "fd7f1fba8303a7a1f098c7f350f0d48fbdf9cb4a1d4fb52d33ddafb2c3af5f59",
+        "bytes": 300440
+      }
+    },
+    {
+      "id": 55,
+      "day": "2026-12-11",
+      "title_zh": "合成氨工业化",
+      "title_en": "Industrial Ammonia Synthesis",
+      "desktop_file": "desktop-43436e70f036f351cc7b13b33e5c82004ca70605e3e8aaba71a12580f45dd4f8.jpg",
+      "phone_file": "phone-370e2508377ebb4b4108e6a7a4ed4ff333881f162aff496873702abe993d3148.jpg",
+      "preview_file": "preview-f60d389e7895500ee7952f57f560cbc3c774b224c03bc1d6a8daaabd30ae6de9.webp",
+      "phone": {
+        "file": "phone-cca3f48ab8ffaf7d9c2b8503607f9650bae5903d12f53e34ffc82b27b4fa888d.jpg",
+        "sha256": "cca3f48ab8ffaf7d9c2b8503607f9650bae5903d12f53e34ffc82b27b4fa888d",
+        "bytes": 3408609
+      },
+      "preview": {
+        "file": "preview-2da0ebd9bef89fc3a677fe3ab7d0b9ba98b594e7dcb6abe60842075af9a91d8c.webp",
+        "sha256": "2da0ebd9bef89fc3a677fe3ab7d0b9ba98b594e7dcb6abe60842075af9a91d8c",
+        "bytes": 333690
+      }
+    },
+    {
+      "id": 56,
+      "day": "2026-12-12",
+      "title_zh": "商业广播",
+      "title_en": "Commercial Broadcasting",
+      "desktop_file": "desktop-9b40cc0a2c65d45a8b1eaf89b4cd77a333e3ec86c95d676fc6ee09b786606c36.jpg",
+      "phone_file": "phone-28eb8cd3904b2583763639bccd778bd6d9ba4bb9ea57e8a6c8006a35ec1749dd.jpg",
+      "preview_file": "preview-43ea74489db3a1872c45c02cb9e03e7747ae2989e397daafe86df83af16e0a2a.webp",
+      "phone": {
+        "file": "phone-baeac21121ff1caa656d7d3da3455978925743e0cd03d52dbbab41710bff91dc.jpg",
+        "sha256": "baeac21121ff1caa656d7d3da3455978925743e0cd03d52dbbab41710bff91dc",
+        "bytes": 2159445
+      },
+      "preview": {
+        "file": "preview-8e0e17ed9389c4b5e22a958f5bc1c5737d5d29e92953c2a70ad7ecb0fc07c3f5.webp",
+        "sha256": "8e0e17ed9389c4b5e22a958f5bc1c5737d5d29e92953c2a70ad7ecb0fc07c3f5",
+        "bytes": 272830
+      }
+    },
+    {
+      "id": 57,
+      "day": "2026-12-13",
+      "title_zh": "电视",
+      "title_en": "Television",
+      "desktop_file": "desktop-63c07dcecf1926193e81632321b5a3b0f9f62f5b9efd41ed7fd1ece9597e607b.jpg",
+      "phone_file": "phone-4eeee915f832cedf1fcbd1d879b87fdc6453e75c562601d286e17ff767f58d8d.jpg",
+      "preview_file": "preview-21c554b1f03100759c7d0a107f42feb98c134c5192f3b795acfcade587b479cf.webp",
+      "phone": {
+        "file": "phone-9d3dee0623d068aa827f5b8bee33ce0aeb41d8fb66ca05c20fa895eaec9bdb76.jpg",
+        "sha256": "9d3dee0623d068aa827f5b8bee33ce0aeb41d8fb66ca05c20fa895eaec9bdb76",
+        "bytes": 2242951
+      },
+      "preview": {
+        "file": "preview-7e06cc69e1c149e2499f3aa69ca9fe978ca09af6b54bb90e6c1e09dd58d9c8e7.webp",
+        "sha256": "7e06cc69e1c149e2499f3aa69ca9fe978ca09af6b54bb90e6c1e09dd58d9c8e7",
+        "bytes": 289942
+      }
+    },
+    {
+      "id": 58,
+      "day": "2026-12-14",
+      "title_zh": "青霉素",
+      "title_en": "Penicillin",
+      "desktop_file": "desktop-29f0a531b97ad5976f1407a16f4202051315913c92cc549e4ac8cf915103ecd6.jpg",
+      "phone_file": "phone-8a40c6b4be18616deffff7c6e187f58f93f01c5a7b9d2516a97c170a6b7657e2.jpg",
+      "preview_file": "preview-c433ece36e2b5bb603df35d8cdd29fb6bc2023ab1e32c75e21ede8882743fe86.webp",
+      "phone": {
+        "file": "phone-56cf219505c6befd7999896f13244c7852444fd9a65c5f9fb8b9cf29cb9dbe48.jpg",
+        "sha256": "56cf219505c6befd7999896f13244c7852444fd9a65c5f9fb8b9cf29cb9dbe48",
+        "bytes": 2684545
+      },
+      "preview": {
+        "file": "preview-01eceb16b277d584711cc297c3d38ac938d7de858ed21549bd880b1090ca9b43.webp",
+        "sha256": "01eceb16b277d584711cc297c3d38ac938d7de858ed21549bd880b1090ca9b43",
+        "bytes": 328904
+      }
+    },
+    {
+      "id": 59,
+      "day": "2026-12-15",
+      "title_zh": "原子时代",
+      "title_en": "The Atomic Age",
+      "desktop_file": "desktop-a395ab0f205135ba9e039f8762e1d5cdce8bcef9658cd746108a0442b89d114c.jpg",
+      "phone_file": "phone-31bbabd4e9d72d12aeb457668dc75f2c68559469e753ee1184f432446c8d57bd.jpg",
+      "preview_file": "preview-4893427eece6bc4b62281e19db7b4d317bc0731aee43be09af2300c8a5cd1556.webp",
+      "phone": {
+        "file": "phone-cf7dd3b9394a4baf7169816b46aec62523126f1537fa5963289f59c821d18928.jpg",
+        "sha256": "cf7dd3b9394a4baf7169816b46aec62523126f1537fa5963289f59c821d18928",
+        "bytes": 2519686
+      },
+      "preview": {
+        "file": "preview-a72b0c8c9db298fd5b4c42bd0e5458ff0ebed5e8dfa259ef3c888759dc653d19.webp",
+        "sha256": "a72b0c8c9db298fd5b4c42bd0e5458ff0ebed5e8dfa259ef3c888759dc653d19",
+        "bytes": 279242
+      }
+    },
+    {
+      "id": 60,
+      "day": "2026-12-16",
+      "title_zh": "第一座核反应堆",
+      "title_en": "First Nuclear Reactor",
+      "desktop_file": "desktop-0ad1a99e45c99d58bb97448c94635c7f8528370daa0cc822623d43549dfa5e08.jpg",
+      "phone_file": "phone-2d194cc7f52ebe54a111db2f8f020b99254f2599ea17cefc3ab405f882d85deb.jpg",
+      "preview_file": "preview-450167eb74d45f7d5be37b4e634fa673e6e72f0d5761f96edefd36beeff9f140.webp",
+      "phone": {
+        "file": "phone-2661681071cee90e8d75fb3e1acf9f68fd93e7ff0506db94fc873c3096083cd7.jpg",
+        "sha256": "2661681071cee90e8d75fb3e1acf9f68fd93e7ff0506db94fc873c3096083cd7",
+        "bytes": 1921106
+      },
+      "preview": {
+        "file": "preview-3aaef945e9a9b3503dc03677344fb59fbdab3280abf04aac5505489f0389cee6.webp",
+        "sha256": "3aaef945e9a9b3503dc03677344fb59fbdab3280abf04aac5505489f0389cee6",
+        "bytes": 231356
+      }
+    },
+    {
+      "id": 61,
+      "day": "2026-12-17",
+      "title_zh": "晶体管与计算机",
+      "title_en": "The Transistor and the Computer",
+      "desktop_file": "desktop-4a0b536d08fd5d083ee8142910c769e3e12ec1d75f144a08f78e2bf13ef6c976.jpg",
+      "phone_file": "phone-42f5c97611f912d6083d9a4c167bc0062dd93aad6e4f67cb5653bb32268a65e8.jpg",
+      "preview_file": "preview-ee4fc26acad916cd8772a4c795b8ae4dfe3cff8b931a252afa49aacdd081b396.webp",
+      "phone": {
+        "file": "phone-8c09d87b4e714d9bb91809098306e39186781b9488005a76a7b3a0653a19efee.jpg",
+        "sha256": "8c09d87b4e714d9bb91809098306e39186781b9488005a76a7b3a0653a19efee",
+        "bytes": 1652607
+      },
+      "preview": {
+        "file": "preview-35b9ac9e009fa34ee5614d1e3df0f1d721b2d9a9d3ef5dd55c430f38390a389e.webp",
+        "sha256": "35b9ac9e009fa34ee5614d1e3df0f1d721b2d9a9d3ef5dd55c430f38390a389e",
+        "bytes": 262904
+      }
+    },
+    {
+      "id": 62,
+      "day": "2026-12-18",
+      "title_zh": "ENIAC 揭幕",
+      "title_en": "ENIAC Unveiled",
+      "desktop_file": "desktop-0fb3bd5fe97f065ea88909c14d73f233a2370a1061bc6275d1e3d12ac0896efd.jpg",
+      "phone_file": "phone-232e8752f7aa26e0151e8c463454a12874e51a98609e4e850cd1e479aec626be.jpg",
+      "preview_file": "preview-ed767d55eb9a3c8fec8455bb889a5fbdee03f03bbdcbbb5f7cb61c4f16e9792b.webp",
+      "phone": {
+        "file": "phone-d91ac795df7b6a8fef7dcdc735680886b0673b441e177489957dd61ba08d7487.jpg",
+        "sha256": "d91ac795df7b6a8fef7dcdc735680886b0673b441e177489957dd61ba08d7487",
+        "bytes": 2177844
+      },
+      "preview": {
+        "file": "preview-f0854a6b9ae470904596fc6f8a626e2daa9fe398f6962ad702c914c86776493f.webp",
+        "sha256": "f0854a6b9ae470904596fc6f8a626e2daa9fe398f6962ad702c914c86776493f",
+        "bytes": 281620
+      }
+    },
+    {
+      "id": 63,
+      "day": "2026-12-19",
+      "title_zh": "晶体管",
+      "title_en": "The Transistor",
+      "desktop_file": "desktop-c3c12eb87a819cc7693e27e1dec76a1af5bb58dbbc688a5df6f7e6db6efea133.jpg",
+      "phone_file": "phone-4c5efe89ff283219519e77f1ef3b6784d1772f69f30354325a10dda5ab763f4d.jpg",
+      "preview_file": "preview-9320cc5fa2d6115e7720f477fe9ce55a4b689abece580c301783a45ddf9ab6be.webp",
+      "phone": {
+        "file": "phone-8bfe7377f869e72dad5ff5bb1ed509da59455b17550323f72439293f51dc3b00.jpg",
+        "sha256": "8bfe7377f869e72dad5ff5bb1ed509da59455b17550323f72439293f51dc3b00",
+        "bytes": 1470535
+      },
+      "preview": {
+        "file": "preview-ab2e407c363c360fc92dbd6e3e6a9477a34177283644e666f32afef9da3a2930.webp",
+        "sha256": "ab2e407c363c360fc92dbd6e3e6a9477a34177283644e666f32afef9da3a2930",
+        "bytes": 213448
+      }
+    },
+    {
+      "id": 64,
+      "day": "2026-12-20",
+      "title_zh": "实用太阳能电池",
+      "title_en": "Practical Solar Cell",
+      "desktop_file": "desktop-430a0f348e9cc6e114427329e5a31a9e45d62ce5f9f5e72753733be8136d85df.jpg",
+      "phone_file": "phone-5dd4b4850138aabee41517bf59900d2371376ef0f22b4c14c8ece05094ea35c6.jpg",
+      "preview_file": "preview-c961ff1fca22e83dd5a701e5781723e1f05ab1a1e73df74e47998f86e51355e3.webp",
+      "phone": {
+        "file": "phone-90aa3523f194e948d6370e9c2085990851543b8483a49f7b454082a30c16c633.jpg",
+        "sha256": "90aa3523f194e948d6370e9c2085990851543b8483a49f7b454082a30c16c633",
+        "bytes": 3266989
+      },
+      "preview": {
+        "file": "preview-81100095e42448812a5e0575e6c46774f044cacb0042d7402b61fc8a55ab01c0.webp",
+        "sha256": "81100095e42448812a5e0575e6c46774f044cacb0042d7402b61fc8a55ab01c0",
+        "bytes": 391836
+      }
+    },
+    {
+      "id": 65,
+      "day": "2026-12-21",
+      "title_zh": "核电站投运",
+      "title_en": "Nuclear Power Plant Online",
+      "desktop_file": "desktop-c5815d72b462db3738d41c48ccc40a033ed15f40dc34b045a0fbef3e28ed5c94.jpg",
+      "phone_file": "phone-8866613e33e11b9f5e69bbc9ac18558dd978a3a5e5ac957f81be0ada8cc0e0f2.jpg",
+      "preview_file": "preview-3179fa8a2c179f1cdf597143a3927e4a02d91b7006bd9ba218296a8e989a9f0f.webp",
+      "phone": {
+        "file": "phone-2a40983943a2547c1c156a53501fdfcd73aaa4aa95c2a148af2205fd50ba275d.jpg",
+        "sha256": "2a40983943a2547c1c156a53501fdfcd73aaa4aa95c2a148af2205fd50ba275d",
+        "bytes": 2803659
+      },
+      "preview": {
+        "file": "preview-1191257f4d05abf9e7a4430d9e78bb63609dfb804bd7e7793f3353024a03bf2d.webp",
+        "sha256": "1191257f4d05abf9e7a4430d9e78bb63609dfb804bd7e7793f3353024a03bf2d",
+        "bytes": 312488
+      }
+    },
+    {
+      "id": 66,
+      "day": "2026-12-22",
+      "title_zh": "太空时代",
+      "title_en": "The Space Age",
+      "desktop_file": "desktop-8b67dfeca668f5bf664099f119bb0b401a4d9a1631bd8698e794249114de267a.jpg",
+      "phone_file": "phone-853fbf5fd4010793b36075b7b3bd25d0a6f7559c3d71f35d7f8d360a43e61192.jpg",
+      "preview_file": "preview-8d9dcba4022f34b962388da2134f5ed7ec0994ce327636ad43328d489da39d51.webp",
+      "phone": {
+        "file": "phone-13a682309e8cd7c13822251f4ba12cd4febe83e3b33c836ce8e0fb0797bb7d21.jpg",
+        "sha256": "13a682309e8cd7c13822251f4ba12cd4febe83e3b33c836ce8e0fb0797bb7d21",
+        "bytes": 2355305
+      },
+      "preview": {
+        "file": "preview-cf4f1d9c18cdcb17c8e1cf47f88e04b1ccf741a05915f9e0710b55a24e49e2ee.webp",
+        "sha256": "cf4f1d9c18cdcb17c8e1cf47f88e04b1ccf741a05915f9e0710b55a24e49e2ee",
+        "bytes": 279868
+      }
+    },
+    {
+      "id": 67,
+      "day": "2026-12-23",
+      "title_zh": "第一颗人造卫星",
+      "title_en": "First Artificial Satellite",
+      "desktop_file": "desktop-9ad0a52203a9a0bfa8fe205043e4fd0931f65c309cc3020c1bbf92d3cbe81e29.jpg",
+      "phone_file": "phone-2419138ed05694763d5c65505c69414a95ed931c248ce975fb4a397b8a5fd0f6.jpg",
+      "preview_file": "preview-d85832d2466c67da93071dea89f47ac438a07f2ae262e881f2ecf520b5d99aaa.webp",
+      "phone": {
+        "file": "phone-2ab9c41a7011358de9af680a586734ac9a1b88df5cc690daee14aadf0870820c.jpg",
+        "sha256": "2ab9c41a7011358de9af680a586734ac9a1b88df5cc690daee14aadf0870820c",
+        "bytes": 2371965
+      },
+      "preview": {
+        "file": "preview-c222b9087737b86092ebda9f4b6dc8d302c27c98aebeec509b54b1202a79ef18.webp",
+        "sha256": "c222b9087737b86092ebda9f4b6dc8d302c27c98aebeec509b54b1202a79ef18",
+        "bytes": 280486
+      }
+    },
+    {
+      "id": 68,
+      "day": "2026-12-24",
+      "title_zh": "集成电路",
+      "title_en": "The Integrated Circuit",
+      "desktop_file": "desktop-2ed76834f69cfef46c772623eb1541d380a52d2ac4c0bc21ea797c3066f88cea.jpg",
+      "phone_file": "phone-c4dba9968e1660c6212aaefb623db6d1eb51e230f88e3221f10760c6857bbdd5.jpg",
+      "preview_file": "preview-5b4dec047e72e6c38861bb91ded6a35b450623a084b890ca2d90128c75c105ce.webp",
+      "phone": {
+        "file": "phone-2965dfc3b847f1b5b3b7c1b5834e6d5da66dfc9406f171d9f28f7d2984fc1311.jpg",
+        "sha256": "2965dfc3b847f1b5b3b7c1b5834e6d5da66dfc9406f171d9f28f7d2984fc1311",
+        "bytes": 1718713
+      },
+      "preview": {
+        "file": "preview-4348d1da090cb5454b4ac08406da8a75ab0ea876e1f96821a6a7ad4a6d8ed5ed.webp",
+        "sha256": "4348d1da090cb5454b4ac08406da8a75ab0ea876e1f96821a6a7ad4a6d8ed5ed",
+        "bytes": 224128
+      }
+    },
+    {
+      "id": 69,
+      "day": "2026-12-25",
+      "title_zh": "激光器",
+      "title_en": "The Laser",
+      "desktop_file": "desktop-9aae56c826019ecc64f20b4237e06d6070879d65428bb01bafb716f3792c9792.jpg",
+      "phone_file": "phone-83fb69af9f6d78a8992580ea8c6d4f4a8ec923a7c6911d1a0d9c25e9a7a36bb1.jpg",
+      "preview_file": "preview-887a3951e5d005307255ec87f2bdad82929be29960a716b8e0b7a43491777418.webp",
+      "phone": {
+        "file": "phone-31f741818d5f07a3c414385cfd38a82163692b9b276fa5321308b0a3a20ba380.jpg",
+        "sha256": "31f741818d5f07a3c414385cfd38a82163692b9b276fa5321308b0a3a20ba380",
+        "bytes": 2056943
+      },
+      "preview": {
+        "file": "preview-5295495157a595d287332e7ce24b74ebb25426b69254d365316769cf0892ccb6.webp",
+        "sha256": "5295495157a595d287332e7ce24b74ebb25426b69254d365316769cf0892ccb6",
+        "bytes": 265968
+      }
+    },
+    {
+      "id": 70,
+      "day": "2026-12-26",
+      "title_zh": "人类首次进入太空",
+      "title_en": "First Human in Space",
+      "desktop_file": "desktop-757c7736cd6ef83a20936e0b073a3f8552e853ff6f353b905c238a3eaf47ea43.jpg",
+      "phone_file": "phone-6fb4ff8b910cb4b86f113ea1e0027a9d52a0d35fa6f745249f05ff7bc8b52cd8.jpg",
+      "preview_file": "preview-44aa0a7bb0de66c9d0c865bffbc4fe8d9206fdcb9df075d89f5a6fb91d717ff1.webp",
+      "phone": {
+        "file": "phone-9a4e7a1df77398372b6b53082a0b0ec24e616881e0dc6ebe7243424cea98620f.jpg",
+        "sha256": "9a4e7a1df77398372b6b53082a0b0ec24e616881e0dc6ebe7243424cea98620f",
+        "bytes": 2788290
+      },
+      "preview": {
+        "file": "preview-4da866a82341946121a1138094b37cf5a2c49383dcf93065a50e8373ca1d607d.webp",
+        "sha256": "4da866a82341946121a1138094b37cf5a2c49383dcf93065a50e8373ca1d607d",
+        "bytes": 289940
+      }
+    },
+    {
+      "id": 71,
+      "day": "2026-12-27",
+      "title_zh": "人类登月",
+      "title_en": "Moon Landing",
+      "desktop_file": "desktop-771ad411f57eb4a09003e9d979ed98585eee3aed35a54374cd465884849424ad.jpg",
+      "phone_file": "phone-9c18a3dde185c7c535328ce9873a24e8d4cd62467176c2deb62df1a788129b03.jpg",
+      "preview_file": "preview-064090ed8162989936c675c85832784a40cb43777b3be89cf36fe53e8b249ee6.webp",
+      "phone": {
+        "file": "phone-79c11deee8fd0fca69f0cb7b2aeba3ae32d27bcb4ed2efae1b544541d146fe92.jpg",
+        "sha256": "79c11deee8fd0fca69f0cb7b2aeba3ae32d27bcb4ed2efae1b544541d146fe92",
+        "bytes": 2318857
+      },
+      "preview": {
+        "file": "preview-6a2a71883a226e90e5263d54de2e7525061e24d82da70308c7c325f63fbc8b5e.webp",
+        "sha256": "6a2a71883a226e90e5263d54de2e7525061e24d82da70308c7c325f63fbc8b5e",
+        "bytes": 274034
+      }
+    },
+    {
+      "id": 72,
+      "day": "2026-12-28",
+      "title_zh": "ARPANET 首条消息",
+      "title_en": "First ARPANET Message",
+      "desktop_file": "desktop-a74cc05db50824a78b58d82cf5a63a2d20a219d798d95b6ecd2d1349c9feec47.jpg",
+      "phone_file": "phone-4ddfc7a731f661ae7745bd3f472c704e14968bf4316e71463f7624b1dc6c2e66.jpg",
+      "preview_file": "preview-b1a2b7b2035af2c03b70129d05bbef1cff3ce1ce80f952defae5f541517c84f6.webp",
+      "phone": {
+        "file": "phone-f1362230edc46e8e0f1352922445945460a1c188036c992a2a8c426c9975d267.jpg",
+        "sha256": "f1362230edc46e8e0f1352922445945460a1c188036c992a2a8c426c9975d267",
+        "bytes": 1939086
+      },
+      "preview": {
+        "file": "preview-d464274899fb3d0ef4f85ab4fb8ad1f99f6fab4186bae7ee75fe0516da635c66.webp",
+        "sha256": "d464274899fb3d0ef4f85ab4fb8ad1f99f6fab4186bae7ee75fe0516da635c66",
+        "bytes": 251700
+      }
+    },
+    {
+      "id": 73,
+      "day": "2026-12-29",
+      "title_zh": "微处理器",
+      "title_en": "The Microprocessor",
+      "desktop_file": "desktop-ead7aa5079cb9a952f38f8284ed75515cf68947f37ca17a7de787317412da554.jpg",
+      "phone_file": "phone-b9e77ca269b63556025d7f8e1c7f0c7fc461b1f07676c04eaee8a2ab4741f5a0.jpg",
+      "preview_file": "preview-2436c020890b9d37596c06536b31cdf6503b148bf1d02014b85ff42bc6068cb9.webp",
+      "phone": {
+        "file": "phone-7d23fa5f9531d2f058e465ca26278e9dd117ad9e91f4eb4ea0c36901e8599697.jpg",
+        "sha256": "7d23fa5f9531d2f058e465ca26278e9dd117ad9e91f4eb4ea0c36901e8599697",
+        "bytes": 2497466
+      },
+      "preview": {
+        "file": "preview-dbbbd46bad93048153f4c4e0d434d8f66b6bdf492711a84e997f7477ddd535dd.webp",
+        "sha256": "dbbbd46bad93048153f4c4e0d434d8f66b6bdf492711a84e997f7477ddd535dd",
+        "bytes": 243742
+      }
+    },
+    {
+      "id": 74,
+      "day": "2026-12-30",
+      "title_zh": "第一通手机电话",
+      "title_en": "First Mobile Phone Call",
+      "desktop_file": "desktop-632f28feff3076f69344ad4b9c78b738f1a90cb63c8c7fa3c6ef9be872813365.jpg",
+      "phone_file": "phone-bed6eb731238599b0586321a8bab35f8b6bfde46a5fa41489818c3774589982b.jpg",
+      "preview_file": "preview-a37f918accf2f88517594a2c01af1b7091ba3b2dcf79a845cae6d3893d2a3ff6.webp",
+      "phone": {
+        "file": "phone-757ec018524a191f5f33cdf451566f570ec681dd32b1b7bc65dc2989276aeebf.jpg",
+        "sha256": "757ec018524a191f5f33cdf451566f570ec681dd32b1b7bc65dc2989276aeebf",
+        "bytes": 2083320
+      },
+      "preview": {
+        "file": "preview-df5808f0086c3ef5b5b76e3ea1feb4f5bc21452abe68f9c393fe0d57b2c5b7ae.webp",
+        "sha256": "df5808f0086c3ef5b5b76e3ea1feb4f5bc21452abe68f9c393fe0d57b2c5b7ae",
+        "bytes": 269300
+      }
+    },
+    {
+      "id": 75,
+      "day": "2026-12-31",
+      "title_zh": "个人电脑",
+      "title_en": "The Personal Computer",
+      "desktop_file": "desktop-3b7832588c1a160022d14b236a4871201e0646e1e7e0bee3a166f88b2f4ff160.jpg",
+      "phone_file": "phone-ad65ef4e9c02f6d4c542cd388cfa6e6ef61b83c7a81e1cdbc07a9e0809f2422c.jpg",
+      "preview_file": "preview-3c637b79b018c7d0e59f7e737cbe982be8025a622aa4f89a42fe9b3e3e431b22.webp",
+      "phone": {
+        "file": "phone-8535331d6d7afcf464295594d347cba7c8fcae417380a988a46114b5c8ef7d3d.jpg",
+        "sha256": "8535331d6d7afcf464295594d347cba7c8fcae417380a988a46114b5c8ef7d3d",
+        "bytes": 2271418
+      },
+      "preview": {
+        "file": "preview-d7facd57a5c1c11bdbf1d585fcc4233433acd53b17f31026cda426b0b8dee664.webp",
+        "sha256": "d7facd57a5c1c11bdbf1d585fcc4233433acd53b17f31026cda426b0b8dee664",
+        "bytes": 279840
+      }
+    },
+    {
+      "id": 76,
+      "day": "2027-01-01",
+      "title_zh": "Apple II 上市",
+      "title_en": "Apple II Goes on Sale",
+      "desktop_file": "desktop-3527341999e4ba53009d911f40ccd0eb994d5ebb8607247b2f5cbcfd76552746.jpg",
+      "phone_file": "phone-20440e116593cc782e8b2fd787e1c7550fa7b3dad52ba0f87fcb1c2037a88f74.jpg",
+      "preview_file": "preview-40047bcec86a5db13424a05377b0aecc244c6c16b2839d3f8277d1e605a6f834.webp",
+      "phone": {
+        "file": "phone-3afdc803f349b57ca658b8b7da95fba185f6acf146bf3202c7e2f2d6873541d4.jpg",
+        "sha256": "3afdc803f349b57ca658b8b7da95fba185f6acf146bf3202c7e2f2d6873541d4",
+        "bytes": 2275905
+      },
+      "preview": {
+        "file": "preview-9f5e69fddf093790cb2543b88fe0a739e280b16c4b334d128c69672a2e0e5737.webp",
+        "sha256": "9f5e69fddf093790cb2543b88fe0a739e280b16c4b334d128c69672a2e0e5737",
+        "bytes": 248542
+      }
+    },
+    {
+      "id": 77,
+      "day": "2027-01-02",
+      "title_zh": "TCP/IP 启用",
+      "title_en": "TCP/IP Switch-On",
+      "desktop_file": "desktop-5f6337cce1b8009ac3b4bd3823d6d69577042e345c65c081333acdab13f4bcb1.jpg",
+      "phone_file": "phone-37cff3344a52a61455e5b30634f4921c862fa31d274bfe9012a75d96028a1f1b.jpg",
+      "preview_file": "preview-eedacf666a3cce2240e6a3d89042c6d6eca8a4bfa3c2db4ee8c332592d890beb.webp",
+      "phone": {
+        "file": "phone-0ac24d677fa347fd52383843ce58f91c56312e87928a545b72fd0511d1b792bf.jpg",
+        "sha256": "0ac24d677fa347fd52383843ce58f91c56312e87928a545b72fd0511d1b792bf",
+        "bytes": 2014095
+      },
+      "preview": {
+        "file": "preview-bbd0d97b2009fd02e71215f7f47179df07520c25d1de40cce8821878ab453fbc.webp",
+        "sha256": "bbd0d97b2009fd02e71215f7f47179df07520c25d1de40cce8821878ab453fbc",
+        "bytes": 244088
+      }
+    },
+    {
+      "id": 78,
+      "day": "2027-01-03",
+      "title_zh": "哈勃望远镜升空",
+      "title_en": "Hubble Space Telescope Launched",
+      "desktop_file": "desktop-8ef533b46ec077141d00c01166f651b81d8257af24fa0054e647baadf97c6e85.jpg",
+      "phone_file": "phone-4dcd17e825c81a04254eae80eb369c39327b8ac65dc4b4d684a0bd2cfaf7ded5.jpg",
+      "preview_file": "preview-4e19427711589d5daf181decc63ee4eddab9a4fe332284ade9381ffcb055458a.webp",
+      "phone": {
+        "file": "phone-0be04f1c18411b2a59080e5e388efab2ef6568949e31260ae6546c96b0f26cf6.jpg",
+        "sha256": "0be04f1c18411b2a59080e5e388efab2ef6568949e31260ae6546c96b0f26cf6",
+        "bytes": 2082216
+      },
+      "preview": {
+        "file": "preview-165508c1429bb8488e62116892a782ea8fdebfea5649fab97e92a1e9f891336a.webp",
+        "sha256": "165508c1429bb8488e62116892a782ea8fdebfea5649fab97e92a1e9f891336a",
+        "bytes": 236470
+      }
+    },
+    {
+      "id": 79,
+      "day": "2027-01-04",
+      "title_zh": "互联网",
+      "title_en": "The Internet",
+      "desktop_file": "desktop-12de79c17a50eb9a5283c9fb8689a60026979453505ccdb71f0248335c43a43f.jpg",
+      "phone_file": "phone-c3156845fb11a5c0748a8fe57c43a957fbc6776646a3b0d12cddf265e27edc49.jpg",
+      "preview_file": "preview-0f1000d76cac9f43b8c966fd8e22cfb0a407d33804eb4983311f644871577346.webp",
+      "phone": {
+        "file": "phone-6b50202648ad4a04e6b288bafa7ef2cc6d1438df0649c9ced569054a2f900b1e.jpg",
+        "sha256": "6b50202648ad4a04e6b288bafa7ef2cc6d1438df0649c9ced569054a2f900b1e",
+        "bytes": 3156346
+      },
+      "preview": {
+        "file": "preview-2291b9fe7a22eb6dd090705a127dd602c9c6c727ca6515428e2224f5acd3874d.webp",
+        "sha256": "2291b9fe7a22eb6dd090705a127dd602c9c6c727ca6515428e2224f5acd3874d",
+        "bytes": 317592
+      }
+    },
+    {
+      "id": 80,
+      "day": "2027-01-05",
+      "title_zh": "万维网公开",
+      "title_en": "The World Wide Web Goes Public",
+      "desktop_file": "desktop-d0af564b001205db9b06bccb56119c12e25047f882b10f466683da514c79b5a9.jpg",
+      "phone_file": "phone-a8d8e5c9c8b13e7540d0234c734eeccae0ddae175c89379889621464fadf13b7.jpg",
+      "preview_file": "preview-32559e94cd62764712fe813bc5230eae1c828abafd7ac0d8cb345aa627c3945b.webp",
+      "phone": {
+        "file": "phone-a909fbb68ef0cccd5421a18f487656e44a457b98221256a79b3ff135ed94effd.jpg",
+        "sha256": "a909fbb68ef0cccd5421a18f487656e44a457b98221256a79b3ff135ed94effd",
+        "bytes": 2309087
+      },
+      "preview": {
+        "file": "preview-274650d4e7dedff0f5f6f4834df1fa1c798e64f91de04c08fd22a55fe8951694.webp",
+        "sha256": "274650d4e7dedff0f5f6f4834df1fa1c798e64f91de04c08fd22a55fe8951694",
+        "bytes": 283228
+      }
+    },
+    {
+      "id": 81,
+      "day": "2027-01-06",
+      "title_zh": "Linux 诞生",
+      "title_en": "Linux Is Born",
+      "desktop_file": "desktop-0ccb238b9bb6f999e8023046d1dd81b3176edcdfbc4b991a24cbcb0c796c3d09.jpg",
+      "phone_file": "phone-d4c2766d80ad719d8646da0d788bdd48d0f04b6d9cdac48b18d405c97fcdcdc9.jpg",
+      "preview_file": "preview-512b481886a590b0378c1a45e7ad8316888151c0a8e8d0228de19bd41a113840.webp",
+      "phone": {
+        "file": "phone-2876371fff5620a32823bdee5f4142b97f87d468c39f51552105969395382119.jpg",
+        "sha256": "2876371fff5620a32823bdee5f4142b97f87d468c39f51552105969395382119",
+        "bytes": 2248476
+      },
+      "preview": {
+        "file": "preview-3341800581f0af8a631733a4d89db4b9decd620c705628610089a672900ac121.webp",
+        "sha256": "3341800581f0af8a631733a4d89db4b9decd620c705628610089a672900ac121",
+        "bytes": 256376
+      }
+    },
+    {
+      "id": 82,
+      "day": "2027-01-07",
+      "title_zh": "谷歌成立",
+      "title_en": "Google Founded",
+      "desktop_file": "desktop-b9e92bdb6f07f7b8e6eeea2e92f9f154fab91d26ec152b5b75a48e6eae69b5f3.jpg",
+      "phone_file": "phone-12210626e338aec89c76bc237dfd72fab03c36198971dcd51b929a96d8072e91.jpg",
+      "preview_file": "preview-662250cfef62e1898283b50c0d31b39f2feaf59c1f3bae2ac32b4ad1840db1a5.webp",
+      "phone": {
+        "file": "phone-84fd0ed9c6bfc061ea0d06633ad8ba00d94dc91bcec28547cf2ac0e5afa04958.jpg",
+        "sha256": "84fd0ed9c6bfc061ea0d06633ad8ba00d94dc91bcec28547cf2ac0e5afa04958",
+        "bytes": 2696790
+      },
+      "preview": {
+        "file": "preview-6e5a6e1771e1520d6d29cf3617df83d0bf0ead92b70d508e0d3046133729166c.webp",
+        "sha256": "6e5a6e1771e1520d6d29cf3617df83d0bf0ead92b70d508e0d3046133729166c",
+        "bytes": 271844
+      }
+    },
+    {
+      "id": 83,
+      "day": "2027-01-08",
+      "title_zh": "Wi-Fi 标准确立",
+      "title_en": "Wi-Fi Standard Established",
+      "desktop_file": "desktop-0e213fcf73f0b2295fcfffd3612684a7371e0ad4b81b5ea3b1f82833ab8d1d2f.jpg",
+      "phone_file": "phone-dee4c9a7fa24bcc7197c27c1dea4c92021f7831915c1a9d73b319cd8b88b0746.jpg",
+      "preview_file": "preview-cbc65e535bea06664f0f992d81fa96222186a09e3e1d9b6bef0dc75679435d9b.webp",
+      "phone": {
+        "file": "phone-aa09b41094578688005809935b53fcb4dcce810fbd901973ba059e8843ac6077.jpg",
+        "sha256": "aa09b41094578688005809935b53fcb4dcce810fbd901973ba059e8843ac6077",
+        "bytes": 1892153
+      },
+      "preview": {
+        "file": "preview-2d8345e4829d6e99784fe65838fee9d24f17bbf83517dd9ea0ca3b267927d5d9.webp",
+        "sha256": "2d8345e4829d6e99784fe65838fee9d24f17bbf83517dd9ea0ca3b267927d5d9",
+        "bytes": 305734
+      }
+    },
+    {
+      "id": 84,
+      "day": "2027-01-09",
+      "title_zh": "云计算",
+      "title_en": "Cloud Computing",
+      "desktop_file": "desktop-c1c61d9ec294e66ce14300a7e6a373565a5be868f75901a6613d615d36a2724f.jpg",
+      "phone_file": "phone-06cc5f76a104cab8eb9b98852d2e6f93bed64bad7a2c9811429996b63b5614d1.jpg",
+      "preview_file": "preview-43661ba9209810dc712749da68b061839b2ccc2ef10375fdce90a28eb4fe1b9a.webp",
+      "phone": {
+        "file": "phone-e6d89879faa974404bfcc4651711545a7c91e490a5c06a316a073dbec3054eb1.jpg",
+        "sha256": "e6d89879faa974404bfcc4651711545a7c91e490a5c06a316a073dbec3054eb1",
+        "bytes": 1998015
+      },
+      "preview": {
+        "file": "preview-89241d4c39a6d92b3f0c648d1b2c5d6155a2ad9b913689e6ecd3e7ba71493e51.webp",
+        "sha256": "89241d4c39a6d92b3f0c648d1b2c5d6155a2ad9b913689e6ecd3e7ba71493e51",
+        "bytes": 261520
+      }
+    },
+    {
+      "id": 85,
+      "day": "2027-01-10",
+      "title_zh": "移动互联网",
+      "title_en": "The Mobile Internet",
+      "desktop_file": "desktop-af2702d8d7f95212f480d062abc89ee2a47230dcaa424fb15079570e51977867.jpg",
+      "phone_file": "phone-22e4531f37d99b5c934971f64169930d2da9d45cd90892ccdc1140d9cea42048.jpg",
+      "preview_file": "preview-37206bdf05df98bd5b7d0ec53c6c08f77ab2cff007d5e6324a2f4984e9919ab2.webp",
+      "phone": {
+        "file": "phone-5383e776da28be936974acd43fef85713f28c11c80b4edb4a87bd0f123ec2c12.jpg",
+        "sha256": "5383e776da28be936974acd43fef85713f28c11c80b4edb4a87bd0f123ec2c12",
+        "bytes": 1381881
+      },
+      "preview": {
+        "file": "preview-c9243d8e300b5884e46cf2d6a7a95ddfb4d3cc29f3760f848f23d0cdf3e862c0.webp",
+        "sha256": "c9243d8e300b5884e46cf2d6a7a95ddfb4d3cc29f3760f848f23d0cdf3e862c0",
+        "bytes": 231366
+      }
+    },
+    {
+      "id": 86,
+      "day": "2027-01-11",
+      "title_zh": "iPhone 发布",
+      "title_en": "iPhone Unveiled",
+      "desktop_file": "desktop-c974f8cfa1ee8b2b744ed7400d9a5de7b083b0c01dae91464294381fd074322d.jpg",
+      "phone_file": "phone-9285577673a2e06c2b98936f06869bccca25e6d0b6dd4ccef692f3a0c9b6e77c.jpg",
+      "preview_file": "preview-3293bf6bfcbb9b348bf7efd25c9d0a9047fe03508d60c66e21449f61eee08f2e.webp",
+      "phone": {
+        "file": "phone-a11f480d870aefcd4a53a45e5e003586d5f0b2f1702bbbbe84dce1dede8e454d.jpg",
+        "sha256": "a11f480d870aefcd4a53a45e5e003586d5f0b2f1702bbbbe84dce1dede8e454d",
+        "bytes": 1396364
+      },
+      "preview": {
+        "file": "preview-714bee4795d854dba867fc3041c8520dba730fea56ad0f01a10cbad3775963af.webp",
+        "sha256": "714bee4795d854dba867fc3041c8520dba730fea56ad0f01a10cbad3775963af",
+        "bytes": 241238
+      }
+    },
+    {
+      "id": 87,
+      "day": "2027-01-12",
+      "title_zh": "CUDA",
+      "title_en": "CUDA",
+      "desktop_file": "desktop-973a6f92d22d85f3133c9afabac870e268cdeb5ffbd6d8409b9ef25865ad8cce.jpg",
+      "phone_file": "phone-3e7b861f809aab051b90e24b9cac90a5e67d879fcd21bf2a98c21cdbd301e7de.jpg",
+      "preview_file": "preview-257813c6572079338df301d7eea820146af6db55d6f53c02e0844b0e90bb4ed6.webp",
+      "phone": {
+        "file": "phone-c33d3d5770be24dfe96e17e76dafc4e90fd30b9e7d1a2624e55d6ea967be25bd.jpg",
+        "sha256": "c33d3d5770be24dfe96e17e76dafc4e90fd30b9e7d1a2624e55d6ea967be25bd",
+        "bytes": 2168910
+      },
+      "preview": {
+        "file": "preview-d94c198ae4575c441ff23676c1faa9e5d86e9549e2900238197f2621e67150d4.webp",
+        "sha256": "d94c198ae4575c441ff23676c1faa9e5d86e9549e2900238197f2621e67150d4",
+        "bytes": 282584
+      }
+    },
+    {
+      "id": 88,
+      "day": "2027-01-13",
+      "title_zh": "App Store 开张",
+      "title_en": "App Store Opens",
+      "desktop_file": "desktop-747f36ba444b164d632706aa4ee7e14b83f0202eeec2b25a52635f0b14d829ff.jpg",
+      "phone_file": "phone-13e2c663cd5eaa8b9a72a558c7d16f8bb17bffad627d5dd372ff6c8ff316eef8.jpg",
+      "preview_file": "preview-3350b2287516d52b5bf480b0e1cd1a5d4c7ee03bb096fe20cee983f4581b8f5f.webp",
+      "phone": {
+        "file": "phone-b13b89ca1f4ee6218a502b9c62a685777a9912216e5bbd50205cd93d85b3e491.jpg",
+        "sha256": "b13b89ca1f4ee6218a502b9c62a685777a9912216e5bbd50205cd93d85b3e491",
+        "bytes": 2482111
+      },
+      "preview": {
+        "file": "preview-684cf2dcccbc0a1ea826d4b0eb8be40dbaaf9ff9e20411daf7acd4f0d78eadd6.webp",
+        "sha256": "684cf2dcccbc0a1ea826d4b0eb8be40dbaaf9ff9e20411daf7acd4f0d78eadd6",
+        "bytes": 316182
+      }
+    },
+    {
+      "id": 89,
+      "day": "2027-01-14",
+      "title_zh": "CRISPR 基因编辑",
+      "title_en": "CRISPR Gene Editing",
+      "desktop_file": "desktop-c803fb4f95896635fd8d0f108314cb967f2cb5024957fa272c7a6d30d83c05ae.jpg",
+      "phone_file": "phone-69983aa55a11ac9345b2aa08f13e26f4aae04ffd4629587d7b23ff88e08e103b.jpg",
+      "preview_file": "preview-7a8c3be369d9ebbd0bbd00e9b615958631f4ef25523abe86e5e71da50afc17a7.webp",
+      "phone": {
+        "file": "phone-6d64f395fa1f5494653eb6c6dfaae57f5d943b84e39ac1fdb5fe03becdd61464.jpg",
+        "sha256": "6d64f395fa1f5494653eb6c6dfaae57f5d943b84e39ac1fdb5fe03becdd61464",
+        "bytes": 2270696
+      },
+      "preview": {
+        "file": "preview-da2b877b93e18161ed69dd6340d6debf11997c29d35e79344489d22c2f84549b.webp",
+        "sha256": "da2b877b93e18161ed69dd6340d6debf11997c29d35e79344489d22c2f84549b",
+        "bytes": 328452
+      }
+    },
+    {
+      "id": 90,
+      "day": "2027-01-15",
+      "title_zh": "深度学习",
+      "title_en": "Deep Learning",
+      "desktop_file": "desktop-a884adbaa7d7ba9d7b05f82ba18e0e18eecdf612f6b5b7d04b28391493753701.jpg",
+      "phone_file": "phone-42a72f9b2f3a9cbfb06c166224abf7ab8bf6acc38a83b7047d12925497d5984b.jpg",
+      "preview_file": "preview-aaec471b4fefb8f00022f4b6865dda9b64b7058102fbec816713ee717ee73663.webp",
+      "phone": {
+        "file": "phone-4adf1419637a7dd16bdbfe3bf6c145f3ba093aa49f5440929e7278121a3ffa5f.jpg",
+        "sha256": "4adf1419637a7dd16bdbfe3bf6c145f3ba093aa49f5440929e7278121a3ffa5f",
+        "bytes": 1796722
+      },
+      "preview": {
+        "file": "preview-a732fd563ab241ab646a75e7cfbcaac51e210cb7611296e20002b76e89d1707f.webp",
+        "sha256": "a732fd563ab241ab646a75e7cfbcaac51e210cb7611296e20002b76e89d1707f",
+        "bytes": 224446
+      }
+    },
+    {
+      "id": 91,
+      "day": "2027-01-16",
+      "title_zh": "AlexNet",
+      "title_en": "AlexNet",
+      "desktop_file": "desktop-3983b6bdafa18c08c4a9d56ac667036c74cc3a685b4a5be3ec14a869d0689779.jpg",
+      "phone_file": "phone-657b255daf01fe9f08536f2b6511c28b365776fe428f5825d4850e5393d07888.jpg",
+      "preview_file": "preview-6f955d1662a4e38f2a13f13df9ebbe5d2d1229cf9b0506358bd4910d24a2d672.webp",
+      "phone": {
+        "file": "phone-03569e372ce871305eba9893f3a2c168aa4161c7f0505e9b96d4bcf7b4757f34.jpg",
+        "sha256": "03569e372ce871305eba9893f3a2c168aa4161c7f0505e9b96d4bcf7b4757f34",
+        "bytes": 1893366
+      },
+      "preview": {
+        "file": "preview-572c0f8784124bb32360031713cc314bb06a7359cf9de07c8e0f2d5e9e941ade.webp",
+        "sha256": "572c0f8784124bb32360031713cc314bb06a7359cf9de07c8e0f2d5e9e941ade",
+        "bytes": 229176
+      }
+    },
+    {
+      "id": 92,
+      "day": "2027-01-17",
+      "title_zh": "ResNet：残差网络",
+      "title_en": "ResNet: Residual Networks",
+      "desktop_file": "desktop-4649bc2332835800eb8d6d45c6bee5ca74bd800cf0478adff842eefcaab558fc.jpg",
+      "phone_file": "phone-9ec48fd39594c301a4f375db1f605d6961f7acf5231d5f039a7274a174f5e23b.jpg",
+      "preview_file": "preview-634d924b9d32e37e7177eab91aa3c66c64a2d7847fb4a5e4e9bd5bd4bef1798d.webp",
+      "phone": {
+        "file": "phone-183c6d2e45bd825b25350904ad34e029e3ea7d0005854baee1cbf1ab1ab35455.jpg",
+        "sha256": "183c6d2e45bd825b25350904ad34e029e3ea7d0005854baee1cbf1ab1ab35455",
+        "bytes": 1593990
+      },
+      "preview": {
+        "file": "preview-c307d65f0cc4a4d44210a71667369df3979c7b691d74fa028b16e7892d000c15.webp",
+        "sha256": "c307d65f0cc4a4d44210a71667369df3979c7b691d74fa028b16e7892d000c15",
+        "bytes": 208308
+      }
+    },
+    {
+      "id": 93,
+      "day": "2027-01-18",
+      "title_zh": "火箭一级首次回收",
+      "title_en": "First Rocket Booster Recovery",
+      "desktop_file": "desktop-89ac2f9172694511cb88361bc3e1ae402649a572de721b34c3e0f752f9e4e6c7.jpg",
+      "phone_file": "phone-10f03d7801dc0f0fe6dfdb341b33da4057f0708af93ecbc6842f4a1507f8ec50.jpg",
+      "preview_file": "preview-3ff541638490461205aa6b70fdaf59933fc85bebcc66d4548e72958b76d2509e.webp",
+      "phone": {
+        "file": "phone-09f2cf3e4608d1e16e6dbd4f9392423884b59bd786f2cb80fcb08d585d7cbf96.jpg",
+        "sha256": "09f2cf3e4608d1e16e6dbd4f9392423884b59bd786f2cb80fcb08d585d7cbf96",
+        "bytes": 2256940
+      },
+      "preview": {
+        "file": "preview-42d450ff3ec3e126d61cdeb78f082de313600d93380009b5b5ecacf10cdf044c.webp",
+        "sha256": "42d450ff3ec3e126d61cdeb78f082de313600d93380009b5b5ecacf10cdf044c",
+        "bytes": 258352
+      }
+    }
+  ]
+}
