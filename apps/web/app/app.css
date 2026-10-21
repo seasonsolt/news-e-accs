@@ -1278,6 +1278,21 @@ html { scrollbar-gutter: stable; }
 .chronicle-slice-links a { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--bg-sunk); font-size: 13px; color: var(--ink-2); transition: background-color .15s, color .15s; }
 .chronicle-slice-links a:hover { background: var(--accent-soft); color: var(--accent); }
 
+/* The selected era opens into its existing illustrated milestones. */
+.chronicle-scenes { margin-top: 24px; }
+.chronicle-scenes h3 { font-size: 18px; font-weight: 600; }
+.chronicle-scenes-summary { margin: -4px 0 18px; color: var(--ink-3); font-size: 13px; line-height: 1.7; }
+.chronicle-scenes-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 16px; list-style: none; padding: 0; }
+.chronicle-scene { display: flex; flex-direction: column; gap: 6px; border-radius: var(--radius-control); }
+.chronicle-scene img, .chronicle-era-overview { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: var(--radius-control); border: 1px solid var(--line); background: var(--bg-sunk); }
+.chronicle-scene-date { margin-top: 4px; color: var(--ink-3); font-size: 11px; }
+.chronicle-scene-title { color: var(--ink); font-size: 14px; line-height: 1.5; }
+.chronicle-scene:hover .chronicle-scene-title { color: var(--accent); }
+.chronicle-scene:focus-visible { outline: 2px solid var(--amber); outline-offset: 5px; }
+.chronicle-era-overview { max-width: 540px; }
+#observatory { scroll-margin-top: 80px; }
+@media (max-width: 600px) { .chronicle-scenes-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 12px; } }
+
 /* The film strip of eras. */
 .chronicle-strip { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x proximity; margin-inline: -16px; padding: 4px 16px 10px; scrollbar-width: thin; }
 @media (min-width: 961px) { .chronicle-strip { margin-inline: 0; padding-inline: 2px; } }

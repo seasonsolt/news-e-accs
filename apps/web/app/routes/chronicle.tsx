@@ -104,7 +104,7 @@ export default function ChroniclePage() {
             )}
           </div>
         </div>
-        <EraStrip eras={chronicle.eras} current={era.id} now={now} />
+        <EraStrip milestones={chronicle.milestones} eras={chronicle.eras} current={era.id} now={now} />
         <p className="text-[11.5px] leading-relaxed text-ink-4"><Text value="数据在 industry/chronicle/，每条都附出处；指标在两个有来源的数据点之间按对数插值；预测包含机构、社区观点与注明提出者的本站情景推演，年份不是确定的实现日期。配图由 AI 按各时代的画风绘制。" /></p>
         <SubscribeCta source="chronicle_inline" sample={{ to: "/daily" }} sticky />
       </div>

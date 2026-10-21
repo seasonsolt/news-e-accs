@@ -119,3 +119,34 @@ test("recorded day links include at, current site links do not", async () => {
 });
 
 test.skip("feature-off chronicle 404 (compile-time industry switch)", () => {});
+
+test("era scenes include only illustrated moments in the selected era and retain no-JS navigation", async () => {
+  const server = await createServer({ configFile: false, root: new URL("../", import.meta.url).pathname, server: { middlewareMode: true, ws: false }, appType: "custom" });
+  try {
+    const { EraStrip } = await server.ssrLoadModule("/app/features/chrono/EraStrip.tsx");
+    const eras = [
+      { id: "early", from: 1800, title: "Early", summary: "Early scenes", art: "early", artStyle: "Engraving" },
+      { id: "later", from: 1900, title: "Later", summary: "Later scenes", art: "later", artStyle: "Painting" },
+      { id: "future", from: 2030, title: "Future", summary: "Possible futures", art: "future", artStyle: "Concept", forecast: true },
+    ];
+    const milestones = [
+      { id: "before", t: 1799, title: "Before", art: "before" },
+      { id: "start", t: 1800, title: "Start", art: "start" },
+      { id: "no-art", t: 1850, title: "Without illustration" },
+      { id: "last", t: 1899, title: "Last", art: "last" },
+      { id: "boundary", t: 1900, title: "Boundary", art: "boundary" },
+    ].map((m) => ({ ...m, precision: "year", detail: m.title, category: "compute", source: "https://example.com" }));
+    const render = (current: string, path = "/chronicle") => parseHTML(renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [path] }, createElement(EraStrip, { eras, milestones, current, now: 2026 })))).document;
+    const early = render("early");
+    assert.equal(early.querySelectorAll(".chronicle-frame").length, 3);
+    assert.deepEqual([...early.querySelectorAll(".chronicle-scene-title")].map((el) => el.textContent), ["Start", "Last"]);
+    assert.equal(early.querySelector(".chronicle-scene")?.getAttribute("href"), "/chronicle?t=1800#observatory");
+    assert.match(early.textContent ?? early.documentElement.textContent!, /2 scenes/);
+    const later = render("later", "/zh/chronicle");
+    assert.deepEqual([...later.querySelectorAll(".chronicle-scene-title")].map((el) => el.textContent), ["Boundary"]);
+    assert.match(later.querySelector(".chronicle-scenes")!.textContent!, /1 幅场景/);
+    const future = render("future");
+    assert.equal(future.querySelectorAll(".chronicle-scene").length, 0);
+    assert.equal(future.querySelector(".chronicle-era-overview")?.getAttribute("src"), "/media/art/epochs/future-800.webp");
+  } finally { await server.close(); }
+});
