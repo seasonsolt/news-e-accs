@@ -11,7 +11,7 @@ export interface Product {
 }
 export const PRODUCTS: readonly Product[] = [
   {
-    slug: "wallpaper", name: "4K Wallpaper", url: "/products/wallpaper", status: "live",
+    slug: "wallpaper", name: "4K Wallpaper", logo: "/media/products/wallpaper.svg", url: "/products/wallpaper", status: "live",
     kind: { en: "Daily 4K wallpaper", zh: "每日 4K 壁纸" },
     description: { en: "A new desktop and phone wallpaper every day. Confirm your newsletter subscription for 100 credits.", zh: "每天一张桌面和手机壁纸，确认邮件订阅即可领取 100 积分（每张 10 积分）。" },
   },
