@@ -42,12 +42,14 @@ done
 if [ -f "$SRC/Victorian Pneumatic Mailroom Engraving.png" ]; then
   ffmpeg -loglevel error -y -i "$SRC/Victorian Pneumatic Mailroom Engraving.png" -vf "scale=900:-1" -q:v 7 "$OUT/subscribe-email.jpg"
 fi
-# Epoch plates use their era id, not a fixed list; missing plates are left to the web fallback.
+# Chronicle plates use their era or milestone id, not a fixed list.
 shopt -s nullglob
-for file in "$SRC/epochs/"*.png; do
-  name=$(basename "$file" .png)
-  mkdir -p "$OUT/epochs"
-  cwebp -quiet -q 68 -resize 1600 0 "$file" -o "$OUT/epochs/$name-1600.webp"
-  cwebp -quiet -q 68 -resize 800 0 "$file" -o "$OUT/epochs/$name-800.webp"
+for group in epochs moments; do
+  for file in "$SRC/$group/"*.png; do
+    name=$(basename "$file" .png)
+    mkdir -p "$OUT/$group"
+    cwebp -quiet -q 68 -resize 1600 0 "$file" -o "$OUT/$group/$name-1600.webp"
+    cwebp -quiet -q 68 -resize 800 0 "$file" -o "$OUT/$group/$name-800.webp"
+  done
 done
 du -sh "$OUT"

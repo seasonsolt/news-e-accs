@@ -548,7 +548,8 @@
     },
     "difference-engine": {
       "title": "The Difference Engine",
-      "detail": "Babbage proposed a machine to compute mathematical tables automatically."
+      "detail": "Babbage proposed a machine to compute mathematical tables automatically.",
+      "artStyle": "Victorian engineering copperplate engraving"
     },
     "liverpool-manchester-railway": {
       "title": "The First Intercity Railway",
@@ -730,7 +731,8 @@
     },
     "dna-double-helix": {
       "title": "The DNA Double Helix",
-      "detail": "Watson and Crick publish the molecular structure of DNA in Nature."
+      "detail": "Watson and Crick publish the molecular structure of DNA in Nature.",
+      "artStyle": "1950s science magazine gouache"
     },
     "silicon-solar-cell": {
       "title": "Practical Solar Cell",
@@ -1185,7 +1187,8 @@
     },
     "jwst-launch": {
       "title": "James Webb Space Telescope launches",
-      "detail": "An infrared space telescope lifts off to observe the early universe."
+      "detail": "An infrared space telescope lifts off to observe the early universe.",
+      "artStyle": "Contemporary aerospace concept painting"
     },
     "instructgpt-paper": {
       "title": "InstructGPT: training on human feedback",

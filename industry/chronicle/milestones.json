@@ -664,7 +664,9 @@
       "title": "差分机",
       "detail": "巴贝奇提出自动计算数表的机械。",
       "category": "compute",
-      "source": "https://en.wikipedia.org/wiki/Difference_engine"
+      "source": "https://en.wikipedia.org/wiki/Difference_engine",
+      "art": "difference-engine",
+      "artStyle": "维多利亚工程铜版画"
     },
     {
       "id": "liverpool-manchester-railway",
@@ -1081,7 +1083,9 @@
       "title": "DNA双螺旋",
       "detail": "沃森和克里克在《自然》发表DNA分子结构。",
       "category": "human",
-      "source": "https://en.wikipedia.org/wiki/Molecular_Structure_of_Nucleic_Acids:_A_Structure_for_Deoxyribose_Nucleic_Acid"
+      "source": "https://en.wikipedia.org/wiki/Molecular_Structure_of_Nucleic_Acids:_A_Structure_for_Deoxyribose_Nucleic_Acid",
+      "art": "dna-double-helix",
+      "artStyle": "1950年代科学杂志水粉画"
     },
     {
       "id": "silicon-solar-cell",
@@ -2112,7 +2116,9 @@
       "title": "韦布太空望远镜发射",
       "detail": "红外空间望远镜升空，用于观测早期宇宙。",
       "category": "human",
-      "source": "https://en.wikipedia.org/wiki/James_Webb_Space_Telescope"
+      "source": "https://en.wikipedia.org/wiki/James_Webb_Space_Telescope",
+      "art": "jwst-launch",
+      "artStyle": "当代航天工程概念画"
     },
     {
       "id": "instructgpt-paper",
