@@ -2735,6 +2735,19 @@
       "source": "https://9to5google.com/2026/09/30/gemini-4-argon-announcement/"
     },
     {
+      "id": "rea-software-reconstruction",
+      "t": 2026.75,
+      "precision": "month",
+      "date": "2026-10",
+      "title": "软件大开源时代的序幕",
+      "detail": "REA 将逆向工具接入编程智能体。10 月一手实测中，Opus 5.5 借助 REA 重建了应用的保活功能。本站将理解与重建门槛下降称为“软件大开源时代”的序幕；这不意味着原软件已开放源码或许可。",
+      "category": "compute",
+      "capability": "AI 辅助软件功能重建",
+      "source": "https://korben.info/en/rea-ai-agent-reverse-engineering-test.html",
+      "art": "rea-software-reconstruction",
+      "artStyle": "当代计算结构剖视概念画"
+    },
+    {
       "id": "forecast-agent-teams-speculative",
       "t": 2027,
       "precision": "year",

@@ -237,6 +237,10 @@
 
 > Distinct illustrative photograph for AI agents, 2025 onward. Landscape 3:2, contemporary large-format night photography, dark indigo and copper amber. A three-quarter view of a workstation with three monitors: abstract structured code and test results, browser research documents and figures, and a finished report with a completion checklist. The keyboard is unoccupied. A person standing behind the desk at far right reviews the report on a tablet, hands away from the keyboard. Screens convey autonomous computer work followed by human verification. Quiet workspace, glass partitions, warm desk lamp, dark blue window. Keep the left 40 percent dark for the year and era overlays. Cluster screens around x=65%, y=45% for desktop and phone crops. No giant industrial landscape, humanoid robots, holograms, glowing brains, close-up faces, flames, cooling towers, logos, readable text or watermarks. Standalone image, not a website mockup.
 
+### 软件功能重建（2026-10-21）
+
+`moments/rea-software-reconstruction` 表现不透明软件被理解、拆解并重建为透明结构。概念插画使用内置 imagegen 生成，原图和完整提示词保存在 [`tools/art/chronicle-rea`](../tools/art/chronicle-rea/README.md)，事实依据及措辞边界见[核查记录](chronicle/rea-software-reconstruction.md)。网站提供 800/1600 WebP 和匹配深度图。
+
 # 壁纸（4K）
 
 所有生产壁纸带 `e-acc.ai` 水印：裁切后、颗粒前添加，使用 `assets/og-fonts/noto-sans-sc-700.ttf`，白色 55% 不透明、黑色 35% 阴影偏移 2px。桌面右下角字号 44px，距右边、下边各 64px；手机底部居中字号 56px，距底边 260px。预览从已带水印的桌面版生成。`WATERMARK=0` 仅用于自查；生产上传保持默认开启，服务器不添加水印。

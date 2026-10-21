@@ -1525,6 +1525,12 @@
       "title": "Forecast: world population peaks",
       "detail": "The UN projects world population will peak at about 10.3 billion in the mid-2080s and then decline.",
       "forecastBy": "UN Population Division (WPP 2024)"
+    },
+    "rea-software-reconstruction": {
+      "title": "Dawn of a Software Openness Era",
+      "detail": "REA connects reverse-engineering tools to coding agents. An October hands-on test used Opus 5.5 with REA to rebuild an app’s keep-awake feature. We see falling barriers to understanding and reconstruction as the dawn of a software openness era; the original software has not thereby become open source or openly licensed.",
+      "capability": "AI-assisted software feature reconstruction",
+      "artStyle": "Contemporary computational cutaway concept art"
     }
   },
   "metrics": {
