@@ -137,6 +137,44 @@ test("the weekly readings put views by section, subscribers and Search Console o
   assert.equal((await app.inject("/api/admin/metrics")).statusCode, 401, "the readings are for the admin only");
 });
 
+test("a failed page-query read keeps the week and any earlier snapshot", async () => {
+  const snapshot = { property: "sc-domain:example.test", rows: [], limitReached: false };
+  await sql`UPDATE search_console_weekly SET page_queries = ${sql.json(snapshot)} WHERE week = ${week.start}::date`;
+  globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
+    if (String(input) === "https://oauth2.googleapis.com/token") return Response.json({ access_token: "synthetic-token" });
+    const body = JSON.parse(String(init!.body));
+    if (body.inspectionUrl) return new Response("quota", { status: 429 });
+    if (body.dimensions?.includes("query")) return new Response("busy", { status: 503 });
+    return Response.json({ rows: body.dimensions ? [{ keys: ["https://example.test/story/a"], clicks: 1, impressions: 20 }] : [{ clicks: 21, impressions: 400 }] });
+  }) as typeof fetch;
+  const result = await readSearchConsoleWeek(now);
+  assert.equal(result.status, "read");
+  assert.match((result as { queriesError?: string }).queriesError ?? "", /page queries: HTTP 503/);
+  const [row] = await sql<{ clicks: number; page_queries: unknown }[]>`SELECT clicks, page_queries FROM search_console_weekly WHERE week = ${week.start}::date`;
+  assert.equal(row!.clicks, 21, "the week's totals are still written");
+  assert.deepEqual(row!.page_queries, snapshot, "a failed rerun does not erase the earlier snapshot");
+});
+
+test("the readings carry query detail only for the newest detailed week and the week before it", async () => {
+  const row = (query: string, impressions: number) => ({ page: "https://example.test/story/a", query, clicks: 1, impressions, ctr: 0.01, position: 5 });
+  const snapshot = (...rows: ReturnType<typeof row>[]) => ({ property: "sc-domain:example.test", rows, limitReached: false });
+  const [before, older] = [addDays(week.start, -7), addDays(week.start, -14)];
+  await sql`UPDATE search_console_weekly SET page_queries = ${sql.json(snapshot(row("model release", 80)))} WHERE week = ${week.start}::date`;
+  for (const [day, value] of [[before, snapshot(row("model release", 50), row("unrelated", 10))], [older, snapshot(row("model release", 40))]] as const) {
+    await sql`INSERT INTO search_console_weekly (week, property, clicks, impressions, inspected, indexed, sections, page_queries)
+      VALUES (${day}::date, 'sc-domain:example.test', 0, 0, 0, 0, '{}', ${sql.json(value)})`;
+  }
+  try {
+    const [, latest, previous, oldest] = (await weeklyReadings(4, now)).rows;
+    assert.deepEqual(latest!.search?.pageQueries?.rows.map((r) => r.query), ["model release"]);
+    assert.deepEqual(previous!.search?.pageQueries?.rows.map((r) => [r.query, r.impressions]), [["model release", 50]], "the week before keeps only the shown candidates");
+    assert.ok(oldest!.search, "an older week keeps its totals");
+    assert.equal(oldest!.search!.pageQueries, null, "an older week's detail is not loaded");
+  } finally {
+    await sql`DELETE FROM search_console_weekly WHERE week IN (${before}::date, ${older}::date)`;
+  }
+});
+
 test("distribution counters reject arbitrary channels and identifiers", () => {
   assert.deepEqual(normalizeSiteEvent({ event: "distribution_read", target: "share" }), { event: "distribution_read", target: "share" });
   for (const target of ["", "reader@example.com", "https://example.test", "unknown"]) assert.equal(normalizeSiteEvent({ event: "distribution_visit", target }), null);

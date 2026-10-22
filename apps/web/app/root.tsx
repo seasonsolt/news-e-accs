@@ -153,10 +153,12 @@ export default function App() {
       body: JSON.stringify({ event: "page_view", path: pathname }),
     }).catch(() => {});
   }, [pathname]);
+  // Counted per page, like page views: filters or ?at= changing the query on the same page are not a new visit.
+  const via = new URLSearchParams(search).get("via");
   useEffect(() => {
     if (pathname === "/admin" || pathname.startsWith("/admin/")) return;
-    return trackDistribution(search);
-  }, [pathname, search]);
+    return trackDistribution(via);
+  }, [pathname, via]);
   // iOS Safari only shows :active (pressed) styles once the document listens for touches.
   useEffect(() => {
     const noop = () => {};

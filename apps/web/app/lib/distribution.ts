@@ -4,8 +4,9 @@ import { recordEngagement } from "./engagement.ts";
 // Attribution lasts only in this tab. No reader identifier, URL, or arbitrary campaign string is stored.
 let channel: DistributionChannel | null = null;
 export function currentDistribution(): DistributionChannel | null { return channel; }
-export function trackDistribution(search: string): () => void {
-  const incoming = distributionChannel(new URLSearchParams(search).get("via"));
+/** Counts one page of this tab; `via` is the label in that page's address, if it has one. */
+export function trackDistribution(via: string | null): () => void {
+  const incoming = distributionChannel(via);
   if (incoming) channel = incoming;
   if (!channel) return () => {};
   const target = channel;

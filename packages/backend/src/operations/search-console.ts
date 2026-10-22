@@ -84,13 +84,20 @@ export async function readSearchConsoleWeek(now = new Date()) {
   }
 
   // A bounded snapshot of Google's top rows, not a census of all searches. Keep missing history null.
-  const queryRows = (await google<{ rows?: Array<{ keys: string[]; clicks: number; impressions: number; ctr: number; position: number }> }>(query,
-    { startDate: week.start, endDate: week.end, dimensions: ["page", "query"], rowLimit: 25_000, dataState: "final" }, "page queries")).rows ?? [];
-  const pageQueries: SearchQuerySnapshot = {
-    property,
-    rows: queryRows.map((r) => ({ page: r.keys[0]!, query: r.keys[1]!, clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position })),
-    limitReached: queryRows.length === 25_000,
-  };
+  // It is the heaviest request of the run: a refusal or timeout here leaves it unknown, not the whole week.
+  let pageQueries: SearchQuerySnapshot | null = null;
+  let queriesError: string | null = null;
+  try {
+    const queryRows = (await google<{ rows?: Array<{ keys: string[]; clicks: number; impressions: number; ctr: number; position: number }> }>(query,
+      { startDate: week.start, endDate: week.end, dimensions: ["page", "query"], rowLimit: 25_000, dataState: "final" }, "page queries")).rows ?? [];
+    pageQueries = {
+      property,
+      rows: queryRows.map((r) => ({ page: r.keys[0]!, query: r.keys[1]!, clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position })),
+      limitReached: queryRows.length === 25_000,
+    };
+  } catch (error) {
+    queriesError = (error instanceof Error ? error.message : String(error)).slice(0, 200);
+  }
 
   // The discovery URLs are what the site asks Google to index; a quota refusal ends the count where it is.
   const urls = (await loadDiscoveryEntries(now)).map((e) => e.loc).slice(0, MAX_INSPECTIONS);
@@ -130,8 +137,9 @@ export async function readSearchConsoleWeek(now = new Date()) {
   };
   await sql`
     INSERT INTO search_console_weekly (week, property, clicks, impressions, inspected, indexed, sections, page_queries)
-    VALUES (${reading.week}, ${property}, ${reading.clicks}, ${reading.impressions}, ${reading.inspected}, ${reading.indexed}, ${sql.json(Object.fromEntries(sections) as never)}, ${sql.json(pageQueries as never)})
+    VALUES (${reading.week}, ${property}, ${reading.clicks}, ${reading.impressions}, ${reading.inspected}, ${reading.indexed}, ${sql.json(Object.fromEntries(sections) as never)}, ${pageQueries ? sql.json(pageQueries as never) : null})
     ON CONFLICT (week) DO UPDATE SET property = EXCLUDED.property, clicks = EXCLUDED.clicks, impressions = EXCLUDED.impressions,
-      inspected = EXCLUDED.inspected, indexed = EXCLUDED.indexed, sections = EXCLUDED.sections, page_queries = EXCLUDED.page_queries, fetched_at = now()`;
-  return { status: "read" as const, ...reading, urls: urls.length, ...(stopped ? { stopped } : {}) };
+      inspected = EXCLUDED.inspected, indexed = EXCLUDED.indexed, sections = EXCLUDED.sections,
+      page_queries = coalesce(EXCLUDED.page_queries, search_console_weekly.page_queries), fetched_at = now()`;
+  return { status: "read" as const, ...reading, urls: urls.length, ...(stopped ? { stopped } : {}), ...(queriesError ? { queriesError } : {}) };
 }

@@ -32,7 +32,7 @@ test("visible reading pauses in hidden tabs and cleans up on navigation", async 
   });
   try {
     const { trackDistribution } = await import("../app/lib/distribution.ts");
-    const stop = trackDistribution("?via=share");
+    const stop = trackDistribution("share");
     assert.equal(delay, 15000);
     time = 5000; doc.visibilityState = "hidden"; listener!();
     assert.equal(callback, undefined);
@@ -43,6 +43,6 @@ test("visible reading pauses in hidden tabs and cleans up on navigation", async 
     doc.visibilityState = "visible"; listener!();
     assert.deepEqual(events, ["distribution_visit", "distribution_read"]);
     stop(); assert.equal(listener, undefined);
-    const cancel = trackDistribution(""); cancel(); assert.equal(callback, undefined);
+    const cancel = trackDistribution(null); cancel(); assert.equal(callback, undefined);
   } finally { for (const [k, d] of saved) { if (d) Object.defineProperty(globalThis, k, d); else Reflect.deleteProperty(globalThis, k); } }
 });
