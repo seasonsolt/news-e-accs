@@ -140,6 +140,8 @@ export interface PoolResponse {
   total: number;
   todayCount: number;
   freshness: string;
+  /** The home page's hot strip, on the unfiltered first page only. */
+  hot: HotStripEntry[] | null;
 }
 
 export interface OutlineEntry {

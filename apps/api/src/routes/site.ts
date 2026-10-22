@@ -125,7 +125,12 @@ export function registerSite(app: FastifyInstance) {
     const page = Math.min(Math.max(Number(q.page) || 1, 1), 50);
     const search = q.q?.trim() ? q.q.trim().slice(0, 200) : null;
     const tab = q.tab === "relevance" ? "relevance" : "time";
-    return sendJsonWithEtag(req, reply, await loadPool({ ...filters, q: search, tab, page, lang: q.lang === "en" ? "en" : "zh" }), { etagPrefix: "pool", cacheControl: "public, max-age=60, s-maxage=60" });
+    const unfiltered = filters.channel === "all" && !filters.category && !filters.tag && !search && page === 1;
+    const [data, hot] = await Promise.all([
+      loadPool({ ...filters, q: search, tab, page, lang: q.lang === "en" ? "en" : "zh" }),
+      unfiltered ? loadHotStrip() : null,
+    ]);
+    return sendJsonWithEtag(req, reply, { ...data, hot }, { etagPrefix: "pool", cacheControl: "public, max-age=60, s-maxage=60" });
   }));
 
   app.get("/api/site/items/:id", siteHandler(async (req, reply) => {

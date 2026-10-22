@@ -125,11 +125,11 @@ const searchPool = sharedSearch(
   queryPool, (q) => !!q.q?.trim(),
 );
 
-export function loadPool(query: PoolQuery): Promise<PoolResponse> {
+export function loadPool(query: PoolQuery): Promise<Omit<PoolResponse, "hot">> {
   return searchPool(query, query.now);
 }
 
-async function queryPool(query: PoolQuery, now: Date): Promise<PoolResponse> {
+async function queryPool(query: PoolQuery, now: Date): Promise<Omit<PoolResponse, "hot">> {
   const page = Math.min(Math.max(query.page ?? 1, 1), POOL_MAX_PAGES);
   const q = query.q?.trim() || null;
   const tab = q && query.tab === "relevance" ? "relevance" : "time";

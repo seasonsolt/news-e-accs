@@ -955,7 +955,7 @@ html { scrollbar-gutter: stable; }
 .deck { position: relative; isolation: isolate; overflow: hidden; margin-inline: calc(50% - var(--page-width, 100vw) / 2); margin-top: -16px; padding: 56px 0 40px; background: var(--deck); color: var(--deck-ink); }
 .deck.is-compact { padding: 28px 0 30px; }
 @media (min-width: 961px) { .deck { padding: 88px 0 48px; } .deck.is-compact { padding: 40px 0 36px; } }
-/* The homepage keeps a full-bleed photograph around a bounded reading column. */
+/* 精选 and 全部动态 (the homepage layout) keep a full-bleed photograph around a bounded reading column. */
 .home-page { max-width: 1200px; margin-inline: auto; }
 .home-page > .deck { padding: 28px 0; }
 .home-page .deck-inner { max-width: 1264px; }

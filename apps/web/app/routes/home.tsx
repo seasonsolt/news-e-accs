@@ -1,30 +1,22 @@
-import { featuredProduct } from "@aihot/industry/products";
 import { localePath, requestLocale } from "../lib/locale";
-import { Link } from "../lib/navigation";
-import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
+import { localeFromMatches, useTranslate } from "../lib/i18n";
 import { SITE } from "@aihot/site";
 import { useRef } from "react";
-import { redirect, useLoaderData, useRouteLoaderData } from "react-router";
+import { redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/home";
 import type { TimelineResponse } from "@aihot/contracts/site";
 import { cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { filterParams, hasFeedFilters, listPath, organizationLd, pageMeta, readFilters, websiteLd } from "../lib/seo";
 import { inNav } from "../components/shell/nav";
-import { Deck } from "../components/shell/Deck";
-import { KardashevMeter } from "../features/chrono/KardashevMeter";
-import type { loader as rootLoader } from "../root";
 import { Onboarding } from "../features/onboarding/Onboarding";
 import { useSubscribeView } from "../features/subscribe/useSubscribeView";
-import { recordEngagement } from "../lib/engagement";
 import { CategoryBanner } from "../features/art/CategoryBanner";
 import { Timeline } from "../features/feed/Timeline";
 import { HotTopics } from "../features/feed/HotTopics";
+import { FeedDeck } from "../features/feed/FeedDeck";
 import { CategoryTabs, FeedSwitch, SearchField, SearchIconLink } from "../features/feed/Filters";
-import { beijingDate } from "@aihot/contracts/time";
-import { weekdayShort } from "../lib/format";
 import { requestAt } from "../features/chrono/at";
-import { webModules } from "../site-modules";
 
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
@@ -48,24 +40,10 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
   return pageMeta({ path, jsonLd: path === "/" && !f?.at ? [websiteLd(localeFromMatches(matches ?? [])), organizationLd()] : undefined, noindex: !!f?.at || hasFeedFilters(f) }, localeFromMatches(matches ?? []));
 }
 
-/** The day the page shows (the time machine's, else today), in the deck's kicker. */
-function TodayLabel({ at }: { at?: string | null }) {
-  const tx = useTranslate();
-  const day = at ?? beijingDate(Date.now());
-  const [y, m, d] = day.split("-").map(Number) as [number, number, number];
-  return (
-    <span suppressHydrationWarning>
-      {y}.{String(m).padStart(2, "0")}.{String(d).padStart(2, "0")} · {tx(weekdayShort(day))}
-    </span>
-  );
-}
-
 export default function Home() {
   const tx = useTranslate();
   const subscribeLink = useRef<HTMLSpanElement>(null);
   const { data, filters } = useLoaderData<typeof loader>();
-  const root = useRouteLoaderData<typeof rootLoader>("root");
-  const k = root?.timeBounds?.kardashev ?? null;
   // A first visit to the unfiltered front page opens on the newsletter onboarding (shown before paint
   // by the boot script); everyone else, crawlers included, reads the news below.
   const front = filters.channel === "all" && !filters.category && !filters.tag && !filters.at;
@@ -74,28 +52,7 @@ export default function Home() {
   return (
     <div className="home-page pb-6">
       {front && <Onboarding mode="overlay" />}
-      {filtered ? (
-        <Deck compact art="home-intelligence" label={tx("精选")} kicker={<TodayLabel at={filters.at} />} title={filters.tag ? `#${filters.tag}` : tx("精选")} />
-      ) : (
-        <Deck
-          art="home-intelligence"
-          label={tx("精选")}
-          heading={tx(SITE.homeHeading)}
-          kicker={<><TodayLabel at={filters.at} /><Text value="· 智能体时代" /></>}
-          title={<><Text value="宇宙在降温，" /><br /><Text value="文明在升温。" /></>}
-          description={tx("站在时间之外看这一天：它在一百三十八亿年里的位置，以及刚刚推着文明往前走的那几件事。")}
-          aside={k !== null && <KardashevMeter k={k} />}
-        >
-          <div className="flex flex-wrap gap-3">
-            <span ref={subscribeLink} className="inline-flex">
-              <Link to="/subscribe" onClick={() => recordEngagement("subscribe_click")} className="deck-button is-primary"><Text value="订阅每日 08:00 日报" /></Link>
-            </span>
-            <Link to="/chronicle" className="deck-button"><Text value="打开加速史" /></Link>
-            {webModules().flatMap((m) => m.home?.links ?? []).map((l) => <Link key={l.to} to={l.to} className="deck-button"><Text value={l.label} /></Link>)}
-          </div>
-          {featuredProduct()?.url && <Link to={featuredProduct()!.url!} className="mt-3 inline-flex text-sm text-[#e8c98a]"><Text value="设为 4K 壁纸 →" /></Link>}
-        </Deck>
-      )}
+      <FeedDeck label={tx("精选")} heading={tx(SITE.homeHeading)} at={filters.at} tag={filters.tag} filtered={filtered} subscribeRef={subscribeLink} />
 
       <div className="mt-6 hidden items-center justify-between gap-4 lg:mt-8 lg:flex">
         <div className="flex min-w-0 flex-1 items-center gap-3">

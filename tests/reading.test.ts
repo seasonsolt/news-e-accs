@@ -84,6 +84,13 @@ test("a query that names a company also finds the articles about it", async () =
   assert.ok(!(await search(`claude ${T}-nothing`)).includes(about));
 });
 
+test("全部动态 carries the home hot strip only on its unfiltered first page", async () => {
+  const hotOf = async (query: string) => JSON.parse((await app.inject({ method: "GET", url: `/api/site/pool${query}` })).body).hot;
+  const [plain, timeline] = await Promise.all([hotOf(""), app.inject({ method: "GET", url: "/api/site/timeline" }).then((r) => JSON.parse(r.body).hot)]);
+  assert.deepEqual(plain, timeline, "the same strip as 精选");
+  for (const query of ["?category=industry", "?channel=firstParty", "?q=claude", "?page=2"]) assert.equal(await hotOf(query), null, query);
+});
+
 test("bare addresses in post text become safe links", () => {
   const html = textToHtml("see https://arxiv.org/abs/2502.11089. <b>x</b>\n\n1. one\n2. two");
   assert.match(html, /<a href="https:\/\/arxiv\.org\/abs\/2502\.11089" target="_blank" rel="noopener noreferrer nofollow">https:\/\/arxiv\.org\/abs\/2502\.11089<\/a>\./);

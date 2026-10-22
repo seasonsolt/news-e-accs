@@ -38,7 +38,7 @@ test("every subscribe form posts the page locale", async () => {
   const root = new URL("../app/", import.meta.url);
   const onboarding = readFileSync(new URL("features/onboarding/Onboarding.tsx", root), "utf8");
   const cta = readFileSync(new URL("features/subscribe/SubscribeCta.tsx", root), "utf8");
-  const home = readFileSync(new URL("routes/home.tsx", root), "utf8");
+  const home = readFileSync(new URL("features/feed/FeedDeck.tsx", root), "utf8");
   assert.match(onboarding, /const locale = useLocale\(\)/);
   assert.match(onboarding, /requestSubscribe\(email, locale, source\)/);
   assert.match(cta, /const locale = useLocale\(\)/);

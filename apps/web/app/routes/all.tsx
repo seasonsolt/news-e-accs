@@ -16,6 +16,9 @@ import { PillTabs } from "../components/ui/Tabs";
 import { DayList, Pagination } from "../features/feed/DayList";
 import { EmptyState } from "../components/ui/Page";
 import { Deck } from "../components/shell/Deck";
+import { FeedDeck } from "../features/feed/FeedDeck";
+import { HotTopics } from "../features/feed/HotTopics";
+import { inNav } from "../components/shell/nav";
 
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
@@ -86,18 +89,15 @@ export default function AllPage() {
   const updated = beijingTime(data.freshness);
 
   return (
-    <div className="pb-6">
-      <Deck
-        compact
-        art="ambient-engine-room"
-        label={tx("全部动态")}
-        kicker={f.q ? tx("搜索") : <><Text value="全部动态 · 今日" /><span className="num">{data.todayCount}</span><Text value="条" /></>}
-        title={title ?? tx("全部 AI 动态")}
-        description={f.q ? undefined : tx("信源抓到、进了内容池的全部内容，按时间排列；精选只是其中一部分。")}
-      />
-      {/* Desktop, as on 精选: one filter row with the search field aligned on the right. */}
+    <div className={`pb-6 ${f.q ? "" : "home-page"}`}>
+      {f.q ? (
+        <Deck compact art="ambient-engine-room" label={tx("全部动态")} kicker={tx("搜索")} title={title ?? tx("全部 AI 动态")} />
+      ) : (
+        <FeedDeck label={tx("全部动态")} heading={tx(ALL_TITLE)} tag={f.tag} filtered={!!(f.tag || f.category || f.channel !== "all")} />
+      )}
+      {/* Desktop, as on 精选: one filter row with the search field aligned on the right, then the hot strip. */}
       <div className="hidden lg:block">
-        <div className="mb-5 mt-6 flex items-center justify-between gap-4">
+        <div className="mb-5 mt-6 flex items-center justify-between gap-4 lg:mt-8">
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <FeedSwitch base="/all" layoutId="all-feed-desk" />
             <CategoryTabs base="/all" category={f.category} channel={f.channel} layoutId="all-cat-desk" className="min-w-0" />
@@ -115,6 +115,8 @@ export default function AllPage() {
           <CategoryTabs base="/all" category={f.category} channel={f.channel} layoutId="all-cat-mobile" size="sm" className="min-w-0 flex-1" />
         </div>
       </div>
+
+      {data.hot && inNav("/hot") && <div className="mb-6"><HotTopics entries={data.hot} /></div>}
 
       {f.q && (
         <div className="mb-3 mt-3 flex flex-wrap items-center justify-between gap-2 lg:mt-0">
