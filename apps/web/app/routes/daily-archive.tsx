@@ -48,7 +48,7 @@ export default function DailyArchive() {
     >
       <div className="@container">
         {months.map((m) => (
-          <SectionPage key={m.id} id={`m-${m.id}`} label={m.label}>
+          <SectionPage key={m.id} id={`m-${m.id}`} label={tx(m.label)}>
             <Rows items={m.entries}>
               {(e, cell) => (
                 <IntentLink key={e.key} to={`/daily/${e.key}`} className={`group flex gap-4 py-4 ${cell}`}>
