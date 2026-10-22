@@ -142,6 +142,8 @@ export default function App() {
   useEffect(() => { noteExistingStars(); }, []);
   useEffect(() => {
     if (pathname === "/admin" || pathname.startsWith("/admin/") || countedPath.current === pathname) return;
+    // Only the document's first view is a full load; the server tells crawlers by their many full loads.
+    const nav = countedPath.current !== null;
     countedPath.current = pathname;
     void fetch("/api/site/analytics", {
       method: "POST",
@@ -149,7 +151,7 @@ export default function App() {
       cache: "no-store",
       keepalive: true,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event: "page_view", path: pathname }),
+      body: JSON.stringify({ event: "page_view", path: pathname, nav }),
     }).catch(() => {});
   }, [pathname]);
   // iOS Safari only shows :active (pressed) styles once the document listens for touches.

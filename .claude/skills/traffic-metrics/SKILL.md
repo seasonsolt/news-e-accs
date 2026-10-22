@@ -12,7 +12,7 @@ description: Measure e-acc.ai's real readership and growth — UV/PV, sessions, 
 | 来源 | 命令 | 适合回答 | 盲区 |
 |---|---|---|---|
 | Cloudflare 请求日志 | `node .claude/skills/traffic-metrics/cf-traffic.ts --days 7` | UV、PV、会话、跳出、落地页、读完一篇后去哪、回访、机器读者、各出口 | 没有 IP、来源站、国家、设备（当前令牌对 `clientRefererHost`、`clientAsn`、`ja4`、`clientRequestQuery` 返回 403） |
-| 站内首方计数 | `deploy/update.sh --stats 7`（只读，也可 30/90） | 按路由的页面浏览、订阅/分享/外链/收藏事件 | 不分人，跑 JS 的爬虫也会计入（10-12 一天 6,047 次就是爬虫）；被广告拦截器挡掉的不计 |
+| 站内首方计数 | `deploy/update.sh --stats 7`（只读，也可 30/90） | 按路由的页面浏览、订阅/分享/外链/收藏事件 | 不分人；服务器按下面“一个人”的同一条整页加载规则和爬虫字样过滤（2026-10-22 上线），换着 UA 刷的爬虫仍会计入；此前的日子含跑 JS 的爬虫（10-12 一天 6,047 次、10-22 上午 655 次）；被广告拦截器挡掉的不计 |
 | Google Search Console | 内置浏览器打开（使用者已登录），见下 | 搜索曝光、点击、CTR、排名，按页面/查询/日期 | 只有 Google 搜索；数据晚 2–3 天 |
 
 Search Console 链接（`breakdown` 可换 `page`、`query`、`date`，`num_of_days` 可换 7/28/90）：

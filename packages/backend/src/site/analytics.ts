@@ -1,5 +1,6 @@
 import type { ModulePage } from "@aihot/contracts/modules";
 import { parseSubscribeTarget, SUBSCRIBE_FUNNEL_EVENTS, subscribeEventTarget, type SubscribeFunnelEvent } from "@aihot/contracts/subscribe";
+import { beijingDate } from "@aihot/contracts/time";
 import { MODULES } from "@aihot/site/modules";
 import { sql } from "../db.ts";
 
@@ -42,6 +43,57 @@ function englishPagePath(raw: string): string | null {
   if (/^\/leaderboard\/sources\/[^/]+$/.test(raw)) return "/leaderboard/sources/:key";
   if (/^\/leaderboard\/[^/]+$/.test(raw)) return "/leaderboard/:model";
   return MODULE_PAGES.find((p) => p.match.test(raw))?.path ?? null;
+}
+
+/** A person rarely opens more than this many full pages from one browser in a day without navigating in-app. */
+const MAX_FULL_LOADS = 15;
+/** Above that, a person navigates in-app at least once per this many further full loads; a crawler that renders
+ * JavaScript reloads nearly every page (Chrome/145 Mac on 10-22: 384 views and 279 subscribe views by 10:00). */
+const LOADS_PER_NAV = 10;
+/** User agents tracked per day. The endpoint is public, so this bounds the memory a script can take. */
+const BROWSERS_PER_DAY = 20_000;
+const BOT_WORDS = /bot|crawl|spider|slurp|headless|preview|fetch|scan|monitor|python|curl|wget|go-http|axios|node|java\/|compatible;/i;
+
+export type ViewKind = "load" | "nav";
+
+/**
+ * Tells readers from crawlers that render JavaScript, with the same rule as the traffic-metrics skill: per user
+ * agent and Taipei day, full loads beyond MAX_FULL_LOADS count only with in-app navigations alongside them. The
+ * counts live in this process's memory and are dropped at the day's end; nothing about a browser is stored.
+ */
+export function readerFilter(now = () => Date.now()) {
+  let day = "";
+  let browsers = new Map<string, { loads: number; navs: number }>();
+  const crawling = (s: { loads: number; navs: number }) => s.loads > MAX_FULL_LOADS && s.navs * LOADS_PER_NAV < s.loads - MAX_FULL_LOADS;
+  const today = () => {
+    const d = beijingDate(now());
+    if (d !== day) {
+      day = d;
+      browsers = new Map();
+    }
+    return browsers;
+  };
+  return {
+    /** Whether this page view counts; it is noted either way. */
+    view(ua: string, kind: ViewKind): boolean {
+      if (!ua || BOT_WORDS.test(ua)) return false;
+      const seen = today();
+      let s = seen.get(ua);
+      if (!s) {
+        if (seen.size >= BROWSERS_PER_DAY) return false;
+        seen.set(ua, s = { loads: 0, navs: 0 });
+      }
+      if (kind === "nav") s.navs++;
+      else s.loads++;
+      return kind === "nav" || !crawling(s);
+    },
+    /** Whether an interaction counts: not from a crawler, nor from a browser that is past the line today. */
+    event(ua: string): boolean {
+      if (!ua || BOT_WORDS.test(ua)) return false;
+      const s = today().get(ua);
+      return !s || !crawling(s);
+    },
+  };
 }
 
 export async function recordPageView(path: string): Promise<void> {
