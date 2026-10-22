@@ -226,3 +226,38 @@ test("subscribe from parameters accept only the source whitelist", () => {
   for (const source of SUBSCRIBE_SOURCES) assert.equal(subscribeSource(source), source);
   for (const value of [null, undefined, "", "private@example.org", "CONCEPT", {}, ["concept"]]) assert.equal(subscribeSource(value), null);
 });
+
+test("subscription page shows a deduplicated real issue and an explicit language before signup", async () => {
+  for (const prefix of ["", "/zh"]) {
+    const { document } = parseHTML((await page(`${prefix}/subscribe?from=concept`)).html);
+    assert.ok(document.querySelector('a[href="'+prefix+'/daily/2026-10-04"]'));
+    assert.equal(document.querySelectorAll('section[aria-labelledby="sample-title"] li').length, 1);
+    assert.ok(document.querySelector('[data-subscribe-page-form] button[type=submit]')?.textContent?.includes(prefix ? "免费订阅日报" : "Subscribe for free"));
+    assert.ok(document.querySelector(`a[href="${prefix ? '' : '/zh'}/subscribe?from=concept"]`));
+    assert.equal(document.querySelector('video'), null);
+  }
+});
+
+test("subscription page submits the selected language and preserves attribution, with visible errors and confirmation instructions", async () => {
+  const browser = await chromium.launch({ channel: "chromium" });
+  try {
+    for (const prefix of ["", "/zh"]) {
+      const tab = await browser.newPage();
+      await tab.route("**/api/site/engagement", (route) => route.fulfill({ status: 204 }));
+      const bodies: unknown[] = [];
+      await tab.route("**/api/site/newsletter/subscribe", (route) => {
+        bodies.push(route.request().postDataJSON());
+        return route.fulfill(bodies.length === 1 ? { status: 503, json: { detail: "暂时无法完成，请稍后再试。" } } : { status: 202, json: { ok: true } });
+      });
+      await tab.goto(`${web.origin}${prefix}/subscribe?from=concept`);
+      await tab.locator('#subscribe-page-email').fill('reader@example.com');
+      await tab.locator('[data-subscribe-page-form] button[type=submit]').click();
+      await tab.locator('[data-subscribe-page-form] [role=alert]').waitFor();
+      await tab.locator('[data-subscribe-page-form] button[type=submit]').click();
+      await tab.locator('[data-subscribe-page-form] [role=status]').waitFor();
+      assert.deepEqual(bodies, Array(2).fill({ email: 'reader@example.com', language: prefix ? 'zh' : 'en', source: 'concept' }));
+      assert.match(await tab.locator('[data-subscribe-page-form] [role=status]').innerText(), /reader@example.com/);
+      await tab.close();
+    }
+  } finally { await browser.close(); }
+});

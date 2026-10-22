@@ -35,6 +35,7 @@ export async function startMotionFixture() {
     const path = url.pathname;
     res.setHeader("Content-Type", "application/json");
     if (path === "/api/site/meta") return res.end(JSON.stringify({ changelogVersion: null }));
+    if (path === "/api/site/reports/daily/latest-page") return res.end(JSON.stringify({ report: null, index: [] }));
     // Confirmation QA stays on this synthetic API; no subscriber or mailer exists here.
     if (path === "/api/site/newsletter/confirm" && req.method === "POST") {
       let body = "";

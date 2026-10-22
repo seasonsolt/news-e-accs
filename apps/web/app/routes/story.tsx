@@ -370,6 +370,11 @@ export default function StoryPage() {
             )}
           </Panel>
 
+          <NextReads reads={nextReads} currentStory={story.publicId} related={
+            [...story.related].sort((a, b) => Number(b.relation === "storyline") - Number(a.relation === "storyline"))
+              .map((r) => ({ to: `/story/${r.publicId}`, title: r.title, label: r.relation === "storyline" ? "沿着这条故事线读下去" : "相关事件" }))
+          } className="order-2 px-1" />
+
           {STORY_PARTS.map(({ name, part: Block }) => story.modules?.[name] ? <div key={name} className="order-3"><Block data={story.modules[name]} /></div> : null)}
 
           {story.developments.length > 1 && (
@@ -452,23 +457,7 @@ export default function StoryPage() {
             </Panel>
           )}
 
-          {story.related.length > 0 && (
-            <Panel title={tx("关联事件")} className="order-6">
-              <ul className="-my-1 divide-y divide-line-soft">
-                {story.related.map((r) => (
-                  <li key={r.publicId}>
-                    <Link viewTransition to={`/story/${r.publicId}`} className="group flex items-baseline gap-3 py-3">
-                      <span className="shrink-0 text-[12px] text-ink-4">{r.relation === "storyline" ? tx("同一故事线") : tx("相关事件")}</span>
-                      <span className="min-w-0 flex-1 text-[14.5px] font-medium text-ink-2 transition-colors group-hover:text-accent">{r.title}</span>
-                      <IconChevronRight size={14} className="shrink-0 self-center text-ink-4" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </Panel>
-          )}
 
-          <NextReads reads={nextReads} currentStory={story.publicId} className="order-7 px-1" />
         </div>
 
         <aside className="order-2 flex min-w-0 flex-col gap-4 lg:order-none lg:gap-5">

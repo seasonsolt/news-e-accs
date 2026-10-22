@@ -31,8 +31,8 @@ test("onboarding keeps real text and mobile exposes an operable motion toggle", 
   assert.match(await html("/more"), /aria-pressed="false"[^>]*>[\s\S]*?减少动效/);
 });
 
-test("onboarding SSR has a poster layer but no film request trigger, even on /subscribe", async () => {
-  for (const path of ["/", "/subscribe"]) {
+test("onboarding SSR has a poster layer but no film request trigger", async () => {
+  for (const path of ["/", "/subscribe?token=motion-fixture-confirm"]) {
     const { document } = parseHTML(await html(path));
     const video = document.querySelector("video")!;
     assert.ok(video);

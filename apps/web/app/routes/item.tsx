@@ -313,6 +313,11 @@ export default function ItemPage() {
 
           {summaryOnly && <p className="mt-6 rounded-control bg-bg-sunk px-4 py-3 text-[13.5px] leading-relaxed text-ink-3"><Text value="应来源方要求，这里只提供摘要与原文入口。完整内容请阅读原文。" /></p>}
 
+          <NextReads reads={nextReads} related={[
+            ...(item.story ? [{ to: `/story/${item.story.publicId}`, title: item.story.title, label: "查看这件事的完整进展" }] : []),
+            ...related.map((s) => ({ to: `/story/${s.publicId}`, title: s.title, label: "相关事件" })),
+          ]} />
+
           {item.group && item.group.reportCount > 1 && <ItemSources group={item.group} parentId={item.id} />}
 
           {item.body && bodyHtml && (
@@ -361,22 +366,6 @@ export default function ItemPage() {
             </div>
           )}
 
-          {related.length > 0 && (
-            <section className="mt-9">
-              <h2 className="text-[12.5px] font-semibold text-ink-3"><Text value="相关事件" /></h2>
-              <ul className="mt-1 divide-y divide-line-soft">
-                {related.map((s) => (
-                  <li key={s.publicId}>
-                    <Link to={`/story/${s.publicId}`} className="block py-2.5 text-[14px] text-ink-2 hover:text-accent">
-                      {s.title}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          <NextReads reads={nextReads} currentStory={item.story?.publicId} />
           <SubscribeCta
             source="item_inline"
             sample={nextReads?.daily ? { to: `/daily/${nextReads.daily.key}`, date: nextReads.daily.key } : { to: "/daily" }}

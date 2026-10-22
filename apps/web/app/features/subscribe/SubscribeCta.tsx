@@ -12,7 +12,7 @@ import { claimSubscribeView, useSubscribeView } from "./useSubscribeView";
 import { recordSubscribe, requestSubscribe } from "./flow";
 
 type InlineSource = Extract<SubscribeSource, "daily_inline" | "item_inline" | "chronicle_inline" | "story_inline">;
-type Phase = { kind: "idle" } | { kind: "sending" } | { kind: "sent"; email: string } | { kind: "error"; message: string };
+export type Phase = { kind: "idle" } | { kind: "sending" } | { kind: "sent"; email: string } | { kind: "error"; message: string };
 
 const FIELD = "h-12 w-full rounded-full border border-line bg-bg px-4 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-4 focus:border-accent";
 const BUTTON = "inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-ink px-5 text-[15px] font-semibold text-bg transition-opacity disabled:opacity-60";
@@ -38,10 +38,10 @@ export function SubscribeCta({ source, sample, sticky = false }: {
         ) : (
           <>
             <h2 id={`subscribe-cta-${source}`} className="font-display text-[26px] italic leading-tight text-ink sm:text-[30px]">
-              <Text value="明早 08:00 把这样一份日报发到你邮箱" />
+              <Text value={source === "daily_inline" ? "明早 08:00 把这样一份日报发到你邮箱" : "每天一封，跟上 AI 的重要变化"} />
             </h2>
             <p className="mt-2 max-w-[62ch] text-[14.5px] leading-relaxed text-ink-3">
-              <Text value="和上面这份一样：几件值得看的事。免费，点确认信之后才会开始发送，每封信都能一键退订。" />
+              <Text value={source === "daily_inline" ? "和上面这份一样：几件值得看的事。免费，点确认信之后才会开始发送，每封信都能一键退订。" : "模型发布、价格变化、算力进展，附原始来源。免费，确认后开始发送，随时一键退订。"} />
               {sample && <>{" "}<SampleLink sample={sample} /></>}
             </p>
             <EmailForm id={`subscribe-email-${source}`} source={source} email={email} setEmail={setEmail} phase={phase} formRef={formRef} onPhase={setPhase} className="mt-4" />
@@ -62,7 +62,7 @@ function SampleLink({ sample }: { sample: { to: string; date?: string } }) {
   );
 }
 
-function Sent({ email }: { email: string }) {
+export function Sent({ email }: { email: string }) {
   const tx = useTranslate();
   return (
     <div role="status">
@@ -72,7 +72,7 @@ function Sent({ email }: { email: string }) {
   );
 }
 
-function EmailForm({ id, source, email, setEmail, phase, formRef, onPhase, className = "", compact = false }: {
+export function EmailForm({ id, source, email, setEmail, phase, formRef, onPhase, className = "", compact = false, buttonLabel = "订阅" }: {
   id: string;
   source: SubscribeSource;
   email: string;
@@ -83,6 +83,7 @@ function EmailForm({ id, source, email, setEmail, phase, formRef, onPhase, class
   className?: string;
   /** One row, for the phone bar where a stacked field would cover the page. */
   compact?: boolean;
+  buttonLabel?: string;
 }) {
   const tx = useTranslate();
   const locale = useLocale();
@@ -118,7 +119,7 @@ function EmailForm({ id, source, email, setEmail, phase, formRef, onPhase, class
           className={`${FIELD} min-w-0 ${compact ? "flex-1" : "sm:flex-1"}`}
         />
         <button type="submit" disabled={phase.kind === "sending"} className={BUTTON}>
-          {phase.kind === "sending" ? tx("确认中…") : tx("订阅")}
+          {phase.kind === "sending" ? tx("确认中…") : tx(buttonLabel)}
         </button>
       </div>
       {phase.kind === "error" && <p role="alert" className="mt-2 text-[13.5px] text-hot">{tx(phase.message)}</p>}
