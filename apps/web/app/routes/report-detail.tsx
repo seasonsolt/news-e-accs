@@ -61,7 +61,7 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
     publishedTime: r.generatedAt,
     noindex: !!loaderData.at,
     jsonLd: loaderData.at ? undefined : newsArticleLd({ path, headline: title, description, image, datePublished: r.generatedAt, inLanguage: contentHtmlLanguage(r, locale) }),
-  }, locale), feedLink(r.kind)];
+  }, locale), feedLink(r.kind, locale)];
 }
 
 export default function ReportDetailPage() {

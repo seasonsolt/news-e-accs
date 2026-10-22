@@ -65,7 +65,7 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
   const text = page > 1
     ? (en ? `${topic.name} picks archive, page ${page}. ${topic.definition}` : `${topic.name}的精选归档第 ${page} 页。${topic.definition}`)
     : description(data, parts, en);
-  const crumbs = breadcrumbLd([{ name: SITE.name, path: "/" }, { name: "主题", path: "/topics" }, { name: topic.name, path: `/topics/${topic.slug}` }]);
+  const crumbs = breadcrumbLd([{ name: SITE.name, path: "/" }, { name: translate(locale, "主题"), path: "/topics" }, { name: topic.name, path: `/topics/${topic.slug}` }]);
   return pageMeta({
     title: page > 1
       ? (en ? `${topic.name} picks · page ${page}` : `${topic.name} 精选 · 第 ${page} 页`)
@@ -116,7 +116,7 @@ export default function TopicRoute() {
         </p>
         {topic.latest && (
           <span className="text-[12px] text-ink-4">
-            <time dateTime={topic.latest.at} className="num">{monthDayTime(topic.latest.at)}</time> <Text value="更新" />
+            <time dateTime={topic.latest.at} className="num">{tx(monthDayTime(topic.latest.at))}</time> <Text value="更新" />
           </span>
         )}
       </header>

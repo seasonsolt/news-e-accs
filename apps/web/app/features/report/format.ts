@@ -1,4 +1,5 @@
-import { publicPath } from "../../lib/locale.ts";
+import { publicPath, type Locale } from "../../lib/locale.ts";
+import { translate } from "../../lib/translate.ts";
 // Names, dates and grouping for daily, weekly and monthly reports.
 import type { ReportNavigationEntry, ReportKind } from "@aihot/contracts/site";
 import { beijingDate, beijingWeekday, isoWeekLabel, isoWeekRange } from "@aihot/contracts/time";
@@ -17,8 +18,8 @@ export function kindFromPath(pathname: string): ReportKind {
   return "daily";
 }
 
-/** The kind's RSS feed, announced in the page head so a reader given the page finds it. */
-export const feedLink = (kind: ReportKind) => ({ tagName: "link", rel: "alternate", type: "application/rss+xml", title: `${SITE.name} ${KIND_LABEL[kind]}`, href: `/feed/${kind}.xml` }) as const;
+/** The kind's RSS feed in the page's language, announced in the page head so a reader given the page finds it. */
+export const feedLink = (kind: ReportKind, locale: Locale) => ({ tagName: "link", rel: "alternate", type: "application/rss+xml", title: `${SITE.name} ${translate(locale, KIND_LABEL[kind])}`, href: `/feed/v2${locale === "zh" ? "/zh" : ""}/${kind}.xml` }) as const;
 
 export function reportPath(kind: ReportKind, key: string): string {
   return `${KIND_PATH[kind]}/${key}`;

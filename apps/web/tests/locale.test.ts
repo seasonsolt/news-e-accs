@@ -3,6 +3,8 @@ import { test } from "node:test";
 import { htmlLanguage, requestLocale, publicPath, localePath, languageSwitchPath, hasChineseRoute, languagePreference, prefersChinese } from "../app/lib/locale.ts";
 import { translate } from "../app/lib/translate.ts";
 import { defineWebModule } from "../app/modules.ts";
+import { SITE } from "@aihot/site";
+import { feedLink } from "../app/features/report/format.ts";
 
 test("URL language is stable across browser languages and preference cookies, including data requests", () => {
   for (const path of ["/", "/all", "/weekly.data", "/_.data", "/items/123"]) {
@@ -47,6 +49,20 @@ test("explicit UI copy, placeholders and numeric units translate without changin
   assert.equal(translate("en", "2026 年 9 月 1 日 · 星期二"), "2026-09-01 · Tuesday");
   assert.equal(translate("en", "2026年9月1日 周二"), "2026-09-01 Tue");
   assert.equal(translate("en", "这是数据库中已发布的中文新闻标题"), "这是数据库中已发布的中文新闻标题");
+});
+
+
+test("site copy and labels built in code have English counterparts", () => {
+  for (const message of [SITE.feedbackLead, SITE.feedbackExample, SITE.feedbackEmailHint, "跟进", "时间范围", "近 24 小时变化", "AI 主题", "AI 日报 · 历史存档", "Agent 读了就能查"]) {
+    assert.notEqual(translate("en", message), message, message);
+  }
+  assert.equal(translate("en", "查看 {0} 的帖子", "Sam"), "View Sam’s post");
+  assert.equal(translate("en", "REST API 的完整定义 · {0}", "4.0.0"), "Complete REST API specification · 4.0.0");
+});
+
+test("report pages announce the feed in their own language", () => {
+  assert.deepEqual([feedLink("daily", "en").href, feedLink("daily", "en").title], ["/feed/v2/daily.xml", `${SITE.name} Daily`]);
+  assert.equal(feedLink("weekly", "zh").href, "/feed/v2/zh/weekly.xml");
 });
 
 

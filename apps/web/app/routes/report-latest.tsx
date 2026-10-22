@@ -1,7 +1,7 @@
 import { hasAlternateEdition } from "../lib/edition-meta.server";
 import { contentHtmlLanguage } from "../lib/content-language";
 import { localePath, requestLocale } from "../lib/locale";
-import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
+import { localeFromMatches, Text, translate, useTranslate } from "../lib/i18n";
 import { REPORTS, SITE } from "@aihot/site";
 import { redirect, useLoaderData, useRouteLoaderData } from "react-router";
 import type { Route } from "./+types/report-latest";
@@ -55,8 +55,8 @@ export function meta({ matches, loaderData, location }: Route.MetaArgs) {
     type: article ? "article" : "website",
     publishedTime: article ? report.generatedAt : undefined,
     // The latest issue, described at this page's own address (its canonical).
-    jsonLd: report && !loaderData?.at ? newsArticleLd({ path: location.pathname, headline: `AI ${KIND_LABEL[kind]}`, description: report.lead?.leadParagraph ?? description, image: `/og/reports/${kind}/${report.key}.png`, datePublished: report.generatedAt, inLanguage: contentHtmlLanguage(report, locale) }) : undefined,
-  }, locale), feedLink(kind)];
+    jsonLd: report && !loaderData?.at ? newsArticleLd({ path: location.pathname, headline: translate(locale, `AI ${KIND_LABEL[kind]}`), description: report.lead?.leadParagraph ?? description, image: `/og/reports/${kind}/${report.key}.png`, datePublished: report.generatedAt, inLanguage: contentHtmlLanguage(report, locale) }) : undefined,
+  }, locale), feedLink(kind, locale)];
 }
 
 export default function ReportLatestPage() {

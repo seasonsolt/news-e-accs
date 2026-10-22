@@ -1,4 +1,4 @@
-import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
+import { localeFromMatches, Text, useLocale, useTranslate } from "../lib/i18n";
 import { useEffect, useState } from "react";
 import { IntentLink } from "../components/ui/IntentLink";
 import { useLoaderData, useNavigate, useSearchParams } from "react-router";
@@ -41,12 +41,12 @@ const ANCHORS = new Map([
 ]);
 const anchorHref = (id: string) => `${hrefOf(ANCHORS.get(id)!)}#${id}`;
 
-/** Machine-readable entry points, with what each one is for. */
-const RESOURCES: Array<[label: string, href: string, note: string]> = [
+/** Machine-readable entry points, with what each one is for (a message, then its values). */
+const RESOURCES: Array<[label: string, href: string, note: string, ...values: unknown[]]> = [
   ["llms.txt", "/llms.txt", "给大模型读的站点说明"],
   ["llms-full.txt", "/llms-full.txt", "最近 7 天的日报和当前热点，附事件页与原文链接"],
-  ["Agent 使用说明", "/api/v1/agent", `Agent 读了就能查${GUIDE_CLIENTS ? `，${GUIDE_CLIENTS} 用的也是它` : ""}`],
-  ["OpenAPI 3.1", "/openapi-v1.json", `REST API 的完整定义 · ${V}`],
+  ["Agent 使用说明", "/api/v1/agent", GUIDE_CLIENTS ? "Agent 读了就能查，{0} 用的也是它" : "Agent 读了就能查", GUIDE_CLIENTS],
+  ["OpenAPI 3.1", "/openapi-v1.json", "REST API 的完整定义 · {0}", V],
   ...AGENT_PARTS.flatMap((p) => p.resources ?? []),
 ];
 
@@ -89,6 +89,7 @@ export function meta({ location, matches }: Route.MetaArgs) {
 
 export default function AgentPage() {
   const tx = useTranslate();
+  const locale = useLocale();
   const { healthy, base, now } = useLoaderData<typeof loader>();
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -151,11 +152,11 @@ export default function AgentPage() {
       </AsideCard>
       <AsideCard title={tx("接入资源")}>
         <nav aria-label={tx("接入资源")} className="-mx-2 -mb-1">
-          {RESOURCES.map(([l, h, note]) => (
+          {RESOURCES.map(([l, h, note, ...values]) => (
             <a key={h} href={h} target={h.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" className="group flex items-start gap-2 rounded-control px-2 py-2 transition-colors hover:bg-bg-sunk">
               <span className="min-w-0 flex-1">
                 <span className="block text-[13.5px] text-ink-2 group-hover:text-ink">{tx(l)}</span>
-                <span className="mt-0.5 block text-[12px] text-ink-4">{tx(note)}</span>
+                <span className="mt-0.5 block text-[12px] text-ink-4">{tx(note, ...values)}</span>
               </span>
               <IconArrowUpRight size={13} className="mt-1 shrink-0 text-ink-4" />
             </a>
@@ -173,7 +174,7 @@ export default function AgentPage() {
 
   return (
     <>
-    <Deck compact label={tx("Agent 接入")} title={tx("把 {0} 接进你的 Agent", SITE.name)} description={tx("{0}{1}种方式读的是同一份数据：精选、热点、日报、周报和月报，按你用的工具选一种就行。全部匿名只读，不用注册，也不用 API Key。", `${TRACKS.map((t) => t.short).join("、")} `, WAYS)} />
+    <Deck compact label={tx("Agent 接入")} title={tx("把 {0} 接进你的 Agent", SITE.name)} description={tx("{0}{1}种方式读的是同一份数据：精选、热点、日报、周报和月报，按你用的工具选一种就行。全部匿名只读，不用注册，也不用 API Key。", ...(locale === "en" ? [TRACKS.map((t) => t.short).join(", "), TRACKS.length] : [`${TRACKS.map((t) => t.short).join("、")} `, WAYS]))} />
     <div className="h-6" />
     <ReadingLayout aside={aside}>
       <header>

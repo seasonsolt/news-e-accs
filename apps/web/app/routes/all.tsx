@@ -1,6 +1,6 @@
 import { localePath, publicPath, requestLocale } from "../lib/locale";
 import { Link } from "../lib/navigation";
-import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
+import { localeFromMatches, Text, translate, useTranslate } from "../lib/i18n";
 import { SITE, subjectAfter } from "@aihot/site";
 import { redirect, useLoaderData, useNavigation, useSearchParams } from "react-router";
 import type { Route } from "./+types/all";
@@ -45,13 +45,14 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
   const path = listPath("/all", { ...(f && filterParams(f)), q, tab: q && f?.tab === "relevance" ? "relevance" : null, page: page > 1 ? page : null });
   const title = `${q ? `搜索：${q}` : ALL_TITLE}${page > 1 ? ` · 第 ${page} 页` : ""}`;
   const noindex = !!q || hasFeedFilters(f);
+  const locale = localeFromMatches(matches ?? []);
   return pageMeta({
     title,
     description: `${SITE.name} 收录的${subjectAfter("全部", "相关动态")}，可按频道、类别与标签筛选，支持中英文搜索。`,
     path,
     noindex,
-    jsonLd: noindex ? undefined : itemListLd(path, title, loaderData?.data.items.map((i) => i.title) ?? []),
-  }, localeFromMatches(matches ?? []));
+    jsonLd: noindex ? undefined : itemListLd(path, translate(locale, title), loaderData?.data.items.map((i) => i.title) ?? []),
+  }, locale);
 }
 
 function pageHref(params: URLSearchParams, page: number) {

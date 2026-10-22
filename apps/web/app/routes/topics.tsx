@@ -1,5 +1,5 @@
 import { useLoaderData } from "react-router";
-import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
+import { localeFromMatches, Text, translate, useTranslate } from "../lib/i18n";
 import { SITE, subjectAfter, withSubject } from "@aihot/site";
 import type { Route } from "./+types/topics";
 import type { TopicSummary, TopicsResponse } from "@aihot/contracts/site";
@@ -42,7 +42,7 @@ export function meta({ loaderData, matches }: Route.MetaArgs) {
         "@type": "CollectionPage",
         "@id": `${base}/topics#collection`,
         url: `${base}/topics`,
-        name: withSubject("主题"),
+        name: translate(locale, withSubject("主题")),
         inLanguage: SITE.locale,
         isPartOf: { "@id": `${base}/#website` },
         mainEntity: {
@@ -51,13 +51,14 @@ export function meta({ loaderData, matches }: Route.MetaArgs) {
           itemListElement: indexed.map((t, i) => ({ "@type": "ListItem", position: i + 1, name: t.name, url: `${base}/topics/${t.slug}` })),
         },
       },
-      breadcrumbLd([{ name: SITE.name, path: "/" }, { name: "主题", path: "/topics" }]),
+      breadcrumbLd([{ name: SITE.name, path: "/" }, { name: translate(locale, "主题"), path: "/topics" }]),
     ],
   }, locale);
 }
 
 /** Phones: a row per topic in a grouped list; wider screens: a card per topic. */
 function TopicCard({ t }: { t: TopicSummary }) {
+  const tx = useTranslate();
   return (
     <IntentLink
       viewTransition
@@ -82,7 +83,7 @@ function TopicCard({ t }: { t: TopicSummary }) {
           {t.latest?.title ?? t.definition}
         </span>
         <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11.5px] text-ink-4 lg:mt-3 lg:justify-between">
-          {t.latest && <time dateTime={t.latest.at} suppressHydrationWarning>{relativeTime(t.latest.at)}</time>}
+          {t.latest && <time dateTime={t.latest.at} suppressHydrationWarning>{tx(relativeTime(t.latest.at))}</time>}
           <span>
             {t.recent > 0 ? (
               <>
