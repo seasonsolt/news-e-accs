@@ -5,7 +5,7 @@ import { useLoaderData, useSearchParams } from "react-router";
 import { Onboarding } from "../features/onboarding/Onboarding";
 import type { Route } from "./+types/subscribe";
 import type { ReportLatestPage } from "@aihot/contracts/site";
-import { loadOr404 } from "../lib/api.server";
+import { apiGet } from "../lib/api.server";
 import { SubscribePage } from "../features/subscribe/SubscribePage";
 import { pageMeta } from "../lib/seo";
 
@@ -19,7 +19,8 @@ export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown
 
 export async function loader({ request }: Route.LoaderArgs) {
   if (new URL(request.url).searchParams.has("token")) return { report: null };
-  const { report } = await loadOr404<ReportLatestPage>("/api/site/reports/daily/latest-page", { request, signal: request.signal });
+  // The sample issue is optional: the sign-up form renders without it.
+  const report = await apiGet<ReportLatestPage>("/api/site/reports/daily/latest-page", { request, signal: request.signal }).then((r) => r.report, () => null);
   return { report };
 }
 

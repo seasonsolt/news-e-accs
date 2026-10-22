@@ -9,6 +9,14 @@ test("editorial context precedes discovery and never repeats the current story",
   assert.equal(links[0]!.label, "Same storyline");
 });
 
+test("every related story stays linked and the daily is not crowded out", () => {
+  const related = Array.from({ length: 5 }, (_, i) => ({ to: `/story/r${i}`, title: `Related ${i}`, label: "Related" }));
+  const daily = { key: "2026-10-21", title: "Daily", issueNumber: 1, count: 3 };
+  assert.deepEqual(readingLinks({ daily, hot: [] }, related, null).map((x) => x.to), [...related.map((r) => r.to), "/daily/2026-10-21"]);
+  const hot = Array.from({ length: 5 }, (_, i) => ({ rank: i + 1, storyPublicId: `h${i}`, title: `Hot ${i}` }));
+  assert.equal(readingLinks({ daily: null, hot }, related, null).length, 5 + 3, "hot stories stay a short discovery tail");
+});
+
 test("missing discovery data still offers known context; an empty site offers no invented link", () => {
   assert.deepEqual(readingLinks(null, [], null), []);
   assert.equal(readingLinks(null, [{ to: "/story/parent", title: "Parent event", label: "Full story" }], null)[0]!.to, "/story/parent");

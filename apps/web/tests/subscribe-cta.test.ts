@@ -81,6 +81,7 @@ test("a subscribe view is counted once per page view, and a failure reason stays
 });
 
 let web: WebServer;
+let latestFails = false;
 const api = createServer((req, res) => {
   const url = new URL(req.url ?? "/", "http://local");
   res.setHeader("Content-Type", "application/json");
@@ -98,6 +99,7 @@ const api = createServer((req, res) => {
   if (match) {
     const r = report(match[1] as ReportKind);
     const index = [{ key: r.key, issueNumber: r.issueNumber, title: r.lead?.title ?? r.title, count: 2 }];
+    if (match[2] === "latest-page" && latestFails) { res.statusCode = 503; return send({ code: "temporarily_unavailable" }); }
     if (match[2] === "latest-page") return send({ report: r, index });
     if (match[2]?.startsWith("navigation/")) return send({ items: index });
     if (match[2] === r.key) return send(r);
@@ -236,6 +238,14 @@ test("subscription page shows a deduplicated real issue and an explicit language
     assert.ok(document.querySelector(`a[href="${prefix ? '' : '/zh'}/subscribe?from=concept"]`));
     assert.equal(document.querySelector('video'), null);
   }
+});
+
+test("the subscription form still renders when the sample issue cannot be read", async () => {
+  latestFails = true;
+  try {
+    const { document } = parseHTML((await page("/zh/subscribe")).html);
+    assert.ok(document.querySelector("[data-subscribe-page-form] #subscribe-page-email"));
+  } finally { latestFails = false; }
 });
 
 test("subscription page submits the selected language and preserves attribution, with visible errors and confirmation instructions", async () => {
