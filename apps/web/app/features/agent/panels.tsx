@@ -236,7 +236,7 @@ export function ApiPanel(props: AgentPanelProps) {
             [<Mono>/api/v1/monthlies</Mono>, "月报索引", "每月一次"],
             ...AGENT_PARTS.flatMap((a) => (a.api ? [{ group: a.api.group }, ...a.api.rows.map(([path, does, often]) => [<Mono>{path}</Mono>, does, often])] : [])),
             { group: "给 AI 助手" },
-            [<Mono>/api/v1/agent</Mono>, tx("给 Agent 的中文使用说明，列出的地址使用中文 Markdown 模板，内容取自兼容版或存档原语言；这些地址不接受 lang{0}", GUIDE_CLIENTS ? tx("；{0} 用的就是它们", GUIDE_CLIENTS) : ""), "需要时"],
+            [<Mono>/api/v1/agent</Mono>, tx("给 Agent 的中文使用说明，列出的地址使用中文 Markdown 模板，内容取自兼容版或存档原语言；这些地址不接受 lang{0}", GUIDE_CLIENTS.length ? tx("；{0} 用的就是它们", GUIDE_CLIENTS.map((name) => tx(name)).join(tx("、"))) : ""), "需要时"],
             { group: "完整精选同步" },
             [<Mono>/api/v1/selected/snapshot</Mono>, "当前全部精选，分页一次拿全", "只在第一次"],
             [<Mono>/api/v1/selected/changes</Mono>, "之后的新增、修改和撤选", "几分钟一次"],

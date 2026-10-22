@@ -7,5 +7,5 @@ export const AGENT_PARTS: readonly AgentPart[] = (await loadParts((m) => m.agent
 /** The tag on what visitors copy: the first module's. */
 export const TAG = AGENT_PARTS.find((p) => p.tag)?.tag ?? null;
 
-/** The modules' clients built on the Agent guide, by name, as the page lists them. */
-export const GUIDE_CLIENTS = AGENT_PARTS.flatMap((p) => p.guideClients ?? []).join("、");
+/** The modules' clients built on the Agent guide, by name. The page joins them for the reader. */
+export const GUIDE_CLIENTS = AGENT_PARTS.flatMap((p) => p.guideClients ?? []);
