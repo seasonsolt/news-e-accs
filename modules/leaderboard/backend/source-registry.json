@@ -176,6 +176,20 @@
           "license": "尚未确认机器成绩与数据复用条款。"
         },
         {
+          "key": "wordsmith-editing",
+          "status": "observing",
+          "name": "Wordsmith · 书稿编辑",
+          "fullName": "Wordsmith Model Bench",
+          "operator": "Wordsmith",
+          "description": "给未出版书稿写编辑意见、逐句修改和终稿校对。",
+          "logo": null,
+          "officialUrl": "https://wordsmith.page/benchmark/models",
+          "what": "2026-10 试点：12 个模型配置，编辑意见、逐句修改、终稿校对三项，0–100 分附 95% 区间；不同厂商的模型裁判互不评自家模型。",
+          "usage": "观察中，不计分：没有数据复用许可，没有可机读成绩，由销售书稿编辑产品的 Wordsmith 自己出题自己评，题目、清单和书稿都不公开，无法复核。写明许可、提供机读成绩并经人类编辑校验后再评估。",
+          "limits": "运营方自述为试点而非独立认证；样本小、区间宽；裁判尚未与人类编辑对照；只有英文书稿。",
+          "license": "页面未写明数据许可。"
+        },
+        {
           "key": "openvibeeval-design",
           "status": "observing",
           "name": "OpenVibeEval · 网页作品",

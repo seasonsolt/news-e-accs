@@ -196,6 +196,16 @@
       "limits": "The aggregate Rank Score mixes factors other than capability. Uneven task coverage prevents direct use of the homepage aggregate rank.",
       "license": "Machine-readable results and data reuse terms have not been confirmed."
     },
+    "wordsmith-editing": {
+      "name": "Wordsmith · Manuscript editing",
+      "fullName": "Wordsmith Model Bench",
+      "operator": "Wordsmith",
+      "description": "Writes editorial notes, line edits and a final proofread for unpublished manuscripts.",
+      "what": "October 2026 pilot: 12 model configurations across craft notes, line edits and polish, scored 0–100 with 95% intervals. Judges from different model makers never grade their own maker's models.",
+      "usage": "Under observation, not scored: there is no data reuse license and no machine-readable results, and Wordsmith, which sells a manuscript editing product, writes and grades the test itself. Instructions, checklist and pages are unpublished, so results cannot be checked. Reassess once a license is stated, machine-readable results are published and the judges are validated against human editors.",
+      "limits": "Described by its operator as a pilot, not an independent certification. Small sample with wide intervals; judges not yet checked against human editors; English manuscripts only.",
+      "license": "No data license is stated on the page."
+    },
     "openvibeeval-design": {
       "name": "OpenVibeEval · Web designs",
       "operator": "OpenVibeEval",
