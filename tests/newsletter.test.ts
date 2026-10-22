@@ -152,7 +152,7 @@ test("a malformed address is refused, and nothing is mailed while the valve is c
 
 test("signing up stores the address pending and mails one confirmation per cooldown", async () => {
   const before = since();
-  assert.deepEqual(await subscribe({ email: EMAIL, language: "zh", ...visitor }), { ok: true });
+  assert.deepEqual(await subscribe({ email: EMAIL, language: "zh", channel: "share", ...visitor }), { ok: true });
   const [row] = await sql<{ status: string; confirm_sent_at: Date | null }[]>`SELECT status, confirm_sent_at FROM newsletter_subscribers WHERE email = ${EMAIL.toLowerCase()}`;
   const [preference] = await sql`SELECT language, language_preference_known FROM newsletter_subscribers WHERE email = ${EMAIL.toLowerCase()}`;
   assert.equal(preference!.language, "zh");
@@ -172,7 +172,8 @@ test("signing up stores the address pending and mails one confirmation per coold
   assert.equal(hits.slice(before).some((h) => h.path.startsWith("/contacts")), false, "signing up does not touch the list");
 
   // Asking again in the same language answers the same and mails nothing more.
-  assert.deepEqual(await subscribe({ email: EMAIL.toUpperCase(), language: "zh", ...visitor }), { ok: true });
+  assert.deepEqual(await subscribe({ email: EMAIL.toUpperCase(), language: "zh", channel: "newsletter", ...visitor }), { ok: true });
+  assert.equal((await sql`SELECT signup_channel FROM newsletter_subscribers WHERE email = ${EMAIL.toLowerCase()}`)[0]!.signup_channel, "share", "repeat signup cannot overwrite first attribution");
   assert.equal(hits.slice(before).filter((h) => h.path === "/emails").length, 1);
   assert.equal((await sql`SELECT language, pending_language FROM newsletter_subscribers WHERE email = ${EMAIL.toLowerCase()}`)[0]!.language, "zh");
   assert.equal((await sql`SELECT pending_language FROM newsletter_subscribers WHERE email = ${EMAIL.toLowerCase()}`)[0]!.pending_language, null);
@@ -237,6 +238,7 @@ test("today's report goes out as one broadcast, once", async () => {
   assert.equal(broadcast.body.send, true);
   assert.match(broadcast.body.subject, new RegExp(`头条 ${T}`));
   assert.match(broadcast.body.html, /\{\{\{RESEND_UNSUBSCRIBE_URL\}\}\}/, "every issue carries the unsubscribe link");
+  assert.match(broadcast.body.text, /via=newsletter/);
   assert.match(broadcast.body.html, /导语 &lt;b&gt;不&lt;\/b&gt;是 HTML。/, "report text is escaped");
   assert.match(broadcast.body.html, new RegExp(`/zh/daily/${TODAY}`));
   assert.match(broadcast.body.html, new RegExp(`/zh/items/nl-${T}-1`));

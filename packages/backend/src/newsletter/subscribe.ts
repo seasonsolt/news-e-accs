@@ -1,3 +1,4 @@
+import { distributionChannel } from "@aihot/contracts/distribution";
 // Newsletter sign-up with double opt-in. Subscribing answers the same whether or not the address was
 // known (so the form cannot be used to test addresses) and mails a confirmation link; the link opens a
 // page that confirms by script (a POST), so mail scanners that only fetch links cannot confirm on a
@@ -75,11 +76,12 @@ export async function checkDailyLetters(additional = 0): Promise<void> {
   if (n + additional >= DAILY_LETTERS) throw new NewsletterRejected(429, "rate_limited", "今天订阅的人太多了，请明天再试。", 3600);
 }
 
-export async function subscribe(input: { email: string; ip: string; userAgent: string; language?: DistributionLanguage; source?: unknown }): Promise<{ ok: true }> {
+export async function subscribe(input: { email: string; ip: string; userAgent: string; language?: DistributionLanguage; source?: unknown; channel?: unknown }): Promise<{ ok: true }> {
   const email = normalizeEmail(input.email);
   if (!email) throw new NewsletterRejected(400, "invalid_request", "邮箱格式不正确。");
   const language = subscribeLanguage(input.language);
   const signupSource = subscribeSource(input.source);
+  const channel = distributionChannel(input.channel);
   const source = await checkSubscribeRequest(input.ip, input.userAgent, language);
 
   const [previous] = await sql<{ token: string; language: DistributionLanguage; pending_language: DistributionLanguage | null; confirm_sent_at: Date | null; updated_at: Date }[]>`
@@ -101,8 +103,8 @@ export async function subscribe(input: { email: string; ip: string; userAgent: s
   // A different request retires the previous link, so an older letter cannot apply a language it did not offer.
   const token = changed || !previous ? randomBytes(32).toString("base64url") : previous.token;
   const [row] = await sql<{ id: string; token: string; language: DistributionLanguage; pending_language: DistributionLanguage | null }[]>`
-    INSERT INTO newsletter_subscribers (email, token, source_hash, language, language_preference_known, pending_language, signup_source)
-    VALUES (${email}, ${token}, ${source}, ${language}, true, NULL, ${signupSource})
+    INSERT INTO newsletter_subscribers (email, token, source_hash, language, language_preference_known, pending_language, signup_source, signup_channel)
+    VALUES (${email}, ${token}, ${source}, ${language}, true, NULL, ${signupSource}, ${channel})
     ON CONFLICT (email) DO UPDATE SET
       signup_source = coalesce(newsletter_subscribers.signup_source, EXCLUDED.signup_source),
       pending_language = CASE WHEN newsletter_subscribers.language = ${language} THEN NULL ELSE ${language} END,
