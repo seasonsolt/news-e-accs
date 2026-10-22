@@ -1,3 +1,4 @@
+import { trackDistribution } from "./lib/distribution";
 import { Link } from "./lib/navigation";
 import { requestLocale, localePath, htmlLanguage, type Locale } from "./lib/locale";
 import { Text, translate, useLocale, useTranslate } from "./lib/i18n";
@@ -152,6 +153,10 @@ export default function App() {
       body: JSON.stringify({ event: "page_view", path: pathname }),
     }).catch(() => {});
   }, [pathname]);
+  useEffect(() => {
+    if (pathname === "/admin" || pathname.startsWith("/admin/")) return;
+    return trackDistribution(search);
+  }, [pathname, search]);
   // iOS Safari only shows :active (pressed) styles once the document listens for touches.
   useEffect(() => {
     const noop = () => {};

@@ -19,8 +19,10 @@ const INSPECTION_GAP_MS = 120;
 // Access tokens live an hour; a new one is signed well before that.
 const TOKEN_RENEW_MS = 45 * 60_000;
 
-// reasons: Google's coverage state for each inspected URL that is not indexed ("Crawled - currently not indexed",
-// "Discovered - currently not indexed", ...), counted; weeks read before it was kept have none.
+export interface SearchQueryReading { page: string; query: string; clicks: number; impressions: number; ctr: number; position: number }
+export interface SearchQuerySnapshot { property: string; rows: SearchQueryReading[]; limitReached: boolean }
+
+// Google's coverage states for inspected URLs that are not indexed; older weeks have no reasons.
 export interface SectionReading { clicks: number; impressions: number; inspected: number; indexed: number; reasons?: Record<string, number> }
 
 /** The address's first part, the Chinese edition counted with the English page: "/zh/story/x" is "story". */
@@ -81,6 +83,15 @@ export async function readSearchConsoleWeek(now = new Date()) {
     s.impressions += row.impressions;
   }
 
+  // A bounded snapshot of Google's top rows, not a census of all searches. Keep missing history null.
+  const queryRows = (await google<{ rows?: Array<{ keys: string[]; clicks: number; impressions: number; ctr: number; position: number }> }>(query,
+    { startDate: week.start, endDate: week.end, dimensions: ["page", "query"], rowLimit: 25_000, dataState: "final" }, "page queries")).rows ?? [];
+  const pageQueries: SearchQuerySnapshot = {
+    property,
+    rows: queryRows.map((r) => ({ page: r.keys[0]!, query: r.keys[1]!, clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position })),
+    limitReached: queryRows.length === 25_000,
+  };
+
   // The discovery URLs are what the site asks Google to index; a quota refusal ends the count where it is.
   const urls = (await loadDiscoveryEntries(now)).map((e) => e.loc).slice(0, MAX_INSPECTIONS);
   let stopped: number | null = null;
@@ -118,9 +129,9 @@ export async function readSearchConsoleWeek(now = new Date()) {
     indexed: all.reduce((n, s) => n + s.indexed, 0),
   };
   await sql`
-    INSERT INTO search_console_weekly (week, property, clicks, impressions, inspected, indexed, sections)
-    VALUES (${reading.week}, ${property}, ${reading.clicks}, ${reading.impressions}, ${reading.inspected}, ${reading.indexed}, ${sql.json(Object.fromEntries(sections) as never)})
+    INSERT INTO search_console_weekly (week, property, clicks, impressions, inspected, indexed, sections, page_queries)
+    VALUES (${reading.week}, ${property}, ${reading.clicks}, ${reading.impressions}, ${reading.inspected}, ${reading.indexed}, ${sql.json(Object.fromEntries(sections) as never)}, ${sql.json(pageQueries as never)})
     ON CONFLICT (week) DO UPDATE SET property = EXCLUDED.property, clicks = EXCLUDED.clicks, impressions = EXCLUDED.impressions,
-      inspected = EXCLUDED.inspected, indexed = EXCLUDED.indexed, sections = EXCLUDED.sections, fetched_at = now()`;
+      inspected = EXCLUDED.inspected, indexed = EXCLUDED.indexed, sections = EXCLUDED.sections, page_queries = EXCLUDED.page_queries, fetched_at = now()`;
   return { status: "read" as const, ...reading, urls: urls.length, ...(stopped ? { stopped } : {}) };
 }

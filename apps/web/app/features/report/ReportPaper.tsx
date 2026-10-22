@@ -1,3 +1,4 @@
+import { DailyBriefing } from "./DailyBriefing";
 import { contentHtmlLanguage } from "../../lib/content-language";
 import { Link } from "../../lib/navigation";
 import { ContentLanguage } from "../../components/ContentLanguage";
@@ -270,7 +271,7 @@ function FrontPage({ report, pages, leadStory, count }: { report: ReportDetail; 
   const wide = !cover?.width || !cover.height || cover.width / cover.height >= 1.25;
   const title = report.lead?.title ?? leadStory?.title ?? tx(headline(report.kind, report.key, count));
   const dek = daily || !leadStory ? (report.lead?.leadParagraph ?? leadStory?.summary ?? report.overview) : leadStory.summary;
-  const highlights = report.highlights.filter((h) => !leadStory || keyOf(h) !== keyOf(leadStory)).slice(0, 3);
+  const highlights = (daily ? [] : report.highlights).filter((h) => !leadStory || keyOf(h) !== keyOf(leadStory)).slice(0, 3);
   const inPage = new Set(pages.flatMap((p) => p.items.map((c) => c.itemId)).filter(Boolean));
   const period = daily ? tx("今日") : report.kind === "weekly" ? tx("本周") : tx("本月");
   const index = [...pages.map((p) => ({ id: p.id, label: p.label, n: tx("{0} 件", p.items.length) })), ...(report.flashes.length > 0 ? [{ id: "s-flash", label: tx("快讯"), n: tx("{0} 条", report.flashes.length) }] : [])];
@@ -478,6 +479,7 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
       ) : (
         <>
           {!daily && leadStory && report.overview && <Overview text={report.overview} />}
+          {daily && <DailyBriefing report={report} />}
           <FrontPage report={report} pages={pages} leadStory={leadStory} count={count} />
         </>
       )}

@@ -1,3 +1,4 @@
+import { distributionChannel } from "@aihot/contracts/distribution";
 import type { ModulePage } from "@aihot/contracts/modules";
 import { parseSubscribeTarget, SUBSCRIBE_FUNNEL_EVENTS, subscribeEventTarget, type SubscribeFunnelEvent } from "@aihot/contracts/subscribe";
 import { MODULES } from "@aihot/site/modules";
@@ -55,6 +56,7 @@ export async function recordPageView(path: string): Promise<void> {
 export const SITE_EVENTS = [
   "star_add", "star_remove", "first_star", "subscribe_click",
   ...SUBSCRIBE_FUNNEL_EVENTS,
+  "distribution_visit", "distribution_read",
   "outbound_click", "share_click", "starred_export", "starred_import",
 ] as const;
 export type SiteEvent = (typeof SITE_EVENTS)[number];
@@ -111,6 +113,7 @@ export function normalizeSiteEvent(body: unknown): { event: SiteEvent; target: s
   if (typeof raw === "string" && raw.length > 300) return null;
   const target = typeof raw === "string" ? raw : "";
   const name = event as SiteEvent;
+  if (name === "distribution_visit" || name === "distribution_read") return distributionChannel(target) ? { event: name, target } : null;
   if (EMPTY_TARGET.has(name)) return target === "" ? { event: name, target: "" } : null;
   if (FUNNEL_EVENT.has(name)) {
     const parsed = parseSubscribeTarget(name, target);

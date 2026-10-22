@@ -10,6 +10,7 @@ import { weeklyReadings } from "@aihot/backend/admin/metrics";
 import { config } from "@aihot/backend/config";
 import { closeDb, sql } from "@aihot/backend/db";
 import { lastFullWeek, pageSection, readSearchConsoleWeek } from "@aihot/backend/operations/search-console";
+import { normalizeSiteEvent } from "@aihot/backend/site/analytics";
 import { buildApp } from "../apps/api/src/app.ts";
 
 const app = await buildApp();
@@ -70,6 +71,11 @@ test("Search Console is read only when switched on, with a signed service-accoun
       // As if the run had gone on for most of an hour: the next call signs a new access token first.
       if (!body.dimensions) Date.now = () => realNow() + 50 * 60_000;
       if (!body.dimensions) return Response.json({ rows: [{ clicks: 12, impressions: 340 }] });
+      if (body.dimensions.includes("query")) {
+        assert.deepEqual(body.dimensions, ["page", "query"]);
+        assert.equal(body.dataState, "final");
+        return Response.json({ rows: [{ keys: ["https://example.test/story/a", "model release"], clicks: 3, impressions: 80, ctr: 0.0375, position: 8.2 }] });
+      }
       return Response.json({ rows: [
         { keys: ["https://example.test/story/a"], clicks: 5, impressions: 100 },
         { keys: ["https://example.test/zh/story/b"], clicks: 2, impressions: 60 },
@@ -117,12 +123,21 @@ test("the weekly readings put views by section, subscribers and Search Console o
   assert.ok(readings.rows[2]!.subscribers < last.subscribers || readings.rows[2]!.subscribers === last.subscribers - last.confirmations, "subscribers are counted at each week's end");
   assert.deepEqual([last.search?.clicks, last.search?.impressions, last.search?.inspected, last.search?.indexed], [12, 340, 2, 1]);
   assert.equal(readings.rows[2]!.search, null);
+  assert.deepEqual(last.search?.pageQueries, { property: "sc-domain:example.test", rows: [{ page: "https://example.test/story/a", query: "model release", clicks: 3, impressions: 80, ctr: 0.0375, position: 8.2 }], limitReached: false });
+  await sql`UPDATE search_console_weekly SET page_queries = NULL WHERE week = ${week.start}::date`;
+  assert.equal((await weeklyReadings(4, now)).rows[1]!.search?.pageQueries, null, "old weeks stay unknown, not zero");
 
   assert.ok(last.confirmationsBySource.some((s) => s.source === null && s.count >= 1));
-  await sql`UPDATE newsletter_subscribers SET signup_source = 'concept', unsubscribed_at = now() WHERE email = ${email}`;
+  await sql`UPDATE newsletter_subscribers SET signup_source = 'concept', signup_channel = 'share', unsubscribed_at = now() WHERE email = ${email}`;
   const afterUnsubscribe = (await weeklyReadings(4, now)).rows[1]!;
   assert.equal(afterUnsubscribe.confirmations, last.confirmations);
+  assert.equal(afterUnsubscribe.distribution.find((c) => c.channel === "share")?.confirmations, 1);
   assert.ok(afterUnsubscribe.confirmationsBySource.some((s) => s.source === "concept" && s.count >= 1));
 
   assert.equal((await app.inject("/api/admin/metrics")).statusCode, 401, "the readings are for the admin only");
+});
+
+test("distribution counters reject arbitrary channels and identifiers", () => {
+  assert.deepEqual(normalizeSiteEvent({ event: "distribution_read", target: "share" }), { event: "distribution_read", target: "share" });
+  for (const target of ["", "reader@example.com", "https://example.test", "unknown"]) assert.equal(normalizeSiteEvent({ event: "distribution_visit", target }), null);
 });

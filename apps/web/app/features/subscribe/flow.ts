@@ -1,3 +1,4 @@
+import { currentDistribution } from "../../lib/distribution.ts";
 // The newsletter form's one request, and the anonymous funnel counts that go with it.
 // Double opt-in is unchanged: 202 means a confirmation letter was accepted, not that the reader is subscribed.
 import { subscribeErrorReason, subscribeEventTarget, type SubscribeConfirmation, type SubscribeErrorReason, type SubscribeFunnelEvent, type SubscribeLocale, type SubscribeSource } from "@aihot/contracts/subscribe";
@@ -28,7 +29,8 @@ function failure(status: number, problem: { detail?: unknown; retryAfter?: unkno
 /** Accepts only 202. A network failure is `network`; the server's status maps to cap, 503, and the other reasons. */
 export async function requestSubscribe(email: string, language: Locale, source: SubscribeSource): Promise<SubscribeFailure | null> {
   try {
-    const { status, problem } = await post("/api/site/newsletter/subscribe", { email, language, source });
+    const channel = currentDistribution();
+    const { status, problem } = await post("/api/site/newsletter/subscribe", { email, language, source, ...(channel ? { channel } : {}) });
     if (status === 202) return null;
     return failure(status, problem, "暂时无法完成，请稍后再试。");
   } catch {
