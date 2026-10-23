@@ -84,11 +84,12 @@ test("a query that names a company also finds the articles about it", async () =
   assert.ok(!(await search(`claude ${T}-nothing`)).includes(about));
 });
 
-test("全部动态 carries the home hot strip only on its unfiltered first page", async () => {
+test("全部动态 carries the home hot strip on every first page but search", async () => {
   const hotOf = async (query: string) => JSON.parse((await app.inject({ method: "GET", url: `/api/site/pool${query}` })).body).hot;
-  const [plain, timeline] = await Promise.all([hotOf(""), app.inject({ method: "GET", url: "/api/site/timeline" }).then((r) => JSON.parse(r.body).hot)]);
-  assert.deepEqual(plain, timeline, "the same strip as 精选");
-  for (const query of ["?category=industry", "?channel=firstParty", "?q=claude", "?page=2"]) assert.equal(await hotOf(query), null, query);
+  const timeline = JSON.parse((await app.inject({ method: "GET", url: "/api/site/timeline" })).body).hot;
+  // A category or channel keeps the strip, so switching tabs does not reshape the page.
+  for (const query of ["", "?category=industry", "?channel=firstParty"]) assert.deepEqual(await hotOf(query), timeline, query || "unfiltered");
+  for (const query of ["?q=claude", "?page=2"]) assert.equal(await hotOf(query), null, query);
 });
 
 test("bare addresses in post text become safe links", () => {

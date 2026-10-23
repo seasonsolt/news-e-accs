@@ -47,12 +47,11 @@ export default function Home() {
   // A first visit to the unfiltered front page opens on the newsletter onboarding (shown before paint
   // by the boot script); everyone else, crawlers included, reads the news below.
   const front = filters.channel === "all" && !filters.category && !filters.tag && !filters.at;
-  const filtered = !!(filters.tag || filters.category || filters.channel !== "all");
   useSubscribeView(subscribeLink, "home_button", front);
   return (
     <div className="home-page pb-6">
       {front && <Onboarding mode="overlay" />}
-      <FeedDeck label={tx("精选")} heading={tx(SITE.homeHeading)} at={filters.at} tag={filters.tag} filtered={filtered} subscribeRef={subscribeLink} />
+      <FeedDeck label={tx("精选")} heading={tx(SITE.homeHeading)} at={filters.at} tag={filters.tag} subscribeRef={subscribeLink} />
 
       <div className="mt-6 hidden items-center justify-between gap-4 lg:mt-8 lg:flex">
         <div className="flex min-w-0 flex-1 items-center gap-3">

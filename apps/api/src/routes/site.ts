@@ -108,10 +108,10 @@ export function registerSite(app: FastifyInstance) {
     const filters = parseFilters(q);
     const limit = Math.min(Math.max(Number(q.limit) || 20, 1), 40);
     const at = parseAt(q.at);
-    const unfiltered = filters.channel === "all" && !filters.category && !filters.tag && !q.cursor;
+    const firstPage = !q.cursor;
     const [data, hot] = await Promise.all([
       loadTimeline({ ...filters, cursor: q.cursor || null, limit, at }),
-      unfiltered ? loadHotStrip(at ? beijingDayEnd(at) : null) : null,
+      firstPage ? loadHotStrip(at ? beijingDayEnd(at) : null) : null,
     ]);
     // Any cache in front and the home page built from this answer share one absolute deadline.
     // A past day's slice is settled and keeps longer.
@@ -125,10 +125,10 @@ export function registerSite(app: FastifyInstance) {
     const page = Math.min(Math.max(Number(q.page) || 1, 1), 50);
     const search = q.q?.trim() ? q.q.trim().slice(0, 200) : null;
     const tab = q.tab === "relevance" ? "relevance" : "time";
-    const unfiltered = filters.channel === "all" && !filters.category && !filters.tag && !search && page === 1;
+    const firstPage = !search && page === 1;
     const [data, hot] = await Promise.all([
       loadPool({ ...filters, q: search, tab, page, lang: q.lang === "en" ? "en" : "zh" }),
-      unfiltered ? loadHotStrip() : null,
+      firstPage ? loadHotStrip() : null,
     ]);
     return sendJsonWithEtag(req, reply, { ...data, hot }, { etagPrefix: "pool", cacheControl: "public, max-age=60, s-maxage=60" });
   }));

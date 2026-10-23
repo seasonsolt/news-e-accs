@@ -24,14 +24,15 @@ function TodayLabel({ at }: { at?: string | null }) {
 }
 
 /**
- * The deck above 精选 and 全部动态. Both feeds share it, so 精选 / 全部 switches only the list below
- * and the filter row stays where it was, as a category switch does. Filtered views get the compact deck.
+ * The deck above 精选 and 全部动态. Both feeds and all their categories share it, so switching feed or
+ * category changes only the list below and the filter row stays where it was. A tag page (reached from a
+ * link, not a tab) gets the compact deck with the tag as its title.
  */
-export function FeedDeck({ label, heading, at, tag, filtered, subscribeRef }: { label: string; heading: string; at?: string | null; tag?: string | null; filtered: boolean; subscribeRef?: Ref<HTMLSpanElement> }) {
+export function FeedDeck({ label, heading, at, tag, subscribeRef }: { label: string; heading: string; at?: string | null; tag?: string | null; subscribeRef?: Ref<HTMLSpanElement> }) {
   const tx = useTranslate();
   const root = useRouteLoaderData<typeof rootLoader>("root");
   const k = root?.timeBounds?.kardashev ?? null;
-  if (filtered) return <Deck compact art="home-intelligence" label={label} kicker={<TodayLabel at={at} />} title={tag ? `#${tag}` : label} />;
+  if (tag) return <Deck compact art="home-intelligence" label={label} kicker={<TodayLabel at={at} />} title={`#${tag}`} />;
   return (
     <Deck
       art="home-intelligence"
