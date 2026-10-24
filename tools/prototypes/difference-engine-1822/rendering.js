@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { EffectComposer } from "./vendor/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "./vendor/addons/postprocessing/RenderPass.js";
 import { GTAOPass } from "./vendor/addons/postprocessing/GTAOPass.js";
@@ -36,13 +37,108 @@ export function createWorkshopRenderer(renderer, scene, camera) {
         gl_FragColor=vec4(c,1.0);
       }`,
   });
-  composer.addPass(new RenderPass(scene, camera)); composer.addPass(ao); composer.addPass(grade); composer.addPass(new OutputPass());
+  const engrave = new ShaderPass(ENGRAVING);
+  composer.addPass(new RenderPass(scene, camera)); composer.addPass(ao); composer.addPass(grade); composer.addPass(new OutputPass()); composer.addPass(engrave);
   const resize = () => {
-    const mobile = innerWidth < 761;
-    composer.setPixelRatio(Math.min(renderer.getPixelRatio(), mobile ? 1 : 1.25));
+    const mobile = innerWidth < 761, pixelRatio = Math.min(renderer.getPixelRatio(), mobile ? 1 : 1.25);
+    composer.setPixelRatio(pixelRatio);
     composer.setSize(innerWidth, innerHeight);
+    engrave.uniforms.uResolution.value.set(innerWidth * pixelRatio, innerHeight * pixelRatio);
+    engrave.uniforms.uLineScale.value = pixelRatio;
     ao.updateGtaoMaterial({ samples: mobile ? 8 : 16 });
   };
   resize();
-  return { composer, resize };
+  // The plate's brightness spread is the target: the rendered frame is remapped onto the reference's luminance
+  // mean and spread, measured once at the painting's viewpoint so the look does not pump while walking.
+  async function calibrate(referenceUrl) {
+    // onload, not decode(): decode() waits for a paint, which never comes while the tunnel keeps us hidden.
+    const image = new Image();
+    await new Promise((resolve, reject) => { image.onload = resolve; image.onerror = () => reject(new Error(`原画未能载入：${referenceUrl}`)); image.src = referenceUrl; });
+    const strength = engrave.uniforms.uStrength.value;
+    engrave.uniforms.uStrength.value = 0; composer.render();
+    const rendered = lumaStats(renderer.domElement), reference = lumaStats(image);
+    engrave.uniforms.uLumaMap.value.set(rendered.mean, rendered.spread, reference.mean, reference.spread);
+    engrave.uniforms.uStrength.value = strength;
+  }
+  function setEngraving(on) { engrave.uniforms.uStrength.value = on ? 1 : 0; }
+  return { composer, resize, calibrate, setEngraving };
 }
+
+function lumaStats(source) {
+  const canvas = document.createElement("canvas"); canvas.width = 96; canvas.height = 64;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  context.drawImage(source, 0, 0, canvas.width, canvas.height);
+  const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+  let sum = 0, squares = 0; const count = data.length / 4;
+  for (let i = 0; i < data.length; i += 4) {
+    const l = (data[i] * .2126 + data[i + 1] * .7152 + data[i + 2] * .0722) / 255; sum += l; squares += l * l;
+  }
+  const mean = sum / count;
+  return { mean, spread: Math.sqrt(Math.max(squares / count - mean * mean, 1e-4)) };
+}
+
+// The plates are Victorian copperplate engravings: sepia paper and ink, brass the only saturated colour,
+// tone carried by hatching, every form closed by an ink line. Runs on display colours after OutputPass.
+const ENGRAVING = {
+  uniforms: {
+    tDiffuse: { value: null }, uStrength: { value: 1 },
+    uResolution: { value: new THREE.Vector2(1, 1) }, uLineScale: { value: 1 },
+    uLumaMap: { value: new THREE.Vector4(.5, .25, .5, .25) },   // rendered mean, spread → reference mean, spread
+  },
+  vertexShader: "varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float uStrength, uLineScale; uniform vec2 uResolution; uniform vec4 uLumaMap;
+    varying vec2 vUv;
+    float luma(vec3 c){ return dot(c, vec3(.2126,.7152,.0722)); }
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+    float noise(vec2 p){
+      vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
+      return mix(mix(hash(i), hash(i + vec2(1., 0.)), f.x), mix(hash(i + vec2(0., 1.)), hash(i + vec2(1., 1.)), f.x), f.y);
+    }
+    // A burin line: straight on average, with a slow waver so the set reads as cut by hand, not printed by screen.
+    float hatch(vec2 p, float angle, float spacing, float width){
+      if (width <= 0.) return 0.;
+      vec2 dir = vec2(cos(angle), sin(angle));
+      float along = dot(p, vec2(-dir.y, dir.x));
+      float across = dot(p, dir) + (noise(vec2(along * .035, dot(p, dir) / spacing * .5)) - .5) * spacing * .7;
+      float d = abs(fract(across / spacing) - .5) * 2.;
+      return 1. - smoothstep(width - .2, width + .2, d);
+    }
+    void main(){
+      vec3 c = texture2D(tDiffuse, vUv).rgb;
+      if (uStrength <= 0.) { gl_FragColor = vec4(c, 1.); return; }
+      float l = luma(c);
+      float t = clamp((l - uLumaMap.x) / uLumaMap.y * uLumaMap.w + uLumaMap.z, 0., 1.);
+      t = mix(t, t * t * (3. - 2. * t), .55);   // the plates are printed hard: deep shadow, open light
+
+      vec3 ink = vec3(.12,.075,.04), umber = vec3(.5,.36,.21), paper = vec3(.96,.89,.73);
+      vec3 sepia = mix(mix(ink, umber, smoothstep(0., .48, t)), paper, smoothstep(.4, 1., t));
+      // Brass keeps its hue and gets the plate's glow: warm, saturated pixels keep their colour at the remapped brightness.
+      // Brass is yellow (green well above blue); the reddish wood (red well above green) stays in the sepia.
+      float warmth = smoothstep(.04, .15, c.g - c.b) * (1. - smoothstep(.1, .2, c.r - c.g)) * smoothstep(.1, .35, l);
+      vec3 hue = c / max(max(c.r, max(c.g, c.b)), .02);
+      vec3 brass = clamp(mix(vec3(1.), hue, 1.25) * vec3(1., .82, .45) * (t * 1.25 + .08), 0., 1.);
+      vec3 col = mix(sepia, brass, warmth * .85);
+
+      // Hatching lives in wood, plaster and shadow, never on the brass: one set in the half-tones, a crossing set deep down.
+      vec2 p = gl_FragCoord.xy / uLineScale;
+      float shade = (1. - t) * (1. - warmth);
+      float h1 = hatch(p, .82, 3.4, clamp((shade - .45) * 1.4, 0., .7));
+      float h2 = hatch(p, -.55, 4.6, clamp((shade - .7) * 1.6, 0., .6));
+      col *= 1. - .34 * max(h1, h2 * .85);
+
+      // Ink contour from the luminance gradient.
+      vec2 px = 1. / uResolution;
+      float tl = luma(texture2D(tDiffuse, vUv + px * vec2(-1., 1.)).rgb), tr = luma(texture2D(tDiffuse, vUv + px * vec2(1., 1.)).rgb);
+      float bl = luma(texture2D(tDiffuse, vUv + px * vec2(-1., -1.)).rgb), br = luma(texture2D(tDiffuse, vUv + px * vec2(1., -1.)).rgb);
+      float gx = (tr + br) - (tl + bl), gy = (tl + tr) - (bl + br);
+      float edge = smoothstep(.09, .3, length(vec2(gx, gy)));
+      col = mix(col, ink, edge * .55);
+
+      // Paper: fine tooth plus a slow mottle, strongest in the light areas where paper shows.
+      float tooth = hash(floor(gl_FragCoord.xy / uLineScale)) - .5;
+      float mottle = hash(floor(vUv * vec2(48., 32.))) - .5;
+      col *= 1. + (tooth * .07 + mottle * .03) * (.4 + t);
+
+      gl_FragColor = vec4(mix(c, col, uStrength), 1.);
+    }`,
+};

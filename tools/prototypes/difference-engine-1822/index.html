@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#171813">
+  <meta name="theme-color" content="#0d0a07">
   <title>1822 · 差分机工坊 — e/acc 场景原型</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./style.css">
@@ -14,6 +14,7 @@
     <div id="viewport" aria-label="三维场景：拖动环视，滚轮走近，点击机器操作"></div>
     <div class="vignette" aria-hidden="true"></div>
     <header class="masthead">
+      <button class="back-button" id="back" hidden><span aria-hidden="true">←</span> 回到时间线</button>
       <a class="brand" href="https://e-acc.ai/zh/chronicle?t=1822">e/acc <span>文明现场</span></a>
       <div class="edition"><span class="status-dot"></span>可探索场景 <span class="edition-no">01 / 1822</span></div>
     </header>
@@ -65,7 +66,7 @@
       </div>
       <p class="gesture-hint"><span class="desktop-hint">拖动环视 · 滚轮走近 · WASD 行走 · 空格转动</span><span class="touch-hint">单指环视 · 双指缩放 · 点击标记操作</span></p>
     </div>
-    <footer class="scene-footer"><span>交互概念复原 · 非 1822 年实物复刻</span><button id="about-open" class="text-button">关于这一幕</button></footer>
+    <footer class="scene-footer"><span>交互概念复原 · 非 1822 年实物复刻</span><span class="footer-actions"><button id="style-toggle" class="text-button" aria-pressed="true">画风：原画</button><button id="about-open" class="text-button">关于这一幕</button></span></footer>
     <div class="toast" id="toast" role="status" hidden></div>
   </main>
   <dialog id="reference-dialog"><button class="dialog-close icon-button" aria-label="关闭原画">×</button><img src="./reference.webp" alt="现有加速史的差分机工坊原画，黄铜计算柱与高窗工坊"><div class="dialog-caption"><h2>从这幅画，走进空间。</h2><p>原画用于美术方向参照。眼前场景由独立三维几何构成，可以走近、环视并操作。</p></div></dialog>

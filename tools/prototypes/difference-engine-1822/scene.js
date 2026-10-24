@@ -10,6 +10,18 @@ import { initialRegisters, advanceRegisters, digits, canWalkTo } from "./calcula
 const $ = (id) => document.getElementById(id);
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const mobile = () => innerWidth < 761;
+const params = new URLSearchParams(location.search);
+// Opened from the chronicle tunnel: the scene waits, framed like the plate, until the tunnel hands over.
+const embedded = params.has("embed");
+const baseFov = () => mobile() ? 51 : 43;
+// The plate's own camera: its vertical field of view at the plate's 3:2. Other screens crop it like the tunnel
+// does (object-fit: cover), so the scene lines up with the plate whatever the window's shape.
+const PLATE_FOV = 46, PLATE_ASPECT = 1.5;
+function plateFov(aspect) {
+  if (aspect <= PLATE_ASPECT) return PLATE_FOV;
+  const half = Math.tan(THREE.MathUtils.degToRad(PLATE_FOV) / 2) * PLATE_ASPECT / aspect;
+  return THREE.MathUtils.radToDeg(2 * Math.atan(half));
+}
 let seed = 1822;
 function random() { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }
 
@@ -537,23 +549,28 @@ async function start() {
   const dustGeometry = new THREE.BufferGeometry(); dustGeometry.setAttribute("position", new THREE.BufferAttribute(dustPositions, 3));
   const dust = new THREE.Points(dustGeometry, new THREE.PointsMaterial({ color: "#ffe0ac", size: .011, transparent: true, opacity: .3, depthWrite: false })); scene.add(dust);
 
-  let cameraFlight = null, activeView = "wide", cycle = null, running = false, driveAngle = 0, toastTimeout;
+  let cameraFlight = null, activeView = "wide", cycle = null, running = false, driveAngle = 0, toastTimeout, paused = embedded;
   const views = {
     wide: { position: mobile() ? [4.6, 3.5, 14.8] : [5.1, 2.9, 8.2], target: mobile() ? [.15, 2, .1] : [-.5, 2.15, .15], title: "工坊全景" },
     close: { position: [2.9, 2.9, 4.25], target: [.15, 2.5, 0], title: "计算柱近景" },
     side: { position: [5.2, 2.2, 2.2], target: [1.1, 1.85, 0], title: "传动机构侧面" },
     paper: { position: [-1.45, 2.35, 3.65], target: [-1.6, 1.03, 2.25], title: "平方数表" },
+    // Matched by eye to reference.webp at 3:2: the engine fills the right two thirds, the arched windows behind its end.
+    painting: { position: [2.3, 2.7, 7.3], target: [-1.1, 1.75, 0], title: "原画视角", plate: true },
   };
+  const viewFov = (view) => view.plate ? plateFov(camera.aspect) : baseFov();
   function updateViewButtons() {
     for (const name of ["wide", "close", "side"]) { $("view-" + name).classList.toggle("is-active", activeView === name); $("view-" + name).setAttribute("aria-pressed", String(activeView === name)); }
   }
   function goToView(name, immediate = false) {
     const view = views[name]; activeView = name; updateViewButtons(); $("view-name").textContent = view.title;
-    const position = new THREE.Vector3(...view.position), target = new THREE.Vector3(...view.target);
-    if (immediate || reducedMotion.matches) { camera.position.copy(position); controls.target.copy(target); controls.update(); cameraFlight = null; }
-    else cameraFlight = { started: performance.now(), from: camera.position.clone(), targetFrom: controls.target.clone(), to: position, targetTo: target };
+    const position = new THREE.Vector3(...view.position), target = new THREE.Vector3(...view.target), fov = viewFov(view);
+    if (immediate || reducedMotion.matches) {
+      camera.position.copy(position); controls.target.copy(target); camera.fov = fov; camera.updateProjectionMatrix(); controls.update(); cameraFlight = null;
+    }
+    else cameraFlight = { started: performance.now(), from: camera.position.clone(), targetFrom: controls.target.clone(), to: position, targetTo: target, fovFrom: camera.fov, fovTo: fov };
   }
-  goToView("wide", true);
+  goToView("painting", true);
   controls.addEventListener("start", () => { cameraFlight = null; activeView = null; updateViewButtons(); $("view-name").textContent = "自由探索"; });
 
   function toast(message) { $("toast").textContent = message; $("toast").hidden = false; clearTimeout(toastTimeout); toastTimeout = setTimeout(() => { $("toast").hidden = true; }, 3000); }
@@ -751,7 +768,9 @@ async function start() {
     $("experience").classList.toggle("is-near", camera.position.distanceTo(controls.target) < 8);
   }
   function resize() {
-    camera.aspect = viewport.clientWidth / viewport.clientHeight; camera.updateProjectionMatrix();
+    camera.aspect = viewport.clientWidth / viewport.clientHeight;
+    if (activeView && !cameraFlight) camera.fov = viewFov(views[activeView]);
+    camera.updateProjectionMatrix();
     renderer.setPixelRatio(Math.min(devicePixelRatio, mobile() ? 1.5 : 1.75)); renderer.setSize(viewport.clientWidth, viewport.clientHeight);
     pipeline.resize();
   }
@@ -760,11 +779,12 @@ async function start() {
   function frame(time) {
     requestAnimationFrame(frame);
     const delta = Math.min((time - previousTime) / 1000, .05); previousTime = time;
-    if (document.hidden) return;
+    if (document.hidden || paused) return;
     if (cameraFlight) {
       const t = Math.min(1, (time - cameraFlight.started) / 1250), eased = t * t * (3 - 2 * t);
       camera.position.lerpVectors(cameraFlight.from, cameraFlight.to, eased);
       controls.target.lerpVectors(cameraFlight.targetFrom, cameraFlight.targetTo, eased);
+      camera.fov = THREE.MathUtils.lerp(cameraFlight.fovFrom, cameraFlight.fovTo, eased); camera.updateProjectionMatrix();
       if (t === 1) cameraFlight = null;
     }
     walk(delta); controls.update();
@@ -801,8 +821,42 @@ async function start() {
     renderer.info.reset();pipeline.composer.render();
   }
   if (mobile()) { $("inspector-body").hidden = true; $("inspector-toggle").textContent = "+"; $("inspector-toggle").setAttribute("aria-expanded", "false"); $("inspector-toggle").setAttribute("aria-label", "展开原理面板"); }
+  // Calibrate the engraving at the plate's viewpoint, where scene and plate show the same room.
+  await pipeline.calibrate("./reference.webp");
+  let engraved = params.get("style") !== "pbr";
+  function setEngraved(on) {
+    engraved = on; pipeline.setEngraving(on);
+    $("style-toggle").textContent = on ? "画风：原画" : "画风：写实"; $("style-toggle").setAttribute("aria-pressed", String(on));
+  }
+  setEngraved(engraved);
+  $("style-toggle").addEventListener("click", () => setEngraved(!engraved));
+  if (!embedded) goToView("wide", true);
   renderer.info.reset();pipeline.composer.render(); renderer.domElement.dataset.drawCalls = String(renderer.info.render.calls);
   $("loading").hidden = true; projectHotspots(); requestAnimationFrame(frame);
+  if (params.has("debug")) window.workshop = { camera, controls, views, goToView, setEngraved, render: () => { controls.update(); pipeline.composer.render(); } };
+
+  if (embedded) {
+    const experience = $("experience");
+    experience.classList.add("is-embedded", "is-crossing"); $("back").hidden = false;
+    const tell = (type) => parent.postMessage({ source: "workshop-1822", type }, location.origin);
+    addEventListener("message", (event) => {
+      if (event.origin !== location.origin || event.data?.source !== "chronicle-tunnel") return;
+      if (event.data.type === "enter") {
+        goToView("painting", true); paused = false; previousTime = performance.now();
+        pipeline.composer.render(); renderer.domElement.focus({ preventScroll: true }); tell("entered");
+        // Once the plate has dissolved into the room, step off the plate's spot so the depth shows,
+        // and bring the controls in only when the camera has landed.
+        const settle = reducedMotion.matches ? 0 : 1100, flight = reducedMotion.matches ? 0 : 1250;
+        setTimeout(() => { if (activeView === "painting") goToView("wide"); }, settle);
+        setTimeout(() => experience.classList.remove("is-crossing"), settle + flight);
+      }
+    });
+    $("back").addEventListener("click", () => {
+      experience.classList.add("is-crossing"); setRunning(false); goToView("painting");
+      setTimeout(() => { paused = true; tell("exit"); }, reducedMotion.matches ? 0 : 1300);
+    });
+    tell("ready");
+  }
 }
 
 start().catch((error) => {

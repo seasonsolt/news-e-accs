@@ -36,6 +36,17 @@ python3 tools/prototypes/difference-engine-1822/preview.py
 
 木地板、灰泥墙和窗框石材使用 Poly Haven 的 CC0 扫描贴图，分别加载颜色、OpenGL 法线、粗糙度与遮蔽。日光从高窗外照入，配合 GTAO 接触阴影、抗锯齿和暖色调色。工程图由内置 image_gen 生成，资产、完整提示词和来源记录见 [`assets/README.md`](assets/README.md)。它是场景装饰，不是历史文献。
 
+## 原画画风
+
+默认按原画的铜版画风格渲染（`rendering.js` 的 `ENGRAVING`，在 OutputPass 之后处理显示颜色）：
+- 亮度对齐原画：启动时在「原画视角」测一次渲染画面的亮度均值和离散度，映射到 `reference.webp` 的数值；只测一次，走动时画面不会忽明忽暗。
+- 着色：其余部分转为褐色墨与纸色，只有黄铜保留色相。
+- 线条：中间调和暗部加手刻排线（黄铜上不加），再加墨线轮廓和纸纹。
+
+页脚「画风」可切换写实渲染，`?style=pbr` 默认打开写实渲染。
+
+「原画视角」（`views.painting`）按原画构图对齐，3:2 下垂直视场角为 46°，其他比例按 `object-fit: cover` 换算。时间隧道（`../chronicle-tunnel/`）以 `?embed` 打开本场景，从这个视角交接。
+
 ## 实现与验证
 
 - `scene.js`：三维几何、光照、镜头、拾取、机械演示和界面绑定。
