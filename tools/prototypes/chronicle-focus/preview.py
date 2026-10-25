@@ -1,6 +1,7 @@
 """Local-only preview of the focused chronicle layout. Serves this directory, the site's media
-(apps/web/public/media, so plates and fonts keep their site paths) and forwards the one data request,
-/api/site/chronicle, to a running API (npm run dev:api; default http://127.0.0.1:3001)."""
+(apps/web/public/media, so plates and fonts keep their site paths), the 1822 workshop prototype at
+/difference-engine-1822/, and forwards the one data request, /api/site/chronicle, to a running API
+(npm run dev:api; default http://127.0.0.1:3001)."""
 import argparse
 import functools
 import http.server
@@ -9,6 +10,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 MEDIA = HERE.parents[2] / "apps" / "web" / "public"
+WORKSHOP = HERE.parent / "difference-engine-1822"
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -16,7 +18,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         if self.path.split("?")[0] == "/api/site/chronicle":
-            with urllib.request.urlopen(self.api + "/api/site/chronicle", timeout=10) as upstream:
+            # The live site's Cloudflare rejects Python's default User-Agent.
+            request = urllib.request.Request(self.api + "/api/site/chronicle", headers={"User-Agent": "e-acc-chronicle-focus-preview"})
+            with urllib.request.urlopen(request, timeout=10) as upstream:
                 body = upstream.read()
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -26,9 +30,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         super().do_GET()
 
+    def end_headers(self):
+        # A prototype under edit: never let the browser keep an old module.
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
+
     def translate_path(self, path):
         if path.startswith("/media/"):
             return str(MEDIA / path.split("?")[0].lstrip("/"))
+        if path.startswith("/difference-engine-1822/"):
+            return str(WORKSHOP / path.split("?")[0].removeprefix("/difference-engine-1822/"))
         return super().translate_path(path)
 
 

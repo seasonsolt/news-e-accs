@@ -1,5 +1,6 @@
 // Focused chronicle layout: the first screen is the plate, the axis and three readouts; everything else
 // opens in one side layer. Data comes from the site's /api/site/chronicle through preview.py.
+// The plates sit in a depth tunnel (depth-stage.js) that the axis flies through; ?flat keeps the flat plates.
 
 // ---------------------------------------------------------------------------
 // Mirrors packages/contracts/src/chronicle.ts and apps/web/app/features/chrono/format.ts (copied, not
@@ -174,6 +175,9 @@ const CATEGORY_COLOR = { cosmos: "#9fb0d6", life: "#86c79a", human: "#e2b468", e
 const STAGE_METRICS = ["population", "energy", "messaging"];
 const SHORT_LABEL = { population: "世界人口", energy: "一次能源功率", compute: "每美元算力", messaging: "伦敦→纽约消息", travel: "最快移动速度" };
 const SNAP_PX = 9;
+// Plates you can walk into: the plate's art key → its scene, which opens from the same framing as the plate.
+const SCENES = { "difference-engine": "/difference-engine-1822/?embed" };
+const WHEEL_STEP = 120;
 
 const $ = (id) => document.getElementById(id);
 const present = (nodes) => nodes.filter((c) => c !== null && c !== undefined);
@@ -186,6 +190,8 @@ const el = (tag, { dataset, style, ...props } = {}, ...children) => {
 };
 
 const now = decimalYear(Date.now());
+// Load the tunnel while the data is on its way, not after it.
+const depthModule = new URLSearchParams(location.search).has("flat") ? null : import("./depth-stage.js");
 const data = await fetch("/api/site/chronicle").then((r) => r.json());
 const eras = [...data.eras].sort((a, b) => a.from - b.from);
 const milestones = [...data.milestones].sort((a, b) => a.t - b.t);
@@ -220,6 +226,7 @@ function keepInView(u) {
 }
 
 function setT(t, { follow = true } = {}) {
+  if (depth?.busy) return;
   state.t = Math.min(Math.max(t, BIG_BANG), now + AXIS_FUTURE_YEARS);
   if (follow) keepInView(toAxis(state.t, now));
   scheduleRender();
@@ -233,6 +240,24 @@ function scheduleRender() {
 // ---------------------------------------------------------------------------
 // Stage
 // ---------------------------------------------------------------------------
+
+// Every picture on the axis, in time order: era openings and milestone plates (the stops of ‹ ›).
+const pictures = [
+  ...eras.map((e) => ({ t: e.from + 1e-9, src: `/media/art/epochs/${e.art}` })),
+  ...milestones.filter((m) => m.art).map((m) => ({ t: m.t, src: `/media/art/moments/${m.art}`, scene: SCENES[m.art] })),
+].sort((a, b) => a.t - b.t);
+const pictureAxis = pictures.map((p) => toAxis(p.t, now));
+// The axis position in pictures: an integer on a picture, a fraction in flight between two.
+function pictureProgress(t) {
+  const u = toAxis(t, now);
+  const i = pictureAxis.findLastIndex((x) => x <= u);
+  if (i < 0) return 0;
+  if (i >= pictures.length - 1) return pictures.length - 1;
+  const span = pictureAxis[i + 1] - pictureAxis[i];
+  return span > 0 ? i + (u - pictureAxis[i]) / span : i;
+}
+const depth = depthModule && (await depthModule).createDepthStage($("stage"), pictures, { onModeChange: () => scheduleRender(), onSceneReady: () => scheduleRender() });
+document.body.classList.toggle("has-depth", Boolean(depth));
 
 const plates = [$("plate-a"), $("plate-b")];
 let plateKey = "";
@@ -260,7 +285,12 @@ function splitTime(label) {
 
 function renderMoment(era, focus) {
   const plate = plateOf(era, focus);
-  showPlate(plate);
+  if (depth) depth.setProgress(pictureProgress(state.t), plate.alt);
+  else showPlate(plate);
+  const enter = $("enter");
+  enter.hidden = !(depth && focus?.art && SCENES[focus.art]);
+  enter.disabled = !depth?.canEnter();
+  enter.firstChild.textContent = enter.disabled ? "正在打开工坊… " : "走进工坊 ";
   const label = focus ? timeLabel(focus.t, now, focus.precision, focus.date) : timeLabel(state.t, now);
   const [before, figure, after] = splitTime(label);
   $("time").replaceChildren(...present([
@@ -393,13 +423,31 @@ document.addEventListener("keydown", (event) => {
     closeLayer();
     return;
   }
-  if (event.target.closest?.("input, textarea, .layer")) return;
+  if (event.target.closest?.("input, textarea, .layer") || depth?.busy) return;
+  if (event.key === "Enter" && !event.target.closest?.("button, [role=slider]") && !$("enter").hidden) {
+    depth.enter();
+    return;
+  }
   if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
     event.preventDefault();
     setT(stepPicture(eras, milestones, state.t, event.key === "ArrowLeft" ? -1 : 1));
   }
 });
 new ResizeObserver(() => scheduleRender()).observe(track);
+$("enter").addEventListener("click", () => depth.enter());
+
+// The wheel over the plate flies to the next or previous picture; over the axis it still zooms.
+let wheelSum = 0, wheelAt = 0;
+$("stage").addEventListener("wheel", (event) => {
+  if (!depth || depth.busy || event.target.closest(".axis, .layers")) return;
+  event.preventDefault();
+  if (event.timeStamp - wheelAt > 300) wheelSum = 0;
+  wheelAt = event.timeStamp;
+  wheelSum += event.deltaY;
+  if (Math.abs(wheelSum) < WHEEL_STEP) return;
+  setT(stepPicture(eras, milestones, state.t, Math.sign(wheelSum)));
+  wheelSum = 0;
+}, { passive: false });
 
 // ---------------------------------------------------------------------------
 // Side layer: all gauges, what is near this moment, the era gallery
@@ -546,4 +594,4 @@ function render() {
 }
 
 render();
-window.chronicleFocus = { state, setT, openLayer, closeLayer };
+window.chronicleFocus = { state, setT, openLayer, closeLayer, depth };
