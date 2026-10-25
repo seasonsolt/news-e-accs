@@ -13,6 +13,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["--env-file=.env", "apps/api/src/main.ts"],
       "port": 3001
+    },
+    {
+      "name": "chronicle-focus",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["tools/prototypes/chronicle-focus/preview.py", "--api", "https://e-acc.ai"],
+      "port": 8844
     }
   ]
 }
