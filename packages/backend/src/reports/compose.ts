@@ -9,7 +9,7 @@ import { EDITION_TIMES, REPORTS, SITE } from "@aihot/site";
 import { PLAIN_TERMS, RELEASE } from "@aihot/industry/taxonomy";
 import { promptText, promptVersion } from "../editorial/prompts.ts";
 import { modelFor } from "../editorial/models.ts";
-import { ENTITIES, isRelease } from "../editorial/vocabulary.ts";
+import { ENTITIES, entityNames, isRelease } from "../editorial/vocabulary.ts";
 import { addDays, isoWeekLabel, isoWeekRange, monthRange, zonedDate, zonedDateTime, zonedMidnight, zonedTime } from "@aihot/contracts/time";
 import { sql } from "../db.ts";
 import { config } from "../config.ts";
@@ -241,7 +241,7 @@ export function periodPrompt(kind: "weekly" | "monthly", startDate: string, endD
   };
 }
 
-const COMPANY_NAMES = Object.values(ENTITIES).map((e) => [e.name, ...e.aliases, ...(e.otherNames ?? [])].map((n) => n.toLowerCase()));
+const COMPANY_NAMES = Object.values(ENTITIES).map((e) => entityNames(e).map((n) => n.toLowerCase()));
 /** Words a writer may use that name nothing in particular: the pack's plain terms and the site's name. */
 const PLAIN = new Set([...PLAIN_TERMS, SITE.name.toLowerCase()]);
 
@@ -282,14 +282,25 @@ export function fitted(text: string, max: number): string | null {
  * anything the events do not name is not used, and overlong text keeps the leading sentences that fit.
  * Without a usable overview the issue is saved with none (see periodOverview). Events whose reports have
  * no English copy yet get one in the same call; an answer that fails to supply them defers the issue.
+ * Without a usable overview the issue is saved with none (see periodOverview).
+ * An automatic run skips a complete period of quiet dailies without publishing an empty issue.
  */
 async function composePeriod(kind: "weekly" | "monthly", key: string, startDate: string, endDateInclusive: string, reason: string | undefined) {
   const previous = await savedReport(kind, key);
   if (previous && reason === undefined) return { key, entries: previous.entries };
   const { start, end, timeZone } = await issueWindow(kind, key, periodReportWindow(startDate, endDateInclusive));
-  const { entries, issues } = await periodEntries(startDate, endDateInclusive);
+  const { entries, issues, hasEntries } = await periodEntries(startDate, endDateInclusive);
   const top = entries.slice(0, PERIOD_EVENTS[kind]);
-  if (!top.length) throw new Error(`${kind} ${key}: no daily entries in the period`);
+  if (!top.length) {
+    if (reason === undefined && !hasEntries && issues > 0) {
+      // Before the site's first daily there was nothing to publish; missing later dailies are still a failure.
+      const [{ first }] = await sql<{ first: string | null }[]>`SELECT min(key) AS first FROM reports WHERE kind = 'daily'`;
+      const firstDate = first && first > startDate ? first : startDate;
+      const days = (Date.parse(endDateInclusive) - Date.parse(firstDate)) / 86400000 + 1;
+      if (issues === days) return null;
+    }
+    throw new Error(`${kind} ${key}: no daily entries in the period`);
+  }
   const selected = await candidates(start, end);
   const missing = top.filter((e) => e.needsEnglishCopy);
   const groupsOf = () => SECTION_ORDER
@@ -423,9 +434,10 @@ export async function composeDueReports(now = new Date(), limit = 8): Promise<{ 
       if (k.kind !== "daily" && (!firstDaily || k.end(key) < firstDaily)) continue;
       if (shutdownSignal.signal.aborted || generated.length >= limit) break kinds;
       try {
-        await k.compose(key);
-        generated.push(`${k.kind}:${key}`);
+        if (await k.compose(key) !== null) generated.push(`${k.kind}:${key}`);
       } catch (error) {
+        // An issue interrupted by the stop is not a failure: it is written after the restart.
+        if (shutdownSignal.signal.aborted) break kinds;
         failed.push(`${k.kind}:${key}`);
         console.error(JSON.stringify({ level: "error", msg: "report failed", report: `${k.kind}:${key}`, error: logError(error) }));
       }

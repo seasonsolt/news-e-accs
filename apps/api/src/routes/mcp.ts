@@ -194,6 +194,7 @@ function registerTools(server: McpServer, say: typeof ok) {
     },
     safe(T.search, async (args) => {
       const q = args.q.trim();
+      if (q.includes("\0")) return fail("invalid_request", "Search queries cannot contain NUL characters.");
       if ([...q].length < 2) return fail("invalid_request", "Search queries must contain 2 to 200 characters.");
       const query = (mode: "selected" | "all") => ({ lang: args.lang, mode, window: args.window, by: "timeline", category: args.category ?? null, q, limit: args.limit, cursor: null } as const);
       let res = await recent(`items:${JSON.stringify(query("selected"))}`, () => v1Items(query("selected")));

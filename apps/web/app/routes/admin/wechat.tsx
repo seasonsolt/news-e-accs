@@ -6,7 +6,7 @@ import { useAdminAction } from "../../features/admin/action";
 import { toast } from "../../features/admin/toast";
 import { Badge, Button, Card, Empty } from "../../features/admin/ui";
 import { adminGet } from "../../lib/admin.server";
-import { copyText } from "../../lib/clipboard";
+import { copyText, copyRich } from "../../lib/clipboard";
 
 // The shapes of packages/backend/src/admin/wechat.ts.
 interface ColumnEntry {
@@ -132,15 +132,7 @@ function dayLabel(date: string) {
   return `${m}月${d}日 周${WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]}`;
 }
 
-/** Rich text for the 公众号 editor, with the plain text alongside for anywhere that takes no formatting. */
-async function copyRich(html: string, text: string) {
-  try {
-    await navigator.clipboard.write([new ClipboardItem({ "text/html": new Blob([html], { type: "text/html" }), "text/plain": new Blob([text], { type: "text/plain" }) })]);
-  } catch {
-    await copyText(text);
-    throw new Error("rich copy unavailable");
-  }
-}
+
 
 function readDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

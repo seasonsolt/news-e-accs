@@ -4,7 +4,7 @@ import { readdir, stat, unlink } from "node:fs/promises";
 import path from "node:path";
 import { config } from "../config.ts";
 import { sql } from "../db.ts";
-import { screenshotsForwarded } from "./feedback.ts";
+import { expireFeedbackBans, pruneFeedbackSubmissionState, screenshotsForwarded } from "./feedback.ts";
 import { serverModules } from "../modules.ts";
 
 /** Removes files under `dir` last written more than `maxAgeMs` ago. */
@@ -35,6 +35,8 @@ export async function dailyRetention(now = new Date()) {
   for (const m of serverModules()) if (m.retention) Object.assign(modules, await m.retention(now));
   const mcpUsage = await sql`DELETE FROM mcp_usage_daily WHERE day < (${now}::timestamptz AT TIME ZONE 'Asia/Taipei')::date - 89`;
   const leases = await sql`DELETE FROM delivery_leases WHERE expires_at < ${now}`;
+  const expiredFeedbackBans = await sql.begin(tx => expireFeedbackBans(tx, now));
+  const expiredFeedbackState = await pruneFeedbackSubmissionState(now);
   // Scheduled-task history: 30 days (failures 90) is enough for the runs view.
   const runs = await sql`DELETE FROM job_runs WHERE started_at < ${new Date(now.getTime() - 30 * 86400_000)} AND (status IS DISTINCT FROM 'failed' OR started_at < ${new Date(now.getTime() - 90 * 86400_000)})`;
   const monthMs = 30 * 86400_000;
@@ -48,6 +50,8 @@ export async function dailyRetention(now = new Date()) {
     ...modules,
     deletedMcpUsage: mcpUsage.count,
     deletedLeases: leases.count,
+    expiredFeedbackBans,
+    expiredFeedbackState,
     deletedJobRuns: runs.count,
     deletedScreenshots,
     prunedCache,

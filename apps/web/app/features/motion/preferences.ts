@@ -1,3 +1,4 @@
+import { reducedMotionQuery } from "../../lib/motion.ts";
 // One shared subscription for the whole site, not one media query / observer per score. The server
 // snapshot is false, including the hydration render: decoration only starts after React takes over.
 // The pre-paint script owns the first frame; storage events keep other tabs in step, and observing
@@ -21,7 +22,7 @@ function onStorage(event: StorageEvent) {
 export function subscribeMotionPreference(listener: () => void) {
   listeners.add(listener);
   if (listeners.size === 1) {
-    media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    media = reducedMotionQuery();
     media.addEventListener("change", notify);
     observer = new MutationObserver(notify);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-motion"] });
@@ -39,7 +40,7 @@ export function subscribeMotionPreference(listener: () => void) {
 }
 function snapshot() {
   return document.documentElement.getAttribute("data-motion") !== "reduced"
-    && !(media ?? window.matchMedia("(prefers-reduced-motion: reduce)")).matches;
+    && !(media ?? reducedMotionQuery()).matches;
 }
 
 export function useMotionAllowed(): boolean {

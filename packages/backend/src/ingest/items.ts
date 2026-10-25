@@ -6,6 +6,7 @@
 import { sql } from "../db.ts";
 import { upsertMaterial } from "../content/materials.ts";
 import { queueProcessing } from "../jobs/content.ts";
+import { readPublicationDate } from "../sources/dates.ts";
 import { normalizeUrl } from "../lib/url.ts";
 import { parseXItem, xHandle, xSourcesByHandle, type ParsedXPost } from "./x-post.ts";
 
@@ -83,7 +84,7 @@ async function ingestGeneric(sourceId: string, sourceName: unknown, items: ItemI
     const url = normalizeUrl(rawUrl);
     if (!url || seen.has(url)) continue;
     seen.add(url);
-    const published = typeof it.publishedAt === "string" ? new Date(it.publishedAt) : null;
+    const publication = readPublicationDate(typeof it.publishedAt === "string" ? it.publishedAt : null, "+00:00");
     const res = await upsertMaterial({
       sourceId: source.id,
       // Normalize only for deduplication. Ownership needs the reported origin (including www and
@@ -91,7 +92,7 @@ async function ingestGeneric(sourceId: string, sourceName: unknown, items: ItemI
       url: rawUrl,
       title,
       author: typeof it.author === "string" ? it.author.slice(0, 200) : null,
-      publishedAt: published && Number.isFinite(published.getTime()) ? published : null,
+      ...publication,
       raw: it.raw ?? null,
       via: "ingest",
       backfill: backfillOf(it.raw),

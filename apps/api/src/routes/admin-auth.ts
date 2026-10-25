@@ -91,6 +91,8 @@ export function registerAdminAuth(app: FastifyInstance) {
       ?? (DEPLOYMENT.loginReturnHeader ? req.headers[DEPLOYMENT.loginReturnHeader.toLowerCase()] : undefined)
       ?? "/admin",
     );
+    // A live session does not need signing in again: go straight to where the visitor was headed.
+    if (await sessionPrincipal(req.headers.cookie)) return reply.header("Cache-Control", "no-store").redirect(safeReturn(returnTo), 302);
     if (accessLoginConfigured()) return reply.header("Cache-Control", "no-store").redirect(`/api/auth/access?${new URLSearchParams({ return: safeReturn(returnTo) })}`, 302);
     if (feishuLoginConfigured() && !config.adminPassword) return feishuRedirect(reply, returnTo);
     return reply.header("Cache-Control", "no-store").redirect(loginPage(returnTo), 302);
@@ -98,7 +100,7 @@ export function registerAdminAuth(app: FastifyInstance) {
 
   app.get("/api/auth/options", async (_req, reply) => reply.header("Cache-Control", "no-store").send({ password: !!config.adminPassword, feishu: feishuLoginConfigured(), access: accessLoginConfigured() }));
 
-  // The sign-in form posts as a plain HTML form; only this route reads that format.
+  // The sign-in and sign-out forms post as plain HTML forms; only these routes read that format.
   app.register(async (form) => {
     form.addContentTypeParser("application/x-www-form-urlencoded", { parseAs: "string", bodyLimit: 16 * 1024 }, (_req, body, done) => {
       done(null, Object.fromEntries(new URLSearchParams(String(body))));
@@ -116,6 +118,12 @@ export function registerAdminAuth(app: FastifyInstance) {
         if (!(error instanceof LoginRejected)) req.log.error({ err: error }, "admin login failed");
         return reply.redirect(loginPage(returnTo, error instanceof LoginRejected && /ADMIN_PASSWORD/.test(error.message) ? "unset" : "wrong"), 303);
       }
+    });
+    // Signing out is a plain form too: outside this scope its empty urlencoded body would be a 415.
+    form.post("/api/auth/logout", async (req, reply) => {
+      await endSession(req.headers.cookie);
+      reply.header("Set-Cookie", cookie(SESSION_COOKIE, "", 0, secure())).header("Cache-Control", "no-store");
+      return reply.redirect(accessLoginConfigured() ? "/cdn-cgi/access/logout" : "/", 303);
     });
   });
 
@@ -166,13 +174,6 @@ export function registerAdminAuth(app: FastifyInstance) {
     reply.header("Cache-Control", "no-store");
     const admin = await sessionPrincipal(req.headers.cookie);
     return reply.code(admin && !admin.dev ? 204 : 401).send();
-  });
-
-  // With Cloudflare Access, its own sign-out follows, or the next visit would sign straight back in.
-  app.post("/api/auth/logout", async (req, reply) => {
-    await endSession(req.headers.cookie);
-    reply.header("Set-Cookie", cookie(SESSION_COOKIE, "", 0, secure())).header("Cache-Control", "no-store");
-    return reply.redirect(accessLoginConfigured() ? "/cdn-cgi/access/logout" : "/", 303);
   });
 
   app.get("/api/admin/me", adminHandler(async (_req, _reply, admin): Promise<AdminMe> => ({ name: admin.name, csrf: admin.csrf, dev: admin.dev })));

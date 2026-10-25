@@ -1,3 +1,4 @@
+import { scrollBehavior } from "../lib/motion";
 import { hasAlternateEdition } from "../lib/edition-meta.server";
 import { contentHtmlLanguage } from "../lib/content-language";
 import { localePath, requestLocale } from "../lib/locale";
@@ -154,7 +155,7 @@ function useActiveSection(keys: SectionKey[]): [SectionKey, (k: SectionKey) => v
     const destination = window.scrollY + el.getBoundingClientRect().top - (parseFloat(getComputedStyle(el).scrollMarginTop) || 0);
     clampedTarget.current = destination >= max - 1 ? { key: k, landed: false } : null;
     setActive(k);
-    el.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    el.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
     history.replaceState(history.state, "", `#${SECTIONS[k]}`);
   };
   return [active, go];

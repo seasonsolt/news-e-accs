@@ -1,6 +1,7 @@
 // First-party site API (/api/site/*). Not a public API: it may evolve with the website,
 // but it is served from the same public read layer as v1, RSS and MCP.
 import type { CategoryKey, ChannelKey } from "./taxonomy.ts";
+import { isoWeekRange, monthDay } from "./time.ts";
 
 export type EditorialLanguage = "en" | "zh";
 /** sourceLanguage is the editorial source, language is the actual returned copy. */
@@ -82,7 +83,7 @@ export interface FeedItemSummary extends Pick<ItemSummary, "editorialLanguage" |
   }) | null;
   /**
    * A selected report whose fact is represented by another report (全部动态 and search): that report,
-   * so the card can say "同一新闻，精选展示《…》" instead of claiming a seat of its own.
+   * so the card can say "同一件事，精选收录的是《…》" instead of claiming a seat of its own.
    */
   sameEvent?: { id: string; title: string } | null;
 }
@@ -93,6 +94,11 @@ export interface GroupInfo {
   additionalSourceCount: number;
   /** Distinct public reports of this fact. */
   reportCount: number;
+  /**
+   * The selected reports of this fact under the current filters. The timeline's reader-side unread
+   * filter keeps a group while any of them is unread; the timeline fills it, other callers omit it.
+   */
+  memberIds?: string[];
 }
 
 export interface TimelineCard {
@@ -187,7 +193,7 @@ export interface ItemDetail extends ItemSummary {
   xCounts?: { views: number | null; favorite: number | null; retweet: number | null; reply: number | null; collectedAt: string } | null;
 }
 
-/** A fact's public reports under the list's filters: what "另有 N 家信源报道" opens. */
+/** A fact's public reports under the list's filters: what "另外 N 家也报道了" opens. */
 export interface GroupReport {
   editorialLanguage?: EditorialLanguage;
   contentLanguage?: ContentLanguage;
@@ -313,6 +319,17 @@ export interface StoryDetail {
 // Reports (daily / weekly / monthly)
 
 export type ReportKind = "daily" | "weekly" | "monthly";
+
+/** What each kind of report is called. */
+export const REPORT_NAMES: Record<ReportKind, string> = { daily: "日报", weekly: "周报", monthly: "月报" };
+
+/** An issue's date as Chinese readers write and search it: "10月17日", "10月12日—18日" (or "9月28日—10月4日"), "2026年10月". */
+export function reportDateLabel(kind: ReportKind, key: string): string {
+  if (kind === "daily") return monthDay(key);
+  if (kind === "monthly") return `${key.slice(0, 4)}年${Number(key.slice(5, 7))}月`;
+  const { start, end } = isoWeekRange(key)!;
+  return `${monthDay(start)}—${start.slice(5, 7) === end.slice(5, 7) ? `${Number(end.slice(8, 10))}日` : monthDay(end)}`;
+}
 
 export interface ReportCitation {
   itemId: string | null;

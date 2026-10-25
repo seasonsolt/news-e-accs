@@ -1,3 +1,4 @@
+import { reducedMotion as prefersReducedMotion } from "@aihot/web/lib/motion";
 // The 1822 workshop: geometry, light, camera, picking, the engine's demonstration and the bindings to the page's
 // DOM (page.tsx renders it; everything here is looked up inside `root`). Loaded lazily, in the browser only.
 import * as THREE from "three";
@@ -190,7 +191,7 @@ export function start(root: HTMLElement, { tx, embedded, plate }: WorkshopOption
   return dispose;
 
   async function run() {
-    const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+    const reducedMotion = { get matches() { return prefersReducedMotion(); } };
     const params = new URLSearchParams(location.search);
     const { random, geometries, canvasTexture, makeDigitsTexture, cylinderGeometry, gearGeometry, mesh, box, cylinder, rod, torus } = createKit();
     const experience = $("experience"), viewport = $("viewport");

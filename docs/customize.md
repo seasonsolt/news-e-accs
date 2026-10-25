@@ -14,7 +14,7 @@
 
 ## 1. 站名和文案：`site/site.ts`
 
-- `name`：站名。导航、标题、分享图、RSS、MCP、后台都用它。`organization.name` 是结构化数据里的网站运营者（给搜索引擎看），默认也是站名，改站名时一起改；`organization.founder` 是创始人（选填）。
+- `name`：站名。导航、标题、分享图、RSS、MCP、后台都用它。`organization.name` 是结构化数据里的网站运营者（给搜索引擎看），默认也是站名，改站名时一起改；`organization.founder` 是创始人（选填），其中 `sameAs` 可列公开个人页面的地址。
 - `subject`：行业词。页面上“AI 日报”“全部 AI 动态”会变成“法律日报”“全部法律动态”。
 - `homeTitle`、`topicsTitle`、`description`、`tagline`、`keywords`：首页和主题目录页的标题、一句话介绍、分享图下方的小字、给搜索引擎的关键词。
 - `feedbackExample`：反馈表单输入框里的示例。
@@ -25,7 +25,7 @@
 - `crawlerName`：抓取信源时报的名字，别用别人的站名。
 - `contactEmail`：对外联系邮箱（选填），填了就在 `llms.txt` 和给 Agent 的使用说明里写成授权联系方式。
 - `footerNote`：关于页底部的一行小字。默认是一行框架署名“由 AIHOT 开源框架驱动”，可以留也可以删（设成 `null`）。
-- `icp`：中国大陆网站的备案号，填了就显示在页脚。
+- `icp`、`psb`：中国大陆网站的 ICP 和公安备案号，填了就显示在页脚，并链接到对应备案记录。
 - `github`：源码仓库的地址（选填），填了就在侧栏和“我的”页底部显示“GitHub 开源”。
 - `llmsIntro`：`llms.txt` 里一句话介绍下面的一段详细介绍（选填）。
 - `rootIcons`：标准图标以外也放在网站根目录的图标，`site/brand/` 里的文件名（选填）。
@@ -97,7 +97,7 @@
 | `report-period.md`、`report-period-sections.md` | 周报月报的总述和栏目导读（日报按规则编排，不用提示词） |
 | `translate-*.md` | 全文翻译 |
 
-你的站有读者文字里不用的词（夸张的说法、方言词、读者看不懂的行话），写进 `industry/wording.ts`：每项是一个正则和改法。写完标题、摘要和推荐理由后逐个查，用了就让模型只改这些词一次（模型步骤“改用词”，环境变量 `WORDING_MODEL` 可以单独选模型）；改完数字有变或标题摘要变空就保留原文字。词表空着就不查，也不多调用。
+你的站有读者文字里不用的词（夸张的说法、方言词、读者看不懂的行话），写进 `industry/wording.ts`：每项是一个正则和改法。写完标题、摘要和推荐理由后逐个查，用了就让模型只改这些词一次（模型步骤“改用词”，环境变量 `WORDING_MODEL` 可以单独选模型）；改完数字有变、标题摘要变空，或模型服务拒绝改写，就保留原文字。词表空着就不查，也不多调用，模型服务拒绝服务时的告警里也不列这一步。
 
 提示词里用 `{{siteName}}` 指代站名，`{{> 文件名}}` 引用另一份提示词。改提示词不用改代码。
 
@@ -146,7 +146,7 @@
 
 ## 8. 模型和部署
 
-- 模型：`.env` 里的 `LLM_BASE_URL`、`LLM_API_KEY`、`LLM_MODEL`，任何 OpenAI 兼容接口都行，所有步骤默认都用它。`site/models.ts` 列出具名的模型（各用自己的地址和密钥环境变量）和每一步默认用哪个；部署时还可以用环境变量（见 `.env.example`）或后台“模型与评测”页逐步改选。用推理模型（先想再答）时给它留出推理的额度：默认模型设 `LLM_REASONING_TOKENS`，具名模型在 `site/models.ts` 里写 `reasoningTokens`；不留的话推理会把每一步的输出额度用光，答案为空，每次调用都失败。有 ChatGPT 订阅时，具名模型也可以写成 `transport: "codex"`，用服务器上登录的官方 Codex CLI 回答（见 [部署](deploy.md#文字步骤用-codex-模型)）。
+- 模型：`.env` 里的 `LLM_BASE_URL`、`LLM_API_KEY`、`LLM_MODEL`，任何 OpenAI 兼容接口都行，所有步骤默认都用它。`site/models.ts` 列出具名的模型（各用自己的地址和密钥环境变量）和每一步默认用哪个；部署时还可以用环境变量（见 `.env.example`）或后台“模型与评测”页逐步改选。用推理模型（先想再答）时给它留出推理的额度：默认模型设 `LLM_REASONING_TOKENS`，具名模型在 `site/models.ts` 里写 `reasoningTokens`；不留的话推理会把每一步的输出额度用光，答案为空，每次调用都失败。有 ChatGPT 订阅时，具名模型也可以写成 `transport: "codex"`，用服务器上登录的官方 Codex CLI 回答（见 [部署](deploy.md#文字步骤用-codex-模型)）。 评分预设可写 `scoreCall: { temperature, maxTokens, timeoutMs }`；备用模型的 `fallbackFor` 按能力指定经过本站资料评测的主模型组合，本站默认不设置备用组合。
 - 部署：见 [部署](deploy.md)。
 
 ## 改完以后检查

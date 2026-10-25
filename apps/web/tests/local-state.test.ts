@@ -198,3 +198,16 @@ test("engagement reports are fire-and-forget, skipped during SSR, and count midd
   if (saved) Object.defineProperty(globalThis, "window", saved);
   else Reflect.deleteProperty(globalThis, "window");
 });
+
+// Readers' browsers already keep their stars, read marks and settings under these names; a renamed key
+// is an empty one for every existing reader. New keys may be added.
+test("the storage keys readers already have data under keep their names", async () => {
+  const { state } = await reader();
+  const kept = {
+    starred: "aihot-starred-items", read: "aihot-read-items", theme: "aihot-theme", font: "aihot-font",
+    changelogSeen: "aihot-changelog-seen-version", feedbackDraft: "aihot-feedback-draft-v1", recentSearches: "aihot-recent-searches",
+  } as const;
+  for (const [role, key] of Object.entries(kept)) {
+    assert.equal(state.KEYS[role as keyof typeof kept], key, `readers' ${role} data is stored under ${key}; renaming the key loses it`);
+  }
+});

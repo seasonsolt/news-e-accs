@@ -1,3 +1,4 @@
+import { BEIJING_TIMEZONE } from "@aihot/contracts/time";
 import path from "node:path";
 import { access } from "node:fs/promises";
 import { z } from "zod";
@@ -80,6 +81,6 @@ export default defineServerModule({
   sitemap: { pages: [{ loc: "/products/wallpaper", changefreq: "daily", priority: 0.7 }] },
   admin: { counts: {
     wallpaperKeys: async () => (await sql`SELECT count(*)::int AS n FROM wallpaper_keys`)[0]!.n,
-    wallpaperDownloads: async () => (await sql`SELECT count(*)::int AS n FROM wallpaper_downloads WHERE first_at >= date_trunc('day', now() AT TIME ZONE 'Asia/Shanghai') AT TIME ZONE 'Asia/Shanghai'`)[0]!.n,
+    wallpaperDownloads: async () => (await sql`SELECT count(*)::int AS n FROM wallpaper_downloads WHERE first_at >= date_trunc('day', now() AT TIME ZONE ${BEIJING_TIMEZONE}) AT TIME ZONE ${BEIJING_TIMEZONE}`)[0]!.n,
   } },
 });

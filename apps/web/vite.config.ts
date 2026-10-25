@@ -42,8 +42,10 @@ export default defineConfig({
     rolldownOptions: {
       output: {
         // Keep the framework stable across releases and reused shell code in one browser cache
-        // entry, including the site and industry packages. Feature code shares only with its users:
-        // admin pages do not need to download the public feed and article readers.
+        // entry, including the site and industry packages and the search every page mounts. Feature
+        // code shares only with its users: admin pages do not need to download the public feed and
+        // article readers. Every file is one more request a new reader makes, so the feed pages'
+        // components travel together instead of one file each.
         codeSplitting: {
           groups: [
             { name: "framework", test: /node_modules[\\/](?:react|react-dom|scheduler|react-router|@react-router|cookie|set-cookie-parser|turbo-stream)[\\/]/, priority: 30 },

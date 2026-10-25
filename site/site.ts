@@ -3,6 +3,8 @@
 // 域名不在这里：部署时用环境变量 SITE_URL 设置。
 import type { RedirectRule } from "@aihot/contracts/http-policy";
 
+import type { Founder } from "@aihot/contracts/site-config";
+
 /**
  * 日报、周报、月报什么时候出（北京时间，HH:mm）：日报收这个时间之前的 24 小时，周报在每个自然周之后的周一出，
  * 月报在每月 1 日出。排程、成刊时间窗口、缺期告警和所有提到时间的文案都读它（public/ 里的文件写占位
@@ -69,6 +71,8 @@ export const SITE = {
   footerNote: "Built on open-source software",
   /** 中国大陆网站的 ICP 备案号（选填），填了就显示在侧栏底部和“我的”页底部，并链接到工信部备案系统。 */
   icp: null as string | null,
+  /** 中国大陆网站的公安备案信息（选填），填了显示在侧栏底部和“我的”页底部。 */
+  psb: null as string | null,
   /** 源码的 GitHub 仓库地址（选填），填了就在侧栏底部和“我的”页底部显示“GitHub 开源”。 */
   github: null as string | null,
   /** 结构化数据里的网站运营者（搜索引擎用）。 */
@@ -77,7 +81,7 @@ export const SITE = {
     /** 同一运营者在别处的官方身份（社交账号、姊妹站），写进首页结构化数据的 sameAs。 */
     sameAs: [] as string[],
     /** 创始人（选填）。 */
-    founder: null as null | { name: string; alternateName?: string; jobTitle?: string; description?: string; url?: string },
+    founder: null as Founder | null,
   },
   /** 抓取信源时报上的名字和版本（User-Agent 里用），不要冒用别的站。 */
   crawlerName: "EaccNewsBot/1.0",
@@ -226,8 +230,6 @@ export const ALERTS = {
   usualFlow: null as string | null,
   /** worker 停了的告警里，怎么看它的日志。 */
   workerLogs: "看 worker 的日志（docker compose logs worker）",
-  /** 某家模型服务拒绝服务或额度用完时，告警里说哪些步骤停了；没写的服务用通用说法。 */
-  modelStops: {} as Record<string, string>,
 };
 
 /** 后台新建信源时的默认设置。 */

@@ -128,3 +128,7 @@ npm run build -w @aihot/web && node --test apps/web/tests/*.test.ts
 `mcp_usage_daily` 只按台北日、操作、已注册工具、固定结果类型、是否检查流量聚合，不保存 IP、Cookie、访客/会话 ID、客户端名称、参数、查询词、结果或单次记录。匿名请求不能推断独立用户或区分机器人，重试每次计数。统计自部署后开始，不回填。worker 的每日清理保留含今天的 90 天。
 
 计数在 MCP JSON/SSE 响应发送完成后落库，不读取或复制响应体；数据库写入失败只记错误日志，不改变调用结果。自带 `mcp-check.ts` 和 `smoke.ts` 对每次请求发送 `X-MCP-Usage: check`，检查请求单独计数并排除于使用量；该自报标签只用于统计，不参与权限或限流。其他未标记的人工探测也会计入工具调用。
+
+## 本站网页约定
+
+剪贴板写入统一经过 `apps/web/app/lib/clipboard.ts`，包括公众号的富文本复制。动画的系统偏好查询统一在 `lib/motion.ts`；本站 `features/motion/preferences.ts` 继续维护 `data-motion` 和跨标签页订阅。页面跳转沿用本站的资源预取及 HTML/data 缓存期限：悬停不读取页面数据，实际点击只读一次，浏览器测试覆盖返回与过期行为。时光机、产品画框和蒸汽朋克插画已有的圆角几何在架构测试中显式列出，合并引擎不替换这些站点设计。

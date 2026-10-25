@@ -1,3 +1,4 @@
+import { BEIJING_TIMEZONE } from "@aihot/contracts/time";
 // Hot ranking: attention over the last 48 hours from independent participants.
 // Each participant counts once per window (repeat collection does not add heat), decays with a
 // 24-hour half-life, and the source time (not collection time) places evidence in the window.
@@ -280,7 +281,7 @@ export async function pruneHotRankings(now = new Date()): Promise<number> {
       AND (NOT h.published OR EXISTS (
         SELECT 1 FROM hot_rankings later
         WHERE later.published AND (later.computed_at, later.id) > (h.computed_at, h.id)
-          AND (later.computed_at AT TIME ZONE 'Asia/Shanghai')::date = (h.computed_at AT TIME ZONE 'Asia/Shanghai')::date))`;
+          AND (later.computed_at AT TIME ZONE ${BEIJING_TIMEZONE})::date = (h.computed_at AT TIME ZONE ${BEIJING_TIMEZONE})::date))`;
   return rows.count;
 }
 

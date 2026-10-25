@@ -1,7 +1,7 @@
 import path from "node:path";
 import { defineServerModule } from "@aihot/backend/modules";
 import { sql } from "@aihot/backend/db";
-import { beijingStamp } from "@aihot/backend/notify/feishu";
+import { beijingStamp } from "@aihot/contracts/time";
 import { siteUrl } from "@aihot/backend/publication/links";
 import { sendFile } from "../../apps/api/src/routes/static.ts";
 import { registerLeaderboard } from "./api/leaderboard.ts";

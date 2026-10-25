@@ -30,7 +30,10 @@ export function ThemeSwitch({ className = "" }: { className?: string }) {
       applyTheme(resolvedTheme(nextPref), nextPref === null);
     };
     const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
-    if (doc.startViewTransition && motionAllowed) doc.startViewTransition(apply);
+    if (doc.startViewTransition && motionAllowed) {
+      delete doc.documentElement.dataset.vt;
+      doc.startViewTransition(apply);
+    }
     else apply();
   };
 

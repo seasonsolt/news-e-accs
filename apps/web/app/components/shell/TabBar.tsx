@@ -1,3 +1,4 @@
+import { scrollBehavior } from "../../lib/motion";
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import { Link, useLocation, useRevalidator } from "react-router";
 import { tabs, type TabKey } from "./nav";
@@ -55,8 +56,7 @@ export function TabBar({ changelogVersion }: { changelogVersion: string | null }
                 if (pathname !== t.to) return markBack();
                 event.preventDefault();
                 if (window.scrollY > 0) {
-                  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-                  window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+                  window.scrollTo({ top: 0, behavior: scrollBehavior() });
                 } else if (revalidator.state === "idle") {
                   void revalidator.revalidate();
                 }

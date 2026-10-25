@@ -1,5 +1,10 @@
 /** English interface copy; keys preserve the site’s existing Chinese wording. */
 export const ENGLISH: Readonly<Record<string, string>> = {
+  "只看未读": "Unread only",
+  "这批精选都读过了": "You’ve read these picks",
+  "没有未读的精选内容": "No unread picks",
+  "点下方的按钮，继续找更早的未读精选。": "Use the button below to find earlier unread picks.",
+  "关掉「只看未读」可以看到全部内容。": "Turn off Unread only to see all picks.",
   "接下来读什么": "Read next",
   "今日还有哪些重要变化": "More changes in today’s briefing",
   "查看这件事的完整进展": "See the full story",

@@ -24,7 +24,7 @@ import { registerNewsletter } from "./newsletter.ts";
 import { loadHot, loadStoryDetail, resolveStory } from "@aihot/backend/publication/stories";
 import { listReports, loadReport, reportKeyAt, reportNavigation, loadReportNavigation, loadReportMonth, type ReportKind } from "@aihot/backend/publication/reports";
 import { cached } from "@aihot/backend/lib/cache";
-import { looseQuery, sendJsonWithEtag as sendOriginalJson, sendProblem } from "../http/respond.ts";
+import { looseQuery, QueryError, sendJsonWithEtag as sendOriginalJson, sendProblem } from "../http/respond.ts";
 
 import { localizePublication } from "@aihot/backend/publication/content-language";
 const editionLang = (req: FastifyRequest) => (looseQuery(req).lang === "en" ? "en" : "zh");
@@ -55,7 +55,7 @@ export function siteHandler(fn: Handler): Handler {
       return await fn(req, reply);
     } catch (error) {
       if (error instanceof EditionUnavailableError) return sendProblem(req, reply, { status: 503, code: "edition_unavailable", detail: "The requested stored edition is not ready", retryAfter: 60 });
-      if (error instanceof BadRequest) return sendProblem(req, reply, { status: 400, code: "invalid_request", detail: error.message });
+      if (error instanceof BadRequest || error instanceof QueryError) return sendProblem(req, reply, { status: 400, code: "invalid_request", detail: error.message });
       if (error instanceof InvalidCursorError) return sendProblem(req, reply, { status: 400, code: "invalid_cursor", detail: error.message });
       if (error instanceof SearchBusyError) {
         req.log = req.log.child({ reason: "search_capacity_exhausted" });
