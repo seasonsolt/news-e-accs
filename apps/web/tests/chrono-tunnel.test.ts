@@ -21,6 +21,25 @@ test("the tunnel's pictures are the arrow keys' stops in axis order, a scene on 
   }
 });
 
+test("an era opening on an illustrated milestone is one picture, so every arrow step flies exactly one", () => {
+  const opening: ChronicleEra[] = [...eras, { id: "era-2", from: 1950, title: "Era", summary: "", art: "era-2", artStyle: "" }];
+  const marked: ChronicleMilestone[] = [...milestones, { id: "turn", t: 1950, art: "turn", precision: "year", title: "Moment", detail: "", category: "compute", source: "https://example.com" }];
+  const pictures = tunnelPictures(opening, marked, new Map());
+  assert.equal(pictures.filter((p) => Math.abs(p.t - 1950) < 1e-6).map((p) => p.src).join(), "/media/art/moments/turn");
+  for (const direction of [1, -1] as const) {
+    let t = direction === 1 ? -2e9 : 3000;
+    let at = pictureProgress(pictures, t, 2026);
+    for (;;) {
+      const next = stepPicture(opening, marked, t, direction);
+      if (next === t) break;
+      const progress = pictureProgress(pictures, next, 2026);
+      if (at !== 0 && at !== pictures.length - 1) assert.ok(Math.abs(Math.abs(progress - at) - 1) < 1e-6, `${t} → ${next}: ${at} → ${progress}`);
+      t = next;
+      at = progress;
+    }
+  }
+});
+
 test("between two pictures the tunnel is in flight; beyond the ends it rests on the first or the last", () => {
   const pictures = tunnelPictures(eras, milestones, new Map());
   const between = pictureProgress(pictures, 1860, 2026);

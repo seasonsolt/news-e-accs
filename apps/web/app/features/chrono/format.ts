@@ -153,11 +153,16 @@ export function compactTick(label: string): string {
   return `${m[3] === "后" ? "+" : ""}${value} ${m[2] === "个月" ? "mo" : "yr"}`;
 }
 
-/** The tunnel's pictures (depth-tunnel.ts): era openings and illustrated milestones in axis order, the stops of stepPicture. */
+/**
+ * The tunnel's pictures (depth-tunnel.ts): era openings and illustrated milestones in axis order, the stops of
+ * stepPicture. An era that opens on an illustrated milestone is that milestone's plate on the deck, and
+ * stepPicture stops there once: a second picture at the same moment would make that step fly two.
+ */
 export function tunnelPictures(eras: ChronicleEra[], milestones: ChronicleMilestone[], scenes: ReadonlyMap<string, string>): Array<{ t: number; src: string; scene?: string }> {
+  const illustrated = milestones.filter((m) => m.art);
   return [
-    ...eras.map((era) => ({ t: era.from + 1e-9, src: `/media/art/epochs/${era.art}` })),
-    ...milestones.filter((m) => m.art).map((m) => ({ t: m.t, src: `/media/art/moments/${m.art}`, scene: scenes.get(m.id) })),
+    ...eras.filter((era) => !illustrated.some((m) => Math.abs(m.t - era.from) < 1e-6)).map((era) => ({ t: era.from + 1e-9, src: `/media/art/epochs/${era.art}` })),
+    ...illustrated.map((m) => ({ t: m.t, src: `/media/art/moments/${m.art}`, scene: scenes.get(m.id) })),
   ].sort((a, b) => a.t - b.t);
 }
 
