@@ -38,6 +38,12 @@ export function createWorkshopRenderer(renderer, scene, camera) {
       }`,
   });
   const engrave = new ShaderPass(ENGRAVING);
+  // The AO pass already renders depth and view normals each frame; the hatching reads them to sit on the surfaces.
+  Object.assign(engrave.uniforms.tDepth, { value: ao.depthTexture });
+  Object.assign(engrave.uniforms.tNormal, { value: ao.normalTexture });
+  Object.assign(engrave.uniforms.uProjection, { value: camera.projectionMatrix });
+  Object.assign(engrave.uniforms.uProjectionInverse, { value: camera.projectionMatrixInverse });
+  Object.assign(engrave.uniforms.uCameraWorld, { value: camera.matrixWorld });
   composer.addPass(new RenderPass(scene, camera)); composer.addPass(ao); composer.addPass(grade); composer.addPass(new OutputPass()); composer.addPass(engrave);
   const resize = () => {
     const mobile = innerWidth < 761, pixelRatio = Math.min(renderer.getPixelRatio(), mobile ? 1 : 1.25);
@@ -84,9 +90,12 @@ const ENGRAVING = {
     tDiffuse: { value: null }, uStrength: { value: 1 },
     uResolution: { value: new THREE.Vector2(1, 1) }, uLineScale: { value: 1 },
     uLumaMap: { value: new THREE.Vector4(.5, .25, .5, .25) },   // rendered mean, spread → reference mean, spread
+    tDepth: { value: null }, tNormal: { value: null },
+    uProjection: { value: new THREE.Matrix4() }, uProjectionInverse: { value: new THREE.Matrix4() }, uCameraWorld: { value: new THREE.Matrix4() },
   },
   vertexShader: "varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }",
   fragmentShader: `uniform sampler2D tDiffuse; uniform float uStrength, uLineScale; uniform vec2 uResolution; uniform vec4 uLumaMap;
+    uniform sampler2D tDepth, tNormal; uniform mat4 uProjection, uProjectionInverse, uCameraWorld;
     varying vec2 vUv;
     float luma(vec3 c){ return dot(c, vec3(.2126,.7152,.0722)); }
     float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
@@ -120,10 +129,31 @@ const ENGRAVING = {
       vec3 col = mix(sepia, brass, warmth * .85);
 
       // Hatching lives in wood, plaster and shadow, never on the brass: one set in the half-tones, a crossing set deep down.
-      vec2 p = gl_FragCoord.xy / uLineScale;
       float shade = (1. - t) * (1. - warmth);
-      float h1 = hatch(p, .82, 3.4, clamp((shade - .45) * 1.4, 0., .7));
-      float h2 = hatch(p, -.55, 4.6, clamp((shade - .7) * 1.6, 0., .6));
+      float w1 = clamp((shade - .45) * 1.4, 0., .7), w2 = clamp((shade - .7) * 1.6, 0., .6);
+      float h1, h2;
+      float depth = texture2D(tDepth, vUv).x;
+      if (depth < 1.) {
+        // Cut into the surface, not the screen: the lines lie on the plane the surface faces, in world units, so they
+        // stay on the wood and plaster as the camera moves. Their spacing steps by octaves with distance and blends
+        // between two, so on screen they stay as fine as an engraver's.
+        vec4 view = uProjectionInverse * vec4(vUv * 2. - 1., depth * 2. - 1., 1.);
+        view /= view.w;
+        vec3 world = (uCameraWorld * view).xyz;
+        vec3 n = abs(mat3(uCameraWorld) * (texture2D(tNormal, vUv).xyz * 2. - 1.));
+        vec2 plane = n.y > max(n.x, n.z) ? world.xz : n.x > n.z ? world.zy : world.xy;
+        float perPixel = 2. * -view.z / uProjection[1][1] / (uResolution.y / uLineScale);
+        float level = log2(perPixel / .004);
+        float unit = .004 * exp2(floor(level)), blend = fract(level);
+        vec2 p = plane / unit, q = plane / (unit * 2.);
+        h1 = mix(hatch(p, .82, 3.4, w1), hatch(q, .82, 3.4, w1), blend);
+        h2 = mix(hatch(p, -.55, 4.6, w2), hatch(q, -.55, 4.6, w2), blend);
+      } else {
+        // Nothing solid here (the view through the windows): the lines fall back to the paper.
+        vec2 p = gl_FragCoord.xy / uLineScale;
+        h1 = hatch(p, .82, 3.4, w1);
+        h2 = hatch(p, -.55, 4.6, w2);
+      }
       col *= 1. - .34 * max(h1, h2 * .85);
 
       // Ink contour from the luminance gradient.

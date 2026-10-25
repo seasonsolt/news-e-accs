@@ -556,7 +556,7 @@ async function start() {
     side: { position: [5.2, 2.2, 2.2], target: [1.1, 1.85, 0], title: "传动机构侧面" },
     paper: { position: [-1.45, 2.35, 3.65], target: [-1.6, 1.03, 2.25], title: "平方数表" },
     // Matched by eye to reference.webp at 3:2: the engine fills the right two thirds, the arched windows behind its end.
-    painting: { position: [2.3, 2.7, 7.3], target: [-1.1, 1.75, 0], title: "原画视角", plate: true },
+    painting: { position: [2.3, 2.7, 7.3], target: [-1.1, 1.3, 0], title: "原画视角", plate: true },
   };
   const viewFov = (view) => view.plate ? plateFov(camera.aspect) : baseFov();
   function updateViewButtons() {
