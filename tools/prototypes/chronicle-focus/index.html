@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>加速史 · 精简布局原型 — e/acc</title>
+  <link rel="icon" href="data:,">
+  <script type="importmap">{"imports":{"three":"/difference-engine-1822/vendor/three.module.js"}}</script>
+  <style>
+    /* Site tokens (apps/web/app/app.css), copied so the comparison is about layout only. */
+    @font-face{font-family:"Instrument Serif";font-style:italic;font-weight:400;font-display:swap;src:url("/media/fonts/InstrumentSerif-Italic.woff2") format("woff2")}
+    @font-face{font-family:"Big Shoulders Display";font-weight:800;font-display:swap;src:url("/media/fonts/BigShouldersDisplay-800-numerals.woff2") format("woff2");unicode-range:U+20,U+25,U+2B,U+2D-39,U+4B,U+4E,U+6F,U+B0,U+B2-B3,U+B9,U+D7,U+2070,U+2074-2079}
+    :root{--bg:#f4ecdc;--surface:#fbf7ee;--ink:#2a1f16;--ink-3:#62513f;--ink-4:#6f5d48;--line:#ddd0b5;--accent:#955418;
+      --deck:#120e0a;--deck-2:#1a1510;--deck-ink:#f4ecdc;--brass:#d9a441;--brass-hi:#f0d28a;--radius:14px;--ease:cubic-bezier(.25,1,.5,1);
+      --sans:system-ui,-apple-system,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+      --display:"Instrument Serif","Songti SC","STSong","Noto Serif SC",Georgia,serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace;--num:"Big Shoulders Display",var(--sans)}
+    *{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--sans)}
+    button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--brass);outline-offset:3px}
+
+    /* A stand-in for the site's masthead, so the first screen is judged at its real height. */
+    .masthead{height:56px;display:flex;align-items:center;gap:28px;padding:0 24px;max-width:1280px;margin:0 auto}
+    .brand{font:italic 26px var(--display);text-decoration:none;color:var(--ink)}
+    .nav{display:flex;gap:22px;color:var(--ink-3)}.nav span.on{color:var(--ink);font-weight:600}
+    .kpill{margin-left:auto;font:12px var(--mono);padding:5px 12px;border:1px solid var(--line);border-radius:999px}
+
+    .shell{max-width:1280px;margin:0 auto;padding:0 24px 40px;display:grid;grid-template-columns:minmax(0,1fr) 0;gap:0;transition:grid-template-columns .45s var(--ease),gap .45s var(--ease)}
+    .shell.has-layer{grid-template-columns:minmax(0,1fr) 400px;gap:16px}
+
+    /* The stage: plate, the moment, three readouts and the axis — the whole first screen. */
+    .stage{position:relative;isolation:isolate;overflow:hidden;height:calc(100vh - 56px - 24px);min-height:560px;border-radius:var(--radius);background:radial-gradient(ellipse at 70% 30%,#2a2016,var(--deck) 70%);color:var(--deck-ink);display:flex;flex-direction:column}
+    .plate{position:absolute;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover;object-position:50% 38%;transition:opacity .5s var(--ease)}
+    .shade{position:absolute;inset:0;z-index:-1;background:linear-gradient(to top,rgb(12 9 6/.96) 0%,rgb(12 9 6/.7) 30%,rgb(12 9 6/0) 62%),linear-gradient(to right,rgb(12 9 6/.6),rgb(12 9 6/0) 58%)}
+    .layers{position:absolute;top:20px;right:22px;display:flex;gap:6px;z-index:3}
+    .layers button{padding:6px 12px;border:1px solid rgb(217 164 65/.4);border-radius:999px;background:rgb(21 17 13/.55);backdrop-filter:blur(6px);font:12px var(--mono);letter-spacing:.04em;color:var(--brass-hi);transition:background .2s}
+    .layers button:hover,.layers button[aria-expanded=true]{background:rgb(217 164 65/.25)}
+    .moment{margin-top:auto;padding:0 36px;max-width:44rem}
+    .kicker{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font:500 11.5px/1 var(--mono);letter-spacing:.12em;color:var(--brass)}
+    .chip{padding:3px 7px;border-radius:4px;background:rgb(217 164 65/.18);letter-spacing:.04em;color:var(--brass-hi)}
+    .forecast-tag{padding:3px 6px;border:1px dashed var(--brass);border-radius:4px;letter-spacing:.04em}
+    .time{margin:10px 0 0;font-family:var(--display);font-weight:400;line-height:.9;text-shadow:0 2px 30px rgb(0 0 0/.45)}
+    .time-figure{font-size:clamp(68px,9vw,120px);letter-spacing:-.02em}.time-unit{margin-inline:.06em;font-size:clamp(26px,3.4vw,40px);color:rgb(244 236 220/.82)}
+    .title{margin:12px 0 0;font-size:21px;font-weight:600}
+    .detail{margin:6px 0 0;max-width:36rem;font-size:14.5px;line-height:1.7;color:rgb(244 236 220/.8);text-wrap:pretty}
+
+    /* The depth tunnel (depth-stage.js) replaces the two flat plates; ?flat brings them back. */
+    .has-depth img.plate{display:none}
+    canvas.plate{display:block;touch-action:none;outline:none}
+    .enter{margin-top:14px;display:inline-flex;gap:10px;align-items:center;padding:8px 16px;border-radius:999px;border:1px solid var(--brass);background:rgb(26 19 11/.8);font-size:14px;transition:background .2s,opacity .3s}
+    .enter:hover:not(:disabled){background:#2c2010}.enter[hidden]{display:none}.enter:disabled{opacity:.6;cursor:wait}
+    .scene-frame{position:absolute;inset:0;z-index:5;width:100%;height:100%;border:0;opacity:0;pointer-events:none;transition:opacity .8s ease;background:transparent}
+    .scene-frame.is-open{opacity:1;pointer-events:auto}
+    .stage .moment,.stage .readouts,.stage .axis,.stage .layers,.stage .shade{transition:opacity .5s}
+    .stage:is(.is-entering,.is-inside) :is(.moment,.readouts,.axis,.layers,.shade){opacity:0;pointer-events:none}
+
+    /* Three readouts that move with the axis: the acceleration you can feel while scrubbing. */
+    .readouts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:22px 36px 18px;border-top:1px solid rgb(217 164 65/.28);max-width:52rem}
+    .readout{padding:12px 18px 0 0}.readout+.readout{padding-left:18px;border-left:1px solid rgb(217 164 65/.18)}
+    .readout-label{font:11px var(--mono);letter-spacing:.06em;color:rgb(244 236 220/.6)}
+    .readout-value{margin-top:4px;display:flex;align-items:baseline;gap:6px;white-space:nowrap}
+    .readout-value .num{font:800 30px/1 var(--num);letter-spacing:.01em;color:var(--deck-ink);font-variant-numeric:tabular-nums}
+    .readout-value .unit{font-size:12px;color:rgb(244 236 220/.7)}
+    .readout-note{margin-top:4px;font:11.5px var(--mono);color:var(--brass-hi)}
+    .readout.is-empty .num{color:rgb(244 236 220/.4)}.readout.is-empty .readout-note{color:rgb(244 236 220/.45)}
+
+    /* The axis: symmetric log of the distance from now, milestones as ticks, wheel to zoom. */
+    .axis{position:relative;padding:12px 36px 14px;background:linear-gradient(to bottom,rgb(18 14 10/.0),rgb(18 14 10/.9) 40%)}
+    .track{position:relative;height:46px;cursor:pointer;touch-action:none;outline:none}
+    .era-band{position:absolute;top:6px;height:30px;border-left:1px solid rgb(244 236 220/.08)}
+    .era-band.on{background:rgb(217 164 65/.1)}
+    .tick{position:absolute;top:10px;width:2px;height:22px;margin-left:-1px;border-radius:1px;opacity:.8}
+    .tick.art{height:26px;top:8px;opacity:1}
+    .tick.forecast{opacity:.45}
+    .now-line{position:absolute;top:0;bottom:4px;width:1px;background:var(--brass-hi)}
+    .now-line span{position:absolute;top:-4px;left:4px;font:10.5px var(--mono);color:var(--brass-hi)}
+    .cursor{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--brass-hi);pointer-events:none}
+    .cursor::before{content:"";position:absolute;top:-7px;left:-6px;width:14px;height:14px;border-radius:50%;background:var(--brass);box-shadow:0 0 0 3px rgb(217 164 65/.3)}
+    .scale{position:relative;height:16px;font:10.5px var(--mono);color:rgb(244 236 220/.55)}
+    .scale span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+    .axis-controls{display:flex;align-items:center;gap:10px;margin-top:6px;font-size:12.5px;color:rgb(244 236 220/.7)}
+    .axis-controls button{padding:5px 12px;border:1px solid rgb(244 236 220/.18);border-radius:999px}.axis-controls button:hover:not(:disabled){border-color:var(--brass)}
+    .axis-controls button:disabled{opacity:.35;cursor:default}
+    .axis-hint{flex:1;text-align:center;font:11px var(--mono);color:rgb(244 236 220/.45)}
+
+    /* The side layer: secondary reading opens beside the stage, which keeps working; Esc closes it. */
+    .layer{position:sticky;top:12px;height:calc(100vh - 56px - 24px);min-height:560px;overflow:hidden;border-radius:var(--radius);background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;opacity:0;visibility:hidden;transition:opacity .3s var(--ease),visibility 0s .3s}
+    .shell.has-layer .layer{opacity:1;visibility:visible;transition:opacity .3s var(--ease) .1s}
+    .layer-head{display:flex;align-items:center;gap:4px;padding:12px 12px 0 16px;border-bottom:1px solid var(--line)}
+    .layer-tab{padding:8px 10px 10px;font-size:13.5px;color:var(--ink-3);border-bottom:2px solid transparent;margin-bottom:-1px}
+    .layer-tab[aria-selected=true]{color:var(--ink);font-weight:600;border-color:var(--accent)}
+    .layer-close{margin-left:auto;width:30px;height:30px;border-radius:50%;font-size:18px;color:var(--ink-3)}.layer-close:hover{background:var(--bg)}
+    .layer-body{flex:1;overflow:auto;padding:16px}
+    .layer-note{margin:0 0 12px;font-size:12px;color:var(--ink-4);line-height:1.6}
+
+    .gauges{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .gauge{padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff8}
+    .gauge-label{font-size:12px;color:var(--ink-3)}
+    .gauge-value{margin-top:4px;display:flex;align-items:baseline;gap:4px}.gauge-value .num{font:800 24px/1 var(--num)}.gauge-value .unit{font-size:11.5px;color:var(--ink-3)}
+    .gauge-note{margin-top:2px;min-height:16px;font-size:11.5px;color:var(--accent)}
+    .gauge svg{display:block;width:100%;height:30px;margin-top:6px}
+    .trace-line{fill:none;stroke:var(--ink-3);stroke-width:1.2}.trace-cursor{stroke:var(--accent);stroke-width:1}.trace-dot{fill:var(--accent)}.trace-forecast{fill:rgb(149 84 24/.07)}
+
+    .list{list-style:none;margin:0;padding:0}
+    .list li+li{border-top:1px solid var(--line)}
+    .list button{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;width:100%;padding:10px 4px;text-align:left;border-radius:6px}
+    .list button:hover{background:var(--bg)}.list .on{background:rgb(149 84 24/.08)}
+    .list .when{font:11.5px var(--mono);color:var(--ink-4);padding-top:2px}.list .what{font-size:13.5px;font-weight:600}.list .why{display:block;font-size:12.5px;color:var(--ink-3);font-weight:400}
+    .sub{margin:18px 0 8px;font:600 12px var(--sans);letter-spacing:.04em;color:var(--ink-3)}
+    .caps{display:flex;flex-wrap:wrap;gap:6px}.cap{padding:4px 9px;border-radius:999px;border:1px solid var(--line);font-size:12.5px}.cap.next{border-style:dashed;color:var(--ink-3)}.cap small{color:var(--ink-4);margin-left:4px}
+    .eras{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .era{display:block;text-align:left;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#fff8}
+    .era img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;background:var(--bg)}
+    .era span{display:block;padding:6px 8px;font-size:12.5px}.era.on{outline:2px solid var(--accent);outline-offset:-2px}
+
+    .below{max-width:1280px;margin:0 auto;padding:0 24px 48px;display:flex;gap:24px;align-items:center;justify-content:space-between;color:var(--ink-4);font-size:12px}
+    .below form{display:flex;gap:8px}.below input{width:260px;padding:9px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font:inherit}
+    .below form button{padding:9px 18px;border-radius:999px;background:var(--ink);color:var(--bg)}
+    .proto-flag{position:fixed;left:12px;bottom:12px;padding:4px 10px;border-radius:6px;background:var(--ink);color:var(--bg);font:11px var(--mono);opacity:.8}
+    @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <a class="brand" href="#">e/acc</a>
+    <nav class="nav"><span>精选</span><span class="on">加速史</span><span>热点</span><span>AI 日报</span><span>产品</span><span>模型前沿</span></nav>
+    <span class="kpill" id="kpill">K = —</span>
+  </header>
+
+  <div class="shell" id="shell">
+    <main class="stage" id="stage" aria-label="观测舱">
+      <img class="plate" id="plate-a" alt="">
+      <img class="plate" id="plate-b" alt="" style="opacity:0">
+      <div class="shade"></div>
+      <div class="layers" role="toolbar" aria-label="更多内容">
+        <button type="button" data-layer="gauges" aria-expanded="false" aria-controls="layer">全部读数</button>
+        <button type="button" data-layer="nearby" aria-expanded="false" aria-controls="layer">此刻附近</button>
+        <button type="button" data-layer="eras" aria-expanded="false" aria-controls="layer">时代画卷</button>
+      </div>
+
+      <section class="moment" aria-live="polite">
+        <div class="kicker" id="kicker"></div>
+        <h1 class="time" id="time"></h1>
+        <h2 class="title" id="title"></h2>
+        <p class="detail" id="detail"></p>
+        <button type="button" class="enter" id="enter" hidden>走进工坊 <span aria-hidden="true">→</span></button>
+      </section>
+
+      <section class="readouts" id="readouts" aria-label="文明读数"></section>
+
+      <section class="axis" aria-label="时间导航">
+        <div class="track" id="track" role="slider" tabindex="0" aria-label="时间轴（对数刻度）"></div>
+        <div class="scale" id="scale"></div>
+        <div class="axis-controls">
+          <button type="button" id="prev">‹ 上一个里程碑</button>
+          <span class="axis-hint">方向键或在画面上滚动逐幅穿越 · 时间轴上滚轮缩放 · 拖动或点击定位时间</span>
+          <button type="button" id="today">回到现在</button>
+          <button type="button" id="next">下一个里程碑 ›</button>
+        </div>
+      </section>
+    </main>
+
+    <aside class="layer" id="layer" aria-label="更多内容" tabindex="-1">
+      <div class="layer-head" role="tablist">
+        <button class="layer-tab" role="tab" data-layer="gauges">全部读数</button>
+        <button class="layer-tab" role="tab" data-layer="nearby">此刻附近</button>
+        <button class="layer-tab" role="tab" data-layer="eras">时代画卷</button>
+        <button class="layer-close" id="layer-close" aria-label="关闭">×</button>
+      </div>
+      <div class="layer-body" id="layer-body"></div>
+    </aside>
+  </div>
+
+  <footer class="below">
+    <span>数据在 industry/chronicle/，每条附出处；指标在有来源的数据点之间按对数插值；配图由 AI 按各时代画风绘制。</span>
+    <form onsubmit="return false"><input type="email" placeholder="每天一封，跟上 AI 的重要变化" aria-label="邮箱"><button type="button">订阅</button></form>
+  </footer>
+  <span class="proto-flag">精简布局原型 · 非线上页面</span>
+  <script type="module" src="./focus.js"></script>
+</body>
+</html>

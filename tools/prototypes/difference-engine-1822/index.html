@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0d0a07">
+  <title>1822 · 差分机工坊 — e/acc 场景原型</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./style.css">
+  <script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
+</head>
+<body>
+  <main id="experience" aria-label="1822 年差分机三维工坊">
+    <div id="viewport" aria-label="三维场景：拖动环视，滚轮走近，点击机器操作"></div>
+    <div class="vignette" aria-hidden="true"></div>
+    <header class="masthead">
+      <button class="back-button" id="back" hidden><span aria-hidden="true">←</span> 回到时间线</button>
+      <a class="brand" href="https://e-acc.ai/zh/chronicle?t=1822">e/acc <span>文明现场</span></a>
+      <div class="edition"><span class="status-dot"></span>可探索场景 <span class="edition-no">01 / 1822</span></div>
+    </header>
+    <section class="intro">
+      <p class="eyebrow">THE AGE OF MECHANICAL THOUGHT</p>
+      <h1>1822<span>差分机工坊</span></h1>
+      <p class="intro-copy">当计算，第一次有了形状。</p>
+      <p class="context">走进黄铜与齿轮之间，<br>用一次转动，算出下一行未来。</p>
+      <button class="text-button" id="reference-open">查看原画 <span aria-hidden="true">↗</span></button>
+    </section>
+    <div id="loading" role="status"><span class="loading-ring"></span><p>正在打开工坊</p></div>
+    <div id="error" role="alert" hidden><h2>三维场景未能启动</h2><p>请使用支持 WebGL 2 的浏览器打开此本地预览。</p><pre id="error-detail"></pre></div>
+
+    <nav id="hotspots" aria-label="机器上的操作点">
+      <button class="hotspot" id="spot-crank" data-action="crank" aria-label="转动手柄"><span class="spot-circle">↻</span><span class="spot-label">转动手柄</span></button>
+      <button class="hotspot" id="spot-columns" data-action="columns" aria-label="查看计算柱"><span class="spot-circle">＋</span><span class="spot-label">计算柱</span></button>
+      <button class="hotspot" id="spot-paper" data-action="paper" aria-label="查看数表"><span class="spot-circle">≡</span><span class="spot-label">查看数表</span></button>
+    </nav>
+
+    <aside class="inspector" aria-labelledby="inspector-title">
+      <div class="inspector-head"><span class="eyebrow" id="inspector-kicker">FINITE DIFFERENCES</span><button class="icon-button" id="inspector-toggle" aria-label="收起原理面板" aria-expanded="true">−</button></div>
+      <div id="inspector-body">
+        <h2 id="inspector-title">只用加法，计算平方。</h2>
+        <p id="inspector-copy">手柄带动计算柱。每一轮先把一阶差分加到结果，再把恒定的二阶差分加到一阶差分。</p>
+        <div class="registers" aria-label="差分寄存器">
+          <div><span>结果 A</span><strong id="register-a">0</strong></div>
+          <span class="register-arrow">←</span>
+          <div><span>一阶差分 B</span><strong id="register-b">1</strong></div>
+          <span class="register-arrow">←</span>
+          <div><span>二阶差分 C</span><strong>2</strong></div>
+        </div>
+        <div class="ledger"><div class="ledger-head"><span>n</span><span>n²</span><span>运算</span></div><div id="ledger-rows" aria-live="polite"><div><span>0</span><strong>0</strong><span>初始值</span></div></div></div>
+        <p class="machine-status"><span id="machine-dot" class="status-dot"></span><span id="machine-status" role="status">等待转动手柄</span></p>
+      </div>
+    </aside>
+
+    <div class="view-readout" aria-live="polite"><span class="crosshair" aria-hidden="true">⌖</span><span id="view-name">工坊全景</span><span class="readout-rule"></span><span id="distance">— m</span></div>
+    <div class="controls-wrap">
+      <div class="control-dock" role="toolbar" aria-label="场景控制">
+        <div class="view-controls">
+          <button id="view-wide" class="view-button is-active" aria-pressed="true"><span>01</span> 全景</button>
+          <button id="view-close" class="view-button" aria-pressed="false"><span>02</span> 走近</button>
+          <button id="view-side" class="view-button" aria-pressed="false"><span>03</span> 侧看</button>
+        </div>
+        <span class="dock-divider"></span>
+        <button id="step" class="step-button" title="计算下一项（空格键）">转动一轮 <span aria-hidden="true">↻</span></button>
+        <button id="run" class="run-button" aria-pressed="false"><span class="play-icon" aria-hidden="true">▶</span><span id="run-label">连续运转</span></button>
+        <button id="reset" class="icon-button reset-button" aria-label="复位数表" title="复位数表">↺</button>
+      </div>
+      <p class="gesture-hint"><span class="desktop-hint">拖动环视 · 滚轮走近 · WASD 行走 · 空格转动</span><span class="touch-hint">单指环视 · 双指缩放 · 点击标记操作</span></p>
+    </div>
+    <footer class="scene-footer"><span>交互概念复原 · 非 1822 年实物复刻</span><span class="footer-actions"><button id="style-toggle" class="text-button" aria-pressed="true">画风：原画</button><button id="about-open" class="text-button">关于这一幕</button></span></footer>
+    <div class="toast" id="toast" role="status" hidden></div>
+  </main>
+  <dialog id="reference-dialog"><button class="dialog-close icon-button" aria-label="关闭原画">×</button><img src="./reference.webp" alt="现有加速史的差分机工坊原画，黄铜计算柱与高窗工坊"><div class="dialog-caption"><h2>从这幅画，走进空间。</h2><p>原画用于美术方向参照。眼前场景由独立三维几何构成，可以走近、环视并操作。</p></div></dialog>
+  <dialog id="about-dialog"><button class="dialog-close icon-button" aria-label="关闭说明">×</button><div class="about-content"><p class="eyebrow">SCENE STUDY / 001</p><h2>让历史成为可以探索的空间。</h2><p>1822 年，巴贝奇提出差分机。这一幕以现有插画为美术参考，用三维机架、数轮、传动齿轮和手柄搭建一间可探索的工坊。</p><p>演示计算 n²：从 A = 0、B = 1、C = 2 出发，每轮依次执行 A ← A + B、B ← B + C。寄存器、机械数轮和数表保持一致。齿轮与传动动画是原理示意，未复刻完整历史机构。</p><p>场景为艺术概念复原；1822 年对应差分机的提出，完整工坊和机器不代表当年已存在的实物。</p><a href="https://www.sciencemuseum.org.uk/sites/default/files/2023-09/DE2_Technical_Description.pdf" target="_blank" rel="noopener noreferrer">阅读科学博物馆的技术说明 ↗</a><p class="about-small">本地静态原型 · Three.js r180 · 浏览时不调用模型</p></div></dialog>
+  <script type="module" src="./scene.js"></script>
+</body>
+</html>
