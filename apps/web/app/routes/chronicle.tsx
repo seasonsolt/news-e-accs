@@ -72,7 +72,8 @@ export default function ChroniclePage() {
   const tunnel = useDepthTunnel(stage, {
     allowed,
     pictures,
-    progress: pictureProgress(pictures, t, now),
+    // The deck shows a milestone's own plate near its moment (focusAt): the tunnel rests on that picture too, or its scene never loads.
+    progress: pictureProgress(pictures, focus?.art ? focus.t : t, now),
     alt: era ? plateOf(era, focus).alt : "",
     sceneTitle: scene ? tx(scene.label) : "",
   });
