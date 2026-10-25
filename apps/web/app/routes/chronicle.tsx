@@ -18,7 +18,7 @@ import { MomentList } from "../features/chrono/MomentList";
 import { Observatory } from "../features/chrono/Observatory";
 import { StageReadouts } from "../features/chrono/StageReadouts";
 import { useDepthTunnel, useTunnelAllowed } from "../features/chrono/DepthTunnel";
-import { distanceLabel, focusAt, nearbyPlates, pictureProgress, plateOf, restingPicture, stepPicture, timeParam, tunnelPictures } from "../features/chrono/format";
+import { distanceLabel, focusAt, nearbyPlates, pictureProgress, plateOf, stepPicture, timeParam, tunnelPictures } from "../features/chrono/format";
 import { atLabel, withAt } from "../features/chrono/at";
 import { SubscribeCta } from "../features/subscribe/SubscribeCta";
 import { webModules } from "../site-modules";
@@ -69,29 +69,21 @@ export default function ChroniclePage() {
   const focus = focusAt(chronicle.milestones, t, now);
   const scene = focus ? SCENES.get(focus.id) : undefined;
   const allowed = useTunnelAllowed();
-  // While the axis is dragged the camera flies with it; let go, it settles on the plate the deck names.
-  const [dragging, setDragging] = useState(false);
-  const plate = era ? plateOf(era, focus) : null;
   const tunnel = useDepthTunnel(stage, {
     allowed,
     pictures,
-    progress: dragging || !plate ? pictureProgress(pictures, t, now) : restingPicture(pictures, plate.src, t, now),
-    alt: plate?.alt ?? "",
+    progress: pictureProgress(pictures, t, now),
+    alt: era ? plateOf(era, focus).alt : "",
     sceneTitle: scene ? tx(scene.label) : "",
   });
   const busy = tunnel.mode !== "stage";
   const commit = (next: number) => {
-    setDragging(false);
     if (busy) return;
     const clamped = Math.min(now + AXIS_FUTURE_YEARS, Math.max(BIG_BANG, next));
     setT(clamped);
     navigate(`?t=${timeParam(clamped, now)}`, { replace: true, preventScrollReset: true });
   };
-  const move = (next: number) => {
-    if (busy) return;
-    setDragging(true);
-    setT(next);
-  };
+  const move = (next: number) => { if (!busy) setT(next); };
 
   // The layer beside the deck on a desktop; on a phone its panels simply follow the deck.
   const [panel, setPanel] = useState<Panel | null>(null);
