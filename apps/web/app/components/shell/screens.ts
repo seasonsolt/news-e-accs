@@ -15,6 +15,8 @@ export interface Screen {
   name?: string;
   /** The page draws its own bottom toolbar instead of the tab bar (articles). */
   toolbar?: boolean;
+  /** The page fills the window and draws its own chrome: no navigation, footer or module parts (a chronicle scene). */
+  bare?: boolean;
 }
 
 /** What the current page declares: route handles merged from the root down, the deepest route winning. */

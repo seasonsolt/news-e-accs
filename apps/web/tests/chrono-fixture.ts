@@ -17,6 +17,7 @@ export const chronicle: ChronicleResponse = {
   milestones: [
     { id: "bang", t: BIG_BANG, precision: "ga", title: "大爆炸", detail: "宇宙膨胀", category: "cosmos", source: "https://example.com/bang" },
     { id: "steam", t: 1769, precision: "year", date: "1769", title: "瓦特蒸汽机", detail: "改良蒸汽机", category: "energy", capability: "蒸汽动力", source: "https://example.com/steam" },
+    { id: "difference-engine", t: 1822, precision: "year", date: "1822", title: "差分机", detail: "机械计算", category: "compute", art: "difference-engine", artStyle: "铜版画", source: "https://example.com/engine" },
     { id: "electricity", t: 1882, precision: "year", date: "1882", title: "电力", detail: "电网", category: "energy", capability: "电力", source: "https://example.com/electricity" },
     { id: "moon", t: dateToYear("1969-07-20"), precision: "day", date: "1969-07-20", title: "登月", detail: "载人登月", category: "human", capability: "登月", source: "https://example.com/moon" },
     { id: "record", t: dateToYear("2026-09-01"), precision: "day", date: "2026-09-01", title: "本站记录", detail: "历史入口", category: "culture", source: "https://example.com/record" },

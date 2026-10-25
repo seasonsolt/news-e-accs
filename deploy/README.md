@@ -10,6 +10,7 @@
 ```
 
 - Worker 把所有请求带上 `EDGE_SECRET` 转给新闻站，匿名请求的公开响应（源站给了 `public` 和 `s-maxage`）放进边缘缓存，响应头 `x-eacc-edge-cache: HIT|MISS`。带后台或登录 cookie 的请求、`/api`（`/api/site/*` 和图片代理除外）、`/admin`、`/starred`、`/feedback` 不进缓存。
+- 加速史场景的贴图（`/media/scenes/<场景>/<名字>.<哈希>.webp`）不经过新闻站：Worker 用 R2 绑定 `MEDIA` 直接读桶 `e-acc` 的 `scenes/` 前缀，带 `immutable` 长缓存，响应头同样有 `x-eacc-edge-cache`。桶里的 `wallpapers/` 和 `scene-sources/` 不对外。贴图的构建和上传见 `modules/scenes/README.md`；新场景要先上传贴图，再发布新闻站。
 - 根域名 e-acc.ai 的 DNS 是一条代理开启的占位记录 `AAAA 100::`，只用来让 Worker 路由 `e-acc.ai/*` 生效，不能删，也不能关代理（MX、TXT 记录照常）。
 - 2026-10 以前，e-acc.ai 的价格、计算器、时间线等工具页由另一个仓库 seasonsolt/e-acc.ai 的 Cloudflare Pages 静态站提供。2026-10-18 下线：仓库已归档，Pages 项目已删除；价格页由模型榜模块接管（`/pricing`），其余旧地址的跳转写在 `site/site.ts` 的 `REDIRECTS`。
 
@@ -34,7 +35,7 @@
 
 ```bash
 cd deploy/edge && npm ci && npm test
-npx cf deploy --dry-run --secrets-file <临时文件>   # 确认 bindings 里有 env.EDGE_SECRET
+npx cf deploy --dry-run --secrets-file <临时文件>   # 确认 bindings 里有 env.EDGE_SECRET 和 env.MEDIA
 npx cf deploy --secrets-file <临时文件>
 ```
 

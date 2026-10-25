@@ -1,6 +1,7 @@
 // e-acc.ai edge Worker: forwards every request to the news site (this repository, on DMIT behind a
 // Cloudflare Tunnel) with the edge secret, and keeps anonymous public responses in the Cache API.
 import { isCacheEligible, isCacheable } from "./cache.mjs";
+import { sceneKey, serveScene } from "./scenes.mjs";
 
 const SITE = "https://e-acc.ai";
 const ORIGIN_CACHE_CONTROL = "x-eacc-origin-cache-control";
@@ -22,6 +23,8 @@ function toNews(request, env) {
 
 export default {
   async fetch(request, env, ctx) {
+    const scene = sceneKey(request);
+    if (scene) return serveScene(request, scene, env, ctx);
     if (!isCacheEligible(request)) return toNews(request, env);
     const url = new URL(request.url);
     let search = url.search;

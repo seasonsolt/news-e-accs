@@ -11,6 +11,8 @@ export default defineConfig({
       // The news site; it serves only requests carrying EDGE_SECRET and redirects the rest to e-acc.ai.
       NEWS_ORIGIN: bindings.text("https://news.e-accs.com"),
       EDGE_SECRET: bindings.secret(),
+      // Bucket e-acc: the Worker serves only its scenes/ prefix (src/scenes.mjs); wallpapers/ and scene-sources/ stay private.
+      MEDIA: bindings.r2({ name: "e-acc" }),
     },
     triggers: [triggers.fetch({ pattern: "e-acc.ai/*", zone: "e-acc.ai" })],
   },

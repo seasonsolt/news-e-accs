@@ -48,6 +48,8 @@ export default defineConfig({
           groups: [
             { name: "framework", test: /node_modules[\\/](?:react|react-dom|scheduler|react-router|@react-router|cookie|set-cookie-parser|turbo-stream)[\\/]/, priority: 30 },
             { name: "motion", test: /node_modules[\\/](?:motion|framer-motion|motion-dom|motion-utils)[\\/]/, priority: 20 },
+            // Only lazily imported (the chronicle's tunnel, the scenes): never shares a chunk with code a page loads up front.
+            { name: "three", test: /node_modules[\\/]three[\\/]/, priority: 20 },
             { name: "shared", test: /apps[\\/]web[\\/]app[\\/](?!features[\\/]|routes[\\/])|[\\/](?:industry|site)[\\/]/, minShareCount: 2, priority: 10 },
           ],
         },

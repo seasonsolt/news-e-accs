@@ -16,6 +16,7 @@ import { SiteNav } from "./components/shell/SiteNav";
 import { SiteFooter } from "./components/shell/SiteFooter";
 import { MobileTabBar } from "./components/shell/MobileTabBar";
 import { BackToTop, NavigationProgress } from "./components/shell/Chrome";
+import { useScreen } from "./components/shell/screens";
 import { LanguageHint } from "./components/shell/LanguageHint";
 import { FirstStarHint } from "./components/shell/FirstStarHint";
 import { buttonClass } from "./components/ui/Controls";
@@ -138,6 +139,7 @@ export default function App() {
   useHydratedFlag();
   useAppearanceSync();
   const { pathname, search } = useLocation();
+  const { bare } = useScreen();
   const countedPath = useRef<string | null>(null);
   useEffect(() => rememberPage(pathname + search), [pathname, search]);
   useEffect(() => { noteExistingStars(); }, []);
@@ -167,8 +169,8 @@ export default function App() {
     document.addEventListener("touchstart", noop, { passive: true });
     return () => document.removeEventListener("touchstart", noop);
   }, []);
-  // The admin has its own chrome.
-  if (pathname === "/admin" || pathname.startsWith("/admin/")) return <Outlet />;
+  // The admin has its own chrome, and so does a page that fills the window.
+  if (pathname === "/admin" || pathname.startsWith("/admin/") || bare) return <Outlet />;
   return (
     <>
       <SiteShell changelogVersion={meta.changelogVersion} timeBounds={meta.timeBounds}>

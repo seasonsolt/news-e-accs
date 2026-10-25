@@ -62,6 +62,10 @@ MCP 默认接受 `SITE_URL` 的主机以及 `localhost`、`127.0.0.1`、`[::1]`�
 
 ### 更新
 
+### 加速史场景模块
+
+`/chronicle` 首屏改为聚焦布局：桌面端只放插画、三个读数和时间轴，全部读数、此刻附近和时代画卷收进侧栏；手机端照旧依次排列。桌面端的插画由纵深隧道绘制（按需加载 three.js），停在有场景的里程碑上可以「走进工坊」。新模块 `modules/scenes` 的贴图不在 git 里，也不随程序发布：先按 `modules/scenes/README.md` 构建，再放到读者能访问的 `/media/scenes/` 下（我们用 R2 和入口 Worker，见 `deploy/README.md`；自己部署可以把 `apps/web/public/media/scenes/` 的构建结果放进镜像或交给 CDN）。没有贴图时场景页显示载入失败，加速史页面不受影响。不需要迁移。
+
 ### 模型价格改用 OpenRouter
 
 模型榜的价格不再读各家官方价格页，改为每次刷新（`leaderboard.round`，需要 `COLLECT_ENABLED=true`）取 OpenRouter 公开模型列表的价格，不调用模型；OpenRouter 上没有的模型保留原价格。迁移 0139 删除 `lb_price_checks`（2026-10-19 起每日核对的读数记录，删除后不可恢复），0140 删除 `lb_prices.since`（价格生效日），0141 删除 `lb_prices.unlisted_on`。定时任务 `leaderboard.prices` 和模型步骤 `priceCheck`（`PRICE_CHECK_MODEL`）随之移除，worker 启动时自动清掉旧的定时任务。第一次刷新会把 OpenRouter 列出的模型（包括原来以人民币标价的）换成它的美元价。智能成本指数不再读 `lb_prices`，当前价改读模型榜的官方价种子文件；种子文件之后才有官方价的模型，要在 `modules/indices/seeds/price-history.json` 加一条才会计入。

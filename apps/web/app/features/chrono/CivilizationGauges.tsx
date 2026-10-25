@@ -7,7 +7,7 @@ import { IconArrowUpRight } from "../../components/icons";
 import { chineseCount, metricValue } from "./format";
 
 /** How the moment compares with today: a message template and separate count to localize Chinese units. */
-function versusToday(metric: ChronicleMetric, v: number, today: number | null): { message: string; count?: string } | null {
+export function versusToday(metric: ChronicleMetric, v: number, today: number | null): { message: string; count?: string } | null {
   if (today === null || v <= 0 || today <= 0) return null;
   const ratio = v / today;
   if (ratio > 0.95 && ratio < 1.05) return { message: "与今天相当" };
@@ -74,7 +74,7 @@ export function CivilizationGauges({ metrics, t, now }: { metrics: ChronicleMetr
         <h2 id="civilization-gauges"><Text value="文明读数" /></h2>
         <p><Text value="小曲线是每项指标的全部有据历史，横轴同样按对数时间；圆点是此刻。" /></p>
       </div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+      <div className="chronicle-gauge-grid grid grid-cols-2 gap-3 lg:grid-cols-3">
         <article className="chronicle-gauge is-dial">
           <div className="chronicle-gauge-label"><Text value="卡尔达肖夫指数" /></div>
           <KardashevDial k={k} />

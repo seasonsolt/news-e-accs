@@ -71,3 +71,46 @@ test("Router data shares one entry whatever its _routes parameter", async () => 
   assert.equal(hit.headers.get("x-eacc-edge-cache"), "HIT");
   assert.deepEqual([...store.keys()], ["https://e-acc.ai/pricing.data?lang=en"]);
 });
+
+test("a scene file is read from R2's scenes/ prefix, kept for good, and never reaches the news site", async () => {
+  const reads = [];
+  const bucket = {
+    get: async (key) => {
+      reads.push(key);
+      return key === "scenes/workshop/wood-color.0123456789.webp"
+        ? { body: "webp bytes", size: 10, httpEtag: '"e1"' }
+        : null;
+    },
+  };
+  const scenes = { ...env, MEDIA: bucket };
+  const fetchScene = async (path, headers = {}, method = "GET") => {
+    const waits = [];
+    const res = await worker.fetch(new Request(`https://e-acc.ai${path}`, { method, headers }), scenes, { waitUntil: (p) => waits.push(p) });
+    await Promise.all(waits);
+    return res;
+  };
+
+  const miss = await fetchScene("/media/scenes/workshop/wood-color.0123456789.webp");
+  assert.equal(miss.status, 200);
+  assert.equal(miss.headers.get("content-type"), "image/webp");
+  assert.equal(miss.headers.get("cache-control"), "public, max-age=31536000, immutable");
+  assert.equal(miss.headers.get("x-eacc-edge-cache"), "MISS");
+  assert.equal(await miss.text(), "webp bytes");
+  const hit = await fetchScene("/media/scenes/workshop/wood-color.0123456789.webp");
+  assert.equal(hit.headers.get("x-eacc-edge-cache"), "HIT");
+  assert.equal(await hit.text(), "webp bytes");
+  const unchanged = await fetchScene("/media/scenes/workshop/wood-color.0123456789.webp", { "if-none-match": '"e1"' });
+  assert.equal(unchanged.status, 304);
+  assert.deepEqual(reads, ["scenes/workshop/wood-color.0123456789.webp"]);
+
+  const missing = await fetchScene("/media/scenes/workshop/stone-color.0123456789.webp");
+  assert.equal(missing.status, 404);
+  assert.equal(seen.length, 0);
+
+  // Anything else under /media, including the bucket's private prefixes, goes to the news site as before.
+  for (const path of ["/media/wallpapers/a.webp", "/media/scenes/../wallpapers/a.0123456789.webp", "/media/scenes/workshop/a.webp", "/media/scenes/Workshop/a.0123456789.webp"]) {
+    await fetchScene(path);
+  }
+  assert.equal(reads.length, 2);
+  assert.equal(seen.length, 4);
+});

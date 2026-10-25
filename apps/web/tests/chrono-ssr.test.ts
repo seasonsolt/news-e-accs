@@ -62,8 +62,15 @@ test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era
   assert.equal(document.querySelector("h1")!.textContent, "1769年");
   assert.match(document.querySelector("header")!.textContent!, /蒸汽时代/);
   assert.ok(document.querySelector('img[alt="蒸汽时代（铜版画）"]'));
-  // The depth parallax is client-only decoration: the server sends the static plate alone.
-  assert.equal(document.querySelector(".observatory-depth, canvas"), null);
+  // The depth parallax and the tunnel are client-only decoration: the server sends the static plate alone.
+  assert.equal(document.querySelector(".observatory-depth, .observatory-tunnel, canvas, iframe"), null);
+  // The deck's three readouts, and every panel of the layer, closed or not, are in the page.
+  assert.deepEqual([...document.querySelectorAll(".chronicle-readout-label")].map((el) => el.textContent), ["世界人口", "一次能源功率"]);
+  // Only a milestone with a scene offers the way in.
+  assert.equal(document.querySelector(".observatory-enter"), null);
+  assert.deepEqual([...document.querySelectorAll("#chronicle-layer .chronicle-panel")].map((el) => el.getAttribute("data-panel")), ["gauges", "nearby", "eras"]);
+  assert.equal(document.querySelector("#chronicle-layer")!.hasAttribute("data-panel"), false);
+  assert.ok(document.querySelector('#chronicle-layer [data-panel="nearby"] .chronicle-rail-item'));
   const slider = document.querySelector('[role="slider"]')!;
   assert.equal(slider.getAttribute("aria-valuetext"), "1769年");
   assert.equal(slider.hasAttribute("data-dragging"), false);
@@ -72,6 +79,15 @@ test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era
   assert.match(document.querySelector("main")!.textContent!, /卡尔达肖夫指数/);
   assert.equal(document.querySelector('meta[name="robots"]'), null);
   assert.ok(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith("/zh/chronicle"));
+});
+
+test("a milestone with a scene links to the scene's page in the reader's language, which draws no site chrome", async () => {
+  const document = await page("/chronicle?t=1822");
+  assert.equal(document.querySelector(".observatory-era")!.textContent, "差分机");
+  assert.equal(document.querySelector("a.observatory-enter")!.getAttribute("href"), "/zh/chronicle/difference-engine");
+  const scene = await page("/chronicle/difference-engine");
+  assert.equal(scene.querySelector('nav[aria-label="主导航"]'), null);
+  assert.equal(scene.querySelector("canvas"), null);
 });
 
 test("civilization comparison notes localize large counts and preserve Chinese output", async () => {

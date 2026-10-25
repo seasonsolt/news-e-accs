@@ -152,3 +152,22 @@ export function compactTick(label: string): string {
   const value = new Intl.NumberFormat("en", { notation: "compact" }).format(n);
   return `${m[3] === "后" ? "+" : ""}${value} ${m[2] === "个月" ? "mo" : "yr"}`;
 }
+
+/** The tunnel's pictures (depth-tunnel.ts): era openings and illustrated milestones in axis order, the stops of stepPicture. */
+export function tunnelPictures(eras: ChronicleEra[], milestones: ChronicleMilestone[], scenes: ReadonlyMap<string, string>): Array<{ t: number; src: string; scene?: string }> {
+  return [
+    ...eras.map((era) => ({ t: era.from + 1e-9, src: `/media/art/epochs/${era.art}` })),
+    ...milestones.filter((m) => m.art).map((m) => ({ t: m.t, src: `/media/art/moments/${m.art}`, scene: scenes.get(m.id) })),
+  ].sort((a, b) => a.t - b.t);
+}
+
+/** Where t lies among the pictures: an integer on a picture, a fraction between two, by axis position. */
+export function pictureProgress(pictures: Array<{ t: number }>, t: number, now: number): number {
+  const u = toAxis(t, now);
+  const axis = pictures.map((p) => toAxis(p.t, now));
+  const i = axis.findLastIndex((x) => x <= u);
+  if (i < 0) return 0;
+  if (i >= pictures.length - 1) return pictures.length - 1;
+  const span = axis[i + 1]! - axis[i]!;
+  return span > 0 ? i + (u - axis[i]!) / span : i;
+}

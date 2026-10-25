@@ -13,24 +13,6 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["--env-file=.env", "apps/api/src/main.ts"],
       "port": 3001
-    },
-    {
-      "name": "chronicle-focus",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["tools/prototypes/chronicle-focus/preview.py", "--api", "https://e-acc.ai"],
-      "port": 8844
-    },
-    {
-      "name": "chronicle-tunnel",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["tools/prototypes/chronicle-tunnel/preview.py"],
-      "port": 8843
-    },
-    {
-      "name": "workshop-1822",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["tools/prototypes/difference-engine-1822/preview.py"],
-      "port": 8842
     }
   ]
 }

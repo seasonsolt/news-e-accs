@@ -128,6 +128,12 @@ export interface WebModule {
   tools?: Array<{ to: string; label: string; icon: ReactNode }>;
   /** The front page's opening: buttons after the engine's 订阅 and 加速史 (routes/home.tsx). */
   home?: { links?: Array<{ to: string; label: string }> };
+  /**
+   * The chronicle (routes/chronicle.tsx): scenes the reader can step into from a milestone's plate. On a
+   * desktop the observatory opens `path` in a frame over the plate and hands over by the messages of
+   * features/chrono/scene-handoff.ts; the page itself stays reachable at its address. `label` is the way in (走进工坊).
+   */
+  chronicle?: { scenes?: Array<{ milestone: string; path: string; label: string }> };
   admin?: {
     /** Navigation groups of its own, ahead of the engine's. */
     groups?: Array<{ group: string; items: AdminNavEntry[] }>;
