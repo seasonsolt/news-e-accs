@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { ChronicleEra, ChronicleMilestone } from "@aihot/contracts/chronicle";
-import { pictureProgress, stepPicture, tunnelPictures } from "../app/features/chrono/format.ts";
+import { pictureProgress, restingPicture, stepPicture, tunnelPictures } from "../app/features/chrono/format.ts";
 import { embedPath, FROM_SCENE, readSceneCommand, readSceneEvent, TO_SCENE } from "../app/features/chrono/scene-handoff.ts";
 
 const eras: ChronicleEra[] = [-1e9, 1900].map((from, i) => ({ id: `era-${i}`, from, title: "Era", summary: "", art: `era-${i}`, artStyle: "" }));
@@ -28,6 +28,16 @@ test("between two pictures the tunnel is in flight; beyond the ends it rests on 
   assert.ok(pictureProgress(pictures, 1880, 2026) > between);
   assert.equal(pictureProgress(pictures, -5e9, 2026), 0);
   assert.equal(pictureProgress(pictures, 2026, 2026), pictures.length - 1);
+});
+
+test("let go between two pictures, the tunnel rests on the deck's plate, not in the gap", () => {
+  const pictures = tunnelPictures(eras, milestones, new Map());
+  // 1860 is after the engine's plate, in era-0: the deck shows era-0's plate, so the tunnel goes back to it.
+  assert.equal(restingPicture(pictures, "/media/art/epochs/era-0", 1860, 2026), 0);
+  assert.equal(restingPicture(pictures, "/media/art/moments/engine", 1822, 2026), 2);
+  assert.equal(restingPicture(pictures, "/media/art/epochs/era-1", 1950, 2026), 3);
+  // A plate the tunnel does not have falls back to the nearest picture.
+  assert.equal(restingPicture(pictures, "/media/art/epochs/missing", 1860, 2026), Math.round(pictureProgress(pictures, 1860, 2026)));
 });
 
 test("the hand-over accepts only its own messages, same-origin, from the other window", () => {

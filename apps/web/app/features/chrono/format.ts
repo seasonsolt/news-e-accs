@@ -171,3 +171,17 @@ export function pictureProgress(pictures: Array<{ t: number }>, t: number, now: 
   const span = axis[i + 1]! - axis[i]!;
   return span > 0 ? i + (u - axis[i]!) / span : i;
 }
+
+/**
+ * Where the tunnel rests at t once the axis is let go: on the deck's plate (`src`, plateOf), so the canvas
+ * shows what the readout names instead of the empty gap between two pictures. A plate that recurs rests on
+ * the copy nearest t.
+ */
+export function restingPicture(pictures: Array<{ t: number; src: string }>, src: string, t: number, now: number): number {
+  const at = pictureProgress(pictures, t, now);
+  let best = -1;
+  pictures.forEach((picture, i) => {
+    if (picture.src === src && (best < 0 || Math.abs(i - at) < Math.abs(best - at))) best = i;
+  });
+  return best < 0 ? Math.round(at) : best;
+}

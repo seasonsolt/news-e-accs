@@ -18,7 +18,7 @@ import { MomentList } from "../features/chrono/MomentList";
 import { Observatory } from "../features/chrono/Observatory";
 import { StageReadouts } from "../features/chrono/StageReadouts";
 import { useDepthTunnel, useTunnelAllowed } from "../features/chrono/DepthTunnel";
-import { distanceLabel, focusAt, nearbyPlates, pictureProgress, plateOf, stepPicture, timeParam, tunnelPictures } from "../features/chrono/format";
+import { distanceLabel, focusAt, nearbyPlates, pictureProgress, plateOf, restingPicture, stepPicture, timeParam, tunnelPictures } from "../features/chrono/format";
 import { atLabel, withAt } from "../features/chrono/at";
 import { SubscribeCta } from "../features/subscribe/SubscribeCta";
 import { webModules } from "../site-modules";
@@ -69,21 +69,29 @@ export default function ChroniclePage() {
   const focus = focusAt(chronicle.milestones, t, now);
   const scene = focus ? SCENES.get(focus.id) : undefined;
   const allowed = useTunnelAllowed();
+  // While the axis is dragged the camera flies with it; let go, it settles on the plate the deck names.
+  const [dragging, setDragging] = useState(false);
+  const plate = era ? plateOf(era, focus) : null;
   const tunnel = useDepthTunnel(stage, {
     allowed,
     pictures,
-    progress: pictureProgress(pictures, t, now),
-    alt: era ? plateOf(era, focus).alt : "",
+    progress: dragging || !plate ? pictureProgress(pictures, t, now) : restingPicture(pictures, plate.src, t, now),
+    alt: plate?.alt ?? "",
     sceneTitle: scene ? tx(scene.label) : "",
   });
   const busy = tunnel.mode !== "stage";
   const commit = (next: number) => {
+    setDragging(false);
     if (busy) return;
     const clamped = Math.min(now + AXIS_FUTURE_YEARS, Math.max(BIG_BANG, next));
     setT(clamped);
     navigate(`?t=${timeParam(clamped, now)}`, { replace: true, preventScrollReset: true });
   };
-  const move = (next: number) => { if (!busy) setT(next); };
+  const move = (next: number) => {
+    if (busy) return;
+    setDragging(true);
+    setT(next);
+  };
 
   // The layer beside the deck on a desktop; on a phone its panels simply follow the deck.
   const [panel, setPanel] = useState<Panel | null>(null);
@@ -131,8 +139,10 @@ export default function ChroniclePage() {
   }, [running]);
 
   if (!era) return <p className="py-8 text-ink-3"><Text value="尚无时代数据。" /></p>;
-  const previous = chronicle.milestones.filter((m) => m.t < t - 1e-6).at(-1);
-  const following = chronicle.milestones.find((m) => m.t > t + 1e-6);
+  // ‹ › go from picture to picture, like the arrow keys and the wheel: every press is a flight.
+  const previous = stepPicture(chronicle.eras, chronicle.milestones, t, -1);
+  const following = stepPicture(chronicle.eras, chronicle.milestones, t, 1);
+  const stopTitle = (at: number) => focusAt(chronicle.milestones, at, now)?.title ?? eraAt(chronicle.eras, at)?.title;
   const date = yearToDate(t);
   const present = !!date && !!bounds && date >= bounds.today;
   const recorded = !!date && !!bounds?.earliest && date >= bounds.earliest && date < bounds.today;
@@ -192,10 +202,10 @@ export default function ChroniclePage() {
         <section aria-label={tx("时间导航")} className="chronometer">
           <ChronicleAxis eras={chronicle.eras} milestones={chronicle.milestones} now={now} t={t} onMove={move} onCommit={commit} />
           <div className="chronometer-controls">
-            <button type="button" disabled={!previous} onClick={() => previous && commit(previous.t)} title={previous?.title}><Text value="‹ 上一个里程碑" /></button>
+            <button type="button" disabled={previous === t} onClick={() => commit(previous)} title={stopTitle(previous)}><Text value="‹ 上一个里程碑" /></button>
             <span className="chronometer-hint"><Text value="方向键逐幅切换画面 · 滚轮缩放 · 拖动或点击定位时间" /></span>
             <button type="button" onClick={() => commit(now)}><Text value="回到现在" /></button>
-            <button type="button" disabled={!following} onClick={() => following && commit(following.t)} title={following?.title}><Text value="下一个里程碑 ›" /></button>
+            <button type="button" disabled={following === t} onClick={() => commit(following)} title={stopTitle(following)}><Text value="下一个里程碑 ›" /></button>
           </div>
         </section>
       </div>
