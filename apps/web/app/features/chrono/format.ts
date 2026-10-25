@@ -104,12 +104,17 @@ export function stepPicture(eras: ChronicleEra[], milestones: ChronicleMilestone
   return (direction === 1 ? pictures.find((moment) => moment > t + 1e-6) : pictures.findLast((moment) => moment < t - 1e-6)) ?? t;
 }
 
-/** The milestone standing at t, if any: a click snaps to one, and the deck then shows that event. */
+/**
+ * The milestone standing at t, if any: a click snaps to one, and the deck then shows that event. Of two at the
+ * same moment the illustrated one wins: its picture is the one in view.
+ */
 export function focusAt(milestones: ChronicleMilestone[], t: number, now: number): ChronicleMilestone | null {
   const u = toAxis(t, now);
   return milestones.reduce<ChronicleMilestone | null>((best, m) => {
     const d = Math.abs(toAxis(m.t, now) - u);
-    return d < 0.0008 && (!best || d < Math.abs(toAxis(best.t, now) - u)) ? m : best;
+    if (d >= 0.0008) return best;
+    const b = best ? Math.abs(toAxis(best.t, now) - u) : Infinity;
+    return d < b || (d === b && m.art && !best!.art) ? m : best;
   }, null);
 }
 
@@ -158,21 +163,16 @@ export function compactTick(label: string): string {
  * stepPicture. An era that opens on an illustrated milestone is that milestone's plate on the deck, and
  * stepPicture stops there once: a second picture at the same moment would make that step fly two.
  */
-export function tunnelPictures(eras: ChronicleEra[], milestones: ChronicleMilestone[], scenes: ReadonlyMap<string, string>): Array<{ t: number; src: string; scene?: string }> {
+export function tunnelPictures(eras: ChronicleEra[], milestones: ChronicleMilestone[], scenes: ReadonlyMap<string, string>): Array<{ t: number; src: string; milestone?: ChronicleMilestone; scene?: string }> {
   const illustrated = milestones.filter((m) => m.art);
   return [
     ...eras.filter((era) => !illustrated.some((m) => Math.abs(m.t - era.from) < 1e-6)).map((era) => ({ t: era.from + 1e-9, src: `/media/art/epochs/${era.art}` })),
-    ...illustrated.map((m) => ({ t: m.t, src: `/media/art/moments/${m.art}`, scene: scenes.get(m.id) })),
+    ...illustrated.map((m) => ({ t: m.t, src: `/media/art/moments/${m.art}`, milestone: m, scene: scenes.get(m.id) })),
   ].sort((a, b) => a.t - b.t);
 }
 
-/** Where t lies among the pictures: an integer on a picture, a fraction between two, by axis position. */
-export function pictureProgress(pictures: Array<{ t: number }>, t: number, now: number): number {
+/** The picture the deck and the tunnel rest on at t: the nearest on the axis, so the view never hangs between two. -1 without pictures. */
+export function restingPicture(pictures: Array<{ t: number }>, t: number, now: number): number {
   const u = toAxis(t, now);
-  const axis = pictures.map((p) => toAxis(p.t, now));
-  const i = axis.findLastIndex((x) => x <= u);
-  if (i < 0) return 0;
-  if (i >= pictures.length - 1) return pictures.length - 1;
-  const span = axis[i + 1]! - axis[i]!;
-  return span > 0 ? i + (u - axis[i]!) / span : i;
+  return pictures.reduce((best, p, i) => best < 0 || Math.abs(toAxis(p.t, now) - u) < Math.abs(toAxis(pictures[best]!.t, now) - u) ? i : best, -1);
 }

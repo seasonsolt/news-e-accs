@@ -11,11 +11,13 @@ import { compactTick, keepAxisInView, panAxisWindow, projectAxis, stepEra, stepP
 
 const SNAP_PX = 8;
 
-export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit }: {
+export function ChronicleAxis({ eras, milestones, now, t, picture, onMove, onCommit }: {
   eras: ChronicleEra[];
   milestones: ChronicleMilestone[];
   now: number;
   t: number;
+  /** The picture in view (restingPicture): the arrow keys step on from it. */
+  picture: number;
   /** While dragging: the needle follows. */
   onMove: (t: number) => void;
   /** On release (or a key, a click): the moment is settled and goes into the address. */
@@ -98,8 +100,8 @@ export function ChronicleAxis({ eras, milestones, now, t, onMove, onCommit }: {
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "ArrowLeft" || e.key === "ArrowDown") onCommit(stepPicture(eras, milestones, t, -1));
-    else if (e.key === "ArrowRight" || e.key === "ArrowUp") onCommit(stepPicture(eras, milestones, t, 1));
+    if (e.key === "ArrowLeft" || e.key === "ArrowDown") onCommit(stepPicture(eras, milestones, picture, -1));
+    else if (e.key === "ArrowRight" || e.key === "ArrowUp") onCommit(stepPicture(eras, milestones, picture, 1));
     else if (e.key === "PageUp") onCommit(stepEra(eras, t, -1));
     else if (e.key === "PageDown") onCommit(stepEra(eras, t, 1));
     else if (e.key === "Home") onCommit(fromAxis(0, now));
