@@ -3,11 +3,13 @@
 // by rule, without a model judging anything: one entry per event, its most authoritative report with
 // the event's other developments listed under it; an event an earlier issue covered comes back only
 // with a new fact; an event with an official post and three or more independent participants is
-// carried even when none of its reports was selected; entries rank by importance (score, the day's
+// carried even when none of its reports was selected; a window with fewer events than MIN_EVENTS lowers
+// the selection bar step by step until it has them; entries rank by importance (score, the day's
 // independent participants, first-hand), and the first one leads. Sections are the industry pack's
 // (industry/taxonomy.ts CATEGORIES).
 import { addDays } from "@aihot/contracts/time";
 import { CATEGORIES } from "@aihot/industry/taxonomy";
+import { SELECTION } from "@aihot/industry/selection";
 import { sql } from "../db.ts";
 import { currentSignals } from "../events/hot.ts";
 import { pickRepresentative, representativePriority, REPRESENTATIVE_COLUMNS, type RepresentativeIdentity } from "../publication/representative.ts";
@@ -37,6 +39,10 @@ const PER_SOURCE = 2;
 const FOLLOW_UP_SOURCES = 4;
 /** The pack's `commentary` categories (how-tos, opinions): a follow-up of theirs is a flash, whoever wrote it. */
 const COMMENTARY = new Set<string>(CATEGORIES.filter((c) => "commentary" in c).map((c) => c.key));
+/** A quiet window's daily lowers the selection bar until it carries this many events (or runs out). */
+const MIN_EVENTS = 6;
+/** How far each step lowers every tier's bar; none goes below SELECTION.understandFloor, the reports written like selected ones. */
+const RELAX_STEP = 5;
 /** Earlier issues a daily remembers. */
 const MEMORY_DAYS = 7;
 
@@ -72,7 +78,7 @@ export interface DailyEntry extends ReportEntry {
   related?: RelatedReport[];
   /** The latest earlier issue that covered this event. */
   followUp?: string;
-  /** Carried for its official post and independent coverage, though none of its reports was selected. */
+  /** Carried though none of its reports was selected: for its official post and independent coverage, or a quiet window's lowered bar. */
   fillIn?: true;
 }
 
@@ -165,6 +171,8 @@ const asRelated = (e: ReportEntry): RelatedReport => ({
 });
 
 const factKeyOf = (r: ReportRow) => r.fact_public_id ?? `a:${r.id}`;
+/** The event a fact belongs to: its story, else the fact itself. */
+const eventKeyOf = (f: { key: string; rows: ReportRow[] }) => (f.rows[0]!.story_id === null ? `f:${f.key}` : `s:${f.rows[0]!.story_id}`);
 
 function groupBy<T>(rows: T[], key: (row: T) => string): Map<string, T[]> {
   const out = new Map<string, T[]>();
@@ -297,6 +305,47 @@ async function missedFacts(start: Date, end: Date): Promise<Array<{ key: string;
     .map(([key, members]) => ({ key, rows: members }));
 }
 
+/**
+ * The window's reports that missed selection on their score alone: listed, confirmed as news that adds
+ * something (grouping complete, not judged without new value), written like selected ones, from a tier
+ * that is scored. Each comes with how far below its tier's bar it scored.
+ */
+async function nearMisses(start: Date, end: Date): Promise<Array<ReportRow & { below: number }>> {
+  const rows = await sql<ReportRow[]>`
+    SELECT ${REPORT_FIELDS}
+    FROM publications p JOIN sources s ON s.id = p.source_id JOIN articles a ON a.id = p.article_id
+    LEFT JOIN facts f ON f.id = p.fact_id AND ${ownFactEvidenceCondition()}
+    LEFT JOIN stories st ON st.id = f.story_id
+    WHERE ${listedCondition(end)} AND NOT p.selection_candidate AND NOT p.backfill AND s.participation_mode = 'editorial'
+      AND a.grouping_status = 'complete' AND a.selection_adds_value IS NOT FALSE
+      AND s.tier = ANY(${Object.keys(SELECTION.thresholds)}::text[]) AND p.score >= ${SELECTION.understandFloor}
+      AND p.timeline_at >= ${start} AND p.timeline_at < ${end}`;
+  return (await inEnglish(rows)).map((r) => ({ ...r, below: SELECTION.thresholds[r.source_tier!]! - Number(r.score) }));
+}
+
+/**
+ * The facts a quiet window adds to reach MIN_EVENTS: the bar drops RELAX_STEP at a time for every tier,
+ * and each step admits all the facts it reaches, nearest misses first. `relaxedBy` is the last step taken.
+ */
+function relaxBar(kept: Array<{ key: string; rows: ReportRow[] }>, near: Array<ReportRow & { below: number }>): { added: Array<{ key: string; rows: ReportRow[]; selected: false }>; relaxedBy: number } {
+  const events = new Set(kept.map(eventKeyOf));
+  const taken = new Set(kept.map((f) => f.key));
+  const pending = [...groupBy(near.filter((r) => !taken.has(factKeyOf(r))), factKeyOf)]
+    .map(([key, rows]) => ({ key, rows, selected: false as const, below: Math.min(...rows.map((r) => r.below)) }))
+    .sort((a, b) => a.below - b.below || a.key.localeCompare(b.key));
+  const added: Array<{ key: string; rows: ReportRow[]; selected: false }> = [];
+  let relaxedBy = 0;
+  while (events.size < MIN_EVENTS && pending.length > 0) {
+    relaxedBy = Math.max(relaxedBy + RELAX_STEP, Math.ceil(pending[0]!.below / RELAX_STEP) * RELAX_STEP);
+    while (pending.length > 0 && pending[0]!.below <= relaxedBy) {
+      const { below: _, ...fact } = pending.shift()!;
+      added.push(fact);
+      events.add(eventKeyOf(fact));
+    }
+  }
+  return { added, relaxedBy };
+}
+
 /** The window's public reports the editors scored: none means judging did not run there, not a quiet day. */
 async function judgedReports(start: Date, end: Date): Promise<number> {
   const [row] = await sql<{ n: number }[]>`
@@ -327,7 +376,16 @@ export async function dailyEdition(date: string, start: Date, end: Date): Promis
     ...[...groupBy(selected, factKeyOf)].map(([key, rows]) => ({ key, rows, selected: true })),
     ...missed.map((m) => ({ ...m, selected: false })),
   ];
-  const kept = raw.filter((f) => !memory.keys.has(f.key) && !f.rows.some((r) => memory.keys.has(`a:${r.id}`)));
+  const fresh = (f: { key: string; rows: ReportRow[] }) => !memory.keys.has(f.key) && !f.rows.some((r) => memory.keys.has(`a:${r.id}`));
+  const kept: Array<{ key: string; rows: ReportRow[]; selected: boolean }> = raw.filter(fresh);
+  const repeatsSuppressed = raw.length - kept.length;
+  let relaxedBy = 0;
+  if (new Set(kept.map(eventKeyOf)).size < MIN_EVENTS) {
+    const near = (await nearMisses(start, end)).filter((r) => fresh({ key: factKeyOf(r), rows: [r] }));
+    const relaxed = relaxBar(kept, near);
+    kept.push(...relaxed.added);
+    relaxedBy = relaxed.relaxedBy;
+  }
   const factIds = [...new Set(kept.map((f) => f.rows[0]!.fact_id).filter((id): id is number => id !== null))];
   const sourcesOf = await factSources(factIds, end);
   const facts: Fact[] = kept.map((f) => {
@@ -341,7 +399,7 @@ export async function dailyEdition(date: string, start: Date, end: Date): Promis
 
   // One entry per event: its most reported fact leads (then the earliest, as the hot list chooses), and
   // the event's other facts are listed under it.
-  const events = [...groupBy(facts, (f) => (f.rows[0]!.story_id === null ? `f:${f.key}` : `s:${f.rows[0]!.story_id}`)).values()];
+  const events = [...groupBy(facts, eventKeyOf).values()];
   const storyIds = [...new Set(events.map((fs) => fs[0]!.rows[0]!.story_id).filter((id): id is number => id !== null))];
   const loose = events.filter((fs) => fs[0]!.rows[0]!.story_id === null).flatMap((fs) => fs.flatMap((f) => f.rows.map((r) => r.id)));
   const [talk, named] = await Promise.all([
@@ -393,7 +451,7 @@ export async function dailyEdition(date: string, start: Date, end: Date): Promis
   return {
     entries,
     legacy,
-    stats: { judgedReports: judged, selectedReports: selected.length, facts: raw.length, repeatsSuppressed: raw.length - kept.length, fillIns: kept.filter((f) => !f.selected).length, events: entries.length },
+    stats: { judgedReports: judged, selectedReports: selected.length, facts: raw.length, repeatsSuppressed, fillIns: kept.filter((f) => !f.selected).length, relaxedBy, events: entries.length },
   };
 }
 
