@@ -18,7 +18,8 @@ import { MomentList } from "../features/chrono/MomentList";
 import { Observatory } from "../features/chrono/Observatory";
 import { StageReadouts } from "../features/chrono/StageReadouts";
 import { useDepthTunnel, useTunnelAllowed } from "../features/chrono/DepthTunnel";
-import { distanceLabel, focusAt, nearbyPlates, plateOf, restingPicture, stepPicture, timeParam, tunnelPictures } from "../features/chrono/format";
+import { distanceLabel, focusAt, nearbyPlates, plateOf, restingPicture, stepPicture, timeParam, tunnelPictures, workshopStops } from "../features/chrono/format";
+import { scrollToAnchor } from "../lib/motion";
 import { atLabel, withAt } from "../features/chrono/at";
 import { SubscribeCta } from "../features/subscribe/SubscribeCta";
 import { webModules } from "../site-modules";
@@ -47,8 +48,8 @@ export function headers() {
   return { "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate=600" };
 }
 
-type Panel = "gauges" | "nearby" | "eras";
-const PANELS: Array<[Panel, string]> = [["gauges", "全部读数"], ["nearby", "此刻附近"], ["eras", "时代画卷"]];
+type Panel = "gauges" | "nearby" | "eras" | "workshops";
+const PANELS: Array<[Panel, string]> = [["gauges", "全部读数"], ["nearby", "此刻附近"], ["eras", "时代画卷"], ["workshops", "工坊"]];
 
 /** Keyed like plateOf: era and milestone IDs can be the same. */
 const SCENES = new Map(webModules().flatMap((m) => m.chronicle?.scenes ?? []).flatMap((scene) => [
@@ -68,6 +69,7 @@ export default function ChroniclePage() {
   const locale = useLocale();
   // The tunnel opens the scene in a frame of its own, which links do not localize: the frame needs the locale's path.
   const pictures = useMemo(() => tunnelPictures(chronicle.eras, chronicle.milestones, new Map([...SCENES].map(([id, scene]) => [id, localePath(scene.path, locale)]))), [chronicle, locale]);
+  const workshops = useMemo(() => workshopStops(pictures, new Map([...SCENES.values()].map((scene) => [localePath(scene.path, locale), scene.label]))), [pictures, locale]);
   // Between two pictures the deck and the tunnel show the nearer one, its plate and its text; the needle and
   // the readouts stay at t. The arrow keys, the wheel and ‹ › step on from the picture in view.
   const resting = restingPicture(pictures, t, now);
@@ -111,7 +113,17 @@ export default function ChroniclePage() {
   };
   useEffect(() => {
     if (!panel) return;
-    if (opener.current && !layer.current?.contains(document.activeElement)) layer.current?.focus({ preventScroll: true });
+    const body = layer.current?.querySelector<HTMLElement>(".chronicle-layer-body");
+    if (body) body.scrollTop = 0;
+    if (opener.current && !layer.current?.contains(document.activeElement)) {
+      const target = panel === "workshops" ? layer.current?.querySelector<HTMLElement>("#chronicle-workshops") : layer.current;
+      target?.focus({ preventScroll: true });
+      if (panel === "workshops" && window.innerWidth < 961) {
+        const chronometer = stage.current?.querySelector<HTMLElement>(".chronometer");
+        if (target && chronometer) target.style.scrollMarginTop = `${chronometer.getBoundingClientRect().height + 16}px`;
+        scrollToAnchor("chronicle-workshops");
+      }
+    }
     const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") close(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -176,6 +188,26 @@ export default function ChroniclePage() {
       </div>
     ),
     eras: <EraStrip milestones={chronicle.milestones} eras={chronicle.eras} current={era.id} now={now} />,
+    workshops: (
+      <section id="chronicle-workshops" tabIndex={-1} aria-labelledby="chronicle-workshops-title">
+        <div className="chronicle-section-head">
+          <h2 id="chronicle-workshops-title"><Text value="可进入工坊" /></h2>
+          <p>{tx("{0} 个历史时刻，可以亲手探索。", workshops.length)}</p>
+        </div>
+        <p className="chronicle-workshop-help"><Text value="门形标记对应可进入的场景。选择年代定位，或直接走进工坊。" /></p>
+        <ul className="chronicle-workshop-list">
+          {workshops.map((stop) => (
+            <li key={stop.path} className={scene && localePath(scene.path, locale) === stop.path ? "is-current" : undefined}>
+              <Link to={`?t=${timeParam(stop.t, now)}#observatory`} onClick={close} preventScrollReset className="chronicle-workshop-locate" aria-label={tx("定位到 {0}：{1}", tx(timeLabel(stop.t, now)), tx(stop.label))}>
+                <img src={`${stop.src}-800.webp`} alt="" loading="lazy" decoding="async" width={80} height={54} />
+                <span><span className="chronicle-workshop-date">{tx(timeLabel(stop.t, now))}</span><strong>{tx(stop.label)}</strong></span>
+              </Link>
+              <Link to={stop.path} className="chronicle-workshop-enter" aria-label={tx(stop.label)}><Text value="进入 3D" /><span aria-hidden="true">↗</span></Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ),
   };
   return (
     <div className={`chronicle-page pb-8 pt-3 lg:pt-0 ${panel ? "has-layer" : ""}`}>
@@ -190,7 +222,7 @@ export default function ChroniclePage() {
           scene={scene ? { path: scene.path, label: tx(scene.label), enter: running ? tunnel.enter : null, loading: running && !tunnel.canEnter } : null}
           tools={(
             <div className="observatory-layers" role="toolbar" aria-label={tx("更多内容")}>
-              {PANELS.map(([key, label]) => (
+              {PANELS.filter(([key]) => key !== "workshops").map(([key, label]) => (
                 <button key={key} type="button" aria-expanded={panel === key} aria-controls="chronicle-layer" onClick={(event) => toggle(key, event.currentTarget)}>
                   <Text value={label} />
                 </button>
@@ -201,7 +233,9 @@ export default function ChroniclePage() {
         <StageReadouts metrics={chronicle.metrics} t={t} now={now} />
         {/* The chronometer docks under the deck and stays at hand while the readouts below scroll by. */}
         <section aria-label={tx("时间导航")} className="chronometer">
-          <ChronicleAxis eras={chronicle.eras} milestones={chronicle.milestones} now={now} t={t} picture={at} onMove={move} onCommit={commit} />
+          <ChronicleAxis eras={chronicle.eras} milestones={chronicle.milestones} now={now} t={t} picture={at} workshops={workshops} activeWorkshop={scene ? localePath(scene.path, locale) : undefined} workshopMenu={(
+            <button type="button" className="chronicle-workshop-menu" aria-expanded={panel === "workshops"} aria-controls="chronicle-workshops" onClick={(event) => toggle("workshops", event.currentTarget)}>{tx("工坊菜单 · {0}", workshops.length)}<span aria-hidden="true">↗</span></button>
+          )} onMove={move} onCommit={commit} />
           <div className="chronometer-controls">
             <button type="button" disabled={previous === at} onClick={() => commit(previous)} title={stopTitle(previous)}><Text value="‹ 上一个里程碑" /></button>
             <span className="chronometer-hint"><Text value="方向键逐幅切换画面 · 滚轮缩放 · 拖动或点击定位时间" /></span>

@@ -171,6 +171,24 @@ export function tunnelPictures(eras: ChronicleEra[], milestones: ChronicleMilest
   ].sort((a, b) => a.t - b.t);
 }
 
+export interface WorkshopStop {
+  t: number;
+  path: string;
+  label: string;
+  src: string;
+}
+
+/** One reachable picture per workshop: its own illustrated milestone, or its era's opening. */
+export function workshopStops(pictures: Array<{ t: number; src: string; scene?: string; milestone?: ChronicleMilestone }>, labels: ReadonlyMap<string, string>): WorkshopStop[] {
+  const selected = new Map<string, (typeof pictures)[number]>();
+  for (const picture of pictures) {
+    if (!picture.scene || !labels.get(picture.scene)) continue;
+    const previous = selected.get(picture.scene);
+    if (!previous || (picture.milestone && !previous.milestone)) selected.set(picture.scene, picture);
+  }
+  return [...selected].map(([path, picture]) => ({ t: picture.t, path, label: labels.get(path)!, src: picture.src })).sort((a, b) => a.t - b.t);
+}
+
 /** The picture the deck and the tunnel rest on at t: the nearest on the axis, so the view never hangs between two. -1 without pictures. */
 export function restingPicture(pictures: Array<{ t: number }>, t: number, now: number): number {
   const u = toAxis(t, now);

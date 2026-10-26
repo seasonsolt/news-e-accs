@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import type { ChronicleEra, ChronicleMilestone } from "@aihot/contracts/chronicle";
-import { focusAt, restingPicture, stepPicture, tunnelPictures } from "../app/features/chrono/format.ts";
+import { focusAt, restingPicture, stepPicture, tunnelPictures, workshopStops } from "../app/features/chrono/format.ts";
 import { embedPath, FROM_SCENE, readSceneCommand, readSceneEvent, TO_SCENE } from "../app/features/chrono/scene-handoff.ts";
 
 const eras: ChronicleEra[] = [-1e9, 1900].map((from, i) => ({ id: `era-${i}`, from, title: "Era", summary: "", art: `era-${i}`, artStyle: "" }));
@@ -29,6 +30,48 @@ test("era scenes attach to their own plate; an illustrated milestone never borro
   assert.equal(pictures[1]!.scene, undefined);
   assert.equal(pictures[2]!.scene, "/chronicle/engine");
   assert.equal(pictures[3]!.scene, undefined);
+});
+
+test("workshop stops deduplicate paths, prefer their illustrated milestone and stay in time order", () => {
+  const pictures = [
+    { t: 1900, src: "engine-era", scene: "/chronicle/engine" },
+    { t: 2025, src: "agents-era", scene: "/chronicle/agents" },
+    { t: 1822, src: "engine-milestone", scene: "/chronicle/engine", milestone: milestones[0]! },
+    { t: -1e6, src: "early-milestone", scene: "/chronicle/early", milestone: milestones[2]! },
+    { t: -2e6, src: "early-era", scene: "/chronicle/early" },
+  ];
+  const labels = new Map([["/chronicle/agents", "Agent studio"], ["/chronicle/engine", "Engine workshop"], ["/chronicle/early", "Early workshop"]]);
+  const expected = [
+    { t: -1e6, src: "early-milestone", path: "/chronicle/early", label: "Early workshop" },
+    { t: 1822, src: "engine-milestone", path: "/chronicle/engine", label: "Engine workshop" },
+    { t: 2025, src: "agents-era", path: "/chronicle/agents", label: "Agent studio" },
+  ];
+  assert.deepEqual(workshopStops(pictures, labels), expected);
+  assert.deepEqual(workshopStops([...pictures].reverse(), labels), expected);
+});
+
+test("workshop stops omit unlabeled and non-enterable pictures without inventing an entrance", () => {
+  assert.deepEqual(workshopStops([
+    { t: 1800, src: "ordinary-plate" },
+    { t: 1822, src: "unlabeled-plate", scene: "/chronicle/unlabeled" },
+    { t: 1900, src: "empty-label", scene: "/chronicle/empty" },
+  ], new Map([["/chronicle/empty", ""], ["/chronicle/absent", "No picture"]])), []);
+  assert.deepEqual(workshopStops([], new Map([["/chronicle/absent", "No picture"]])), []);
+});
+
+test("every registered workshop has one stop that reaches its own timeline picture", async () => {
+  const { SCENES } = await import("../../../modules/scenes/scenes.ts");
+  const { eras } = JSON.parse(readFileSync(new URL("../../../industry/chronicle/eras.json", import.meta.url), "utf8")) as { eras: ChronicleEra[] };
+  const { milestones } = JSON.parse(readFileSync(new URL("../../../industry/chronicle/milestones.json", import.meta.url), "utf8")) as { milestones: ChronicleMilestone[] };
+  const paths = new Map(SCENES.flatMap(scene => [
+    ...(scene.era ? [[`e-${scene.era}`, scene.path] as const] : []),
+    ...(scene.milestone ? [[`m-${scene.milestone}`, scene.path] as const] : []),
+  ]));
+  const pictures = tunnelPictures(eras, milestones, paths);
+  const stops = workshopStops(pictures, new Map(SCENES.map(scene => [scene.path, scene.label])));
+  assert.equal(stops.length, SCENES.length);
+  assert.deepEqual(new Set(stops.map(stop => stop.path)), new Set(SCENES.map(scene => scene.path)));
+  for (const stop of stops) assert.ok(pictures.some(picture => picture.t === stop.t && picture.scene === stop.path && picture.src === stop.src), stop.path);
 });
 
 test("an era opening on an illustrated milestone is one picture, so every arrow step flies exactly one", () => {

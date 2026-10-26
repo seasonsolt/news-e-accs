@@ -3,21 +3,24 @@ import { Text, useLocale, useTranslate } from "../../lib/i18n";
 // Wheel or pinch zooms around the pointer; horizontal or shift+wheel pans the visible window.
 // Drag or click positions the needle, with clicks snapping to nearby milestones. Arrow keys step
 // through every era plate and illustrated milestone; PageUp/PageDown jump between eras.
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { axisTicks, fromAxis, timeLabel, toAxis, type ChronicleEra, type ChronicleMilestone } from "@aihot/contracts/chronicle";
 
 import { useMotionAllowed } from "../motion/preferences";
-import { compactTick, keepAxisInView, panAxisWindow, projectAxis, stepEra, stepPicture, zoomAxisWindow, type AxisWindow } from "./format";
+import { compactTick, keepAxisInView, panAxisWindow, projectAxis, stepEra, stepPicture, zoomAxisWindow, type AxisWindow, type WorkshopStop } from "./format";
 
 const SNAP_PX = 8;
 
-export function ChronicleAxis({ eras, milestones, now, t, picture, onMove, onCommit }: {
+export function ChronicleAxis({ eras, milestones, now, t, picture, workshops = [], activeWorkshop, workshopMenu, onMove, onCommit }: {
   eras: ChronicleEra[];
   milestones: ChronicleMilestone[];
   now: number;
   t: number;
   /** The picture in view (restingPicture): the arrow keys step on from it. */
   picture: number;
+  workshops?: WorkshopStop[];
+  activeWorkshop?: string;
+  workshopMenu?: ReactNode;
   /** While dragging: the needle follows. */
   onMove: (t: number) => void;
   /** On release (or a key, a click): the moment is settled and goes into the address. */
@@ -87,14 +90,21 @@ export function ChronicleAxis({ eras, milestones, now, t, picture, onMove, onCom
     let next = fromAxis(pos.u, now);
     if (!moved) {
       // A click means "this one": the nearest milestone within a few pixels.
-      let best: { m: ChronicleMilestone; d: number } | null = null;
-      for (const m of milestones) {
+      let best: { t: number; d: number } | null = null;
+      // The narrow door marks remain easy to select even among dense ordinary ticks.
+      for (const m of workshops) {
         const mu = toAxis(m.t, now);
         if (mu < view.lo || mu > view.hi) continue;
         const d = Math.abs(mu - pos.u) / span * pos.width;
-        if (d <= SNAP_PX && (!best || d < best.d)) best = { m, d };
+        if (d <= SNAP_PX && (!best || d < best.d)) best = { t: m.t, d };
       }
-      if (best) next = best.m.t;
+      for (const m of best ? [] : milestones) {
+        const mu = toAxis(m.t, now);
+        if (mu < view.lo || mu > view.hi) continue;
+        const d = Math.abs(mu - pos.u) / span * pos.width;
+        if (d <= SNAP_PX && (!best || d < best.d)) best = { t: m.t, d };
+      }
+      if (best) next = best.t;
     }
     onCommit(next);
   };
@@ -112,6 +122,12 @@ export function ChronicleAxis({ eras, milestones, now, t, picture, onMove, onCom
 
   return (
     <div className="chronicle-axis select-none">
+      {!!workshops.length && (
+        <div className="chronicle-workshop-head">
+          <span><span className="chronicle-door-key" aria-hidden="true">↗</span><Text value="可进入工坊" /></span>
+          {workshopMenu}
+        </div>
+      )}
       <div
         ref={track}
         role="slider"
@@ -155,6 +171,15 @@ export function ChronicleAxis({ eras, milestones, now, t, picture, onMove, onCom
               className={`chronicle-tick cat-${m.category} ${m.forecast ? "is-forecast" : ""}`}
               style={{ left: `${projectAxis(mu, view) * 100}%` }}
             />
+          );
+        })}
+        {workshops.map((stop) => {
+          const position = toAxis(stop.t, now);
+          if (position < view.lo || position > view.hi) return null;
+          return (
+            <span key={stop.path} className={`chronicle-workshop-mark ${activeWorkshop === stop.path ? "is-current" : ""}`} style={{ left: `${projectAxis(position, view) * 100}%` }} title={`${tx(timeLabel(stop.t, now))} · ${tx(stop.label)}`} aria-hidden="true">
+              <svg width="12" height="15" viewBox="0 0 12 15" fill="none"><path d="M1.5 14V1.5h9V14M.5 14h11M7 8h.5" stroke="currentColor" strokeWidth="1.5" /><path d="M3.5 3.5h4V13h-4z" fill="currentColor" fillOpacity=".2" /></svg>
+            </span>
           );
         })}
         {nowU >= view.lo && nowU <= view.hi && (

@@ -68,7 +68,7 @@ test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era
   assert.deepEqual([...document.querySelectorAll(".chronicle-readout-label")].map((el) => el.textContent), ["世界人口", "一次能源功率"]);
   // The registered era plate opens the representative steam workshop.
   assert.equal(document.querySelector("a.observatory-enter")!.getAttribute("href"), "/zh/chronicle/steam");
-  assert.deepEqual([...document.querySelectorAll("#chronicle-layer .chronicle-panel")].map((el) => el.getAttribute("data-panel")), ["gauges", "nearby", "eras"]);
+  assert.deepEqual([...document.querySelectorAll("#chronicle-layer .chronicle-panel")].map((el) => el.getAttribute("data-panel")), ["gauges", "nearby", "eras", "workshops"]);
   assert.equal(document.querySelector("#chronicle-layer")!.hasAttribute("data-panel"), false);
   assert.ok(document.querySelector('#chronicle-layer [data-panel="nearby"] .chronicle-rail-item'));
   const slider = document.querySelector('[role="slider"]')!;
@@ -79,6 +79,21 @@ test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era
   assert.match(document.querySelector("main")!.textContent!, /卡尔达肖夫指数/);
   assert.equal(document.querySelector('meta[name="robots"]'), null);
   assert.ok(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith("/zh/chronicle"));
+});
+
+test("the timeline exposes unique workshop stops and localized direct entrances outside its slider", async () => {
+  for (const prefix of ["/zh", ""]) {
+    const response = await fetch(`${fixture.origin}${prefix}/chronicle?t=1822`);
+    const document = parseHTML(await response.text()).document;
+    const menu = document.querySelector('button[aria-controls="chronicle-workshops"]')!;
+    assert.match(menu.textContent!, prefix ? /工坊菜单 · 2/ : /Workshop menu · 2/);
+    assert.equal(document.querySelector('[role="slider"] button, [role="slider"] a'), null);
+    const entries = [...document.querySelectorAll("#chronicle-workshops .chronicle-workshop-enter")];
+    assert.deepEqual(entries.map(a => a.getAttribute("href")), [`${prefix}/chronicle/steam`, `${prefix}/chronicle/difference-engine`]);
+    const stops = [...document.querySelectorAll("#chronicle-workshops .chronicle-workshop-locate")];
+    assert.deepEqual(stops.map(a => a.getAttribute("href")), [`${prefix}/chronicle?t=1769.000000001#observatory`, `${prefix}/chronicle?t=1822#observatory`]);
+    if (!prefix) assert.doesNotMatch(document.querySelector("#chronicle-workshops")!.textContent!, /[\u3400-\u9fff]/u);
+  }
 });
 
 test("the workshop directory offers ten localized playable eras without loading a canvas in SSR", async () => {
