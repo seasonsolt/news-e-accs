@@ -7,6 +7,7 @@ import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
 import { FROM_SCENE, readSceneCommand, type SceneEvent } from "@aihot/web/features/chrono/scene-handoff";
+import { reducedMotionQuery } from "@aihot/web/lib/motion";
 import { createGeometryKit, type Model, type View } from "./geometry.ts";
 import { nextPhase, type World } from "./worlds.ts";
 import { loadSurface } from "./surfaces.ts";
@@ -59,7 +60,7 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
   return dispose;
 
   async function run() {
-    const viewport = $("viewport"), experience = $("experience"), reduced = matchMedia("(prefers-reduced-motion: reduce)");
+    const viewport = $("viewport"), experience = $("experience"), reduced = reducedMotionQuery();
     const studio = world.id === "agents-2026", stone = world.id === "stone-tools";
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     own(() => { renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove(); });
