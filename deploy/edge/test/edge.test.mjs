@@ -77,7 +77,7 @@ test("a scene file is read from R2's scenes/ prefix, kept for good, and never re
   const bucket = {
     get: async (key) => {
       reads.push(key);
-      return key === "scenes/workshop/wood-color.0123456789.webp"
+      return /scenes\/workshop\/(?:wood-color\.0123456789\.webp|boulder\.0123456789\.glb|dawn\.0123456789\.hdr)$/.test(key)
         ? { body: "webp bytes", size: 10, httpEtag: '"e1"' }
         : null;
     },
@@ -103,6 +103,15 @@ test("a scene file is read from R2's scenes/ prefix, kept for good, and never re
   assert.equal(unchanged.status, 304);
   assert.deepEqual(reads, ["scenes/workshop/wood-color.0123456789.webp"]);
 
+  for (const [name, type] of [["boulder.0123456789.glb", "model/gltf-binary"], ["dawn.0123456789.hdr", "application/octet-stream"]]) {
+    const binary = await fetchScene(`/media/scenes/workshop/${name}`);
+    assert.equal(binary.status, 200);
+    assert.equal(binary.headers.get("content-type"), type);
+    assert.equal(binary.headers.get("cache-control"), "public, max-age=31536000, immutable");
+    const head = await fetchScene(`/media/scenes/workshop/${name}`, {}, "HEAD");
+    assert.equal(head.status, 200); assert.equal(await head.text(), "");
+  }
+
   const missing = await fetchScene("/media/scenes/workshop/stone-color.0123456789.webp");
   assert.equal(missing.status, 404);
   assert.equal(seen.length, 0);
@@ -111,6 +120,6 @@ test("a scene file is read from R2's scenes/ prefix, kept for good, and never re
   for (const path of ["/media/wallpapers/a.webp", "/media/scenes/../wallpapers/a.0123456789.webp", "/media/scenes/workshop/a.webp", "/media/scenes/Workshop/a.0123456789.webp"]) {
     await fetchScene(path);
   }
-  assert.equal(reads.length, 2);
+  assert.equal(reads.length, 4);
   assert.equal(seen.length, 4);
 });

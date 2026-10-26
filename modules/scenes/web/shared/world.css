@@ -1,0 +1,61 @@
+.world .intro { max-width: 32rem; }
+.world .intro-copy { max-width: 27rem; line-height: 1.8; }
+.world .intro h1 span { margin-left: .15em; }
+html[lang=en] .world .intro h1 span { display: block; margin: 10px 0 0; font-size: 18px; line-height: 1.2; }
+.world .inspector { width: 292px; }
+.world .inspector h2 { font-size: 25px; line-height: 1.3; }
+.world .phase-index { margin-top: 16px; color: var(--accent); font: 11px var(--font-mono); letter-spacing: .15em; }
+.world .world-readings { margin-top: 18px; border-top: 1px solid var(--line); }
+.world .world-readings > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line-soft); padding: 9px 0; }
+.world .world-readings span { color: var(--ink-4); font-size: 11px; }
+.world .world-readings strong { font: 500 13px var(--font-mono); color: var(--ink); }
+.world .phase-track { list-style: none; display: flex; gap: 3px; margin: 18px 0 0; padding: 0; }
+.world .phase-track li { min-width: 0; flex: 1; }
+.world .phase-track button { display: flex; flex-direction: column; align-items: flex-start; width: 100%; padding: 7px 3px 0; border-top: 2px solid var(--line); font-size: 10px; color: var(--ink-4); }
+.world .phase-track button span { margin-bottom: 5px; font: 10px var(--font-mono); }
+.world .phase-track button[aria-current] { border-color: var(--accent); color: var(--accent); }
+.world .phase-track button.is-done { border-color: var(--brass); }
+.world .dock-note { font-size: 10px; }
+.world .step-button:disabled { cursor: default; }
+.world .world-links { margin-top: 30px; border-top: 1px solid var(--line); padding-top: 18px; display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-4); }
+.world .hotspot.is-visible { pointer-events: auto; }
+.world-stone-tools .vignette { background: linear-gradient(to top, rgb(17 20 16 / .8), transparent 48%), linear-gradient(to right, rgb(17 20 16 / .32), transparent 40%), linear-gradient(rgb(17 20 16 / .18), transparent 15%); }
+.world .is-near .intro { opacity: .55; }
+.world .is-near .intro .intro-copy { display: none; }
+@media (max-width: 1100px) { .world .inspector { width: 260px; } }
+.world .game-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 14px 0 10px; }
+.world .game-action { min-width: 0; min-height: 38px; padding: 7px 8px; color: var(--ink); background: #c5a35e0c; border: 1px solid #b896503f; border-radius: 5px; font: inherit; font-size: 12px; line-height: 1.35; cursor: pointer; }
+.world .game-action:hover, .world .game-action:focus-visible { color: #f1d494; background: #b8965024; border-color: #c3a15e; outline: 1px solid #c3a15e; outline-offset: 2px; }
+.world .game-action:disabled { opacity: .4; cursor: default; }
+.world.is-challenge .phase-track button:disabled { opacity: 1; cursor: default; }
+.world.is-challenge .machine-status { display: flex; line-height: 1.6; font-size: 12px; }
+.world.is-challenge .inspector { max-height: calc(100svh - 170px); overflow-y: auto; scrollbar-width: thin; }
+@media (max-width: 760px) {
+  .world .sheet { overflow-x: hidden; }
+  .world .sheet > *, .world .dock-actions > button { min-width: 0; }
+  .world .run-button { padding-inline: 8px; }
+  .world .inspector { width: auto; }
+  .world.is-challenge .inspector { max-height: none; overflow: visible; }
+  .world .phase-index { margin-top: 5px; font-size: 10px; }
+  .world .inspector h2 { font-size: 20px; margin-top: 4px; }
+  .world .world-readings { display: flex; gap: 12px; margin-top: 8px; }
+  .world .world-readings > div { flex: 1; flex-direction: column; gap: 2px; padding: 6px 0; min-width: 0; }
+  .world .world-readings strong { font-size: 11px; }
+  .world .world-readings span { font-size: 10px; }
+  .world .phase-track { margin-top: 10px; }
+  .world .phase-track button { min-height: 44px; flex-direction: row; gap: 5px; align-items: center; padding-top: 2px; }
+  .world .phase-track button span { margin: 0; }
+  .world .machine-status { display: none; }
+  .world.is-challenge .machine-status { display: flex; margin-top: 8px; }
+  .world.is-challenge .game-controls { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin: 9px 0 5px; }
+  .world.is-challenge .game-action { min-height: 40px; padding: 5px; font-size: 11px; }
+  .world.is-challenge .phase-track { display: none; }
+  .world .sheet { gap: 8px; }
+  .world .intro h1 { font-size: 56px; }
+}
+@media (max-width: 360px), (max-height: 740px) and (max-width: 760px) {
+  .world .phase-track { display: none; }
+  .world .intro h1 { font-size: 44px; }
+  .world .sheet { padding: 12px; }
+  .world .world-readings { gap: 6px; }
+}

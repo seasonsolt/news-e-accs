@@ -11,7 +11,7 @@ import type { HotResponse, ReportDetail, TimelineResponse } from "@aihot/contrac
 export const chronicle: ChronicleResponse = {
   eras: [
     { id: "cosmos", from: BIG_BANG, title: "宇宙", summary: "宇宙的早期", art: "cosmos", artStyle: "深空摄影" },
-    { id: "steam", from: 1769, title: "蒸汽时代", summary: "蒸汽动力改变文明", art: "steam", artStyle: "铜版画" },
+    { id: "steam-age", from: 1769, title: "蒸汽时代", summary: "蒸汽动力改变文明", art: "steam", artStyle: "铜版画" },
     { id: "forecast", from: 2030, title: "未来（推测）", summary: "公开预测", art: "forecast", artStyle: "线框", forecast: true },
   ],
   milestones: [

@@ -156,8 +156,8 @@ export function compactTick(label: string): string {
 /** The tunnel's pictures (depth-tunnel.ts): era openings and illustrated milestones in axis order, the stops of stepPicture. */
 export function tunnelPictures(eras: ChronicleEra[], milestones: ChronicleMilestone[], scenes: ReadonlyMap<string, string>): Array<{ t: number; src: string; scene?: string }> {
   return [
-    ...eras.map((era) => ({ t: era.from + 1e-9, src: `/media/art/epochs/${era.art}` })),
-    ...milestones.filter((m) => m.art).map((m) => ({ t: m.t, src: `/media/art/moments/${m.art}`, scene: scenes.get(m.id) })),
+    ...eras.map((era) => ({ t: era.from + 1e-9, src: `/media/art/epochs/${era.art}`, scene: scenes.get(`e-${era.id}`) })),
+    ...milestones.filter((m) => m.art).map((m) => ({ t: m.t, src: `/media/art/moments/${m.art}`, scene: scenes.get(`m-${m.id}`) })),
   ].sort((a, b) => a.t - b.t);
 }
 

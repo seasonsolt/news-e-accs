@@ -9,7 +9,7 @@ const milestones: ChronicleMilestone[] = [{ id: "engine", t: 1822, art: "engine"
   .map((m) => ({ precision: "year", title: "Moment", detail: "", category: "compute", source: "https://example.com", ...m }));
 
 test("the tunnel's pictures are the arrow keys' stops in axis order, a scene on its milestone's plate", () => {
-  const pictures = tunnelPictures(eras, milestones, new Map([["engine", "/chronicle/engine"]]));
+  const pictures = tunnelPictures(eras, milestones, new Map([["m-engine", "/chronicle/engine"]]));
   assert.deepEqual(pictures.map((p) => p.src), ["/media/art/epochs/era-0", "/media/art/moments/old", "/media/art/moments/engine", "/media/art/epochs/era-1"]);
   assert.deepEqual(pictures.map((p) => p.scene), [undefined, undefined, "/chronicle/engine", undefined]);
   // Every stop of stepPicture is a picture of the tunnel, and resting on one is an integer position.
@@ -19,6 +19,14 @@ test("the tunnel's pictures are the arrow keys' stops in axis order, a scene on 
     assert.equal(t, pictures[i]!.t);
     assert.equal(pictureProgress(pictures, t, 2026), i);
   }
+});
+
+test("era scenes attach to their own plate; an illustrated milestone never borrows the era scene", () => {
+  const pictures = tunnelPictures(eras, milestones, new Map([["e-era-0", "/chronicle/early"], ["m-engine", "/chronicle/engine"]]));
+  assert.equal(pictures[0]!.scene, "/chronicle/early");
+  assert.equal(pictures[1]!.scene, undefined);
+  assert.equal(pictures[2]!.scene, "/chronicle/engine");
+  assert.equal(pictures[3]!.scene, undefined);
 });
 
 test("between two pictures the tunnel is in flight; beyond the ends it rests on the first or the last", () => {

@@ -1,0 +1,32 @@
+[
+  {
+    "name": "window-fuji",
+    "source": "panorama-fuji.png",
+    "md5": "e1f639ac396f38a70cbf3a1e0e2a7251",
+    "width": 2172,
+    "quality": 90,
+    "license": "AI generated",
+    "generator": "built-in imagegen",
+    "prompt": "modules/scenes/assets/agents-2026/window-scenes.prompt.md"
+  },
+  {
+    "name": "window-paris",
+    "source": "panorama-paris.png",
+    "md5": "852c502f8125f3032ca0554061d73057",
+    "width": 2172,
+    "quality": 90,
+    "license": "AI generated",
+    "generator": "built-in imagegen",
+    "prompt": "modules/scenes/assets/agents-2026/window-scenes.prompt.md"
+  },
+  {
+    "name": "window-great-wall",
+    "source": "panorama-great-wall.png",
+    "md5": "c666a0522691c22d3231e0e3fd8e9fb5",
+    "width": 2172,
+    "quality": 90,
+    "license": "AI generated",
+    "generator": "built-in imagegen",
+    "prompt": "modules/scenes/assets/agents-2026/window-scenes.prompt.md"
+  }
+]

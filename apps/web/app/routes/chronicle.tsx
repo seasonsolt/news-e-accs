@@ -50,8 +50,11 @@ export function headers() {
 type Panel = "gauges" | "nearby" | "eras";
 const PANELS: Array<[Panel, string]> = [["gauges", "全部读数"], ["nearby", "此刻附近"], ["eras", "时代画卷"]];
 
-/** Scenes the modules open from milestones' plates (WebModule.chronicle), by milestone. */
-const SCENES = new Map(webModules().flatMap((m) => m.chronicle?.scenes ?? []).map((scene) => [scene.milestone, scene]));
+/** Keyed like plateOf: era and milestone IDs can be the same. */
+const SCENES = new Map(webModules().flatMap((m) => m.chronicle?.scenes ?? []).flatMap((scene) => [
+  ...(scene.era ? [[`e-${scene.era}`, scene] as const] : []),
+  ...(scene.milestone ? [[`m-${scene.milestone}`, scene] as const] : []),
+]));
 
 export default function ChroniclePage() {
   const tx = useTranslate();
@@ -67,12 +70,16 @@ export default function ChroniclePage() {
   const pictures = useMemo(() => tunnelPictures(chronicle.eras, chronicle.milestones, new Map([...SCENES].map(([id, scene]) => [id, localePath(scene.path, locale)]))), [chronicle, locale]);
   const era = eraAt(chronicle.eras, t);
   const focus = focusAt(chronicle.milestones, t, now);
-  const scene = focus ? SCENES.get(focus.id) : undefined;
+  const plate = era ? plateOf(era, focus) : null;
+  const scene = plate ? SCENES.get(plate.key as `e-${string}` | `m-${string}`) : undefined;
+  // An era's scene follows its plate throughout that era, including "now". Illustrated milestones keep
+  // their own plate and never inherit the era's scene. Rest on the matching plate before handing over.
+  const eraSceneIndex = scene && plate?.key.startsWith("e-") ? pictures.findIndex((p) => p.src === plate.src) : -1;
   const allowed = useTunnelAllowed();
   const tunnel = useDepthTunnel(stage, {
     allowed,
     pictures,
-    progress: pictureProgress(pictures, t, now),
+    progress: eraSceneIndex >= 0 ? eraSceneIndex : pictureProgress(pictures, t, now),
     alt: era ? plateOf(era, focus).alt : "",
     sceneTitle: scene ? tx(scene.label) : "",
   });

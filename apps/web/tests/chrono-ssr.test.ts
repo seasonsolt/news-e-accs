@@ -66,8 +66,8 @@ test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era
   assert.equal(document.querySelector(".observatory-depth, .observatory-tunnel, canvas, iframe"), null);
   // The deck's three readouts, and every panel of the layer, closed or not, are in the page.
   assert.deepEqual([...document.querySelectorAll(".chronicle-readout-label")].map((el) => el.textContent), ["世界人口", "一次能源功率"]);
-  // Only a milestone with a scene offers the way in.
-  assert.equal(document.querySelector(".observatory-enter"), null);
+  // The registered era plate opens the representative steam workshop.
+  assert.equal(document.querySelector("a.observatory-enter")!.getAttribute("href"), "/zh/chronicle/steam");
   assert.deepEqual([...document.querySelectorAll("#chronicle-layer .chronicle-panel")].map((el) => el.getAttribute("data-panel")), ["gauges", "nearby", "eras"]);
   assert.equal(document.querySelector("#chronicle-layer")!.hasAttribute("data-panel"), false);
   assert.ok(document.querySelector('#chronicle-layer [data-panel="nearby"] .chronicle-rail-item'));
@@ -81,6 +81,21 @@ test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era
   assert.ok(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith("/zh/chronicle"));
 });
 
+test("the workshop directory offers ten localized playable eras without loading a canvas in SSR", async () => {
+  for (const prefix of ["/zh", ""]) {
+    const response = await fetch(`${fixture.origin}${prefix}/chronicle/workshops`);
+    assert.equal(response.status, 200);
+    const document = parseHTML(await response.text()).document;
+    assert.equal(document.querySelectorAll("main").length, 1);
+    assert.equal(document.querySelectorAll(".workshop-gallery-card").length, 10);
+    const links = [...document.querySelectorAll<HTMLAnchorElement>(".workshop-gallery-start")];
+    assert.equal(new Set(links.map(a => a.getAttribute("href"))).size, 10);
+    for (const link of links) assert.ok(link.getAttribute("href")!.startsWith(`${prefix}/chronicle/`));
+    assert.equal(document.querySelector("canvas,iframe"), null);
+    if (!prefix) assert.doesNotMatch(document.querySelector("main")!.textContent!, /[\u3400-\u9fff]/u);
+  }
+});
+
 test("a milestone with a scene links to the scene's page in the reader's language, which draws no site chrome", async () => {
   const document = await page("/chronicle?t=1822");
   assert.equal(document.querySelector(".observatory-era")!.textContent, "差分机");
@@ -88,6 +103,29 @@ test("a milestone with a scene links to the scene's page in the reader's languag
   const scene = await page("/chronicle/difference-engine");
   assert.equal(scene.querySelector('nav[aria-label="主导航"]'), null);
   assert.equal(scene.querySelector("canvas"), null);
+});
+
+test("all workshops have localized bare pages and embedded pages stay out of the index", async () => {
+  const cases = [["agents", "智能体工坊", "The Agent Studio"], ["stone-tools", "石器工坊", "The Stone Workshop"], ["fire", "火的工坊", "The Hearth"], ["agriculture", "农业工坊", "The First Farm"]];
+  const { WORLDS } = await import("../../../modules/scenes/web/shared/worlds.ts");
+  const { messages } = await import("../../../modules/scenes/web/shared/messages.ts");
+  for (const world of Object.values(WORLDS).filter(w => w.challenge)) cases.push([world.path.split("/").at(-1)!, world.title, messages.en[world.title as keyof typeof messages.en]!]);
+  for (const [path, zh, en] of cases) {
+    const document = await page(`/chronicle/${path}`);
+    assert.match(document.querySelector("h2")!.textContent!, new RegExp(zh!));
+    assert.equal(document.querySelector('nav[aria-label="主导航"]'), null);
+    assert.equal(document.querySelector("canvas"), null);
+    assert.equal(document.querySelectorAll("[data-phase]").length, 4);
+    if (document.querySelector("#game-controls")) assert.equal(document.querySelectorAll("[data-phase]:disabled").length, 4, "challenge stages cannot bypass the game rules");
+    assert.ok(document.querySelector('.brand')!.getAttribute("href")!.startsWith("/zh/chronicle?t="));
+    const embedded = await page(`/chronicle/${path}?embed`);
+    assert.match(embedded.querySelector('meta[name="robots"]')!.getAttribute("content")!, /noindex/);
+    const response = await fetch(`${fixture.origin}/chronicle/${path}`);
+    assert.equal(response.status, 200);
+    const english = parseHTML(await response.text()).document;
+    assert.equal(english.querySelector(".intro h2")!.textContent, en);
+    assert.doesNotMatch(english.querySelector("main")!.textContent!, /[\u3400-\u9fff]/);
+  }
 });
 
 test("civilization comparison notes localize large counts and preserve Chinese output", async () => {

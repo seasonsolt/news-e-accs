@@ -1,23 +1,26 @@
-// Builds a scene's textures and uploads them to R2 (modules/scenes/README.md).
+// Builds a scene's textures, packed scans and lighting and uploads them to R2 (modules/scenes/README.md).
 //
 //   node modules/scenes/scripts/assets.ts build <scene>    originals → apps/web/public/media/scenes/<scene>/ + manifest.json
 //   node modules/scenes/scripts/assets.ts upload <scene>   the manifest's files → R2 e-acc/scenes/<scene>/
 //
 // `build` reads each original listed in assets/<scene>/sources.json from .data/scene-sources/<scene>/,
 // fetching it first when it is missing (from its public address, or from the bucket's private
-// scene-sources/ prefix) and refusing one whose MD5 differs. It writes WebP files named after their
-// content, so a changed texture gets a new address and every address can be cached for good, and
+// scene-sources/ prefix) and refusing one whose MD5 differs. It writes WebP, GLB and HDR files named after their
+// content, so a changed asset gets a new address and every address can be cached for good, and
 // records them in web/<scene>/manifest.json, which the scene's code reads. `upload` needs the cf CLI signed in.
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
+import { packGltf, type GltfSource } from "./pack-gltf.ts";
 
 const ROOT = path.resolve(import.meta.dirname, "../../..");
 const BUCKET = "e-acc";
 
 interface Source {
+  kind?: "gltf" | "binary";
+  gltf?: GltfSource;
   name: string;
   source: string;
   md5: string;
@@ -43,7 +46,9 @@ async function original(item: Source): Promise<Buffer> {
   const file = path.join(ROOT, ".data/scene-sources", scene!, item.source);
   if (!existsSync(file)) {
     mkdirSync(path.dirname(file), { recursive: true });
-    if (item.url) {
+    if (item.gltf) {
+      writeFileSync(file, await packGltf(item.gltf, item.width, item.quality));
+    } else if (item.url) {
       const response = await fetch(item.url);
       if (!response.ok) throw new Error(`${item.source}: ${response.status} from ${item.url}`);
       writeFileSync(file, Buffer.from(await response.arrayBuffer()));
@@ -64,14 +69,13 @@ async function build() {
   mkdirSync(outDir, { recursive: true });
   const manifest: Record<string, string> = {};
   for (const item of sources) {
-    const webp = await sharp(await original(item))
-      .resize({ width: item.width, withoutEnlargement: true })
-      .webp({ quality: item.quality, effort: 6 })
-      .toBuffer();
-    const name = `${item.name}.${createHash("sha256").update(webp).digest("hex").slice(0, 10)}.webp`;
-    writeFileSync(path.join(outDir, name), webp);
+    const source = await original(item);
+    const bytes = item.kind ? source : await sharp(source).resize({ width: item.width, withoutEnlargement: true }).webp({ quality: item.quality, effort: 6 }).toBuffer();
+    const extension = item.kind === "gltf" ? ".glb" : item.kind === "binary" ? path.extname(item.source) : ".webp";
+    const name = `${item.name}.${createHash("sha256").update(bytes).digest("hex").slice(0, 10)}${extension}`;
+    writeFileSync(path.join(outDir, name), bytes);
     manifest[item.name] = name;
-    console.log(`${name}  ${(webp.length / 1024).toFixed(0)} KB`);
+    console.log(`${name}  ${(bytes.length / 1024).toFixed(0)} KB`);
   }
   writeFileSync(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`);
 }
@@ -83,7 +87,8 @@ function upload() {
     if (!built.has(name)) throw new Error(`${name} is in the manifest but not built; run build first`);
   }
   for (const name of Object.values(manifest)) {
-    cf(["r2", "objects", "put", `scenes/${scene}/${name}`, "--bucket-name", BUCKET, "--file", path.join(outDir, name), "--content-type", "image/webp", "-q"], { encoding: "utf8" });
+    const contentType = name.endsWith(".glb") ? "model/gltf-binary" : name.endsWith(".hdr") ? "application/octet-stream" : "image/webp";
+    cf(["r2", "objects", "put", `scenes/${scene}/${name}`, "--bucket-name", BUCKET, "--file", path.join(outDir, name), "--content-type", contentType, "-q"], { encoding: "utf8" });
     console.log(`uploaded scenes/${scene}/${name}`);
   }
 }

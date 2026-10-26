@@ -1,6 +1,6 @@
-// A scene's pictures and textures (modules/scenes/README.md): /media/scenes/<scene>/<name>.<hash>.webp is
-// the object scenes/<scene>/<name>.<hash>.webp in R2. Its name changes with its content, so a copy is kept for good.
-const SCENE_FILE = /^\/media\/scenes\/([a-z0-9-]+)\/([a-z0-9-]+\.[0-9a-f]{10}\.webp)$/;
+// Scene textures, packed meshes and lighting (modules/scenes/README.md) map to the same
+// scenes/<scene>/<name>.<hash>.<webp|glb|hdr> key in R2. Content hashes keep cached copies valid.
+const SCENE_FILE = /^\/media\/scenes\/([a-z0-9-]+)\/([a-z0-9-]+\.[0-9a-f]{10}\.(?:webp|glb|hdr))$/;
 const SITE = "https://e-acc.ai";
 
 /** The R2 key a request asks for, or null when it is not a scene file. */
@@ -20,7 +20,7 @@ export async function serveScene(request, key, env, ctx) {
     if (!object) return new Response("Not found", { status: 404, headers: { "cache-control": "public, max-age=60" } });
     response = new Response(object.body, {
       headers: {
-        "content-type": "image/webp",
+        "content-type": key.endsWith(".glb") ? "model/gltf-binary" : key.endsWith(".hdr") ? "application/octet-stream" : "image/webp",
         "content-length": String(object.size),
         "cache-control": "public, max-age=31536000, immutable",
         etag: object.httpEtag,
