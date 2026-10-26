@@ -5,8 +5,6 @@
   "assets": [
     {
       "id": "fuji",
-      "sourcePath": "/Users/Thin/.codex/generated_images/01a17395-0918-7982-a02b-a8db526b77a5/exec-5fa2b423-094a-4c27-af53-7b8ea7947e69.png",
-      "workspacePath": "/Users/Thin/.codex/worktrees/chronicle-workshops/news-e-accs/.data/scene-sources/agents-2026/panorama-fuji.png",
       "relativeWorkspacePath": ".data/scene-sources/agents-2026/panorama-fuji.png",
       "md5": "e1f639ac396f38a70cbf3a1e0e2a7251",
       "width": 2172,
@@ -15,12 +13,12 @@
       "bytes": 2052798,
       "mode": "built-in-imagegen",
       "format": "png",
-      "visualReview": "Inspected original output: one continuous landscape across three adjacent windows, recognizable central complete landmark, no room, window frame, text or watermark. No source stretching or resizing."
+      "visualReview": "Inspected original output: one continuous landscape across three adjacent windows, recognizable central complete landmark, no room, window frame, text or watermark. No source stretching or resizing.",
+      "generationOutput": "01a17395-0918-7982-a02b-a8db526b77a5/exec-5fa2b423-094a-4c27-af53-7b8ea7947e69.png",
+      "r2": "scene-sources/agents-2026/panorama-fuji.png"
     },
     {
       "id": "paris",
-      "sourcePath": "/Users/Thin/.codex/generated_images/01a17395-0918-7982-a02b-a8db526b77a5/exec-ed90d096-2f32-40bf-8112-55da31086f16.png",
-      "workspacePath": "/Users/Thin/.codex/worktrees/chronicle-workshops/news-e-accs/.data/scene-sources/agents-2026/panorama-paris.png",
       "relativeWorkspacePath": ".data/scene-sources/agents-2026/panorama-paris.png",
       "md5": "852c502f8125f3032ca0554061d73057",
       "width": 2172,
@@ -29,12 +27,12 @@
       "bytes": 2527794,
       "mode": "built-in-imagegen",
       "format": "png",
-      "visualReview": "Inspected original output: one continuous landscape across three adjacent windows, recognizable central complete landmark, no room, window frame, text or watermark. No source stretching or resizing."
+      "visualReview": "Inspected original output: one continuous landscape across three adjacent windows, recognizable central complete landmark, no room, window frame, text or watermark. No source stretching or resizing.",
+      "generationOutput": "01a17395-0918-7982-a02b-a8db526b77a5/exec-ed90d096-2f32-40bf-8112-55da31086f16.png",
+      "r2": "scene-sources/agents-2026/panorama-paris.png"
     },
     {
       "id": "great-wall",
-      "sourcePath": "/Users/Thin/.codex/generated_images/01a17395-0918-7982-a02b-a8db526b77a5/exec-e90284a2-80e3-42a5-99ce-09d4e272844b.png",
-      "workspacePath": "/Users/Thin/.codex/worktrees/chronicle-workshops/news-e-accs/.data/scene-sources/agents-2026/panorama-great-wall.png",
       "relativeWorkspacePath": ".data/scene-sources/agents-2026/panorama-great-wall.png",
       "md5": "c666a0522691c22d3231e0e3fd8e9fb5",
       "width": 2172,
@@ -43,7 +41,9 @@
       "bytes": 2711318,
       "mode": "built-in-imagegen",
       "format": "png",
-      "visualReview": "Inspected original output: one continuous landscape across three adjacent windows, recognizable central complete landmark, no room, window frame, text or watermark. No source stretching or resizing."
+      "visualReview": "Inspected original output: one continuous landscape across three adjacent windows, recognizable central complete landmark, no room, window frame, text or watermark. No source stretching or resizing.",
+      "generationOutput": "01a17395-0918-7982-a02b-a8db526b77a5/exec-e90284a2-80e3-42a5-99ce-09d4e272844b.png",
+      "r2": "scene-sources/agents-2026/panorama-great-wall.png"
     }
   ]
 }

@@ -88,7 +88,7 @@ node modules/scenes/scripts/assets.ts upload difference-engine-1822   # 把 mani
 
 扫描素材来自 Poly Haven，均为 [CC0](https://polyhaven.com/license)：[Rock 09](https://polyhaven.com/a/rock_09)、[Boulder 01](https://polyhaven.com/a/boulder_01)、[Grass Bermuda 01](https://polyhaven.com/a/grass_bermuda_01)、[Shrub 01](https://polyhaven.com/a/shrub_01)、[Gravelly Sand](https://polyhaven.com/a/gravelly_sand)、[Kiara 1 Dawn](https://polyhaven.com/a/kiara_1_dawn)。来源与校验在 `assets/stone-tools/sources.json`。`pack-gltf.ts` 保留扫描几何，将贴图嵌入 GLB，并合并原素材独立的植被透明通道。HDR 只用于环境光。
 
-石核与三片石片从同一扫描网格裁切，断面按真实交线封口；阶段切换、更换几何与复位仍由现有交互驱动。地面有独立色彩、法线、粗糙度与高度材质，岩石使用接触阴影，植被实例绘制。素材在浏览器直接从本站加载，不请求 Poly Haven，也不调用模型。新增素材目前只在本地准备，尚未上传 R2。
+石核与三片石片从同一扫描网格裁切，断面按真实交线封口；阶段切换、更换几何与复位仍由现有交互驱动。地面有独立色彩、法线、粗糙度与高度材质，岩石使用接触阴影，植被实例绘制。素材在浏览器直接从本站加载，不请求 Poly Haven，也不调用模型。这组素材已上传 R2 的 `scenes/stone-tools/`；内容哈希地址由同名场景的 `manifest.json` 记录。
 
 ## 2026、用火与农业的细节
 
@@ -100,7 +100,7 @@ node modules/scenes/scripts/assets.ts upload difference-engine-1822   # 把 mani
 
 可见台灯承担桌面的暖色主光与投影，各窗从当前图像局部线性色彩生成补光，随画面平滑过渡。窗景切换完成后捕获实际房间，更新金属、玻璃与木桌的环境反射，释放上一张反射纹理；不在每帧重新捕获。木材高度图与颜色图分离，设备分别使用哑面石墨、拉丝铝与铜件材质。代码 Canvas 仅在内容变化的 2 Hz 节点重绘。
 
-设备与显示器内容由代码生成；窗内全景使用内置 imagegen 生成，完整提示词在 [window-scenes.prompt.md](assets/agents-2026/window-scenes.prompt.md)，来源、尺寸和 MD5 在同目录 `generated-sources.json`、`sources.json`，不归入 CC0 扫描素材。图像只是虚拟窗的显示内容，工坊与设备仍为可环视的三维几何。木地板与灰泥继续复用已有 CC0 素材。任务、指示灯、风扇与状态屏均是本地预设演示，不接真实智能体或系统监控。全景原图与 WebP 当前仅在本机，尚未上传 R2；发布前需保存私有原图并上传构建素材。
+设备与显示器内容由代码生成；窗内全景使用内置 imagegen 生成，完整提示词在 [window-scenes.prompt.md](assets/agents-2026/window-scenes.prompt.md)，来源、尺寸和 MD5 在同目录 `generated-sources.json`、`sources.json`，不归入 CC0 扫描素材。图像只是虚拟窗的显示内容，工坊与设备仍为可环视的三维几何。木地板与灰泥继续复用已有 CC0 素材。任务、指示灯、风扇与状态屏均是本地预设演示，不接真实智能体或系统监控。三张全景原图已按记录的 MD5 私有归档至 R2 的 `scene-sources/agents-2026/`，可由 `sources.json` 的 `r2` 键恢复；构建 WebP 已上传 `scenes/agents-2026/`。
 
 用火用真实扫描岩石构成岩棚，木柴由带树皮、年轮和弯曲轮廓的实体几何构成；火焰是局部体积内的程序化光线步进，烟与火星另行绘制。原有燃料阶段驱动木柴、火焰和投影强度。
 
