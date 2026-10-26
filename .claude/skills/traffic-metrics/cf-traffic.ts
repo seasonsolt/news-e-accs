@@ -97,6 +97,11 @@ function route(raw: string): string {
 type UaDay = { beacon: number; pages: number; navs: number; assets: number; owner: number; rows: number; weighted: number };
 type Session = { ua: string; landing: string; paths: string[] };
 
+// A person opened a page and ran the page's code (the view beacon, scripts or an in-app navigation), without
+// the many full loads and few navigations of a crawler that renders JavaScript.
+const isPerson = (s: UaDay) => s.beacon + s.pages + s.navs > 0 && (s.beacon > 0 || s.assets > 0 || s.navs > 0)
+  && (s.pages <= MAX_FULL_LOADS || (s.navs > 0 && s.navs * LOADS_PER_NAV >= s.pages - MAX_FULL_LOADS));
+
 const until = args.until ?? addDays(beijingDate(Date.now()), -1);
 const days = Array.from({ length: Number(args.days) }, (_, i) => addDays(until, i - Number(args.days) + 1));
 const host = args.host.replace(/'/g, "");
@@ -125,10 +130,11 @@ for (const day of days) {
     else if (r.cls === "owner") s.owner += ok;
     ua.set(r.ua, s);
   }
-  const events = cf<Hit>(`SELECT timestamp ts, userAgent ua, clientRequestPath path FROM events.httpRequests
-    WHERE clientRequestHttpHost = '${host}' AND verifiedBotCategory = '' AND userAgent LIKE 'Mozilla/%' AND edgeResponseStatus = '200'
-      AND lower(userAgent) NOT LIKE '%bot%' AND lower(userAgent) NOT LIKE '%crawl%' AND lower(userAgent) NOT LIKE '%spider%'
-      AND lower(userAgent) NOT LIKE '%headless%' AND userAgent NOT LIKE '%compatible;%' AND ${PAGE_OR_NAV}
+  // Only the readers' own hits: a crawler rotating browser UAs (10-25: 80,000 loads a day) would fill the row limit.
+  const readers = [...ua].filter(([, s]) => isPerson(s)).map(([agent]) => `'${agent.replace(/'/g, "''")}'`);
+  const events = readers.length === 0 ? [] : cf<Hit>(`SELECT timestamp ts, userAgent ua, clientRequestPath path FROM events.httpRequests
+    WHERE clientRequestHttpHost = '${host}' AND verifiedBotCategory = '' AND edgeResponseStatus = '200'
+      AND userAgent IN (${readers.join(", ")}) AND ${PAGE_OR_NAV}
     ORDER BY timestamp LIMIT ${ROW_LIMIT}`, since, end);
   const byUa = new Map<string, Array<{ t: number; path: string }>>();
   for (const e of events) {
@@ -150,11 +156,6 @@ for (const day of days) {
 
 // Only a signed-in admin gets a 200 from the admin API or an admin page's data; that browser is left out of every day.
 const owner = new Set(perDay.flatMap((d) => [...d.ua].filter(([, s]) => s.owner > 0).map(([agent]) => agent)));
-// A person opened a page and ran the page's code (the view beacon, scripts or an in-app navigation), without
-// the many full loads and few navigations of a crawler that renders JavaScript.
-const isPerson = (s: UaDay) => s.beacon + s.pages + s.navs > 0 && (s.beacon > 0 || s.assets > 0 || s.navs > 0)
-  && (s.pages <= MAX_FULL_LOADS || (s.navs > 0 && s.navs * LOADS_PER_NAV >= s.pages - MAX_FULL_LOADS));
-
 const seen = new Set<string>();
 const daily = perDay.map(({ day, ua, sessions }) => {
   const people = [...ua].filter(([agent, s]) => !owner.has(agent) && isPerson(s));
