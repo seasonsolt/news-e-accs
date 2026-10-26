@@ -19,6 +19,8 @@ const FOG_NEAR = 15;
 const FOG_FAR = 110;
 /** A longer jump starts this many plates short of the target. */
 const MAX_FLIGHT = 6;
+/** Share of the remaining way the camera covers per second: lower is a slower, softer flight. */
+const FOLLOW = 2.4;
 /** Plates kept loaded beyond the target. */
 const AHEAD = 3;
 const DECK = 0x120e0a;
@@ -269,7 +271,7 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
     const now = performance.now();
     if (Math.abs(target - progress) > MAX_FLIGHT) progress = target - Math.sign(target - progress) * MAX_FLIGHT;
     const previous = progress;
-    progress += (target - progress) * Math.min(1, dt * 4);
+    progress += (target - progress) * Math.min(1, dt * FOLLOW);
     if (Math.abs(target - progress) < 1e-4) progress = target;
     velocity = THREE.MathUtils.lerp(velocity, Math.abs(progress - previous) / Math.max(dt, 1e-3), 0.15);
 
@@ -281,7 +283,8 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
     camera.position.set(mouseSmooth.x * 1.6 + Math.sin(t * 0.3) * 0.15 * swayAmount, mouseSmooth.y * 0.9 + Math.cos(t * 0.23) * 0.1 * swayAmount, camZ);
     const ahead = clamp(Math.floor((0.5 - camZ) / GAP) + 1, 0, N - 1);   // the first plate still in front
     camera.lookAt(-mouseSmooth.x * 0.6, -mouseSmooth.y * 0.4, zOf(ahead));
-    if (mode === "entering" && settleStarted && now - settleStarted > SETTLE_MS) {
+    // A flight still under way (the slow follow) finishes before the snap, or the snap would cut it short.
+    if (mode === "entering" && settleStarted && now - settleStarted > SETTLE_MS && Math.abs(target - progress) < 0.01) {
       // Snap the last few percent so this frame is the plate exactly as the scene's plate camera frames it.
       progress = target; settleStarted = 0; mouseSmooth.set(0, 0); swayAmount = 0;
       camera.position.set(0, 0, restOf(target)); camera.lookAt(0, 0, zOf(target));

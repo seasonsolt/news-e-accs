@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Lightbox, type LightboxImage } from "../../components/ui/Lightbox";
 import { useLocale, translate } from "../../lib/i18n";
 import type { Locale } from "../../lib/locale";
+import { copyText } from "../../lib/clipboard";
 
 /** Pictures worth enlarging: not inside a link, not tiny icons. */
 function canZoom(img: HTMLImageElement): boolean {
@@ -63,7 +64,7 @@ function enhanceCode(root: HTMLElement, locale: Locale): () => void {
     button.addEventListener("click", async () => {
       let ok = true;
       try {
-        await navigator.clipboard.writeText(source);
+        await copyText(source);
       } catch {
         ok = false;
       }

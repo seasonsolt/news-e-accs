@@ -5,7 +5,7 @@ import { SITE } from "@aihot/site";
 import { HEADER_SOURCE_LANGUAGE } from "./items.ts";
 import { serverModules } from "../modules.ts";
 import { sql } from "../db.ts";
-import { cachedByKey, SHARED_ONLY } from "../lib/cache.ts";
+import { shared } from "../lib/cache.ts";
 import { proxiedImage, proxiedImageSet } from "../media/imgproxy.ts";
 import { behindSources, currentSignals, heatSeries, sourceClocks, type HotRanking } from "../events/hot.ts";
 import { relatedEvidence, RELATED_MIN_REPORTS } from "../events/related.ts";
@@ -303,7 +303,7 @@ async function sparklines(storyIds: number[], at: Date): Promise<Map<number, Arr
 
 // Shared by concurrent readers of a ranking, but read again each time: a cover's visibility and licence
 // follow publication changes.
-const hotCovers = cachedByKey((ranking: HotRanking) => String(ranking.id), (ranking: HotRanking) => queryHotCovers(ranking), { ...SHARED_ONLY, maxKeys: 4 });
+const hotCovers = shared((ranking: HotRanking) => String(ranking.id), queryHotCovers);
 
 /** A picture per story from its public full-text reports, the representative first, wide enough for a card. */
 async function queryHotCovers({ entries }: HotRanking, at = new Date()) {

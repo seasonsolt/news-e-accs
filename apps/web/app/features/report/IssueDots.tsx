@@ -8,6 +8,8 @@ import { Text } from "../../lib/i18n";
 import { useEffect, useMemo, useRef } from "react";
 
 import type { ReportNavigationEntry, ReportKind } from "@aihot/contracts/site";
+import { watchAppearance } from "../../lib/local-state";
+import { reducedMotion } from "../../lib/motion";
 import { KIND_PATH, periodGrid } from "./format";
 
 const ROW = 20;
@@ -26,7 +28,7 @@ export function IssueDots({ kind, reportKey, issueNumber, index, className = "" 
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
     const { cells, columns } = grid;
-    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const still = reducedMotion();
     let width = 0;
     let cw = 0;
     let hovered = -1;
@@ -127,16 +129,13 @@ export function IssueDots({ kind, reportKey, issueNumber, index, className = "" 
       readColors();
       redraw();
     };
-    const theme = new MutationObserver(recolour);
-    const scheme = matchMedia("(prefers-color-scheme: dark)");
 
     readColors();
     size();
     started = performance.now();
     redraw();
     resize.observe(canvas);
-    theme.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class"] });
-    scheme.addEventListener("change", recolour);
+    const unwatch = watchAppearance((change) => change === "theme" && recolour());
     canvas.addEventListener("pointermove", onMove);
     canvas.addEventListener("pointerleave", onLeave);
     canvas.addEventListener("click", onClick);
@@ -144,8 +143,7 @@ export function IssueDots({ kind, reportKey, issueNumber, index, className = "" 
       disposed = true;
       if (frame) cancelAnimationFrame(frame);
       resize.disconnect();
-      theme.disconnect();
-      scheme.removeEventListener("change", recolour);
+      unwatch();
       canvas.removeEventListener("pointermove", onMove);
       canvas.removeEventListener("pointerleave", onLeave);
       canvas.removeEventListener("click", onClick);

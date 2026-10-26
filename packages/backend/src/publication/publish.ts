@@ -4,9 +4,8 @@
 import { toPublicApiCategory } from "@aihot/contracts/taxonomy";
 import { SITE } from "@aihot/site";
 import { one, sql, type Tx } from "../db.ts";
-import { audit } from "../audit.ts";
 import { sha256, stableJson } from "../lib/ids.ts";
-import { collapseWhitespace } from "../lib/text.ts";
+import { collapseWhitespace, isChineseText } from "../lib/text.ts";
 import type { XPostData } from "../content/materials.ts";
 import { originalPostCopy } from "../content/posts.ts";
 import { showsPost } from "./items.ts";
@@ -226,20 +225,6 @@ async function syncLedger(tx: Tx, articleId: string, now: Date): Promise<"upsert
   return "remove";
 }
 
-/** Refresh a saved sync payload after a public-format change, without rerunning editorial decisions. */
-export async function refreshSelectedPayload(articleId: string, actor: string, reason: string): Promise<"upsert" | "remove" | null> {
-  return sql.begin(async (tx) => {
-    await tx`SELECT 1 FROM articles WHERE id = ${articleId} FOR UPDATE`;
-    const [before] = await tx`SELECT in_set, payload_hash, last_seq FROM selected_state WHERE article_id = ${articleId}`;
-    const op = await syncLedger(tx, articleId, new Date());
-    if (op) {
-      const [after] = await tx`SELECT in_set, payload_hash, last_seq FROM selected_state WHERE article_id = ${articleId}`;
-      await audit(actor, "content.refresh-selected-payload", `content:${articleId}`, reason, before, after, { db: tx });
-    }
-    return op;
-  });
-}
-
 export async function publishArticle(articleId: string, options: PublishOptions = {}): Promise<PublishResult | null> {
   return sql.begin(async (tx) => {
     await tx`SELECT 1 FROM articles WHERE id = ${articleId} FOR UPDATE`;
@@ -287,7 +272,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
   const now = options.now ?? new Date();
 
   const f = override?.fields ?? {};
-  const isChineseTitle = article.language === "zh" || /[一-鿿]/.test(article.title);
+  const isChineseTitle = isChineseText(article.title, article.language);
   // A textless or link-only post keeps its own text; X posts may use their source text as a title;
   // articles need editorial copy in their declared language.
   const editorialLanguage = analysis?.editorial_language ?? "zh";

@@ -24,7 +24,9 @@ import { StarPill } from "../features/feed/parts";
 import { ItemSources } from "../features/item/ItemSources";
 import { withoutShortLinks } from "../features/item/post-links";
 import { ArticleBody } from "../features/item/ArticleBody";
-import { scrollToAnchor } from "../components/ui/OutlineSheet";
+import { scrollToAnchor } from "../lib/motion";
+import { useContainedScroll } from "../components/ui/Page";
+import { copyText } from "../lib/clipboard";
 import { StoryFollowups } from "../features/item/StoryFollowups";
 import { AuthorRoleMark, FactCard, StoryDigest, XCountsLine } from "../features/item/FactCard";
 import { MediaGallery } from "../features/item/MediaGallery";
@@ -127,7 +129,7 @@ export default function ItemPage() {
     try {
       const res = await fetch(`/items/${item.id}/markdown?lang=${locale}`);
       if (!res.ok) throw new Error(String(res.status));
-      await navigator.clipboard.writeText(await res.text());
+      await copyText(await res.text());
       setToast(tx("Markdown 已复制"));
     } catch {
       setToast(tx("复制失败，请在浏览器中打开后导出"));
@@ -178,7 +180,7 @@ export default function ItemPage() {
             onSelect={async () => {
               close();
               try {
-                await navigator.clipboard.writeText(`${siteUrl()}${localePath(`/items/${item.id}`, locale)}`);
+                await copyText(`${siteUrl()}${localePath(`/items/${item.id}`, locale)}`);
                 setToast(tx("链接已复制"));
               } catch {
                 // clipboard unavailable
@@ -201,8 +203,15 @@ export default function ItemPage() {
   const byline = isX ? `@${item.x!.handle}` : fromX && item.author ? `@${item.author.replace(/^@/, "")}` : item.author;
   // Post text keeps t.co short links that say nothing on their own: the page names how many the post has.
   const { text: summaryText, links: postLinks } = fromX && item.summary ? withoutShortLinks(item.summary) : { text: item.summary, links: 0 };
+  const [outlineRef, outlineOverscroll] = useContainedScroll<HTMLElement>();
   const outline = showOutline && (
-    <nav aria-label={tx("本文目录")} className="border-t border-line pt-3.5">
+    <nav ref={outlineRef} aria-label={tx("本文目录")} tabIndex={outlineOverscroll ? 0 : undefined} onKeyDown={(e) => {
+      const nav = e.currentTarget;
+      if (nav.scrollHeight <= nav.clientHeight || e.altKey || e.ctrlKey || e.metaKey) return;
+      const up = ["ArrowUp", "PageUp", "Home"].includes(e.key) || (e.key === " " && e.shiftKey);
+      const down = ["ArrowDown", "PageDown", "End"].includes(e.key) || (e.key === " " && !e.shiftKey);
+      if ((up && nav.scrollTop <= 0) || (down && nav.scrollTop + nav.clientHeight >= nav.scrollHeight - 1)) e.preventDefault();
+    }} className={`scrollbar-thin max-h-[calc(100vh-3rem)] overflow-y-auto border-t border-line pt-3.5 ${outlineOverscroll}`}>
       <h2 className="text-[12px] font-semibold text-ink-3"><Text value="本文目录" /></h2>
       <ol className="-ml-px mt-2.5 space-y-0.5 border-l border-line">
         {item.outline.map((o) => (
@@ -234,8 +243,8 @@ export default function ItemPage() {
         {moreMenu}
       </div>
 
-      <div className={`mx-auto ${showOutline ? "max-w-[var(--page-max-reading)] 2xl:grid 2xl:grid-cols-[minmax(0,1fr)_minmax(0,720px)_minmax(0,1fr)] 2xl:gap-x-12" : "max-w-[720px]"}`}>
-        {showOutline && <div className="hidden 2xl:block" />}
+      <div className={`mx-auto ${showOutline ? "max-w-[var(--page-max-reading)] lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,720px)_minmax(0,1fr)] lg:gap-x-8 2xl:gap-x-12" : "max-w-[720px]"}`}>
+        {showOutline && <div className="hidden lg:block" />}
         <article lang={contentHtmlLanguage(item, locale)} className="min-w-0 pb-6 pt-5 lg:pt-6">
           <div className="sticky top-2 z-20 mb-3 hidden w-fit rounded-full bg-bg/90 pl-1.5 pr-2 backdrop-blur lg:block">{backButton}</div>
           <ContentLanguage content={item} />
@@ -340,7 +349,7 @@ export default function ItemPage() {
               {hasTranslation && lang === "zh" && !item.body.complete && (
                 <p className="mb-5 rounded-control bg-bg-sunk px-3 py-2 text-[13px] text-ink-3"><Text value="译文尚不完整，完整内容请切换到原文。" /></p>
               )}
-              {outline && <div className="mb-8 2xl:hidden">{outline}</div>}
+              {outline && <div className="mb-8 lg:hidden">{outline}</div>}
               <ArticleBody html={bodyHtml} lang={actualBodyLocale ?? "und"} />
             </section>
           )}
@@ -373,7 +382,7 @@ export default function ItemPage() {
           />
         </article>
         {showOutline && (
-          <aside className="hidden 2xl:block">
+          <aside className="hidden lg:block">
             <div className="sticky top-6 max-w-[240px]">{outline}</div>
           </aside>
         )}

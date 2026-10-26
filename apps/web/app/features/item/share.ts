@@ -1,3 +1,4 @@
+import { copyText } from "../../lib/clipboard.ts";
 import { distributionUrl } from "@aihot/contracts/distribution";
 import { recordEngagement } from "../../lib/engagement.ts";
 
@@ -9,7 +10,7 @@ export async function shareOrCopy(title: string, url: string): Promise<"shared" 
       await navigator.share({ title, url });
       result = "shared";
     } else {
-      await navigator.clipboard.writeText(`${title}\n${url}`);
+      await copyText(`${title}\n${url}`);
       result = "copied";
     }
     recordEngagement("share_click");

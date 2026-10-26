@@ -18,7 +18,7 @@ import { MomentList } from "../features/chrono/MomentList";
 import { Observatory } from "../features/chrono/Observatory";
 import { StageReadouts } from "../features/chrono/StageReadouts";
 import { useDepthTunnel, useTunnelAllowed } from "../features/chrono/DepthTunnel";
-import { distanceLabel, focusAt, nearbyPlates, pictureProgress, plateOf, stepPicture, timeParam, tunnelPictures } from "../features/chrono/format";
+import { distanceLabel, focusAt, nearbyPlates, plateOf, restingPicture, stepPicture, timeParam, tunnelPictures } from "../features/chrono/format";
 import { atLabel, withAt } from "../features/chrono/at";
 import { SubscribeCta } from "../features/subscribe/SubscribeCta";
 import { webModules } from "../site-modules";
@@ -68,18 +68,20 @@ export default function ChroniclePage() {
   const locale = useLocale();
   // The tunnel opens the scene in a frame of its own, which links do not localize: the frame needs the locale's path.
   const pictures = useMemo(() => tunnelPictures(chronicle.eras, chronicle.milestones, new Map([...SCENES].map(([id, scene]) => [id, localePath(scene.path, locale)]))), [chronicle, locale]);
-  const era = eraAt(chronicle.eras, t);
-  const focus = focusAt(chronicle.milestones, t, now);
+  // Between two pictures the deck and the tunnel show the nearer one, its plate and its text; the needle and
+  // the readouts stay at t. The arrow keys, the wheel and ‹ › step on from the picture in view.
+  const resting = restingPicture(pictures, t, now);
+  const at = pictures[resting]?.t ?? t;
+  const era = eraAt(chronicle.eras, at);
+  // An era's opening picture shows the era, not a milestone that happens to stand close by.
+  const focus = resting < 0 ? focusAt(chronicle.milestones, t, now) : pictures[resting]!.milestone ?? null;
   const plate = era ? plateOf(era, focus) : null;
   const scene = plate ? SCENES.get(plate.key as `e-${string}` | `m-${string}`) : undefined;
-  // An era's scene follows its plate throughout that era, including "now". Illustrated milestones keep
-  // their own plate and never inherit the era's scene. Rest on the matching plate before handing over.
-  const eraSceneIndex = scene && plate?.key.startsWith("e-") ? pictures.findIndex((p) => p.src === plate.src) : -1;
   const allowed = useTunnelAllowed();
   const tunnel = useDepthTunnel(stage, {
     allowed,
     pictures,
-    progress: eraSceneIndex >= 0 ? eraSceneIndex : pictureProgress(pictures, t, now),
+    progress: Math.max(0, resting),
     alt: era ? plateOf(era, focus).alt : "",
     sceneTitle: scene ? tx(scene.label) : "",
   });
@@ -117,7 +119,7 @@ export default function ChroniclePage() {
 
   // In the tunnel the wheel over the plate flies to the next or the previous picture; over the axis it still zooms.
   const step = useRef<(direction: -1 | 1) => void>(() => {});
-  step.current = (direction) => commit(stepPicture(chronicle.eras, chronicle.milestones, t, direction));
+  step.current = (direction) => commit(stepPicture(chronicle.eras, chronicle.milestones, at, direction));
   const running = tunnel.running;
   useEffect(() => {
     const element = stage.current;
@@ -138,8 +140,10 @@ export default function ChroniclePage() {
   }, [running]);
 
   if (!era) return <p className="py-8 text-ink-3"><Text value="尚无时代数据。" /></p>;
-  const previous = chronicle.milestones.filter((m) => m.t < t - 1e-6).at(-1);
-  const following = chronicle.milestones.find((m) => m.t > t + 1e-6);
+  // ‹ › go from picture to picture, like the arrow keys and the wheel: every press is a flight.
+  const previous = stepPicture(chronicle.eras, chronicle.milestones, at, -1);
+  const following = stepPicture(chronicle.eras, chronicle.milestones, at, 1);
+  const stopTitle = (stop: number) => focusAt(chronicle.milestones, stop, now)?.title ?? eraAt(chronicle.eras, stop)?.title;
   const date = yearToDate(t);
   const present = !!date && !!bounds && date >= bounds.today;
   const recorded = !!date && !!bounds?.earliest && date >= bounds.earliest && date < bounds.today;
@@ -179,7 +183,7 @@ export default function ChroniclePage() {
         <Observatory
           era={era}
           focus={focus}
-          nearby={nearbyPlates(chronicle.eras, chronicle.milestones, t, now)}
+          nearby={nearbyPlates(chronicle.eras, chronicle.milestones, at, now)}
           label={focus ? tx(timeLabel(focus.t, now, focus.precision, focus.date)) : tx(timeLabel(t, now))}
           distance={tx(distanceLabel(t, now))}
           flat={running}
@@ -197,12 +201,12 @@ export default function ChroniclePage() {
         <StageReadouts metrics={chronicle.metrics} t={t} now={now} />
         {/* The chronometer docks under the deck and stays at hand while the readouts below scroll by. */}
         <section aria-label={tx("时间导航")} className="chronometer">
-          <ChronicleAxis eras={chronicle.eras} milestones={chronicle.milestones} now={now} t={t} onMove={move} onCommit={commit} />
+          <ChronicleAxis eras={chronicle.eras} milestones={chronicle.milestones} now={now} t={t} picture={at} onMove={move} onCommit={commit} />
           <div className="chronometer-controls">
-            <button type="button" disabled={!previous} onClick={() => previous && commit(previous.t)} title={previous?.title}><Text value="‹ 上一个里程碑" /></button>
+            <button type="button" disabled={previous === at} onClick={() => commit(previous)} title={stopTitle(previous)}><Text value="‹ 上一个里程碑" /></button>
             <span className="chronometer-hint"><Text value="方向键逐幅切换画面 · 滚轮缩放 · 拖动或点击定位时间" /></span>
             <button type="button" onClick={() => commit(now)}><Text value="回到现在" /></button>
-            <button type="button" disabled={!following} onClick={() => following && commit(following.t)} title={following?.title}><Text value="下一个里程碑 ›" /></button>
+            <button type="button" disabled={following === at} onClick={() => commit(following)} title={stopTitle(following)}><Text value="下一个里程碑 ›" /></button>
           </div>
         </section>
       </div>

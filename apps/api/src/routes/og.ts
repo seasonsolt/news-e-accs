@@ -1,6 +1,7 @@
 // Share images (1200×630 PNG) for pages, items, reports, topics and events. Only public content
 // gets a card; anything else is a real 404.
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { reportDateLabel } from "@aihot/contracts/site";
 import { beijingDate } from "@aihot/contracts/time";
 import { localizePublication } from "@aihot/backend/publication/content-language";
 import { distributionCategory, distributionLanguage, editionPath, editionReady, type DistributionLanguage } from "@aihot/backend/publication/distribution";
@@ -72,7 +73,8 @@ export function registerOg(app: FastifyInstance) {
 
   app.get("/og/pages/:file", languageHandler(async (req, reply, lang) => {
     const name = (req.params as { file: string }).file.replace(/\.png$/, "");
-    const card = (lang === "en" ? PAGES : ZH_PAGES)[name];
+    const pages = lang === "en" ? PAGES : ZH_PAGES;
+    const card = Object.hasOwn(pages, name) ? pages[name] : undefined;
     if (!card || !(req.params as { file: string }).file.endsWith(".png")) return notFound(reply);
     return send(req, reply, card, 86400);
   }));

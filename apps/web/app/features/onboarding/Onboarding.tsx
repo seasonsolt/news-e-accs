@@ -1,3 +1,4 @@
+import { beijingDate } from "@aihot/contracts/time";
 import { featuredProduct } from "@aihot/industry/products";
 import { Link } from "../../lib/navigation";
 import { Text, useLocale, useTranslate } from "../../lib/i18n";
@@ -248,7 +249,7 @@ export function Onboarding({ mode, token = null, source: pageSource = "subscribe
                 </div>
               ) : toNews(tx("去看今天的新闻"), true)}
             </Notice>
-            <TearTicket date={new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())} />
+            <TearTicket date={beijingDate(Date.now())} />
           </>
         ) : confirming ? (
           <div className="flex w-full max-w-md flex-col items-center gap-4">

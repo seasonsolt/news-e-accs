@@ -1,3 +1,4 @@
+import { beijingAt, BEIJING_TIMEZONE } from "@aihot/contracts/time";
 import { weekdayShort } from "../../lib/format";
 import type { Locale } from "../../lib/locale";
 
@@ -8,10 +9,10 @@ export function Inline({ text }: { text: string }) {
 
 export function dateHeading(date: string, locale: Locale = "zh"): { label: string; weekday: string } {
   if (locale === "en") {
-    const value = new Date(`${date}T12:00:00+08:00`);
+    const value = beijingAt(date, "12:00");
     return {
-      label: new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Shanghai", year: "numeric", month: "short", day: "numeric" }).format(value),
-      weekday: new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Shanghai", weekday: "long" }).format(value),
+      label: new Intl.DateTimeFormat("en-US", { timeZone: BEIJING_TIMEZONE, year: "numeric", month: "short", day: "numeric" }).format(value),
+      weekday: new Intl.DateTimeFormat("en-US", { timeZone: BEIJING_TIMEZONE, weekday: "long" }).format(value),
     };
   }
   const [y, m, d] = date.split("-").map(Number) as [number, number, number];

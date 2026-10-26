@@ -6,7 +6,7 @@ import { enqueue, QUEUES } from "@aihot/backend/jobs/queue";
 import { ImageBudgetExceeded } from "@aihot/backend/media/cache";
 import { requestImage } from "@aihot/backend/media/request";
 import { MediaBusyError } from "@aihot/backend/media/capacity";
-import { verifyProxyRequest } from "@aihot/backend/media/imgproxy";
+import { LONGEST_CACHE_SECONDS, verifyProxyRequest } from "@aihot/backend/media/imgproxy";
 import { etagMatches, looseQuery } from "../http/respond.ts";
 
 function imageCacheControl(exp: string, limit: number): string {
@@ -45,7 +45,7 @@ export function registerMedia(app: FastifyInstance) {
       const etag = `"${createHash("sha256").update(type).update("\0").update(body).digest("hex")}"`;
       reply
         .header("Content-Type", type)
-        .header("Cache-Control", pendingAnimation && !queued ? "no-store" : imageCacheControl(q.exp!, pendingAnimation ? 60 : 7 * 86400))
+        .header("Cache-Control", pendingAnimation && !queued ? "no-store" : imageCacheControl(q.exp!, pendingAnimation ? 60 : LONGEST_CACHE_SECONDS))
         .header("ETag", etag)
         .header("X-Content-Type-Options", "nosniff")
         .header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox");

@@ -190,10 +190,10 @@ test("the prefilter's BLOCK stops everything; UNKNOWN with material goes on like
   const vague = await analyzeArticle(vagueId);
   assert.deepEqual([vague!.output!.relevance, vague!.output!.selected, vague!.output!.title], ["pass", true, "Understood headline VAGUE"]);
   assert.equal((await row(vagueId)).output.prefilter.label, "UNKNOWN", "the prefilter's own answer stays on record");
-  // Nothing but a title and no page to fetch: the BLOCK counts as UNKNOWN and waits for material.
+  // Nothing but a title and no page to fetch: it waits for material without a model call.
   const bare = await analyzeArticle(await article("BARE", { bodyText: null, excerpt: null, bodyStatus: "none" }));
   assert.deepEqual([bare!.output!.relevance, bare!.output!.selected, bare!.output!.score], ["unknown", false, null]);
-  assert.deepEqual(calls("BARE"), ["prefilter"]);
+  assert.deepEqual(calls("BARE"), []);
 });
 
 test("a feed summary alone: the article page is fetched first, then the whole article is judged", async () => {

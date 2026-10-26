@@ -47,12 +47,7 @@ export function CopyPage({ doc, rendered, eyebrow, footer, aside }: { doc: CopyD
     {locale === "en" && <p className="mt-4 text-[13px] text-ink-3" lang="en">This document is available in Chinese. An English version has not been published.</p>}
     <div className="h-6" />
     <ArticleLayout
-      left={
-        <>
-          {aside}
-          {info}
-        </>
-      }
+      left={info}
       right={
         <>
           <div className="space-y-8 2xl:hidden">{info}</div>

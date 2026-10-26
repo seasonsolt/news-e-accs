@@ -14,7 +14,7 @@ import { ITEM_COPY } from "@aihot/site";
 import { SameEventBadge, SelectedBadge } from "../../components/ui/Badge";
 import { ScoreLabel } from "../../components/ui/Score";
 import { beijingTime } from "@aihot/contracts/time";
-import { MediaThumbs, SourceLine, StarButton } from "./parts";
+import { MediaThumbs, SourceLine, StarButton, readTone } from "./parts";
 import { GroupButton, GroupSources } from "./ReadingGroup";
 import { QuotedLine } from "../item/QuotedPost";
 import { rememberPreview } from "../item/preview";
