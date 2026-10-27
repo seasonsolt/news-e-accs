@@ -49,10 +49,9 @@ export default function Home() {
   const front = filters.channel === "all" && !filters.category && !filters.tag && !filters.at;
   useSubscribeView(subscribeLink, "home_button", front);
   return (
-    // The front page reads at night in either theme: the plate's sky runs on into the list (app.css).
-    <div className="home-page is-night pb-6" data-theme="dark">
+    <div className="home-page pb-6">
       {front && <Onboarding mode="overlay" />}
-      <FeedDeck label={tx("精选")} heading={tx(SITE.homeHeading)} at={filters.at} tag={filters.tag} lead={leadCard(data.cards)} subscribeRef={subscribeLink} />
+      <FeedDeck label={tx("精选")} heading={tx(SITE.homeHeading)} at={filters.at} tag={filters.tag} front lead={leadCard(data.cards)} subscribeRef={subscribeLink} />
 
       <div className="mt-6 hidden items-center justify-between gap-4 lg:mt-8 lg:flex">
         <div className="flex min-w-0 flex-1 items-center gap-3">

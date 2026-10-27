@@ -82,6 +82,17 @@ export function tabIsActive(item: NavItem, pathname: string): boolean {
 }
 
 /**
+ * The pages the menus lead to (the top bar, 更多, the phone tab bar and the modules' entries). They read
+ * at night in either theme, as one immersive set with the front page (root.tsx, app.css); the pages
+ * opened from them (an item, a report, a topic) keep the reader's theme.
+ */
+export function isMenuPage(pathname: string): boolean {
+  const path = publicPath(pathname);
+  const modules = webModules().flatMap((m) => [...(m.sidebar?.items ?? []), ...(m.tools ?? []), ...(m.home?.links ?? [])]);
+  return [...TOPNAV, ...MORE_MENU.flatMap((g) => g.items), ...TABBAR, ...modules].some((item) => item.to === path) || /^\/(weekly|monthly)$/.test(path);
+}
+
+/**
  * The phone shell's tabs (TabBar.tsx, screens.ts and the modules' `tabs`). The pages here are reached
  * through MobileTabBar and TOPNAV above; these types keep the modules' contract (modules.ts) whole.
  */

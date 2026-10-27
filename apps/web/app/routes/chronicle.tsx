@@ -210,7 +210,7 @@ export default function ChroniclePage() {
     ),
   };
   return (
-    <div className={`chronicle-page pb-8 pt-3 lg:pt-0 ${panel ? "has-layer" : ""}`}>
+    <div className={`chronicle-page pb-8 ${panel ? "has-layer" : ""}`}>
       <div ref={stage} className={`chronicle-stage is-${tunnel.mode} ${tunnel.ready ? "has-tunnel" : ""}`}>
         <Observatory
           era={era}

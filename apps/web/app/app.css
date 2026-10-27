@@ -177,7 +177,7 @@
 }
 
 [data-theme="dark"],
-:root:has(.home-page.is-night) {
+:root:has(.night-page) {
   color-scheme: dark;
   --bg: #15110d;
   --bg-sunk: #1b1611;
@@ -961,13 +961,13 @@ html { scrollbar-gutter: stable; }
 .home-page .deck-inner { max-width: 1264px; }
 .home-page .deck-plate { object-position: 65% 62%; }
 .home-page .deck-shade { background: linear-gradient(90deg, rgb(10 8 6 / .88), rgb(10 8 6 / .25) 70%), linear-gradient(0deg, rgb(10 8 6 / .85), transparent 65%); }
-.home-page.is-night .deck-plate { object-position: 65% 42%; }
-.home-page.is-night .deck-shade { background: linear-gradient(to top, var(--deck) 0, rgb(18 14 10 / .84) 24%, rgb(18 14 10 / .2) 58%, rgb(18 14 10 / .55) 100%), linear-gradient(90deg, rgb(10 8 6 / .82), rgb(10 8 6 / .2) 55%, rgb(10 8 6 / 0) 78%); }
+.home-hero.is-front .deck-plate { object-position: 65% 42%; }
+.home-hero.is-front .deck-shade { background: linear-gradient(to top, var(--deck) 0, rgb(18 14 10 / .84) 24%, rgb(18 14 10 / .2) 58%, rgb(18 14 10 / .55) 100%), linear-gradient(90deg, rgb(10 8 6 / .82), rgb(10 8 6 / .2) 55%, rgb(10 8 6 / 0) 78%); }
 .home-page .deck-desc { max-width: 32rem; font-size: 16px; line-height: 1.75; }
-/* The front page reads at night in either theme: the plate fills the first screen and its sky runs on
-   into the list, with no seam between the deck and the page. */
-.home-page.is-night, :root:has(.home-page.is-night) { --bg: var(--deck); --daybar: var(--deck); }
-.home-page.is-night > .home-hero { display: flex; flex-direction: column; justify-content: flex-end; min-height: clamp(600px, calc(100svh - 120px), 860px); padding: 64px 0 20px; }
+/* The pages the menus lead to read at night in either theme (nav.ts isMenuPage): the decks' dark runs on
+   into the page, with no seam. The front page's plate fills the first screen. */
+.night-page, :root:has(.night-page) { --bg: var(--deck); --daybar: var(--deck); }
+.night-page .home-hero.is-front { display: flex; flex-direction: column; justify-content: flex-end; min-height: clamp(600px, calc(100svh - 120px), 860px); padding: 64px 0 20px; }
 .home-hero .deck-inner { width: 100%; }
 .home-hero-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 28px 48px; }
 .home-hero-copy { flex: 999 1 520px; min-width: 0; max-width: 46rem; }
@@ -985,7 +985,7 @@ html { scrollbar-gutter: stable; }
 .home-lead-go { font-size: 14px; color: var(--brass-hi); }
 @media (max-width: 960px) {
   .home-page .deck-plate { object-position: 78% 40%; }
-  .home-page.is-night > .home-hero { min-height: calc(100svh - 130px - env(safe-area-inset-bottom)); padding-top: 40px; }
+  .night-page .home-hero.is-front { min-height: calc(100svh - 130px - env(safe-area-inset-bottom)); padding-top: 40px; }
   .home-hero-row { gap: 22px; }
   .home-lead { max-width: none; padding: 16px 18px; }
   .home-lead-title { font-size: 17px; }
@@ -996,7 +996,7 @@ html { scrollbar-gutter: stable; }
 }
 /* Phones keep the first screen to the line, two buttons, the lead and the rail. */
 @media (max-width: 640px) {
-  .home-page.is-night .deck-shade { background: linear-gradient(to top, var(--deck) 0, rgb(18 14 10 / .9) 40%, rgb(18 14 10 / .35) 75%, rgb(18 14 10 / .6) 100%); }
+  .home-hero.is-front .deck-shade { background: linear-gradient(to top, var(--deck) 0, rgb(18 14 10 / .9) 40%, rgb(18 14 10 / .35) 75%, rgb(18 14 10 / .6) 100%); }
   .home-hero .deck-heading { font-size: 13px; font-weight: 500; color: rgb(244 236 220 / .72); }
   .home-hero-title { font-size: 44px; }
   .home-hero-title:lang(en) { font-size: 40px; line-height: 1.05; }
@@ -1186,6 +1186,8 @@ html { scrollbar-gutter: stable; }
 /* The page. On a phone the deck, the chronometer and every panel follow one another down the page. On a
    desktop the deck, its three readouts and the chronometer fill the first screen, and the panels open one
    at a time in a layer beside it (beside it on a wide window, over its edge on a narrower one). */
+/* It spans the window under the top bar, as the decks do; on a desktop the notes below keep the column. */
+.chronicle-page { margin-top: -16px; }
 .chronicle-stage { display: contents; }
 .chronicle-readouts { display: none; }
 .chronicle-layer { display: block; margin-top: 2rem; outline: none; }
@@ -1195,8 +1197,9 @@ html { scrollbar-gutter: stable; }
 .chronicle-below { margin-top: 2.5rem; }
 .chronicle-below > * + * { margin-top: 2.5rem; }
 @media (min-width: 961px) {
-  .chronicle-page { --stage-height: max(560px, calc(100svh - 112px)); position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 0; transition: grid-template-columns 450ms var(--ease-out-quart), column-gap 450ms var(--ease-out-quart); }
-  .chronicle-stage { grid-column: 1; grid-row: 1; position: relative; isolation: isolate; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr) auto; height: var(--stage-height); border-radius: var(--radius-panel); background: radial-gradient(ellipse at 70% 30%, #2a2016, var(--deck) 70%); color: var(--deck-ink); }
+  .chronicle-page { --stage-height: max(560px, calc(100svh - 96px)); position: relative; margin-inline: calc(50% - var(--page-width, 100vw) / 2); display: grid; grid-template-columns: minmax(0, 1fr) 0; transition: grid-template-columns 450ms var(--ease-out-quart), column-gap 450ms var(--ease-out-quart); }
+  .chronicle-stage { grid-column: 1; grid-row: 1; position: relative; isolation: isolate; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr) auto; height: var(--stage-height); background: radial-gradient(ellipse at 70% 30%, #2a2016, var(--deck) 70%); color: var(--deck-ink); }
+  .chronicle-below { max-width: var(--page-max-wide); margin-inline: auto; padding-inline: 32px; }
   .chronicle-stage .observatory { position: static; isolation: auto; overflow: visible; display: flex; min-height: 0; flex-direction: column; justify-content: flex-end; margin: 0; border-radius: 0; background: none; }
   .chronicle-stage .observatory-readout { position: relative; padding: 0 36px 22px; }
   .chronicle-stage .observatory-shade { background: linear-gradient(to top, rgb(12 9 6 / .96) 0%, rgb(12 9 6 / .7) 34%, rgb(12 9 6 / 0) 62%), linear-gradient(to right, rgb(12 9 6 / .6), rgb(12 9 6 / 0) 58%); }
@@ -1216,7 +1219,7 @@ html { scrollbar-gutter: stable; }
   .chronicle-readout-bar { display: block; height: 3px; margin-top: 9px; border-radius: 9999px; background: rgb(244 236 220 / .14); }
   .chronicle-readout-bar > span { display: block; height: 100%; border-radius: 9999px; background: var(--brass-hi); }
 
-  .chronicle-layer { grid-column: 2; grid-row: 1; position: absolute; top: 0; right: 0; z-index: 30; display: flex; width: min(400px, 100%); height: var(--stage-height); flex-direction: column; overflow: hidden; margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-panel); box-shadow: 0 18px 40px -18px rgb(0 0 0 / .45); opacity: 0; visibility: hidden; transition: opacity 300ms var(--ease-out-quart), visibility 0s 300ms; }
+  .chronicle-layer { grid-column: 2; grid-row: 1; position: absolute; top: 16px; right: 16px; z-index: 30; display: flex; width: min(400px, calc(100% - 32px)); height: calc(var(--stage-height) - 32px); flex-direction: column; overflow: hidden; margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-panel); box-shadow: 0 18px 40px -18px rgb(0 0 0 / .45); opacity: 0; visibility: hidden; transition: opacity 300ms var(--ease-out-quart), visibility 0s 300ms; }
   .has-layer .chronicle-layer { opacity: 1; visibility: visible; transition: opacity 300ms var(--ease-out-quart) 100ms; }
   .chronicle-layer-head { display: flex; align-items: center; gap: 4px; padding: 12px 12px 0 16px; border-bottom: 1px solid var(--line); }
   .chronicle-layer-head [role="tab"] { flex: 1; min-width: 0; margin-bottom: -1px; padding: 8px 6px 10px; border-bottom: 2px solid transparent; font-size: 12px; color: var(--ink-3); }
@@ -1235,8 +1238,8 @@ html { scrollbar-gutter: stable; }
   .chronicle-below { grid-column: 1 / -1; margin-top: 24px; }
 }
 @media (min-width: 1280px) {
-  .chronicle-page.has-layer { grid-template-columns: minmax(0, 1fr) 400px; column-gap: 16px; }
-  .chronicle-layer { position: sticky; top: 12px; width: auto; box-shadow: none; }
+  .chronicle-page.has-layer { grid-template-columns: minmax(0, 1fr) 400px; column-gap: 16px; padding-right: 16px; }
+  .chronicle-layer { position: sticky; top: 12px; width: auto; height: calc(var(--stage-height) - 24px); margin-top: 12px; box-shadow: none; }
 }
 
 /* The chronometer: the log axis as a brass instrument, sticky under the deck. */

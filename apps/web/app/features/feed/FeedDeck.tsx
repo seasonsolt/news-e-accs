@@ -57,13 +57,13 @@ function LeadStory({ card, past }: { card: TimelineCard; past: boolean }) {
  * share it, so switching feed or category changes only the list below and the filter row stays where it
  * was. A tag page (reached from a link, not a tab) gets the compact deck with the tag as its title.
  */
-export function FeedDeck({ label, heading, at, tag, lead, subscribeRef }: { label: string; heading: string; at?: string | null; tag?: string | null; lead?: TimelineCard | null; subscribeRef?: Ref<HTMLSpanElement> }) {
+export function FeedDeck({ label, heading, at, tag, front = false, lead, subscribeRef }: { label: string; heading: string; at?: string | null; tag?: string | null; /** The front page: the plate fills the first screen. */ front?: boolean; lead?: TimelineCard | null; subscribeRef?: Ref<HTMLSpanElement> }) {
   const tx = useTranslate();
   const root = useRouteLoaderData<typeof rootLoader>("root");
   const k = root?.timeBounds?.kardashev ?? null;
   if (tag) return <Deck compact art="home-intelligence" label={label} kicker={<TodayLabel at={at} />} title={`#${tag}`} />;
   return (
-    <section className="deck home-hero" aria-label={label}>
+    <section className={`deck home-hero ${front ? "is-front" : ""}`} aria-label={label}>
       <Plate src="/media/art/epochs/agents" className="deck-plate" />
       <div className="deck-shade" aria-hidden="true" />
       <div className="deck-inner">

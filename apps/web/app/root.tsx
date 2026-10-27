@@ -15,6 +15,7 @@ import "./app.css";
 import { SiteNav } from "./components/shell/SiteNav";
 import { SiteFooter } from "./components/shell/SiteFooter";
 import { MobileTabBar } from "./components/shell/MobileTabBar";
+import { isMenuPage } from "./components/shell/nav";
 import { BackToTop, NavigationProgress } from "./components/shell/Chrome";
 import { useScreen } from "./components/shell/screens";
 import { LanguageHint } from "./components/shell/LanguageHint";
@@ -111,6 +112,7 @@ export function meta({ error, loaderData }: Route.MetaArgs) {
 /** The deck's top bar, the page (or an error), the footer and the phone tab bar. */
 function SiteShell({ changelogVersion, timeBounds, children }: { changelogVersion: string | null; timeBounds: TimeMachineBounds | null; children: ReactNode }) {
   const navigation = useNavigation();
+  const night = isMenuPage(useLocation().pathname);
   return (
     <div className="flex min-h-dvh flex-col">
       <NavigationProgress active={navigation.state === "loading"} />
@@ -118,7 +120,7 @@ function SiteShell({ changelogVersion, timeBounds, children }: { changelogVersio
       <SiteNav changelogVersion={changelogVersion} kardashev={timeBounds?.kardashev ?? null} />
       {/* One centred column (640px on phones, the list width on desktop), 16px below the top bar; a
           page's Deck spans the window from inside it and takes up those 16px to sit flush. */}
-      <main id="main" className="min-w-0 flex-1 overflow-x-clip pb-[calc(72px+env(safe-area-inset-bottom))] lg:pb-12">
+      <main id="main" data-theme={night ? "dark" : undefined} className={`min-w-0 flex-1 overflow-x-clip pb-[calc(72px+env(safe-area-inset-bottom))] lg:pb-12 ${night ? "night-page" : ""}`}>
         <div className="mx-auto w-full max-w-[640px] px-4 pt-4 lg:max-w-[var(--page-max-wide)] lg:px-8">
           <TimeBar bounds={timeBounds} />
           {webModules().map((m) => m.root?.Top && <m.root.Top key={m.name} />)}
