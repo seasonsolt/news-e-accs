@@ -1,6 +1,6 @@
 # Continuous virtual window panorama sources
 
-Generated with the built-in `image_gen` tool, one separate generation per location. Each original is a continuous 2172 × 724 (3:1) panorama spanning all three adjacent windows. All windows show contiguous thirds of the same panorama and switch locations together. No source was stretched or resized. Earlier square window sources remain only in the ignored raw-source directory and are superseded.
+Generated with the built-in `image_gen` tool, one separate generation per location. Each original is a continuous 2172 × 724 (3:1) panorama spanning all three adjacent windows. All windows show contiguous thirds of the same panorama and switch locations together. The original generation outputs were not stretched or resized. The scene now uses 3840 × 1280 derivatives made with local Real-ESRGAN 4× enhancement and proportional resizing; their sources and hashes are recorded in `../scene-art-upscale-2026-10-28.json`. Earlier square window sources remain only in the ignored raw-source directory and are superseded.
 
 ## fuji
 

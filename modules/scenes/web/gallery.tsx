@@ -3,6 +3,7 @@ import { localeFromMatches, translate, useLocale, useTranslate } from "@aihot/we
 import { localePath } from "@aihot/web/lib/locale";
 import { workshopTime, useWorkshopProgress } from "@aihot/web/lib/local-state";
 import { pageMeta } from "@aihot/web/lib/seo";
+import { artSrcSet, artUrl } from "@aihot/web/features/chrono/art";
 import { WORLDS } from "./shared/worlds.ts";
 import styles from "./gallery.css?url";
 
@@ -41,7 +42,7 @@ export default function Gallery() {
         const date = world.time < 0 && locale !== "en" ? `${unit} ${world.figure}` : `${world.figure}${unit ? ` ${unit}` : ""}`;
         return <li key={world.id}>
           <article className={`workshop-gallery-card${record ? " is-done" : ""}`}>
-            <div className="workshop-gallery-image"><img src={world.plate} alt="" width={1600} height={1067} loading="lazy" decoding="async" /><span className="workshop-gallery-index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>{record && <span className="workshop-gallery-done" role="img" aria-label={tx("已完成")}>✓</span>}</div>
+            <div className="workshop-gallery-image"><img src={artUrl(world.plate.replace(/-1600\.webp$/, ""), 1600)} srcSet={artSrcSet(world.plate.replace(/-1600\.webp$/, ""))} sizes="(min-width: 1050px) 480px, (min-width: 720px) 50vw, 100vw" alt="" width={1600} height={1067} loading="lazy" decoding="async" /><span className="workshop-gallery-index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>{record && <span className="workshop-gallery-done" role="img" aria-label={tx("已完成")}>✓</span>}</div>
             <div className="workshop-gallery-body">
               <p className="workshop-gallery-date">{date}</p>
               <h2>{tx(world.title)}</h2>

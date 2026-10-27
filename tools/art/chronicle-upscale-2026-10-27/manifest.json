@@ -1,0 +1,4492 @@
+{
+  "audit": [
+    {
+      "group": "epochs",
+      "art": "abundance-speculative",
+      "currentSha256": "11159ba360dc6ae7caaee98996ddf49c4b236f8b6d6a7e7939e7abf2e83011f6",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/abundance-speculative.png",
+        "sha256": "683eb93f89edcbf082dc31d29e2807bbe379dbcc5f1f051d311b793989017727"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "07e7b62d6966973617a574a90f4ae8092efbe8da3030807ae18bccbccf417226",
+          "bytes": 869692
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "18d14c6875cbd8d124d4cfc414dc3069fc9f7090da49e7b673c2d51cf81100db",
+          "bytes": 87204
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "11f7412c1b8dc465889587478703979f486c810bf6d7d8c65bc419a7afb16653",
+          "bytes": 276248
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "agents-workflow",
+      "currentSha256": "35e601ed16dfee78fdea9aa72181bccb2fd038d01a3c54927eb551ba6fbb2691",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/agents-workflow.png",
+        "sha256": "b4a842cb9d93c9d91ec023a48192a67666700f55c2d0a68448eaa8d578b2c6ee"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "e7388fe25071ed1b9e9ef08f0e760e284627527e85b6172219ef48852e0474cd",
+          "bytes": 290560
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "0ada255e1968f1a08fca1b86b2ef0804a684519a36e0a429128d3f0b20444713",
+          "bytes": 36378
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "d7e58d887524d1cc6806a05df408913827d7b6b6d2cccdbf00e11cdf78eaa6f5",
+          "bytes": 98694
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "agricultural-revolution",
+      "currentSha256": "43b12ff86cfe20f67ae98427122c2db1684381947f6ec65d996465ba69ce6640",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/agricultural-revolution.png",
+        "sha256": "ca21b5d0fd1a283ca4bf49e3f980e136a1aff90a7d5636796952d19f68e979d2"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "6660644e39745616eb5778555d3b69c15d73fe0d382495f902de9f7194ba42d4",
+          "bytes": 983620
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "599dd2d766774d5350c6cc8081086ba680792fc6d82d863a992361596a270f97",
+          "bytes": 96736
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "f5e0bd4cfcf9dbb1cfe95c84bdefa4f8ef5acf525ff604d5bb99a47cf473ddb2",
+          "bytes": 287580
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "alphago-match",
+      "currentSha256": "052e1bbae0cf5d752ffc9f870ad5d02d084c983e213c6d0ea304630f67a25a8c",
+      "source": {
+        "path": "tools/art/alphago-match.png",
+        "sha256": "98ba715462b3ac65b468f32c57c0a6319a55ae338326c99409570c7b36c2fafa"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "23bdcf9d029a88b75b36aa1ed3e83f0e7e479aa7d080a495d0232a47dabae78c",
+          "bytes": 374764
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "b08e568019f1bf1b4cfb4ea98de91e03b46e51a8e759457391317707c1b6d3dc",
+          "bytes": 42358
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "51e491cd20fd527c91871a5961607d0cf0d05e1be20abf4563a54b0b5de93f38",
+          "bytes": 118704
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "atomic-age",
+      "currentSha256": "7ed2c73441f3106328dec708c7a7c7832e31899dbfb81abe270a0369a6f6cdb9",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/atomic-age.png",
+        "sha256": "d01c06e565b92c09627ccf68f41fe0f2956219e705a1e3190821be3bf34d71f0"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "962f18021b874327c397ee8661ec8ae4fe12ec061e4fcaeb2dbf5b66523aad6b",
+          "bytes": 521046
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "c70b8d72b65d207c06f3bcfc0a0ddc4a5efa7f797ef164c9150a633d0b74f0d2",
+          "bytes": 64668
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "5807aac157035c39c532728be1f90ccbb0d2d434b6fc7e8819e12ffa402e0be7",
+          "bytes": 175262
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "axial-age",
+      "currentSha256": "40a56da41eb1cd25df65d70277d6ed6d41260b2dfa26b8315f667ba8e0cf3dea",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/axial-age.png",
+        "sha256": "61323b0c4e401e1d4af76a0f0fa360f0d838cf63fda217193cbe92de2341170b"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "724fd9be03ee49d6a4409d9a95aa3e6691a978384d61aa6ebf36f4dd1100555f",
+          "bytes": 654158
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "18564a78438ccdb60d52084dfd408dcb98378df37f55f0937d0f08c43cc7ea13",
+          "bytes": 74348
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "51ce69ec0ec046815dc7982e435a8cc2f6f020e4a65f3c71b20369fcb394491e",
+          "bytes": 214830
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "big-bang",
+      "currentSha256": "4dc4f5249eaa00095caac29419cac8d7c7bb364a711be24921139b4e387133c6",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/big-bang.png",
+        "sha256": "1951e287a163efcc81082c162ec8ca9d6aec2d1241837613791c97db17d9e833"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "eef0cf1d16349a9d66cbb97288b35135eee51a7d597f267ef351b28029ffd8e9",
+          "bytes": 175942
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "aee0d547e6a8d2350b8554c357785a3a8baad6636df8428f687e74a2b9144355",
+          "bytes": 13756
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "f04e385723f963e03f7e0573d651e91035409d6854e846a2c72fb581c50fa639",
+          "bytes": 46358
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "cambrian-explosion",
+      "currentSha256": "9fac06b5e5af52b6335f107a925a9493d7e11e2d74805a56ba8b01403dafb6f8",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/cambrian-explosion.png",
+        "sha256": "bde35bef1be8b69896b5d54f306e5d76040393436417aaaa47f695921e4978b1"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "1ea0b62d211324a86b0ecc038d7a525404fe2fcf6cf8ebd58c03e32751c7d427",
+          "bytes": 1026916
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "bb3ed0a9ef6c960de43dbdaad44d2757339ae82fc245beaa4e49fab20422df68",
+          "bytes": 81418
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "3b3068c7c949bd6b4fed8295058361d9d9bc1c99b94227690a5734e53b3559ba",
+          "bytes": 286246
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "coding-copilot",
+      "currentSha256": "3a3bc357ce221dad4b252937b0b8a953882f30f55395c86d098daff8ac8ce55a",
+      "source": {
+        "path": "tools/art/coding-copilot.png",
+        "sha256": "9e0233a84109c9a257d6a68e3d399f2b4b29a027ee694831b18a0d07b0651739"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "9dd15c53a34afdefe017ade7b296894346b07cb26dcdfa06d1a2a782138b2d79",
+          "bytes": 283092
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "565e656d355ce39c5c60f2e633375a41566ddf885c3b37ab1dc871f6bfeffffc",
+          "bytes": 42252
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "e33446f33679af0f9316f0da44c99b27fbf3ff5f74b936066e2c8427b649da23",
+          "bytes": 107690
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "cognitive-revolution",
+      "currentSha256": "658a3ed46b6a844b321a5feb697e7176df1d8d42da7d5702c1cf07811aeab943",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/cognitive-revolution.png",
+        "sha256": "88efe0198d80da92e504538a434d036d87c5cc29c36de57a8ee5df8451eb63ac"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "891e866cd18ad6fd4cc3d7c42022b79f24044a43362f36ae659fa2d359ee4efd",
+          "bytes": 881616
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "8b6d2578893bed954d0c3dd107d0c59a91ec3feae4e69a83145e65cb2eadb31b",
+          "bytes": 87832
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "155794cf3cd9c6a4d5e37c6e12baf57f9d52020f3d489f7d60e1d040ef5d6b33",
+          "bytes": 271414
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "combustion-flight",
+      "currentSha256": "b56420c5a688da301a6a318afd2081fae2ece8997d33caf2ee973c85bb21c51c",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/combustion-flight.png",
+        "sha256": "c4b1251109987730c4394191e34a953d4d2897b525d03d94b89735d3f7b43ad9"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "676f3aea6af0be9a95a66dd4a6e3a2178647f06066e60335bd6f9d85543ae684",
+          "bytes": 354102
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "a388575f04624d39bfdb0e741f740169feccc007cdd4ab85ab142d140e6edbcc",
+          "bytes": 58768
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "ed326c61234a4e14d8568496713b729f6adbd1a09c6d389c5dda9a43a9aa47d2",
+          "bytes": 139404
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "deep-learning-lab",
+      "currentSha256": "8e75aad4bff40715537daf64e6fecac175ef7ee394f7e8708ccf7a33efd60ba4",
+      "source": {
+        "path": "tools/art/deep-learning-lab.png",
+        "sha256": "ba884106c55009c8bbb50e2c68c82f3cd07c9b5267bd8755ab6c146ed3e77832"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "862c923dbbe1ada33395c87594c80b78d056a9a82c91e9da362306ae9db06073",
+          "bytes": 265868
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "47f878efc6e7236c0654de70bf24e0233eccafbb2ad5d5c6b4be66fb5f1301ce",
+          "bytes": 36008
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "fefa6d4dd299e7e8827893163da6ec711d109f28fa4987128b244541657cff0d",
+          "bytes": 92900
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "early-ironworking-v2",
+      "currentSha256": "297467af3ddd699c1d709e057af6015bee8155e40c30ab918c64a298c6bcfb58",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/epochs/early-ironworking-v2.png",
+        "sha256": "1a0055eef9aa4b8fbc10e6e20467f161a3224b048b32492ec5ef67ee3f73b32e"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "03b6fce95b11b38570185396a65626d5ec434887faed401030ba6734ddcf4ec7",
+          "bytes": 998784
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "a804a9b342ece84fed9fa3c4cf1fe8a41a682ce0b06100821e90e3279f573269",
+          "bytes": 100330
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "53be3d2b4c8c56b00f410650b0d9f9c8641420107f20c9ae212d9a9171853bb5",
+          "bytes": 312784
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "electric-age",
+      "currentSha256": "d2f84be5ed6e721df7d8962c60ef9549d02b8a9cfbb7dd60108888d521a6fce0",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/electric-age.png",
+        "sha256": "69deb30b414fa225be026ceb8e523b6dd7662bfbaf98bb7070e82919844575f2"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "9d66cd621412addd0275de9b912c6becb0fa1504b65e639a92407362d5922022",
+          "bytes": 686852
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "86c4d0b24848818c2256d05e2578e3a948ce0a4f82d1c6594850b35a3d4cf984",
+          "bytes": 73194
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "dcf0db15de849161cbf1137f65e3dd4c7a265dcca7576239df336e1ccd9e720b",
+          "bytes": 221822
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "few-shot-learning",
+      "currentSha256": "38d79c410843178464abad0fbbcf4db493761187ad19eb83753c5777c37cae54",
+      "source": {
+        "path": "tools/art/few-shot-learning.png",
+        "sha256": "9b00381a497a0aadf24e325488dfe3dffb31fc22fe2b7b5bb854c87bf8fac2eb"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "8d8ca6f7d272fbaeb5b8716ccd21af527be91ccbfd1da6a19ce3972e487322a5",
+          "bytes": 214712
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "941ca50d796c94f9fbee4c919f9dbdabd2a2f2a89109e2a21cbe4e71525d4fda",
+          "bytes": 26622
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "02b581e06af8fae8578e679482e406ebfb7026404cfea4226810350dea445662",
+          "bytes": 70288
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "first-stars-galaxies",
+      "currentSha256": "b8f24f0237fcb4dd7e4c22d50c6ba06c43ed5d186974017370ba523f6ff5b7e0",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/first-stars-galaxies.png",
+        "sha256": "3a20528178ef3019ce0602381ddd86ba339cee48e20405759cae372164fe435a"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "f16a7d1c6c1dd88b45d4464c9b9d07b41e202309e3ec6204693ae9063cd8fdf7",
+          "bytes": 259924
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "88015e52d1a14930cbc3540838b94027739209a89b0b82c469c4ce0ef4f93629",
+          "bytes": 33114
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "90757453003ad51a3524371a4059bf82b924d599b4fba71d31b2c1b985291f82",
+          "bytes": 93056
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "forecast-agent-teams",
+      "currentSha256": "240d242c3a514dd52685a2b333618238f1fcbe4377fcb0445735622b05ca53d8",
+      "source": {
+        "path": "tools/art/forecast-agent-teams.png",
+        "sha256": "7159f6378588ea2b70bb6bacaf1c4f1be84e688bf3956d56a8bb4f7db47897be"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "45e1ea30ae07c81fd841f23325d7dbf91e297e8ddccfb60d13b0a7cb733d4ed5",
+          "bytes": 425976
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "f811635bb45757fd1cc1bcb448a214f50a8542208b63ce5d3a2b4ca422b04d65",
+          "bytes": 51036
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "f2022d3246905a6b18aa4339ec08417b42159cff6702b1a4ad7f6d5178fa2264",
+          "bytes": 140958
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "forecast-grid-compute",
+      "currentSha256": "e0d188939bb2969e15998f8075d8d3f5cc319b480efe9086badc2f50ec2c5c97",
+      "source": {
+        "path": "tools/art/forecast-grid-compute.png",
+        "sha256": "bfd80785008ed51e4dcd6481f9840aa44c6c32e0ac92279a8ea9bc6e63928f08"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "eed4cf0a496b1fb2082cf8348933377dc4524bcf84d9f47e732e3f97d985fd12",
+          "bytes": 626424
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "5e79dda4e947922d22a551c98affbf79d7a7e6ddc9c71e1efef5d023dcd4aabe",
+          "bytes": 61336
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "5031ddcdc2204462ece5c6a2a8f9d898a6e0cf4eaad209087e1fb5499db09a13",
+          "bytes": 192242
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "forecast-interactive-worlds",
+      "currentSha256": "d3eb038d0b6a9b98c19ca4abb842986203d783e42d3be7cbfbd6cddb87ce6330",
+      "source": {
+        "path": "tools/art/forecast-interactive-worlds.png",
+        "sha256": "363f54293f1c9e6d4b89ee1b411b3f3a7e79b53569707365f28c5dc5d8123eeb"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "150e255317289688d1230877e9d389c04cb5f828348e09c0574a24140e18af71",
+          "bytes": 547040
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "a1a12ff483e7d1a4478b96534d1315d2bf18d21dc64cec4f79ef28f37ac188c2",
+          "bytes": 59538
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "d74d4c64326191d7cacf6025fc18b3ac687a7adf4813761974ffea200075ccf3",
+          "bytes": 174346
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "forecast-personal-ai",
+      "currentSha256": "4782bb2e829f590920030282ab0c5a6ecd6651048695cb7f82478263c7c48c8d",
+      "source": {
+        "path": "tools/art/forecast-personal-ai.png",
+        "sha256": "a7fe22d916a5a3c5cd86b327bd5210832b735cb46826cf279d8e33ebd2227470"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "d3f955af26d4f68ec6469f336724c0bd564012e569b912c887665f20ec2a4671",
+          "bytes": 415418
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "fdbbd2db7bd001264aeae5c4e6c078a596c29fda8e00d08f7ff819912947c378",
+          "bytes": 61326
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "f00c91a5e5d1ded77d60391a32bf8f6b31233cca0d58343d89ebc57a54da733d",
+          "bytes": 150904
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "forecast-science-loop",
+      "currentSha256": "3e096b807b77f49c0ac67d802d3e777ec3254723ee5bba8e954004e1d92fcfa0",
+      "source": {
+        "path": "tools/art/forecast-science-loop.png",
+        "sha256": "3a6153495c4924e1f89fcbab5a8e5baf1788be07e6efcc14464dfcaedbe044d0"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "949b092217722647253df7550fcf5aeb8cd5330b295914e19e7f91aae467890a",
+          "bytes": 276014
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "c6d072d92cac28f0641a006ffd7556404ea47d01243cfd5e942c9c63596e8a84",
+          "bytes": 45068
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "2a2884871348cee008c711430dc1b0e355fca093fd5efd2d5ed25a890d393852",
+          "bytes": 107910
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "forecast-useful-robots",
+      "currentSha256": "45ebda7d4f7bfff7cbdf6d1e3d3e1173d146ddeba03b3165110cbc3e4c341a3f",
+      "source": {
+        "path": "tools/art/forecast-useful-robots.png",
+        "sha256": "08eb23853b0bbdee44d57e462994dc0b4dc544652d8334edbbcbe0b9b138ba02"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "51b4e209450e09ef264ef8546f45e14530c545b266a434b71b7f069227b435e8",
+          "bytes": 391872
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "0239a3b70ac80141a83da2b52eb7c6eaa62374c955192d77341f9b72621369b2",
+          "bytes": 57392
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "30d4210e10e56f2b740b2256b0a21fcc03011d80f569afad628d148308c3d6e6",
+          "bytes": 143750
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "homo-stone-tools",
+      "currentSha256": "21e7148f25603d266f9fdfe5e7d59b8c3ad6fc7ed8671f82b31ca05113aed971",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/homo-stone-tools.png",
+        "sha256": "b54dd01d9a134b3dc5d9b4f66d97cbbc77cadca236e8ed923917352afaf926b5"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "46efbd9407fac511ef823d5e5b0c99fc50000f0228477e038f729cb6a080fe62",
+          "bytes": 913040
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "9b7d3725b80fa8794fcbc6eba764663f02314e1af0537be2959b7d10875a04f6",
+          "bytes": 56522
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "4459fb5d04b5227031ca804cfb3d72f35e269ae7f7be4e39c9f1b4b98dfa8879",
+          "bytes": 215712
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "internet",
+      "currentSha256": "f617cae4dc28597f4d2d4040dd75b277bd246d2eb36ee17a125f6bffef53852f",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/internet.png",
+        "sha256": "26d4e3fbfe4261a83ae4f92c3523828d194abec009b1931e699cac0b8e815771"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "13217ffaa74ca26c1cb72b87801ac3b00681271cd0266922c0894cb989a44d41",
+          "bytes": 759642
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "0a7ff2c3fa237796dfcfaa1c86882ad4730d5d6f4093dac70a00a68ddba95be4",
+          "bytes": 76498
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "8ec5888fde5f0ae36541a58431fbb0b3db5d60efcb8d536fff5fed0577be8d58",
+          "bytes": 228064
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "kardashev-i-speculative",
+      "currentSha256": "b5eebb53ca6ad3e587843a6f8a64a15a8845bb2c44cdc7f984b23a58fd96b799",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/kardashev-i-speculative.png",
+        "sha256": "f99347e018f9d8f9755046d2f80224132abf66ea7499c3eeab6d944f1c31db6b"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "31623b98e1679a425e4f00207efd9ba041bf3a51236b7d38f1e1d3fd73a0afb6",
+          "bytes": 484268
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "8147d0715f60aba68408fac9b7d9cbec2cc7d324f4d6d69e2a7418b82a9f3af3",
+          "bytes": 46886
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "01271570c4ccd14f18b16e6892e6ca37dec17aeac45ed9912bcc30d9496cbcd0",
+          "bytes": 151016
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "language-pretraining",
+      "currentSha256": "1eb2f33c71a005e47b8b184b713d674a7bf60851b6435b909de205b174a93c8e",
+      "source": {
+        "path": "tools/art/language-pretraining.png",
+        "sha256": "c5760f2c4f52f5e22a01df517248ace735240fcdf0d7357ece9d96883f515bce"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "c83c72697de61dc51553934e5585ee289114ec6da5044fe4f7c3c79c33fdd152",
+          "bytes": 373106
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "4ab54ad09c51473a6283a57cf12dfbbda4856702c2fb98bdb71ca1c042fe06ee",
+          "bytes": 50282
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "100537c4af955e437d818d3ff366aa0633398f97dfee83fef0f12b2f0712a081",
+          "bytes": 130550
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "large-models",
+      "currentSha256": "209743ae081bcaf3e0fc2c7473345b0356f9cf2dabaf591eb706a590ab5ea298",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/large-models.png",
+        "sha256": "a4fabc0f1925cc5e10ab5f7fc99f285d46a55ab5d9a1ad6db71fd8bb475c05c8"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "9c169f2ef44218ba3ee96a1308ee08eb806a7e4a4029d3f0858d30611cdc1acc",
+          "bytes": 481902
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "7859b4113cbb89db046ff36fdbc55a20ea92a667d2c40c434ab1e9784a4def39",
+          "bytes": 65408
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "0f8ee0eef9fc6a601e2fe5b6bec7b71114ffdf0b222c519649ed881b5fe9f5bf",
+          "bytes": 179618
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "medieval-silk-road",
+      "currentSha256": "a54af8a8333dd2f2507db9db79a7b431df6a200cb70c05262dfd2c61161f05e4",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/medieval-silk-road.png",
+        "sha256": "47c16008bd0e7d876805163f86fdbc32ae479c315a3e2dcc2cdd9d3f8d53b378"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "3ee834b7d954424c2b833d010ec9c0a111b6577084479f578ca7e7604a194de6",
+          "bytes": 1311514
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "b0b13e4de78eb7b8d7cbbcc7f84e9577576a773ed859cd49a0a1639352cdd2a3",
+          "bytes": 121950
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "f0ce75e3526a141be831c1e9e04f36803aab1f3263534665320f11e00d06b32a",
+          "bytes": 392146
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "mobile-internet",
+      "currentSha256": "b80c47cf12ace7590f3c42fdf61f40da6a5268ac068e9c8b391def7e5f1cc9d5",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/mobile-internet.png",
+        "sha256": "33b22da44bcfec58459a4d8b1d2120f2ff3f8a5e413c84cf418117aa70df2c45"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "b169278a829387f9afcdcc384d2ea52ac2dd29f005b65851d02c963432f5642d",
+          "bytes": 148098
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "e96c97e11019c2649100da0eaf34cc70b9ecfe96ed9280691c4461a180fdbe42",
+          "bytes": 26412
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "6f7b37f72c0689f932b490740a39ced57cb54e62b72b59a020d34956e972c3de",
+          "bytes": 57904
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "model-tool-use",
+      "currentSha256": "c74d6d5459f79ed5899b93441872e4fa87171080f9678295da2c7720fc403a3d",
+      "source": {
+        "path": "tools/art/model-tool-use.png",
+        "sha256": "14a512dedb945121e09aa67f1d595cdbca489683a3e3dc3a8fd0ebd3678eddd6"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "65c2c720d0cbdd3713c5053517c3da0226d75ed50178292d9634b46126694600",
+          "bytes": 320656
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "9dc51b20754c1f189f29e361b8a59e9c4ef87682f3a8b0bd6bfcd988ee447c92",
+          "bytes": 32432
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "08fd35cd8f6ce3ed118dfcf478817f28d2d76b3d25f0e93695ff2591c71f3dfb",
+          "bytes": 95592
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "multimodal-understanding",
+      "currentSha256": "e988ef61502080405e73f74a4d4c5e339b89da9cb107d7beba5268b12556cae6",
+      "source": {
+        "path": "tools/art/multimodal-understanding.png",
+        "sha256": "bf3745f3e092876e639bb8f7d61746802917dcf865058c54371a566d8499907c"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "27393f4db59033af75f7a05bb794ecbba29dbdbe9a8da2225c2b7462581d8aa2",
+          "bytes": 305678
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "22d243c48f5a70840b44cea8ed58e995a388e43176fe01d37784c4676bcaab7d",
+          "bytes": 41100
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "298a5f8e5efc28874bf7aea5bc7994dadfa787128b2ac358608512ee50d6b377",
+          "bytes": 107650
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "origin-of-life",
+      "currentSha256": "048fc70e6d303ae565420a609065743489cbb32189d0266b1a71b49a40282d1c",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/origin-of-life.png",
+        "sha256": "3805d1917b60f430644a43d4089acc8acebe43e5e0a3f47cc8f22e507a773d52"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "9776a515081d42001b14f68023db5f76e70ecd6e249d51146817c7fde083a264",
+          "bytes": 873126
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "e9913358455f7ca86fe5e98f3d37f5c1c905a5e3fa29eeee0defceeb11e69450",
+          "bytes": 73860
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "ca7ee6197e73a1e8adfe0f323a8baa9061d4e398cb5b753a3b7b465af6a164d0",
+          "bytes": 252680
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "personal-computer",
+      "currentSha256": "26f6bdfc9fdf616a9ca8961a137e071f631788279a18f02430515ade65ea692e",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/personal-computer.png",
+        "sha256": "edc8a8d5b4e3350aab05febd5e191071468b828c5467dd13ea0d2507075c01f9"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "820f9615d670877e0da831b2286f907b457a1baf5aa87e82d00f51eecb5925b2",
+          "bytes": 319682
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "376424a3429187ad9fc7788d172cc2fdad6d17b8a92d9215c3d0c1e39e971c6d",
+          "bytes": 43316
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "a5517c193c8eff2c63861d9ab133a74d6626a87dec290f4061f34dfeba7149da",
+          "bytes": 114716
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "printing",
+      "currentSha256": "47551f14be0eb56ab118346ab3707aa4a223b81da66baf51fa4fc20f730898c4",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/printing.png",
+        "sha256": "2ed56376afa20caff4975bd859aeddec9a94b28c0039202ffd29a9ee9dc22bdb"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "1ee6e279b4188736b58649d053ea229e5f67601ca76ae60fb4ab7b493bba1989",
+          "bytes": 1669658
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "c4cb5f543bd2f2ff21be0f7546dffc65454cb809ccf014d6c9ad72b8985e9a0c",
+          "bytes": 129382
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "36d519f8498707e2fbc55ca72508d5cc243d7c5c68c6c1e358ffb1e6577b0fe4",
+          "bytes": 468588
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "realtime-voice-vision",
+      "currentSha256": "2d8482ad3efc8aa93486ed509c10852ab3db540a1370cd91fa03fda8dbfefb1a",
+      "source": {
+        "path": "tools/art/realtime-voice-vision.png",
+        "sha256": "ab02aa83793f2b1b8233073757fb0f8bd0425e0d3eb60f2e418109bb824eca98"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "aa489ea0d09601834e2146090008b2182fe73cf7279245d1e6a2460ef289775a",
+          "bytes": 264694
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "a773465fb1ce014f76e6aaaf89e9c603a9ff91f53af5779eb69c916591d256d7",
+          "bytes": 39928
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "729e90dcbbd8aba0d6574c22157ff2e681b430f72ff2a2e62b4e3654b94c2165",
+          "bytes": 98622
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "reasoning-model",
+      "currentSha256": "df9acd74bddbab3dfa971bb0e7aa3db7b992d4905b53613dd6ff6627ceae76e5",
+      "source": {
+        "path": "tools/art/reasoning-model.png",
+        "sha256": "23b77bfb72794d02249e5af7c5cac36863baf6252b217aa4b9bd7d0aae7ec87c"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "2e4df516915bd72ad6be9706cee0a74120991d443846100b80932b5b5e64d9c1",
+          "bytes": 268956
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "1a8264cb0604341d4f02678c8b3087278ca8e675cc2bf75e658929885d34bd93",
+          "bytes": 33708
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "8ab29d116a564f8e3c7cd23cde5d6b59ac3b88b92855f4e9fd26f598c36b2796",
+          "bytes": 88148
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "sapiens-language",
+      "currentSha256": "d643e7eccc91199e0ead61adb51b4f60be1bc54d6a3d852cf61c1ae75984acf5",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/sapiens-language.png",
+        "sha256": "396fc79115c7adab083b5054f916701e6d0d6d9aca58929801ed49d5e8b8343c"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "a7a72942ec9dba0c26cd88f6562651f64d776e64a1f26210016581571645748b",
+          "bytes": 1617444
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "ac538b8edc3e6b41ca8a947f8a60becb7b15dadaa03c7f1de8c269af4f5e257b",
+          "bytes": 99756
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "7571de7c6aea647bd3b35ec7255dd8f7df70eabfdb48e73150694f37cea79ef7",
+          "bytes": 398504
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "scientific-revolution",
+      "currentSha256": "815c365acbff3bda7144394613f269aa31794d0336e97bf7b9ab3aa263ba1b73",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/scientific-revolution.png",
+        "sha256": "a5e6ff64680cc8f360c8ae96f62a1621772b667b9287848b2b6f3ab995a93318"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "caab9ae5b79914c626c00aa612b4e1fe7bfb4a756b9607caca2c6c70062ccf88",
+          "bytes": 1833124
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "b20207e2ac33e69c76e6694d7b70d8105ee43371fef6f74be8394f9caa6f587e",
+          "bytes": 109040
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "98576b9cfaf81d5509199211260558b709f24a16530d45210e7f467d4c94ee20",
+          "bytes": 448714
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "solar-system",
+      "currentSha256": "665ac9db59de4c3f03a09dc199a3ff8ee6c3a00db028ee57cc3d46d96ae4dc30",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/solar-system.png",
+        "sha256": "22a4f79af9568ea42e54de539379e8c9d3af9e66a570a4a4ab211c5d44e17a2f"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "21e55ec5a3ae16dd7cf3bbc122d932e363756ce4b5f0f47e3c2dfb4384232b9c",
+          "bytes": 1761028
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "12e044ebde549fdc52cb5ff91f334d08d938b0f57e1044537060f7b87f3bd858",
+          "bytes": 81986
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "f63d2e7ab4d7e3209c2d60e56d446da0b14ebcd6975d5ec484754b67cc888d03",
+          "bytes": 381006
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "space-age",
+      "currentSha256": "30e45c333dbd876d83e29eb741a4787d205382b23d8883e840be6b99cb7260c8",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/space-age.png",
+        "sha256": "340b0df34e6234c8d9991f084cfaa8bddfd1edfcc86d8f85611f56ff666499b7"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "5e47943b72ec8f732ec3c39387019815ac87e9d48fae4c10002c973693305cce",
+          "bytes": 411862
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "d9650a97a383b9e197130ace32b12bfe482fa479f5b094b8248cfd556bf66e65",
+          "bytes": 42840
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "3fffa1b5a7b63874edad2bacdc94aaafd5db3cf913be8814658ad58d7971774f",
+          "bytes": 127416
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "steam-age",
+      "currentSha256": "fa50e40b505bee94f4b065b3a6128ed1eabab56b69e4743056f38c02b59e2b5c",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/steam-age.png",
+        "sha256": "fc8a001150e2c995d79dcacf33e3c2bceb21349a31ed3c7101cf8cf5a42ec123"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "f2465680ff089943cbd252cd70c84d31ee9c15108ae46d56308e8a13f52ee76b",
+          "bytes": 1476060
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "79da184cc88152dee3656e4b97074b5434bba913e6889e6db186f6bfd19e035b",
+          "bytes": 91862
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "051c4ae33d4d2620271ccb8d853f8f5a9a5cb34728a06b0038e078e9de6492da",
+          "bytes": 347522
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "taming-fire",
+      "currentSha256": "1280fe6ae40755388055d9377da3998e7fb038b79fd4d7e636c597fa51fcd329",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/taming-fire.png",
+        "sha256": "38951326b5de748c883d475c2e8f1db76195f6f22c1b2fc19f6790aee6d1d90e"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "c9a2c27a01f2d2b434bbcce44d303c572b9ff15dea73c85af6fc26b2bea3998f",
+          "bytes": 877256
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "9928968b5f565c1c13ac72fbe9e5261715ea5d2725cd9b167805d54457eafcdc",
+          "bytes": 83444
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "2e5c150ae55a4f135a9b1dabc468edeccf4c0af2965b84fe1fe794f14e42a557",
+          "bytes": 270142
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "text-to-image",
+      "currentSha256": "b4a259094ee83f61d2ebeaea1d2c3f4ed4d45f15a9749b03c7afc58823218d26",
+      "source": {
+        "path": "tools/art/text-to-image.png",
+        "sha256": "1a3d7c42fe9229d64414a25b1a166cb087c1f0bfa01a29365d5da673726c7eef"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "f2439afe471dd85c374213083837e4cb1d2e5bb9d1c7488c7c21004e61620df6",
+          "bytes": 328458
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "ef8bc1525ab81ce211f53ec75fbe92122e9b4e507c237db1c63de9f268b4f62b",
+          "bytes": 44018
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "d831e780580b040cce9dd4a2ee7382a21ce06640f77f11e752fff29f026dcf69",
+          "bytes": 111524
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "text-to-video",
+      "currentSha256": "e429f27265040f5bfb179473aff22a7cf5bab14f6c5833095089caacc0e52ce0",
+      "source": {
+        "path": "tools/art/text-to-video.png",
+        "sha256": "5ae7973966e44d7b3eb527a9382e342c836c5155800bfb5dcab7118716180c46"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "a3304f28fde8619c255b2b21abacab9076e0debfd0f2252430d4a3a491e7ac4a",
+          "bytes": 293444
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "779c4f33fd372f80c08767288213debc9db2389f9dee9ae62c2ddc509406abb0",
+          "bytes": 35476
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "fecc2fd07e34aeb1bbf3545fa1cd357bdcd2c5e68cdcc132ec5f220818534706",
+          "bytes": 95814
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "transformer-attention",
+      "currentSha256": "51910179da9b90103dba931815074ebd9c7f199818e62da7eaa4b29ded7d35dd",
+      "source": {
+        "path": "tools/art/transformer-attention.png",
+        "sha256": "4c5bcd99f3ae2c05afd29791874e196bfbdf88dad4bf8e70ee6caf1abf30995f"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "ce6c75d117c43cd3f16b8d6e171b32ad8691d4f5dfa1a370b0a13547d3f37dcd",
+          "bytes": 189600
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "df7871da4121a0ac8004ce1c475b841d52ee80af1b29ee013c5b21eaaab7bd87",
+          "bytes": 23966
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "ee0c44202a06f71e44fd1eeef8ebf509c0700fafd56ee2550bccf50423137b33",
+          "bytes": 62392
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "transistor-computer",
+      "currentSha256": "3ca580ceed156b1427edd481b47ec42cdba42a4b7d980d805cc2b2bd50a21155",
+      "source": {
+        "path": "~/Desktop/eacc-art/epochs/transistor-computer.png",
+        "sha256": "4797dc9d49aeba2b24150000f577de5f926d640661dfd1b0bad025d322114124"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "77029e9631113be4b0ef3151432ccf36bc4da7491646574006efbc47de21643c",
+          "bytes": 185014
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "0de361a309459033b86e187b6e97495fb8c1dce70e74939fbbf33be24b65bb83",
+          "bytes": 31036
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "b09e81b10b9ed3fdf4e5fe7addc099c2a686b6c48570b760aa36575b1ed0d181",
+          "bytes": 71356
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "triassic-life-v2",
+      "currentSha256": "0534fd93918b773bd5292157f89aab9917564e4fa384a4f2a35a3eeb585eff4b",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/epochs/triassic-life-v2.png",
+        "sha256": "8b68acc7baf905c1d87026242ec1b9f42403043aa48e71b85fbdf38179028ab5"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "8ab705ada9fc51e8c352d4b42965adb5d27fd8d43cbc3c48997c185e1adeaf16",
+          "bytes": 946074
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "a46078ea114250df5b21bc19693d85d15dc39c417119bf6fa123ff82f397cac0",
+          "bytes": 98982
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "667b17221c605338f45d8ce68426dd76aceb31df148d48b9ef1a141c00637d70",
+          "bytes": 305042
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "uruk-accounting-v2",
+      "currentSha256": "1afb5b7b7326964bab286e9c3c0ff768a3aabc57cfa130d35d7666f3b08112bf",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/epochs/uruk-accounting-v2.png",
+        "sha256": "f878ed2243cf7c5c65458ef4e3f7ada41d47c317603aa098ce6c60f91186bcb8"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "1beac27703d6111731e82358af71e46e2cdd5773b6d6f577ea6c995d0e14d6d4",
+          "bytes": 894440
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "9d88722b84fe6982d9f4841194c59df79a716fbd17b39c6dd150983646556d88",
+          "bytes": 84980
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "ca2e87dea312ac20ca1032d942203509c627730e5ea9ac3faa5290ab01c51a82",
+          "bytes": 275472
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "ada-lovelace-program",
+      "currentSha256": "b2f6c57e4b6bdc4dafb36e34edd3e96e095ab586ddd038f298c95d0c81649697",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/moments/ada-lovelace-program.png",
+        "sha256": "e4a25785870766205ce02f3a2371df037bffb2e32c7f00751df9619127330dba"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "e71c66fd37fb29dee60b7690c9e4d56f504de7647fa4027db04f177bfcdd181c",
+          "bytes": 1360262
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "29e5a7a8e090d857d6a674128a1d85bb3b68498a7312d41787e0a4fafd8223fc",
+          "bytes": 82382
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "80381b1777d9460123f627202a2296bc60244d77eb99c47b67e0bc8c64e07438",
+          "bytes": 323644
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "agriculture",
+      "currentSha256": "b3cef2ff56d95ad92e323b66d2dd41dde86c3c85ee62e015613ee69b0c6ae4e7",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/agriculture.png",
+        "sha256": "95be7597541d7a674ff0e4e9a08d696fb5fcef3df641b637e4298a4308470bcd"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "495b73ca7682287e7869e467ee40599b955d4f13e225a617d6bf95b39e9f291c",
+          "bytes": 859926
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "465e39314b5f74377b64a8cafc379580abc6e77251dc1da776fbfb490ae9337a",
+          "bytes": 93496
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "7a2f5b1ec906125161fb92c872fbf83246c7b37c1130fb0b9b04d2766c884a38",
+          "bytes": 270646
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "alexnet-classification",
+      "currentSha256": "ab099bf46d3b9c1f6b7f1b6b23362966f78b75924291abbca7e80d25a8edd436",
+      "source": {
+        "path": "tools/art/alexnet-classification.png",
+        "sha256": "48f6e7f1d6c9a42999794b7d80bfc36e3040f14bdcc60f5a300a44b91daa2ffc"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "dd9b82a9a390a05e6777b62e43b08375df3d9970b15c59008d0f9370ca2fe27c",
+          "bytes": 239548
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "8063ba73c42b268af2792f7113e4ef2a14f11c24269ecc37074ca61f879de559",
+          "bytes": 34442
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "4235148451766137b8327d916250eba61b735ac1d3248f9a6941c5912ee77f0e",
+          "bytes": 86168
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "amazon-s3",
+      "currentSha256": "27ef07913df0edd1a497050f7a5e0153022ed3f593ed09151e7055669d7c5d80",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/amazon-s3.png",
+        "sha256": "0c9603df4761a773e06fa91b297a4d0d2b682940a8e313e6b7b6a66674719ac5"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "77233f2bc011b6c671aa635f258d3887c7a186f1447c76c05ff8b1daa313e25f",
+          "bytes": 287910
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "fbbdb8985fd4ca376fc415a93fd79026223b3fdc9d799ec24e0d5d31059b1c16",
+          "bytes": 39084
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "b32c7dca13aa54cd82932d44b49dbdee9a239785618563b3e5789410b3dbdbaa",
+          "bytes": 103256
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "apollo-11",
+      "currentSha256": "c09c042af457c39a1d4d70c6a61cc6cce665ef31cf4182eff18b52f4871d5166",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/apollo-11.png",
+        "sha256": "dee4b6184b97da12335c8fb68e28fd568c3ee16174f2f05fed2891b9417225e7"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "c4893b2504fcf9fb15622324af24620394c52f1bb9f5ec767ee9d6200090572b",
+          "bytes": 1049188
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "459abf4f5ce51e8bba894b3ff36ad632f6680a11373575db7373301f341ae1b7",
+          "bytes": 94030
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "a0c793298b28fed449c6744403892a5170b09f34b749eff18b358b715e389cf0",
+          "bytes": 310424
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "app-store",
+      "currentSha256": "524df13a769de7d82260e2406c14e7b90cc66d41c8e65387e030dda2ad90f643",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/app-store.png",
+        "sha256": "9ea159419d6a9c9d30a7df4be52de68ccbd2829a936e92feea601e910147630d"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "bd7cff2a3b8d5d72c9e09c9bb6b710b0aa8c3209f78e9e16645e87f099e17319",
+          "bytes": 826048
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "394da82f2605ce356117bba8b70cccb7e65ee4ef32b111d02889ba2c0f4b9b68",
+          "bytes": 70556
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "6d406e010a858a977314ce27b163bf5a6dceb3ded3f98b3135688c7c601f29d6",
+          "bytes": 227226
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "apple-ii",
+      "currentSha256": "dee75dea19096cee4afb085c9ae4b49889158e1e981c1650f165fbeaeb626b2e",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/apple-ii.png",
+        "sha256": "a9343cac5022191add23c0ac423d18f44f71c03a48bfb8e1e516d52778f295dd"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "48eae3b460fbe04222fe1c35c6ccba71bef3f35abd4db950cd7e397d25487ea8",
+          "bytes": 413678
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "9acba9dbda3e09019a71d61360d75a1f35ef860f6e306c3175ed534a5027a4cd",
+          "bytes": 48162
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "22d0acb5e64a2f75aa179f17524aabaa77007003506bb9f0593816bcb22fc8c2",
+          "bytes": 128524
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "arpanet-first-message",
+      "currentSha256": "9d75fdc0a6abe274285e2057cdaa7a4cb37fd36bc062de9da1ffcb45226587a6",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/arpanet-first-message.png",
+        "sha256": "b30c268a19ba5eea0e13bb884b5b34eefc6a78105548d9ff7b8fb09e7c4d1c6f"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "65e8132a4c57574d94f0526e304827a058491dc0e0434be3d95c971a800b79bc",
+          "bytes": 310518
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "b9ec42c5fe3c09b2b8378ea983e63cb35c5aec07092bff0f46af04edd5cfdd3d",
+          "bytes": 39294
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "b517a64421352c7a9694dc1b279b2a1728a3d62702752f0ee799c503ce399e31",
+          "bytes": 104812
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "artemis-ii-record",
+      "currentSha256": "37f0c641b93ec61f1a573686a334b8016cd12789a6022ab25251ff18bce3f6ce",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/artemis-ii-record.png",
+        "sha256": "630645dd34a6c847224387e9d8bb2a0a78e257029c3b01cec6c4effc9e8c996f"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "84f568a4827892cbbb3b8afe04f06ed8a1c2198a6211a17b1941e104ebb927b8",
+          "bytes": 762630
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "c4b6f92ba3480e689b4ff790a0665914e05c3437f56d3b72fc5d344e9c34bda1",
+          "bytes": 64520
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "bba9258e0c090c3f209bde73875a46aebc9c2b58d12442877a5f4c9b9dca2cb3",
+          "bytes": 212968
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "assembly-line",
+      "currentSha256": "60710f646de159d00bb18ca85b6db141869565075c8ed53664473624d90c517d",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/assembly-line.png",
+        "sha256": "6f19c873603203401421216c6a702442d85a48c4bf799afdb30a9788ec238206"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "20b6c02de63acea0c92f3c48614f7a23a2806b3d9afa5ff543d8299752c8cea1",
+          "bytes": 736348
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "602125fcd034c7238f3228038e3a6f6889682b0109929b418e650c756a878cb7",
+          "bytes": 88580
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "54eeb5988b793d0015eafaf9a03ecb4deac6e62ec4a422e811ed533ac6793f97",
+          "bytes": 249218
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "benz-motorwagen",
+      "currentSha256": "21918fdf18a925cca0b03c4a5fe3edd86778f520b2c501dc431d9650300aec8c",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/benz-motorwagen.png",
+        "sha256": "28733f4f16830a10dc176e812c2c2770ff6acba948220374bf4be78c48f70e20"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "0e4b058006bcda515c3da96d1e4e9f76cd6fa1d647f9f81e70ba82d5d10d670b",
+          "bytes": 1754666
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "0ef0772ac6931e8763d4fa48d4866accd90527a2b46a4e48e0d4c9b3c95e43be",
+          "bytes": 130698
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "33c69ab4945c6cba4d09c54816d43642d8eac523dbb7cb8f2c511664bef02eee",
+          "bytes": 471484
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "black-hole-image",
+      "currentSha256": "a98623020097c454c5f3260744d5c690dc07450b9332028ce1b39658186efff6",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/black-hole-image.png",
+        "sha256": "88b258cb6047d1db79e91f90a3ae781f1601b8b9d2d2706b00fd2c6b0df1188c"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "2bc138ac954902e86286362f54188daaa3a5b2a3bdcf1aeef5def5aed0c0ba72",
+          "bytes": 207938
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "ef1f4f9bf6cfa2ffb596cb350a365d801280535c1cb11364a01dc4340201309d",
+          "bytes": 15392
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "ed5d9edab30ccd41d85f14bc62420af73299f8cbba8c142dd269b7d022675393",
+          "bytes": 53828
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "bronze-age",
+      "currentSha256": "0f6370a007223efe343ca9fed1ef0322098aac7357292610cd9339b11f3584cc",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/bronze-age.png",
+        "sha256": "8438fe4a9dd4a1f5c89876117eb82dc33e5b4da5fb039c06926bd5ca51d467ca"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "1cb2c9309fb5dc08a1bc3556c1e8c4e38c0ac4b8c13a57263e869072efa7796f",
+          "bytes": 1541796
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "3e8a57d5d5bad1a403740df573095cea9f64fc6148546283d8dc8a8293a07e6b",
+          "bytes": 138690
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "d12b98f75bb13387aa413f5a497ab30888685563257b25c7ae9de43ce6e68eb7",
+          "bytes": 469226
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "change-4-lunar-v2",
+      "currentSha256": "18051211b5e20760f98836ff4b224806bbbcfdb64b2a09245dc9f0213d1355a8",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/moments/change-4-lunar-v2.png",
+        "sha256": "7b3b4be21e784ad553f8ece2e6c8aa5314af96afbdbdab502540af1c592b330e"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "98e5799a31fc793a733981f09cf226fc72d3dc0df3a31a9617476cc518522c4a",
+          "bytes": 1143658
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "b18f13eff4b618221c23f0c526a042cf0822cc1bbe5ab2efaebeabe14c31c54d",
+          "bytes": 107602
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "6b3958a516358da9e63d079034e7cd365880042f819f4e345391b6bc11b48d0b",
+          "bytes": 337876
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "chatgpt",
+      "currentSha256": "7acc8169b16811e1f334ac0fe8b57d1292522043166fcc86a04f431b422ab427",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/chatgpt.png",
+        "sha256": "e813e4c3ce37d8a4e6f4023e541c198a241d0a2c731f0f75290d1c1c2bf3099d"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "1d220781cd08b3403e24d9a1a424c5e6a90414275cf0c78e891333fd7df9db9e",
+          "bytes": 345918
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "04ce40773a6d22eb266068306e35116d648d45cb8a9ffdd84aca84c12dc7b8f8",
+          "bytes": 47836
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "497eca35f56cff0f27860c1015e03a057645f6e298bf0d688badee6bdeab792b",
+          "bytes": 123406
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "chicago-pile-1",
+      "currentSha256": "2041e75d6ced530fba8ca734e973d505815cc573a2d8b0c19a1004d0517c5b7c",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/chicago-pile-1.png",
+        "sha256": "3b4e810949c791f43199f07e593a6ed8daa1026594b5c30b157065a0d5e8c62a"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "4d64f4de2f5d6731108ff7d5d83cbffa884a1e59891342be49ea13ce797f78ed",
+          "bytes": 425452
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "074c4cc8302f41fd6feda8bc49165101503333c7479e3b1af5babd90878267bb",
+          "bytes": 36806
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "56169a123834eace2ba8c04062fc15d11dc1eaeda5cdad863f48fb08d64dde16",
+          "bytes": 118966
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "claude-4",
+      "currentSha256": "6dce78094059fdcbf7b7e9dde3696c90f67d074e1ccf0b6656fd6ebf8d24bfe4",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/claude-4.png",
+        "sha256": "7b5514fdc90141749044edb74a977d98f2384b8c8a5f492428718cc458b5447e"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "6c7d73737c1322d31a66c9993815ba321bbe0e3ceebc9815172455fe9d99a24d",
+          "bytes": 526408
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "22ed684506d45a66c953888b809e135cd0191be01f50b605e3cd5b89b17dfc93",
+          "bytes": 60962
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "51bce97a6711b18f34f46b34a41cec787baf1dc5c9b396e588b2a4c9c9897428",
+          "bytes": 176526
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "coinage",
+      "currentSha256": "36664c2c343c6ce5c5be29daf73ec20256fe753792d8a21519c02271ce947d4b",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/coinage.png",
+        "sha256": "f8552f611b1d511a1655d41db384c6590ddbf37f45e5e8160cb3cfc01bd953ba"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "496c0e67246dd776d30bab3759cf06c489e79861a6553d8a798bae1d60c5d2ca",
+          "bytes": 563646
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "7de68dc60b66cddda1bd55011dd039ed7f45ec39c07e5b5cc6794872edb5f158",
+          "bytes": 80604
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "e9f0d195626441b202c470a2562f229e058316132f73f7f3db09639dba5b8a40",
+          "bytes": 206194
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "coke-smelting",
+      "currentSha256": "9d245d747c03f879db546e8dc480cab1f12e1cb815f55792aee0896a543e5b76",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/coke-smelting.png",
+        "sha256": "afbca4ebcf20b8e70699fd626af5d11d430be8025236769ce20c93b1764ed37e"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "9a83e7464d908944e29944a8530926794bfcbe48051f20d648c3f66ec479bcd0",
+          "bytes": 1496576
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "a0c6273f18972d2cd37295b18c3788867fe4f2ded68d98c7f113f06e8f110add",
+          "bytes": 113780
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "f2008ffd0e3583525a81689c24539f602c188d4f49822004d164770b1791d651",
+          "bytes": 402014
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "computer-use",
+      "currentSha256": "983d8c2b98bf1ac8b88a9eb554a2187bb3a7152a63ba0ce272acf9caad6f5053",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/computer-use.png",
+        "sha256": "da808a20ecb593f35dc2a81137f06a2df91642abe5770ba609e9bfc44b268e82"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "abc284f03f3c5fad065f5ed8585265b2a8af3921bdaf589b058c27fc91c53a17",
+          "bytes": 165232
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "36bd6c0c2f0cbab37ff4c763ae886cda935f5d683f144b03b21ae2fa0ab04f5c",
+          "bytes": 25436
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "9351b11e8a17e66a8bf16105638db52555f644704496c6ba1ae18ea3511a882f",
+          "bytes": 60316
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "control-of-fire",
+      "currentSha256": "288f94371710e4b1d8a666365346c1a54dac161a92060ee7c1da13c7f31f6783",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/control-of-fire.png",
+        "sha256": "56a81ecf40fd15e666ce1efb9a8caab6998a7c732ae1a0073d4a49cdabe9a85c"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "04396e081112bee262a9b866580af30bfd2785d47445c4a66399e701d032f542",
+          "bytes": 998340
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "217b29590db17d6e26bf31fbaedbbe06cd31b50c8f99ec73a79dfd9800b87004",
+          "bytes": 106988
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "3955a8954bd9cf714347d193b6e8cf7ad42768af5d793f5225ba34cf23d12e7c",
+          "bytes": 324626
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "crispr",
+      "currentSha256": "a5e61adf69ed7cbad6c41806e1dfec64f48aa7f38ac7bededa0b4dc1fb05334a",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/crispr.png",
+        "sha256": "cda0560d9ef0e3929a58cb89e3c54c781d57c8284144fdf40ccf886e5d3f1860"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "7df2c1c0d36e36a90a2c5716de84db45160bb4b87868d976a5cd24fb479e1590",
+          "bytes": 438608
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "357ff1e890885cadbc0b1354a423957baca9c0f0159b014d489bea4d6b58c24c",
+          "bytes": 63898
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "5aed5876c1671dd9d65970581d69c2a559d061ac5a181ffca53fc7468ede1499",
+          "bytes": 163794
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "cuda-2007-v2",
+      "currentSha256": "439959229edea24a9bdaa90ae1ce2e1f6e77aebb6dbe140f708d048902b84da5",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/moments/cuda-2007-v2.png",
+        "sha256": "16c514f1f2fb47717c53603d6035a511355f9fee3441567561e505c03ccb6d31"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "6d6ef354578d0571c69efad1c6b2adb5c4d145b8b6457fb7b2e5d2b40dc658c2",
+          "bytes": 418392
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "bcc5c2539d8c1e9289cd28db7a830844bd60f30e4914b632e17070591d596806",
+          "bytes": 49578
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "9ace1b2f668d95dded658b60d005c7bddb18f5d8a900c9f0c87be3a0932bcb0a",
+          "bytes": 134640
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "daguerreotype",
+      "currentSha256": "123c59e4e7a2cac7c766abdb6268786c4fe69139f00f952096f24091a4831dd0",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/daguerreotype.png",
+        "sha256": "2c604792f69e22df4193dd55b6bc16f670dd7f9a586d263f03f7d654887f8fb2"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "7eedf04ee80cbed7c9ad7aebfbb077acfae22c0486f95b5ca49c1f6c4883cdde",
+          "bytes": 662244
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "520e3dbdca1c9f5bf998e75080510477def81f6fb09fe25ec7be54acb3acd182",
+          "bytes": 56510
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "afde92a58d53932d6ed4fbade7f01640c2ac85562ffd7219a1d5262fcd59826f",
+          "bytes": 179734
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "ddpm",
+      "currentSha256": "82976f1f2fc27cade92246307589c2dadf62b778c59095b72bc143c3827edffd",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/ddpm.png",
+        "sha256": "92f298a53e8529f968ff0283a894f85fab2729a626a2e133ecc02918e0f146d6"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "c00236e65a496bf3e86677cc11a1a5b5266f5459f45cce4df35a2564778b6f21",
+          "bytes": 598394
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "2ad36aa5eec177ef4f139a8998e5dfc8d5aca525e41d3093f6bc0304f1846be3",
+          "bytes": 59224
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "4bac669afde39f67b68e9b8dfd19262981f39c5354144328e696089e8400208a",
+          "bytes": 188972
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "deepseek-r1",
+      "currentSha256": "71877983cba9d61837616b4e66eac7403f6bf075f61a7f05f60a7be617c502f6",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/deepseek-r1.png",
+        "sha256": "ce96ce08066d4868b754a68fb7e18e45c6521a4691aedb32ed29f80cf52a2b1f"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "be6bea5cc52d60b11617fcf2259d4799f2ecd25b5c3e13c1a43de8ca5b723ae4",
+          "bytes": 1069960
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "2cc7570dc9fd7b35d87e37b86e1fa047d3d5a7c1a51b10bac4f5d558821828bf",
+          "bytes": 125172
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "7d18dec0bcb17f46ec933ac05153ce0a2ff8adce2f3607eb7869b56cebea07b7",
+          "bytes": 373068
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "deepseek-v3",
+      "currentSha256": "d453e738ce41fa3804e1054c5c01478745f81228d9c9e33c49dd1ee5b1eea6a6",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/deepseek-v3.png",
+        "sha256": "21908bf4227d845a3d216eb9e4dbfb128e2936612deee0b0fb0a7d3fae52111d"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "c1088fbd21a667345e0790da3190341b326ef433d6cddc9b635d469cca4f5539",
+          "bytes": 520804
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "1b464b82cfad3009606c94c576cae731d3838807dc2def04ab4ac493e9a70d6e",
+          "bytes": 59392
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "9ddd4f4153035adaffd773f8306a9c01b4bbed2822d012d6a9d8e33553bd4184",
+          "bytes": 172916
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "diamond-sutra",
+      "currentSha256": "70ec7cd1c0293bc63b9e3e1a1ec3e74bbc77992d81772e2c33c194523e38f75b",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/moments/diamond-sutra.png",
+        "sha256": "a2e44c44cc3b47ba7f9c2fbbf7d412824c0e095c001ffc97d92cb513e812aadc"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "625e7597060720e8d9dbf87fbea33d81fc05ca247fd1ce12723032c5cfd13a64",
+          "bytes": 832074
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "49164e85bdaf331a9914a0c30aba93894a4cb41b63e9fccc733699157cccafef",
+          "bytes": 78826
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "e42892840952573e6065291829202ea05086100b494cf9abb1317ea0087496d7",
+          "bytes": 246130
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "difference-engine",
+      "currentSha256": "4d71b7f5340f64bfa157ca143c5aea491eed18924869c78cf1a102c86da5dd4f",
+      "source": {
+        "path": "tools/art/chronicle-2026-10/moments/difference-engine.png",
+        "sha256": "f77d91eb3fa9604fd16549e1c1cca466fca0ea229915240dcc9ac63bc4541d61"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "f333d5ab1d41bfa53949a749cdc8cacdcaa5efbbbc82511cc099c7a97e991d32",
+          "bytes": 1311590
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "4bda65133ade818b5fb2fef6073c337ece865aedf26252702ee1da0ee6fe13d3",
+          "bytes": 111040
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "13b4364dc79647ae3cbad360b507c01f2c4389465f75cd3e4eb3f99ddb67dbd9",
+          "bytes": 374276
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "dna-double-helix",
+      "currentSha256": "708767d704c96751f993fa6a43538b3ef94feab83d2b75d54327880179a39e46",
+      "source": {
+        "path": "tools/art/chronicle-2026-10/moments/dna-double-helix.png",
+        "sha256": "c291450a261c218220839359f5d8f2bc8b27d4eaf34b1184ff3d6c04bf5f8401"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "65107ce4d212a552fd92f038672afdd7ea6f780d090c5f8ca9a7fe264ff22919",
+          "bytes": 506452
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "5093440bf9c699e0673116e8a136f869068c3789886ad1e356ade2bb1c401440",
+          "bytes": 66176
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "7519914a24e4fe4065729b9d3c15b8a527a127da44e6e6f905982e4d6d8bd53e",
+          "bytes": 177832
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "drake-well",
+      "currentSha256": "26a538b218100788a096a9e81342770b239c75951f48809c0c3e6d183441a082",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/drake-well.png",
+        "sha256": "65a628a3346da6f320d6d8f0c0b637a4b2b45fdf6da37f2c734927502922f686"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "88979df315f1bc8bc4f9f3ef88156afb78527d279976e6d305cae62d2839002f",
+          "bytes": 686972
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "52bc6f70c005c5d344f5d1f5d80ce813593033199fa2a6ea2f18dc8f4ef9125b",
+          "bytes": 77748
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "6f4990cf0ade88b755b2ea4c586fcabe7ab5df255fdc74ad36b9cfdf6e6ee91f",
+          "bytes": 224222
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "early-ironworking-v2",
+      "currentSha256": "297467af3ddd699c1d709e057af6015bee8155e40c30ab918c64a298c6bcfb58",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/epochs/early-ironworking-v2.png",
+        "sha256": "1a0055eef9aa4b8fbc10e6e20467f161a3224b048b32492ec5ef67ee3f73b32e"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "03b6fce95b11b38570185396a65626d5ec434887faed401030ba6734ddcf4ec7",
+          "bytes": 998784
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "a804a9b342ece84fed9fa3c4cf1fe8a41a682ce0b06100821e90e3279f573269",
+          "bytes": 100330
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "53be3d2b4c8c56b00f410650b0d9f9c8641420107f20c9ae212d9a9171853bb5",
+          "bytes": 312784
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "electromagnetic-induction",
+      "currentSha256": "51586c83fe921bf421b713b18e4659862a762bd7000c0a12e4fc0a84de4ff10e",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/electromagnetic-induction.png",
+        "sha256": "b4bfbcd8a4bac0790bb38757290d52710da14e41868dee6eaf4726aedc0d0372"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "c155ffca85582cff34fcd7ee017bc44cbbc50a82dd9f40fba8d8a9ee1ea29cf9",
+          "bytes": 1494260
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "7ba81e30a216e48376bab3432a0904822373e781dfd119a2401d59a93d4744f0",
+          "bytes": 96264
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "5f92317955395745a139f7e6f990ea85d6374e0395f116c4e44cfc859e895983",
+          "bytes": 382278
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "eniac",
+      "currentSha256": "347328e86748879b82bcfb054038a8025755d767a2b668c113519714adc889a1",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/eniac.png",
+        "sha256": "b2f8ba26486f409257f45055da808485c056e271759977e6d4bbd6b21c52468f"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "e6d2331d7bbfbbebfe42dcc3b3e5223c2dfecd9757c3de6a2a42b0dbe33efd56",
+          "bytes": 798004
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "27f5397382baf6c4c77812de66de8496cc925305f27c11b9f50ac0afb92bfa5d",
+          "bytes": 84076
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "1229db00a261b94881b2a00e954f2ede4c09d7cf12442102851e25641acb4b54",
+          "bytes": 257784
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "falcon9-landing",
+      "currentSha256": "e3f366fd256e330854f5710b434a4b7fcae0c44e14b2f8c13d9aba019af3e8c9",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/falcon9-landing.png",
+        "sha256": "a311eb15f257ab0e5c17b605994e506fed78e3bfcabc299a0b9637f1292a8dee"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "7e82d6d65c57bd2e2d847b455088af72f99aa218196d91d6cab9e5788af7d903",
+          "bytes": 279212
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "895e6ca149ec3c4f507ef71432db47734fcd2d9163e74b9728d57d3915552ee9",
+          "bytes": 28020
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "c8b573fbe309a86a6ec01731104de7c6965cfea7d78d1d60f5dc64c69d19a435",
+          "bytes": 86354
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "first-mobile-call",
+      "currentSha256": "bdbf3598f7ac0bf5ad730a05bfc1bbc20b85dbf631b6d9c3d689df94c0c1d2b0",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/first-mobile-call.png",
+        "sha256": "48e829c4261dcf08f938e62b9331b6aac856a13023862bc4c469b25191c24c8c"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "6bbf12079a3bf09b50c73a344b1029ff80c08924e8b4f811ae8cb487258fac26",
+          "bytes": 412540
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "8b08dc224ee823d8812c0f9afad036b79e79885c37e0c1a5a474977037c22886",
+          "bytes": 45098
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "d865c1a6e82fd00b67a294e8a5a0089000c7aed58c90f396a388393f404d6083",
+          "bytes": 124092
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "forecast-agent-teams",
+      "currentSha256": "240d242c3a514dd52685a2b333618238f1fcbe4377fcb0445735622b05ca53d8",
+      "source": {
+        "path": "tools/art/forecast-agent-teams.png",
+        "sha256": "7159f6378588ea2b70bb6bacaf1c4f1be84e688bf3956d56a8bb4f7db47897be"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "45e1ea30ae07c81fd841f23325d7dbf91e297e8ddccfb60d13b0a7cb733d4ed5",
+          "bytes": 425976
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "f811635bb45757fd1cc1bcb448a214f50a8542208b63ce5d3a2b4ca422b04d65",
+          "bytes": 51036
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "f2022d3246905a6b18aa4339ec08417b42159cff6702b1a4ad7f6d5178fa2264",
+          "bytes": 140958
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "forecast-grid-compute",
+      "currentSha256": "e0d188939bb2969e15998f8075d8d3f5cc319b480efe9086badc2f50ec2c5c97",
+      "source": {
+        "path": "tools/art/forecast-grid-compute.png",
+        "sha256": "bfd80785008ed51e4dcd6481f9840aa44c6c32e0ac92279a8ea9bc6e63928f08"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "eed4cf0a496b1fb2082cf8348933377dc4524bcf84d9f47e732e3f97d985fd12",
+          "bytes": 626424
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "5e79dda4e947922d22a551c98affbf79d7a7e6ddc9c71e1efef5d023dcd4aabe",
+          "bytes": 61336
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "5031ddcdc2204462ece5c6a2a8f9d898a6e0cf4eaad209087e1fb5499db09a13",
+          "bytes": 192242
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "forecast-interactive-worlds",
+      "currentSha256": "d3eb038d0b6a9b98c19ca4abb842986203d783e42d3be7cbfbd6cddb87ce6330",
+      "source": {
+        "path": "tools/art/forecast-interactive-worlds.png",
+        "sha256": "363f54293f1c9e6d4b89ee1b411b3f3a7e79b53569707365f28c5dc5d8123eeb"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "150e255317289688d1230877e9d389c04cb5f828348e09c0574a24140e18af71",
+          "bytes": 547040
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "a1a12ff483e7d1a4478b96534d1315d2bf18d21dc64cec4f79ef28f37ac188c2",
+          "bytes": 59538
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "d74d4c64326191d7cacf6025fc18b3ac687a7adf4813761974ffea200075ccf3",
+          "bytes": 174346
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "forecast-personal-ai",
+      "currentSha256": "4782bb2e829f590920030282ab0c5a6ecd6651048695cb7f82478263c7c48c8d",
+      "source": {
+        "path": "tools/art/forecast-personal-ai.png",
+        "sha256": "a7fe22d916a5a3c5cd86b327bd5210832b735cb46826cf279d8e33ebd2227470"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "d3f955af26d4f68ec6469f336724c0bd564012e569b912c887665f20ec2a4671",
+          "bytes": 415418
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "fdbbd2db7bd001264aeae5c4e6c078a596c29fda8e00d08f7ff819912947c378",
+          "bytes": 61326
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "f00c91a5e5d1ded77d60391a32bf8f6b31233cca0d58343d89ebc57a54da733d",
+          "bytes": 150904
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "forecast-science-loop",
+      "currentSha256": "3e096b807b77f49c0ac67d802d3e777ec3254723ee5bba8e954004e1d92fcfa0",
+      "source": {
+        "path": "tools/art/forecast-science-loop.png",
+        "sha256": "3a6153495c4924e1f89fcbab5a8e5baf1788be07e6efcc14464dfcaedbe044d0"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "949b092217722647253df7550fcf5aeb8cd5330b295914e19e7f91aae467890a",
+          "bytes": 276014
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "c6d072d92cac28f0641a006ffd7556404ea47d01243cfd5e942c9c63596e8a84",
+          "bytes": 45068
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "2a2884871348cee008c711430dc1b0e355fca093fd5efd2d5ed25a890d393852",
+          "bytes": 107910
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "forecast-useful-robots",
+      "currentSha256": "45ebda7d4f7bfff7cbdf6d1e3d3e1173d146ddeba03b3165110cbc3e4c341a3f",
+      "source": {
+        "path": "tools/art/forecast-useful-robots.png",
+        "sha256": "08eb23853b0bbdee44d57e462994dc0b4dc544652d8334edbbcbe0b9b138ba02"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "51b4e209450e09ef264ef8546f45e14530c545b266a434b71b7f069227b435e8",
+          "bytes": 391872
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "0239a3b70ac80141a83da2b52eb7c6eaa62374c955192d77341f9b72621369b2",
+          "bytes": 57392
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "30d4210e10e56f2b740b2256b0a21fcc03011d80f569afad628d148308c3d6e6",
+          "bytes": 143750
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "gagarin",
+      "currentSha256": "035811085ef5195a795d1d48208c040dfd8f15cea3e55c3cdb9084db2cf33d84",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/gagarin.png",
+        "sha256": "428c40ea8bc12f723d27fc51016709c869a3c6175a2e18d352c5e5a44024807e"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "5283ee790d626b96f4340650ad87cf29e22ebe63a7e78c204aa0d7563170b23e",
+          "bytes": 696312
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "88fd11cdae978eefe3edcde8163991e034e4549d693c49fe0cb70a928cf97513",
+          "bytes": 83018
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "1007167641184aedeec4d8f1b590ed5b4ad0dfd38ed74b7f1bc6854d3c487094",
+          "bytes": 236754
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "gemini",
+      "currentSha256": "44f49a67a45f913491b29b80c86cbcc11975ad2d545f3b9e8f765040f124bd4b",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/gemini.png",
+        "sha256": "1375283a61bdd213c82e85fc977ca09db6a723c46014821d933f1365f5d277d0"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "8466f870ba29f503a42088cf1d22424eb199d7f6569bb69d876fdac9525549c3",
+          "bytes": 364396
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "d0e785713785b851cebbff2280aae2a6e2545460df200ae2525491e56327904b",
+          "bytes": 48600
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "a0c40b1d66828a869614f95114fa07dfdb00413af4e55eec2e92460bde00cd9f",
+          "bytes": 131850
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "google",
+      "currentSha256": "32a9ab2da60567d455c1f902a90c5b2162bcd1063f27527562d48e62af50c209",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/google.png",
+        "sha256": "cb1028f61ead22ea90a9e0ea3af6cf7da405805589dbcd5d526dafdc51903226"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "9f947d5fea3a0f0bfa6795b906d9deeb5a625ef35bf30f246187980f23785e1c",
+          "bytes": 426450
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "e42f79ea2c92e41818996666bf3150be4371f83793faf248479fbe812d9c24ee",
+          "bytes": 50954
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "1bc233323eac1d5b4faac6806c249e0109ae98fd1c80c58c9004fb4de336b874",
+          "bytes": 138914
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "gpt-5",
+      "currentSha256": "5fcade7c572e10bbf784948a53a2186462cd230fbbbbb83923e947d98a7f51c9",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/gpt-5.png",
+        "sha256": "d6396a78cb7ae862ec9c44d15c1ffd13b10bc1bcdf2164bc5e30911b20680a89"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "e2274b289551cb92b029361e717b367ea5c04fafb77fad87ff7aa9cd3626f935",
+          "bytes": 224056
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "fdd5362bdf191303944859c1126271856133fbc7a85055f22b6429be267d5d53",
+          "bytes": 28840
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "e88dc606afba5509b0c2b388c0a7e08fc36f4d68375b4c600edf017c3feac6ff",
+          "bytes": 77186
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "gpt-6-sol-luna",
+      "currentSha256": "7ba0e0e3d15c04f58e88385e77c2642289ff521b72e6c3e561f530daee8f0818",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/gpt-6-sol-luna.png",
+        "sha256": "c12819cdbbf42b161dfa8d2a0e6684c54151a228d28729e6262b9146ea698f9e"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "e3722b5cda60efe006656293be79cfab9ef195971b4493ef321f1c9dd98426a9",
+          "bytes": 605702
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "ce7b29380f027971b63ec6ff8d58f6a31612fc8115d3c3db915688024a009941",
+          "bytes": 66852
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "083714b5bed7b79fce3478b8a2a213a348db28e07f6ba056cec214caeef0fd0f",
+          "bytes": 202294
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "gunpowder-warfare",
+      "currentSha256": "0b2874dd36b04962cb092d0bd7b5caa816c640e6b332dd0d7c7722141a4e9a7d",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/gunpowder-warfare.png",
+        "sha256": "9f4653b61cae21a05f6c68f07a2a11267c5f5ec2baad2f7661270c7653527287"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "154cdc52ab998dca055c3a26482cf9e8944bf4d58cfe405238dff177379425b0",
+          "bytes": 1120326
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "ab4b437d46d67715c4eb4104d4e7cf1642d2bc281af7cf148a0b720a2754fdff",
+          "bytes": 85520
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "6025fd6e631c6e2dbd92abb9b100dec24c31af8a91eb7ea7e4b6cc4e1e6c3335",
+          "bytes": 295674
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "gutenberg-press",
+      "currentSha256": "26ed14e7ac1823e9c62911e5194b674d77a6014a210bbcfaf93c4b0abb1b6cac",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/gutenberg-press.png",
+        "sha256": "439141b0068b156a78e83428d7aa2fc257514b73ee3c46f6465de6d254c157db"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "f151b6da671c0acb0858500b549af3a7193984589bea87c65c5f6e1166750f5a",
+          "bytes": 1732748
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "3d652e774f760d230875245c18c90cc348a7d8f22c95e7f98a5607bb7f0dd7fb",
+          "bytes": 135532
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "dc8c9a45729572875020f8925ce37fba4b151721d9d46e200cfb35fe9de9fa2a",
+          "bytes": 485240
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "haber-bosch",
+      "currentSha256": "9014e82e3e974c6c7871f3d4a97292c76239b3f62ef365896bb12375ead1dde0",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/haber-bosch.png",
+        "sha256": "8c56dbb682519d4093ba91d73b1eb63e22a7c0298857bb07a5e600ebf5362c9f"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "d3bf7e4eeeabb499bef6da4f153c375a30e8803cbf171cb469e14d2d13d28611",
+          "bytes": 1266894
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "e0ba7a67f3f957fd842951a5e948558f56f916426f1992d2828473212d4de67f",
+          "bytes": 118608
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "e51298420223d05c3a99cbcf4b370937ecc2c192dd379adfe97482393b485ddd",
+          "bytes": 387870
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "hubble-launch",
+      "currentSha256": "79de5a02cf3bd6bb37e5590fb72be8c1c143e4d33474be89c0ae4203f1df88f6",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/hubble-launch.png",
+        "sha256": "589405a73b6fe7c977f6a61dd177e27c36a48317d78ec172f7277a0a9d0db50a"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "74bb4ee3a64e56cce370bbba1b414d7a89c0887b94255cb03ac0c8b1dc94e2e0",
+          "bytes": 407388
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "217a4a5a43054c913274542c0c131c7277b751d638c102f071c28fe035184672",
+          "bytes": 49498
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "86f364dbed7f72bea65d68b86846ae275b251185cbeda4befe697e47944e6f1d",
+          "bytes": 140146
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "imo-gold",
+      "currentSha256": "8dce75c27dd563c4e22875c93efa6d30a92f2db0207307136c33a78d68b3ee71",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/imo-gold.png",
+        "sha256": "c75f50b9d3a3a0b3813ba31efdd4081c410ae8b50e9c07cbe04769b802eb2de1"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "9bda80900f22a1a461cf14b67031481b42aa03e01fb0f6162f335c93289000fe",
+          "bytes": 489854
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "c2448a971fd4852bb214c62643ba9a0aaef74363d9ff49269c58e3d288691041",
+          "bytes": 62998
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "3ad901334bda3a88093a6613af25238e37ceeade4678810a460666e9423be35f",
+          "bytes": 174156
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "instructgpt-paper",
+      "currentSha256": "24095ff1d584e0e05a4b8b156e29c0d37e7b51d252076da7a0ff255a3a7c7aec",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/instructgpt-paper.png",
+        "sha256": "35d32b834d69d5e4a38898691607ff98cfaae3b85a7e69bdfdd8d7ef7e3def11"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "f6d3385eecc4d9de38bd9b898df2014d53ea668ce34f9fcc9b721f9afe2127ca",
+          "bytes": 414778
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "a81c49f308e7dcb7f854d9bc6177768b5cc509ac85564a207f4571e008f5eb26",
+          "bytes": 47436
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "752614c9c0cc35bd82e1a0dd8d10a71e09d424850621355be4fb1e08b14f8daf",
+          "bytes": 136636
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "integrated-circuit",
+      "currentSha256": "a7cac66bf1fafa6f41c86d6c01dd1b4f9be41e368a9b8fd0aa507174ffbeec0b",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/integrated-circuit.png",
+        "sha256": "cc5583c8ef8b3b9a8ec5c9067dc77f1a391c0d96fa4a962f8eb791caa719131b"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "b6e057f3aeaf0675f558ed24c99fa547a300cd71070f36a06d1b04c5e4778a4c",
+          "bytes": 277310
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "ac69294c15a1eb9354004ec79656ab32bfccaeb6cfe546557999e2ac2b543a71",
+          "bytes": 38584
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "e2833f32ec2b47edb53d1ce266412ca575a2ec4fa179e06ce93be57ccb7c5d42",
+          "bytes": 99026
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "intel-4004",
+      "currentSha256": "d9eb7dc9022020eea0ffd1fcd32bef9e43995cb4ebb3220d7fcf36da41b7ba23",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/intel-4004.png",
+        "sha256": "80c5f85f870b46d54c99d1f90a0faa01c2f0743ccf56925b57a2d6b0d8792c7b"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "b60dc34e450e6f53113d43963ac5e415a31d0f23e70a7f60f3b2115ae233496a",
+          "bytes": 677510
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "4866e2f34601a6dd979bd7478d160ae6e9ce35b2645c51fe93a7ca795ded442c",
+          "bytes": 75472
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "c0a007279d057835989409211db18c4e9cf22e0176b48deebe6f69bdb88944fc",
+          "bytes": 211580
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "iphone-2007-v2",
+      "currentSha256": "7169083213a1cda926b6884988ca3a1b2150ec8a27d164d62f90d46436aa8915",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/moments/iphone-2007-v2.png",
+        "sha256": "c0961e1cfa14de0ffb6b89fce13c0123b13b6b3b03418a2b17358a3fe5e3fdc7"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "f9f4f09fdbbd6a09ac4ad25311d25dadc0f9f5a55cac945fefbf013da0ed4aad",
+          "bytes": 191946
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "ef9afdba6895069fc99e6881dd04377209870a5b7842cee62cd0958c15f9af37",
+          "bytes": 19108
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "493ce608a82eee6e6ad05c7b05cf3d6d1d178bc1e284502b8b542375a255b626",
+          "bytes": 58522
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "jacquard-loom",
+      "currentSha256": "46a985d1d2e26af1d5a68a8a391a4827ff2a647544d499ba95d61aa20894361c",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/moments/jacquard-loom.png",
+        "sha256": "0eeba72fec857f8b4375d31ddec5462588e972e209e2e1f140abb27d8e8799eb"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "aa644e19793a9a7a3ea20fa3f2bd209f556f9d63418f535e04e322ef35510539",
+          "bytes": 892408
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "e4f52927c06ef7aa847901f67917490918ce5640ea13aabe3940f325682f77f9",
+          "bytes": 93600
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "984f838116353cf06df14c068bfaacc1ae96456852f37beee5ffe87f23e389bd",
+          "bytes": 288424
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "jwst-launch",
+      "currentSha256": "a144af25950e13a586b0b7d1121c9e6f833c1fa68b4c69302a30f69c67356893",
+      "source": {
+        "path": "tools/art/chronicle-2026-10/moments/jwst-launch.png",
+        "sha256": "44f3954a8a433b5a92a12028622b28e95076627b3803f0d5e99864c336d6c544"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "eff864203330639a5999e00a274a618aa477ea514aacdefa9652c72d18432bb7",
+          "bytes": 234826
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "46a0371f96c0a2114d56c8c179ed77ca315931a946468b84981d226c0f86d724",
+          "bytes": 26846
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "a8b8b34b4738d2d43667e270d30c3e793f8e8702d93f51245e364b2625f98f62",
+          "bytes": 77140
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "kdka-broadcast",
+      "currentSha256": "616ed3e778a576e587821e90d091bd2b2fac4b96ff0db48deb57e5f19ca29c9f",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/kdka-broadcast.png",
+        "sha256": "7fce96800d9c24227e8376469cbfd8ca88ff1cbfac160f758be212617c84c886"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "61b22b8b3a44e23a83d98efdb6a57cbb6501e9bcc05a2181ee522395857a17ba",
+          "bytes": 366242
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "16424f5d7ba3678934f2ec1501ce7e26c9ae7203949e3c432f6494ebcbd72e83",
+          "bytes": 60084
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "34e9a479313d0114af1860e20a52197f7522697e3db984530e9b71e2a33ead8c",
+          "bytes": 143882
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "light-bulb",
+      "currentSha256": "8ffdf741d7d0eac1b2ab756010383e965f8eaaf1201a68b4e5c8c3355b309362",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/light-bulb.png",
+        "sha256": "9b8453c50b9b80b4b0ec319c150cc3a71e71c7f958546eff16b85329ca5a4b15"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "a1f4e94d33655c05f99407887071b958bc6dccb4cf5470b5662d21eff4a82025",
+          "bytes": 1560274
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "3bd14725c323fa236fe27b7d6e0977d4f07ab8b78a8066ac9f740840827789a5",
+          "bytes": 114880
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "d1fe8562bb06bfca43cd9ac999f0b401eaa7a0685837eb01e8c356ece80ed6e5",
+          "bytes": 423426
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "linux",
+      "currentSha256": "4efc5a717474971ee385c0f2615e1bc23e7dfe37001eec8d2379a7ddd0e9509a",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/linux.png",
+        "sha256": "3e478d57530f548d51018b7a57114d249018c4bcb37ecb59a38b5a37eb382441"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "a038682a77c08442cd4668d90c0039e7f07c1f643bb871778d13bc427faa6f24",
+          "bytes": 505172
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "f52dd93d184e66c8f33e080a4c54777e2eb6366a84f26ac3cc8bfec07270f1b1",
+          "bytes": 51578
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "596c2718d44da7145b690ae74bdac09c124d82c36cf9d341b53889b5ad3d2d94",
+          "bytes": 151162
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "liverpool-manchester-railway",
+      "currentSha256": "07191e81c88792352fb10a70bbc289a57098e72bf1cb952f3b3adddb2acead60",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/liverpool-manchester-railway.png",
+        "sha256": "2228d9f774557e3b2278d3c6ca086283351a824070eb89fee314c77ed6b5f2cd"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "4798b4d5a884e10f8cd4d52db9e74edd8fead5538982fe723c62e002cb8a3e5a",
+          "bytes": 1102152
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "ecff75ac6f371c463abe4a8d00e7d7a5b00b9948b4be5b2161515f8a9b63c6d3",
+          "bytes": 105394
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "bdf71efec140eb122dee635aaef4185e89407871f0322a5dedf7dcd051bf135c",
+          "bytes": 328914
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "lomekwi-tools",
+      "currentSha256": "1987e154d02d8d0ca6c46761ee9b506d90464878cd95007f01206418c2b072f6",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/lomekwi-tools.png",
+        "sha256": "421051fcb34c5626bddcaf94e6f40e0206fa9ca6d2367b912bf6b93e7756184f"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "6929cebf7673edd40045d6262e8d133b4058c2b8e78a02bd96094497ba7a155a",
+          "bytes": 1149960
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "9dca84dad7d90c778bae4d348178c8f2c8eb072342de195386308a45e96af3b5",
+          "bytes": 92056
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "6d696b673be7ccb7534ec0776e504e6a1e5e2f356ef99300c4218e8339ab03bb",
+          "bytes": 302504
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "magnetic-compass",
+      "currentSha256": "b5013ceb2a36d7daf48dc79421990e6d898aa83414156215a7948f86fb298931",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/magnetic-compass.png",
+        "sha256": "6271a8c62b593235324e872df724194773f5c93a61dd620f2a7cf1765ba4abb6"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "7019e2a62d0e7b196f83b9b6792e255d9747ee5a398c049de15f480f14482c35",
+          "bytes": 697962
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "43219f24f18b7e5079c3678bbd92dc776cb2a8be75038e21b173d7d071331eb4",
+          "bytes": 63996
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "e174df591f5ad5ecd7ce6cc7c79028291de2055138d4857202d04d6e97304b08",
+          "bytes": 200016
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "manchester-baby",
+      "currentSha256": "042f2accb781176edcfc891aa264972eb6525e8c27654f590f7b13c838a46f2a",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/moments/manchester-baby.png",
+        "sha256": "2ce19ec5c61be1604ab3e28e2d884fc1268091b2ad8df0449ae7f09910661bc5"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "b89c4549bf2387fe5e1789af2b4784e6f8cf3c5dffe3f8b765674ab22537f76c",
+          "bytes": 647454
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "039c49870d59deb6a479db0d8f60ef4871d62cba25b81746fadfe236c84a8056",
+          "bytes": 80440
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "1e74bcfc657ea601466cadc87f7f7583efce74833f036c2f2d0da0a5a3596072",
+          "bytes": 229412
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "marconi-transatlantic",
+      "currentSha256": "5ee924fa62389e57495b3df9ae5af78a8bec6c2bff274a20d7735fa34b157781",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/marconi-transatlantic.png",
+        "sha256": "f6784b6e45d462e72f378130b77be4e55674c2b037ed772f3d9e7b9dcd875897"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "63e84aba1b2075079694486392d31eb0be4f06e50217fcd66275488743a3aeed",
+          "bytes": 649140
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "ac3907b6d885ce686d6a91546523e35478924c38120ba9e7921c039674e0c575",
+          "bytes": 63248
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "bb6e1d911861f0f6709dc9a09a2a9cc95fe94c94ac4e0f15384d71e742413b95",
+          "bytes": 187882
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "morse-telegraph",
+      "currentSha256": "43c07f2f0f7c86c3096a72913e69bd1f6751e79057c714b5280df8866ae81921",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/morse-telegraph.png",
+        "sha256": "4af499846dce65f5aeec622f9a306ea77234dab74b4942bdb97147aa49db1feb"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "135bbc8d3013b3455c22d4cefe52d00322b269bd4a73eb0ca6a14459a83e3705",
+          "bytes": 1005120
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "b734e90f191cc959f5ba33a1fd58f6f8be5d78ba1d4e25b613d02dc95c0215ed",
+          "bytes": 85560
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "8c7a6663555252499545b4e449e6577c8f3b97de12d6a4d78c1f9b61337938f9",
+          "bytes": 274446
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "mosfet",
+      "currentSha256": "d1f6f50526bfd4e1abdf4a4b4daa663b22066500b280f08f91443740e7a7f774",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/moments/mosfet.png",
+        "sha256": "55a067ab36f6bcd6da738a0b5eff0cb933728f00f08e7760a8a98df49d209d96"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "e2d62cd5a4e1f0fe977ccf36674b162dd4d9519f95502d189938ee9414fbe19e",
+          "bytes": 412378
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "d6d70cabb4c2948ccd26c9b3c26c27e7cd19ae7af1c5c9cbcab211158bdbd118",
+          "bytes": 46648
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "cbd4095bc1206cf302dd24ace0471f3de9d0829928f2fbca6a32c716634ef14d",
+          "bytes": 130652
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "movable-type",
+      "currentSha256": "a03d7978d122d9f741e3e5efcc3f9ac9f44340ac88054bfc668a631979c2ea84",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/movable-type.png",
+        "sha256": "db300d91b4ed984c0ad399bab8b698b4798eddc233993fd316ebfc37e96ede15"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "2638927d7ed35624ea6b5ef96bc3fbc556d7f30830b8dd622bedff2e6b9cb5a0",
+          "bytes": 708456
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "2741b99a911a8a987cfe89580b24c22a1d37d2a9cd8244a29fa96b7e211147c1",
+          "bytes": 49986
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "ae57c9b641012f76cad24d2bfc98f3b434fd5bd7007d9a5565f94d3894acda93",
+          "bytes": 175042
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "mrna-vaccine",
+      "currentSha256": "ec4901eb3b59b60e1f32d0f9f9e377ee88e3e93e0aebba9a9ed5b97c296f5f1d",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/mrna-vaccine.png",
+        "sha256": "16c21859361a69bd1d13c1c7b371dbe9b49d3977e141b2fbf59ebe0a57ee506c"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "3953bc59d4d2db7c2fb8e161058ff8876fb8d7286edf3c8a3ebea7fa15f3b8ae",
+          "bytes": 201268
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "7dc2d34d47c41c321e52dac6b54f01dc72e70b9f1fca1bb40ee930ff7c2bc412",
+          "bytes": 31366
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "6b9119ffd875910b5045229c97a305cab71abeb24462f23588412a2de4a1c172",
+          "bytes": 73372
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "newcomen-engine",
+      "currentSha256": "9e8d843e28cb25cb43cdee2522d5129b623693040582e507740ba211dce76b88",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/newcomen-engine.png",
+        "sha256": "732e7605aedcf5f952b6b58c4cd4e11ed1fb733df2b3ba0fb09341094031e0fc"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "9cb97b804e1b24c5106fca74b038ff791d8027b880c873ab79f2d462741c85d6",
+          "bytes": 2023538
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "210810c9977457e5e79462872d18ec314522678eee8580b000053c69fbc3a3db",
+          "bytes": 129988
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "7fcad20767e199700c7c6343529e93ff2860bde7aa2cbf177370ccdd4ee82586",
+          "bytes": 504180
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "nif-ignition-2022-v2",
+      "currentSha256": "3cd39dabff974fdee7952438d7580a67ed1a374643a4d02c71b6c63f7ead6a0f",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/moments/nif-ignition-2022-v2.png",
+        "sha256": "61cc6ca231f2a21664785b3952cb6cf4757ab64a6052faa8140e5134fbe75a2a"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "421594bb409b8603c8daef34221edae01ab4c29c1045b8f8468bbe2fd22671e7",
+          "bytes": 915062
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "b635d9dad97610020cd7700091e9f48e93ff60d0ad8795129db0e0b9ba4b19f2",
+          "bytes": 110590
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "7159955e8f58ffac6ed649fca753c8c6af86500858b800349ede8674148976dc",
+          "bytes": 316688
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "obninsk",
+      "currentSha256": "2a802b2c92e6332efe62d397f27c01358f6169f05e2fddf3b69c4c65ec87f3aa",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/obninsk.png",
+        "sha256": "46018cd9241ff37de3236772b29d4886abf34cbddd01fbc916eb9bbbbe603bb2"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "f39f6c57836b0531ab99e98924c56900d6ba4b94828eef68f4a9a70df639b5e7",
+          "bytes": 587038
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "656e2c6a1f1bfe548b3916f78c0412f0f111a3c5a7bc14f7575cb6bc163f426f",
+          "bytes": 72610
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "2d33f972d0cbce433d85cca09f84a79b37545ce8ea75f78b8eed7195e5890f8d",
+          "bytes": 205400
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "ohio-compute-plan-v2",
+      "currentSha256": "dc0197e98d00028843bdeb050999c2192494b9daf47976f34378555171b53143",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/moments/ohio-compute-plan-v2.png",
+        "sha256": "3477029ad49f4f43939f2b2e42e458274a48152783e1503a61a6ee1c7aaa89a3"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "49adab11576717f61480edfaf6945a035921712c73867d57c6f8f52d022a1d3c",
+          "bytes": 498742
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "d215d7a6e919b9e680464d72e9c048d0f52eefa7a71e7b6de4f60d3dbdd6d9b0",
+          "bytes": 59158
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "cc60201ae25bbc7d6025aae2d185e45dec51f61013e70a1eb2569f6bed336dd9",
+          "bytes": 160888
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "oldest-figurative-art",
+      "currentSha256": "6ecae47dad135062fd185033436bc4255ef175300e75f445e2e2c66a03e901dc",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/oldest-figurative-art.png",
+        "sha256": "56aa1c5b180a5b171a280cc36183424b6f523089d891bdf11f26add915abc82e"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "1369b561abadafd49a893b069ec585a06208100157126d8083f3d7389ee9ebc7",
+          "bytes": 892752
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "c10171fd9e71749f62031859aeb2afda30efcce01cfee7f6d34665931e65c15f",
+          "bytes": 109132
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "c1ed8953a142432df691380727d06f04990031e1b4a6508f3dc27c1a10741600",
+          "bytes": 311132
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "openai-astra-math",
+      "currentSha256": "474ee2dfe927ebeab2a79a04c618137c1aae37b9475b7bb3535ee0efdb322af7",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/openai-astra-math.png",
+        "sha256": "f5272f9997e4f1e5ff2b9d9ea40677daa3b854ef224b68f1eed7bb935f4d754f"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "95a39efb27e1d80f22daf788a09cd5b01774afbebc4241d1f6b6df334b0419cb",
+          "bytes": 1024468
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "8a42393aa6a5b0438d7bd24dc2a5f3a401e8c34803428586d9c8f8c10148f3bf",
+          "bytes": 115102
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "f9fa305c3dd5ef41c163be65f7d4e09d4dacde295321660b4c361c03868bedfc",
+          "bytes": 344412
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "openai-o1",
+      "currentSha256": "4d1765001b23f811c92914b434c88f1f8ef2f99e7cf2d45e378eda8cd795f63b",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/openai-o1.png",
+        "sha256": "cd4dda7593d45f7e394cafab9eb7eb154fb6b84080928f88c5cfc9319ef571de"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "ec295fe1f3cf1f081b156ece8ce6ad29deab45fb258a22865475d88c344f0659",
+          "bytes": 225496
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "f08340ec1e66d5e4a7a1fda34367200dbcf4d545a4fb3f9d07119efed58296b0",
+          "bytes": 28806
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "6ea213a0d3f2a62ff0bed9fcb8177e6ef9679f704d6603d4e073b7ec3d9dbb37",
+          "bytes": 77624
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "papermaking",
+      "currentSha256": "9b5c995a1bf7f310d01391320a797ce5829ba1d185031ff86886f7a4755a3a49",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/papermaking.png",
+        "sha256": "c98039e41cb378795889c337260013695d4d5beac9debd879425a5bc80ab7d60"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "6e3e745faaf285ce923761471019520543d22e16bd0ba12139eb7f9fd5b3615b",
+          "bytes": 1084428
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "1c81a4400a6e991e5dfd8be30188119182a4c58f906d1f8defcfca227ef9f681",
+          "bytes": 82074
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "6153dbe26df6b51f68979a799a551c6c9a1d1c026515348b97ce0a2fa602ee87",
+          "bytes": 293914
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "pearl-street-station",
+      "currentSha256": "27fb7e894ceb06bca093c2286a5d0049ba33c892bfdedaaf7e3cf325fc21908b",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/pearl-street-station.png",
+        "sha256": "669b894ffb28d9bdb4b0f008cf128f84ac4e975a60536ceb531d8232855512be"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "98f3a4a2b9514968d3369b8270a5c3546a9c8e8ee40866830d288c9131ef70e7",
+          "bytes": 1285358
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "75fb8264f08905b020285f7dc39502a97f66a655e2c91881b8ce21c7e42db0c0",
+          "bytes": 107204
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "4323e7e9d09efb780a376945e316aea435d459cd4d136c605949238ca10f3b1c",
+          "bytes": 372888
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "penicillin",
+      "currentSha256": "98863c765a2fa9b19fdc41a62d6b9fcaa94beb0370518046714a72d12e4ca4c7",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/penicillin.png",
+        "sha256": "0c8d7a637ba0617db08e3530e061f375fa88de40fa12ee348e9054c4a6518cee"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "3a942b60f92eae271d91405ac3f2af3d398187cf6cec2b1dc59115b4b0339aa9",
+          "bytes": 559390
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "d7005e43ce9da756f9d67f282647337eafffab292d54d1c46919996fee7bc654",
+          "bytes": 65572
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "bc25629bc0489feceb83d23f7fe703929b919a099e138c531428d6c176946e14",
+          "bytes": 185364
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "phoenician-alphabet",
+      "currentSha256": "e1cf7dcce4ee85a82975f527bc6a0fa5744a7a9b987ecd939f4564820bb80b4f",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/phoenician-alphabet.png",
+        "sha256": "07c4298a7b7cc8bf651bab94d2985d134c44b5dff0171edda1adc146a4bec87c"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "249666f315d146164e0d237edb724cb2279134eced744d1140f526b8bda2f6d5",
+          "bytes": 918840
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "76f649cfa502cbad55211bda67c6969891db6cc5fa5b99cbcf3eb4d120992820",
+          "bytes": 102640
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "44d0bb72cf3215a49ab8aadd6e740de597a0a5ac668d00ff2748e565e89aae84",
+          "bytes": 295992
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "rag",
+      "currentSha256": "c14a11377b745f16a78d4006d1be78047f7e92045da90b02ca7f2b329439ebce",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/rag.png",
+        "sha256": "8ff1ea365b3ea5a0916f00a4a98772fb477a6ba87e3ce323fcb3f6da64821acb"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "dfa387651f9485409a192dba4fb78905b7a803927cdb53f3b5e0fc9bb4e7a205",
+          "bytes": 268188
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "fedc83f168d9516c7b3f2aa78a966851bdd8e342d0dc682fbf5680dc38d3a9c4",
+          "bytes": 38098
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "2ecbaee2880a802583a6529fa4f8e71b3fcd3572a5f8f04cc7ae6fbd1e591048",
+          "bytes": 97482
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "rea-software-reconstruction",
+      "currentSha256": "6ac76f4a0433455422ca7b8189b7e1e72fa118c7d9bf6e664130207e3595c0cc",
+      "source": {
+        "path": "tools/art/chronicle-rea/moments/rea-software-reconstruction.png",
+        "sha256": "5a21124356e12b9eb54b11013cd9a46204a5bd7e6f98f1908c9d2e234b907c76"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "f0900b7c9c636aef08e28fb5b15239a22a679eebbaca62e35b26abf058b80dcb",
+          "bytes": 492352
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "b478896e9a558bfc1f0b9dbbd182a9181d9e727ca1fd1bf0933fc0fd8756eb5f",
+          "bytes": 44256
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "88cd729a56118f0db71c9a4e46539e5f7d710624da47e6103ac87549caade9f8",
+          "bytes": 142900
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "react",
+      "currentSha256": "bb79b72b988612f0b3a6b7a86a2ed438776f099e9b92b55dc8488e2a80af12c9",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/react.png",
+        "sha256": "2f2cdcf860b8167328de0216fc5719d4bf46d2882c37d3014d0c0b27a1eab1ac"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "e886691f2049e923200180a87184a1fe94137a1970fea22e4c4104c5ef2b7632",
+          "bytes": 463760
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "14ea67bac70b2c52677320ac8964ec3a6b41b5868e9bbb59edfc83f00241e0f5",
+          "bytes": 55164
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "5ec5e3b3b45f656d33c44b35a11b1a42a2ab1b3c6362e23b32330204d0240255",
+          "bytes": 157466
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "resnet",
+      "currentSha256": "28ea046376f22cef667503a345842c6ed70b736c077e555e2a9aec3a85eaeb08",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/resnet.png",
+        "sha256": "d9ae575e59d69a861161e4faad6b97b92040ab6c8acc93a2056b5eefefd1327c"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "6eaad007cafbb89a4ea3c78a55aa80bc65a6edc3e630aef5d095d493f23126e3",
+          "bytes": 169734
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "fbbea3a699f08b0da4270b288312d188aa1a6145accc0632cd97b227476eefad",
+          "bytes": 24220
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "a70cc23a2868d34789b66c10d5be153ed2235351c020ee920fa09d8b7e3e5f93",
+          "bytes": 62156
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "ruby-laser-1960-v2",
+      "currentSha256": "b00b7f77df31c2ae71063044282c91ece95009525967c337cf744ba52228a560",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/moments/ruby-laser-1960-v2.png",
+        "sha256": "c17d4924aa766781bbaa7359e7c4f2b5464187badded619049466fb5d41f83d3"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "ac9aae880b2733810fa8accdd69bbcc54b21285a4b63c97e7ec87b0d17d59580",
+          "bytes": 264780
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "3297414948075a06fe6e3a4340a857ec0de4e692ec74b532c105fc85434921ae",
+          "bytes": 36810
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "019035a08f35b1d4f71177967fe1c4898a4ded1c974c090f78e33080de4aa023",
+          "bytes": 94340
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "sidereus-nuncius",
+      "currentSha256": "da9acabd11e99bf42ef0ae977ca52b0340354108ef94a1e303afb73dbfe514c2",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/sidereus-nuncius.png",
+        "sha256": "8fff3c35cc64e39a168617c21f8d581ae9298efcef65198fb89befee0f138d1a"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "429abb1506ab2a99ddf4e5888c9dac3d099343f4fb17670c8edcfec5a88d9d9d",
+          "bytes": 995694
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "539bf46743f918a91d7e8e6fc8e03534c1c634d2547d651846f0446f6ac2d990",
+          "bytes": 80238
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "2cf9b88505d4353757579f6484972955dd89d7326e8245029c8c096ab15ad8be",
+          "bytes": 285690
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "silicon-solar-cell-1954-v2",
+      "currentSha256": "ae25c21c20858374732c96d1cf4bf94e00eb2dc2388e0f1e1888e1e064806a4e",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/moments/silicon-solar-cell-1954-v2.png",
+        "sha256": "610ea92b42f307afe1259158cf2867560f5af728a7d3b1e6dc6817e48730fe54"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "615501205eab26fc9cdf5ea014ae8eb713ff01a0788ab3596d5dcbe8f3c07617",
+          "bytes": 439532
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "ed68ed8814911e4f3e6b9eab2905606b67d058ed55ef0d4fb306380d2ebdca86",
+          "bytes": 56490
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "2651958da65b7c54737ca905eb092fa3f528de9f99c2032b58699cdb953ce473",
+          "bytes": 149682
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "smallpox-vaccination",
+      "currentSha256": "f453a1cf53ec3d01e7f054eb03f42b458925f4850cbeceac3b7801eaf7f28d01",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/smallpox-vaccination.png",
+        "sha256": "e884508ccb8374735ecde9aea29bab5d970de8539ebd5afc7a1067eafa2be63a"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "a24197c140ca8ea90332fdc2d944c8bcefb1cf3d4dcd89ace44a3193a684a1cb",
+          "bytes": 934990
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "1cab27925f8bc3bfec9f368fe0b9d3fb5a6193026d2b206813695148241490d7",
+          "bytes": 96778
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "764f4ccc2175563fe140e42a8f7cb073a734f285ad18a06473b6b9c0f8787d95",
+          "bytes": 301390
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "sputnik",
+      "currentSha256": "483a801539c2fe528b492262299c2782a6ab6fd1db74a4eec4429e70637f162f",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/sputnik.png",
+        "sha256": "99be5e1be6b02a389bf8fac028d1ae18bb3c50824321e91bf9164172862752a0"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "c23083b86286f922d8ca86e2811e4c960a8651bd2d7240531e92036c9f8249ce",
+          "bytes": 394404
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "c3f47f315547e5148d1b072534c9f3446a7093a7e1fa6b2e1c75cdd39bfd7497",
+          "bytes": 51180
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "143cb5200e4abc12ba84bb76214a32b2bcd0f28ef0550660bdacfe56666fd346",
+          "bytes": 136686
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "stargate",
+      "currentSha256": "8dd2a6bcf7201889b2a7b33ce5d9e8490672cfe47339b62ffcab2028c9d3e51d",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/stargate.png",
+        "sha256": "2a255ebeb0eda91bd415b51c9d635488be6a7226f969e88b81880113eced3d61"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2162,
+          "sha256": "60371948068145788ff63d5dc95b4d51e771ddb9a5ab3b4a274293775034c94e",
+          "bytes": 1058064
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 451,
+          "sha256": "3083449d6f90afdfca944b35b872ad19552813d40ca570a8eda96b3a527b5653",
+          "bytes": 100622
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 901,
+          "sha256": "8bcda95354109652a814c858120e3ebc37a06ebc3c56c95029abafd5753ec0fa",
+          "bytes": 326164
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "starship-catch",
+      "currentSha256": "bd25c09d2ad63c0ec7f14678fa61bd8886b7f595ca5ea3bf1a743106bf060f0f",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/starship-catch.png",
+        "sha256": "761b34d7e2d7cd4ac70cdfe56e3c5090e1f73c2aca79d06817ff83e58649f571"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "5c09c23d0973adc6327b472f39939fe8476495f1fa45ce57d16cfdef3defa762",
+          "bytes": 231594
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "d18bd3138cc0754601c5dcd41dda7af34dccc19d9d869fd8f64e022db1dedb3b",
+          "bytes": 25496
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "c40396dbaa54655de18cc38f8b1eafd5dcc716684270cd51fb24327abe6a1028",
+          "bytes": 73196
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "tcp-ip",
+      "currentSha256": "0fc9d215e602229cdf599730f331962581b05d9251f9f0e7d7f39ce0ae18d271",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/tcp-ip.png",
+        "sha256": "06ca2b25c32d2197103c04feca2fbcc9e2f82f1ebc0e171100353c11a16627e1"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "28f78949e71a5eb15b471a92aaa1ac7bdc6236e9c533f9daf14903cde4dbdbd8",
+          "bytes": 373420
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "84aabf67805198082cabc2338933490af4d53eeacdf8bc4578d62b69f757d48e",
+          "bytes": 43176
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "625a2136e3a753011d9bfe9bd04c16868090402685f16e6bc4caccf2135fe416",
+          "bytes": 120082
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "telephone",
+      "currentSha256": "d2e22c9d701af7cc16b2b3439284b111f9842ef17afa38d7d22d36ebd3105f72",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/telephone.png",
+        "sha256": "012acc18f30eaed0d9b4b0236165cf8a61daa2e560b6a53cb49fc0d8c7a4a674"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "f3f5b046128dd1d8acd717e5de89afb70efc95c4baf1f5d8cd42a67577da0bb6",
+          "bytes": 2196574
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "89f4fcc249c15b43bf05ddf75ce48ed9622be9dfbdf1d06e218367e529fd3878",
+          "bytes": 98704
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "d72ee03f96dd7084274ee6fad3a607d97094f4cd396061b3dbc27067641d2f3a",
+          "bytes": 454628
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "television",
+      "currentSha256": "ea4fd451be5c0a7517da278ae4adbb2ed14ac39adc4b4dfad4f16bfb636092b1",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/television.png",
+        "sha256": "0ef5ab891218f1c2efd24d6e1d7784f7d77226289c40a9bfdf442dd46e658d68"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "dd80a52324e7437a6adc885899bf2fc7cddd85a8ae2b9eb30077952bc63d6d4c",
+          "bytes": 371666
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "0efe21507358ff4d51371774ed82f2848a9ccf9687fb1d55ffadfa3cc9dcda60",
+          "bytes": 47298
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "ccfc3be261f1aa4500e71829fc6c9d8f910d64f7e1da95beba79d32095073af7",
+          "bytes": 128636
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "transistor",
+      "currentSha256": "3e78b59a2cbcca13464b8b175e89156bd7f8d50b2dd7e567e39977342b961212",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/transistor.png",
+        "sha256": "98c437ee3e208b1748d0c995d6655186140ea467f023ec28867ca3a0e26794d0"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "6698b2b14689e0eac255cb916177cb91bc8047418ecae9647af672f88f6b75ef",
+          "bytes": 232988
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "6f951ed9d631d63db0037f2898fa5a5539c96301b9143ceb5768a2da3672d01d",
+          "bytes": 34964
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "013b60a969d472983899fe4515b719de9c8df06c0d706fbfc831ec93207a9709",
+          "bytes": 86764
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "turing-machine",
+      "currentSha256": "9c6a2599b34422924d526a6fd21de11de5afe7971f99811fac2cf634db85bc7a",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/moments/turing-machine.png",
+        "sha256": "f5fadf777255b74c3665df00ca076204e5c6815771627d5d07edce26a93d1db9"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "a7f818acc4b430dc2c69cf75ceaabced534d87062b63990fb1e7c22fc32eea69",
+          "bytes": 349558
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "256928f01aba094d9d6398027a104c382cbb91bfff382b856794923e829fca4f",
+          "bytes": 39038
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "db8cc8fa5b1a2bdc40fc421919c31c3d3c09890ca106bc33db730dc6760b36c9",
+          "bytes": 109858
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "uruk-accounting-v2",
+      "currentSha256": "1afb5b7b7326964bab286e9c3c0ff768a3aabc57cfa130d35d7666f3b08112bf",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/epochs/uruk-accounting-v2.png",
+        "sha256": "f878ed2243cf7c5c65458ef4e3f7ada41d47c317603aa098ce6c60f91186bcb8"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "1beac27703d6111731e82358af71e46e2cdd5773b6d6f577ea6c995d0e14d6d4",
+          "bytes": 894440
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "9d88722b84fe6982d9f4841194c59df79a716fbd17b39c6dd150983646556d88",
+          "bytes": 84980
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "ca2e87dea312ac20ca1032d942203509c627730e5ea9ac3faa5290ab01c51a82",
+          "bytes": 275472
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "voltaic-pile",
+      "currentSha256": "4f3b595bf975229201e7681c3740a591d51b2855dfce0720720fd3c4d7737339",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/voltaic-pile.png",
+        "sha256": "433322627d61d85ea96deaada22c5f16ed7355261c281dac89675274911e2cfe"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "ef86204a8e317f8753dae7780b713b989f155e264adb787390caf528eaf4c6ab",
+          "bytes": 929948
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "d5074ec074ec0c549fab6348db2a86c6179bbe2603f45304b6be6b9201b28cff",
+          "bytes": 67676
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "86f9bfa7bd26d4cbad4df5b7d2b33b23c06fb80f997a49a742ccaa21d310deda",
+          "bytes": 249158
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "watermill",
+      "currentSha256": "0077ef9fba23f3374edd8bacc34533211f6fd1375321a8fdc44f97a7fb95c34d",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/watermill.png",
+        "sha256": "886957ea122859dd07e9367eed601de7f52956aefbe7ef511e0ee15f6e27cb01"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "3ba28fc1f04295cbcaff8f4c0b663f4d30256c5dee94781ce88a45138da990d9",
+          "bytes": 912150
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "6cab1e5e150fc598f852922c5fbeaa5919e37f0ebe236f74161ec522db4ad8fc",
+          "bytes": 112802
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "35df4f214fec7ff2dc26588392e2c8d58a0d96de3e5697d70abb677d9c048eec",
+          "bytes": 321912
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "watt-engine",
+      "currentSha256": "5ab23595706358c3c762d96fa867485362e19921fdf309ba44bf7599fb592b38",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/watt-engine.png",
+        "sha256": "b6fa17bcfd10b03e6786f84e49cd39408659f6e29e1887485a2685f2fba208fe"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "2d8f8529467fbad78e51ccce1eb1ee4fa9e9571eb15456806927272de7242fb2",
+          "bytes": 1064972
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "18d57d354a1da61ebefb9a3232acea6419c073520ddb5f97ac2abdb88b97b259",
+          "bytes": 77504
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "e3faab82f116a5bc1a18eb9368f45bb0fe1e71cb1ba3a5959f65370e94aa35df",
+          "bytes": 261944
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "wheel",
+      "currentSha256": "00e127b61e0dee09b3ed2f5b1ac6d60068820db85eb5549cc560b092674a6005",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/wheel.png",
+        "sha256": "c497015e352bea73d109487ff6b1373cab643e342140a521ec33c20a79aaba99"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "7b3b9c67f3404f607bac34eb745f4feb45ab7f43337cfeb5b8ed52ef164d5827",
+          "bytes": 1114580
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "7f6072ade44f538446511c13c7534dace5965deb415d1f471944bdf74627aa65",
+          "bytes": 125036
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "29a95a075c23c861e0bf9e2eb373ad59f3deb67c5a86279a56f22899c69716ff",
+          "bytes": 374728
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "wifi-80211b",
+      "currentSha256": "96fc31139cda3ba5d5c9bfc2949a3c2fbb6310c8465c38890fb0a28f9ab396d4",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/wifi-80211b.png",
+        "sha256": "7bd1f4abfcbdd1c042b1044ac4a9192a4f24809982b6b12af47400c8bc246ab3"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "223ae92961bc78fbfa038037fc043e2664b59bc86e3d24df33ae023b3d35a6e1",
+          "bytes": 281292
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "d33f4edadf01ef5c3557ab6597f4c814034c0948e155806a69a83ed775ad020b",
+          "bytes": 40534
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "c52b7a22d80531de171268a56a38e1628c47affe3f86a3d92646ce2643e08739",
+          "bytes": 101450
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "windmill",
+      "currentSha256": "892c1871b11d9937e913a31995ee7693f5f7a599c2a30b732d84f4786d7895cc",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/windmill.png",
+        "sha256": "33dd22e596401d41dd7b99b6b7a671539488b3c503feed864ab5270e36d555ce"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "e4ef26636a446be5c9c2d747d1f8f654228e15bf695c0b83a76122851af5de34",
+          "bytes": 1716210
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "389808a2ce36cbba22dfc9540865a723325412a6667c439c69fcbc8fc1428f0c",
+          "bytes": 137282
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "377e4ce71b0bb9d9d367a4d69dff944b58391d78c9ea615430c8178c058a082a",
+          "bytes": 466322
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "world-wide-web-1991-v2",
+      "currentSha256": "53ece344af98078fde9fa49514ebb1f34205133fc76b792fcb55fd34426bef56",
+      "source": {
+        "path": "tools/art/chronicle-quality-2026-10-27/moments/world-wide-web-1991-v2.png",
+        "sha256": "f77ed01c7dfb55dea9b74d0d75249da84bf15d432b12d966f250366e8acf5b2d"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "12bba15cdf65c5937834ae760376ded065fa5436395bc31c912e5ce3c89e5e30",
+          "bytes": 304220
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "eefb8c808b9edfc047cdcff811bbab0604f3cd4dbf4b64333468c520d8333ca6",
+          "bytes": 40410
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "99bbeaffd6e807a7116ab5886b0d16faa6afb82470422b366de828a45fe1ae0e",
+          "bytes": 107302
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "wright-flyer",
+      "currentSha256": "f012e544dbd05dff0dc480733046a6a656c3f0448aae01de5ea687ff366b0482",
+      "source": {
+        "path": "~/Desktop/eacc-art/moments/wright-flyer.png",
+        "sha256": "ebd8a4b03665b478118f07845ae3ccd960be5994ef8a85b201eeff3ff2ed25c6"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "f366a0f577c485c9e5d0a6f902be01c603b92bf526ebe3a2a1ddd25f3caf0406",
+          "bytes": 308508
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "0a15deb78cc27d65c28de6e3ef3d6e15ad5e7345cdbfcc2d5cf3f79c0857a0d5",
+          "bytes": 32804
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "0fe15227ec706618dce90fa1ccad907582b9f272a60d02c6c0ceeeb7d11f0f14",
+          "bytes": 98402
+        }
+      }
+    }
+  ],
+  "profile": {
+    "model": "realesrgan-x4plus",
+    "scale": 4,
+    "width": 3840,
+    "quality": 78,
+    "binarySha256": "c1c35d92079085de96b9d547fd7e4464bc8a2e9ccf28d7b8c712d72ade91b7cc",
+    "modelFiles": {
+      "realesrgan-x4plus.bin": "713ee713b0353afaa27976f0563a64a5043bd70b9bd8936c2e26e25ebcdbcddf",
+      "realesrgan-x4plus.param": "35330ececcea33b6c397a72548e788d5d53becee4734c50b7fada36e89f10a86"
+    },
+    "cwebpSha256": "beed71767112f3374e2178b75384fac6e0d448932ea11b5cafda2793ecfb2eaf"
+  },
+  "profileSha256": "dfa9cb933a82878531a9f9976cb64189909cf41a579d894ccde05bac007037ea",
+  "derivativeProfile": {
+    "widths": [
+      800,
+      1600
+    ],
+    "quality": 82,
+    "cwebpSha256": "beed71767112f3374e2178b75384fac6e0d448932ea11b5cafda2793ecfb2eaf"
+  },
+  "derivativeProfileSha256": "73d236e66b1cbc90455206f08ba2c20766cda841d476817821467c38af3563a3"
+}

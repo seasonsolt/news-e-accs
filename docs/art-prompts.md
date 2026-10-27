@@ -53,6 +53,7 @@
 4. 不用在世艺术家的名字，只用时代流派和媒介。
 5. 保存为 `~/Desktop/eacc-art/epochs/<时代 id>.png`，再跑 `tools/make-art.sh`。
 6. 再跑 `uv run tools/make-depth.py`，给新版画生成深度图 `<时代 id>-depth.webp`，观察窗的景深视差要用它（没有深度图的版画就是静态图）。模型是 Depth Anything V2 Small（Apache-2.0），在本机运行；Base 和 Large 是 CC-BY-NC，不能用。里程碑版画要传目录：`uv run tools/make-depth.py apps/web/public/media/art/moments`。
+7. 为观察窗和场景大图生成 3840 像素宽的高清版。使用无水印的 PNG 原图，核对并更新素材清单后运行 `tools/upscale-chronicle.py`；具体模型、命令和来源记录见 `tools/art/chronicle-upscale-2026-10-27/README.md`。
 
 每条提示词末尾都加上这句：
 

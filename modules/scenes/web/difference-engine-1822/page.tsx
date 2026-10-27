@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router";
 import { localeFromMatches, translate, useLocale, useTranslate } from "@aihot/web/lib/i18n";
 import { localePath } from "@aihot/web/lib/locale";
 import { pageMeta } from "@aihot/web/lib/seo";
+import { artSrcSet, artUrl } from "@aihot/web/features/chrono/art";
 import type { Screen } from "@aihot/web/components/shell/screens";
 import styles from "./workshop.css?url";
 
@@ -59,7 +60,7 @@ function Workshop() {
   return <div className="workshop" ref={root}>
     <main id="experience" aria-label={tx("1822 年差分机三维工坊")}>
       {/* The plate stands in until the canvas covers it, and stays when there is no WebGL 2 or no script. */}
-      <div id="viewport" aria-label={tx("三维场景：拖动环视，滚轮走近，点击机器操作")}><img className="workshop-plate" src={PLATE} alt="" width={1600} height={1067} /></div>
+      <div id="viewport" aria-label={tx("三维场景：拖动环视，滚轮走近，点击机器操作")}><img className="workshop-plate" src={artUrl(PLATE.replace(/-1600\.webp$/, ""), 1600)} alt="" width={1600} height={1067} /></div>
       <div className="vignette" aria-hidden="true"></div>
       <header className="masthead">
         <button className="pill" id="back" hidden={!embedded}><span aria-hidden="true">←</span> {tx("回到时间线")}</button>
@@ -122,7 +123,7 @@ function Workshop() {
       </div>
       <div className="toast" id="toast" role="status" hidden></div>
     </main>
-    <dialog id="reference-dialog"><button className="dialog-close icon-button" aria-label={tx("关闭原画")}>×</button><img src={PLATE} alt={tx("现有加速史的差分机工坊原画，黄铜计算柱与高窗工坊")} width={1600} height={1067} loading="lazy" /><div className="dialog-caption"><h2>{tx("从这幅画，走进空间。")}</h2><p>{tx("原画用于美术方向参照。眼前场景由独立三维几何构成，可以走近、环视并操作。")}</p></div></dialog>
+    <dialog id="reference-dialog"><button className="dialog-close icon-button" aria-label={tx("关闭原画")}>×</button><img src={artUrl(PLATE.replace(/-1600\.webp$/, ""), 1600)} srcSet={artSrcSet(PLATE.replace(/-1600\.webp$/, ""))} sizes="(min-width: 1142px) 1050px, 92vw" alt={tx("现有加速史的差分机工坊原画，黄铜计算柱与高窗工坊")} width={1600} height={1067} loading="lazy" /><div className="dialog-caption"><h2>{tx("从这幅画，走进空间。")}</h2><p>{tx("原画用于美术方向参照。眼前场景由独立三维几何构成，可以走近、环视并操作。")}</p></div></dialog>
     <dialog id="about-dialog"><button className="dialog-close icon-button" aria-label={tx("关闭说明")}>×</button><div className="about-content"><p className="kicker">{tx("加速史 · 可进入的场景")}</p><h2>{tx("让历史成为可以探索的空间。")}</h2><p>{tx("1822 年，巴贝奇提出差分机。这一幕以现有插画为美术参考，用三维机架、数轮、传动齿轮和手柄搭建一间可探索的工坊。")}</p><p>{tx("演示计算 n²：从 A = 0、B = 1、C = 2 出发，每轮依次执行 A ← A + B、B ← B + C。寄存器、机械数轮和数表保持一致。齿轮与传动动画是原理示意，未复刻完整历史机构。")}</p><p>{tx("场景为艺术概念复原；1822 年对应差分机的提出，完整工坊和机器不代表当年已存在的实物。")}</p><a href="https://www.sciencemuseum.org.uk/sites/default/files/2023-09/DE2_Technical_Description.pdf" target="_blank" rel="noopener noreferrer">{tx("阅读科学博物馆的技术说明")} ↗</a><p className="about-small">{tx("Three.js r180 · 浏览时不调用模型")}</p></div></dialog>
   </div>;
 }

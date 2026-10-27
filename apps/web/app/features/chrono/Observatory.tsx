@@ -46,7 +46,7 @@ export function Observatory({ era, focus, nearby, label, distance, flat, scene, 
   const plate = plateOf(era, focus);
   return (
     <section id="observatory" className={`observatory ${era.forecast ? "is-forecast" : ""}`} aria-label={tx("观测舱")}>
-      <Plate key={plate.key} src={plate.src} alt={plate.alt} className="observatory-plate" />
+      <Plate key={plate.key} src={plate.src} alt={plate.alt} className="observatory-plate" highResolution />
       {/* Kept mounted across plates: it flies from one to the next. */}
       {!flat && <DepthLayer src={plate.src} at={plate.at} nearby={nearby} />}
       <div className="observatory-shade" aria-hidden="true" />

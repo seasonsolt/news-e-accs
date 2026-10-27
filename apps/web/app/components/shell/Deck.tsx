@@ -3,6 +3,7 @@
 // (the time-machine dial, a meter) and an optional row below (tabs, figures). Dark in either theme.
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMotionAllowed } from "../../features/motion/preferences";
+import { artSizes, artSrcSet, artUrl } from "../../features/chrono/art";
 
 /**
  * The page's width (the window's, less any scrollbar) as --page-width on <html>, for the deck's full-bleed
@@ -13,23 +14,31 @@ import { useMotionAllowed } from "../../features/motion/preferences";
 export const DECK_BLEED_SCRIPT = `(function(){var d=document.documentElement;function s(){d.style.setProperty('--page-width',d.clientWidth+'px')}s();if(window.ResizeObserver)new ResizeObserver(s).observe(d);else window.addEventListener('resize',s)})();`;
 
 /** An illustration under /media/art/ (at 800 and 1600), fading in; a missing one leaves the dark band. */
-export function Plate({ src, alt = "", className }: { src: string; alt?: string; className: string }) {
+export function Plate({ src, alt = "", className, highResolution = false }: { src: string; alt?: string; className: string; highResolution?: boolean }) {
   const image = useRef<HTMLImageElement>(null);
   const [broken, setBroken] = useState(false);
+  const [aspect, setAspect] = useState(1.5);
   const allowed = useMotionAllowed();
   useEffect(() => {
-    if (image.current?.complete && image.current.naturalWidth === 0) setBroken(true);
-  }, []);
+    const loaded = image.current;
+    if (!loaded?.complete) return;
+    if (loaded.naturalWidth === 0) setBroken(true);
+    else if (highResolution && loaded.naturalHeight) setAspect(loaded.naturalWidth / loaded.naturalHeight);
+  }, [src, highResolution]);
   if (broken) return <div className={`${className} is-empty`} aria-hidden="true" />;
   return (
     <img
       ref={image}
-      src={`${src}-1600.webp`}
-      srcSet={`${src}-800.webp 800w, ${src}-1600.webp 1600w`}
-      sizes="100vw"
+      src={highResolution ? artUrl(src, 1600) : `${src}-1600.webp`}
+      srcSet={highResolution ? artSrcSet(src) : `${src}-800.webp 800w, ${src}-1600.webp 1600w`}
+      sizes={highResolution ? artSizes(aspect) : "100vw"}
       alt={alt}
       fetchPriority="high"
       decoding="async"
+      onLoad={(event) => {
+        const loaded = event.currentTarget;
+        if (highResolution && loaded.naturalHeight) setAspect(loaded.naturalWidth / loaded.naturalHeight);
+      }}
       onError={() => setBroken(true)}
       className={`${className} ${allowed ? "motion-allowed" : ""}`}
     />

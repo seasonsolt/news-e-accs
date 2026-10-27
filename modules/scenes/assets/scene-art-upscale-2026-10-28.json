@@ -1,0 +1,138 @@
+{
+  "date": "2026-10-28",
+  "pipeline": {
+    "model": "realesrgan-x4plus",
+    "scale": 4,
+    "longestEdge": 3840,
+    "binarySha256": "c1c35d92079085de96b9d547fd7e4464bc8a2e9ccf28d7b8c712d72ade91b7cc",
+    "modelFiles": {
+      "bin": "713ee713b0353afaa27976f0563a64a5043bd70b9bd8936c2e26e25ebcdbcddf",
+      "param": "35330ececcea33b6c397a72548e788d5d53becee4734c50b7fada36e89f10a86"
+    },
+    "encoder": "sharp/libvips resize, PNG then WebP at original scene quality (90/85)",
+    "sharpVersion": "0.35.5",
+    "libvipsVersion": "8.18.7",
+    "libwebpVersion": "1.6.0",
+    "resizeKernel": "sharp default lanczos3",
+    "webpEffort": 6,
+    "rebuild": "node modules/scenes/scripts/assets.ts build <scene>"
+  },
+  "images": [
+    {
+      "scene": "agents-2026",
+      "name": "window-fuji",
+      "original": {
+        "r2": "scene-sources/agents-2026/panorama-fuji.png",
+        "md5": "e1f639ac396f38a70cbf3a1e0e2a7251",
+        "sha256": "5a759d2280539ec9a2ace7c6f148711669c2da86e8d31fbc02b33d56e6b79fda",
+        "width": 2172,
+        "height": 724,
+        "bytes": 2052798
+      },
+      "processedSource": {
+        "source": "panorama-fuji-realesrgan-4k.png",
+        "r2": "scene-sources/agents-2026/panorama-fuji-realesrgan-4k.png",
+        "md5": "465468b50f21605ba23182153511a34d",
+        "sha256": "2c9dfa71834be0dff6a905f644a7abbd8cd057d2a7ff1317061f50817f983b9f",
+        "width": 3840,
+        "height": 1280,
+        "bytes": 9012830
+      },
+      "webp": {
+        "file": "window-fuji.55586d1018.webp",
+        "sha256": "55586d1018000f20d6e4f1808023767568df61d7a6e2fe29cb4bb737bf19f56d",
+        "width": 3840,
+        "height": 1280,
+        "bytes": 474886,
+        "quality": 90
+      }
+    },
+    {
+      "scene": "agents-2026",
+      "name": "window-paris",
+      "original": {
+        "r2": "scene-sources/agents-2026/panorama-paris.png",
+        "md5": "852c502f8125f3032ca0554061d73057",
+        "sha256": "d56445c1fee31c303ee1bf769b1abfff03ce572d3ea0fc3aa26c6384e71a9842",
+        "width": 2172,
+        "height": 724,
+        "bytes": 2527794
+      },
+      "processedSource": {
+        "source": "panorama-paris-realesrgan-4k.png",
+        "r2": "scene-sources/agents-2026/panorama-paris-realesrgan-4k.png",
+        "md5": "5fe67f332c2943b2db2c1c1fe15d5b3d",
+        "sha256": "a61df7a9b740cb0694048edd1f2a447c4c606b2a72f64e5b398782dc7dba2d97",
+        "width": 3840,
+        "height": 1280,
+        "bytes": 9792143
+      },
+      "webp": {
+        "file": "window-paris.9ccabf1856.webp",
+        "sha256": "9ccabf185681b58d9e1624c4c732fd39fe457db37d877bf2ef983fd874152b09",
+        "width": 3840,
+        "height": 1280,
+        "bytes": 840162,
+        "quality": 90
+      }
+    },
+    {
+      "scene": "agents-2026",
+      "name": "window-great-wall",
+      "original": {
+        "r2": "scene-sources/agents-2026/panorama-great-wall.png",
+        "md5": "c666a0522691c22d3231e0e3fd8e9fb5",
+        "sha256": "dfb6f6bdee053b8076c03b93f717e4e257ee73b350a0692670fddfccd49dd1c5",
+        "width": 2172,
+        "height": 724,
+        "bytes": 2711318
+      },
+      "processedSource": {
+        "source": "panorama-great-wall-realesrgan-4k.png",
+        "r2": "scene-sources/agents-2026/panorama-great-wall-realesrgan-4k.png",
+        "md5": "0a47e94ce33318350f34f77c259c97d0",
+        "sha256": "23a08d9a640499693bc1ef4585b88072e9737f9aab720eceb5e1be7671f4b012",
+        "width": 3840,
+        "height": 1280,
+        "bytes": 9931344
+      },
+      "webp": {
+        "file": "window-great-wall.9cd8887348.webp",
+        "sha256": "9cd88873484918494d003826042dc6c0ec7d366241ca596e8aa451104e51493f",
+        "width": 3840,
+        "height": 1280,
+        "bytes": 893872,
+        "quality": 90
+      }
+    },
+    {
+      "scene": "difference-engine-1822",
+      "name": "engineering-plate",
+      "original": {
+        "r2": "scene-sources/difference-engine-1822/engineering-plate-v2.png",
+        "md5": "e6176b7c52267806bb58b9c4fc753cfa",
+        "sha256": "d7b32a223aaba9825152fb1cdb0a60be521dc3ef575650ddb64c8744e1f33629",
+        "width": 1086,
+        "height": 1448,
+        "bytes": 3401669
+      },
+      "processedSource": {
+        "source": "engineering-plate-v2-realesrgan-4k.png",
+        "r2": "scene-sources/difference-engine-1822/engineering-plate-v2-realesrgan-4k.png",
+        "md5": "a3bcc18b536f31b54003a53445c41b0c",
+        "sha256": "353a12a00fc930d957a9e3b1354fae6274bbebb9d3f4f7a94d257bf16ec17089",
+        "width": 2880,
+        "height": 3840,
+        "bytes": 26566471
+      },
+      "webp": {
+        "file": "engineering-plate.cd504c3ee6.webp",
+        "sha256": "cd504c3ee6f1924ddf502518cf1f241d7da41eeb9f846798c276c1cc5eacfd79",
+        "width": 2880,
+        "height": 3840,
+        "bytes": 2004356,
+        "quality": 85
+      }
+    }
+  ]
+}

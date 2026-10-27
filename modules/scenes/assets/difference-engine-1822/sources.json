@@ -121,11 +121,11 @@
   },
   {
     "name": "engineering-plate",
-    "source": "engineering-plate-v2.png",
-    "r2": "scene-sources/difference-engine-1822/engineering-plate-v2.png",
-    "md5": "e6176b7c52267806bb58b9c4fc753cfa",
+    "source": "engineering-plate-v2-realesrgan-4k.png",
+    "r2": "scene-sources/difference-engine-1822/engineering-plate-v2-realesrgan-4k.png",
+    "md5": "a3bcc18b536f31b54003a53445c41b0c",
     "license": "Generated for this site (engineering-plate.prompt.txt)",
-    "width": 1086,
+    "width": 2880,
     "quality": 85
   }
 ]

@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 
 import { timeLabel, type ChronicleMilestone, type ChronicleEra } from "@aihot/contracts/chronicle";
 import { timeParam } from "./format";
+import { artSrcSet, artUrl } from "./art";
 
 export function EraStrip({ eras, milestones, current, now }: { eras: ChronicleEra[]; milestones: ChronicleMilestone[]; current: string; now: number }) {
   const tx = useTranslate();
@@ -39,7 +40,7 @@ export function EraStrip({ eras, milestones, current, now }: { eras: ChronicleEr
               className={`chronicle-frame ${era.forecast ? "is-forecast" : ""}`}
               title={era.artStyle}
             >
-              <img src={`/media/art/epochs/${era.art}-800.webp`} alt="" loading="lazy" decoding="async" width={160} height={107} />
+              <img src={artUrl(`/media/art/epochs/${era.art}`, 800)} alt="" loading="lazy" decoding="async" width={160} height={107} />
               <span>{era.title}</span>
             </Link>
           ))}
@@ -57,7 +58,7 @@ export function EraStrip({ eras, milestones, current, now }: { eras: ChronicleEr
               {scenes.map((m) => (
                 <li key={m.id}>
                   <Link className="chronicle-scene" to={`?t=${timeParam(m.t, now)}#observatory`}>
-                    <img src={`/media/art/moments/${m.art}-800.webp`} alt="" loading="lazy" decoding="async" width={800} height={533} title={m.artStyle} />
+                    <img src={artUrl(`/media/art/moments/${m.art}`, 800)} srcSet={artSrcSet(`/media/art/moments/${m.art}`)} sizes="(min-width: 961px) 420px, (min-width: 600px) 50vw, 100vw" alt="" loading="lazy" decoding="async" width={800} height={533} title={m.artStyle} />
                     <span className="chronicle-scene-date num">{tx(timeLabel(m.t, now, m.precision, m.date))}{m.forecast && <> · <Text value="预测" /></>}</span>
                     <span className="chronicle-scene-title">{m.title}</span>
                   </Link>
@@ -65,7 +66,7 @@ export function EraStrip({ eras, milestones, current, now }: { eras: ChronicleEr
               ))}
             </ul>
           ) : (
-            <img className="chronicle-era-overview" src={`/media/art/epochs/${selected.art}-800.webp`} alt={`${selected.title}（${selected.artStyle}）`} loading="lazy" decoding="async" width={800} height={533} />
+            <img className="chronicle-era-overview" src={artUrl(`/media/art/epochs/${selected.art}`, 800)} srcSet={artSrcSet(`/media/art/epochs/${selected.art}`)} sizes="(min-width: 600px) 540px, 100vw" alt={`${selected.title}（${selected.artStyle}）`} loading="lazy" decoding="async" width={800} height={533} />
           )}
         </section>
       )}

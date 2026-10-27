@@ -110,7 +110,9 @@ node modules/scenes/scripts/assets.ts upload difference-engine-1822   # 把 mani
 
 可见台灯承担桌面的暖色主光与投影，各窗从当前图像局部线性色彩生成补光，随画面平滑过渡。窗景切换完成后捕获实际房间，更新金属、玻璃与木桌的环境反射，释放上一张反射纹理；不在每帧重新捕获。木材高度图与颜色图分离，设备分别使用哑面石墨、拉丝铝与铜件材质。代码 Canvas 仅在内容变化的 2 Hz 节点重绘。
 
-设备与显示器内容由代码生成；窗内全景使用内置 imagegen 生成，完整提示词在 [window-scenes.prompt.md](assets/agents-2026/window-scenes.prompt.md)，来源、尺寸和 MD5 在同目录 `generated-sources.json`、`sources.json`，不归入 CC0 扫描素材。图像只是虚拟窗的显示内容，工坊与设备仍为可环视的三维几何。木地板与灰泥继续复用已有 CC0 素材。任务、指示灯、风扇与状态屏均是本地预设演示，不接真实智能体或系统监控。三张全景原图已按记录的 MD5 私有归档至 R2 的 `scene-sources/agents-2026/`，可由 `sources.json` 的 `r2` 键恢复；构建 WebP 已上传 `scenes/agents-2026/`。
+设备与显示器内容由代码生成；窗内全景使用内置 imagegen 生成，完整提示词在 [window-scenes.prompt.md](assets/agents-2026/window-scenes.prompt.md)，原始生成图的来源、尺寸和 MD5 在同目录 `generated-sources.json`，不归入 CC0 扫描素材。图像只是虚拟窗的显示内容，工坊与设备仍为可环视的三维几何。木地板与灰泥继续复用已有 CC0 素材。任务、指示灯、风扇与状态屏均是本地预设演示，不接真实智能体或系统监控。
+
+三张全景采用壁纸同款 `realesrgan-x4plus` 本地 4 倍超分，再等比缩至 3840×1280，保留完整 3:1 画面。构建源与原始生成图分别保存在私有 `scene-sources/agents-2026/` 的不同对象中；`sources.json` 指向高清构建源，原图仍按 `generated-sources.json` 的键恢复。处理配方、原图与产物校验记录在 [scene-art-upscale-2026-10-28.json](assets/scene-art-upscale-2026-10-28.json)。发布时先归档新增 PNG 并上传内容哈希 WebP，再发布网页；旧对象保留供旧版页面读取。
 
 用火用真实扫描岩石构成岩棚，木柴由带树皮、年轮和弯曲轮廓的实体几何构成；火焰是局部体积内的程序化光线步进，烟与火星另行绘制。原有燃料阶段驱动木柴、火焰和投影强度。
 
@@ -122,6 +124,6 @@ node modules/scenes/scripts/assets.ts upload difference-engine-1822   # 把 mani
 
 扫描材质来自 [Poly Haven](https://polyhaven.com/)，授权 [CC0](https://polyhaven.com/license)：木地板、木机架和工作台用 [Old Wooden Floor 03](https://polyhaven.com/a/old_wooden_floor_03)，拱窗和石材用 [Old Stone Wall](https://polyhaven.com/a/old_stone_wall)，灰泥墙用 [Plastered Wall 03](https://polyhaven.com/a/plastered_wall_03)。黄铜、铸铁和钢材的细纹由 `materials.ts` 在浏览器里生成。
 
-`engineering-plate` 是模型生成的装饰性工程蚀刻图，提示词在 `assets/difference-engine-1822/engineering-plate.prompt.txt`，原图在 R2 的 `scene-sources/`。它只用于房间里的纸张和图板，不是历史机构图。
+`engineering-plate` 是模型生成的装饰性工程蚀刻图，提示词在 `assets/difference-engine-1822/engineering-plate.prompt.txt`，原图在 R2 的 `scene-sources/`。现有高清构建源采用相同 4 倍超分流程后等比缩至 2880×3840，来源与校验同见上述处理记录。它只用于房间里的纸张和图板，不是历史机构图。
 
 场景是艺术概念复原：1822 年是巴贝奇提出差分机的年份，完整的工坊和机器不代表当年已有的实物。演示的平方数表用有限差分计算（`calculation.ts`），机械动画只示意原理。

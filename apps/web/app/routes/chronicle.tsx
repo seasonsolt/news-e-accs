@@ -19,6 +19,7 @@ import { MomentList } from "../features/chrono/MomentList";
 import { Observatory } from "../features/chrono/Observatory";
 import { StageReadouts } from "../features/chrono/StageReadouts";
 import { useDepthTunnel, useTunnelAllowed } from "../features/chrono/DepthTunnel";
+import { artUrl } from "../features/chrono/art";
 import { distanceLabel, focusAt, nearbyPlates, plateOf, restingPicture, stepPicture, timeParam, tunnelPictures, workshopStops } from "../features/chrono/format";
 import { scrollToAnchor } from "../lib/motion";
 import { atLabel, withAt } from "../features/chrono/at";
@@ -208,7 +209,7 @@ export default function ChroniclePage() {
           {workshops.map((stop) => (
             <li key={stop.path} className={[scene && localePath(scene.path, locale) === stop.path && "is-current", isFinished(stop.path) && "is-done"].filter(Boolean).join(" ") || undefined}>
               <Link to={`?t=${timeParam(stop.t, now)}#observatory`} onClick={close} preventScrollReset className="chronicle-workshop-locate" aria-label={tx("定位到 {0}：{1}", tx(timeLabel(stop.t, now)), tx(stop.label))}>
-                <img src={`${stop.src}-800.webp`} alt="" loading="lazy" decoding="async" width={80} height={54} />
+                <img src={artUrl(stop.src, 800)} alt="" loading="lazy" decoding="async" width={80} height={54} />
                 <span><span className="chronicle-workshop-date">{tx(timeLabel(stop.t, now))}{isFinished(stop.path) && <span className="chronicle-workshop-check" role="img" aria-label={tx("已完成")}>✓</span>}</span><strong>{tx(stop.label)}</strong></span>
               </Link>
               <Link to={stop.path} className="chronicle-workshop-enter" aria-label={tx(stop.label)}><Text value="进入 3D" /><span aria-hidden="true">↗</span></Link>

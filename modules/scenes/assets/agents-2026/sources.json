@@ -1,35 +1,35 @@
 [
   {
     "name": "window-fuji",
-    "source": "panorama-fuji.png",
-    "md5": "e1f639ac396f38a70cbf3a1e0e2a7251",
-    "width": 2172,
+    "source": "panorama-fuji-realesrgan-4k.png",
+    "md5": "465468b50f21605ba23182153511a34d",
+    "width": 3840,
     "quality": 90,
     "license": "AI generated",
     "generator": "built-in imagegen",
     "prompt": "modules/scenes/assets/agents-2026/window-scenes.prompt.md",
-    "r2": "scene-sources/agents-2026/panorama-fuji.png"
+    "r2": "scene-sources/agents-2026/panorama-fuji-realesrgan-4k.png"
   },
   {
     "name": "window-paris",
-    "source": "panorama-paris.png",
-    "md5": "852c502f8125f3032ca0554061d73057",
-    "width": 2172,
+    "source": "panorama-paris-realesrgan-4k.png",
+    "md5": "5fe67f332c2943b2db2c1c1fe15d5b3d",
+    "width": 3840,
     "quality": 90,
     "license": "AI generated",
     "generator": "built-in imagegen",
     "prompt": "modules/scenes/assets/agents-2026/window-scenes.prompt.md",
-    "r2": "scene-sources/agents-2026/panorama-paris.png"
+    "r2": "scene-sources/agents-2026/panorama-paris-realesrgan-4k.png"
   },
   {
     "name": "window-great-wall",
-    "source": "panorama-great-wall.png",
-    "md5": "c666a0522691c22d3231e0e3fd8e9fb5",
-    "width": 2172,
+    "source": "panorama-great-wall-realesrgan-4k.png",
+    "md5": "0a47e94ce33318350f34f77c259c97d0",
+    "width": 3840,
     "quality": 90,
     "license": "AI generated",
     "generator": "built-in imagegen",
     "prompt": "modules/scenes/assets/agents-2026/window-scenes.prompt.md",
-    "r2": "scene-sources/agents-2026/panorama-great-wall.png"
+    "r2": "scene-sources/agents-2026/panorama-great-wall-realesrgan-4k.png"
   }
 ]

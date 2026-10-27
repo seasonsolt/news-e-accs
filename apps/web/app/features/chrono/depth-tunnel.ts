@@ -7,6 +7,7 @@
 // over to it (scene-handoff.ts).
 import * as THREE from "three";
 import { TO_SCENE, embedPath, readSceneEvent, type SceneCommand } from "./scene-handoff.ts";
+import { artUrl, artWidth, loadArtImage } from "./art.ts";
 
 const PLANE_W = 16;
 const PLANE_H = PLANE_W * 1067 / 1600;
@@ -99,6 +100,7 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
   } catch {
     return null;
   }
+  if (renderer.capabilities.maxTextureSize < 800) { renderer.dispose(); return null; }
   const { onChange } = options;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(DECK);
@@ -121,6 +123,7 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
   function layout() {
     const w = stage.clientWidth, h = stage.clientHeight;
     if (!w || !h) return;
+    clearHigh();
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -138,6 +141,22 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
   const flatDepth = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
   flatDepth.needsUpdate = true;
   const live = new Map<number, Plate>();
+  let high: { index: number; texture: THREE.Texture; image: HTMLImageElement } | null = null;
+  let highRequest: { index: number; controller: AbortController } | null = null;
+  let highAttempted: number | null = null;
+  const clearHigh = () => {
+    highRequest?.controller.abort();
+    highRequest = null;
+    highAttempted = null;
+    if (!high) return;
+    const entry = live.get(high.index);
+    if (entry) entry.mesh.material.uniforms.uColor!.value = entry.color;
+    high.texture.dispose();
+    high.texture.image = null;
+    high.image.removeAttribute("src");
+    high = null;
+  };
+  const baseWidth = renderer.capabilities.maxTextureSize >= 1600 ? 1600 : 800;
   let drawn = false;
   function plate(i: number): Plate {
     const existing = live.get(i);
@@ -154,7 +173,7 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
     mesh.position.z = zOf(i);
     mesh.renderOrder = -i;   // farther plates draw first
     mesh.visible = false;
-    const color = loader.load(`${picture.src}-1600.webp`, (texture) => {
+    const color = loader.load(artUrl(picture.src, baseWidth), (texture) => {
       // A few plates are not 3:2; keep their proportions instead of stretching them over the frame.
       const image = texture.image as HTMLImageElement;
       mesh.scale.y = (image.height / image.width) / (PLANE_H / PLANE_W);
@@ -174,6 +193,7 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
     return entry;
   }
   function drop(i: number) {
+    if (high?.index === i || highRequest?.index === i) clearHigh();
     const entry = live.get(i);
     if (!entry) return;
     scene.remove(entry.mesh);
@@ -205,6 +225,27 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
 
   // Progress runs from 0 to N-1. Nothing is drawn until the page says where on the axis it is.
   let target: number | null = null, progress: number | null = null, velocity = 0;
+  function upgradeCurrent() {
+    if (target === null || progress === null || mode !== "stage" || Math.abs(target - progress) >= 1e-4) return;
+    const i = Math.round(target), entry = live.get(i);
+    if (!entry || entry.loaded < 2 || entry.fade < 1) return;
+    const image = entry.color.image as HTMLImageElement;
+    if (!image?.naturalWidth) return;
+    const width = artWidth(stage.clientWidth, stage.clientHeight, window.devicePixelRatio, renderer.capabilities.maxTextureSize, image.naturalWidth / image.naturalHeight);
+    if (width !== 3840 || high?.index === i || highRequest?.index === i || highAttempted === i) return;
+    const controller = new AbortController(), requestedTarget = target;
+    highAttempted = i;
+    highRequest = { index: i, controller };
+    void loadArtImage(`${pictures[i]!.src}-3840.webp`, controller.signal).then((decoded) => {
+      if (controller.signal.aborted || target !== requestedTarget || mode !== "stage" || live.get(i) !== entry) { decoded.removeAttribute("src"); return; }
+      const texture = new THREE.Texture(decoded);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      texture.needsUpdate = true;
+      high = { index: i, texture, image: decoded };
+      entry.mesh.material.uniforms.uColor!.value = texture;
+    }).catch(() => {}).finally(() => { if (highRequest?.controller === controller) highRequest = null; });
+  }
   function cameraZ(p: number) {
     if (N < 2) return restOf(0);
     const i = Math.min(Math.floor(p), N - 2), t = p - i;
@@ -306,6 +347,7 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
     dust.size = 0.06 + clamp(velocity * 0.12, 0, 0.12);
     placeDust(camZ);
     renderer.render(scene, camera);
+    upgradeCurrent();
     // The canvas shows once the plate it rests on is drawn; until then the <img> underneath stays in view.
     const resting = live.get(Math.round(target));
     if (!drawn && resting && resting.fade >= 1) { drawn = true; canvas.classList.add("is-ready"); onChange(); }
@@ -321,7 +363,7 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
   sizes.observe(stage);
   const view = new IntersectionObserver(([entry]) => { visible = !!entry?.isIntersecting; });
   view.observe(stage);
-  const onLost = (event: Event) => { event.preventDefault(); cancelAnimationFrame(raf); canvas.classList.remove("is-ready"); };
+  const onLost = (event: Event) => { event.preventDefault(); clearHigh(); cancelAnimationFrame(raf); drawn = false; canvas.classList.remove("is-ready"); onChange(); };
   canvas.addEventListener("webglcontextlost", onLost);
   layout();
   loop();
@@ -334,7 +376,9 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
   return {
     setProgress(p, alt) {
       const could = canEnter();
-      target = clamp(p, 0, N - 1);
+      const next = clamp(p, 0, N - 1);
+      if (target !== next) clearHigh();
+      target = next;
       // The first frame opens on the picture itself rather than flying in from the start of the axis.
       if (progress === null) progress = target;
       canvas.setAttribute("aria-label", alt);
@@ -345,6 +389,7 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
     canEnter,
     enter() {
       if (!canEnter()) return;
+      clearHigh();
       target = Math.round(target!);
       settleStarted = performance.now();
       setMode("entering");
@@ -353,6 +398,7 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
     get ready() { return drawn; },
     dispose() {
       cancelAnimationFrame(raf);
+      clearHigh();
       for (const id of timers) clearTimeout(id);
       sizes.disconnect();
       view.disconnect();

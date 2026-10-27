@@ -62,6 +62,11 @@ test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era
   assert.equal(document.querySelector("h1")!.textContent, "1769年");
   assert.match(document.querySelector("header")!.textContent!, /蒸汽时代/);
   assert.ok(document.querySelector('img[alt="蒸汽时代（铜版画）"]'));
+  assert.match(document.querySelector(".observatory-plate")!.getAttribute("srcSet")!, /-hd-800\.webp 800w, .*?-hd-1600\.webp 1600w, .*?-3840\.webp 3840w/);
+  assert.match(document.querySelector(".observatory-plate")!.getAttribute("src")!, /-hd-1600\.webp$/);
+  const thumbnails = [...document.querySelectorAll(".chronicle-rail-thumb, .chronicle-frame img")];
+  assert.ok(thumbnails.length > 0);
+  assert.ok(thumbnails.every(image => image.getAttribute("src")!.endsWith("-hd-800.webp")));
   // The depth parallax and the tunnel are client-only decoration: the server sends the static plate alone.
   assert.equal(document.querySelector(".observatory-depth, .observatory-tunnel, canvas, iframe"), null);
   // The deck's three readouts, and every panel of the layer, closed or not, are in the page.
@@ -117,6 +122,9 @@ test("the workshop directory lists all fifteen workshops, with no reader progres
     assert.equal(document.querySelector(".workshop-gallery-done, .is-done"), null);
     for (const link of links) assert.ok(link.getAttribute("href")!.startsWith(`${prefix}/chronicle/`));
     assert.equal(document.querySelector("canvas,iframe"), null);
+    const card = document.querySelector(".workshop-gallery-image img")!;
+    assert.match(card.getAttribute("srcSet")!, /-3840\.webp 3840w/);
+    assert.equal(card.getAttribute("loading"), "lazy");
     if (!prefix) assert.doesNotMatch(document.querySelector("main")!.textContent!, /[\u3400-\u9fff]/u);
   }
 });
@@ -128,6 +136,8 @@ test("a milestone with a scene links to the scene's page in the reader's languag
   const scene = await page("/chronicle/difference-engine");
   assert.equal(scene.querySelector('nav[aria-label="主导航"]'), null);
   assert.equal(scene.querySelector("canvas"), null);
+  assert.match(scene.querySelector("#reference-dialog img")!.getAttribute("src")!, /-hd-1600\.webp$/);
+  assert.match(scene.querySelector(".workshop-plate")!.getAttribute("src")!, /-hd-1600\.webp$/);
 });
 
 test("all workshops have localized bare pages and embedded pages stay out of the index", async () => {
@@ -140,6 +150,8 @@ test("all workshops have localized bare pages and embedded pages stay out of the
     assert.match(document.querySelector("h2")!.textContent!, new RegExp(zh!));
     assert.equal(document.querySelector('nav[aria-label="主导航"]'), null);
     assert.equal(document.querySelector("canvas"), null);
+    assert.match(document.querySelector("#reference-dialog img")!.getAttribute("src")!, /-hd-1600\.webp$/);
+    assert.match(document.querySelector(".workshop-plate")!.getAttribute("src")!, /-hd-1600\.webp$/);
     assert.equal(document.querySelectorAll("[data-phase]").length, 4);
     if (document.querySelector("#game-controls")) assert.equal(document.querySelectorAll("[data-phase]:disabled").length, 4, "challenge stages cannot bypass the game rules");
     assert.ok(document.querySelector('.brand')!.getAttribute("href")!.startsWith("/zh/chronicle?t="));
@@ -226,6 +238,6 @@ test("era scenes include only illustrated moments in the selected era and retain
     assert.match(later.querySelector(".chronicle-scenes")!.textContent!, /1 幅场景/);
     const future = render("future");
     assert.equal(future.querySelectorAll(".chronicle-scene").length, 0);
-    assert.equal(future.querySelector(".chronicle-era-overview")?.getAttribute("src"), "/media/art/epochs/future-800.webp");
+    assert.equal(future.querySelector(".chronicle-era-overview")?.getAttribute("src"), "/media/art/epochs/future-hd-800.webp");
   } finally { await server.close(); }
 });

@@ -9,6 +9,7 @@
 // fails to load, and the static plate underneath stays exactly as it was. Paused off screen.
 import { useEffect, useRef, useState } from "react";
 import { hasFinePointer, useMotionAllowed } from "../motion/preferences";
+import { artUrl, artWidth, loadArtImage } from "./art";
 
 /** How far a layer at the extreme of the depth range moves at full pointer travel, per unit of depth. */
 const STRENGTH = 0.024;
@@ -18,7 +19,7 @@ const FOCUS = 0.5;
 const ZOOM = 1.04;
 /** Matches .observatory-plate's object-position: 50% 38%. */
 const POSITION_Y = 0.38;
-const MAX_DPR = 1.5;
+const MAX_DPR = 2;
 /** Share of the remaining distance the parallax covers per 1/60 s, whatever the display's refresh rate. */
 const EASE = 0.08;
 const FLIGHT_MS = 900;
@@ -90,8 +91,11 @@ void main() {
 
 /** A plate's image and depth textures and its aspect ratio. */
 interface Slot {
+  src: string;
   image: WebGLTexture;
   depth: WebGLTexture;
+  base: HTMLImageElement;
+  high?: boolean;
   aspect: number;
   dropped?: boolean;
 }
@@ -130,16 +134,17 @@ interface Pictures {
 }
 
 /** Fetches and decodes a plate once, keeping the most recently used few. */
-function fetchPlate(cache: Map<string, Pictures>, src: string): Pictures {
-  let entry = cache.get(src);
-  if (entry) cache.delete(src);
+function fetchPlate(cache: Map<string, Pictures>, src: string, width: 800 | 1600 = 1600): Pictures {
+  const key = artUrl(src, width);
+  let entry = cache.get(key);
+  if (entry) cache.delete(key);
   else {
-    const fresh: Pictures = { image: load(`${src}-1600.webp`), depth: load(`${src}-depth.webp`).catch(() => null) };
+    const fresh: Pictures = { image: load(key), depth: load(`${src}-depth.webp`).catch(() => null) };
     // A failed plate is forgotten, so that coming back to it tries again.
-    fresh.image.catch(() => { if (cache.get(src) === fresh) cache.delete(src); });
+    fresh.image.catch(() => { if (cache.get(key) === fresh) cache.delete(key); });
     entry = fresh;
   }
-  cache.set(src, entry);
+  cache.set(key, entry);
   for (const key of cache.keys()) if (cache.size > CACHE_SIZE) cache.delete(key);
   return entry;
 }
@@ -151,6 +156,7 @@ function fetchPlate(cache: Map<string, Pictures>, src: string): Pictures {
 export function DepthLayer({ src, at, nearby }: { src: string; at: number; nearby: string[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const cache = useRef(new Map<string, Pictures>());
+  const prefetchWidth = useRef<800 | 1600>(1600);
   const show = useRef<((src: string, at: number) => void) | null>(null);
   const allowed = useMotionAllowed();
   const [ready, setReady] = useState(false);
@@ -166,6 +172,10 @@ export function DepthLayer({ src, at, nearby }: { src: string; at: number; nearb
     layer.append(canvas);
     const gl = canvas.getContext("webgl", { alpha: false, antialias: false, depth: false, stencil: false });
     if (!gl) { canvas.remove(); setFailed(true); return; }
+    const textureLimit = gl.getParameter(gl.MAX_TEXTURE_SIZE) as number;
+    const baseWidth = textureLimit >= 1600 ? 1600 : 800;
+    if (textureLimit < baseWidth) { gl.getExtension("WEBGL_lose_context")?.loseContext(); canvas.remove(); setFailed(true); return; }
+    prefetchWidth.current = baseWidth;
 
     const vertex = compile(gl, gl.VERTEX_SHADER, VERTEX);
     const fragment = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT);
@@ -205,6 +215,8 @@ export function DepthLayer({ src, at, nearby }: { src: string; at: number; nearb
     let visible = true;
     let previous = 0;
     let request = 0;
+    let highRequest: AbortController | null = null;
+    let currentSrc = "";
     let shownAt: number | null = null;
     // Idle: `front` alone. In flight: `front` is A and `back` is B, warp running from `from` to `to`.
     let front: Slot | null = null;
@@ -237,6 +249,34 @@ export function DepthLayer({ src, at, nearby }: { src: string; at: number; nearb
       cover(uCoverA, front);
       cover(uCoverB, b);
     };
+    const clearHigh = () => {
+      highRequest?.abort();
+      highRequest = null;
+      if (front?.high) {
+        gl.deleteTexture(front.image);
+        front.image = texture(gl, front.base);
+        front.high = false;
+        bind();
+      }
+    };
+    const upgrade = () => {
+      const slot = front;
+      if (!slot || slot.src !== currentSrc || slot.high || flight || highRequest) return;
+      const width = artWidth(canvas.clientWidth, canvas.clientHeight, window.devicePixelRatio, textureLimit, slot.aspect);
+      if (width !== 3840) return;
+      const controller = new AbortController();
+      highRequest = controller;
+      void loadArtImage(`${slot.src}-3840.webp`, controller.signal).then((image) => {
+        if (cancelled || controller.signal.aborted || front !== slot || flight) { image.removeAttribute("src"); return; }
+        const high = texture(gl, image);
+        image.removeAttribute("src");
+        gl.deleteTexture(slot.image);
+        slot.image = high;
+        slot.high = true;
+        bind();
+        start();
+      }).catch(() => {}).finally(() => { if (highRequest === controller) highRequest = null; });
+    };
     /** Ends a flight where it was heading: the plate it arrives at becomes the only one. */
     const land = () => {
       if (!flight) return;
@@ -245,13 +285,16 @@ export function DepthLayer({ src, at, nearby }: { src: string; at: number; nearb
       flight = null;
       gl.uniform1f(uWarp, 0);
       bind();
+      upgrade();
     };
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
       canvas.width = Math.max(1, Math.round(canvas.clientWidth * dpr));
       canvas.height = Math.max(1, Math.round(canvas.clientHeight * dpr));
       gl.viewport(0, 0, canvas.width, canvas.height);
+      clearHigh();
       bind();
+      upgrade();
     };
     const draw = (now: number) => {
       frame = 0;
@@ -276,13 +319,15 @@ export function DepthLayer({ src, at, nearby }: { src: string; at: number; nearb
 
     show.current = (next, nextAt) => {
       const id = ++request;
-      const { image: imageLoad, depth: depthLoad } = fetchPlate(cache.current, next);
+      clearHigh();
+      currentSrc = next;
+      const { image: imageLoad, depth: depthLoad } = fetchPlate(cache.current, next, baseWidth);
       // A missing map is a 404 page, which can take seconds; it must not hold the jump up.
       const grace = new Promise<undefined>((resolve) => setTimeout(resolve, DEPTH_GRACE_MS));
       Promise.all([imageLoad, Promise.race([depthLoad, grace])]).then(([image, depth]) => {
         if (cancelled || id !== request) return;
         land();
-        const slot: Slot = { image: texture(gl, image), depth: texture(gl, depth ?? null), aspect: image.naturalWidth / image.naturalHeight };
+        const slot: Slot = { src: next, image: texture(gl, image), depth: texture(gl, depth ?? null), base: image, aspect: image.naturalWidth / image.naturalHeight };
         if (depth === undefined) {
           void depthLoad.then((late) => {
             if (!late || cancelled || slot.dropped) return;
@@ -298,6 +343,7 @@ export function DepthLayer({ src, at, nearby }: { src: string; at: number; nearb
           bind();
           draw(performance.now());
           setReady(true);
+          upgrade();
           return;
         }
         // Forward: the current plate is A and jumps away. Back: the arriving plate is A, the jump played in reverse.
@@ -322,7 +368,7 @@ export function DepthLayer({ src, at, nearby }: { src: string; at: number; nearb
       target.y = ((event.clientY - box.top) / box.height) * 2 - 1;
     };
     const onLeave = () => { target.x = 0; target.y = 0; };
-    const onLost = () => { cancelled = true; cancelAnimationFrame(frame); setFailed(true); };
+    const onLost = () => { cancelled = true; highRequest?.abort(); highRequest = null; cancelAnimationFrame(frame); setFailed(true); };
     const sizes = new ResizeObserver(resize);
     const view = window.IntersectionObserver ? new IntersectionObserver(([entry]) => {
       visible = !!entry?.isIntersecting;
@@ -339,6 +385,8 @@ export function DepthLayer({ src, at, nearby }: { src: string; at: number; nearb
     canvas.addEventListener("webglcontextlost", onLost);
     return () => {
       cancelled = true;
+      highRequest?.abort();
+      highRequest = null;
       show.current = null;
       cancelAnimationFrame(frame);
       sizes.disconnect();
@@ -360,7 +408,7 @@ export function DepthLayer({ src, at, nearby }: { src: string; at: number; nearb
   const ahead = nearby.join("\n");
   useEffect(() => {
     if (!allowed || !ahead) return;
-    const timer = setTimeout(() => { for (const next of ahead.split("\n")) fetchPlate(cache.current, next); }, NEARBY_DELAY_MS);
+    const timer = setTimeout(() => { for (const next of ahead.split("\n")) fetchPlate(cache.current, next, prefetchWidth.current); }, NEARBY_DELAY_MS);
     return () => clearTimeout(timer);
   }, [allowed, ahead]);
 

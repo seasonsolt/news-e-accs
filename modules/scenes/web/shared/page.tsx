@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router";
 import { localeFromMatches, translate, useLocale, useTranslate } from "@aihot/web/lib/i18n";
 import { localePath } from "@aihot/web/lib/locale";
 import { pageMeta } from "@aihot/web/lib/seo";
+import { artSrcSet, artUrl } from "@aihot/web/features/chrono/art";
 import type { Screen } from "@aihot/web/components/shell/screens";
 import { WORLDS, type World } from "./worlds.ts";
 import base from "../difference-engine-1822/workshop.css?url";
@@ -58,7 +59,7 @@ function WorldExperience({ world }: { world: World }) {
   </div>;
   return <div className={`workshop world world-${world.id}${world.challenge ? " is-challenge" : ""}`} ref={root}>
     <main id="experience" aria-label={tx(world.title)}>
-      <div id="viewport" aria-label={tx("三维场景：拖动环视，滚轮走近，点击机器操作")}><img className="workshop-plate" src={world.plate} alt="" width={1600} height={1067} /></div>
+      <div id="viewport" aria-label={tx("三维场景：拖动环视，滚轮走近，点击机器操作")}><img className="workshop-plate" src={artUrl(world.plate.replace(/-1600\.webp$/, ""), 1600)} alt="" width={1600} height={1067} /></div>
       <div className="vignette" aria-hidden="true" />
       <header className="masthead">
         <button className="pill" id="back" hidden={!embedded}>← {tx("回到时间线")}</button>
@@ -91,7 +92,7 @@ function WorldExperience({ world }: { world: World }) {
       </div>
       <div id="toast" className="toast" role="status" hidden />
     </main>
-    <dialog id="reference-dialog"><button className="dialog-close icon-button" aria-label={tx("关闭原画")}>×</button><img src={world.plate} alt={tx(world.title)} width={1600} height={1067} /><div className="dialog-caption"><h2>{tx("从这幅画，走进空间。")}</h2><p>{tx("原画用于美术方向参照。眼前场景由独立三维几何构成，可以走近、环视并操作。")}</p></div></dialog>
+    <dialog id="reference-dialog"><button className="dialog-close icon-button" aria-label={tx("关闭原画")}>×</button><img src={artUrl(world.plate.replace(/-1600\.webp$/, ""), 1600)} srcSet={artSrcSet(world.plate.replace(/-1600\.webp$/, ""))} sizes="(min-width: 1142px) 1050px, 92vw" alt={tx(world.title)} width={1600} height={1067} loading="lazy" /><div className="dialog-caption"><h2>{tx("从这幅画，走进空间。")}</h2><p>{tx("原画用于美术方向参照。眼前场景由独立三维几何构成，可以走近、环视并操作。")}</p></div></dialog>
     <dialog id="about-dialog"><button className="dialog-close icon-button" aria-label={tx("关闭说明")}>×</button><div className="about-content"><p className="kicker">{tx("加速史 · 可进入的场景")}</p><h2>{tx(world.title)}</h2><p>{tx(world.note)}</p><a href={world.source} target="_blank" rel="noopener noreferrer">{tx("阅读背景资料")} ↗</a><div className="world-links"><span>{tx("下一站")}</span><Link to={localePath(next.path, locale)}>{tx(next.title)} →</Link></div><div className="world-links"><Link to={localePath("/chronicle/workshops", locale)}>{tx("时代工坊")} →</Link></div></div></dialog>
   </div>;
 }

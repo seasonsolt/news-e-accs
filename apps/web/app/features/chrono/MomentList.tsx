@@ -1,4 +1,5 @@
 import { Text, useTranslate } from "../../lib/i18n";
+import { artUrl } from "./art";
 // The milestones nearest the moment on the axis, as one compact rail; the closest is lit.
 import { timeLabel, toAxis, type ChronicleCategory, type ChronicleMilestone } from "@aihot/contracts/chronicle";
 
@@ -20,7 +21,7 @@ export function MomentList({ milestones, t, now, onCommit }: { milestones: Chron
         {nearby.map((m) => (
           <li key={m.id} className={`chronicle-rail-item cat-${m.category} ${m.forecast ? "is-forecast" : ""} ${m === closest ? "is-closest" : ""}`}>
             <span className="chronicle-rail-dot" aria-hidden="true" />
-            {m.art && <img className="chronicle-rail-thumb" src={`/media/art/moments/${m.art}-800.webp`} alt="" loading="lazy" decoding="async" width={96} height={64} title={m.artStyle} />}
+            {m.art && <img className="chronicle-rail-thumb" src={artUrl(`/media/art/moments/${m.art}`, 800)} alt="" loading="lazy" decoding="async" width={96} height={64} title={m.artStyle} />}
             <div className="chronicle-rail-meta">
               <span className="num">{tx(timeLabel(m.t, now, m.precision, m.date))}</span>
               <span>{tx(CATEGORY[m.category])}</span>

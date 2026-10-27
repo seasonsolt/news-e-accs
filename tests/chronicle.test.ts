@@ -75,10 +75,11 @@ if (missing.length) {
       assert.equal(eraAt(eras, era.from)?.id, era.id);
     });
   });
-  test("every plate the data names is on disk at both widths", () => {
+  test("every plate the data names has the standard and enhanced image widths", () => {
     const plate = (dir: string, slug: string) => {
       assert.match(slug, /^[a-z0-9-]+$/);
-      for (const w of [800, 1600]) assert.ok(existsSync(new URL(`../apps/web/public/media/art/${dir}/${slug}-${w}.webp`, import.meta.url)), `${dir}/${slug}-${w}`);
+      for (const w of [800, 1600, 3840]) assert.ok(existsSync(new URL(`../apps/web/public/media/art/${dir}/${slug}-${w}.webp`, import.meta.url)), `${dir}/${slug}-${w}`);
+      for (const w of [800, 1600]) assert.ok(existsSync(new URL(`../apps/web/public/media/art/${dir}/${slug}-hd-${w}.webp`, import.meta.url)), `${dir}/${slug}-hd-${w}`);
     };
     eras.forEach((era) => plate("epochs", era.art));
     milestones.filter((m) => m.art).forEach((m) => {

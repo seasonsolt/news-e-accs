@@ -5,8 +5,56 @@ import { eraAt, type ChronicleEra, type ChronicleMilestone } from "@aihot/contra
 import { parseAt, stepAt, withAt } from "../app/features/chrono/at.ts";
 import { distanceLabel, keepAxisInView, MIN_AXIS_SPAN, nearbyPlates, panAxisWindow, projectAxis, stepEra, stepPicture, timeParam, untilLabel, zoomAxisWindow } from "../app/features/chrono/format.ts";
 import { ApiError, apiErrorResponse, loadOr404 } from "../app/lib/api.server.ts";
+import { artSrcSet, artUrl, artWidth, loadArtImage } from "../app/features/chrono/art.ts";
+
+test("every responsive Chronicle size uses the enhanced artwork and a fresh URL", () => {
+  const src = "/media/art/epochs/steam-age";
+  assert.equal(artUrl(src, 800), `${src}-hd-800.webp`);
+  assert.equal(artUrl(src, 1600), `${src}-hd-1600.webp`);
+  assert.equal(artUrl(src, 3840), `${src}-3840.webp`);
+  assert.equal(artSrcSet(src), `${src}-hd-800.webp 800w, ${src}-hd-1600.webp 1600w, ${src}-3840.webp 3840w`);
+});
 
 const today = "2026-10-04";
+test("plate resolution covers portrait crops and respects both GPU texture dimensions", () => {
+  assert.equal(artWidth(320, 180, 1, 4096), 800);
+  assert.equal(artWidth(1280, 720, 1, 4096), 1600);
+  assert.equal(artWidth(390, 560, 2, 4096), 3840, "a tall phone crop needs more than 1600 source pixels");
+  assert.equal(artWidth(1920, 1080, 3, 4096), 3840, "rendering DPR is capped at two");
+  assert.equal(artWidth(1920, 1080, 2, 2048), 1600);
+  assert.equal(artWidth(1920, 1080, 2, 1024), 800);
+  assert.equal(artWidth(1000, 1000, 2, 4096, .5), 1600, "a portrait texture's height must fit too");
+  assert.equal(artWidth(390, 560, 2, 512), null);
+  assert.equal(artWidth(390, 500, 2, 4096), 1600);
+  assert.equal(artWidth(390, 500, 2, 4096, 3840 / 2162), 3840, "Stargate's wider crop needs the next size even when a 3:2 plate fits 1600");
+});
+
+test("changing plates abandons a pending high-resolution image and never resolves its late decode", async () => {
+  const original = globalThis.Image;
+  const images: StubImage[] = [];
+  class StubImage {
+    src = "";
+    finish!: () => void;
+    constructor() { images.push(this); }
+    decode() { return new Promise<void>((resolve) => { this.finish = resolve; }); }
+    removeAttribute(name: string) { if (name === "src") this.src = ""; }
+  }
+  globalThis.Image = StubImage as unknown as typeof Image;
+  try {
+    const controller = new AbortController();
+    const pending = loadArtImage("/first-3840.webp", controller.signal);
+    assert.equal(images[0]!.src, "/first-3840.webp");
+    controller.abort();
+    await assert.rejects(pending, { name: "AbortError" });
+    images[0]!.finish();
+    await Promise.resolve();
+    assert.equal(images[0]!.src, "");
+    const next = loadArtImage("/second-3840.webp", new AbortController().signal);
+    images[1]!.finish();
+    assert.equal(await next, images[1]);
+  } finally { globalThis.Image = original; }
+});
+
 function near(actual: number, expected: number) {
   assert.ok(Math.abs(actual - expected) < 1e-12, `${actual} != ${expected}`);
 }
