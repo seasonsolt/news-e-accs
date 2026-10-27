@@ -1196,8 +1196,8 @@ html { scrollbar-gutter: stable; }
   .chronicle-readout-note { margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 11.5px var(--font-mono); color: var(--brass-hi); }
   .chronicle-readout.is-empty .num { color: rgb(244 236 220 / .4); }
   .chronicle-readout.is-empty .chronicle-readout-note { color: rgb(244 236 220 / .45); }
-  .chronicle-readout-bar { display: block; height: 3px; margin-top: 9px; border-radius: 2px; background: rgb(244 236 220 / .14); }
-  .chronicle-readout-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--brass-hi); }
+  .chronicle-readout-bar { display: block; height: 3px; margin-top: 9px; border-radius: 9999px; background: rgb(244 236 220 / .14); }
+  .chronicle-readout-bar > span { display: block; height: 100%; border-radius: 9999px; background: var(--brass-hi); }
 
   .chronicle-layer { grid-column: 2; grid-row: 1; position: absolute; top: 0; right: 0; z-index: 30; display: flex; width: min(400px, 100%); height: var(--stage-height); flex-direction: column; overflow: hidden; margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-panel); box-shadow: 0 18px 40px -18px rgb(0 0 0 / .45); opacity: 0; visibility: hidden; transition: opacity 300ms var(--ease-out-quart), visibility 0s 300ms; }
   .has-layer .chronicle-layer { opacity: 1; visibility: visible; transition: opacity 300ms var(--ease-out-quart) 100ms; }
