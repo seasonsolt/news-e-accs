@@ -1162,11 +1162,10 @@ html { scrollbar-gutter: stable; }
 .observatory-wallpaper:hover, .observatory-layers button:hover { background: rgb(217 164 65 / .16); }
 .observatory-layers button[aria-expanded="true"] { background: rgb(217 164 65 / .28); color: #fff3d6; }
 .observatory-layers { display: none; padding: 2px; }
-/* The way into a milestone's scene (WebModule.chronicle): a desktop with a mouse only, like the tunnel it hands over from. */
-.observatory-enter { display: none; margin-top: 18px; align-items: center; gap: 10px; min-height: 44px; padding: 0 20px; border-radius: 999px; background: linear-gradient(var(--brass-hi), var(--brass)); font-size: 14px; font-weight: 600; color: #2a1f16; transition: filter 200ms var(--ease-out-quart), opacity 300ms; }
+/* The way into a milestone's scene (WebModule.chronicle). Everywhere it opens the scene's page; a desktop with a mouse hands over from the tunnel instead. */
+.observatory-enter { display: flex; width: fit-content; margin-top: 18px; align-items: center; gap: 10px; min-height: 44px; padding: 0 20px; border-radius: 999px; background: linear-gradient(var(--brass-hi), var(--brass)); font-size: 14px; font-weight: 600; color: #2a1f16; transition: filter 200ms var(--ease-out-quart), opacity 300ms; }
 .observatory-enter:hover { filter: brightness(1.06); color: #2a1f16; }
 .observatory-enter[aria-disabled="true"] { opacity: .6; cursor: wait; }
-@media (min-width: 961px) and (hover: hover) and (pointer: fine) { .observatory-enter { display: flex; width: fit-content; } }
 .observatory-time { margin-top: 10px; font-family: var(--font-display); font-weight: 400; line-height: .9; color: var(--deck-ink); text-shadow: 0 2px 30px rgb(0 0 0 / .45); }
 .observatory-time-figure { font-size: clamp(68px, 12vw, 136px); letter-spacing: -.02em; }
 .observatory-time-unit { margin-inline: .06em; font-size: clamp(26px, 4vw, 44px); color: rgb(244 236 220 / .82); }
@@ -1272,6 +1271,11 @@ html { scrollbar-gutter: stable; }
 .chronometer-controls .chronicle-workshop-menu { display: flex; align-items: center; gap: 8px; }
 .chronometer-controls .chronicle-workshop-menu[aria-expanded="true"] { border-color: var(--brass); color: var(--deck-ink); }
 #chronicle-workshops { outline: none; scroll-margin-top: 210px; }
+.chronicle-workshop-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
+.chronicle-workshop-tally { font: 12px var(--font-mono); font-variant-numeric: tabular-nums; color: var(--accent-ink); }
+.chronicle-workshop-all { font-size: 12px; color: var(--accent); }
+.chronicle-workshop-all:hover { text-decoration: underline; }
+.chronicle-workshop-check { margin-left: 6px; font-size: 11px; color: var(--ok); }
 .chronicle-workshop-help { margin: -4px 0 16px; font-size: 12px; line-height: 1.7; color: var(--ink-3); }
 .chronicle-workshop-list { display: grid; gap: 10px; }
 .chronicle-workshop-list li { display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--line); border-radius: var(--radius-tile); background: var(--surface); }

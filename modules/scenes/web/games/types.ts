@@ -1,9 +1,12 @@
 export type GameId = "writing" | "iron" | "printing" | "observatory" | "steam" | "electric" | "flight" | "logic" | "space" | "network";
+/** How the status line reads: a neutral note, a step forward, or a rejected attempt. */
+export type GameTone = "info" | "progress" | "error";
 export interface GameSnapshot {
   /** Four explanation/achievement stages, 0 through 3. Completion must be earned by play. */
   progress: number;
   complete: boolean;
   status: string;
+  tone: GameTone;
   readings: [string, string, string];
   /** Submit/operate action. It must not automatically solve choices for the player. */
   primary: string;

@@ -7,6 +7,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { FROM_SCENE, readSceneCommand, type SceneEvent } from "@aihot/web/features/chrono/scene-handoff";
+import { recordWorkshop } from "@aihot/web/lib/local-state";
 import { createMaterials, TextureLoadError, type WorkshopMaterials } from "./materials.ts";
 import { createWorkshopRenderer } from "./rendering.ts";
 import { initialRegisters, advanceRegisters, digits, canWalkTo, type Registers } from "./calculation.ts";
@@ -922,6 +923,8 @@ export function start(root: HTMLElement, { tx, embedded, plate }: WorkshopOption
         if (t === 1) {
           state = cycle.next; history.push({ ...state }); refreshLedger(); cycle = null;
           $("machine-status").textContent = tx("第 {0} 轮完成 · {0}² = {1}", state.n, state.a);
+          // The table of squares reaching 10² is this workshop's finish; it is remembered in this browser (the era workshops page).
+          if (state.n === 10) { recordWorkshop("/chronicle/difference-engine"); toast(tx("平方数表已算到 10² = 100，这座工坊记为完成。")); }
           $("machine-dot").classList.toggle("is-running", running);
           if (queued) { queued = false; beginCycle(); }
           else if (running) later(() => { if (running && !cycle) beginCycle(); }, reducedMotion.matches ? 1800 : 350);

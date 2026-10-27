@@ -75,7 +75,7 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
     const flight = Math.max(0, 1 - (time - launchTime) / 2);
     plane.position.y = .58 + Math.sin((1 - flight) * Math.PI) * flight * .3; plane.position.z = -Math.sin((1 - flight) * Math.PI) * flight * .5;
     plane.rotation.x = flight * game.elevator * .035; for (const p of props) p.rotation.z = time * (flight ? 30 : .4);
-    const key = `${game.passed}:${game.cg}:${game.elevator}:${game.attempts}`;
+    const key = `${game.passed}:${game.cg}:${game.elevator}:${game.attempts}:${game.targets[Math.min(2, game.passed)]}`;
     if (last !== key) { last = key; const c = (map.image as HTMLCanvasElement).getContext("2d")!, target = game.targets[Math.min(2, game.passed)]!; c.fillStyle = "#ead9ad"; c.fillRect(0, 0, 768, 512); c.fillStyle = "#20394a"; c.font = "bold 36px monospace"; c.fillText("FLIGHT / TRIM LAB", 40, 65); c.font = "28px monospace"; [`LEG ${Math.min(3, game.passed + 1)} / 3`, `TARGET CG ${target[0]}  ELEV ${target[1]}`, `ACTUAL CG ${game.cg}  ELEV ${game.elevator}`, `TRIALS ${game.attempts}`, game.passed === 3 ? "ALL LEGS VERIFIED" : "ADJUST, THEN TEST"].forEach((line, i) => c.fillText(line, 40, 145 + i * 66)); map.needsUpdate = true; }
   } };
 }

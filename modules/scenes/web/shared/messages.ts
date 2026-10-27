@@ -4,7 +4,11 @@ import { MODERN_MESSAGES } from "../games/modern.ts";
 export const messages = { en: {
   ...CRAFT_MESSAGES, ...SCIENCE_MESSAGES, ...MODERN_MESSAGES,
   "工坊操作": "Workshop controls", "挑战完成": "Challenge complete",
-  "时代工坊": "Era workshops", "十段历史，十种可以亲手完成的挑战。": "Ten chapters of history. Ten challenges to complete with your own hands.", "开始挑战": "Start challenge", "返回加速史": "Back to the chronicle",
+  "用时": "Time", "操作次数": "Operations", "最快": "Fastest", "最少操作": "Fewest operations", "新纪录": "New personal best", "再玩一次": "Play again",
+  "自动演示不计成绩，亲手完成可记录成绩。": "Automatic demonstrations are not scored. Finish by hand to record a result.",
+  "最快 {0} · 最少 {1} 次操作": "Fastest {0} · fewest {1} operations",
+  "时代工坊": "Era workshops", "十五座工坊，十个可以亲手完成的挑战。": "Fifteen workshops, ten of them challenges to complete with your own hands.", "开始挑战": "Start challenge", "返回加速史": "Back to the chronicle",
+  "当计算，第一次有了形状。走进黄铜与齿轮之间，用一次转动，算出下一行未来。": "When calculation first took shape. Step in among the brass and gears, and with one turn, compute the next line of the future.",
   "走进泥板工坊": "Enter the writing workshop", "走进冶铁工坊": "Enter the forge", "走进印刷工坊": "Enter the printing workshop", "走进天文工坊": "Enter the observatory", "走进蒸汽工坊": "Enter the steam workshop", "走进电气工坊": "Enter the electric workshop", "走进航空工坊": "Enter the flight workshop", "走进逻辑工坊": "Enter the logic laboratory", "走进航天工坊": "Enter the docking laboratory", "走进网络工坊": "Enter the packet workshop",
   "走进石器工坊": "Enter the stone workshop", "走进火的工坊": "Enter the hearth", "走进农业工坊": "Enter the first farm", "走进智能体工坊": "Enter the agent studio",
   "智能体工坊": "The Agent Studio", "石器工坊": "The Stone Workshop", "火的工坊": "The Hearth", "农业工坊": "The First Farm",

@@ -40,6 +40,22 @@ function WorldExperience({ world }: { world: World }) {
   const phase = world.phases[0]!;
   const [figure, unit] = locale === "en" && world.englishDate ? world.englishDate : [world.figure, tx(world.unit)];
   const next = world.next === "difference-engine-1822" ? { path: "/chronicle/difference-engine", title: "差分机工坊" } : WORLDS[world.next];
+  // The challenge's controls give way to this card when the workshop is finished (experience.ts fills it).
+  const done = <div id="done-card" className="done-card" role="group" aria-labelledby="done-heading" tabIndex={-1} hidden>
+    <p className="done-heading"><span aria-hidden="true">✓</span><span id="done-heading">{tx("挑战完成")}</span></p>
+    <dl className="done-stats" id="done-stats">
+      <div><dt>{tx("用时")}</dt><dd id="done-time">—</dd></div>
+      <div><dt>{tx("操作次数")}</dt><dd id="done-steps">—</dd></div>
+      <div><dt>{tx("最快")}</dt><dd id="done-best-time">—</dd></div>
+      <div><dt>{tx("最少操作")}</dt><dd id="done-best-steps">—</dd></div>
+    </dl>
+    <p className="done-note" id="done-note" hidden />
+    <div className="done-actions">
+      <Link className="done-next" to={localePath(next.path, locale)}>{tx("下一站")} · {tx(next.title)} →</Link>
+      <button id="done-again" type="button">{tx("再玩一次")}</button>
+      <Link to={localePath("/chronicle/workshops", locale)}>{tx("全部工坊")}</Link>
+    </div>
+  </div>;
   return <div className={`workshop world world-${world.id}${world.challenge ? " is-challenge" : ""}`} ref={root}>
     <main id="experience" aria-label={tx(world.title)}>
       <div id="viewport" aria-label={tx("三维场景：拖动环视，滚轮走近，点击机器操作")}><img className="workshop-plate" src={world.plate} alt="" width={1600} height={1067} /></div>
@@ -55,14 +71,16 @@ function WorldExperience({ world }: { world: World }) {
       <div id="error" role="alert" hidden><h2>{tx("三维场景未能启动")}</h2><p>{tx("请使用支持 WebGL 2 的浏览器打开此场景。")}</p><pre id="error-detail" /></div>
       <nav id="hotspots" aria-label={tx("场景探索点")} />
       <div className="sheet">
-        <aside className="inspector" aria-labelledby="inspector-title">
+        <aside className="inspector" id="inspector-panel" aria-labelledby="inspector-title">
           <div className="inspector-head"><span className="kicker">{tx(world.id === "agents-2026" ? "从想法到交付" : "演化手记")}</span><button className="icon-button" id="inspector-toggle" aria-label={tx("收起原理面板")} aria-expanded="true">−</button></div>
           <div id="inspector-body"><p className="phase-index" id="phase-index">01 / 0{world.phases.length}</p><h2 id="inspector-title">{tx(phase.title)}</h2><p id="inspector-copy">{tx(phase.detail)}</p>
             <div className="world-readings">{world.readingLabels.map((label, i) => <div key={label}><span>{tx(label)}</span><strong id={`reading-${i}`}>{tx(phase.readings[i]!)}</strong></div>)}</div>
             {world.challenge && <p className="machine-status"><span className="status-dot" id="machine-dot" /><span id="machine-status" role="status">{tx("点击场景中的标记开始探索")}</span></p>}
             {world.challenge && <div id="game-controls" className="game-controls" role="group" aria-label={tx("工坊操作")} />}
+            {world.challenge && done}
             <ol className="phase-track" aria-label={tx("演示阶段")}>{world.phases.map((p, i) => <li key={p.title}><button data-phase={i} disabled={world.challenge} aria-current={i === 0 ? "step" : undefined}><span>{String(i + 1).padStart(2, "0")}</span>{tx(p.readings[0])}</button></li>)}</ol>
             {!world.challenge && <p className="machine-status"><span className="status-dot" id="machine-dot" /><span id="machine-status" role="status">{tx("点击场景中的标记开始探索")}</span></p>}
+            {!world.challenge && done}
           </div>
         </aside>
         <div className="dock" role="toolbar" aria-label={tx("场景控制")}>

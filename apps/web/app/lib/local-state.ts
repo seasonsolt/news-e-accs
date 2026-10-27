@@ -18,6 +18,7 @@ export const KEYS = {
   recentSearches: "aihot-recent-searches",
   firstStar: "eacc-first-star",
   lastBackup: "eacc-last-backup",
+  workshops: "eacc-workshops",
 } as const;
 
 const STARRED_LIMIT = 500;
@@ -124,6 +125,7 @@ const subscribeFont = subscribeKey(KEYS.font);
 const subscribeChangelog = subscribeKey(KEYS.changelogSeen);
 const subscribeRecentSearches = subscribeKey(KEYS.recentSearches);
 const subscribeLastBackup = subscribeKey(KEYS.lastBackup);
+const subscribeWorkshops = subscribeKey(KEYS.workshops);
 
 // Snapshot cache so useSyncExternalStore gets stable references between changes.
 const cache = new Map<string, unknown>();
@@ -465,6 +467,56 @@ export function lastPage(): string | null {
   return v && v.startsWith("/") && !v.startsWith("//") ? v : null;
 }
 
+// workshops (modules/scenes): the ones this reader has finished and their best results, by the workshop's page path
+const WORKSHOP_LIMIT = 100;
+export interface WorkshopRecord {
+  /** The fastest scored finish in milliseconds; absent while the workshop was only finished as a demonstration. */
+  ms?: number;
+  /** The fewest operations in a scored finish. */
+  steps?: number;
+}
+export type WorkshopProgress = Readonly<Record<string, WorkshopRecord>>;
+/** 2:05 for 125 seconds. */
+export function workshopTime(ms: number): string {
+  const seconds = Math.round(ms / 1000);
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+const isCount = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v) && v >= 0;
+
+export function getWorkshopProgress(): WorkshopProgress {
+  return cached(KEYS.workshops, () => {
+    const parsed = readJson(KEYS.workshops);
+    const progress: Record<string, WorkshopRecord> = {};
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return progress;
+    for (const [path, value] of Object.entries(parsed).slice(0, WORKSHOP_LIMIT)) {
+      if (!path.startsWith("/") || !value || typeof value !== "object") continue;
+      const { ms, steps } = value as Record<string, unknown>;
+      progress[path] = { ...(isCount(ms) && { ms }), ...(isCount(steps) && { steps }) };
+    }
+    return progress;
+  });
+}
+
+/**
+ * Marks a workshop finished and keeps the best of its scored finishes, each measure on its own.
+ * `record` is whether this finish beat a best the reader already had.
+ */
+export function recordWorkshop(path: string, result?: { ms: number; steps: number }): { best: WorkshopRecord; record: boolean } {
+  return editLocalData(() => {
+    const progress = getWorkshopProgress(), before = progress[path] ?? {};
+    const ms = result ? Math.round(result.ms) : undefined, steps = result?.steps;
+    const best: WorkshopRecord = { ...before };
+    if (ms !== undefined && isCount(ms) && (before.ms === undefined || ms < before.ms)) best.ms = ms;
+    if (steps !== undefined && isCount(steps) && (before.steps === undefined || steps < before.steps)) best.steps = steps;
+    const record = (before.ms !== undefined && best.ms !== before.ms) || (before.steps !== undefined && best.steps !== before.steps);
+    if (Object.keys(progress).length < WORKSHOP_LIMIT || path in progress) {
+      writeRaw(KEYS.workshops, JSON.stringify({ ...progress, [path]: best }));
+      invalidate(KEYS.workshops);
+    }
+    return { best, record };
+  });
+}
+
 // export / import (version 1)
 export interface ExportBundle {
   version: 1;
@@ -612,6 +664,12 @@ export function useChangelogSeen(): string | null {
 const NO_SEARCHES: string[] = [];
 export function useRecentSearches(): string[] {
   return useSyncExternalStore(subscribeRecentSearches, getRecentSearches, () => NO_SEARCHES);
+}
+
+const NO_WORKSHOPS: WorkshopProgress = {};
+/** The workshops this reader has finished. Empty on the server and while the page hydrates, so both render the same. */
+export function useWorkshopProgress(): WorkshopProgress {
+  return useSyncExternalStore(subscribeWorkshops, getWorkshopProgress, () => NO_WORKSHOPS);
 }
 
 export function useLastBackup(): string | null {

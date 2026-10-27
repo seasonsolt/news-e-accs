@@ -9,16 +9,16 @@
 | 约 100 万年前火的工坊 | `/chronicle/fire` | `taming-fire` | 余烬、添细枝、添木柴、持续照料；火焰、火星与岩壁光照联动 |
 | 约 1.2 万年前农业工坊 | `/chronicle/agriculture` | `agricultural-revolution` | 播种、生长、收获、储粮；查看磨盘与陶器 |
 | 1822 差分机工坊 | `/chronicle/difference-engine` | 里程碑 `difference-engine` | 转动手柄计算平方数表 |
-| 文字工坊 | `/chronicle/writing` | `cities-writing` | 选择谷物或羊群与一至五份数量；按委托正确登记谷物三份、羊群两只、谷物五份 |
+| 文字工坊 | `/chronicle/writing` | `cities-writing` | 选择谷物或羊群与一至五份数量；按每局随机抽出的三笔委托依次登记 |
 | 铁器工坊 | `/chronicle/iron` | `iron-age` | 加炭、鼓风、锤击与冷却；在可锻状态完成两次有效锤击，再冷却成形 |
 | 印刷工坊 | `/chronicle/printing` | `printing` | 排字、校对、上墨和压印；每份重新上墨，完成三张书页 |
-| 观星工坊 | `/chronicle/observatory` | `scientific-revolution` | 对照星图调整方向与焦距；正确记录月面、木星、金星三次观察 |
-| 蒸汽工坊 | `/chronicle/steam` | `steam-age` | 配合汽阀与负载，让压力和转速同时达到目标；每个工况连续测试两次，共完成三组 |
-| 电光工坊 | `/chronicle/electric` | `electric-age` | 选择目标接点、合上开关并测试；依次点亮三支灯，短接会断开保护开关 |
-| 飞行试验工坊 | `/chronicle/flight` | `combustion-flight` | 按配平卡移动重心、调整升降舵，再试飞；通过三段不同配平检验 |
-| 逻辑电路工坊 | `/chronicle/logic` | `transistor-computer` | 设置输入 A、B 并预测输出；逐行正确检验 AND 的四行真值表 |
-| 轨道对接工坊 | `/chronicle/space` | `space-age` | 平移与偏航使位置和姿态对正后推进；克服检查点扰动，完成三段接近与软对接 |
-| 网络分片工坊 | `/chronicle/network` | `internet` | 按一、二、三选择分片，并为每片选择可用路径；绕开断路，完整重组消息 |
+| 观星工坊 | `/chronicle/observatory` | `scientific-revolution` | 对照星图调整方向与焦距；星图给出月面、木星、金星各自随机的刻度，正确记录三次观察 |
+| 蒸汽工坊 | `/chronicle/steam` | `steam-age` | 配合汽阀与负载，让压力和转速同时达到目标；三个工况每局随机，每个连续测试两次 |
+| 电光工坊 | `/chronicle/electric` | `electric-age` | 选择目标接点、合上开关并测试；按状态牌上随机的顺序点亮三支灯，短接会断开保护开关 |
+| 飞行试验工坊 | `/chronicle/flight` | `combustion-flight` | 按配平卡（每局随机三张）移动重心、调整升降舵，再试飞；通过三段不同配平检验 |
+| 逻辑电路工坊 | `/chronicle/logic` | `transistor-computer` | 设置输入 A、B 并预测输出；按随机的行序逐行正确检验 AND 的四行真值表 |
+| 轨道对接工坊 | `/chronicle/space` | `space-age` | 平移与偏航使位置和姿态对正后推进；起始偏差与检查点扰动每局随机，克服后完成三段接近与软对接 |
+| 网络分片工坊 | `/chronicle/network` | `internet` | 按一、二、三选择分片，并为每片选择可用路径；每片断开的线路每局随机，绕开断路，完整重组消息 |
 
 智能体、石器、用火和农业四个工坊共用 `web/shared/page.tsx` 的界面和 `experience.ts` 的相机、操作点、阶段控制与 iframe 交接。`studio.ts` 搭建现代工作室，用火、农业和石器分别在各自的 `scene.ts` 搭建，扫描模型与自然材质的加载、地形及树枝几何由 `shared/scan-assets.ts`、`natural-assets.ts`、`natural-geometry.ts` 共用。每个场景的取景、对象和阶段变化独立。支持拖动环视、滚轮走近、WASD/方向键移动、物件拾取、单步、自动演示、暂停、复位和阶段选择；减少动态效果时相机与阶段直接切换，环境动画停止。失焦、切到后台或打开说明时暂停自动演示。
 
@@ -27,7 +27,7 @@
 ## 怎么进入
 
 - 桌面端（宽度 ≥ 961px、有鼠标、没有关闭动效）：`/chronicle` 的插画由纵深隧道绘制（`apps/web/app/features/chrono/depth-tunnel.ts`）。停在有场景的里程碑上时，隧道在观测舱里用同样大小的 iframe 预先打开 `<场景地址>?embed`，场景暂停在原画视角；读者点「走进工坊」后两边按 `scene-handoff.ts` 的消息交接（`ready` → `enter` → `entered`，返回时 `exit`），只接受同源、来自对方窗口的消息。
-- 其他情况（手机、触屏、关闭动效、没有 WebGL）：「走进工坊」是普通链接，打开场景的独立页面；手机上不显示这个入口。
+- 其他情况（手机、触屏、关闭动效、没有 WebGL）：「走进工坊」是普通链接，打开场景的独立页面；手机上也显示这个入口。
 - 场景页自己画全部界面（路由 `handle` 的 `bare`），不带站点导航。three.js 只在场景页和桌面端隧道里按需加载，服务端不渲染画布。
 
 场景列在 `scenes.ts`：`id` 是 `web/<id>/` 的目录名，`milestone` 是 `industry/chronicle/milestones.json` 里的里程碑，`era` 是 `eras.json` 的时代，二者可同时设置。`label` 是入口按钮的文字。`web.tsx` 把它们交给加速史页面（`WebModule.chronicle.scenes`）。入口按正在显示的画卷关联：时代画卷可在整个时代进入，独立配图的里程碑只进入自己配置的场景。隧道使用 `e-<era>` / `m-<milestone>` 区分相同名称的时代与事件。
@@ -40,7 +40,17 @@
 
 每个挑战有独立的纯状态规则（`web/games/craft-state.ts`、`science-state.ts`、`modern-state.ts`）和 `GameController`。主按钮读取 `snapshot().primary` 的操作 ID，提交当前选择或执行一次操作，不会自动选择正确答案；选择货物、调刻度、接回路等准备步骤由读者完成。只有明确启动「自动演示」才调用 `demo()` 展示正确流程。控制按钮与带 `Spot.action` 的三维实体都通过同一个 `act()` 检查规则。
 
-错误会显示具体反馈，保留已经取得的有效记录，允许改正再试；完成后显示结果并停止自动演示。复位会清空本次设置和进度。完成、错误状态的呈现，以及复位、暂停、减少动态效果和 iframe 交接，都沿用 `web/shared/page.tsx` 与 `experience.ts` 的公共运行逻辑；场景自身只负责几何、操作点、状态与动画。
+错误会显示具体反馈，保留已经取得的有效记录，允许改正再试；完成后显示结果并停止自动演示。复位会清空本次设置和进度，并重新抽取目标。
+
+`GameSnapshot.tone`（`info`、`progress`、`error`）决定状态点与状态行的颜色；出错时面板轻微抖动，变化的读数短暂高亮，减少动态效果时只保留颜色。状态行与说明文字按最长的一段预留高度，操作按钮的位置不随文字变化。
+
+## 每局随机目标与进度
+
+文字的委托、观星的三个刻度、蒸汽的三个工况、电光的点灯顺序、飞行的配平卡、逻辑的行序、对接的偏差与网络的断路线路，都在开始和「再玩一次」时由 `GameController` 的构造参数 `random`（默认 `Math.random`，测试传入固定序列）抽出。抽取保证第一个目标不会被一次无选择的主按钮直接通过，三维场景从游戏的 `view()` 读取当前目标。铁器与印刷没有可随机的目标数据，保持固定。自动演示仍用 `demo()` 走通，但演示过的一局不计成绩。
+
+完成后，面板在原来放操作按钮的位置显示完成卡：本局用时（从第一次操作起，隐藏标签页的时间不算）、操作次数、本工坊最快与最少操作，以及「下一站」（沿 `world.next`）、「再玩一次」和「全部工坊」。智能体、石器、用火和农业四个演示工坊走到最后阶段时显示同样的卡片，没有成绩。差分机的平方数表算到 10² 记为完成，也没有成绩。
+
+进度只存在读者的浏览器里（`apps/web/app/lib/local-state.ts` 的 `eacc-workshops`，按工坊页面路径记录；读写失败时按未完成处理）。`/chronicle/workshops` 列出全部十五座工坊，已完成的显示 ✓ 和最好成绩，加速史「工坊」图层同样标 ✓ 并显示「已完成 n / N」；服务端渲染不带进度，水合后再补。完成、错误状态的呈现，以及复位、暂停、减少动态效果和 iframe 交接，都沿用 `web/shared/page.tsx` 与 `experience.ts` 的公共运行逻辑；场景自身只负责几何、操作点、状态与动画。
 
 十个挑战的装置由代码三维几何构成：泥板与筹码、砌石炉和风箱、木制螺旋印刷机、望远镜、梁式蒸汽机构、灯丝回路、木骨蒙布双翼机、逻辑实验板、对接舱与网络节点台各有独立形制。房间通过 `web/games/workshop.ts` 共用材质、照明、静态合并与实际房间反射；仅复用既有 1822 CC0 木材、石材、灰泥贴图，没有新增素材或 R2 上传项。时代原画提供取景、材质和光色参照，不铺作图片背景充当三维空间。
 

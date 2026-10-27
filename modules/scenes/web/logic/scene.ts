@@ -63,12 +63,12 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
   return { game, spots, pickables: spots.map(s => s.object), views: { wide: { position: [3.6, 2.6, 5.5], target: [0, 1.2, -.4] }, close, side: { position: [-2.5, 1.8, 2.5], target: [0, 1.2, .1] }, painting: { position: [0, 2.2, .5], target: [0, 2.25, -2.2] } }, update(_phase, time) {
     [game.a, game.b, game.output].forEach((bit, i) => { switches[i]!.rotation.x = bit ? -.35 : .35; lamps[i]!.emissiveIntensity = bit ? 1.8 : .02; });
     for (const reel of reels) reel.rotation.z = Math.sin(time * .2) * .1;
-    const key = `${game.a}:${game.b}:${game.output}:${game.passed}`;
+    const key = `${game.a}:${game.b}:${game.output}:${game.passed}:${game.rows}`;
     if (key === last) return; last = key;
     const c = (map.image as HTMLCanvasElement).getContext("2d")!; c.fillStyle = "#102630"; c.fillRect(0, 0, 1024, 640); c.fillStyle = "#d8d0ad"; c.font = "bold 43px monospace"; c.fillText("DISCRETE LOGIC / AND", 48, 65); c.font = "30px monospace";
     c.fillText("ROW    A    B    EXPECTED    TEST", 48, 134);
     for (let row = 0; row < 4; row++) {
-      const a = Math.floor(row / 2), b = row % 2, passed = row < game.passed;
+      const a = game.rows[row]! >> 1, b = game.rows[row]! & 1, passed = row < game.passed;
       c.fillStyle = row === game.passed ? "#efc471" : passed ? "#92c5a3" : "#7a8c8e";
       c.fillText(`${row + 1}      ${a}    ${b}       ${passed ? a & b : "?"}        ${passed ? "PASS" : "----"}`, 48, 205 + row * 66);
     }

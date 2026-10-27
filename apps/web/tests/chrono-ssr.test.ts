@@ -95,19 +95,26 @@ test("the timeline exposes unique workshop stops and localized direct entrances 
     assert.deepEqual(entries.map(a => a.getAttribute("href")), [`${prefix}/chronicle/steam`, `${prefix}/chronicle/difference-engine`]);
     const stops = [...document.querySelectorAll("#chronicle-workshops .chronicle-workshop-locate")];
     assert.deepEqual(stops.map(a => a.getAttribute("href")), [`${prefix}/chronicle?t=1769.000000001#observatory`, `${prefix}/chronicle?t=1822#observatory`]);
+    assert.equal(document.querySelector("#chronicle-workshops .chronicle-workshop-tally")!.textContent, prefix ? "已完成 0 / 2" : "Completed 0 / 2");
+    assert.equal(document.querySelector("#chronicle-workshops .chronicle-workshop-all")!.getAttribute("href"), `${prefix}/chronicle/workshops`);
+    assert.equal(document.querySelector("#chronicle-workshops .chronicle-workshop-check"), null);
     if (!prefix) assert.doesNotMatch(document.querySelector("#chronicle-workshops")!.textContent!, /[\u3400-\u9fff]/u);
   }
 });
 
-test("the workshop directory offers ten localized playable eras without loading a canvas in SSR", async () => {
+test("the workshop directory lists all fifteen workshops, with no reader progress, without loading a canvas in SSR", async () => {
   for (const prefix of ["/zh", ""]) {
     const response = await fetch(`${fixture.origin}${prefix}/chronicle/workshops`);
     assert.equal(response.status, 200);
     const document = parseHTML(await response.text()).document;
     assert.equal(document.querySelectorAll("main").length, 1);
-    assert.equal(document.querySelectorAll(".workshop-gallery-card").length, 10);
+    assert.equal(document.querySelectorAll(".workshop-gallery-card").length, 15);
     const links = [...document.querySelectorAll<HTMLAnchorElement>(".workshop-gallery-start")];
-    assert.equal(new Set(links.map(a => a.getAttribute("href"))).size, 10);
+    assert.equal(new Set(links.map(a => a.getAttribute("href"))).size, 15);
+    assert.ok(links.some(a => a.getAttribute("href") === `${prefix}/chronicle/difference-engine`));
+    // Progress is this browser's: the server sends none and fills in nothing after the fact.
+    assert.equal(document.querySelector(".workshop-gallery-progress")!.textContent, prefix ? "已完成 0 / 15" : "Completed 0 / 15");
+    assert.equal(document.querySelector(".workshop-gallery-done, .is-done"), null);
     for (const link of links) assert.ok(link.getAttribute("href")!.startsWith(`${prefix}/chronicle/`));
     assert.equal(document.querySelector("canvas,iframe"), null);
     if (!prefix) assert.doesNotMatch(document.querySelector("main")!.textContent!, /[\u3400-\u9fff]/u);

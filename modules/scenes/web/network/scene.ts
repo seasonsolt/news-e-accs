@@ -74,7 +74,7 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
       const packet = packets[route]!, progress = (time - sentAt) / 1.5; packet.visible = route === sentRoute && game.shard === sentShard && available && progress >= 0 && progress <= 1; packet.position.copy(curves[route]!.getPoint(Math.max(0, Math.min(1, progress))));
       received[route]!.emissiveIntensity = route < game.passed ? 1.3 : 0;
     }
-    const key = `${game.shard}:${game.route}:${game.passed}`; if (key === last) return; last = key;
+    const key = `${game.shard}:${game.route}:${game.passed}:${game.routes.flat()}`; if (key === last) return; last = key;
     const c = (map.image as HTMLCanvasElement).getContext("2d")!; c.fillStyle = "#071c17"; c.fillRect(0, 0, 800, 600); c.fillStyle = "#9fc398"; c.font = "bold 34px monospace"; c.fillText("PACKET ROUTING / 1991", 35, 60); c.font = "28px monospace";
     [`SELECTED PART ${game.shard} / 3`, `RECEIVER NEEDS ${Math.min(3, game.passed + 1)}`, `ROUTE ${game.route + 1}`, ...game.routes[game.shard - 1]!.map((available, i) => `LINK ${i + 1}: ${available ? "AVAILABLE" : "BROKEN"}`), game.passed === 3 ? "MESSAGE: HELLO, WORLD!" : `REASSEMBLED ${game.passed}/3`].forEach((line, i) => c.fillText(line, 35, 135 + i * 61));
     c.fillStyle = "rgba(0,0,0,.15)"; for (let y = 0; y < 600; y += 4) c.fillRect(0, y, 800, 1); map.needsUpdate = true;

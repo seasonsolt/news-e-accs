@@ -262,6 +262,8 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "时间轴上的菱形标记对应可进入的场景。选择年代定位，或直接走进工坊。": "Diamonds on the timeline mark playable scenes. Select a date to travel there, or enter a workshop directly.",
   "定位到 {0}：{1}": "Go to {0}: {1}",
   "进入 3D": "Enter 3D",
+  "已完成 {0} / {1}": "Completed {0} / {1}",
+  "全部工坊": "All workshops",
   "更多内容": "More",
   "关闭侧栏": "Close panel",
   "正在打开场景…": "Opening the scene…",

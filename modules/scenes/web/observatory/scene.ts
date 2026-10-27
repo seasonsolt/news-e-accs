@@ -63,7 +63,7 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
   finish(preserve);let previous="";
   return {game,views:{wide,close,side,painting:wide},spots,pickables:spots.map(s=>s.object),canMove:(x,z)=>Math.abs(x)<4.2&&z> -2.8&&z<4.8&&!(x> -1.4&&x<.3&&z>-.7&&z<.9),
     update(){const s=game.view();pivot.rotation.y=(s.aim-2.5)*.22;focus.position.z=s.focus*.045;
-      const signature=`${s.aim}:${s.focus}:${s.progress}`;if(signature===previous)return;previous=signature;
+      const signature=`${s.aim}:${s.focus}:${s.progress}:${s.target}`;if(signature===previous)return;previous=signature;
       const c=chartMap.image.getContext("2d")!;c.fillStyle="#cbb995";c.fillRect(0,0,1024,768);c.strokeStyle="#665741";c.lineWidth=2;
       for(let r=65;r<300;r+=48){c.beginPath();c.arc(310,385,r,0,Math.PI*2);c.stroke();}
       for(let i=0;i<6;i++){const a=i*Math.PI/3;c.beginPath();c.moveTo(310,385);c.lineTo(310+Math.sin(a)*280,385-Math.cos(a)*280);c.stroke();c.fillStyle="#352e24";c.font="22px monospace";c.fillText(String(i+1),300+Math.sin(a)*300,390-Math.cos(a)*300);}

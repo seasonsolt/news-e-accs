@@ -1,6 +1,7 @@
 import type { World } from "../shared/worlds.ts";
+import { WRITING_ORDER_MESSAGES } from "./craft-state.ts";
 
-export const CRAFT_MESSAGES: Record<string, string> = {};
+export const CRAFT_MESSAGES: Record<string, string> = { ...WRITING_ORDER_MESSAGES };
 function m(zh: string, en: string) { CRAFT_MESSAGES[zh] = en; return zh; }
 const distance = m("探索距离", "Explore distance");
 export const CRAFT_WORLDS = {
@@ -10,10 +11,10 @@ export const CRAFT_WORLDS = {
     plate: "/media/art/epochs/uruk-accounting-v2-1600.webp", action: m("登记泥板", "Record on tablet"), unitLabel: distance, challenge: true,
     readingLabels: [m("货物", "Goods"), m("数量", "Quantity"), m("账目", "Records")],
     phases: [
-      { title: m("谷物三份，等待登记。", "Three measures of grain await recording."), detail: m("选择货物，再点击计数石调整数量。把谷物三份登记到泥板；选错可直接修改并重试。", "Choose goods and click the counting stones to change the quantity. Record three measures of grain; revise any mismatch and try again."), readings: [m("谷物", "Grain"), "1", "0 / 3"] },
-      { title: m("再记下羊群两只。", "Record two sheep next."), detail: m("第二笔委托更换货物和数量。泥板上的压痕对应已经核对的账目，错误不会抹去正确记录。", "The second order changes goods and quantity. Impressions mark verified records; mistakes preserve correct entries."), readings: [m("羊群", "Sheep"), "2", "1 / 3"] },
-      { title: m("最后一笔：谷物五份。", "The final order: five measures of grain."), detail: m("选择谷物与五份，检查后登记。计数从五循环回一，三笔委托需要各自核对。", "Select grain and five measures, then record. Counting cycles from five to one; verify each order separately."), readings: ["谷物", "5", "2 / 3"] },
-      { title: m("泥板保存了三笔账目。", "The tablet preserves three records."), detail: m("三笔货物和数量均正确。可以复位，再从第一笔委托重新登记。", "All three goods and quantities match. Reset to record the orders again."), readings: [m("已完成", "Complete"), "3", "3 / 3"] },
+      { title: m("第一笔委托，等待登记。", "The first order awaits recording."), detail: m("对照泥板旁的委托签：选择货物，再点击计数石调整数量。核对后登记；选错可直接修改并重试。", "Match the order slip beside the tablet: choose goods and click the counting stones to set the quantity. Check, then record; revise any mismatch and try again."), readings: [m("第一笔", "First order"), "1", "0 / 3"] },
+      { title: m("再记下第二笔委托。", "Record the second order."), detail: m("第二笔委托会更换货物或数量。泥板上的压痕对应已经核对的账目，错误不会抹去正确记录。", "The second order changes the goods or quantity. Impressions mark verified records; mistakes preserve correct entries."), readings: [m("第二笔", "Second order"), "2", "1 / 3"] },
+      { title: m("最后一笔委托。", "The final order."), detail: m("读委托签上的货物和份数，检查后登记。计数从五循环回一，三笔委托需要各自核对。", "Read the goods and quantity on the order slip, then record. Counting cycles from five to one; verify each order separately."), readings: [m("第三笔", "Third order"), "5", "2 / 3"] },
+      { title: m("泥板保存了三笔账目。", "The tablet preserves three records."), detail: m("三笔货物和数量均正确。再玩一次会换一组新的委托。", "All three goods and quantities match. Play again for a new set of orders."), readings: [m("已完成", "Complete"), "3", "3 / 3"] },
     ],
     note: m("城市与早期记账的艺术概念场景。入口沿用约公元前3500年的时代日期；泥板、计数和图形只是原理示意，不把后来的成熟楔形文字当作该年的精确复原。", "An artistic concept of cities and early accounting. The entry follows the era date around 3500 BC. Tablets, counters and marks explain principles rather than reconstructing mature cuneiform at that exact date."),
     source: "https://www.metmuseum.org/essays/the-origins-of-writing", next: "iron",
@@ -49,16 +50,16 @@ export const CRAFT_WORLDS = {
 } satisfies Partial<Record<string, World>>;
 
 Object.assign(CRAFT_MESSAGES, {
-  "选择谷物": "Select grain", "选择羊群": "Select sheep", "数量加一": "Increase quantity", "添加木炭": "Add charcoal", "推动风箱": "Work bellows", "冷却铁坯": "Cool billet", "排列活字": "Set type", "校对字版": "Proof the forme", "字版上墨": "Apply ink",
-  "委托：登记谷物三份。": "Order: record three measures of grain.", "已选择谷物。": "Grain selected.", "已选择羊群。": "Sheep selected.", "数量已改变，请核对委托。": "Quantity changed. Check the order.", "货物或数量不符：修改选择，再登记。": "Goods or quantity do not match. Revise and retry.", "第一笔已登记。委托：登记羊群两只。": "First entry recorded. Order: two sheep.", "第二笔已登记。委托：登记谷物五份。": "Second entry recorded. Order: five measures of grain.", "三笔账目一致，泥板完成。": "All three records match. Tablet complete.",
+  "谷物": "Grain", "羊群": "Sheep", "选择谷物": "Select grain", "选择羊群": "Select sheep", "数量加一": "Increase quantity", "添加木炭": "Add charcoal", "推动风箱": "Work bellows", "冷却铁坯": "Cool billet", "排列活字": "Set type", "校对字版": "Proof the forme", "字版上墨": "Apply ink",
+  "已选择谷物。": "Grain selected.", "已选择羊群。": "Sheep selected.", "数量已改变，请核对委托。": "Quantity changed. Check the order.", "货物或数量不符：修改选择，再登记。": "Goods or quantity do not match. Revise and retry.", "三笔账目一致，泥板完成。": "All three records match. Tablet complete.",
   "先加炭并鼓风，让铁坯进入可锻状态。": "Add charcoal and air to make the billet workable.", "炉火过旺：先冷却，再锤击。": "Too hot: cool before striking.", "铁坯可锻：现在可以锤击。": "The billet is workable. Strike now.", "炉火尚弱，还需要鼓风。": "The fire is weak. Work the bellows.", "冷锤没有成形：先重新加热铁坯。": "Cold blows do not shape it. Reheat first.", "铁坯过热，锤击无效：先冷却。": "Too hot for a valid strike. Cool first.", "两次有效锤击完成，冷却后取出成品。": "Two valid strikes. Cool to finish.", "铁坯已延展一次；保持可锻炉火，再锤一次。": "One valid strike. Keep it workable and strike again.", "铁坯已成形，一件铁器完成。": "The billet is shaped. Iron tool complete.", "炉火已降低；需要时可重新加热。": "Heat reduced. Reheat when needed.", "过热": "Overheated",
   "从字盘选择活字，为这张书页排版。": "Choose movable type and compose the page.", "活字已排好，请校对后印刷。": "Type set. Proof before printing.", "字版还是空的，请先排字。": "The forme is empty. Set type first.", "校对通过，可以上墨。": "Proof passed. Apply ink.", "墨层均匀，可以压印一份。": "Ink is ready. Print one copy.", "已上墨，但还没有校对。": "Inked, but not proofed yet.", "没有字版：先从字盘排字。": "No forme. Set type from the case first.", "尚未校对：检查字版后再压印。": "Not proofed. Check the forme before pressing.", "缺少油墨：每一份压印前都要重新上墨。": "No ink. Re-ink before each impression.", "三份清晰书页完成，知识可以复制。": "Three clear copies. Knowledge can be reproduced.", "这一份已完成，请重新上墨印下一份。": "Copy finished. Re-ink for the next one.", "待校对": "Needs proofing",
 });
 
 Object.assign(CRAFT_MESSAGES, {
   "核对货物与数量，然后把这一笔压进泥板。": "Check the goods and quantity, then impress this entry into the clay.",
-  "第一笔与第三笔委托使用谷物。": "The first and third orders request grain.",
-  "第二笔委托登记两只羊。": "The second order requests two sheep.",
+  "委托要求谷物时，点击谷物碗。": "Click the grain bowl when the order asks for grain.",
+  "委托要求羊群时，点击羊形陶筹。": "Click the clay sheep token when the order asks for sheep.",
   "每次点击加一，五份之后回到一份。": "Each click adds one; after five, counting returns to one.",
   "只有可锻炉火下的锤击才有效，完成两次后冷却。": "Strike at workable heat. After two valid strikes, cool to finish.",
   "空气让炉火增强；留意可锻与过热提示。": "Air strengthens the fire. Watch for workable or overheated feedback.",

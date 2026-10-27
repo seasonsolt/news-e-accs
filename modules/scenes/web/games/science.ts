@@ -34,7 +34,7 @@ export const SCIENCE_MESSAGES: Record<string, string> = {
   "汽阀手轮": "Steam valve", "改变蒸汽输入，再比较压力与速度两根指针。": "Change the steam input, then compare the pressure and speed needles.",
   "负载制动轮": "Load brake", "改变负载，观察飞轮速度怎样变化。": "Change the load and watch the flywheel speed respond.",
   "压力与速度表": "Pressure and speed dials", "金色指针是当前值，绿色标记是目标；两个刻度都不是真实单位。": "Gold needles show current values; green marks show targets. Both scales are dimensionless.",
-  "支路选择器": "Branch selector", "零号是短接示意，按一、二、三的顺序点亮目标灯。": "Zero is a bypass example. Light the target lamps in order: one, two, three.",
+  "支路选择器": "Branch selector", "零号是短接示意，按状态牌上的目标灯顺序依次点亮三支灯。": "Zero is a bypass example. Light the three lamps in the order the status plate shows.",
   "黄铜刀闸": "Brass switch", "合上或断开总开关，再测试所选支路。": "Close or open the main switch, then test the selected branch.",
   "玻璃灯与灯丝": "Glass bulbs and filaments", "点击灯组测试回路；灯丝发光需要闭合的路径。": "Click the lamp assembly to test. The filament needs a closed path to glow.",
 };
@@ -49,9 +49,9 @@ export const SCIENCE_WORLDS = {
     readingLabels: [t("方位刻度", "Bearing"), t("焦距刻度", "Focus"), t("观察记录", "Observations")],
     phases: [
       { title: t("先读星图，再观察。", "Read the chart before observing."), detail: t("星图依次给出月面、木星与金星的目标刻度。方向和焦距都要选对，观察才会被记录。", "The chart gives target marks for the Moon, Jupiter and Venus. Both bearing and focus must match to record an observation."), readings: ["1 / 6", "1 / 4", "0 / 3"] },
-      { title: t("月面的光与影。", "Light and shadow on the Moon."), detail: t("第一份记录完成。对照星图寻找木星，重新调整方向与焦距。", "First observation recorded. Use the chart to find Jupiter and adjust both settings."), readings: ["2 / 6", "2 / 4", "1 / 3"] },
-      { title: t("记录木星，再寻找金星。", "Record Jupiter, then find Venus."), detail: t("不同目标需要不同的简化设置。还差最后一次清晰观察。", "Different targets use different simplified settings. One clear observation remains."), readings: ["4 / 6", "3 / 4", "2 / 3"] },
-      { title: t("三份观察，留在星图上。", "Three observations on the chart."), detail: t("比较天体外观，是检验解释的起点。此处不重现真实天空坐标或光学成像。", "Comparing appearances helps test explanations. This model does not reproduce real celestial coordinates or optical imaging."), readings: ["6 / 6", "4 / 4", "3 / 3"] },
+      { title: t("月面的光与影。", "Light and shadow on the Moon."), detail: t("第一份记录完成。对照星图寻找木星，重新调整方向与焦距。", "First observation recorded. Use the chart to find Jupiter and adjust both settings."), readings: ["1 / 3", "—", "—"] },
+      { title: t("记录木星，再寻找金星。", "Record Jupiter, then find Venus."), detail: t("不同目标需要不同的简化设置。还差最后一次清晰观察。", "Different targets use different simplified settings. One clear observation remains."), readings: ["2 / 3", "—", "—"] },
+      { title: t("三份观察，留在星图上。", "Three observations on the chart."), detail: t("比较天体外观，是检验解释的起点。此处不重现真实天空坐标或光学成像。", "Comparing appearances helps test explanations. This model does not reproduce real celestial coordinates or optical imaging."), readings: ["3 / 3", "—", "—"] },
     ], note, source: "https://catalogue.museogalileo.it/room/RoomVIIBis.html", next: "steam",
   },
   steam: {
@@ -61,9 +61,9 @@ export const SCIENCE_WORLDS = {
     readingLabels: [t("压力／目标", "Pressure / target"), t("速度／目标", "Speed / target"), t("连续稳定采样", "Stable samples")],
     phases: [
       { title: t("让两根指针到达标记。", "Bring both needles onto their marks."), detail: t("开大汽阀提高输入，增加负载抑制转速。两根指针都到绿色标记后，连续测试两次。", "Opening the valve raises input; load restrains speed. Reach both green marks and test twice in a row."), readings: ["0 / 3", "0 / 4", "0 / 2"] },
-      { title: t("第一个工况稳定。", "The first trial is stable."), detail: t("目标标记已改变，重新配合汽阀与负载。过高时可以泄压重试。", "The target marks have moved. Rebalance valve and load; release pressure if it gets too high."), readings: ["3 / 4", "4 / 5", "0 / 2"] },
-      { title: t("再寻找一个较慢的工况。", "Find a slower operating point."), detail: t("并非越快越好，保持两个指标同时稳定才算完成。", "Faster is not always better. Both readings must remain on target."), readings: ["4 / 2", "5 / 2", "0 / 2"] },
-      { title: t("三个工况均已验证。", "Three balanced trials recorded."), detail: t("梁、连杆和飞轮示意不同年代逐步发展的机构；1769是瓦特改进相关的时间线入口。", "Beam, linkage and flywheel illustrate mechanisms developed over time; 1769 marks Watt's improvements in the timeline."), readings: ["2 / 2", "2 / 2", "2 / 2"] },
+      { title: t("第一个工况稳定。", "The first trial is stable."), detail: t("目标标记已改变，重新配合汽阀与负载。过高时可以泄压重试。", "The target marks have moved. Rebalance valve and load; release pressure if it gets too high."), readings: ["1 / 3", "—", "—"] },
+      { title: t("再寻找下一个工况。", "Find the next operating point."), detail: t("并非越快越好，保持两个指标同时稳定才算完成。", "Faster is not always better. Both readings must remain on target."), readings: ["2 / 3", "—", "—"] },
+      { title: t("三个工况均已验证。", "Three balanced trials recorded."), detail: t("梁、连杆和飞轮示意不同年代逐步发展的机构；1769是瓦特改进相关的时间线入口。", "Beam, linkage and flywheel illustrate mechanisms developed over time; 1769 marks Watt's improvements in the timeline."), readings: ["3 / 3", "—", "—"] },
     ], note, source: "https://collection.sciencemuseumgroup.org.uk/people/ap24508/watt-james", next: "electric",
   },
   electric: {
@@ -72,9 +72,9 @@ export const SCIENCE_WORLDS = {
     plate: "/media/art/epochs/electric-age-1600.webp", action: "测试回路", unitLabel,
     readingLabels: [t("支路接点", "Branch contact"), t("总开关", "Main switch"), t("点亮灯数", "Lamps lit")],
     phases: [
-      { title: t("从一条闭合路径开始。", "Begin with a closed path."), detail: t("先选择一号接点，合上开关，再测试。零号支路演示不经过灯丝的短接。", "Select contact one, close the switch and test. Contact zero illustrates a bypass that misses the filament."), readings: ["0 / 3", "断开", "0 / 3"] },
-      { title: t("第一支灯已点亮。", "The first lamp is lit."), detail: t("切换到二号接点，再检查开关与支路。", "Select contact two and check the switch and branch."), readings: ["1 / 3", "闭合", "1 / 3"] },
-      { title: t("把光带到第三支灯。", "Carry light to the third lamp."), detail: t("选择三号接点，完成最后一条示意回路。", "Select contact three to complete the final model circuit."), readings: ["2 / 3", "闭合", "2 / 3"] },
+      { title: t("从一条闭合路径开始。", "Begin with a closed path."), detail: t("按状态牌上的目标灯编号选择接点，合上开关，再测试。零号支路演示不经过灯丝的短接。", "Select the contact numbered like the target lamp on the status plate, close the switch and test. Contact zero illustrates a bypass that misses the filament."), readings: ["0 / 3", "断开", "0 / 3"] },
+      { title: t("第一支灯已点亮。", "The first lamp is lit."), detail: t("看状态牌上的下一个目标灯，切换到对应的接点，再检查开关与支路。", "Read the next target lamp on the status plate, select its contact, and check the switch and branch."), readings: ["1 / 3", "闭合", "1 / 3"] },
+      { title: t("把光带到第三支灯。", "Carry light to the third lamp."), detail: t("选择最后一支灯的接点，完成最后一条示意回路。", "Select the contact of the last lamp to complete the final model circuit."), readings: ["2 / 3", "闭合", "2 / 3"] },
       { title: t("三条路径，三支灯。", "Three paths, three lamps."), detail: t("灯光保持为已完成记录，不表示实际并联接线。此装置仅解释回路概念，不提供真实布线教程。", "The lights remain as recorded achievements, not an actual parallel wiring scheme. This device explains a circuit concept, not real wiring."), readings: ["3 / 3", "闭合", "3 / 3"] },
     ], note, source: "https://www.si.edu/collections/snapshot/edison-light-bulb", next: "flight",
   },

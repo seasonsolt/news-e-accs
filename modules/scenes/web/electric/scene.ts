@@ -70,16 +70,16 @@ export function build(scene: THREE.Scene,k:Kit,assets:WorkshopAssets,renderer:TH
   const statusMap=texture(1024,256,()=>{});const statusFace=mesh(scene,new THREE.PlaneGeometry(1.22,.28),material(new THREE.MeshBasicMaterial({map:statusMap})),[0,.65,1.112]);statusFace.castShadow=false;preserve.add(statusFace);
   const wide:View={position:[3.7,2.65,5.7],target:[-.3,1.15,-.3]},close:View={position:[.2,2.3,2.3],target:[0,1.2,.3]},side:View={position:[-3.3,1.85,2.1],target:[-1.9,1.0,0]};
   const spots=[
-    {id:"contacts",title:"支路选择器",detail:"零号是短接示意，按一、二、三的顺序点亮目标灯。",object:selector,view:close,action:"route-next"},
+    {id:"contacts",title:"支路选择器",detail:"零号是短接示意，按状态牌上的目标灯顺序依次点亮三支灯。",object:selector,view:close,action:"route-next"},
     {id:"switch",title:"黄铜刀闸",detail:"合上或断开总开关，再测试所选支路。",object:switchBase,view:close,action:"switch"},
     {id:"lamps",title:"玻璃灯与灯丝",detail:"点击灯组测试回路；灯丝发光需要闭合的路径。",object:lampGroup,view:close,action:"primary"},
   ];
   for(const s of spots)s.object.traverse(o=>o.userData.spot=s.id);finish(preserve);let previous="";
   return{game,views:{wide,close,side,painting:wide},spots,pickables:spots.map(s=>s.object),canMove:(x,z)=>Math.abs(x)<4.2&&z> -2.8&&z<4.8&&!(x> -3.3&&x<1.95&&z>-.8&&z<1.15),
     update(_phase,_time,dt){const s=game.view();contact.rotation.y=s.route*Math.PI/2;blade.rotation.x=s.closed?0:-.9;
-      for(let i=0;i<3;i++){const on=i<s.progress;filaments[i]!.emissiveIntensity=on?3.2:0;lampLights[i]!.intensity=on?.55:0;}
+      for(let i=0;i<3;i++){const on=s.lit.includes(i+1);filaments[i]!.emissiveIntensity=on?3.2:0;lampLights[i]!.intensity=on?.55:0;}
       if(s.closed)rotor.rotation.z+=dt*1.8;
-      const signature=`${s.route}:${s.closed}:${s.progress}`;if(signature===previous)return;previous=signature;
-      const c=statusMap.image.getContext("2d")!;c.fillStyle="#bca87b";c.fillRect(0,0,1024,256);c.fillStyle="#33362c";c.font="36px monospace";c.fillText("CLOSED PATH / 1879",34,63);c.font="30px monospace";c.fillText(`CONTACT ${s.route}    SWITCH ${s.closed?"CLOSED":"OPEN"}`,34,125);c.fillText(`LAMPS ${s.progress} / 3    TARGET ${Math.min(3,s.progress+1)}`,34,185);statusMap.needsUpdate=true;
+      const signature=`${s.route}:${s.closed}:${s.progress}:${s.order}`;if(signature===previous)return;previous=signature;
+      const c=statusMap.image.getContext("2d")!;c.fillStyle="#bca87b";c.fillRect(0,0,1024,256);c.fillStyle="#33362c";c.font="36px monospace";c.fillText("CLOSED PATH / 1879",34,63);c.font="30px monospace";c.fillText(`CONTACT ${s.route}    SWITCH ${s.closed?"CLOSED":"OPEN"}`,34,125);c.fillText(`LAMPS ${s.progress} / 3    TARGET LAMP ${s.progress===3?"-":s.target}`,34,185);statusMap.needsUpdate=true;
     }};
 }

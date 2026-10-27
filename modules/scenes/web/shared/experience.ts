@@ -8,6 +8,7 @@ import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
 import { FROM_SCENE, readSceneCommand, type SceneEvent } from "@aihot/web/features/chrono/scene-handoff";
 import { reducedMotionQuery } from "@aihot/web/lib/motion";
+import { recordWorkshop, workshopTime } from "@aihot/web/lib/local-state";
 import { createGeometryKit, type Model, type View } from "./geometry.ts";
 import { nextPhase, type World } from "./worlds.ts";
 import { loadSurface } from "./surfaces.ts";
@@ -130,6 +131,19 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
     let phase = 0, visualPhase = 0, elapsed = 0, running = false, sinceStep = 0, paused = embedded, fatal = false;
     let activeView = "wide", flight: { start: number; from: THREE.Vector3; target: THREE.Vector3; view: View; end?: () => void } | null = null;
     const keys = new Set<string>();
+    // One round of play: the reader's operations and active time, and whether the automatic demonstration took a hand in it.
+    let steps = 0, startedAt = 0, idle = 0, hiddenAt = 0, assisted = false, finished = false, shown = false;
+    const newRound = () => { steps = 0; startedAt = 0; idle = 0; assisted = false; finished = false; };
+    const flash = (element: HTMLElement, name: string) => { element.classList.remove(name); void element.offsetWidth; element.classList.add(name); };
+    /** One operation by the reader: counted, then run through the game's rules. */
+    function play(action: string) {
+      setRunning(false);
+      startedAt ||= performance.now();
+      steps++;
+      model.game!.act(action);
+      showPhase(0);
+      if (model.game!.snapshot().tone === "error") flash($("inspector-panel"), "is-rejected");
+    }
     function setRunning(on: boolean) {
       running = on && !(model.game ? model.game.snapshot().complete : phase === world.phases.length - 1) && !fatal;
       sinceStep = 0; $("run").setAttribute("aria-pressed", String(running));
@@ -143,7 +157,12 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
       const p = world.phases[phase]!;
       $("inspector-title").textContent = tx(p.title); $("inspector-copy").textContent = tx(p.detail);
       $("phase-index").textContent = `${String(phase + 1).padStart(2, "0")} / ${String(world.phases.length).padStart(2, "0")}`;
-      (state?.readings ?? p.readings).forEach((v, i) => $("reading-" + i).textContent = tx(v));
+      (state?.readings ?? p.readings).forEach((v, i) => {
+        const element = $("reading-" + i), text = tx(v);
+        if (element.textContent === text) return;
+        element.textContent = text;
+        if (shown) flash(element, "is-changed");
+      });
       for (const button of root.querySelectorAll<HTMLButtonElement>("[data-phase]")) {
         const i = Number(button.dataset.phase);
         if (i === phase) button.setAttribute("aria-current", "step"); else button.removeAttribute("aria-current");
@@ -153,10 +172,31 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
       $<HTMLButtonElement>("step").disabled = done;
       $("step").textContent = tx(done ? state ? "挑战完成" : "演示完成" : state ? model.game!.actions.find(a => a.id === state.primary)?.label ?? world.action : world.action);
       $("machine-status").textContent = tx(state?.status ?? (done ? "演示完成 · 可重新开始" : p.title));
+      $("machine-status").closest<HTMLElement>(".machine-status")!.dataset.tone = state?.tone ?? "info";
       if (state) for (const button of root.querySelectorAll<HTMLButtonElement>(".game-action")) button.disabled = done;
-      if (done) setRunning(false);
+      if (done) { setRunning(false); finish(); }
+      else { finished = false; $("done-card").hidden = true; }
+      if (model.game) $("game-controls").hidden = done;
+      shown = true;
     }
-    function step() { if (model.game) { setRunning(false); model.game.act(model.game.snapshot().primary); showPhase(0); } else showPhase(nextPhase(phase, world.phases.length)); }
+    /** The workshop is finished: remember it in this browser, and show how it went in place of the controls. */
+    function finish() {
+      if (finished) return;
+      finished = true;
+      const scored = !!model.game && !assisted, run = scored ? { ms: performance.now() - startedAt - idle, steps } : undefined;
+      // A demonstration, automatic or of the four finite stages, marks the workshop seen; only the reader's own finish is scored.
+      const saved = model.game && assisted ? undefined : recordWorkshop(world.path, run);
+      const show = (id: string, text: string | undefined) => { $(id).textContent = text === undefined ? "—" : text; };
+      $("done-heading").textContent = tx(scored ? "挑战完成" : "演示完成");
+      $("done-stats").hidden = !run;
+      show("done-time", run && workshopTime(run.ms)); show("done-steps", run && String(run.steps));
+      show("done-best-time", saved?.best.ms === undefined ? undefined : workshopTime(saved.best.ms)); show("done-best-steps", saved?.best.steps === undefined ? undefined : String(saved.best.steps));
+      const note = saved?.record ? "新纪录" : model.game && assisted ? "自动演示不计成绩，亲手完成可记录成绩。" : "";
+      $("done-note").hidden = !note; $("done-note").textContent = tx(note);
+      $("done-card").hidden = false;
+      $("done-card").focus({ preventScroll: true });
+    }
+    function step() { if (model.game) play(model.game.snapshot().primary); else showPhase(nextPhase(phase, world.phases.length)); }
     function updateViewButtons() {
       for (const name of ["wide", "close", "side"]) {
         $("view-" + name).classList.toggle("is-active", activeView === name);
@@ -177,7 +217,7 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
     function inspect(spot: Model["spots"][number]) {
       go(spot.view, "detail");
       $("inspector-body").hidden = false; $("inspector-toggle").setAttribute("aria-expanded", "true"); $("inspector-toggle").textContent = "−";
-      if (model.game && spot.action) { setRunning(false); model.game.act(spot.action); showPhase(0); }
+      if (model.game && spot.action) play(spot.action);
       else if (spot.advance) step();
       else { $("inspector-title").textContent = tx(spot.title); $("inspector-copy").textContent = tx(spot.detail); }
       $("toast").textContent = tx(spot.title); $("toast").hidden = false; toastTime = 3;
@@ -211,16 +251,18 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
     canvas.addEventListener("webglcontextlost", (e) => { e.preventDefault(); fatal = true; setRunning(false); $("error").hidden = false; $("error-detail").textContent = tx("图形上下文已中断，请刷新页面。"); }, { signal });
     for (const name of ["wide", "close", "side"] as const) $("view-" + name).addEventListener("click", () => go(model.views[name], name), { signal });
     $("step").addEventListener("click", step, { signal });
-    $("run").addEventListener("click", () => { if (model.game ? model.game.snapshot().complete : phase === world.phases.length - 1) { model.game?.reset(); showPhase(0); } setRunning(!running); }, { signal });
-    $("reset").addEventListener("click", () => { setRunning(false); model.game?.reset(); showPhase(0); visualPhase = 0; elapsed = 0; go(model.views.wide, "wide"); }, { signal });
+    function restart() { setRunning(false); newRound(); model.game?.reset(); showPhase(0); visualPhase = 0; elapsed = 0; go(model.views.wide, "wide"); }
+    $("run").addEventListener("click", () => { if (model.game ? model.game.snapshot().complete : phase === world.phases.length - 1) { newRound(); model.game?.reset(); showPhase(0); } setRunning(!running); }, { signal });
+    $("reset").addEventListener("click", restart, { signal });
+    $("done-again").addEventListener("click", () => { restart(); canvas.focus({ preventScroll: true }); }, { signal });
     for (const button of root.querySelectorAll<HTMLButtonElement>("[data-phase]")) button.addEventListener("click", () => { if (model.game) return; setRunning(false); showPhase(Number(button.dataset.phase)); }, { signal });
     if (model.game) for (const action of model.game.actions) {
       const button = document.createElement("button"); button.className = "game-action"; button.id = `game-action-${action.id}`; button.textContent = tx(action.label);
       $("game-controls").append(button);
-      button.addEventListener("click", () => { setRunning(false); model.game!.act(action.id); showPhase(0); }, { signal });
+      button.addEventListener("click", () => play(action.id), { signal });
       own(() => button.remove());
     }
-    $("inspector-toggle").addEventListener("click", () => { const open = $("inspector-body").hidden; $("inspector-body").hidden = !open; $("inspector-toggle").textContent = open ? "−" : "+"; $("inspector-toggle").setAttribute("aria-expanded", String(open)); $("inspector-toggle").setAttribute("aria-label", tx(open ? "收起原理面板" : "展开原理面板")); }, { signal });
+    $("inspector-toggle").addEventListener("click", () => { const open = $("inspector-body").hidden; $("inspector-body").hidden = !open; $("inspector-toggle").textContent = open ? "−" : "+"; $("inspector-toggle").setAttribute("aria-expanded", String(open)); $("inspector-toggle").setAttribute("aria-label", tx(open ? "收起原理面板" : "展开原理面板")); reserveText(); }, { signal });
     for (const name of ["reference", "about"]) {
       const dialog = $<HTMLDialogElement>(name + "-dialog");
       $(name + "-open").addEventListener("click", () => { setRunning(false); keys.clear(); dialog.showModal(); }, { signal });
@@ -237,10 +279,25 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
     addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()), { signal });
     const stop = () => { keys.clear(); setRunning(false); };
     addEventListener("blur", stop, { signal });
-    document.addEventListener("visibilitychange", () => { if (document.hidden) stop(); }, { signal });
+    document.addEventListener("visibilitychange", () => {
+      // Only time away during a round comes off it; a round starts at the reader's first operation.
+      if (document.hidden) { hiddenAt = startedAt ? performance.now() : 0; stop(); } else if (hiddenAt) { idle += performance.now() - hiddenAt; hiddenAt = 0; }
+    }, { signal });
     reduced.addEventListener("change", () => { controls.enableDamping = !reduced.matches; if (reduced.matches) { visualPhase = phase; if (flight) go(flight.view, activeView, true); } }, { signal });
+    /** The title and the copy take the room of the longest stage's, so what is below them stays where it is. */
+    function reserveText() {
+      if ($("inspector-body").hidden) return;
+      for (const [element, texts] of [[$("inspector-title"), world.phases.map(p => p.title)], [$("inspector-copy"), world.phases.map(p => p.detail)]] as const) {
+        const current = element.textContent;
+        element.style.minHeight = "";
+        let tallest = 0;
+        for (const text of texts) { element.textContent = tx(text); tallest = Math.max(tallest, Math.ceil(element.getBoundingClientRect().height)); }
+        element.textContent = current; element.style.minHeight = `${tallest}px`;
+      }
+    }
     function resize() {
       const w = viewport.clientWidth, h = viewport.clientHeight; if (!w || !h) return;
+      reserveText();
       camera.aspect = w / h;
       // Match the original plate's cover crop in the tunnel's frame.
       camera.fov = camera.aspect > 1.5 ? THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(Math.PI / 8) * 1.5 / camera.aspect)) : 45;
@@ -274,7 +331,7 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
         }
         walk(dt); controls.update();
         { camera.position.x = THREE.MathUtils.clamp(camera.position.x, -6.4, 6.4); camera.position.z = THREE.MathUtils.clamp(camera.position.z, -4.5, 9); camera.position.y = THREE.MathUtils.clamp(camera.position.y, .8, 5.2); }
-        if (running) { sinceStep += dt; if (sinceStep > (model.game ? 1.5 : 3.8)) { if (model.game) { model.game.demo(); showPhase(0); } else step(); } }
+        if (running) { sinceStep += dt; if (sinceStep > (model.game ? 1.5 : 3.8)) { if (model.game) { assisted = true; model.game.demo(); showPhase(0); } else step(); } }
         if (!reduced.matches) { elapsed += dt; visualPhase = THREE.MathUtils.damp(visualPhase, phase, 2.2, dt); }
         else visualPhase = phase;
         model.update(visualPhase, elapsed, reduced.matches ? 0 : dt);

@@ -2,6 +2,7 @@
 export const messages = {
   en: {
     "走进工坊": "Enter the workshop",
+    "平方数表已算到 10² = 100，这座工坊记为完成。": "The table of squares has reached 10² = 100. This workshop is marked complete.",
     "1822 · 差分机工坊": "1822 · The Difference Engine Workshop",
     "走进 1822 年的差分机工坊：转动手柄，只用加法算出平方数表。": "Step into the 1822 Difference Engine workshop: turn the crank and compute a table of squares by addition alone.",
     "1822 年差分机三维工坊": "A 3D workshop of the 1822 Difference Engine",

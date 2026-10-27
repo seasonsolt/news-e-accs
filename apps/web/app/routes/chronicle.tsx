@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "../lib/navigation";
 import { localeFromMatches, Text, useLocale, useTranslate } from "../lib/i18n";
-import { localePath } from "../lib/locale";
+import { localePath, publicPath } from "../lib/locale";
+import { useWorkshopProgress } from "../lib/local-state";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { data, useLoaderData, useLocation, useRouteLoaderData, type ShouldRevalidateFunction } from "react-router";
 import { FEATURES } from "@aihot/industry/features";
@@ -70,6 +71,10 @@ export default function ChroniclePage() {
   // The tunnel opens the scene in a frame of its own, which links do not localize: the frame needs the locale's path.
   const pictures = useMemo(() => tunnelPictures(chronicle.eras, chronicle.milestones, new Map([...SCENES].map(([id, scene]) => [id, localePath(scene.path, locale)]))), [chronicle, locale]);
   const workshops = useMemo(() => workshopStops(pictures, new Map([...SCENES.values()].map((scene) => [localePath(scene.path, locale), scene.label]))), [pictures, locale]);
+  // This reader's finished workshops are in their browser only: the server renders none, and they appear after hydration.
+  const finished = useWorkshopProgress();
+  const isFinished = (stopPath: string) => !!finished[publicPath(stopPath)];
+  const finishedCount = workshops.filter((stop) => isFinished(stop.path)).length;
   // Between two pictures the deck and the tunnel show the nearer one, its plate and its text; the needle and
   // the readouts stay at t. The arrow keys, the wheel and ‹ › step on from the picture in view.
   const resting = restingPicture(pictures, t, now);
@@ -191,16 +196,20 @@ export default function ChroniclePage() {
     workshops: (
       <section id="chronicle-workshops" tabIndex={-1} aria-labelledby="chronicle-workshops-title">
         <div className="chronicle-section-head">
-          <h2 id="chronicle-workshops-title"><Text value="可进入工坊" /></h2>
+          <div className="chronicle-workshop-heading">
+            <h2 id="chronicle-workshops-title"><Text value="可进入工坊" /></h2>
+            <span className="chronicle-workshop-tally">{tx("已完成 {0} / {1}", finishedCount, workshops.length)}</span>
+            <Link to="/chronicle/workshops" onClick={close} className="chronicle-workshop-all">{tx("全部工坊")} →</Link>
+          </div>
           <p>{tx("{0} 个历史时刻，可以亲手探索。", workshops.length)}</p>
         </div>
         <p className="chronicle-workshop-help"><Text value="时间轴上的菱形标记对应可进入的场景。选择年代定位，或直接走进工坊。" /></p>
         <ul className="chronicle-workshop-list">
           {workshops.map((stop) => (
-            <li key={stop.path} className={scene && localePath(scene.path, locale) === stop.path ? "is-current" : undefined}>
+            <li key={stop.path} className={[scene && localePath(scene.path, locale) === stop.path && "is-current", isFinished(stop.path) && "is-done"].filter(Boolean).join(" ") || undefined}>
               <Link to={`?t=${timeParam(stop.t, now)}#observatory`} onClick={close} preventScrollReset className="chronicle-workshop-locate" aria-label={tx("定位到 {0}：{1}", tx(timeLabel(stop.t, now)), tx(stop.label))}>
                 <img src={`${stop.src}-800.webp`} alt="" loading="lazy" decoding="async" width={80} height={54} />
-                <span><span className="chronicle-workshop-date">{tx(timeLabel(stop.t, now))}</span><strong>{tx(stop.label)}</strong></span>
+                <span><span className="chronicle-workshop-date">{tx(timeLabel(stop.t, now))}{isFinished(stop.path) && <span className="chronicle-workshop-check" role="img" aria-label={tx("已完成")}>✓</span>}</span><strong>{tx(stop.label)}</strong></span>
               </Link>
               <Link to={stop.path} className="chronicle-workshop-enter" aria-label={tx(stop.label)}><Text value="进入 3D" /><span aria-hidden="true">↗</span></Link>
             </li>

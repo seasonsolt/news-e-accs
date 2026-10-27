@@ -28,7 +28,40 @@ html[lang=en] .world .intro h1 span { display: block; margin: 10px 0 0; font-siz
 .world .game-action:hover, .world .game-action:focus-visible { color: #f1d494; background: #b8965024; border-color: #c3a15e; outline: 1px solid #c3a15e; outline-offset: 2px; }
 .world .game-action:disabled { opacity: .4; cursor: default; }
 .world.is-challenge .phase-track button:disabled { opacity: 1; cursor: default; }
-.world.is-challenge .machine-status { display: flex; line-height: 1.6; font-size: 12px; }
+/* The status line keeps room for its longest message, and the controls under it stay where they are. */
+.world.is-challenge .machine-status { display: flex; align-items: flex-start; line-height: 1.6; font-size: 12px; min-height: calc(1.6em * 3); }
+.world.is-challenge .status-dot { margin-top: .55em; }
+html[lang=zh-CN] .world.is-challenge .machine-status { min-height: calc(1.6em * 2); }
+@media (max-width: 760px) { .world.is-challenge .machine-status { min-height: calc(1.6em * 2); } }
+.world .machine-status[data-tone=progress] { color: var(--ok-ink); }
+.world .machine-status[data-tone=progress] .status-dot { background: var(--ok); }
+.world .machine-status[data-tone=error] { color: var(--hot); }
+.world .machine-status[data-tone=error] .status-dot { background: var(--hot); }
+.world .inspector.is-rejected { animation: panel-reject .34s var(--ease-out-quart); }
+@keyframes panel-reject { 20% { transform: translateX(-6px); } 45% { transform: translateX(5px); } 70% { transform: translateX(-3px); } }
+.world .world-readings strong { margin: -1px -6px; padding: 1px 6px; border-radius: var(--radius-mark); }
+.world .world-readings strong.is-changed { animation: reading-flash .9s ease-out; }
+@keyframes reading-flash { from { background: color-mix(in srgb, var(--brass) 45%, transparent); } }
+.world .game-controls[hidden] { display: none; }
+/* The card that takes the controls' place when the workshop is finished. */
+.world .done-card { margin: 14px 0 10px; padding: 14px; border: 1px solid var(--ok); border-radius: var(--radius-tile); background: var(--ok-soft); outline: none; }
+.world .done-card[hidden], .world .done-card [hidden] { display: none; }
+.world .inspector .done-heading { display: flex; align-items: center; gap: 8px; margin: 0; font: 600 15px/1.4 var(--font-sans); color: var(--ok-ink); }
+.world .done-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin: 12px 0 0; }
+.world .done-stats div { min-width: 0; }
+.world .done-stats dt { font-size: 11px; color: var(--ink-4); }
+.world .done-stats dd { margin: 2px 0 0; font: 500 15px var(--font-mono); color: var(--ink); }
+.world .inspector .done-note { margin: 10px 0 0; font-size: 12px; line-height: 1.6; color: var(--accent-ink); }
+.world .done-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 12px; }
+/* Finished, every stage is behind the reader: the card takes the track's room so the panel needs no scrolling. */
+.world .done-card:not([hidden]) ~ .phase-track { display: none; }
+.world .done-actions > * { display: flex; align-items: center; justify-content: center; min-height: 40px; padding: 6px 8px; white-space: nowrap; border: 1px solid var(--line-strong); border-radius: 999px; background: none; color: var(--ink); font-size: 13px; text-align: center; text-decoration: none; }
+.world .done-actions > :hover { background: var(--accent-softer); }
+.world .done-actions > .done-next { grid-column: 1 / -1; border: 0; background: linear-gradient(var(--brass-hi), var(--brass)); color: #2a1f16; font-weight: 600; }
+.world .done-actions > .done-next:hover { background: linear-gradient(#f6dfa4, var(--brass-hi)); }
+/* The scene inside the chronicle cannot take the reader to other pages. */
+.world .is-embedded .done-actions { grid-template-columns: 1fr; }
+.world .is-embedded .done-actions a { display: none; }
 .world.is-challenge .inspector { max-height: calc(100svh - 170px); overflow-y: auto; scrollbar-width: thin; }
 @media (max-width: 760px) {
   .world .sheet { overflow-x: hidden; }
