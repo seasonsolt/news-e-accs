@@ -120,7 +120,7 @@ export function TimelineSlot({ at, children, fresh = false, arrived = false, del
   );
 }
 
-export function Timeline({ initial, filters }: { initial: TimelineResponse; filters: TimelineFilters }) {
+export function Timeline({ initial, filters, foldReasons = false }: { initial: TimelineResponse; filters: TimelineFilters; foldReasons?: boolean }) {
   const tx = useTranslate();
   const location = useLocation();
   const navigation = useNavigation();
@@ -332,7 +332,7 @@ export function Timeline({ initial, filters }: { initial: TimelineResponse; filt
                     const delay = fresh ? Math.min(order++, arrived ? 7 : 10) * (arrived ? 25 : 40) : 0;
                     return (
                       <TimelineSlot key={c.key} dataKey={c.key} at={c.anchorAt} fresh={fresh && !arrived} arrived={arrived} delay={delay}>
-                        <FeedItem item={c.item} group={c.group} filters={filters} read={readSet.has(c.item.id) && !(unreadOnly && unreadVisible(c))} onOpen={markRead} at={c.anchorAt} />
+                        <FeedItem item={c.item} group={c.group} filters={filters} read={readSet.has(c.item.id) && !(unreadOnly && unreadVisible(c))} onOpen={markRead} at={c.anchorAt} foldReason={foldReasons} />
                       </TimelineSlot>
                     );
                   })}

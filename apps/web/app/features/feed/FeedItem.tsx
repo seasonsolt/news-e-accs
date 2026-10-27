@@ -29,9 +29,11 @@ export interface FeedItemProps {
   showTags?: boolean;
   /** The time the item sits at in its list; phones show it in the source line (desktop: on the rail). */
   at?: string;
+  /** Keep the reason behind a 推荐理由 toggle (the front page's quieter list). */
+  foldReason?: boolean;
 }
 
-export const FeedItem = memo(function FeedItem({ item, group, filters, read = false, onOpen, showTags = false, at }: FeedItemProps) {
+export const FeedItem = memo(function FeedItem({ item, group, filters, read = false, onOpen, showTags = false, at, foldReason = false }: FeedItemProps) {
   const tx = useTranslate();
   const language = contentHtmlLanguage(item, useLocale()) ?? "und";
   const isX = item.channel === "x" && !!item.x;
@@ -114,7 +116,13 @@ export const FeedItem = memo(function FeedItem({ item, group, filters, read = fa
         </div>
       )}
 
-      {item.reason && (
+      {item.reason && foldReason && (
+        <details className="feed-reason relative z-10 mt-1 lg:mt-2">
+          <summary className="inline-flex min-h-9 cursor-pointer list-none items-center text-[13px] text-accent-ink lg:min-h-8"><Text value={ITEM_COPY.reasonLabel} /></summary>
+          <p className="mb-1 rounded-tile bg-accent-softer px-3 py-2 text-[13px] leading-[1.75] text-note">{item.reason}</p>
+        </details>
+      )}
+      {item.reason && !foldReason && (
         <div className="mt-1 lg:mt-3 lg:border-t lg:border-line-soft lg:pt-3">
           <p className="line-clamp-1 text-[13px] leading-[1.65] text-note lg:line-clamp-none lg:leading-[1.75]"><Text value={`${ITEM_COPY.reasonLabel}：`} />{item.reason}</p>
         </div>

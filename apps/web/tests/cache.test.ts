@@ -309,7 +309,7 @@ test("URL editions isolate HTML and Router data while preferences cannot change 
   assert.match(chineseHtml, /宇宙在降温/);
   // The front page's h1 is what readers search for; the line under it is display copy.
   assert.match(chineseHtml, /<h1 class="deck-heading">今日 AI 新闻：精选与新兴事件<\/h1>/);
-  assert.match(chineseHtml, /<p class="deck-title">宇宙在降温/);
+  assert.match(chineseHtml, /<p class="[^"]*">宇宙在降温/);
   assert.match(englishHtml, /<h1 class="deck-heading">Today’s AI news: editorial picks and emerging stories<\/h1>/);
   assert.match(chineseHtml, /"@type":"WebSite"/);
   // The acceleration (/chronicle) is the signature view: second in the top bar and a tab on phones.

@@ -176,7 +176,8 @@
   }
 }
 
-[data-theme="dark"] {
+[data-theme="dark"],
+:root:has(.home-page.is-night) {
   color-scheme: dark;
   --bg: #15110d;
   --bg-sunk: #1b1611;
@@ -960,31 +961,47 @@ html { scrollbar-gutter: stable; }
 .home-page .deck-inner { max-width: 1264px; }
 .home-page .deck-plate { object-position: 65% 62%; }
 .home-page .deck-shade { background: linear-gradient(90deg, rgb(10 8 6 / .88), rgb(10 8 6 / .25) 70%), linear-gradient(0deg, rgb(10 8 6 / .85), transparent 65%); }
-.home-page .deck-title { font-size: clamp(32px, 4vw, 48px); }
-.home-page .deck-desc { max-width: 34rem; font-size: 14px; line-height: 1.7; }
-.home-page .deck-foot { margin-top: 20px; }
-.home-page .kardashev-meter { width: 272px; padding: 16px 18px; }
-.home-page .kardashev-meter-figure { font-size: 72px; }
-.home-page .kardashev-meter-bar { height: 8px; margin-top: 12px; }
-@media (min-width: 961px) {
-  .home-page > .deck { padding: 36px 0 28px; }
-  .home-page > .deck.is-compact { padding: 24px 0; }
-  .home-page .deck-copy { flex-basis: 360px; max-width: 36rem; }
-}
+.home-page.is-night .deck-plate { object-position: 65% 42%; }
+.home-page.is-night .deck-shade { background: linear-gradient(to top, var(--deck) 0, rgb(18 14 10 / .84) 24%, rgb(18 14 10 / .2) 58%, rgb(18 14 10 / .55) 100%), linear-gradient(90deg, rgb(10 8 6 / .82), rgb(10 8 6 / .2) 55%, rgb(10 8 6 / 0) 78%); }
+.home-page .deck-desc { max-width: 32rem; font-size: 16px; line-height: 1.75; }
+/* The front page reads at night in either theme: the plate fills the first screen and its sky runs on
+   into the list, with no seam between the deck and the page. */
+.home-page.is-night, :root:has(.home-page.is-night) { --bg: var(--deck); --daybar: var(--deck); }
+.home-page.is-night > .home-hero { display: flex; flex-direction: column; justify-content: flex-end; min-height: clamp(600px, calc(100svh - 120px), 860px); padding: 64px 0 20px; }
+.home-hero .deck-inner { width: 100%; }
+.home-hero-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 28px 48px; }
+.home-hero-copy { flex: 999 1 520px; min-width: 0; max-width: 46rem; }
+.home-hero-title { margin-top: 14px; font-family: var(--font-display); font-size: clamp(44px, 6.2vw, 92px); font-weight: 700; line-height: 1.08; letter-spacing: .02em; color: #fff7e8; text-wrap: balance; text-shadow: 0 2px 30px rgb(0 0 0 / .45); }
+.home-hero-title:lang(en) { font-weight: 400; font-style: italic; letter-spacing: -.01em; }
+.home-hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+.home-hero .deck-button.is-primary { background: linear-gradient(var(--brass-hi), var(--brass)); color: #2a1f16; }
+.home-hero-wallpaper { display: inline-flex; align-items: center; min-height: 36px; margin-top: 10px; font-size: 14px; color: var(--brass-hi); }
+.home-lead { flex: 1 1 340px; max-width: 420px; display: flex; flex-direction: column; gap: 10px; padding: 22px 24px; border-radius: var(--radius-card); border: 1px solid rgb(244 236 220 / .16); background: rgb(18 14 10 / .78); color: var(--deck-ink); transition: border-color .15s; }
+.home-lead:hover { border-color: rgb(217 164 65 / .6); }
+.home-lead-kicker { display: flex; flex-wrap: wrap; gap: 4px 10px; font: 500 12px/1.5 var(--font-mono); letter-spacing: .12em; color: var(--brass); }
+.home-lead-kicker > span { letter-spacing: .04em; color: rgb(244 236 220 / .62); }
+.home-lead-title { font-size: 20px; font-weight: 650; line-height: 1.45; color: #fff7e8; }
+.home-lead-summary { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; font-size: 14.5px; line-height: 1.7; color: rgb(244 236 220 / .74); }
+.home-lead-go { font-size: 14px; color: var(--brass-hi); }
 @media (max-width: 960px) {
-  .home-page .deck-plate { object-position: 88% 62%; }
-  .home-page .deck-row { gap: 20px; }
-  .home-page .deck-aside { width: 100%; }
-  .home-page .kardashev-meter { width: 100%; display: grid; grid-template-columns: 1fr auto; column-gap: 16px; padding: 12px 14px; }
-  .home-page .kardashev-meter-head { grid-column: 1; flex-wrap: wrap; column-gap: 12px; }
-  .home-page .kardashev-meter-reading { grid-column: 2; grid-row: 1 / 4; align-self: center; margin: 0; gap: 6px; }
-  .home-page .kardashev-meter-figure { font-size: 44px; }
-  .home-page .kardashev-meter-of { font-size: 11px; }
-  .home-page .kardashev-meter-bar { grid-column: 1; margin-top: 8px; height: 5px; }
-  .home-page .kardashev-meter-scale { grid-column: 1; font-size: 9px; margin-top: 5px; }
-  .home-page .kardashev-meter-note { grid-column: 1; font-size: 11px; margin-top: 8px; }
-  .home-page .kardashev-meter-go { grid-column: 2; align-self: end; text-align: right; font-size: 11px; margin-top: 8px; }
-  .home-page .deck-button { min-height: 44px; padding-inline: 14px; font-size: 13px; }
+  .home-page .deck-plate { object-position: 78% 40%; }
+  .home-page.is-night > .home-hero { min-height: calc(100svh - 130px - env(safe-area-inset-bottom)); padding-top: 40px; }
+  .home-hero-row { gap: 22px; }
+  .home-lead { max-width: none; padding: 16px 18px; }
+  .home-lead-title { font-size: 17px; }
+  .home-lead-summary { display: none; }
+  .home-lead-go { display: none; }
+  .home-page .deck-desc { font-size: 14.5px; }
+  .home-page .deck-button { min-height: 44px; padding-inline: 16px; font-size: 14px; }
+}
+/* Phones keep the first screen to the line, two buttons, the lead and the rail. */
+@media (max-width: 640px) {
+  .home-page.is-night .deck-shade { background: linear-gradient(to top, var(--deck) 0, rgb(18 14 10 / .9) 40%, rgb(18 14 10 / .35) 75%, rgb(18 14 10 / .6) 100%); }
+  .home-hero .deck-heading { font-size: 13px; font-weight: 500; color: rgb(244 236 220 / .72); }
+  .home-hero-title { font-size: 44px; }
+  .home-hero-title:lang(en) { font-size: 40px; line-height: 1.05; }
+  .home-hero-actions { gap: 10px; margin-top: 20px; }
+  .home-hero .home-hero-extra { display: none; }
 }
 /* An item page's band: the category plate cut to a strip under the top bar, in place of a deck. */
 .item-band { position: relative; isolation: isolate; overflow: hidden; margin-inline: calc(50% - var(--page-width, 100vw) / 2); margin-top: -16px; height: 10px; background: var(--deck); }
@@ -1021,17 +1038,17 @@ html { scrollbar-gutter: stable; }
 
 /* Dark brass cards on parchment: the home page's pressure gauge and the deck's instruments. */
 .hot-gauge { border-radius: var(--radius-panel); background: linear-gradient(var(--deck-2), var(--deck)); border: 1px solid #2c2318; box-shadow: inset 0 1px 0 rgb(217 164 65 / .35), 0 10px 24px -18px rgb(0 0 0 / .6); color: var(--deck-ink); }
-.kardashev-meter { display: block; width: min(420px, 100%); padding: 24px 26px; border-radius: 16px; background: linear-gradient(rgb(26 21 16 / .92), rgb(18 14 10 / .92)); border: 1px solid rgb(217 164 65 / .4); box-shadow: inset 0 1px 0 rgb(240 210 138 / .35); color: var(--deck-ink); }
-.kardashev-meter:hover { border-color: var(--brass); }
-.kardashev-meter-go { display: block; margin-top: 10px; font-size: 13px; font-weight: 600; color: var(--heat); }
-.kardashev-meter-head { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--deck-dim); }
-.kardashev-meter-reading { display: flex; align-items: baseline; gap: 12px; margin-top: 8px; }
-.kardashev-meter-figure { font-size: clamp(72px, 9vw, 108px); }
-.kardashev-meter-of { font-size: 13px; color: var(--deck-faint); }
-.kardashev-meter-bar { display: block; height: 12px; margin-top: 18px; border-radius: 999px; background: rgb(244 236 220 / .1); overflow: hidden; }
-.kardashev-meter-bar > span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #6b4410, var(--brass) 45%, var(--heat) 80%, var(--heat-hi)); }
-.kardashev-meter-scale { display: flex; justify-content: space-between; margin-top: 9px; font: 11.5px var(--font-mono); color: var(--deck-faint); }
-.kardashev-meter-note { display: block; margin-top: 14px; font-size: 13.5px; line-height: 1.7; color: rgb(244 236 220 / .78); }
+.kardashev-meter { position: relative; display: block; margin-top: 40px; color: var(--deck-ink); }
+.kardashev-meter-track { position: relative; display: block; height: 22px; }
+.kardashev-meter-track::before { content: ""; position: absolute; left: 0; right: 0; top: 10px; height: 2px; background: rgb(244 236 220 / .16); }
+.kardashev-meter-fill { position: absolute; left: 0; top: 10px; height: 2px; background: linear-gradient(90deg, rgb(217 164 65 / .15), var(--brass-hi)); }
+.kardashev-meter-tick { position: absolute; top: 6px; width: 1px; height: 10px; background: rgb(244 236 220 / .25); }
+.kardashev-meter-tick.is-lit { background: rgb(240 210 138 / .55); }
+.kardashev-meter-needle { position: absolute; top: 3px; width: 16px; height: 16px; box-sizing: border-box; transform: translateX(-50%); border: 2px solid var(--deck); border-radius: 9999px; background: radial-gradient(circle at 35% 30%, #fff3d6, var(--brass)); box-shadow: 0 0 0 1px var(--brass), 0 0 18px rgb(240 210 138 / .9); }
+.kardashev-meter-scale { position: relative; display: flex; justify-content: space-between; margin-top: 6px; font: 12px var(--font-mono); color: rgb(244 236 220 / .62); }
+.kardashev-meter-now { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; color: var(--brass-hi); }
+.kardashev-meter:hover .kardashev-meter-now { color: #fff3d6; }
+@media (max-width: 640px) { .kardashev-meter { margin-top: 44px; } .kardashev-meter-now { top: -48px; } }
 
 /* The site's foot: preferences, rules and feeds. */
 .site-footer { border-top: 1px solid var(--line); padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
