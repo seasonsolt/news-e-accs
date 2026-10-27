@@ -73,7 +73,6 @@ export function meta({ loaderData }: Route.MetaArgs) {
     rawTitle: true,
     description: page.description,
     path: `/${slug}`,
-    image: "/og.png",
     type: "article",
     jsonLd: structuredData(page, lang),
   }, lang);

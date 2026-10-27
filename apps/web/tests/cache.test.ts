@@ -400,6 +400,8 @@ test("the e/acc concept pages keep their English titles, text language and struc
     assert.ok(html.includes(`<title>${page.title}</title>`), page.path);
     assert.match(html, new RegExp(`<link rel="canonical" href="[^"]*${page.path}"/>`));
     assert.match(html, /<meta property="og:locale" content="en"\/>/);
+    // The share image is the site's card in the page's language: /og.png never existed.
+    assert.ok(html.includes(`<meta property="og:image" content="${site}/og/site.png?lang=en"/>`), page.path);
     assert.match(html, /<article class="pb-14" lang="en">/);
     const english = await (await fetch(`${origin}${page.path}`, { headers: { "Accept-Language": "en" } })).text();
     assert.doesNotMatch(english, /English editions appear when available/, page.path);
@@ -472,6 +474,7 @@ test("the Chinese concept pages are Chinese editions that name the English ones 
       assert.equal(document.documentElement.lang, "zh-CN");
       assert.ok(html.includes(`<title>${page.title}</title>`), page.slug);
       assert.match(html, new RegExp(`<link rel="canonical" href="[^"]*/zh/${page.slug}"/>`));
+      assert.equal(document.querySelector('meta[property="og:image"]')?.getAttribute("content"), `${site}/og/site.png?lang=zh`);
       assert.equal(document.querySelector("article.pb-14")?.getAttribute("lang"), "zh-CN");
       assert.match(document.querySelector("article.pb-14 h2")!.textContent!, /\p{Script=Han}/u, "headings are Chinese");
       const main = jsonLd(html).find((e) => e["@type"] === page.type)!;
