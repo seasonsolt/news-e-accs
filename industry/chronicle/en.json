@@ -2,6 +2,7 @@
   "_readme": "英文版：按 id（指标按 key）对照 eras.json、milestones.json、metrics.json 里给读者看的文字；没写的字段沿用中文。forecastBy 对应 forecast.by，sourceName 对应 source.name。改中文时同步改这里。",
   "eras": {
     "big-bang": {
+      "epoch": "Cosmos",
       "title": "The Big Bang",
       "summary": "The universe expands from an extremely hot, dense state, and the first atoms form as it cools. There are no stars yet, and no observers.",
       "artStyle": "Deep-space astrophotography"
@@ -17,6 +18,7 @@
       "artStyle": "18th-century copperplate star chart"
     },
     "origin-of-life": {
+      "epoch": "Life",
       "title": "Origin of Life on Earth",
       "summary": "Single-celled life persists for about 3 billion years; photosynthesis brings oxygen to the atmosphere, and eukaryotic cells appear.",
       "artStyle": "Hand-drawn microscope scientific illustration"
@@ -32,6 +34,7 @@
       "artStyle": "Paleontological reconstruction oil painting"
     },
     "homo-stone-tools": {
+      "epoch": "Humans",
       "title": "Homo and Stone Tools",
       "summary": "Hominins walk upright and knap stone tools, and Homo erectus leaves Africa. Tools begin to extend the body, but there is still no reliable energy source.",
       "artStyle": "Archaeological line drawing"
@@ -87,6 +90,7 @@
       "artStyle": "Copperplate engraving"
     },
     "steam-age": {
+      "epoch": "Machines and minds",
       "title": "The Age of Steam",
       "summary": "Coal and the steam engine bring the first large-scale use of fossil energy, and factories and railways transform production and distance.",
       "artStyle": "Victorian engineering engraving"
@@ -207,6 +211,7 @@
       "artStyle": "Contemporary large-format night photography"
     },
     "agent-teams-speculative": {
+      "epoch": "Speculative",
       "title": "Long-Horizon Agent Teams (speculative)",
       "summary": "Scenario forecast (2027–2029): teams of agents may continuously divide up, check and deliver work in software development and research. This assumes mature permissions, verification and failure recovery; humans remain responsible for complex tasks.",
       "artStyle": "Near-future realistic scenario illustration (speculative)"

@@ -1139,21 +1139,22 @@ html { scrollbar-gutter: stable; }
    and, on a desktop, the layer's panels. */
 .observatory-tools { position: absolute; top: 16px; right: 16px; z-index: 2; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 @media (min-width: 961px) { .observatory-tools { top: 24px; right: 28px; } }
-.observatory-wallpaper, .observatory-layers button { padding: 6px 12px; border: 1px solid rgb(217 164 65 / .45); border-radius: 999px; background: rgb(21 17 13 / .55); backdrop-filter: blur(6px); font: 12px var(--font-mono); letter-spacing: .04em; color: var(--brass-hi); transition: background 200ms var(--ease-out-quart); }
-.observatory-wallpaper:hover, .observatory-layers button:hover, .observatory-layers button[aria-expanded="true"] { background: rgb(217 164 65 / .22); }
-.observatory-layers { display: none; gap: 6px; }
+.observatory-wallpaper, .observatory-layers { border: 1px solid rgb(217 164 65 / .38); border-radius: 999px; background: rgb(21 17 13 / .58); backdrop-filter: blur(8px); }
+.observatory-wallpaper, .observatory-layers button { padding: 6px 13px; font: 12px var(--font-mono); letter-spacing: .04em; color: var(--brass-hi); transition: background 200ms var(--ease-out-quart); }
+.observatory-layers button { border-radius: 999px; }
+.observatory-wallpaper:hover, .observatory-layers button:hover { background: rgb(217 164 65 / .16); }
+.observatory-layers button[aria-expanded="true"] { background: rgb(217 164 65 / .28); color: #fff3d6; }
+.observatory-layers { display: none; padding: 2px; }
 /* The way into a milestone's scene (WebModule.chronicle): a desktop with a mouse only, like the tunnel it hands over from. */
-.observatory-enter { display: none; margin-top: 14px; align-items: center; gap: 10px; padding: 8px 16px; border: 1px solid var(--brass); border-radius: 999px; background: rgb(26 19 11 / .8); font-size: 14px; color: var(--deck-ink); transition: background 200ms var(--ease-out-quart), opacity 300ms; }
-.observatory-enter:hover { background: #2c2010; }
+.observatory-enter { display: none; margin-top: 18px; align-items: center; gap: 10px; min-height: 44px; padding: 0 20px; border-radius: 999px; background: linear-gradient(var(--brass-hi), var(--brass)); font-size: 14px; font-weight: 600; color: #2a1f16; transition: filter 200ms var(--ease-out-quart), opacity 300ms; }
+.observatory-enter:hover { filter: brightness(1.06); color: #2a1f16; }
 .observatory-enter[aria-disabled="true"] { opacity: .6; cursor: wait; }
-/* On a line of its own: beside a long art style it would cover the style's end. */
 @media (min-width: 961px) and (hover: hover) and (pointer: fine) { .observatory-enter { display: flex; width: fit-content; } }
 .observatory-time { margin-top: 10px; font-family: var(--font-display); font-weight: 400; line-height: .9; color: var(--deck-ink); text-shadow: 0 2px 30px rgb(0 0 0 / .45); }
 .observatory-time-figure { font-size: clamp(68px, 12vw, 136px); letter-spacing: -.02em; }
 .observatory-time-unit { margin-inline: .06em; font-size: clamp(26px, 4vw, 44px); color: rgb(244 236 220 / .82); }
 .observatory-era { margin-top: 14px; font-size: 21px; font-weight: 600; color: var(--deck-ink); }
 .observatory-summary { margin-top: 6px; max-width: 36rem; font-size: 14.5px; line-height: 1.75; color: rgb(244 236 220 / .8); text-wrap: pretty; }
-.observatory-style { display: inline-block; margin-top: 12px; padding-top: 8px; border-top: 1px solid rgb(217 164 65 / .35); font: 11.5px var(--font-mono); letter-spacing: .04em; color: var(--brass-hi); }
 
 /* The tunnel (DepthTunnel.tsx) over the plate once its first picture is drawn, and the scene it hands over to. */
 .observatory-tunnel { position: absolute; inset: 0; z-index: -2; display: block; width: 100%; height: 100%; opacity: 0; outline: none; transition: opacity 400ms var(--ease-out-quart); }
@@ -1178,22 +1179,25 @@ html { scrollbar-gutter: stable; }
 .chronicle-below > * + * { margin-top: 2.5rem; }
 @media (min-width: 961px) {
   .chronicle-page { --stage-height: max(560px, calc(100svh - 112px)); position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 0; transition: grid-template-columns 450ms var(--ease-out-quart), column-gap 450ms var(--ease-out-quart); }
-  .chronicle-stage { grid-column: 1; grid-row: 1; position: relative; isolation: isolate; overflow: hidden; display: flex; flex-direction: column; height: var(--stage-height); border-radius: var(--radius-panel); background: radial-gradient(ellipse at 70% 30%, #2a2016, var(--deck) 70%); color: var(--deck-ink); }
-  .chronicle-stage .observatory { position: static; isolation: auto; overflow: visible; display: flex; flex: 1; min-height: 0; flex-direction: column; justify-content: flex-end; margin: 0; border-radius: 0; background: none; }
-  .chronicle-stage .observatory-readout { position: relative; padding: 0 36px; }
+  .chronicle-stage { grid-column: 1; grid-row: 1; position: relative; isolation: isolate; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr) auto; height: var(--stage-height); border-radius: var(--radius-panel); background: radial-gradient(ellipse at 70% 30%, #2a2016, var(--deck) 70%); color: var(--deck-ink); }
+  .chronicle-stage .observatory { position: static; isolation: auto; overflow: visible; display: flex; min-height: 0; flex-direction: column; justify-content: flex-end; margin: 0; border-radius: 0; background: none; }
+  .chronicle-stage .observatory-readout { position: relative; padding: 0 36px 22px; }
   .chronicle-stage .observatory-shade { background: linear-gradient(to top, rgb(12 9 6 / .96) 0%, rgb(12 9 6 / .7) 34%, rgb(12 9 6 / 0) 62%), linear-gradient(to right, rgb(12 9 6 / .6), rgb(12 9 6 / 0) 58%); }
-  .chronicle-stage .chronometer { position: relative; top: auto; z-index: 1; padding: 10px 36px 14px; border: 0; border-radius: 0; box-shadow: none; background: linear-gradient(rgb(18 14 10 / 0), rgb(18 14 10 / .9) 40%); }
+  .chronicle-stage .chronometer { grid-column: 1 / -1; position: relative; top: auto; z-index: 1; padding: 10px 24px 14px; border: 0; border-radius: 0; box-shadow: none; background: linear-gradient(rgb(18 14 10 / 0), rgb(18 14 10 / .9) 40%); }
   .observatory-layers { display: flex; }
-  .chronicle-readouts { position: relative; z-index: 1; display: grid; max-width: 52rem; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 20px 36px 0; border-top: 1px solid rgb(217 164 65 / .28); }
-  .chronicle-readout { min-width: 0; padding: 12px 18px 0 0; }
-  .chronicle-readout + .chronicle-readout { padding-left: 18px; border-left: 1px solid rgb(217 164 65 / .18); }
-  .chronicle-readout-label { font: 11px var(--font-mono); letter-spacing: .06em; color: rgb(244 236 220 / .6); }
+  .chronicle-readouts { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-end; gap: 14px; align-self: end; padding: 0 36px 26px 0; }
+  .chronicle-readouts-caption { max-width: 26rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 11px var(--font-mono); letter-spacing: .04em; color: rgb(240 210 138 / .55); }
+  .chronicle-readouts-row { display: flex; gap: 28px; }
+  .chronicle-readout { min-width: 112px; }
+  .chronicle-readout-label { white-space: nowrap; font: 11px var(--font-mono); letter-spacing: .06em; color: rgb(244 236 220 / .6); }
   .chronicle-readout-value { display: flex; align-items: baseline; gap: 6px; margin-top: 4px; white-space: nowrap; }
-  .chronicle-readout-value .num { font-size: 28px; font-weight: 700; line-height: 1; color: var(--deck-ink); }
+  .chronicle-readout-value .num { font-size: 24px; font-weight: 700; line-height: 1; color: var(--deck-ink); }
   .chronicle-readout-unit { font-size: 12px; color: rgb(244 236 220 / .7); }
   .chronicle-readout-note { margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 11.5px var(--font-mono); color: var(--brass-hi); }
   .chronicle-readout.is-empty .num { color: rgb(244 236 220 / .4); }
   .chronicle-readout.is-empty .chronicle-readout-note { color: rgb(244 236 220 / .45); }
+  .chronicle-readout-bar { display: block; height: 3px; margin-top: 9px; border-radius: 2px; background: rgb(244 236 220 / .14); }
+  .chronicle-readout-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--brass-hi); }
 
   .chronicle-layer { grid-column: 2; grid-row: 1; position: absolute; top: 0; right: 0; z-index: 30; display: flex; width: min(400px, 100%); height: var(--stage-height); flex-direction: column; overflow: hidden; margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-panel); box-shadow: 0 18px 40px -18px rgb(0 0 0 / .45); opacity: 0; visibility: hidden; transition: opacity 300ms var(--ease-out-quart), visibility 0s 300ms; }
   .has-layer .chronicle-layer { opacity: 1; visibility: visible; transition: opacity 300ms var(--ease-out-quart) 100ms; }
@@ -1221,6 +1225,7 @@ html { scrollbar-gutter: stable; }
 /* The chronometer: the log axis as a brass instrument, sticky under the deck. */
 .chronometer {
   position: sticky; top: 0; z-index: 25;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "previous axis next" ". controls ."; column-gap: 12px;
   margin-inline: -16px;
   padding: 24px 12px 10px;
   background: linear-gradient(var(--deck-2), var(--deck));
@@ -1231,16 +1236,21 @@ html { scrollbar-gutter: stable; }
 @media (min-width: 961px) { .chronometer { margin-inline: 0; padding: 26px 20px 12px; border-radius: 0 0 var(--radius-panel) var(--radius-panel); } }
 .chronicle-track { position: relative; height: 66px; cursor: ew-resize; touch-action: pan-y; border-radius: 6px; overflow: visible; }
 .chronicle-track:focus-visible { outline: 2px solid var(--brass); outline-offset: 4px; }
-.chronicle-workshop-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; font: 11px var(--font-mono); color: #a6e4cb; }
-.chronicle-workshop-head > span { display: flex; align-items: center; gap: 7px; }
-.chronicle-door-key { display: grid; place-items: center; width: 13px; height: 17px; border: 1px solid currentColor; background: #10251d; line-height: 1; }
-.chronicle-workshop-menu { display: flex; align-items: center; gap: 10px; min-height: 32px; padding: 5px 12px; border: 1px solid #83c5a870; border-radius: var(--radius-control); color: #c6f0dd; background: #14271ed9; }
-.chronicle-workshop-menu:hover, .chronicle-workshop-menu[aria-expanded="true"] { border-color: #a6e4cb; background: #214332; }
-.chronicle-workshop-menu:focus-visible { outline: 2px solid #a6e4cb; outline-offset: 3px; }
-.chronicle-workshop-mark { position: absolute; top: 21px; bottom: -1px; width: 3px; transform: translateX(-50%); z-index: 1; color: #a6e4cb; background: linear-gradient(transparent, #a6e4cb); box-shadow: 0 0 8px #a6e4cb70; }
-.chronicle-workshop-mark svg { position: absolute; bottom: -2px; left: -4.5px; background: #10251d; filter: drop-shadow(0 0 3px #a6e4cb70); }
-.chronicle-workshop-mark.is-current { color: #e0fff0; background: #c6f0dd; box-shadow: 0 0 12px #a6e4cb; }
-.chronicle-workshop-mark.is-current svg { outline: 1px solid #a6e4cb; outline-offset: 2px; }
+/* Playable workshops: small brass diamonds along the foot of the axis, under the milestone ticks. */
+.chronometer > .chronicle-axis { grid-area: axis; min-width: 0; }
+.chronometer-step { display: grid; place-items: center; align-self: start; width: 44px; height: 44px; margin-top: 11px; border: 1px solid rgb(244 236 220 / .2); border-radius: 50%; background: rgb(18 14 10 / .5); color: var(--deck-ink); transition: border-color .15s; }
+.chronometer-step.is-previous { grid-area: previous; }
+.chronometer-step.is-next { grid-area: next; }
+.chronometer-step:hover { border-color: var(--brass); }
+.chronometer-step:disabled { opacity: .3; pointer-events: none; }
+.chronicle-epoch { position: absolute; top: 5px; padding-left: 6px; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-left: 1px solid rgb(244 236 220 / .2); font-size: 10.5px; line-height: 13px; color: var(--deck-faint); pointer-events: none; }
+.chronicle-epoch.is-current { color: var(--brass-hi); }
+.chronicle-workshop-mark, .chronicle-workshop-key { width: 7px; height: 7px; background: var(--brass-hi); border: 1px solid var(--deck); rotate: 45deg; }
+.chronicle-workshop-mark { position: absolute; bottom: 2px; z-index: 1; translate: -50% 0; box-shadow: 0 0 0 1px rgb(240 210 138 / .3); }
+.chronicle-workshop-mark.is-current { width: 9px; height: 9px; bottom: 1px; background: #fff3d6; box-shadow: 0 0 0 1px var(--brass-hi), 0 0 8px rgb(240 210 138 / .8); }
+.chronicle-workshop-key { flex: none; width: 6px; height: 6px; border: 0; }
+.chronometer-controls .chronicle-workshop-menu { display: flex; align-items: center; gap: 8px; }
+.chronometer-controls .chronicle-workshop-menu[aria-expanded="true"] { border-color: var(--brass); color: var(--deck-ink); }
 #chronicle-workshops { outline: none; scroll-margin-top: 210px; }
 .chronicle-workshop-help { margin: -4px 0 16px; font-size: 12px; line-height: 1.7; color: var(--ink-3); }
 .chronicle-workshop-list { display: grid; gap: 10px; }
@@ -1260,7 +1270,8 @@ html { scrollbar-gutter: stable; }
 .chronicle-band.is-current { background: rgb(217 164 65 / .16); box-shadow: inset 0 2px 0 var(--brass); }
 .chronicle-band-label { position: absolute; top: 5px; left: 6px; max-width: calc(100% - 10px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10.5px; color: var(--deck-faint); pointer-events: none; }
 .chronicle-band.is-current .chronicle-band-label { color: var(--brass-hi); }
-.chronicle-tick { position: absolute; top: 24px; height: 32px; width: 1.5px; transform: translateX(-50%); background: currentColor; opacity: .8; box-shadow: 0 0 4px currentColor; }
+.chronicle-tick { position: absolute; top: 24px; height: 32px; width: 1.5px; transform: translateX(-50%); background: currentColor; opacity: .55; }
+.chronicle-tick.is-near { opacity: .95; box-shadow: 0 0 4px currentColor; }
 .chronicle-tick.cat-cosmos { color: #9fb0d6; }
 .chronicle-tick.cat-life { color: #86c79a; }
 .chronicle-tick.cat-human { color: #e2b468; }
@@ -1277,6 +1288,10 @@ html { scrollbar-gutter: stable; }
 .chronicle-scale span { position: absolute; transform: translateX(-50%); font: 11px var(--font-mono); color: var(--deck-faint); white-space: nowrap; }
 .chronicle-scale span:first-child { transform: translateX(0); }
 .chronicle-scale span:last-child { transform: translateX(-100%); }
+/* Unzoomed, every other power of ten: the full row runs together on a narrower deck. */
+@media (min-width: 641px) {
+  .chronicle-scale:not([data-zoomed]) span:is([data-tick-index="1"], [data-tick-index="3"], [data-tick-index="5"], [data-tick-index="7"], [data-tick-index="9"], [data-tick-index="11"], [data-tick-index="13"], [data-tick-index="14"]) { display: none; }
+}
 @media (max-width: 640px) {
   .chronicle-scale:not([data-zoomed]) span { display: none; }
   .chronicle-scale:not([data-zoomed]) span[data-tick-index="0"],
@@ -1287,13 +1302,19 @@ html { scrollbar-gutter: stable; }
 }
 .chronicle-zoom { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 .chronicle-zoom > span { font: 11px var(--font-mono); color: var(--deck-faint); }
-.chronometer-controls { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+.chronometer-controls { grid-area: controls; position: relative; display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 32px; margin-top: 6px; }
 .chronometer-controls button, .chronicle-zoom button { flex: none; height: 30px; padding: 0 12px; border: 1px solid rgb(244 236 220 / .18); border-radius: 999px; font-size: 12.5px; color: var(--deck-dim); transition: border-color .15s, color .15s; }
 .chronometer-controls button:hover, .chronicle-zoom button:hover { border-color: var(--brass); color: var(--deck-ink); }
-.chronometer-controls button:disabled { opacity: .3; pointer-events: none; }
-.chronometer-controls button:last-child { margin-left: auto; }
-.chronometer-hint { flex: 1; text-align: center; font-size: 11.5px; color: var(--deck-faint); }
-@media (max-width: 640px) { .chronometer-hint { display: none; } .chronometer-controls button, .chronicle-zoom button { padding: 0 10px; font-size: 12px; } }
+.chronicle-workshop-short { display: none; }
+@media (min-width: 641px) { .chronometer-now { position: absolute; right: 0; } }
+@media (max-width: 640px) {
+  .chronometer { grid-template-areas: "axis axis axis" "previous controls next"; row-gap: 8px; }
+  .chronometer-step { align-self: center; margin-top: 0; }
+  .chronometer-controls { margin-top: 0; }
+  .chronicle-workshop-long { display: none; }
+  .chronicle-workshop-short { display: inline; }
+  .chronometer-controls button, .chronicle-zoom button { padding: 0 10px; font-size: 12px; }
+}
 
 
 /* Section heads below the deck: the display serif of the site's banners. */

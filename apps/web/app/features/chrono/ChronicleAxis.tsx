@@ -3,7 +3,7 @@ import { Text, useLocale, useTranslate } from "../../lib/i18n";
 // Wheel or pinch zooms around the pointer; horizontal or shift+wheel pans the visible window.
 // Drag or click positions the needle, with clicks snapping to nearby milestones. Arrow keys step
 // through every era plate and illustrated milestone; PageUp/PageDown jump between eras.
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { axisTicks, fromAxis, timeLabel, toAxis, type ChronicleEra, type ChronicleMilestone } from "@aihot/contracts/chronicle";
 
 import { useMotionAllowed } from "../motion/preferences";
@@ -11,7 +11,7 @@ import { compactTick, keepAxisInView, panAxisWindow, projectAxis, stepEra, stepP
 
 const SNAP_PX = 8;
 
-export function ChronicleAxis({ eras, milestones, now, t, picture, workshops = [], activeWorkshop, workshopMenu, onMove, onCommit }: {
+export function ChronicleAxis({ eras, milestones, now, t, picture, workshops = [], activeWorkshop, onMove, onCommit }: {
   eras: ChronicleEra[];
   milestones: ChronicleMilestone[];
   now: number;
@@ -20,7 +20,6 @@ export function ChronicleAxis({ eras, milestones, now, t, picture, workshops = [
   picture: number;
   workshops?: WorkshopStop[];
   activeWorkshop?: string;
-  workshopMenu?: ReactNode;
   /** While dragging: the needle follows. */
   onMove: (t: number) => void;
   /** On release (or a key, a click): the moment is settled and goes into the address. */
@@ -37,6 +36,12 @@ export function ChronicleAxis({ eras, milestones, now, t, picture, workshops = [
   const nowU = toAxis(now, now);
   const span = view.hi - view.lo;
   const zoomed = span < 1;
+  // The few broad epochs that name the whole axis; zoomed in, the eras name themselves instead.
+  const epochs = eras.flatMap((era, i) => {
+    if (!era.epoch) return [];
+    const next = eras.slice(i + 1).find((e) => e.epoch);
+    return [{ id: era.id, title: era.epoch, from: toAxis(era.from, now), to: next ? toAxis(next.from, now) : 1 }];
+  });
 
   // Follow changes of moment, but let wheel gestures explore away from the needle.
   useEffect(() => { setView((current) => keepAxisInView(current, u)); }, [u]);
@@ -122,12 +127,6 @@ export function ChronicleAxis({ eras, milestones, now, t, picture, workshops = [
 
   return (
     <div className="chronicle-axis select-none">
-      {!!workshops.length && (
-        <div className="chronicle-workshop-head">
-          <span><span className="chronicle-door-key" aria-hidden="true">↗</span><Text value="可进入工坊" /></span>
-          {workshopMenu}
-        </div>
-      )}
       <div
         ref={track}
         role="slider"
@@ -137,6 +136,7 @@ export function ChronicleAxis({ eras, milestones, now, t, picture, workshops = [
         aria-valuemax={1000}
         aria-valuenow={Math.round(u * 1000)}
         aria-valuetext={tx(timeLabel(t, now))}
+        title={tx("方向键逐幅切换画面 · 滚轮缩放 · 拖动或点击定位时间")}
         className={`chronicle-track ${allowed ? "motion-allowed" : ""}`}
         data-dragging={dragging || undefined}
         onPointerDown={onPointerDown}
@@ -158,17 +158,22 @@ export function ChronicleAxis({ eras, milestones, now, t, picture, workshops = [
               title={era.title}
             >
               {/* Named where the visible band is wide enough to carry it; the rest keep their title tooltip. */}
-              {(to - from) / span > 0.05 && <span className="chronicle-band-label">{era.title}</span>}
+              {(zoomed || !epochs.length) && (to - from) / span > 0.05 && <span className="chronicle-band-label">{era.title}</span>}
             </span>
           );
         })}
+        {!zoomed && epochs.map((epoch) => (
+          <span key={epoch.id} className={`chronicle-epoch ${epoch.from <= u && u < epoch.to ? "is-current" : ""}`} style={{ left: `${projectAxis(epoch.from, view) * 100}%`, width: `${(epoch.to - epoch.from) / span * 100}%` }} aria-hidden="true">
+            {epoch.title}
+          </span>
+        ))}
         {milestones.map((m) => {
           const mu = toAxis(m.t, now);
           if (mu < view.lo || mu > view.hi) return null;
           return (
             <span
               key={m.id}
-              className={`chronicle-tick cat-${m.category} ${m.forecast ? "is-forecast" : ""}`}
+              className={`chronicle-tick cat-${m.category} ${m.forecast ? "is-forecast" : ""} ${Math.abs(mu - u) / span < 0.012 ? "is-near" : ""}`}
               style={{ left: `${projectAxis(mu, view) * 100}%` }}
             />
           );
@@ -177,9 +182,7 @@ export function ChronicleAxis({ eras, milestones, now, t, picture, workshops = [
           const position = toAxis(stop.t, now);
           if (position < view.lo || position > view.hi) return null;
           return (
-            <span key={stop.path} className={`chronicle-workshop-mark ${activeWorkshop === stop.path ? "is-current" : ""}`} style={{ left: `${projectAxis(position, view) * 100}%` }} title={`${tx(timeLabel(stop.t, now))} · ${tx(stop.label)}`} aria-hidden="true">
-              <svg width="12" height="15" viewBox="0 0 12 15" fill="none"><path d="M1.5 14V1.5h9V14M.5 14h11M7 8h.5" stroke="currentColor" strokeWidth="1.5" /><path d="M3.5 3.5h4V13h-4z" fill="currentColor" fillOpacity=".2" /></svg>
-            </span>
+            <span key={stop.path} className={`chronicle-workshop-mark ${activeWorkshop === stop.path ? "is-current" : ""}`} style={{ left: `${projectAxis(position, view) * 100}%` }} title={`${tx(timeLabel(stop.t, now))} · ${tx(stop.label)}`} aria-hidden="true" />
           );
         })}
         {nowU >= view.lo && nowU <= view.hi && (

@@ -10,7 +10,7 @@ import { cached } from "../lib/cache.ts";
 
 /** en.json: the English reader text, by era and milestone id and metric key; a missing field keeps the Chinese. */
 interface ChronicleEnglish {
-  eras?: Record<string, Partial<Pick<ChronicleEra, "title" | "summary" | "artStyle">>>;
+  eras?: Record<string, Partial<Pick<ChronicleEra, "title" | "summary" | "artStyle" | "epoch">>>;
   milestones?: Record<string, Partial<Pick<ChronicleMilestone, "title" | "detail" | "capability" | "artStyle">> & { forecastBy?: string }>;
   metrics?: Record<string, Partial<Pick<ChronicleMetric, "label" | "unit" | "note">> & { sourceName?: string }>;
 }

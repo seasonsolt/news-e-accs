@@ -37,7 +37,7 @@ export function Observatory({ era, focus, nearby, label, distance, flat, scene, 
   /** The tunnel draws the plate instead: no DepthLayer. */
   flat: boolean;
   scene: ObservatoryScene | null;
-  /** Buttons in the deck's top corner, after the featured product's. */
+  /** Buttons in the deck's top corner, before the featured product's. */
   tools?: ReactNode;
 }) {
   const tx = useTranslate();
@@ -51,15 +51,11 @@ export function Observatory({ era, focus, nearby, label, distance, flat, scene, 
       {!flat && <DepthLayer src={plate.src} at={plate.at} nearby={nearby} />}
       <div className="observatory-shade" aria-hidden="true" />
       <div className="observatory-tools">
-        {featuredProduct()?.url && <Link to={featuredProduct()!.url!} className="observatory-wallpaper"><Text value="设为 4K 壁纸 →" /></Link>}
         {tools}
+        {featuredProduct()?.url && <Link to={featuredProduct()!.url!} className="observatory-wallpaper"><Text value="设为 4K 壁纸 →" /></Link>}
       </div>
       <header className="observatory-readout">
         <p className="observatory-kicker">
-          <span><Text value="加速史" /></span>
-          <span aria-hidden="true">·</span>
-          <span><Text value="四维视角" /></span>
-          <span aria-hidden="true">·</span>
           <span>{distance}</span>
           {moment && <span className="observatory-chip">{era.title}</span>}
           {era.forecast && <span className="observatory-forecast"><Text value="推测" /></span>}
@@ -71,7 +67,6 @@ export function Observatory({ era, focus, nearby, label, distance, flat, scene, 
         </h1>
         <h2 className="observatory-era">{moment ? moment.title : era.title}</h2>
         <p className="observatory-summary">{moment ? moment.detail : era.summary}</p>
-        <p className="observatory-style"><Text value="画风 ·" />{moment ? (moment.artStyle ?? era.artStyle) : era.artStyle}</p>
         {scene && (
           <Link
             to={scene.path}
@@ -83,8 +78,8 @@ export function Observatory({ era, focus, nearby, label, distance, flat, scene, 
               scene.enter?.();
             }}
           >
+            <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 .8 11.2 6 6 11.2.8 6Z" fill="currentColor" /></svg>
             {scene.loading ? tx("正在打开场景…") : scene.label}
-            <span aria-hidden="true">→</span>
           </Link>
         )}
       </header>

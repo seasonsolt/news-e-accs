@@ -16,6 +16,8 @@ export interface ChronicleEra {
   art: string;
   /** The period visual style the plate is drawn in (shown in its caption). */
   artStyle: string;
+  /** Set on the era that opens one of the axis's few broad epochs (宇宙, 生命…): the epoch's name. */
+  epoch?: string;
   forecast?: boolean;
 }
 

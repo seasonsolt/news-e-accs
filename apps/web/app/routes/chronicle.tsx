@@ -194,7 +194,7 @@ export default function ChroniclePage() {
           <h2 id="chronicle-workshops-title"><Text value="可进入工坊" /></h2>
           <p>{tx("{0} 个历史时刻，可以亲手探索。", workshops.length)}</p>
         </div>
-        <p className="chronicle-workshop-help"><Text value="门形标记对应可进入的场景。选择年代定位，或直接走进工坊。" /></p>
+        <p className="chronicle-workshop-help"><Text value="时间轴上的菱形标记对应可进入的场景。选择年代定位，或直接走进工坊。" /></p>
         <ul className="chronicle-workshop-list">
           {workshops.map((stop) => (
             <li key={stop.path} className={scene && localePath(scene.path, locale) === stop.path ? "is-current" : undefined}>
@@ -222,7 +222,7 @@ export default function ChroniclePage() {
           scene={scene ? { path: scene.path, label: tx(scene.label), enter: running ? tunnel.enter : null, loading: running && !tunnel.canEnter } : null}
           tools={(
             <div className="observatory-layers" role="toolbar" aria-label={tx("更多内容")}>
-              {PANELS.filter(([key]) => key !== "workshops").map(([key, label]) => (
+              {PANELS.map(([key, label]) => (
                 <button key={key} type="button" aria-expanded={panel === key} aria-controls="chronicle-layer" onClick={(event) => toggle(key, event.currentTarget)}>
                   <Text value={label} />
                 </button>
@@ -230,17 +230,26 @@ export default function ChroniclePage() {
             </div>
           )}
         />
-        <StageReadouts metrics={chronicle.metrics} t={t} now={now} />
+        <StageReadouts metrics={chronicle.metrics} t={t} now={now} caption={focus?.art ? (focus.artStyle ?? era.artStyle) : era.artStyle} />
         {/* The chronometer docks under the deck and stays at hand while the readouts below scroll by. */}
         <section aria-label={tx("时间导航")} className="chronometer">
-          <ChronicleAxis eras={chronicle.eras} milestones={chronicle.milestones} now={now} t={t} picture={at} workshops={workshops} activeWorkshop={scene ? localePath(scene.path, locale) : undefined} workshopMenu={(
-            <button type="button" className="chronicle-workshop-menu" aria-expanded={panel === "workshops"} aria-controls="chronicle-workshops" onClick={(event) => toggle("workshops", event.currentTarget)}>{tx("工坊菜单 · {0}", workshops.length)}<span aria-hidden="true">↗</span></button>
-          )} onMove={move} onCommit={commit} />
+          <button type="button" className="chronometer-step is-previous" disabled={previous === at} onClick={() => commit(previous)} title={stopTitle(previous)} aria-label={tx("上一个里程碑")}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3 5 8l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
+          <ChronicleAxis eras={chronicle.eras} milestones={chronicle.milestones} now={now} t={t} picture={at} workshops={workshops} activeWorkshop={scene ? localePath(scene.path, locale) : undefined} onMove={move} onCommit={commit} />
+          <button type="button" className="chronometer-step is-next" disabled={following === at} onClick={() => commit(following)} title={stopTitle(following)} aria-label={tx("下一个里程碑")}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m6 3 5 5-5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </button>
           <div className="chronometer-controls">
-            <button type="button" disabled={previous === at} onClick={() => commit(previous)} title={stopTitle(previous)}><Text value="‹ 上一个里程碑" /></button>
-            <span className="chronometer-hint"><Text value="方向键逐幅切换画面 · 滚轮缩放 · 拖动或点击定位时间" /></span>
-            <button type="button" onClick={() => commit(now)}><Text value="回到现在" /></button>
-            <button type="button" disabled={following === at} onClick={() => commit(following)} title={stopTitle(following)}><Text value="下一个里程碑 ›" /></button>
+            {/* Also the legend of the diamonds on the axis. */}
+            {!!workshops.length && (
+              <button type="button" className="chronicle-workshop-menu" aria-expanded={panel === "workshops"} aria-controls="chronicle-workshops" onClick={(event) => toggle("workshops", event.currentTarget)}>
+                <span className="chronicle-workshop-key" aria-hidden="true" />
+                <span className="chronicle-workshop-long">{tx("{0} 个可进入的工坊", workshops.length)}</span>
+                <span className="chronicle-workshop-short">{tx("{0} 个工坊", workshops.length)}</span>
+              </button>
+            )}
+            <button type="button" className="chronometer-now" onClick={() => commit(now)}><Text value="回到现在" /></button>
           </div>
         </section>
       </div>

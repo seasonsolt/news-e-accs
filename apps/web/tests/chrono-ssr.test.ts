@@ -73,6 +73,9 @@ test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era
   assert.ok(document.querySelector('#chronicle-layer [data-panel="nearby"] .chronicle-rail-item'));
   const slider = document.querySelector('[role="slider"]')!;
   assert.equal(slider.getAttribute("aria-valuetext"), "1769年");
+  // Unzoomed, the axis is named by its broad epochs, the current one marked, instead of era by era.
+  assert.deepEqual([...slider.querySelectorAll(".chronicle-epoch")].map((el) => [el.textContent, el.classList.contains("is-current")]), [["宇宙", false], ["机器", true]]);
+  assert.equal(slider.querySelector(".chronicle-band-label"), null);
   assert.equal(slider.hasAttribute("data-dragging"), false);
   assert.equal(document.querySelectorAll('nav[aria-label="时代"] a').length, 3);
   assert.equal(document.querySelector('nav[aria-label="时代"] a[aria-current]')!.textContent, "蒸汽时代");
@@ -86,7 +89,7 @@ test("the timeline exposes unique workshop stops and localized direct entrances 
     const response = await fetch(`${fixture.origin}${prefix}/chronicle?t=1822`);
     const document = parseHTML(await response.text()).document;
     const menu = document.querySelector('button[aria-controls="chronicle-workshops"]')!;
-    assert.match(menu.textContent!, prefix ? /工坊菜单 · 2/ : /Workshop menu · 2/);
+    assert.match(menu.textContent!, prefix ? /2 个可进入的工坊/ : /2 playable workshops/);
     assert.equal(document.querySelector('[role="slider"] button, [role="slider"] a'), null);
     const entries = [...document.querySelectorAll("#chronicle-workshops .chronicle-workshop-enter")];
     assert.deepEqual(entries.map(a => a.getAttribute("href")), [`${prefix}/chronicle/steam`, `${prefix}/chronicle/difference-engine`]);

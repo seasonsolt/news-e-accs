@@ -139,7 +139,7 @@ if (missing.length) {
     const { loadChronicle } = await import("../packages/backend/src/publication/chronicle.ts");
     const english = loadChronicle("en");
     const han = /\p{Script=Han}/u;
-    for (const era of english.eras) for (const text of [era.title, era.summary, era.artStyle]) assert.doesNotMatch(text, han, era.id);
+    for (const era of english.eras) for (const text of [era.title, era.summary, era.artStyle, era.epoch ?? ""]) assert.doesNotMatch(text, han, era.id);
     for (const m of english.milestones) for (const text of [m.title, m.detail, m.capability ?? "", m.artStyle ?? "", m.forecast?.by ?? ""]) assert.doesNotMatch(text, han, m.id);
     for (const m of english.metrics) for (const text of [m.label, m.unit, m.note, m.source.name]) assert.doesNotMatch(text, han, m.key);
     assert.deepEqual(english.milestones.map((m) => [m.id, m.t, m.source]), milestones.map((m) => [m.id, m.t, m.source]), "only reader text changes");
