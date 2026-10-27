@@ -2,6 +2,7 @@ import { localePath } from "../app/lib/locale.ts";
 // Verify the real SSR output, not a source-code snapshot: final numbers and names must survive with
 // JavaScript off. Boot persistence is exercised in a sandbox, including unavailable browser storage.
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { after, before, test } from "node:test";
 import { runInNewContext } from "node:vm";
 import { createElement, type ComponentType } from "react";
@@ -91,7 +92,8 @@ test("onboarding boot preloads only the first-visit poster, before styles and hy
       assert.equal(link.as, "image");
       assert.equal(link.fetchpriority, "high");
       assert.equal(link.media, `(orientation: ${i ? "landscape" : "portrait"})`);
-      assert.equal(link.href, `/media/hero-${i ? "16x9" : "9x16"}-poster.jpg`);
+      assert.equal(link.href, `/media/ascent-historical-v2-${i ? "16x9" : "9x16"}-poster.jpg`);
+      assert.ok(existsSync(new URL(`../public${link.href}`, import.meta.url)), "the preloaded poster exists");
     });
   }
 });

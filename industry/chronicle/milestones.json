@@ -343,8 +343,8 @@
       "category": "culture",
       "capability": "文字",
       "source": "https://en.wikipedia.org/wiki/Cuneiform",
-      "art": "cuneiform",
-      "artStyle": "苏美尔泥板浮雕"
+      "art": "uruk-accounting-v2",
+      "artStyle": "乌鲁克泥板浮雕复原"
     },
     {
       "id": "great-pyramid",
@@ -373,8 +373,8 @@
       "category": "human",
       "capability": "冶铁",
       "source": "https://en.wikipedia.org/wiki/Iron_Age",
-      "art": "iron-age",
-      "artStyle": "商周青铜器纹样"
+      "art": "early-ironworking-v2",
+      "artStyle": "近东早期冶铁陶土浮雕"
     },
     {
       "id": "phoenician-alphabet",
@@ -465,6 +465,19 @@
       "source": "https://en.wikipedia.org/wiki/Windmill",
       "art": "windmill",
       "artStyle": "波斯泥金细密画"
+    },
+    {
+      "id": "diamond-sutra",
+      "t": 868.3579,
+      "precision": "day",
+      "date": "0868-05-11",
+      "title": "雕版印刷《金刚经》",
+      "detail": "这卷印于868年5月11日的《金刚经》是现存最早有明确日期的完整印本，见证雕版复制文字与图像的成熟工艺；它并非印刷术的起点。",
+      "category": "culture",
+      "capability": "雕版印刷",
+      "source": "https://idp.bl.uk/discover/learning/buddhism-on-the-silk-roads/articles/buddhism-on-the-ground/buddhist-texts-the-diamond-sutra/",
+      "art": "diamond-sutra",
+      "artStyle": "唐代雕版木刻"
     },
     {
       "id": "gunpowder-warfare",
@@ -647,6 +660,19 @@
       "artStyle": "拿破仑时期铜版画"
     },
     {
+      "id": "jacquard-loom",
+      "t": 1804,
+      "precision": "year",
+      "date": "1804",
+      "title": "提花机走向实用",
+      "detail": "雅卡尔在1801年展示提花机构后，于1804年前后把穿孔卡控制织造的系统推向实用。更换卡片链即可改变花纹，为可编程机器提供先例。",
+      "category": "compute",
+      "capability": "穿孔卡程序控制",
+      "source": "https://collection.sciencemuseumgroup.org.uk/objects/co44888/model-of-a-jacquard-loom-with-shuttle-and-components",
+      "art": "jacquard-loom",
+      "artStyle": "十九世纪初机械铜版画"
+    },
+    {
       "id": "first-locomotive",
       "t": 1804.1393,
       "precision": "day",
@@ -715,7 +741,9 @@
       "title": "第一个计算机程序",
       "detail": "洛夫莱斯为分析机写出计算伯努利数的算法。",
       "category": "compute",
-      "source": "https://en.wikipedia.org/wiki/Ada_Lovelace"
+      "source": "https://en.wikipedia.org/wiki/Ada_Lovelace",
+      "art": "ada-lovelace-program",
+      "artStyle": "1840年代维多利亚钢版蚀刻"
     },
     {
       "id": "morse-telegraph",
@@ -994,7 +1022,9 @@
       "title": "图灵机",
       "detail": "图灵提出可计算性的数学模型，奠定计算机科学基础。",
       "category": "compute",
-      "source": "https://en.wikipedia.org/wiki/Turing_machine"
+      "source": "https://en.wikipedia.org/wiki/Turing_machine",
+      "art": "turing-machine",
+      "artStyle": "1930年代学术摄影风格与墨线示意"
     },
     {
       "id": "nuclear-fission",
@@ -1066,6 +1096,19 @@
       "source": "https://en.wikipedia.org/wiki/A_Mathematical_Theory_of_Communication"
     },
     {
+      "id": "manchester-baby",
+      "t": 1948.4699,
+      "precision": "day",
+      "date": "1948-06-21",
+      "title": "首次运行电子存储程序",
+      "detail": "曼彻斯特大学的Baby实验机成功运行保存在电子存储器中的程序，验证程序与数据都能存入机器的计算方式。",
+      "category": "compute",
+      "capability": "电子存储程序",
+      "source": "https://www.manchester.ac.uk/about/news/how-a-70-year-old-baby-changed-the-face-of-modern-computing/",
+      "art": "manchester-baby",
+      "artStyle": "1940年代黑白实验室摄影"
+    },
+    {
       "id": "turing-test",
       "t": 1950,
       "precision": "year",
@@ -1097,8 +1140,8 @@
       "category": "energy",
       "capability": "太阳能电池",
       "source": "https://en.wikipedia.org/wiki/Solar_cell",
-      "art": "silicon-solar-cell",
-      "artStyle": "1950年代彩色印刷广告"
+      "art": "silicon-solar-cell-1954-v2",
+      "artStyle": "1950年代实验室科学杂志插画"
     },
     {
       "id": "obninsk",
@@ -1160,6 +1203,19 @@
       "artStyle": "1950年代实验室彩照"
     },
     {
+      "id": "mosfet",
+      "t": 1959,
+      "precision": "year",
+      "date": "1959",
+      "title": "MOS 场效应晶体管制成",
+      "detail": "贝尔实验室的Atalla与Kahng在1959年制成可工作的金属—氧化物—半导体场效应晶体管，并于1960年公开演示。MOS工艺后来成为高密度芯片的基础。",
+      "category": "compute",
+      "capability": "MOS场效应晶体管",
+      "source": "https://www.computerhistory.org/siliconengine/metal-oxide-semiconductor-mos-transistor-demonstrated/",
+      "art": "mosfet",
+      "artStyle": "1950年代半导体实验室科学插画"
+    },
+    {
       "id": "laser",
       "t": 1960.3716,
       "precision": "day",
@@ -1169,8 +1225,8 @@
       "category": "human",
       "capability": "激光",
       "source": "https://en.wikipedia.org/wiki/Laser",
-      "art": "laser",
-      "artStyle": "1960年代科幻插画"
+      "art": "ruby-laser-1960-v2",
+      "artStyle": "1960年代实验室器物复原插画"
     },
     {
       "id": "gagarin",
@@ -1367,8 +1423,8 @@
       "category": "compute",
       "capability": "万维网",
       "source": "https://en.wikipedia.org/wiki/World_Wide_Web",
-      "art": "world-wide-web",
-      "artStyle": "1990年代阴极射线管像素风"
+      "art": "world-wide-web-1991-v2",
+      "artStyle": "1990年代办公室胶片质感插画"
     },
     {
       "id": "linux",
@@ -1613,8 +1669,8 @@
       "category": "compute",
       "capability": "智能手机",
       "source": "https://en.wikipedia.org/wiki/IPhone_(1st_generation)",
-      "art": "iphone",
-      "artStyle": "2000年代产品渲染"
+      "art": "iphone-2007-v2",
+      "artStyle": "2007年原代手机产品插画"
     },
     {
       "id": "cuda",
@@ -1626,8 +1682,8 @@
       "category": "compute",
       "capability": "GPU通用计算",
       "source": "https://en.wikipedia.org/wiki/CUDA",
-      "art": "cuda",
-      "artStyle": "2000年代硬件宣传图"
+      "art": "cuda-2007-v2",
+      "artStyle": "2000年代硬件杂志插画"
     },
     {
       "id": "kindle",
@@ -1958,8 +2014,8 @@
       "category": "cosmos",
       "capability": "月背探测",
       "source": "https://en.wikipedia.org/wiki/Chang%27e_4",
-      "art": "change-4",
-      "artStyle": "月面遥测影像"
+      "art": "change-4-lunar-v2",
+      "artStyle": "2019年月背探测复原插画"
     },
     {
       "id": "gpt-2",
@@ -2221,8 +2277,8 @@
       "category": "energy",
       "capability": "聚变点火",
       "source": "https://en.wikipedia.org/wiki/National_Ignition_Facility",
-      "art": "fusion-ignition",
-      "artStyle": "2020年代科学摄影渲染"
+      "art": "nif-ignition-2022-v2",
+      "artStyle": "国家点火装置科学复原插画"
     },
     {
       "id": "llama",
@@ -2679,8 +2735,8 @@
       "detail": "最高1050亿美元支持俄亥俄园区首期4.25吉瓦算力，2028年起上线。",
       "category": "ai",
       "source": "https://www.cnbc.com/2026/08/17/nvidia-financing-open-ai-data-center-ohio.html",
-      "art": "nvidia-openai-ohio",
-      "artStyle": "美国中西部冬日纪实摄影"
+      "art": "ohio-compute-plan-v2",
+      "artStyle": "当代算力园区规划概念插画"
     },
     {
       "id": "claude-fable-5-1",

@@ -363,7 +363,7 @@ export function dismissSubscribeBar() {
  * matching poster here, before styles or hydration, but never spend returning readers' bandwidth on it.
  * Complementary media queries keep the preload and the CSS poster in step in either orientation.
  */
-export const ONBOARDING_BOOT_SCRIPT = `(function(){try{if(location.pathname!=='/'||/bot|crawl|spider|slurp|preview|lighthouse|headless/i.test(navigator.userAgent))return;if(localStorage.getItem('${KEYS.onboarded}'))return;document.documentElement.setAttribute('data-onboarding','');['portrait','landscape'].forEach(function(o){var l=document.createElement('link');l.rel='preload';l.as='image';l.setAttribute('fetchpriority','high');l.media='(orientation: '+o+')';l.href='/media/hero-'+(o==='portrait'?'9x16':'16x9')+'-poster.jpg';document.head.appendChild(l)})}catch(e){}})();`;
+export const ONBOARDING_BOOT_SCRIPT = `(function(){try{if(location.pathname!=='/'||/bot|crawl|spider|slurp|preview|lighthouse|headless/i.test(navigator.userAgent))return;if(localStorage.getItem('${KEYS.onboarded}'))return;document.documentElement.setAttribute('data-onboarding','');['portrait','landscape'].forEach(function(o){var l=document.createElement('link');l.rel='preload';l.as='image';l.setAttribute('fetchpriority','high');l.media='(orientation: '+o+')';l.href='/media/ascent-historical-v2-'+(o==='portrait'?'9x16':'16x9')+'-poster.jpg';document.head.appendChild(l)})}catch(e){}})();`;
 
 /** Puts a theme on the page: the document's data-theme and the browser's theme colour. */
 export function applyTheme(theme: "light" | "dark", followsSystem: boolean) {

@@ -24,7 +24,7 @@ CLIPS=(
   "cambrian-explosion|cambrian-explosion-1600.webp|4.0|0.50 0.40"
   "taming-fire|taming-fire-1600.webp|3.5|0.55 0.55"
   "cognitive-revolution|cognitive-revolution-1600.webp|3.1|0.50 0.45"
-  "cities-writing|cities-writing-1600.webp|2.8|0.50 0.45"
+  "uruk-accounting-v2|uruk-accounting-v2-1600.webp|2.8|0.85 0.45"
   "printing|printing-1600.webp|2.5|0.50 0.50"
   "steam-age|steam-age-1600.webp|2.0|0.55 0.45"
   "electric-age|electric-age-1600.webp|1.5|0.50 0.45"
@@ -68,6 +68,6 @@ render() { # $1=W $2=H $3=name
   echo "$name.mp4 $(du -h "$OUT/media/$name.mp4" | cut -f1)"
 }
 
-render 1280 720 ascent-16x9
-render 720 1280 ascent-9x16
+render 1280 720 ascent-historical-v2-16x9
+render 720 1280 ascent-historical-v2-9x16
 

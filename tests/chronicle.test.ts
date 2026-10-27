@@ -135,6 +135,40 @@ if (missing.length) {
     }
   });
 
+  test("printing and programmable-computing milestones preserve their historical boundaries", () => {
+    const milestone = (id: string) => {
+      const found = milestones.find((m) => m.id === id);
+      assert.ok(found, id);
+      return found;
+    };
+    const printedScroll = milestone("diamond-sutra");
+    assert.equal(printedScroll.date, "0868-05-11");
+    assert.ok(printedScroll.t < milestone("movable-type").t);
+    assert.match(printedScroll.detail, /并非印刷术的起点/);
+    assert.equal(new URL(printedScroll.source).hostname, "idp.bl.uk");
+
+    const cardControl = milestone("jacquard-loom");
+    assert.equal(cardControl.date, "1804");
+    assert.match(cardControl.detail, /1801年展示/);
+    assert.ok(cardControl.t < milestone("difference-engine").t);
+    assert.ok(cardControl.t < milestone("hollerith-tabulator").t);
+
+    const storedProgram = milestone("manchester-baby");
+    assert.equal(storedProgram.date, "1948-06-21");
+    const before = capabilitiesAt(milestones, dateToYear("1948-06-20"), now);
+    const after = capabilitiesAt(milestones, dateToYear("1948-06-22"), now);
+    assert.ok(before.held.some((m) => m.id === "eniac"));
+    assert.ok(!before.held.some((m) => m.id === storedProgram.id));
+    assert.ok(after.held.some((m) => m.id === storedProgram.id));
+
+    const mos = milestone("mosfet");
+    assert.equal(mos.date, "1959");
+    assert.equal(mos.precision, "year");
+    assert.match(mos.detail, /1960年公开演示/);
+    assert.ok(milestone("transistor").t < mos.t);
+    assert.ok(mos.t < milestone("intel-4004").t);
+  });
+
   test("the English edition covers every era, milestone and metric in English", async () => {
     const { loadChronicle } = await import("../packages/backend/src/publication/chronicle.ts");
     const english = loadChronicle("en");

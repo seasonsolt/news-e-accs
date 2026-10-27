@@ -7,7 +7,7 @@ export const CRAFT_WORLDS = {
   writing: {
     id: "writing", path: "/chronicle/writing", time: -3499, figure: "3500", unit: m("公元前", "BC"), title: m("文字工坊", "Writing workshop"),
     subtitle: m("把货物与数量，留在泥土里。完成三笔委托，让记忆走出人的头脑。", "Leave goods and quantities in clay. Complete three orders and give memory a durable form."),
-    plate: "/media/art/epochs/cities-writing-1600.webp", action: m("登记泥板", "Record on tablet"), unitLabel: distance, challenge: true,
+    plate: "/media/art/epochs/uruk-accounting-v2-1600.webp", action: m("登记泥板", "Record on tablet"), unitLabel: distance, challenge: true,
     readingLabels: [m("货物", "Goods"), m("数量", "Quantity"), m("账目", "Records")],
     phases: [
       { title: m("谷物三份，等待登记。", "Three measures of grain await recording."), detail: m("选择货物，再点击计数石调整数量。把谷物三份登记到泥板；选错可直接修改并重试。", "Choose goods and click the counting stones to change the quantity. Record three measures of grain; revise any mismatch and try again."), readings: [m("谷物", "Grain"), "1", "0 / 3"] },
@@ -21,7 +21,7 @@ export const CRAFT_WORLDS = {
   iron: {
     id: "iron", path: "/chronicle/iron", time: -1199, figure: "1200", unit: "公元前", title: m("铁器工坊", "Iron workshop"),
     subtitle: m("炉火、风箱与一次有效的锤击。让坚硬的材料，变成手中的工具。", "Fire, bellows and a well-timed blow. Turn resistant material into a tool."),
-    plate: "/media/art/epochs/iron-age-1600.webp", action: m("锤击铁坯", "Strike the billet"), unitLabel: distance, challenge: true,
+    plate: "/media/art/epochs/early-ironworking-v2-1600.webp", action: m("锤击铁坯", "Strike the billet"), unitLabel: distance, challenge: true,
     readingLabels: [m("炉火", "Heat"), m("有效锤击", "Valid strikes"), m("铁坯", "Billet")],
     phases: [
       { title: m("先给炉火一点力量。", "Give the furnace some energy."), detail: m("点击炭篮加炭、推动风箱。炉火达到可锻状态后，才适合在砧上锤击。", "Add charcoal and work the bellows. Strike on the anvil once the billet is workable."), readings: [m("偏冷", "Cool"), "0 / 2", m("待成形", "Unshaped")] },

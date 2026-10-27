@@ -31,7 +31,7 @@
     "dinosaurs-mammals": {
       "title": "Dinosaurs and Mammals",
       "summary": "Dinosaurs rule the land for more than 100 million years; after an asteroid impact, mammals rise and primates appear.",
-      "artStyle": "Paleontological reconstruction oil painting"
+      "artStyle": "Late Triassic ecosystem reconstruction oil painting"
     },
     "homo-stone-tools": {
       "epoch": "Humans",
@@ -62,12 +62,12 @@
     "cities-writing": {
       "title": "Cities and Writing",
       "summary": "Cities, the wheel, bronze and writing appear in Mesopotamia, so accounts, laws and history can be recorded.",
-      "artStyle": "Sumerian clay tablet relief"
+      "artStyle": "Reconstructed Uruk clay relief"
     },
     "iron-age": {
       "title": "Iron, Alphabets and Coinage",
       "summary": "Ironworking spreads and iron tools and weapons become common; alphabets and coinage appear in turn, and large states expand.",
-      "artStyle": "Shang–Zhou bronze motifs"
+      "artStyle": "Near Eastern early ironworking clay relief"
     },
     "axial-age": {
       "title": "The Axial Age",
@@ -409,7 +409,7 @@
       "title": "Cuneiform",
       "detail": "Around 3200 BC, the Sumerians began keeping records on clay tablets, developing the earliest known writing.",
       "capability": "Writing",
-      "artStyle": "Sumerian clay-tablet relief"
+      "artStyle": "Reconstructed Uruk clay relief"
     },
     "great-pyramid": {
       "title": "The Great Pyramid of Giza",
@@ -423,7 +423,7 @@
       "title": "The Iron Age",
       "detail": "From around 1200 BC, ironworking spread and iron gradually replaced bronze.",
       "capability": "Ironworking",
-      "artStyle": "Shang–Zhou bronze vessel motifs"
+      "artStyle": "Near Eastern early ironworking clay relief"
     },
     "phoenician-alphabet": {
       "title": "The Phoenician Alphabet",
@@ -466,6 +466,12 @@
       "detail": "Around the 9th century, horizontal windmills appeared in Persia, used to grind grain and lift water.",
       "capability": "Wind power",
       "artStyle": "Persian gold-illuminated miniature"
+    },
+    "diamond-sutra": {
+      "title": "The Woodblock-Printed Diamond Sutra",
+      "detail": "Dated 11 May 868, this Diamond Sutra is the earliest surviving complete printed book with an explicit date. It demonstrates mature woodblock reproduction of words and images, rather than the invention of printing.",
+      "capability": "Woodblock printing",
+      "artStyle": "Tang-dynasty woodblock print"
     },
     "gunpowder-warfare": {
       "title": "Gunpowder in Warfare",
@@ -547,6 +553,12 @@
       "capability": "The battery",
       "artStyle": "Napoleonic-era copperplate engraving"
     },
+    "jacquard-loom": {
+      "title": "The Jacquard Mechanism Becomes Practical",
+      "detail": "After demonstrating his mechanism in 1801, Jacquard brought punched-card-controlled weaving into practical use around 1804. Changing the card chain changed the pattern, providing a precedent for programmable machines.",
+      "capability": "Punched-card program control",
+      "artStyle": "Early-19th-century mechanical copperplate engraving"
+    },
     "first-locomotive": {
       "title": "The First Locomotive-Hauled Train",
       "detail": "Trevithick's steam locomotive pulled a train along a tramway in Wales."
@@ -576,7 +588,8 @@
     },
     "ada-lovelace-program": {
       "title": "The First Computer Program",
-      "detail": "Lovelace wrote an algorithm for the Analytical Engine to compute Bernoulli numbers."
+      "detail": "Lovelace wrote an algorithm for the Analytical Engine to compute Bernoulli numbers.",
+      "artStyle": "1840s Victorian steel engraving"
     },
     "morse-telegraph": {
       "title": "The Telegraph Line Opens",
@@ -698,7 +711,8 @@
     },
     "turing-machine": {
       "title": "The Turing Machine",
-      "detail": "Turing proposes a mathematical model of computability, laying the foundation of computer science."
+      "detail": "Turing proposes a mathematical model of computability, laying the foundation of computer science.",
+      "artStyle": "1930s academic photographic style with an ink diagram"
     },
     "nuclear-fission": {
       "title": "Nuclear Fission Discovered",
@@ -730,6 +744,12 @@
       "title": "Information Theory",
       "detail": "Shannon publishes \"A Mathematical Theory of Communication\": information becomes measurable."
     },
+    "manchester-baby": {
+      "title": "The First Electronic Stored Program Runs",
+      "detail": "The University of Manchester's experimental Baby computer successfully ran a program held in electronic memory, demonstrating a computing approach in which both instructions and data reside in the machine.",
+      "capability": "Electronic stored programs",
+      "artStyle": "1940s black-and-white laboratory photography"
+    },
     "turing-test": {
       "title": "The Turing Test",
       "detail": "Turing publishes \"Computing Machinery and Intelligence\", proposing the \"imitation game\"."
@@ -743,7 +763,7 @@
       "title": "Practical Solar Cell",
       "detail": "Bell Labs publicly demonstrates the first practical photovoltaic cell.",
       "capability": "Solar cells",
-      "artStyle": "1950s color print advertising"
+      "artStyle": "1950s laboratory science magazine illustration"
     },
     "obninsk": {
       "title": "Nuclear Power Plant Online",
@@ -771,11 +791,17 @@
       "capability": "Integrated circuits",
       "artStyle": "1950s laboratory color photography"
     },
+    "mosfet": {
+      "title": "The MOS Field-Effect Transistor Is Built",
+      "detail": "Atalla and Kahng at Bell Labs built a working metal-oxide-semiconductor field-effect transistor in 1959 and publicly demonstrated it in 1960. MOS fabrication later became the basis of high-density chips.",
+      "capability": "MOS field-effect transistors",
+      "artStyle": "1950s semiconductor laboratory scientific illustration"
+    },
     "laser": {
       "title": "The Laser",
       "detail": "Maiman builds the first laser at Hughes Research Laboratories.",
       "capability": "Lasers",
-      "artStyle": "1960s science-fiction illustration"
+      "artStyle": "Reconstructed 1960s laboratory apparatus illustration"
     },
     "gagarin": {
       "title": "First Human in Space",
@@ -862,7 +888,7 @@
       "title": "The World Wide Web Goes Public",
       "detail": "Berners-Lee publicly releases the World Wide Web project.",
       "capability": "The World Wide Web",
-      "artStyle": "1990s CRT pixel art"
+      "artStyle": "1990s office illustration with film texture"
     },
     "linux": {
       "title": "Linux Is Born",
@@ -971,13 +997,13 @@
       "title": "iPhone Unveiled",
       "detail": "The touchscreen smartphone puts the internet in your pocket.",
       "capability": "Smartphones",
-      "artStyle": "2000s product rendering"
+      "artStyle": "2007 first-generation phone product illustration"
     },
     "cuda": {
       "title": "CUDA",
       "detail": "NVIDIA releases CUDA, opening GPUs to general-purpose computing.",
       "capability": "General-purpose GPU computing",
-      "artStyle": "2000s hardware promotional art"
+      "artStyle": "2000s hardware magazine illustration"
     },
     "kindle": {
       "title": "Kindle Released",
@@ -1123,7 +1149,7 @@
       "title": "Chang'e 4 Lands on the Far Side of the Moon",
       "detail": "A spacecraft makes the first soft landing on the far side of the Moon.",
       "capability": "Lunar far-side exploration",
-      "artStyle": "Lunar telemetry imagery"
+      "artStyle": "Reconstructed 2019 lunar far-side mission illustration"
     },
     "gpt-2": {
       "title": "GPT-2",
@@ -1239,7 +1265,7 @@
       "title": "Fusion ignition",
       "detail": "The US National Ignition Facility produces more fusion energy than the laser energy delivered, for the first time.",
       "capability": "Fusion ignition",
-      "artStyle": "2020s scientific photo rendering"
+      "artStyle": "National Ignition Facility scientific reconstruction"
     },
     "llama": {
       "title": "LLaMA",
@@ -1432,7 +1458,7 @@
     "nvidia-openai-ohio": {
       "title": "Nvidia backs OpenAI financing",
       "detail": "Up to $105 billion supports the first 4.25 gigawatts of compute at the Ohio campus, coming online from 2028.",
-      "artStyle": "Midwestern winter documentary photography"
+      "artStyle": "Contemporary computing-campus planning concept illustration"
     },
     "claude-fable-5-1": {
       "title": "Claude Fable 5.1",

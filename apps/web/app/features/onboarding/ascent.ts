@@ -18,7 +18,7 @@ export const ASCENT: ReadonlyArray<{ art: string; hold: number; zh: string; en: 
   { art: "cambrian-explosion", hold: 4.0, zh: "5.4 亿年前 · 寒武纪大爆发", en: "540 million years ago · The Cambrian explosion" },
   { art: "taming-fire", hold: 3.5, zh: "100 万年前 · 火的驯服", en: "1 million years ago · Taming fire" },
   { art: "cognitive-revolution", hold: 3.1, zh: "6 万年前 · 认知革命", en: "60,000 years ago · The cognitive revolution" },
-  { art: "cities-writing", hold: 2.8, zh: "公元前 3500 年 · 城市与文字", en: "3500 BC · Cities and writing" },
+  { art: "uruk-accounting-v2", hold: 2.8, zh: "公元前 3500 年 · 城市与文字", en: "3500 BC · Cities and writing" },
   { art: "printing", hold: 2.5, zh: "1440 · 印刷术", en: "1440 · Printing" },
   { art: "steam-age", hold: 2.0, zh: "1769 · 蒸汽时代", en: "1769 · The steam age" },
   { art: "electric-age", hold: 1.5, zh: "1879 · 电气时代", en: "1879 · The electric age" },
