@@ -55,7 +55,7 @@ html[lang=zh-CN] .world.is-challenge .machine-status { min-height: calc(1.6em * 
 .world .done-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 12px; }
 /* Finished, every stage is behind the reader: the card takes the track's room so the panel needs no scrolling. */
 .world .done-card:not([hidden]) ~ .phase-track { display: none; }
-.world .done-actions > * { display: flex; align-items: center; justify-content: center; min-height: 40px; padding: 6px 8px; white-space: nowrap; border: 1px solid var(--line-strong); border-radius: 999px; background: none; color: var(--ink); font-size: 13px; text-align: center; text-decoration: none; }
+.world .done-actions > * { display: flex; align-items: center; justify-content: center; min-height: 40px; padding: 6px 8px; white-space: nowrap; border: 1px solid var(--line-strong); border-radius: 9999px; background: none; color: var(--ink); font-size: 13px; text-align: center; text-decoration: none; }
 .world .done-actions > :hover { background: var(--accent-softer); }
 .world .done-actions > .done-next { grid-column: 1 / -1; border: 0; background: linear-gradient(var(--brass-hi), var(--brass)); color: #2a1f16; font-weight: 600; }
 .world .done-actions > .done-next:hover { background: linear-gradient(#f6dfa4, var(--brass-hi)); }
