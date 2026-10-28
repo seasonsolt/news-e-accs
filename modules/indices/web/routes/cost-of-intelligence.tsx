@@ -1,21 +1,17 @@
 // The cost-of-intelligence index (docs/plans/cost-of-intelligence.md): one stepped line per GPQA
-// threshold, drawn on the server so crawlers read the numbers the chart shows. Laid out like the
-// leaderboard's model pages: the deck's figure, a row of stats, then sections under an eyebrow.
+// threshold, drawn on the server so crawlers read the numbers the chart shows. On the night ground of the
+// menu pages: the headline figure, the chart with today's prices beside it, what a dollar buys, the steps
+// of one threshold, then citing and method.
 import { SITE } from "@aihot/site";
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useLoaderData } from "react-router";
 import type { CoiPoint, CoiTier, CostOfIntelligence } from "@aihot/indices/contracts";
-import { FLAME, HEAD_INSET, matchShapes, runsThrough, sticksAlong, tierColor, type Stick } from "@aihot/indices/matchsticks";
 import { loadOr404 } from "@aihot/web/lib/api.server";
 import { localeFromMatches, Text, translate, useLocale, useTranslate } from "@aihot/web/lib/i18n";
 import { localePath } from "@aihot/web/lib/locale";
 import { breadcrumbLd, pageMeta, siteUrl } from "@aihot/web/lib/seo";
-import { useEntrance } from "@aihot/web/lib/hydration";
-import { useMotionAllowed } from "@aihot/web/features/motion/preferences";
 import { CodeBlock, CopyButton } from "@aihot/web/features/agent/CodeBlock";
-import { Deck } from "@aihot/web/components/shell/Deck";
 import { Badge } from "@aihot/web/components/ui/Badge";
-import { PillTabs } from "@aihot/web/components/ui/Tabs";
 import { IconDownload, IconExternal } from "@aihot/web/components/icons";
 
 const PATH = "/index/cost-of-intelligence";
@@ -23,7 +19,11 @@ const CSV = "/api/site/indices/cost-of-intelligence.csv";
 /** The chart as an image (backend/chart.ts): English unless ?lang=zh. */
 const CHART = "/index/cost-of-intelligence.png";
 const chartPath = (locale: string) => (locale === "zh" ? `${CHART}?lang=zh` : CHART);
-const color = tierColor;
+/** The lines on the night ground, apart in lightness as well as hue: bone, brass, ember, red. The PNG keeps its own on paper. */
+const LINE_COLORS = ["#efe3c8", "#d9a441", "#ef7d3c", "#f0524a"];
+const color = (i: number) => LINE_COLORS[i % LINE_COLORS.length]!;
+/** A step that cut at least this much is named on the chart. */
+const BIG_CUT = 0.85;
 
 export async function loader({ request }: { request: Request }) {
   return loadOr404<CostOfIntelligence>("/api/site/indices/cost-of-intelligence", { request, signal: request.signal });
@@ -79,54 +79,45 @@ function usd(price: number): string {
 const pct = (threshold: number) => `${Math.round(threshold * 100)}%`;
 const ratioText = (ratio: number) => (ratio >= 10 ? ratio.toFixed(0) : ratio.toFixed(1));
 
-function Eyebrow({ children }: { children: ReactNode }) {
-  return <span className="mono text-[11px] font-semibold tracking-[0.14em] text-accent">{children}</span>;
+/** Tokens a dollar buys at a price per million: 27K and 7.6M, or 2.7 万 and 762 万. */
+function tokensPerDollar(price: number, locale: string): string {
+  const n = 1e6 / price;
+  if (locale === "zh") return n >= 1e8 ? `${(n / 1e8).toPrecision(3)} 亿` : n >= 1e4 ? `${Number((n / 1e4).toPrecision(3))} 万` : String(Math.round(n));
+  return n >= 1e6 ? `${Number((n / 1e6).toPrecision(2))}M` : n >= 1e3 ? `${Math.round(n / 1e3)}K` : String(Math.round(n));
 }
 
-function SectionHead({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: ReactNode }) {
-  return (
-    <>
-      <Eyebrow>{eyebrow}</Eyebrow>
-      <h2 className="mt-2 text-[20px] font-bold leading-[1.5] text-ink">{title}</h2>
-      {sub && <p className="mt-1 text-[13px] text-ink-3">{sub}</p>}
-    </>
-  );
+function Eyebrow({ children }: { children: ReactNode }) {
+  return <p className="mono text-[12px] tracking-[0.14em] text-[color:var(--brass)]">{children}</p>;
 }
 
 function Swatch({ i, hollow = false }: { i: number; hollow?: boolean }) {
   return <span className="inline-block size-2.5 shrink-0 rounded-full border-2" style={{ borderColor: color(i), background: hollow ? "var(--bg)" : color(i) }} aria-hidden="true" />;
 }
 
-/** The tier with the longest record and a fall to show, for the deck's figure. */
+/** The tier with the longest record and a fall to show, for the headline. */
 function leadTier(tiers: CoiTier[]): CoiTier | undefined {
   return tiers.find((t) => t.ratio);
 }
 
-function TierStat({ tier, i }: { tier: CoiTier; i: number }) {
-  const tx = useTranslate();
-  const first = tier.points[0];
-  const now = tier.points.at(-1);
-  return (
-    <div className="flex min-w-0 flex-col">
-      <span className="flex items-center gap-1.5 whitespace-nowrap text-[11px] font-semibold text-ink-2">
-        <Swatch i={i} />
-        {tx("GPQA ≥ {0}", pct(tier.threshold))}
-      </span>
-      <span className="mt-0.5 truncate text-[11px] text-ink-4">{tx("{0} level", tier.reference)}</span>
-      <span className="mono mt-2 text-[28px] font-medium leading-none tracking-[-0.03em] text-ink">{tier.ratio ? `${ratioText(tier.ratio)}×` : "—"}</span>
-      <span className="mt-1 text-[12px] text-ink-3">{tier.ratio ? tx("cheaper than when first reached") : tx("one price so far")}</span>
-      {first && now && (
-        <span className="mt-2.5 space-y-0.5 text-[12px] text-ink-4">
-          <span className="block text-ink-3">{tier.halvingMonths ? tx("Halves every {0} months", tier.halvingMonths.toFixed(1)) : tx("No halving trend yet")}</span>
-          <span className="num block">{`${usd(first.price)} → ${usd(now.price)}`}</span>
-          <span className="block truncate">{tx("Now {0}", now.model.name)}</span>
-        </span>
-      )}
-    </div>
-  );
+/** Whether every threshold with a fall lost nine tenths of its first price within a year of reaching it. */
+function fallsFastEverywhere(tiers: CoiTier[]): boolean {
+  const falling = tiers.filter((t) => t.points.length > 1);
+  return falling.length > 1 && falling.every((t) => {
+    const first = t.points[0]!;
+    const yearOn = new Date(Date.parse(`${first.date}T00:00:00Z`) + 365 * 864e5).toISOString().slice(0, 10);
+    return t.points.some((p) => p.date <= yearOn && p.price <= first.price / 10);
+  });
+}
+
+/** A step's change from the one before it on the same line. */
+function change(prev: CoiPoint | undefined, p: CoiPoint): string | null {
+  if (!prev) return null;
+  const delta = Math.round((p.price / prev.price - 1) * 100);
+  return delta === 0 ? "0%" : delta < 0 ? `−${-delta}%` : `+${delta}%`;
 }
 
 const day = (date: string) => Date.parse(`${date}T00:00:00Z`);
+const round = (v: number) => Math.round(v * 1000) / 1000;
 /** $0.1, $0.3, $1, $3: one significant figure. */
 const tickUsd = (v: number) => `$${Number(v.toPrecision(1))}`;
 
@@ -137,60 +128,9 @@ function stepAt(tier: CoiTier, date: string): CoiPoint | null {
   return found;
 }
 
-function Match({ stick, tint }: { stick: Stick; tint: string }) {
-  const { stick: body, grain, head, shine } = matchShapes(stick, tint);
-  return (
-    <>
-      <rect {...body} />
-      <rect {...grain} />
-      {head && <ellipse {...head} />}
-      {shine && <ellipse {...shine} />}
-    </>
-  );
-}
-
-/** A flame on a match head, rising from (0, 0); it flickers unless the reader asked for less motion. */
-function Flame({ id, flicker }: { id: string; flicker: boolean }) {
-  return (
-    <g>
-      <defs>
-        <radialGradient id={`${id}-glow`}><stop offset="0" stopColor={FLAME.glowColor} stopOpacity="0.55" /><stop offset="1" stopColor={FLAME.glowColor} stopOpacity="0" /></radialGradient>
-        <linearGradient id={`${id}-fire`} x1="0" x2="0" y1="1" y2="0">
-          {FLAME.fire.map(([offset, stopColor, stopOpacity]) => <stop key={offset} offset={offset} stopColor={stopColor} stopOpacity={stopOpacity} />)}
-        </linearGradient>
-      </defs>
-      <circle {...FLAME.glow} fill={`url(#${id}-glow)`} />
-      <g>
-        {flicker && <animateTransform attributeName="transform" type="scale" values="1 1;0.9 1.08;1.05 0.94;0.96 1.04;1 1" dur="1.1s" repeatCount="indefinite" />}
-        <path d={FLAME.outer} fill={`url(#${id}-fire)`} />
-        <path d={FLAME.inner} fill={FLAME.core} opacity={0.85} />
-      </g>
-    </g>
-  );
-}
-
-/**
- * Log-scale stepped lines laid in matchsticks, at the plot's real size in pixels (so a match keeps its
- * shape); every label is page text every label is page text (as in the story heat chart),
- * so the axes stay legible on a phone. Pointing at the chart reads every line on that date.
- */
-function Chart({ data, focus, onFocus }: { data: CostOfIntelligence; focus: string | null; onFocus: (key: string | null) => void }) {
-  const tx = useTranslate();
-  const entrance = useEntrance();
-  const wash = `coi${useId().replace(/[^\w-]/g, "")}`;
-  const flicker = useMotionAllowed();
-  const [active, setActive] = useState<number | null>(null);
-  // The plot's size in pixels: a guess for the server's HTML (the SVG stretches to it), then measured.
-  const plot = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ w: 960, h: 380 });
-  useEffect(() => {
-    const el = plot.current;
-    if (!el) return;
-    const observer = new ResizeObserver(([entry]) => entry && setSize({ w: entry.contentRect.width, h: entry.contentRect.height }));
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-  const geometry = useMemo(() => {
+/** Both axes in percent of the plot box, shared by the chart and the steps' bars. */
+function useScales(data: CostOfIntelligence) {
+  return useMemo(() => {
     const points = data.tiers.flatMap((t) => t.points);
     if (points.length === 0) return null;
     const dates = [...new Set(points.map((p) => p.date))].sort();
@@ -199,9 +139,25 @@ function Chart({ data, focus, onFocus }: { data: CostOfIntelligence; focus: stri
     // A sixth of a decade of air above and below the lines.
     const lo = Math.log10(Math.min(...points.map((p) => p.price))) - 0.18;
     const hi = Math.log10(Math.max(...points.map((p) => p.price))) + 0.18;
-    // Both axes in percent of the plot box: the SVG stretches to it, the labels and dots sit on it.
-    const x = (date: string) => ((day(date) - t0) / (t1 - t0)) * 100;
-    const y = (price: number) => ((hi - Math.log10(price)) / (hi - lo)) * 100;
+    // Rounded: the server's and the browser's Math.log10 can differ in the last digit, and the page must hydrate.
+    const x = (date: string) => round(((day(date) - t0) / (t1 - t0)) * 100);
+    const y = (price: number) => round(((hi - Math.log10(price)) / (hi - lo)) * 100);
+    return { dates, x, y, lo, hi };
+  }, [data]);
+}
+
+/**
+ * Log-scale stepped lines with every label as page text, so the axes stay legible on a phone. The selected
+ * threshold is drawn full; the biggest cuts are named where they happened. Pointing at the chart reads
+ * every line on that date.
+ */
+function Chart({ data, selected }: { data: CostOfIntelligence; selected: number }) {
+  const tx = useTranslate();
+  const scales = useScales(data);
+  const [active, setActive] = useState<number | null>(null);
+  const geometry = useMemo(() => {
+    if (!scales) return null;
+    const { x, y, lo, hi } = scales;
     const ticks: Array<{ v: number; major: boolean }> = [];
     for (let e = Math.floor(lo); e <= Math.ceil(hi); e++) {
       for (const m of [1, 3]) {
@@ -210,9 +166,9 @@ function Chart({ data, focus, onFocus }: { data: CostOfIntelligence; focus: stri
       }
     }
     const years: string[] = [];
-    for (let year = Number(data.asOf.slice(0, 4)); day(`${year}-01-01`) >= t0; year--) years.unshift(String(year));
-    // Each line's corners in percent of the plot: right to the next step's date, then down (or up) to its price.
-    const vertices = data.tiers.map((tier) => {
+    for (let year = Number(data.asOf.slice(0, 4)); x(`${year}-01-01`) >= 0; year--) years.unshift(String(year));
+    // Each line's corners: right to the next step's date, then down (or up) to its price.
+    const lines = data.tiers.map((tier) => {
       const out: Array<[number, number]> = [];
       tier.points.forEach((p, j) => {
         if (j > 0) out.push([x(p.date), out.at(-1)![1]]);
@@ -221,53 +177,43 @@ function Chart({ data, focus, onFocus }: { data: CostOfIntelligence; focus: stri
       if (out.length) out.push([100, out.at(-1)![1]]);
       return out;
     });
-    // End labels at their line's last price, pushed apart (in percent of the plot's height) so none overlap.
-    const ends = data.tiers.flatMap((tier, i) => (tier.points.length ? [{ tier, i, top: y(tier.points.at(-1)!.price) }] : [])).sort((a, b) => a.top - b.top);
-    for (let j = 1; j < ends.length; j++) ends[j]!.top = Math.max(ends[j]!.top, ends[j - 1]!.top + 8);
-    const overflow = ends.length ? ends.at(-1)!.top - 100 : 0;
-    if (overflow > 0) for (const end of ends) end.top -= overflow;
-    return { dates, x, y, ticks, years, vertices, ends };
-  }, [data]);
-  if (!geometry) return <p className="rounded-tile bg-bg-sunk px-4 py-8 text-center text-[13px] text-ink-4"><Text value="No prices yet." /></p>;
-  const { dates, x, y, ticks, years, vertices, ends } = geometry;
-  const { w, h } = size;
-  const px = (corners: Array<[number, number]>) => corners.map(([cx, cy]) => [(cx * w) / 100, (cy * h) / 100] as [number, number]);
+    // Each line's deepest single cut, when it took off most of the price.
+    const cuts = data.tiers.flatMap((tier, i) => {
+      let best: { p: CoiPoint; prev: CoiPoint } | null = null;
+      tier.points.forEach((p, j) => {
+        const prev = tier.points[j - 1];
+        if (prev && (!best || p.price / prev.price < best.p.price / best.prev.price)) best = { p, prev };
+      });
+      const cut = best as { p: CoiPoint; prev: CoiPoint } | null;
+      return cut && cut.p.price / cut.prev.price <= 1 - BIG_CUT
+        ? [{ i, key: tier.key, left: x(cut.p.date), top: (y(cut.prev.price) + y(cut.p.price)) / 2, name: cut.p.model.name, change: change(cut.prev, cut.p)! }]
+        : [];
+    });
+    return { ticks, years, lines, cuts };
+  }, [data, scales]);
+  if (!scales || !geometry) return <p className="rounded-tile bg-bg-sunk px-4 py-8 text-center text-[13px] text-ink-4"><Text value="No prices yet." /></p>;
+  const { dates, x, y } = scales;
+  const { ticks, years, lines, cuts } = geometry;
   const date = active !== null ? dates[active]! : null;
-  const dim = (key: string) => (focus && focus !== key ? 0.22 : 1);
+  const dim = (i: number) => (i === selected ? 1 : 0.32);
   const pick = (clientX: number, rect: DOMRect) => {
-    const px = ((clientX - rect.left) / rect.width) * 100;
+    const at = ((clientX - rect.left) / rect.width) * 100;
     let best = 0;
     dates.forEach((d, i) => {
-      if (Math.abs(x(d) - px) < Math.abs(x(dates[best]!) - px)) best = i;
+      if (Math.abs(x(d) - at) < Math.abs(x(dates[best]!) - at)) best = i;
     });
     setActive(best);
   };
+  const end = data.tiers[selected]?.points.at(-1);
   return (
     <div>
-      <div className="flex flex-wrap gap-2" role="group" aria-label={tx("Highlight a threshold")}>
-        {data.tiers.map((tier, i) => (
-          <button
-            key={tier.key}
-            type="button"
-            aria-pressed={focus === tier.key}
-            onClick={() => onFocus(focus === tier.key ? null : tier.key)}
-            className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[12.5px] transition-colors ${focus === tier.key ? "border-accent/45 text-ink" : "border-line bg-surface text-ink-3 hover:border-line-strong hover:text-ink"}`}
-          >
-            <Swatch i={i} />
-            {tx("GPQA ≥ {0}", pct(tier.threshold))}
-            <span className="text-[11.5px] text-ink-4 max-sm:hidden">{tier.reference}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="relative mt-8 h-[260px] pl-10 pr-[58px] sm:h-[340px] sm:pr-[102px] lg:h-[400px]">
+      <div className="relative h-[240px] pl-10 sm:h-[340px] lg:h-[420px]">
         {ticks.map(({ v }) => (
           <span key={v} className="num absolute left-0 w-8 -translate-y-1/2 text-right text-[11px] leading-none text-ink-4" style={{ top: `${y(v)}%` }} aria-hidden="true">
             {tickUsd(v)}
           </span>
         ))}
         <div
-          ref={plot}
           className="relative size-full touch-pan-y select-none rounded-mark outline-offset-4"
           role="group"
           aria-label={tx("Point at the chart, or use the left and right arrow keys, to read every line on a date.")}
@@ -284,79 +230,58 @@ function Chart({ data, focus, onFocus }: { data: CostOfIntelligence; focus: stri
           onPointerLeave={(e) => e.pointerType === "mouse" && setActive(null)}
           onBlur={() => setActive(null)}
         >
-          {/* The plot's floor: decades firm, the 3s faint, a baseline under the years. */}
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible" role="img" aria-label={tx("Cheapest price per million tokens by GPQA threshold, log scale")}>
             {ticks.map(({ v, major }) => (
               <line key={v} x1="0" x2="100" y1={y(v)} y2={y(v)} stroke={major ? "var(--line)" : "var(--line-soft)"} strokeDasharray={major ? undefined : "2 5"} vectorEffect="non-scaling-stroke" />
             ))}
             <line x1="0" x2="100" y1="100" y2="100" stroke="var(--line-strong)" vectorEffect="non-scaling-stroke" />
+            {/* The selected line last, on top. */}
+            {data.tiers.map((tier, i) => ({ tier, i })).sort((a, b) => Number(a.i === selected) - Number(b.i === selected)).map(({ tier, i }) => lines[i]!.length > 0 && (
+              <path
+                key={tier.key}
+                d={`M${lines[i]!.map(([cx, cy]) => `${cx},${cy}`).join("L")}`}
+                fill="none"
+                stroke={color(i)}
+                strokeWidth={i === selected ? 3.5 : 2}
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+                style={{ opacity: dim(i), transition: "opacity .25s" }}
+              />
+            ))}
           </svg>
-          {/* Under the highlighted line a wash of its colour, fading to the floor. */}
-          <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className={`absolute inset-0 size-full ${entrance ? "anim-fade-in" : ""}`} aria-hidden="true">
-            <defs>
-              {data.tiers.map((tier, i) => (
-                <linearGradient key={tier.key} id={`${wash}-${i}`} x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0" stopColor={color(i)} stopOpacity="0.28" />
-                  <stop offset="1" stopColor={color(i)} stopOpacity="0" />
-                </linearGradient>
-              ))}
-            </defs>
-            {data.tiers.map((tier, i) => {
-              const corners = px(vertices[i]!);
-              return corners.length > 0 && (
-                <path key={tier.key} d={`M${corners.map(([cx, cy]) => `${cx},${cy}`).join("L")}V${h}H${corners[0]![0]}Z`} fill={`url(#${wash}-${i})`} style={{ opacity: focus === tier.key ? 1 : 0, transition: "opacity .25s" }} />
-              );
-            })}
-          </svg>
-          {/* One SVG per line, laid in matches; each casts a small shadow on the page. */}
-          {data.tiers.map((tier, i) => {
-            const corners = px(vertices[i]!);
-            if (corners.length === 0) return null;
-            const runs = runsThrough(corners);
-            const [ex, ey] = corners.at(-1)!;
-            return (
-              <svg key={tier.key} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className={`absolute inset-0 size-full overflow-visible ${entrance ? "anim-reveal" : ""}`} style={{ opacity: dim(tier.key), filter: "drop-shadow(0 1px 1.2px rgb(40 20 0 / .35))", transition: "opacity .25s" }} aria-hidden="true">
-                {runs.map((run, r) => (
-                  <g key={r} transform={`translate(${run.x} ${run.y}) rotate(${run.angle})`}>
-                    {sticksAlong(run.len).map((stick) => <Match key={stick.at} stick={stick} tint={color(i)} />)}
-                  </g>
-                ))}
-                {/* Today's end: the last match is lit. */}
-                <g transform={`translate(${ex - HEAD_INSET} ${ey - 2.5})`}><Flame id={`${wash}-flame-${i}`} flicker={flicker} /></g>
-              </svg>
-            );
-          })}
           {/* Prices still awaiting a check: a hollow ring at their corner. */}
           {data.tiers.map((tier, i) => tier.points.filter((p) => !p.verified).map((p) => (
             <span
               key={`${tier.key}-${p.date}-${p.model.slug}`}
               className="pointer-events-none absolute size-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full transition-opacity"
-              style={{ left: `${x(p.date)}%`, top: `${y(p.price)}%`, opacity: dim(tier.key), background: "var(--bg)", boxShadow: `0 0 0 2px ${color(i)}` }}
+              style={{ left: `${x(p.date)}%`, top: `${y(p.price)}%`, opacity: dim(i), background: "var(--bg)", boxShadow: `0 0 0 2px ${color(i)}` }}
               aria-hidden="true"
             />
           )))}
-          {/* Where each threshold was first reached, and by what. */}
+          {/* Where each threshold was first reached, by what and at what price. */}
           {data.tiers.map((tier, i) => {
             const first = tier.points[0];
             return first && (
-              <span
-                key={tier.key}
-                className="pointer-events-none absolute flex -translate-x-[6px] -translate-y-[calc(100%+9px)] items-center gap-1 whitespace-nowrap rounded-full bg-bg/85 px-1.5 py-0.5 text-[11px] leading-none text-ink-3 backdrop-blur-[2px] transition-opacity max-sm:hidden"
-                style={{ left: `${x(first.date)}%`, top: `${y(first.price)}%`, opacity: focus && focus !== tier.key ? 0 : 1 }}
-                aria-hidden="true"
-              >
-                <span className="size-1.5 rounded-full" style={{ background: color(i) }} />
-                {first.model.name}
+              <span key={tier.key} className="pointer-events-none absolute transition-opacity max-sm:hidden" style={{ left: `${x(first.date)}%`, top: `${y(first.price)}%`, opacity: dim(i) }} aria-hidden="true">
+                <span className="absolute size-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: color(i) }} />
+                <span className="absolute -translate-x-[6px] -translate-y-[calc(100%+8px)] whitespace-nowrap text-[12px] leading-none text-ink-2">
+                  {first.model.name} · <b className="num font-medium">{usd(first.price)}</b>
+                </span>
               </span>
             );
           })}
-          {ends.map(({ tier, i, top }) => (
-            <span key={tier.key} className="pointer-events-none absolute left-[calc(100%+16px)] flex -translate-y-1/2 items-center gap-1.5 whitespace-nowrap text-[11.5px] leading-none transition-opacity" style={{ top: `${top}%`, opacity: dim(tier.key) }} aria-hidden="true">
-              <Swatch i={i} />
-              <span className="font-semibold text-ink-2">{`≥${pct(tier.threshold)}`}</span>
-              <span className="num text-ink-4 max-sm:hidden">{usd(tier.points.at(-1)!.price)}</span>
+          {cuts.map((cut) => (
+            <span
+              key={cut.key}
+              className={`pointer-events-none absolute -translate-y-1/2 whitespace-nowrap rounded-full border bg-[color:var(--bg)]/85 px-2.5 py-1 text-[12px] leading-none transition-opacity max-sm:hidden ${cut.left > 70 ? "-translate-x-[calc(100%+10px)]" : "translate-x-[10px]"}`}
+              style={{ left: `${cut.left}%`, top: `${cut.top}%`, color: color(cut.i), borderColor: `${color(cut.i)}80`, opacity: cut.i === selected ? 1 : 0.55 }}
+              aria-hidden="true"
+            >
+              {cut.name} <b className="num font-medium">{cut.change}</b>
             </span>
           ))}
+          {/* Today's end of the selected line glows. */}
+          {end && <span className="pointer-events-none absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ left: "100%", top: `${y(end.price)}%`, background: "radial-gradient(circle, #fff3d6 0, var(--brass-hi) 35%, transparent 70%)", boxShadow: "0 0 18px 6px rgb(240 210 138 / .35)" }} aria-hidden="true" />}
           {date && (
             <>
               <span className="pointer-events-none absolute inset-y-0 w-px -translate-x-1/2 bg-line-strong" style={{ left: `${x(date)}%` }} />
@@ -389,7 +314,7 @@ function Chart({ data, focus, onFocus }: { data: CostOfIntelligence; focus: stri
           )}
         </div>
       </div>
-      <div className="relative ml-10 mr-[58px] mt-2.5 h-4 sm:mr-[102px]" aria-hidden="true">
+      <div className="relative ml-10 mt-2.5 h-4" aria-hidden="true">
         {years.map((year) => {
           const left = x(`${year}-01-01`);
           return (
@@ -401,59 +326,155 @@ function Chart({ data, focus, onFocus }: { data: CostOfIntelligence; focus: stri
             </span>
           );
         })}
+        <span className="absolute right-0 text-[11px] leading-none text-[color:var(--brass-hi)]"><Text value="Today" /></span>
       </div>
     </div>
   );
 }
 
-/** A step's change from the one before it on the same line. */
-function change(prev: CoiPoint | undefined, p: CoiPoint): string {
-  if (!prev) return "—";
-  const delta = Math.round((p.price / prev.price - 1) * 100);
-  return delta === 0 ? "0%" : delta < 0 ? `−${-delta}%` : `+${delta}%`;
-}
-
-function StepsTable({ tier }: { tier: CoiTier }) {
+/** The thresholds as buttons: choosing one draws its line full and lists its steps below. */
+function TierPicker({ tiers, selected, onSelect }: { tiers: CoiTier[]; selected: number; onSelect: (i: number) => void }) {
   const tx = useTranslate();
   return (
-    <div className="mt-4 overflow-x-auto">
-      <table className="w-full min-w-[680px] text-[13px]">
-        <thead className="text-[12px] text-ink-4">
-          <tr className="border-b border-line">
-            <th className="py-2 text-left font-medium"><Text value="From" /></th>
-            <th className="py-2 pl-3 text-left font-medium"><Text value="Model" /></th>
-            <th className="py-2 pl-3 text-right font-medium">GPQA</th>
-            <th className="py-2 pl-3 text-right font-medium"><Text value="Blended / M tokens" /></th>
-            <th className="py-2 pl-3 text-right font-medium"><Text value="Change" /></th>
-            <th className="py-2 pl-3 text-right font-medium"><Text value="List price" /></th>
-            <th className="py-2 pl-3 text-right font-medium"><Text value="Source" /></th>
-          </tr>
-        </thead>
-        <tbody>
-          {tier.points.map((p, j) => (
-            <tr key={`${p.date}-${p.model.slug}`} className="border-b border-line-soft last:border-0">
-              <td className="num py-2.5 align-top text-ink-3">{p.date}</td>
-              <td className="py-2.5 pl-3 align-top">
-                <span className="font-medium text-ink">{p.model.name}</span>
-                {p.model.provider && <span className="block text-[12px] text-ink-4">{p.model.provider}</span>}
-              </td>
-              <td className="num py-2.5 pl-3 text-right align-top text-ink-3">{pct(p.score)}</td>
-              <td className="num py-2.5 pl-3 text-right align-top font-semibold text-ink">{usd(p.price)}</td>
-              <td className="num py-2.5 pl-3 text-right align-top text-ink-3">{change(tier.points[j - 1], p)}</td>
-              <td className="num py-2.5 pl-3 text-right align-top text-ink-3">
-                {`${p.currency} ${p.input} / ${p.output}`}
-                {!p.verified && <span className="ml-1.5"><Badge tone="amber">{tx("unverified")}</Badge></span>}
-              </td>
-              <td className="py-2.5 pl-3 text-right align-top">
-                {p.source ? (
-                  <a href={p.source} target="_blank" rel="noopener nofollow" className="inline-flex items-center gap-1 text-ink-3 hover:text-accent"><Text value="Source" /><IconExternal size={12} /></a>
-                ) : "—"}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="flex flex-wrap gap-2" role="group" aria-label={tx("Highlight a threshold")}>
+      {tiers.map((tier, i) => (
+        <button
+          key={tier.key}
+          type="button"
+          aria-pressed={i === selected}
+          onClick={() => onSelect(i)}
+          className={`inline-flex min-h-10 items-center gap-2 rounded-full border px-3.5 text-[13px] transition-colors ${i === selected ? "border-[color:var(--brass)]/60 bg-[color:var(--brass)]/15 text-ink" : "border-line text-ink-3 hover:border-line-strong hover:text-ink"}`}
+        >
+          <Swatch i={i} />
+          {tx("GPQA ≥ {0}", pct(tier.threshold))}
+          <span className="text-[12px] text-ink-4 max-sm:hidden">{tier.reference}</span>
+        </button>
+      ))}
     </div>
+  );
+}
+
+/** Each threshold's price today, how much cheaper it is and how fast it halves. */
+function Today({ tiers, selected, onSelect }: { tiers: CoiTier[]; selected: number; onSelect: (i: number) => void }) {
+  const tx = useTranslate();
+  return (
+    <aside className="flex flex-col gap-2.5" aria-label={tx("Price falls by threshold")}>
+      <p className="mono text-[11px] tracking-[0.12em] text-[color:var(--brass)]"><Text value="Today · per million tokens" /></p>
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-1">
+        {tiers.map((tier, i) => {
+          const now = tier.points.at(-1);
+          return (
+            <button
+              key={tier.key}
+              type="button"
+              aria-pressed={i === selected}
+              onClick={() => onSelect(i)}
+              className={`rounded-tile border px-3 py-2.5 text-left transition-colors ${i === selected ? "border-[color:var(--brass)]/45 bg-[color:var(--brass)]/[.08]" : "border-line-soft hover:border-line"}`}
+            >
+              <span className="flex items-center gap-2 text-[12px] text-ink-3"><Swatch i={i} />{tx("GPQA ≥ {0}", pct(tier.threshold))}</span>
+              <span className="mt-1 flex items-baseline justify-between gap-2">
+                <span className="num text-[22px] leading-tight text-ink">{now ? usd(now.price) : "—"}</span>
+                {tier.ratio && <span className="font-display text-[24px] italic leading-none text-[color:var(--brass-hi)]">{`${ratioText(tier.ratio)}×`}</span>}
+              </span>
+              {now && (
+                <span className="mt-0.5 block truncate text-[11.5px] text-ink-4">
+                  {now.model.name}{tier.halvingMonths ? ` · ${tx("Halves every {0} months", tier.halvingMonths.toFixed(1))}` : ""}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
+
+/** What a dollar bought when each threshold was first reached, and what it buys today. */
+function DollarBuys({ tiers }: { tiers: CoiTier[] }) {
+  const tx = useTranslate();
+  const locale = useLocale();
+  return (
+    <section aria-labelledby="coi-dollar" className="mt-20">
+      <Eyebrow><Text value="WHAT A DOLLAR BUYS" /></Eyebrow>
+      <h2 id="coi-dollar" className="mt-2.5 font-display text-[26px] font-bold leading-snug text-ink sm:text-[34px] [&:lang(en)]:font-normal"><Text value="How much thinking one dollar buys" /></h2>
+      <p className="mt-2 text-[13.5px] text-ink-3"><Text value="Tokens per US dollar at the cheapest price, when each threshold was first reached and today." /></p>
+      <div className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+        {tiers.map((tier, i) => {
+          const first = tier.points[0];
+          const now = tier.points.at(-1);
+          return first && now && (
+            <article key={tier.key} className="rounded-card border border-line bg-surface p-4 lg:p-5">
+              <p className="flex items-center gap-2 text-[13px] text-ink-2"><Swatch i={i} />{tx("GPQA ≥ {0}", pct(tier.threshold))}</p>
+              <p className="mt-0.5 truncate text-[12px] text-ink-4">{tx("{0} level", tier.reference)}</p>
+              <p className="mt-4 text-[12px] text-ink-4">{tx("First reached {0}", first.date.slice(0, 7))}</p>
+              <p className="num text-[18px] text-ink-3">{tokensPerDollar(first.price, locale)}</p>
+              <p className="mt-3 text-[12px] text-ink-4"><Text value="Today" /></p>
+              <p className="font-display text-[40px] leading-none text-ink lg:text-[52px]">{tokensPerDollar(now.price, locale)}</p>
+              <p className="mt-1.5 text-[12px] text-ink-4"><Text value="tokens per dollar" /></p>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/** Every step of one threshold: its date, model, a bar as long as its price on the chart's scale, and the cut. */
+function Steps({ data, selected, onSelect }: { data: CostOfIntelligence; selected: number; onSelect: (i: number) => void }) {
+  const tx = useTranslate();
+  const scales = useScales(data);
+  const tier = data.tiers[selected];
+  if (!tier || !scales) return null;
+  return (
+    <section aria-labelledby="coi-steps" className="mt-20">
+      <Eyebrow><Text value="EVERY STEP" /></Eyebrow>
+      <div className="mt-2.5 flex flex-wrap items-end justify-between gap-4">
+        <h2 id="coi-steps" className="font-display text-[26px] font-bold leading-snug text-ink sm:text-[34px] [&:lang(en)]:font-normal">{tx("Who brought down the price of {0}-level capability", tier.reference)}</h2>
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label={tx("Threshold")}>
+          {data.tiers.map((t, i) => (
+            <button
+              key={t.key}
+              type="button"
+              aria-pressed={i === selected}
+              onClick={() => onSelect(i)}
+              className={`num min-h-10 min-w-16 rounded-full border px-3.5 text-[13px] transition-colors ${i === selected ? "text-[#2a1f16]" : "border-line text-ink-3 hover:border-line-strong hover:text-ink"}`}
+              style={i === selected ? { background: color(i), borderColor: color(i) } : undefined}
+            >
+              {`≥ ${pct(t.threshold)}`}
+            </button>
+          ))}
+        </div>
+      </div>
+      <ol className="mt-6 border-t border-line">
+        {tier.points.map((p, j) => {
+          const cut = change(tier.points[j - 1], p);
+          return (
+            <li key={`${p.date}-${p.model.slug}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-b border-line-soft py-3 sm:grid-cols-[100px_minmax(0,1.3fr)_minmax(0,1.6fr)_88px_64px]">
+              <span className="num text-[12.5px] text-ink-4 max-sm:col-span-2">{p.date}</span>
+              <span className="min-w-0">
+                <span className="block truncate text-[15px] font-medium text-ink">{p.model.name}</span>
+                <span className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-ink-4">
+                  {p.model.provider && <span>{p.model.provider}</span>}
+                  <span className="num">{`GPQA ${pct(p.score)}`}</span>
+                  <span className="num">{`${p.currency} ${p.input} / ${p.output}`}</span>
+                  {!p.verified && <Badge tone="amber">{tx("unverified")}</Badge>}
+                  {p.source && <a href={p.source} target="_blank" rel="noopener nofollow" className="inline-flex items-center gap-1 text-ink-3 hover:text-[color:var(--brass-hi)]"><Text value="Source" /><IconExternal size={12} /></a>}
+                </span>
+              </span>
+              <span className="relative h-2 rounded-full bg-ink/[.06] max-sm:hidden" aria-hidden="true">
+                <span className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${Math.max(2, 100 - scales.y(p.price))}%`, background: color(selected) }} />
+              </span>
+              <span className="num text-right text-[15px] text-ink">{usd(p.price)}</span>
+              <span className={`num text-right text-[13px] max-sm:col-start-2 ${cut ? "text-[color:var(--ok)]" : "text-ink-4"}`}>{cut ?? tx("First")}</span>
+            </li>
+          );
+        })}
+      </ol>
+      <p className="mt-3.5 text-[12.5px] text-ink-4">
+        <Text value="Each row is a launch or a price cut, with where its official price was checked." />{" "}
+        <a href={CSV} className="text-[color:var(--brass-hi)] hover:underline"><Text value="Download CSV" /></a>
+      </p>
+    </section>
   );
 }
 
@@ -480,35 +501,35 @@ function CiteAndEmbed({ data, url }: { data: CostOfIntelligence; url: string }) 
   const citation = `${SITE.name}. (${data.asOf.slice(0, 4)}). ${title}. ${tx("Retrieved {0}, from {1}", data.asOf, url)}`;
   const lines = findings(tx, data.tiers);
   return (
-    <section id="cite" className="mt-12 scroll-mt-6">
-      <SectionHead eyebrow="CITE AND EMBED" title={tx("Use these numbers")} sub={tx("The index is free to quote, chart and republish under CC BY 4.0: credit it with a link to this page. The GPQA Diamond scores it rests on are Epoch AI's, also CC BY 4.0.")} />
-      <div className="card mt-5 overflow-hidden">
-        <div className="flex items-center justify-between gap-3 border-b border-line-soft px-4 py-2.5 lg:px-5">
+    <section id="cite" aria-labelledby="coi-cite" className="min-w-0 scroll-mt-20">
+      <Eyebrow><Text value="CITE AND EMBED" /></Eyebrow>
+      <h2 id="coi-cite" className="mt-2.5 font-display text-[24px] font-bold leading-snug text-ink sm:text-[28px] [&:lang(en)]:font-normal"><Text value="Use these numbers" /></h2>
+      <p className="mt-2 text-[13px] leading-relaxed text-ink-3"><Text value="The index is free to quote, chart and republish under CC BY 4.0: credit it with a link to this page. The GPQA Diamond scores it rests on are Epoch AI's, also CC BY 4.0." /></p>
+      <div className="mt-5 rounded-card border border-line bg-surface">
+        <div className="flex items-center justify-between gap-3 border-b border-line-soft px-4 py-2.5">
           <h3 className="text-[13.5px] font-semibold text-ink"><Text value="Key figures" /><span className="num ml-2 text-[12px] font-normal text-ink-4">{tx("Updated {0}", data.asOf)}</span></h3>
           <CopyButton text={lines.map((l) => l.text).join("\n\n")} />
         </div>
         <ul className="divide-y divide-line-soft">
           {lines.map(({ i, text }) => (
-            <li key={i} className="flex gap-3 px-4 py-3 text-[13.5px] leading-relaxed text-ink-2 lg:px-5">
+            <li key={i} className="flex gap-3 px-4 py-3 text-[13.5px] leading-relaxed text-ink-2">
               <span className="mt-[7px]"><Swatch i={i} /></span>
               <span>{text}</span>
             </li>
           ))}
         </ul>
       </div>
-      <div className="mt-5 grid gap-5 lg:grid-cols-2">
-        <figure className="flex flex-col overflow-hidden rounded-card border border-line bg-surface">
-          <div className="flex items-center justify-between gap-3 border-b border-line-soft px-4 py-2">
-            <figcaption className="text-[12px] text-ink-4">{tx("Chart image · PNG 1200 × 630")}</figcaption>
-            <a href={chartPath(locale)} target="_blank" rel="noopener" className="inline-flex h-7 items-center gap-1 rounded-mark border border-line bg-surface px-2 text-[12px] text-ink-3 transition-colors hover:border-line-strong hover:text-ink"><IconExternal size={13} /><Text value="Open" /></a>
-          </div>
-          <div className="grid flex-1 place-items-center bg-bg-sunk/60 p-3 dark:bg-bg-muted/40">
-            <img src={chartPath(locale)} alt={tx("Cheapest price per million tokens by GPQA threshold, log scale")} width={1200} height={630} loading="lazy" className="h-auto w-full rounded-mark shadow-[0_1px_3px_rgb(0_0_0_/_.08)]" />
-          </div>
-        </figure>
-        <CodeBlock code={embed} title={tx("Embed the chart (HTML)")} wrap className="flex flex-col [&>pre]:flex-1" />
+      <div className="mt-4 flex flex-wrap items-center gap-2.5">
+        <a href={CSV} className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[linear-gradient(var(--brass-hi),var(--brass))] px-4 text-[14px] font-semibold text-[#2a1f16]"><IconDownload size={14} /><Text value="Download CSV" /></a>
+        <a href={chartPath(locale)} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line-strong px-4 text-[14px] text-ink hover:border-[color:var(--brass)]"><IconExternal size={14} />{tx("Chart image · PNG 1200 × 630")}</a>
       </div>
-      <CodeBlock code={citation} title={tx("Citation (APA)")} wrap className="mt-5" />
+      <details className="group mt-4 rounded-card border border-line">
+        <summary className="flex min-h-11 cursor-pointer items-center px-4 text-[13.5px] text-ink-2 marker:text-ink-4"><Text value="Embed code and citation" /></summary>
+        <div className="space-y-4 border-t border-line-soft p-4">
+          <CodeBlock code={embed} title={tx("Embed the chart (HTML)")} wrap className="" />
+          <CodeBlock code={citation} title={tx("Citation (APA)")} wrap className="" />
+        </div>
+      </details>
     </section>
   );
 }
@@ -521,83 +542,96 @@ const LIMITS = [
   "GPQA is saturating: above 90% it separates models less well, and a harder benchmark will take over the top tier.",
 ];
 
+function Method({ data }: { data: CostOfIntelligence }) {
+  const tx = useTranslate();
+  return (
+    <div className="flex min-w-0 flex-col gap-7">
+      <section>
+        <h2 className="text-[15px] font-semibold text-ink"><Text value="How it is computed" /></h2>
+        <div className="mt-2 space-y-2 text-[13.5px] leading-relaxed text-ink-3">
+          <p><Text value="Capability is GPQA Diamond accuracy as measured by Epoch AI, taking each model's best configuration. Price is the first-party API list price per million tokens: standard tier, cache-miss input, shortest context, no launch promotions or batch discounts. Input and output are blended 3:1." /></p>
+          <p><Text value="On every date a model launched or a price changed, each line takes the cheapest model at or above its threshold. The halving time is a least-squares fit of log price against months, with the line read on the first of every month." /></p>
+        </div>
+        <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-ink-4">
+          <span>{tx("{0} models with a GPQA score and a first-party price", data.modelCount)}</span>
+          {data.fx && <span className="num">{tx("CNY prices at {0} per USD ({1})", data.fx.rate.toFixed(4), data.fx.asOf)}</span>}
+        </p>
+        {data.tiers.some((t) => t.points.some((p) => !p.verified)) && (
+          <p className="mt-2 flex items-center gap-1.5 text-[12.5px] text-ink-4"><Swatch i={0} hollow /><Text value="Hollow dots are launch prices still awaiting a check against an archived vendor page." /></p>
+        )}
+      </section>
+      <section>
+        <h2 className="text-[15px] font-semibold text-ink"><Text value="What it does not say" /></h2>
+        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-[13.5px] leading-relaxed text-ink-3">
+          {LIMITS.map((line) => <li key={line}><Text value={line} /></li>)}
+        </ul>
+      </section>
+    </div>
+  );
+}
+
+/** The headline: how much cheaper the longest-running threshold has become, the figure set large. */
+function Headline({ lead }: { lead: CoiTier | undefined }) {
+  const tx = useTranslate();
+  const first = lead?.points[0];
+  const now = lead?.points.at(-1);
+  if (!lead?.ratio || !first || !now) return <h1 id="coi-title" className="font-display text-[40px] font-bold leading-tight text-ink sm:text-[64px]"><Text value="The cost of intelligence" /></h1>;
+  // The figure sits inside a translated sentence: split the sentence where it goes.
+  const [before, after] = tx("{0}× cheaper.", "\u0000").split("\u0000") as [string, string];
+  return (
+    <>
+      <h1 id="coi-title" className="font-display text-[36px] font-bold leading-[1.15] text-[#fff7e8] [text-wrap:balance] sm:text-[52px] lg:text-[64px] [&:lang(en)]:font-normal [&:lang(en)]:italic">
+        <Text value="The same intelligence," /><br />
+        {before}<span className="font-display text-[1.3em] font-normal italic text-[color:var(--brass-hi)]">{ratioText(lead.ratio)}</span>{after}
+      </h1>
+      <p className="mt-4 text-[15px] leading-[1.85] text-ink-2 sm:text-[16px] lg:mt-0">
+        {tx("In {0}, {1}-level capability cost {2} per million tokens. Today {3} does as well for {4}.", first.date.slice(0, 7), lead.reference, usd(first.price), now.model.name, usd(now.price))}
+      </p>
+    </>
+  );
+}
+
 export default function CostOfIntelligencePage() {
   const data = useLoaderData<typeof loader>() as CostOfIntelligence;
   const tx = useTranslate();
   const locale = useLocale();
   const url = `${siteUrl()}${localePath(PATH, locale)}`;
-  const [focus, setFocus] = useState<string | null>(null);
-  const [tab, setTab] = useState(data.tiers[0]?.key ?? "");
+  const [selected, setSelected] = useState(0);
   const lead = leadTier(data.tiers);
-  const shown = data.tiers.find((t) => t.key === tab) ?? data.tiers[0];
-  const unverified = data.tiers.some((t) => t.points.some((p) => !p.verified));
   return (
-    <div className="pb-12">
-      <Deck
-        compact
-        art="cat-models"
-        label={tx("The cost of intelligence")}
-        kicker={tx("Index · updated {0}", data.asOf)}
-        title={tx("The cost of intelligence")}
-        description={tx("The same capability keeps getting cheaper. Each line is the cheapest first-party API price for a model at or above a GPQA Diamond score.")}
-        aside={lead?.ratio && lead.points[0] ? (
-          <span className="flex flex-col items-end">
-            <span className="font-mono text-[12px] text-[var(--deck-dim)]">{tx("{0}-level capability, cheaper than in {1}", lead.reference, lead.points[0].date.slice(0, 7))}</span>
-            <span className="deck-figure text-[96px] lg:text-[120px]">{`${ratioText(lead.ratio)}×`}</span>
-          </span>
-        ) : undefined}
-      />
-
-      <section className="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 border-y border-line py-6 lg:grid-cols-4" aria-label={tx("Price falls by threshold")}>
-        {data.tiers.map((tier, i) => <TierStat key={tier.key} tier={tier} i={i} />)}
+    <div className="pb-16">
+      <section aria-labelledby="coi-title" className="pb-7 pt-10 lg:pt-14">
+        <p className="mono text-[12px] tracking-[0.14em] text-[color:var(--brass)]">{`${tx("The cost of intelligence")} · ${tx("Updated {0}", data.asOf)}`}</p>
+        <div className="mt-4 grid items-end gap-x-12 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] [&>p]:lg:pb-2">
+          <Headline lead={lead} />
+        </div>
+        <p className="mt-3 text-[13px] leading-relaxed text-ink-4"><Text value="Capability is GPQA Diamond accuracy; price is the first-party API list price, input and output blended 3:1." /></p>
       </section>
 
-      <section className="mt-12">
-        <SectionHead eyebrow="CHEAPEST PRICE · LOG SCALE" title={tx("USD per million tokens, blended 3:1 input to output")} sub={tx("Each step is a launch or a price cut that made the threshold cheaper. Point at the chart to read every line on that date.")} />
-        <div className="mt-5"><Chart data={data} focus={focus} onFocus={(key) => { setFocus(key); if (key) setTab(key); }} /></div>
-        <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] leading-relaxed text-ink-4">
-          {unverified && <span className="inline-flex items-center gap-1.5"><Swatch i={0} hollow /><Text value="Hollow dots are launch prices still awaiting a check against an archived vendor page." /></span>}
-          <a href="#cite" className="text-accent hover:text-accent-ink"><Text value="Embed or cite this chart" /></a>
+      <section className="rounded-panel border border-line bg-surface px-4 pb-5 pt-5 sm:px-7 sm:pt-6" aria-label={tx("Cheapest price per million tokens by GPQA threshold, log scale")}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <TierPicker tiers={data.tiers} selected={selected} onSelect={setSelected} />
+          <p className="mono text-[11.5px] tracking-[0.08em] text-ink-4"><Text value="Cheapest price per million tokens · log scale" /></p>
+        </div>
+        <div className="mt-6 grid gap-x-8 gap-y-6 lg:grid-cols-[minmax(0,1fr)_200px]">
+          <div className="min-w-0"><Chart data={data} selected={selected} /></div>
+          <Today tiers={data.tiers} selected={selected} onSelect={setSelected} />
+        </div>
+      </section>
+
+      {fallsFastEverywhere(data.tiers) && (
+        <p className="mt-7 rounded-card border border-[color:var(--brass)]/25 bg-[color:var(--brass)]/[.08] px-5 py-4 font-display text-[17px] leading-relaxed text-[#fff3d6] sm:text-[19px]">
+          <Text value="The pattern: each new level of capability arrives at a high price and loses more than nine tenths of it within a year." />
         </p>
-      </section>
-
-      {shown && (
-        <section className="mt-12">
-          <SectionHead eyebrow="EVERY STEP" title={tx("Which model brought each step")} sub={tx("The cheapest model at or above the threshold from each date on, with its official list price and where it was checked.")} />
-          <PillTabs
-            size="sm"
-            layoutId="coi-tier"
-            label={tx("Threshold")}
-            active={shown.key}
-            onSelect={setTab}
-            items={data.tiers.map((t) => ({ key: t.key, label: tx("GPQA ≥ {0}", pct(t.threshold)) }))}
-            className="mt-5"
-          />
-          <StepsTable tier={shown} />
-        </section>
       )}
 
-      <section className="mt-12">
-        <SectionHead eyebrow="METHOD" title={tx("How it is computed")} />
-        <div className="mt-3 max-w-[720px] space-y-2 text-[13.5px] leading-relaxed text-ink-3">
-          <p><Text value="Capability is GPQA Diamond accuracy as measured by Epoch AI, taking each model's best configuration. Price is the first-party API list price per million tokens: standard tier, cache-miss input, shortest context, no launch promotions or batch discounts. Input and output are blended 3:1." /></p>
-          <p><Text value="On every date a model launched or a price changed, each line takes the cheapest model at or above its threshold. The halving time is a least-squares fit of log price against months, with the line read on the first of every month." /></p>
-        </div>
-        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12.5px] text-ink-4">
-          <a href={CSV} className="inline-flex items-center gap-1 font-medium text-accent hover:text-accent-ink"><IconDownload size={13} /><Text value="Download CSV" /></a>
-          <span>{tx("{0} models with a GPQA score and a first-party price", data.modelCount)}</span>
-          {data.fx && <span className="num">{tx("CNY prices at {0} per USD ({1})", data.fx.rate.toFixed(4), data.fx.asOf)}</span>}
-        </div>
-      </section>
+      <DollarBuys tiers={data.tiers} />
+      <Steps data={data} selected={selected} onSelect={setSelected} />
 
-      <CiteAndEmbed data={data} url={url} />
-
-      <section className="mt-12 border-t border-line pt-6">
-        <h2 className="text-[15px] font-semibold text-ink"><Text value="What it does not say" /></h2>
-        <ul className="mt-2 max-w-[720px] list-disc space-y-1.5 pl-5 text-[13px] leading-relaxed text-ink-3">
-          {LIMITS.map((line) => <li key={line}><Text value={line} /></li>)}
-        </ul>
-      </section>
+      <div className="mt-20 grid gap-10 lg:grid-cols-2">
+        <CiteAndEmbed data={data} url={url} />
+        <Method data={data} />
+      </div>
     </div>
   );
 }

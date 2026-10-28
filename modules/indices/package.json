@@ -6,8 +6,7 @@
     ".": "./module.ts",
     "./server": "./server.ts",
     "./web": "./web.tsx",
-    "./contracts": "./contracts.ts",
-    "./matchsticks": "./matchsticks.ts"
+    "./contracts": "./contracts.ts"
   },
   "dependencies": {
     "@aihot/backend": "*",

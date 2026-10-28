@@ -1,5 +1,5 @@
-// The index's lines are laid in matchsticks, on the page (web/routes/cost-of-intelligence.tsx) and in the
-// embeddable PNG (backend/chart.ts): the same colours, lengths and layout for both.
+// The embeddable PNG (backend/chart.ts) lays the index's lines in matchsticks, on paper. The page draws
+// plain lines on the night ground, in its own colours.
 
 /** Match heads, hotter as the capability rises. */
 export const TIER_COLORS = ["#b08a4a", "#d9a441", "#ff8a3d", "#e0481a"];
@@ -50,7 +50,7 @@ export function sticksAlong(len: number): Stick[] {
   return out;
 }
 
-/** The parts of one match lying along +x from `at`, as plain shapes (JSX on the page, SVG text in the PNG). */
+/** The parts of one match lying along +x from `at`, as plain shapes (SVG text in the PNG). */
 export function matchShapes({ at, len, head }: Stick, tint: string) {
   return {
     stick: { x: at, y: -2.4, width: Math.max(1, len - (head ? 5 : 0)), height: 4.8, rx: 1.4, fill: WOOD, stroke: WOOD_EDGE, strokeWidth: 0.7 },
