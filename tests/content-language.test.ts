@@ -37,7 +37,9 @@ test('changelog editions preserve release identity and reminder version while se
   assert.equal(en.statusCode,200);assert.equal(zh.statusCode,200);
   assert.equal(en.json().latestVersion,zh.json().latestVersion);
   assert.deepEqual(original.json(),zh.json());
-  assert.equal(en.json().releases[0].title,'Website launch');assert.equal(zh.json().releases[0].title,'网站上线');
+  assert.ok(en.json().releases.length);
+  assert.notEqual(en.json().releases[0].title,zh.json().releases[0].title);
+  assert.match(en.json().releases[0].title,/[A-Za-z]/);assert.match(zh.json().releases[0].title,/\p{Script=Han}/u);
   assert.ok(en.json().releases.every((r:any)=>!/[\u3400-\u9fff]/u.test([r.title,...r.body].join(''))));
   assert.deepEqual(en.json().releases.map(({date,time,kind}:any)=>({date,time,kind})),zh.json().releases.map(({date,time,kind}:any)=>({date,time,kind})));
   assert.notEqual(en.headers.etag,zh.headers.etag);

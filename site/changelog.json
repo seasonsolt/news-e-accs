@@ -1,20 +1,202 @@
 {
-  "latestVersion": "2026-10-01T08:00",
+  "latestVersion": "2026-10-28T01:15",
   "releases": [
     {
-      "date": "2026-10-01",
-      "time": "08:00",
-      "kind": "公告",
-      "title": "网站上线",
+      "date": "2026-10-28",
+      "time": "01:15",
+      "kind": "优化",
+      "title": "加速史画面全面高清升级",
       "body": [
-        "用开源资讯框架搭起了这个站：自动盯住信源、精选、把同一件事归到一起，每天早上出一份日报。",
-        "这是示例条目。新条目写在 site/changelog.json 的最前面，并把 latestVersion 改成它的日期和时间，导航上就会出现提醒红点。"
+        "加速史的 154 套时代与事件画作新增适配不同屏幕的高清版本，最高宽 3840 像素；工坊窗景与工程插画也同步增强。画面保留原有构图，使用本地超分处理。"
       ],
       "en": {
-        "title": "Website launch",
+        "title": "Sharper artwork across Chronicle",
         "body": [
-          "Built with an open-source news framework, this site monitors sources, selects noteworthy stories, groups reports about the same event, and publishes a daily briefing every morning.",
-          "This is a sample entry. Add new entries at the top of site/changelog.json and set latestVersion to the new entry’s date and time to show a notification dot in the navigation."
+          "All 154 era and event artworks now have enhanced versions for different screens, up to 3,840 pixels wide. Workshop panoramas and the engineering illustration have also been enhanced, preserving their original framing."
+        ]
+      }
+    },
+    {
+      "date": "2026-10-27",
+      "time": "23:17",
+      "kind": "更新",
+      "title": "工坊记住你的探索进度",
+      "body": [
+        "十五座时代工坊加入完成状态与挑战记录，工坊目录和加速史入口会显示进度；记录保存在当前浏览器中。"
+      ],
+      "en": {
+        "title": "Workshop progress and completion",
+        "body": [
+          "The fifteen era workshops now show completion and challenge records in the directory and Chronicle. Progress is stored in your browser."
+        ]
+      }
+    },
+    {
+      "date": "2026-10-27",
+      "time": "22:02",
+      "kind": "更新",
+      "title": "补全历史节点，校正时代画面",
+      "body": [
+        "加速史新增雕版《金刚经》、雅卡尔提花机、曼彻斯特 Baby 的电子存储程序和 MOS 场效应晶体管四个节点；洛夫莱斯程序和图灵机也有了独立插画。",
+        "重新绘制部分与年代或器物不符的图片，让历史场景与所讲述的事件更贴近。"
+      ],
+      "en": {
+        "title": "New milestones and more faithful historical art",
+        "body": [
+          "Chronicle adds four milestones: the printed Diamond Sutra, the Jacquard loom, Manchester Baby’s electronic stored program and the MOSFET. Lovelace’s program and the Turing machine also receive dedicated illustrations.",
+          "Several illustrations were redrawn to better reflect the era and objects they depict."
+        ]
+      }
+    },
+    {
+      "date": "2026-10-27",
+      "time": "12:08",
+      "kind": "优化",
+      "title": "精选首页焕新",
+      "body": [
+        "精选首页加入当天头条和文明读数，将重要内容、热点与通往加速史的入口放在更清晰的阅读路径中。"
+      ],
+      "en": {
+        "title": "A new front page",
+        "body": [
+          "The picks page brings the day’s lead story and civilization readings together, with clearer paths to the news, trending stories and Chronicle."
+        ]
+      }
+    },
+    {
+      "date": "2026-10-26",
+      "time": "19:23",
+      "kind": "更新",
+      "title": "十五座时代工坊",
+      "body": [
+        "从石器、火与农业，到印刷、飞行、电路与网络，走进十五座可交互的三维工坊。时间轴标记和工坊目录可以帮助找到可进入的历史时刻。"
+      ],
+      "en": {
+        "title": "Fifteen interactive era workshops",
+        "body": [
+          "Explore fifteen interactive 3D workshops, from stone tools, fire and agriculture to printing, flight, circuits and networks. Timeline markers and the workshop directory lead to the scenes."
+        ]
+      }
+    },
+    {
+      "date": "2026-10-25",
+      "time": "16:09",
+      "kind": "更新",
+      "title": "走进加速史的画面",
+      "body": [
+        "加速史加入纵深画廊与可进入的 1822 差分机工坊，从观察插画过渡到探索三维场景。"
+      ],
+      "en": {
+        "title": "Step inside Chronicle",
+        "body": [
+          "A depth tunnel and an explorable 1822 Difference Engine workshop connect Chronicle’s illustrations with interactive 3D scenes."
+        ]
+      }
+    },
+    {
+      "date": "2026-10-21",
+      "time": "16:21",
+      "kind": "更新",
+      "title": "时代画卷与手机壁纸",
+      "body": [
+        "加速史可以按时代浏览已有画作；壁纸新增专为手机纵屏构图的版本，桌面与手机可以选择更合适的画面。"
+      ],
+      "en": {
+        "title": "Era galleries and phone wallpapers",
+        "body": [
+          "Browse Chronicle artwork by era, and choose phone wallpapers composed for portrait screens alongside desktop editions."
+        ]
+      }
+    },
+    {
+      "date": "2026-10-19",
+      "time": "15:00",
+      "kind": "更新",
+      "title": "比较模型 API 价格",
+      "body": [
+        "模型榜新增 API 价格与模型之间的价格对比；智能成本指数提供图表和引用方式，帮助读者观察能力与价格的变化。"
+      ],
+      "en": {
+        "title": "Compare model API prices",
+        "body": [
+          "The model leaderboard adds API prices and pairwise comparisons. The cost-of-intelligence index provides a chart and citation information for exploring changes in capability and price."
+        ]
+      }
+    },
+    {
+      "date": "2026-10-18",
+      "time": "22:01",
+      "kind": "更新",
+      "title": "每日 4K 壁纸",
+      "body": [
+        "每日壁纸产品上线，提供桌面与手机版预览。已确认的邮件订阅者可以领取积分，下载对应日期的高清壁纸。"
+      ],
+      "en": {
+        "title": "Daily 4K wallpapers",
+        "body": [
+          "Daily wallpapers launch with desktop and phone previews. Confirmed email subscribers can claim credits to download wallpapers for a chosen date."
+        ]
+      }
+    },
+    {
+      "date": "2026-10-17",
+      "time": "11:02",
+      "kind": "优化",
+      "title": "按页面语言订阅日报",
+      "body": [
+        "订阅入口加入更多阅读页面；确认后的日报按读者选择的中英文版本发送。"
+      ],
+      "en": {
+        "title": "Subscribe to the daily briefing in your language",
+        "body": [
+          "More reading pages offer the newsletter, and confirmed subscribers receive the daily briefing in their chosen language."
+        ]
+      }
+    },
+    {
+      "date": "2026-10-15",
+      "time": "17:35",
+      "kind": "更新",
+      "title": "收藏变成阅读清单",
+      "body": [
+        "收藏的内容可以集中阅读，查看未读标记和事件后续，并支持备份。"
+      ],
+      "en": {
+        "title": "A reading list for saved stories",
+        "body": [
+          "Saved stories now live in a reading list with unread marks, event updates and backup support."
+        ]
+      }
+    },
+    {
+      "date": "2026-10-13",
+      "time": "14:18",
+      "kind": "更新",
+      "title": "智能成本指数",
+      "body": [
+        "智能成本指数加入网站，用可追溯的数据观察模型能力与价格的变化，并提供数据来源。"
+      ],
+      "en": {
+        "title": "The cost-of-intelligence index",
+        "body": [
+          "The cost-of-intelligence index joins the site, with traceable sources for exploring changes in model capability and price."
+        ]
+      }
+    },
+    {
+      "date": "2026-10-10",
+      "time": "13:37",
+      "kind": "更新",
+      "title": "中英文资讯与产品目录",
+      "body": [
+        "资讯、日报和产品目录支持中英文阅读；英文成为默认版本，中文内容可以通过 /zh 访问。",
+        "加速史以独立入口串联历史时间线、文明读数与站点过去的内容。"
+      ],
+      "en": {
+        "title": "News and products in English and Chinese",
+        "body": [
+          "News, daily briefings and the product directory are available in English and Chinese. English is the default, and Chinese pages are available under /zh.",
+          "Chronicle provides a dedicated home for the historical timeline, civilization readings and the site’s past coverage."
         ]
       }
     }
