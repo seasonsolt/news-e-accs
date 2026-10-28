@@ -45,6 +45,15 @@ test("every path goes to the news site with the secret, the visitor's address an
   }
 });
 
+test("the visitor's country goes to the news site for its reader counts", async () => {
+  const request = new Request("https://e-acc.ai/api/site/analytics", { method: "POST", body: "{}" });
+  Object.defineProperty(request, "cf", { value: { country: "JP" } });
+  await worker.fetch(request, env, { waitUntil: () => {} });
+  assert.equal(seen.at(-1).init.headers.get("x-eacc-country"), "JP");
+  await get("/");
+  assert.equal(seen.at(-1).init.headers.get("x-eacc-country"), "", "a request without Cloudflare's details names none");
+});
+
 test("a public page is cached once and served from the edge with the origin's Cache-Control", async () => {
   const miss = await get("/pricing");
   assert.equal(miss.headers.get("x-eacc-edge-cache"), "MISS");

@@ -12,6 +12,7 @@ function toNews(request, env) {
   const headers = new Headers(request.headers);
   headers.set("x-eacc-edge", env.EDGE_SECRET);
   headers.set("x-eacc-client-ip", request.headers.get("cf-connecting-ip") ?? "");
+  headers.set("x-eacc-country", request.cf?.country ?? "");
   headers.set("x-forwarded-host", url.host);
   return fetch(new URL(`${url.pathname}${url.search}`, env.NEWS_ORIGIN), {
     method: request.method,

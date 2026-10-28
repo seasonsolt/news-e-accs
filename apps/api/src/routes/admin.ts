@@ -5,6 +5,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { AdminSourceUpdate } from "@aihot/contracts/admin";
 import { actorOf } from "@aihot/backend/admin/auth";
 import { siteAnalyticsOverview, subscribeFunnel } from "@aihot/backend/admin/analytics";
+import { growthFunnel, growthJourneys, growthOverview, growthRetention } from "@aihot/backend/admin/growth";
 import { weeklyReadings } from "@aihot/backend/admin/metrics";
 import { newsletterOverview } from "@aihot/backend/admin/newsletter";
 import {
@@ -147,6 +148,10 @@ export function registerAdmin(app: FastifyInstance) {
   app.get("/api/admin/analytics", adminHandler(async (req) => siteAnalyticsOverview(Number(q(req).days) || 30)));
   app.get("/api/admin/analytics/subscribe", adminHandler(async (req) => subscribeFunnel(Number(q(req).days) || 30)));
   app.get("/api/admin/metrics", adminHandler(async (req) => weeklyReadings(Number(q(req).weeks) || 12)));
+  app.get("/api/admin/growth", adminHandler(async (req) => growthOverview(q(req))));
+  app.get("/api/admin/growth/funnel", adminHandler(async (req) => growthFunnel(q(req))));
+  app.get("/api/admin/growth/retention", adminHandler(async (req) => growthRetention(q(req))));
+  app.get("/api/admin/growth/journeys", adminHandler(async (req) => growthJourneys(q(req))));
 
   // Models and evaluation
   app.get("/api/admin/models", adminHandler(async (req) => modelsOverview(Math.min(90, Number(q(req).days) || 7))));

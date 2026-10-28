@@ -57,6 +57,9 @@ const BOT_WORDS = /bot|crawl|spider|slurp|headless|preview|fetch|scan|monitor|py
 
 export type ViewKind = "load" | "nav";
 
+/** A request that says it is a program, or says nothing about itself. */
+export const namedBot = (ua: string) => !ua || BOT_WORDS.test(ua);
+
 /**
  * Tells readers from crawlers that render JavaScript, with the same rule as the traffic-metrics skill: per user
  * agent and Taipei day, full loads beyond MAX_FULL_LOADS count only with in-app navigations alongside them. The
@@ -77,7 +80,7 @@ export function readerFilter(now = () => Date.now()) {
   return {
     /** Whether this page view counts; it is noted either way. */
     view(ua: string, kind: ViewKind): boolean {
-      if (!ua || BOT_WORDS.test(ua)) return false;
+      if (namedBot(ua)) return false;
       const seen = today();
       let s = seen.get(ua);
       if (!s) {
@@ -90,7 +93,7 @@ export function readerFilter(now = () => Date.now()) {
     },
     /** Whether an interaction counts: not from a crawler, nor from a browser that is past the line today. */
     event(ua: string): boolean {
-      if (!ua || BOT_WORDS.test(ua)) return false;
+      if (namedBot(ua)) return false;
       const s = today().get(ua);
       return !s || !crawling(s);
     },

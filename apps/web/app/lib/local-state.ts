@@ -19,6 +19,10 @@ export const KEYS = {
   firstStar: "eacc-first-star",
   lastBackup: "eacc-last-backup",
   workshops: "eacc-workshops",
+  firstVisit: "eacc-first-visit",
+  lastVisit: "eacc-last-visit",
+  prevVisit: "eacc-prev-visit",
+  owner: "eacc-owner",
 } as const;
 
 const STARRED_LIMIT = 500;

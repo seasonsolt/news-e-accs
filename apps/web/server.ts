@@ -228,9 +228,13 @@ async function handle(req: import("node:http").IncomingMessage, res: import("nod
     const forwarded = String(req.headers["x-forwarded-for"] ?? "").split(",").map((v) => v.trim()).filter(Boolean);
     const edgeClient = edge ? String(req.headers["x-eacc-client-ip"] ?? "").trim().slice(0, 64) : "";
     const client = edgeClient || (TRUST_PROXY && forwarded.length ? forwarded[forwarded.length - 1]! : (req.socket.remoteAddress ?? ""));
-    // The edge's address header is consumed here, never passed on to the api.
+    // The edge also reports the visitor's country (for the admin's reader counts); a request that did not come
+    // through the edge cannot name one.
+    const country = edge ? String(req.headers["x-eacc-country"] ?? "").trim().slice(0, 2) : "";
+    // The edge's headers are consumed here, never passed on to the api as they came.
     delete req.headers["x-eacc-client-ip"];
-    return proxyToApi(req, res, { "x-forwarded-for": client, "x-real-ip": client });
+    delete req.headers["x-eacc-country"];
+    return proxyToApi(req, res, { "x-forwarded-for": client, "x-real-ip": client, "x-eacc-country": country });
   }
 
   if ((req.method === "GET" || req.method === "HEAD") && pathname.includes(".") && (await serveStatic(pathname, req, res))) return;

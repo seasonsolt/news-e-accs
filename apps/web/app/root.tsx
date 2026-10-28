@@ -1,4 +1,5 @@
 import { trackDistribution } from "./lib/distribution";
+import { reportView, trackVisibleTime } from "./lib/readership";
 import { Link } from "./lib/navigation";
 import { requestLocale, localePath, htmlLanguage, type Locale } from "./lib/locale";
 import { Text, translate, useLocale, useTranslate } from "./lib/i18n";
@@ -150,14 +151,11 @@ export default function App() {
     // Only the document's first view is a full load; the server tells crawlers by their many full loads.
     const nav = countedPath.current !== null;
     countedPath.current = pathname;
-    void fetch("/api/site/analytics", {
-      method: "POST",
-      credentials: "omit",
-      cache: "no-store",
-      keepalive: true,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event: "page_view", path: pathname, nav }),
-    }).catch(() => {});
+    reportView(pathname, nav, search);
+  }, [pathname]);
+  useEffect(() => {
+    if (pathname === "/admin" || pathname.startsWith("/admin/")) return;
+    return trackVisibleTime(pathname);
   }, [pathname]);
   // Counted per page, like page views: filters or ?at= changing the query on the same page are not a new visit.
   const via = new URLSearchParams(search).get("via");

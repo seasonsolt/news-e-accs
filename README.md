@@ -169,6 +169,7 @@ docker compose up -d --build
 | [综述评测](docs/story-digest-evaluation.md) | 改事件综述提示词前，怎么在同一批事件上并排比较 |
 | [部署](docs/deploy.md) | Docker、域名和 HTTPS、中国大陆、更新、备份、花多少钱，不用 Docker 时在 Linux、macOS（Windows 用 WSL2）上怎么跑 |
 | [架构](docs/architecture.md) | 三个进程、几条不变的规则、目录、模块、数据库迁移、对外出口、测试 |
+| [读者统计](docs/analytics.md) | 后台增长看板：访客和访问怎么算、渠道怎么判、机器流量怎么过滤、各项指标的口径 |
 
 技术栈：Node.js 24 · TypeScript · React Router（服务端渲染）· Fastify · PostgreSQL · pg-boss · Tailwind CSS · Docker Compose。
 

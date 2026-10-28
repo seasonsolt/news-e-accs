@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { SITE } from "@aihot/site";
 import { Await, NavLink, Outlet, useLocation, useNavigation, type ShouldRevalidateFunction } from "react-router";
 import type { Route } from "./+types/layout";
@@ -8,6 +8,7 @@ import { NavigationProgress } from "../../components/shell/Chrome";
 import type { AdminMe, AdminNavCounts } from "@aihot/contracts/admin";
 import { Toaster } from "../../features/admin/toast";
 import { adminGet } from "../../lib/admin.server";
+import { markOwner } from "../../lib/readership";
 import type { AdminNavEntry } from "../../modules";
 import { webModules } from "../../site-modules";
 
@@ -46,8 +47,7 @@ const nav = (): Array<{ group: string; items: AdminNavEntry[] }> => [
       { to: "/admin/models", label: "模型与评测" },
       { to: "/admin/selectbench", label: "SelectBench" },
       { to: "/admin/settings", label: "设置" },
-      { to: "/admin/metrics", label: "周读数" },
-      { to: "/admin/analytics", label: "访问统计" },
+      { to: "/admin/metrics", label: "增长" },
       { to: "/admin/audit", label: "审计记录" },
     ],
   },
@@ -86,6 +86,8 @@ export default function AdminLayout({ loaderData }: Route.ComponentProps) {
   const location = useLocation();
   const groups = nav();
   const flat = groups.flatMap((g) => g.items);
+  // From now on this browser's reading on the site is the owner's, left out of the reader counts.
+  useEffect(markOwner, []);
   return (
     <div className="flex min-h-dvh bg-bg">
       <NavigationProgress active={navigation.state === "loading"} />
