@@ -73,7 +73,7 @@ test("the price history names known models, in date order, with official https s
   const seeds = path.resolve(import.meta.dirname, "../../leaderboard/seeds");
   const directory = readdirSync(seeds).filter((f) => f.startsWith("lb-models-")).sort().at(-1)!;
   // Models released after the directory file was cut.
-  const later = ["gemini-4-argon", "claude-haiku-5-5"];
+  const later = ["gemini-4-argon", "claude-haiku-5-5", "claude-sonnet-5-5", "gpt-6-1-sol", "mistral-large-4-0", "deepseek-v-4-1-flash-1017"];
   const known = new Set([...(JSON.parse(readFileSync(path.join(seeds, directory), "utf8")) as { models: unknown[][] }).models.map((m) => m[0] as string), ...later]);
   const raw = JSON.parse(readFileSync(path.resolve(import.meta.dirname, "../seeds/price-history.json"), "utf8")) as { prices: Array<Record<string, unknown>> };
   const bySlug = new Map<string, Array<Record<string, unknown>>>();

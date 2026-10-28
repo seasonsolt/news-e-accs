@@ -29,12 +29,14 @@
 
 | 来源 | 内容 | 状态（10-13） |
 |---|---|---|
-| `price-history.json` | 2023 到 2025 年的首发价和降价，每条有生效日期和官方出处 | 68 条，全部已核验 |
+| `price-history.json` | 2023 年以来的首发价和降价，每条有生效日期和官方出处 | 68 条，全部已核验；10-28 补了 60 条（有 GPQA 分、种子文件之后才有官方价的模型），其中 5 条待核验 |
 | `lb_prices`（`kind = 'official'`） | 53 个模型的当前价，verified 2026-09-26 | 只有当前价；没有历史记录的模型，把当前价当作从发布日起的价格 |
 
 人民币价格按 `fx_rates` 里的汇率折成美元，和模型榜同一套换算。
 
 10-13 核验的 15 条（o1-mini 首发价和降价、o3、Claude 3.5 Haiku、Mistral Large 2402 / Large 2411 / Small 2501、Grok 3 和 Grok 3 mini、Gemini 1.5 Pro 和 Flash、Gemini 2.0 Flash、DeepSeek 的三条）对照的是厂商定价页在 Wayback 上的存档，出处直接写存档快照地址。核验时改了两处：Gemini 1.5 Pro 和 Flash 正式版 5 月 23 日发布，定价页写明 5 月 30 日开始计费，生效日改为 2024-05-30；o1-mini 降价在 2025-01-29 和 02-01 两次存档之间，按 o3-mini 发布日记为 01-31。
+
+10-28 补价：Epoch 有 GPQA 分（≥35%）、9 月 26 日种子文件之后没人补官方价的模型有 61 个有第一方 API，查到 60 条价格。没补的：GPT-5.5 Instant 和 Qwen3.5-9B 在官方价格页上找不到；Inkling 和 Inkling Small 的官方说法互相矛盾；Muse Spark 首发时没有付费 API；Muse Spark Open 和 GLM-4.7-Flash 没有付费 API。阿里的老模型价格取自定价页的 Wayback 存档，降价日按第一次在存档上看到新价的日子记，实际降价在前一次存档之后。成为线上台阶的 6 条（qwen-turbo-2024-11-01、Qwen3-4B 思考模式、Qwen3.5 Flash、Qwen3.5 Plus、Qwen3.7 Flash、Kimi K2.6）都对照原页面逐字核过。GPT-6.1 Terra 等 Epoch 还没测 GPQA 的新模型，要等 Epoch 发布分数才会并入。
 
 ### 3.3 以后怎么更新
 
