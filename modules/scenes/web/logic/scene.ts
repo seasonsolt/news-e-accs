@@ -56,6 +56,7 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
     for (let i = 0; i < 7; i++) k.box(scene, iron, [x, .38 + i * .045, -1.57], [.8, .015, .03], .002);
   }
   const map = k.texture(1024, 640, () => {}), displayMaterial = k.material(new THREE.MeshBasicMaterial({ map }));
+  for (const x of [-1.12, 1.12]) k.box(scene, iron, [x, 1.5, -2.3], [.065, 3, .14]);
   k.box(scene, enamel, [0, 2.25, -2.25], [2.4, 1.6, .16], .03);
   const display = k.mesh(scene, new THREE.PlaneGeometry(2.2, 1.38), displayMaterial, [0, 2.25, -2.16]); display.castShadow = false; preserve.add(display);
   const testButton = k.cylinder(scene, red, [1.22, 1.16, .62], .09, .07); add("test", testButton, "primary", "检验电路");

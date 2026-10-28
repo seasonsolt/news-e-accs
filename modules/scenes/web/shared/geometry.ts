@@ -12,10 +12,12 @@ export interface Model {
   pickables: THREE.Object3D[];
   update: (phase: number, time: number, delta: number) => void;
   canMove?: (x: number, z: number) => boolean;
+  groundHeight?: (x: number, z: number) => number;
   game?: GameController;
 }
 
 export function createGeometryKit(own: (dispose: () => void) => void) {
+  const ambient: Array<(time: number) => void> = [];
   let seed = 2026;
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
   const geometry = new Map<string, THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>();
@@ -74,6 +76,9 @@ export function createGeometryKit(own: (dispose: () => void) => void) {
       const combined = mesh(scene, g, m); combined.castShadow = cast; combined.receiveShadow = receive;
     }
   }
-  return { own, random, material, texture, mesh, box, sphere, cylinder, rod, tube, torus, mergeStatic };
+  return { own, random, material, texture, mesh, box, sphere, cylinder, rod, tube, torus, mergeStatic,
+    animate(update: (time: number) => void) { ambient.push(update); },
+    update(time: number) { for (const animate of ambient) animate(time); },
+  };
 }
 export type Kit = ReturnType<typeof createGeometryKit>;

@@ -3,17 +3,14 @@ import type { Kit, Model, View } from "../shared/geometry.ts";
 import type { Vec3 } from "../shared/worlds.ts";
 import type { NaturalAssets } from "../shared/natural-assets.ts";
 import { naturalGeometry } from "../shared/natural-geometry.ts";
+import { landscape } from "../shared/landscape.ts";
 
 export function build(scene: THREE.Scene, k: Kit, assets: NaturalAssets): Model {
   const { material, mesh, random } = k, nature = naturalGeometry(scene, k, assets, false), { rock, scan, log, preserved, height } = nature;
-  scene.background = new THREE.Color("#18202d"); scene.fog = new THREE.FogExp2("#26303c", .028);
-  scene.environment = assets.environment; scene.environmentIntensity = .14;
-  scene.add(new THREE.HemisphereLight("#b5c8e6", "#322820", .38));
-  const moon = new THREE.DirectionalLight("#9db9dd", 1.1); moon.position.set(-7, 9, 5); moon.castShadow = true;
-  moon.shadow.mapSize.set(2048, 2048); Object.assign(moon.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12, near: .5, far: 35 }); moon.shadow.normalBias = .015; moon.shadow.autoUpdate=false; moon.shadow.needsUpdate=true; scene.add(moon); k.own(() => moon.shadow.dispose());
-  // Overlapping scan silhouettes form a shelter with a readable opening, ledges and a deep rear wall.
-  for (const [x, z, w, h, a] of [[-5,-4,3.4,4.2,.2],[-2.5,-4.7,3.8,4.8,1.6],[.8,-4.9,4,4.5,2.8],[4.2,-4.4,3.8,4.1,.8],[-5.8,-1.5,2.6,3.6,2.1],[5.5,-1.6,2.5,3.8,3.8]] as number[][]) rock([x!, -.3, z!], [w!, h!, 2.8], a!, true);
-  for (const [x, z, a] of [[-3,-3,1.2],[.1,-3.6,2.4],[3.5,-3,3.5]] as number[][]) rock([x!, 3.2, z!], [4.4, 1.5, 4.5], a!, true);
+  scene.environment = assets.environment;
+  landscape(scene, k, assets, "dusk", false, height);
+  // A low windbreak leaves the sky and the valley open around the evening hearth.
+  for (const [x,z,w,h,a] of [[-4,-4,2.2,1.1,.2],[-1.6,-4.7,2.7,1.4,1.6],[2.2,-4.5,2.5,1.2,2.8]] as number[][]) rock([x!, -.3, z!], [w!, h!, 1.6], a!, true);
   for (let i = 0; i < 32; i++) { const a = random() * 6.28, r = 2.7 + random() * 13, x = Math.cos(a) * r, z = Math.sin(a) * r, s = .08 + random() * .35; rock([x, height(x,z) - .03, z], [s, s * .6, s * .8], a); }
   // Ash is a mottled shallow surface, not a solid grey disc over the terrain.
   const ashMap = k.texture(512,512,(c,w,h) => {
@@ -57,9 +54,9 @@ export function build(scene: THREE.Scene, k: Kit, assets: NaturalAssets): Model 
   const close:View={position:[2.35,1.55,3.35],target:[0,.65,0]},side:View={position:[-3.3,1.55,2.6],target:[0,.85,-.5]};
   k.mergeStatic(scene,preserved);
   let shadowPhase=-1;
-  return {views:{wide:{position:[5.6,2.7,7.4],target:[0,1.3,-1]},close,side,painting:{position:[.6,2.2,8.2],target:[0,1.3,-.7]}},
-    spots:[{id:"hearth",title:"照料火堆",detail:"添入燃料，观察光与热的变化。",object:fireHit,view:close,advance:true},{id:"fuel",title:"木柴与细枝",detail:"细枝容易起焰，较粗的木柴延长燃烧。演示呈现燃料的作用，不认定这个年代已有某种人工点火法。",object:woodHit,view:{position:[3.7,1.35,1.25],target:[2.1,.3,-.5]}},{id:"food",title:"火与食物",detail:"火能改变食物的性质。对用火与烹饪起源的时间和方式，研究仍在继续。",object:foodHit,view:side}],pickables:[fireHit,woodHit,foodHit],canMove:(x,z)=>Math.hypot(x,z)>1.3&&z> -3&&Math.abs(x)<5.1,
-    update(phase,time){const current=Math.floor(phase+.25);if(current!==shadowPhase){light.shadow.needsUpdate=moon.shadow.needsUpdate=true;shadowPhase=current;}const heat=.18+phase*.3;flameM.uniforms.time!.value=time;flameM.uniforms.heat!.value=heat;const h=.28+phase*.28;flame.scale.y=h;flame.position.y=h+.13;light.intensity=(7+phase*15)*(1+Math.sin(time*8.2)*.055+Math.sin(time*11.7)*.035);fuels.forEach((o,i)=>o.visible=i<3||phase>(i<5?.75:1.75));
+  return {groundHeight:height,views:{wide:{position:[5.6,2.1,7.4],target:[0,1.3,-1]},close,side,painting:{position:[.6,2.2,8.2],target:[0,1.3,-.7]}},
+    spots:[{id:"hearth",title:"照料火堆",detail:"添入燃料，观察光与热的变化。",object:fireHit,view:close,advance:true},{id:"fuel",title:"木柴与细枝",detail:"细枝容易起焰，较粗的木柴延长燃烧。演示呈现燃料的作用，不认定这个年代已有某种人工点火法。",object:woodHit,view:{position:[3.7,1.35,1.25],target:[2.1,.3,-.5]}},{id:"food",title:"火与食物",detail:"火能改变食物的性质。对用火与烹饪起源的时间和方式，研究仍在继续。",object:foodHit,view:side}],pickables:[fireHit,woodHit,foodHit],canMove:(x,z)=>Math.hypot(x,z)>1.3,
+    update(phase,time){const current=Math.floor(phase+.25);if(current!==shadowPhase){light.shadow.needsUpdate=true;shadowPhase=current;}const heat=.18+phase*.3;flameM.uniforms.time!.value=time;flameM.uniforms.heat!.value=heat;const h=.28+phase*.28;flame.scale.y=h;flame.position.y=h+.13;light.intensity=(7+phase*15)*(1+Math.sin(time*8.2)*.055+Math.sin(time*11.7)*.035);fuels.forEach((o,i)=>o.visible=i<3||phase>(i<5?.75:1.75));
       for(let i=0;i<70;i++){const t=(time*.24+i/70)%1,a=i*2.4;dummy.position.set(Math.cos(a)*.35+Math.sin(time+i)*t*.35,.1+t*(.7+phase*.7),Math.sin(a)*.3);dummy.scale.set((1-t)*heat*.6,(1-t)*heat*1.6,(1-t)*heat*.6);dummy.updateMatrix();embers.setMatrixAt(i,dummy.matrix);}embers.instanceMatrix.needsUpdate=true;
       smoke.forEach((p,i)=>{const t=(i/15+time*.055)%1;p.visible=phase>.5;p.position.set(Math.sin(i*2.4+t*3)*t*.5,1.2+phase*.35+t*3.2,-t*.45);p.scale.setScalar(.25+t*1.25);});
     }};

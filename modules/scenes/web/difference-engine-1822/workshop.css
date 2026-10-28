@@ -173,3 +173,27 @@ html:has(.workshop) { scrollbar-gutter: auto; background: var(--deck); }
 }
 .workshop #experience > :not(#viewport) { transition: opacity .6s; }
 .workshop .is-crossing > :not(#viewport) { opacity: 0; pointer-events: none; }
+
+/* Daylight around the work terrace; the interface is a light field notebook over the landscape. */
+.workshop { --surface: #f9f7ee; --ink: #293d36; --ink-3: #58675c; --ink-4: #7b887b; --line: #b9c8b659; --line-soft: #b9c8b638; --line-strong: #a9b9a280; --deck: #dce7df; --deck-ink: #294238; --deck-dim: #586c5e; --accent: #65846a; --accent-ink: #365d45; --accent-softer: #dce8d8; --ok: #427158; --ok-ink: #2f5f45; --hot: #a7442b; --deck-faint: #586c5e; color-scheme: light; }
+.workshop .vignette { background: linear-gradient(to top, rgb(244 246 230 / .2), transparent 24%); }
+.workshop .pill, .workshop .view-button, .workshop .run-button, .workshop .reset-button { color: #365347; background: rgb(250 249 237 / .82); border-color: #78927a50; backdrop-filter: blur(12px); }
+.workshop .pill:hover, .workshop .view-button:hover, .workshop .run-button:hover { background: #fcfaed; }
+.workshop .intro { max-width: 27rem; padding: 16px 20px; background: rgb(249 247 235 / .78); border: 1px solid #ffffff70; border-radius: var(--radius-panel); backdrop-filter: blur(12px); }
+.workshop .intro h1 { font-size: clamp(44px, 5vw, 72px); }
+.workshop .intro h1 span, .workshop .readouts dt { color: #687b68; }
+.workshop .kicker, .workshop #distance { color: #50745b; }
+.workshop .inspector { background: rgb(249 247 238 / .92); box-shadow: 0 12px 35px #324f3512; }
+.workshop .dock { background: linear-gradient(transparent, rgb(239 244 225 / .8)); }
+.workshop .spot-circle, .workshop .spot-label { background: #f9f7e8dc; color: #41634b; border-color: #7b997a80; }
+.workshop .roam-note { display: none; position: absolute; z-index: 3; bottom: 28px; left: 28px; margin: 0; padding: 10px 16px; border-radius: 999px; background: #f8f7e5c4; color: #47624f; backdrop-filter: blur(12px); font-size: 13px; letter-spacing: .05em; pointer-events: none; }
+.workshop .is-resting .intro, .workshop .is-resting .inspector, .workshop .is-resting .dock, .workshop .is-resting #hotspots, .workshop .is-resting .vignette, .workshop .is-resting .sheet { display: none; }
+.workshop .is-resting .masthead-tools > :not(#rest-open) { display: none; }
+.workshop .is-resting .roam-note { display: block; }
+@media (max-width: 760px) {
+  .workshop .intro { padding: 12px 16px; left: 16px; max-width: calc(100% - 32px); background: none; border: 0; backdrop-filter: none; text-shadow: 0 1px 4px #f7f6e4; }
+  .workshop .is-resting #viewport { height: 100svh; }
+  .workshop .roam-note { left: 16px; bottom: 22px; }
+}
+
+.workshop.world .game-action:hover, .workshop.world .game-action:focus-visible { color: #365d45; background: #dce8d8; border-color: #65846a; }

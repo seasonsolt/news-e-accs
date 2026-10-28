@@ -1,6 +1,23 @@
 {
-  "latestVersion": "2026-10-28T01:15",
+  "latestVersion": "2026-10-28T17:27",
   "releases": [
+    {
+      "date": "2026-10-28",
+      "time": "17:27",
+      "kind": "优化",
+      "title": "让工坊向风景敞开",
+      "body": [
+        "十五座时代工坊放宽探索范围，移除封闭围墙与厚重暗色遮罩，让河岸、草地、海岸和星空成为装置周围的风景。",
+        "进入后可以先静静看风景，再展开工坊动手探索；云、水面和植被缓慢变化，原有挑战和进度记录继续保留。"
+      ],
+      "en": {
+        "title": "Room to wander in every workshop",
+        "body": [
+          "The fifteen era workshops now open onto riverbanks, meadows, the coast and the stars, with more room to explore, softer light and fewer enclosing walls.",
+          "Arrive with the controls tucked away, stay a while, then open the workshop when you feel like exploring. Clouds, water and plants move gently; existing challenges and progress remain available."
+        ]
+      }
+    },
     {
       "date": "2026-10-28",
       "time": "01:15",

@@ -102,16 +102,13 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
   const vapor = material(new THREE.MeshBasicMaterial({ color: "#d5d4c4", transparent: true, opacity: .14, depthWrite: false }));
   for (let i = 0; i < 6; i++) sphere(steam, vapor, [Math.sin(i) * .12, .45 + i * .1, Math.cos(i) * .12], .075 + i * .012);
   spot("quench-vat", "冷却铁坯", "降低过热炉火；两次有效锤击后冷却即可完成。", vat, "cool");
-  // Hanging hand tools and oxidized geometric bronze frieze tie the apparatus back to the original plate.
+  // A freestanding rack keeps the hand tools within reach.
+  for (const x of [-.3, 2.3]) box(scene, room.wood, [x, 1.1, -3.4], [.09, 2.2, .15]);
   box(scene, room.wood, [1, 2.2, -3.4], [2.6, .13, .14]);
   for (let i = 0; i < 6; i++) {
     const x = -.05 + i * .4; rod(scene, room.iron, [x, 2.2, -3.27], [x, 1.55 - (i % 3) * .1, -3.25], .018);
     if (i % 2) box(scene, room.iron, [x, 1.55 - (i % 3) * .1, -3.25], [.2, .07, .08]);
     else k.torus(scene, room.iron, [x, 1.49 - (i % 3) * .1, -3.25], .06, .012);
-  }
-  for (let i = 0; i < 13; i++) {
-    const x = -2.8 + i * .45; box(scene, bronze, [x, 3.34, -3.59], [.4, .25, .045]);
-    for (const sign of [-1, 1]) { rod(scene, room.iron, [x + sign * .14, 3.27, -3.56], [x, 3.39, -3.56], .009); }
   }
   room.finish(preserve);
   return {
@@ -132,6 +129,6 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
       pump = Math.max(0, pump - delta * 2); moving.scale.y = 1 - Math.sin(pump * Math.PI) * .45;
       quench = Math.max(0, quench - delta * .8); steam.visible = quench > 0; steam.position.y = (1 - quench) * .35;
     },
-    canMove(x, z) { return Math.abs(x) < 4.3 && z > -3.1 && z < 3.8 && !(x > -1.75 && x < 1.7 && z > -2.4 && z < .95); },
+    canMove(x, z) { return !(x > -1.75 && x < 1.7 && z > -2.4 && z < .95); },
   };
 }

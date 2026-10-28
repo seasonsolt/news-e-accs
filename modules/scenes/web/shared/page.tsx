@@ -60,11 +60,11 @@ function WorldExperience({ world }: { world: World }) {
   return <div className={`workshop world world-${world.id}${world.challenge ? " is-challenge" : ""}`} ref={root}>
     <main id="experience" aria-label={tx(world.title)}>
       <div id="viewport" aria-label={tx("三维场景：拖动环视，滚轮走近，点击机器操作")}><img className="workshop-plate" src={artUrl(world.plate.replace(/-1600\.webp$/, ""), 1600)} alt="" width={1600} height={1067} /></div>
-      <div className="vignette" aria-hidden="true" />
+      <div className="vignette" aria-hidden="true" /><p className="roam-note">{tx("不必赶路，随意走走。")}</p>
       <header className="masthead">
         <button className="pill" id="back" hidden={!embedded}>← {tx("回到时间线")}</button>
         <Link className="pill brand" to={localePath(`/chronicle?t=${world.time}`, locale)}>← {tx("回到时间线")}</Link>
-        <div className="masthead-tools"><button className="pill" id="reference-open">{tx("查看原画")}</button><button className="pill" id="about-open">{tx("关于这一幕")}</button></div>
+        <div className="masthead-tools"><button className="pill" id="rest-open" aria-pressed="false">{tx("看看风景")}</button><button className="pill" id="reference-open">{tx("查看原画")}</button><button className="pill" id="about-open">{tx("关于这一幕")}</button></div>
       </header>
       <section className="intro"><p className="kicker">{tx("加速史 · 可进入的场景")}</p><h1>{figure}<span>{unit}</span></h1><h2>{tx(world.title)}</h2><p className="intro-copy">{tx(world.subtitle)}</p><dl className="readouts"><div><dt>{tx("视角")}</dt><dd id="view-name">{tx("全景")}</dd></div><div><dt>{tx(world.unitLabel)}</dt><dd id="distance">—</dd></div></dl></section>
       <div id="loading" role="status"><span className="loading-ring" /><p>{tx("正在打开场景…")}</p></div>

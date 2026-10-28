@@ -3,7 +3,9 @@ import { reducedMotion as prefersReducedMotion } from "@aihot/web/lib/motion";
 // DOM (page.tsx renders it; everything here is looked up inside `root`). Loaded lazily, in the browser only.
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { createGeometryKit } from "../shared/geometry.ts";
+import { landscape, loadLandscapeAssets } from "../shared/landscape.ts";
+import { roomReflections } from "../shared/reflections.ts";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { FROM_SCENE, readSceneCommand, type SceneEvent } from "@aihot/web/features/chrono/scene-handoff";
@@ -206,13 +208,12 @@ export function start(root: HTMLElement, { tx, embedded, plate }: WorkshopOption
     renderer.setPixelRatio(Math.min(devicePixelRatio, mobile() ? 1.5 : 1.75));
     renderer.setSize(viewport.clientWidth, viewport.clientHeight);
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.18;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1;
     viewport.append(renderer.domElement);
     renderer.domElement.setAttribute("aria-label", tx("工坊三维视图"));
     renderer.domElement.setAttribute("tabindex", "0");
 
-    const scene = new THREE.Scene(); scene.background = new THREE.Color("#31271f");
-    scene.fog = new THREE.FogExp2("#6a5840", .012);
+    const scene = new THREE.Scene(), outdoorKit = createGeometryKit(own);
     own(() => {
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
@@ -223,110 +224,28 @@ export function start(root: HTMLElement, { tx, embedded, plate }: WorkshopOption
       });
       for (const geometry of geometries.values()) geometry.dispose();
     });
-    const camera = new THREE.PerspectiveCamera(mobile() ? 51 : 43, viewport.clientWidth / viewport.clientHeight, .05, 70);
+    const camera = new THREE.PerspectiveCamera(mobile() ? 51 : 43, viewport.clientWidth / viewport.clientHeight, .05, 1200);
     const controls = new OrbitControls(camera, renderer.domElement);
     own(() => controls.dispose());
     controls.enableDamping = true; controls.dampingFactor = .065;
-    controls.minDistance = 1.3; controls.maxDistance = 20;
+    controls.minDistance = 1.3; controls.maxDistance = 42;
     controls.maxPolarAngle = Math.PI / 2 - .025; controls.minPolarAngle = .22;
     controls.panSpeed = .6; controls.rotateSpeed = .55; controls.zoomSpeed = .65;
     controls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
-    const pmrem = new THREE.PMREMGenerator(renderer);
-    const environment = new RoomEnvironment();
-    const env = pmrem.fromScene(environment, .04);
-    own(() => env.dispose());
-    scene.environment = env.texture; scene.environmentIntensity = .45;
-    environment.dispose(); pmrem.dispose();
-
-    const m: WorkshopMaterials = await createMaterials(renderer, tx);
+    const [m, landscapeAssets]: [WorkshopMaterials, Awaited<ReturnType<typeof loadLandscapeAssets>>] = await Promise.all([createMaterials(renderer, tx), loadLandscapeAssets(own, renderer)]);
     own(() => { for (const material of Object.values(m)) disposeMaterial(material); });
     if (disposed) return;
 
-    scene.add(new THREE.HemisphereLight("#e4d6bc", "#35261b", .38));
-    const sun = new THREE.DirectionalLight("#ffdfaa", 4.8); sun.position.set(7.5, 10, -10); sun.target.position.set(-1, .3, 4);
-    sun.castShadow = true; sun.shadow.mapSize.set(mobile() ? 2048 : 4096, mobile() ? 2048 : 4096);
-    Object.assign(sun.shadow.camera, { left: -9, right: 9, top: 8, bottom: -7, near: 1, far: 38 });
-    sun.shadow.bias = -.0001; sun.shadow.normalBias = .009; sun.shadow.radius = 3;
-    scene.add(sun, sun.target);
-    own(() => sun.shadow.dispose());
-    const front = new THREE.SpotLight("#e5c79b", 95, 20, .8, .7, 2);
-    front.position.set(-3, 5, 5); front.target.position.set(0, 1.8, 0); scene.add(front, front.target);
-    const cool = new THREE.DirectionalLight("#c5c6bd", .23); cool.position.set(-5, 4, 4); scene.add(cool);
-
+    const outdoors = landscape(scene, outdoorKit, landscapeAssets, "river");
     const room = new THREE.Group(); scene.add(room);
     // Scanned wood has independent fibre normals, roughness and occlusion at physical scale.
     const floor = mesh(room, new THREE.PlaneGeometry(18, 24), m.floor, 0, -.025, 3);
     floor.rotation.x = -Math.PI / 2; floor.castShadow = false;
 
-    const wall = new THREE.Shape(); wall.moveTo(-7, 0); wall.lineTo(7, 0); wall.lineTo(7, 7.8); wall.lineTo(-7, 7.8); wall.closePath();
-    const windowCenters = [1.7, 4.5];
-    for (const x of windowCenters) {
-      const hole = new THREE.Path(); hole.moveTo(x - 1.03, 1.4); hole.lineTo(x - 1.03, 5.3);
-      hole.absarc(x, 5.3, 1.03, Math.PI, 0, true); hole.lineTo(x + 1.03, 1.4); hole.closePath(); wall.holes.push(hole);
-    }
-    mesh(room, new THREE.ExtrudeGeometry(wall, { depth: .4, bevelEnabled: false, curveSegments: 32 }), m.plaster, 0, 0, -4.75);
-    box(room, m.plaster, -7, 3.9, 1.4, .35, 7.8, 12.2);
-    box(room, m.plaster, 7, 3.9, 1.4, .35, 7.8, 12.2);
-    for(const z of [-3.8,-.6,2.8,6.1])box(room,m.woodDark,-6.79,3.4,z,.15,6.8,.16);
-    for(const y of [.65,2.5,5.1])box(room,m.woodDark,-6.78,y,1.1,.16,.12,11.8);
-    box(room, m.woodDark, 0, 7.4, 1.3, 14.3, .25, 12.2);
-    for (const z of [-3.9, -.6, 2.8, 6.2]) {
-      box(room, m.woodDark, 0, 6.9, z, 14.2, .42, .33);
-      for (const x of [-6.65, 6.65]) rod(room, m.woodDark, [x, 5.65, z], [x > 0 ? 5.55 : -5.55, 6.85, z], .14);
-    }
-    box(room, m.woodDark, 0, .23, -4.38, 14.2, .28, .17);
-    for (const x of windowCenters) {
-      box(room, m.trim, x, 1.36, -4.39, 2.43, .2, .65);
-      for (const side of [-1, 1]) {
-        box(room, m.woodDark, x + side * 1.025, 3.35, -4.46, .085, 3.9, .12);
-        box(room, m.trim, x + side * 1.14, 3.35, -4.47, .18, 3.9, .44);
-      }
-      for (let i = 0; i < 13; i++) {
-        const a = (i + .5) / 13 * Math.PI;
-        const block = box(room, m.trim, x + Math.cos(a) * 1.15, 5.3 + Math.sin(a) * 1.15, -4.46, .26, .22, .4);
-        block.rotation.z = a - Math.PI / 2;
-      }
-      const arch = new THREE.Shape(); arch.moveTo(-1.025, 0); arch.lineTo(-1.025, 3.9); arch.absarc(0, 3.9, 1.025, Math.PI, 0, true); arch.lineTo(1.025, 0); arch.closePath();
-      mesh(room, new THREE.ShapeGeometry(arch, 32), m.glass, x, 1.4, -4.49, false);
-      for (let pane = -2; pane <= 2; pane++) {
-        const px = pane * .34, height = 3.9 + Math.sqrt(1.025 ** 2 - px ** 2);
-        box(room, m.iron, x + px, 1.4 + height / 2, -4.43, .035, height, .04);
-      }
-      for (let y = 1.9; y < 6.1; y += .6) {
-        const halfWidth = y > 5.3 ? Math.sqrt(1.025 ** 2 - (y - 5.3) ** 2) : 1.025;
-        box(room, m.iron, x, y, -4.43, halfWidth * 2, .035, .04);
-      }
-    }
-    const skyMap = canvasTexture(512, 512, (c, w, h) => {
-      const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#c3c5b4"); g.addColorStop(.6, "#e8d9b9"); g.addColorStop(1, "#9f9c83"); c.fillStyle = g; c.fillRect(0, 0, w, h);
-      for (let i = 0; i < 20; i++) { c.fillStyle = "#d0c7ac20"; c.fillRect(0, random() * h, w, 3 + random() * 10); }
-    });
-    mesh(room, new THREE.PlaneGeometry(34, 17), new THREE.MeshBasicMaterial({ map: skyMap }), 0, 5, -14, false);
-    const skyline = new THREE.MeshStandardMaterial({ color: "#777c6a", roughness: 1 });
-    for (let i = 0; i < 35; i++) {
-      const x = -16 + i * .95, h = .7 + random() * 2.5;
-      box(room, skyline, x, h / 2, -9 - random() * 2.5, .7 + random() * .8, h, .8, false);
-      box(room, skyline, x + .15, h + .27, -9.2, .14, .55, .2, false);
-    }
-    cylinder(room, skyline, 4.4, 3.1, -11.2, .67, .9, 32);
-    const dome = new THREE.SphereGeometry(.69, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
-    mesh(room, dome, skyline, 4.4, 3.55, -11.2, false); cylinder(room, skyline, 4.4, 4.35, -11.2, .06, .6, 8);
-    cylinder(room,skyline,4.4,3.57,-11.2,.76,.13,48);
-    for (let i=0;i<16;i++) {
-      const a=i/16*Math.PI*2;
-      cylinder(room,skyline,4.4+Math.cos(a)*.61,3.1,-11.2+Math.sin(a)*.61,.035,.78,8);
-      const rib: THREE.Vector3[] = [];
-      for (let j=0;j<=16;j++) {
-        const phi=j/16*Math.PI/2;
-        rib.push(new THREE.Vector3(4.4+Math.cos(a)*Math.cos(phi)*.7,3.55+Math.sin(phi)*.7,-11.2+Math.sin(a)*Math.cos(phi)*.7));
-      }
-      mesh(room,new THREE.TubeGeometry(new THREE.CatmullRomCurve3(rib),20,.009,4,false),skyline,0,0,0,false);
-    }
-    cylinder(room,skyline,4.4,4.3,-11.2,.13,.25,16);
-    cylinder(room,skyline,4.4,4.49,-11.2,.17,.12,16,.05);
-    rod(room,skyline,[4.4,4.5,-11.2],[4.4,4.83,-11.2],.018);
-    rod(room,skyline,[4.31,4.73,-11.2],[4.49,4.73,-11.2],.014);
-
+    // A light timber arcade keeps the period's craft, with the river and sky visible on every side.
+    for (const x of [-7, 7]) for (const z of [-4.5, 7]) box(room, m.woodDark, x, 2.5, z, .18, 5, .18);
+    for (const x of [-7, 7]) box(room, m.woodDark, x, 5, 1.25, .2, .2, 12);
+    for (const z of [-4.5, 7]) box(room, m.woodDark, 0, 5, z, 14.3, .2, .2);
     // A complete, separately articulated engine. It has a back and a drive side, not a textured card.
     const machine = new THREE.Group(); scene.add(machine);
     const rotatingGears: RotatingGear[] = [], digitWheels: THREE.Group[] = [], tappets: THREE.Mesh[] = [];
@@ -625,19 +544,13 @@ export function start(root: HTMLElement, { tx, embedded, plate }: WorkshopOption
       }
     }
 
-    // The engraved drawing is a new decorative asset, independent of the room geometry.
-    mesh(room,new THREE.PlaneGeometry(2.2,2.93),m.diagram,-2.85,3.9,-4.32);
-    for (const x of [-3.88,-1.82]) for (const y of [2.5,5.3]) {
-      const pin=cylinder(room,m.worn,x,y,-4.3,.018,.018,12);pin.rotation.x=Math.PI/2;
-    }
+    // A freestanding drawing board beside the tools, supported even when the terrace is viewed from behind.
+    for (const x of [-4.95, -3.65]) rod(room, m.woodDark, [x, 0, -2.8], [x, 2.9, -3.05], .045);
+    rod(room, m.woodDark, [-4.3, 0, -3.65], [-4.3, 2.65, -3.05], .045);
+    box(room, m.woodDark, -4.3, 1.9, -3, 1.4, 1.87, .08);
+    mesh(room, new THREE.PlaneGeometry(1.3, 1.73), m.diagram, -4.3, 1.9, -2.95);
+    for (const x of [-6.6, -3.6]) box(room, m.woodDark, x, 2.15, -4.1, .1, 4.3, .55);
 
-    // Window light in the dusty air: translucent tapered shafts and a modest particle count.
-    const shaftMaterial = new THREE.MeshBasicMaterial({ color: "#ffe0a4", transparent: true, opacity: .012, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
-    for (const x of windowCenters) {
-      const cone = new THREE.CylinderGeometry(.68, 1.5, 8, 32, 1, true);
-      const beam = mesh(room, cone, shaftMaterial, x - 1.6, 3.2, -.2, false);
-      beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(.32, .7, -.65).normalize());
-    }
     const dustPositions = new Float32Array(130 * 3);
     for (let i = 0; i < dustPositions.length; i += 3) { dustPositions[i] = (random() - .5) * 11; dustPositions[i + 1] = .3 + random() * 6; dustPositions[i + 2] = -3.5 + random() * 11; }
     const dustGeometry = new THREE.BufferGeometry(); dustGeometry.setAttribute("position", new THREE.BufferAttribute(dustPositions, 3));
@@ -651,7 +564,7 @@ export function start(root: HTMLElement, { tx, embedded, plate }: WorkshopOption
       close: { position: [2.9, 2.9, 4.25], target: [.15, 2.5, 0], title: tx("计算柱近景") },
       side: { position: [5.2, 2.2, 2.2], target: [1.1, 1.85, 0], title: tx("传动机构侧面") },
       paper: { position: [-1.45, 2.35, 3.65], target: [-1.6, 1.03, 2.25], title: tx("平方数表") },
-      // Matched by eye to the plate at 3:2: the engine fills the right two thirds, the arched windows behind its end.
+      // Matched by eye to the plate at 3:2: the engine fills the right two thirds, with the horizon behind its end.
       painting: { position: [2.3, 2.7, 7.3], target: [-1.1, 1.3, 0], title: tx("原画视角"), plate: true },
     };
     const viewFov = (view: View) => view.plate ? plateFov(camera.aspect) : baseFov();
@@ -703,6 +616,13 @@ export function start(root: HTMLElement, { tx, embedded, plate }: WorkshopOption
       $("machine-dot").classList.toggle("is-running", value || !!cycle);
       if (!value && !cycle) $("machine-status").textContent = tx("已暂停 · 可转动一轮");
     }
+    function setResting(on: boolean) {
+      experience.classList.toggle("is-resting", on);
+      $("rest-open").setAttribute("aria-pressed", String(on));
+      $("rest-open").textContent = tx(on ? "探索工坊" : "看看风景");
+      if (on) setRunning(false);
+    }
+    $("rest-open").addEventListener("click", () => setResting(!experience.classList.contains("is-resting")), { signal });
     function beginCycle() {
       if (cycle) return;
       if (state.n >= 99) { setRunning(false); toast(tx("本次演示已完成 99 轮，可复位重来")); return; }
@@ -728,6 +648,7 @@ export function start(root: HTMLElement, { tx, embedded, plate }: WorkshopOption
     }
     const showInspector = () => setInspectorOpen(true);
     function inspect(type: Action) {
+      setResting(false);
       for (const spot of Object.values(spots)) spot.element.classList.toggle("is-selected", spot.action === type);
       if (type === "crank") { requestCycle(); toast(tx("手柄转动一轮，机器计算下一项平方数")); }
       if (type === "columns") { goToView("close"); $("inspector-title").textContent = tx("数轮，机械的记忆。"); $("inspector-copy").textContent = tx("左侧三根计算柱分别保存结果、一阶差分、二阶差分。前五层数轮从下到上表示个、十、百、千、万位。"); }
@@ -840,8 +761,8 @@ export function start(root: HTMLElement, { tx, embedded, plate }: WorkshopOption
       if (root.querySelector("dialog[open]") || ["INPUT", "TEXTAREA", "SELECT"].includes(focusedTag())) return;
       const key = e.key.toLowerCase();
       if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) { e.preventDefault(); keys.add(key); cameraFlight = null; activeView = null; updateViewButtons(); $("view-name").textContent = tx("自由行走"); }
-      if (e.code === "Space" && !e.repeat && !["BUTTON", "A"].includes(focusedTag())) { e.preventDefault(); requestCycle(); }
-      if (key === "escape") goToView("wide");
+      if (e.code === "Space" && !experience.classList.contains("is-resting") && !e.repeat && !["BUTTON", "A"].includes(focusedTag())) { e.preventDefault(); requestCycle(); }
+      if (key === "escape") { if (experience.classList.contains("is-resting")) setResting(false); else goToView("wide"); }
     }, { signal });
     addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()), { signal });
     addEventListener("blur", () => { keys.clear(); setRunning(false); }, { signal });
@@ -901,13 +822,14 @@ export function start(root: HTMLElement, { tx, embedded, plate }: WorkshopOption
         if (t === 1) cameraFlight = null;
       }
       walk(delta); controls.update();
+      outdoorKit.update(reducedMotion.matches ? 0 : time / 1000);
       // Keep the camera above the floor and inside the room after dolly / pan / orbit input.
-      camera.position.x = THREE.MathUtils.clamp(camera.position.x, -6.5, 6.5);
-      camera.position.z = THREE.MathUtils.clamp(camera.position.z, -3.95, 16);
-      camera.position.y = THREE.MathUtils.clamp(camera.position.y, .7, 6.6);
-      controls.target.x = THREE.MathUtils.clamp(controls.target.x, -4.8, 4.8);
-      controls.target.z = THREE.MathUtils.clamp(controls.target.z, -3, 6);
-      controls.target.y = THREE.MathUtils.clamp(controls.target.y, .4, 4);
+      camera.position.x = THREE.MathUtils.clamp(camera.position.x, -30, 30);
+      camera.position.z = THREE.MathUtils.clamp(camera.position.z, -20, 32);
+      camera.position.y = THREE.MathUtils.clamp(camera.position.y, Math.max(.7, outdoors.height(camera.position.x, camera.position.z) + 1.1), 12);
+      controls.target.x = THREE.MathUtils.clamp(controls.target.x, -30, 30);
+      controls.target.z = THREE.MathUtils.clamp(controls.target.z, -20, 32);
+      controls.target.y = THREE.MathUtils.clamp(controls.target.y, .4, 10);
       if (cycle) {
         const t = cycle.duration ? Math.min(1, (time - cycle.start) / cycle.duration) : 1;
         const ease = t * t * (3 - 2 * t); driveAngle = cycle.fromAngle + ease * Math.PI * 2;
@@ -938,17 +860,18 @@ export function start(root: HTMLElement, { tx, embedded, plate }: WorkshopOption
       if (time - lastHud > 65) { projectHotspots(); lastHud = time; }
       renderer.info.reset(); pipeline.composer.render();
     }
-    // Calibrate the engraving at the plate's viewpoint, where scene and plate show the same room.
+    roomReflections(scene, renderer, own)();
+    // The optional engraved view retains the reference palette; daylight is the initial view.
     await pipeline.calibrate(plate);
     if (disposed) return;
-    let engraved = params.get("style") !== "pbr";
+    let engraved = params.get("style") === "engraving";
     function setEngraved(on: boolean) {
       engraved = on; pipeline.setEngraving(on);
       $("style-toggle").textContent = on ? tx("画风：原画") : tx("画风：写实"); $("style-toggle").setAttribute("aria-pressed", String(on));
     }
     setEngraved(engraved);
     $("style-toggle").addEventListener("click", () => setEngraved(!engraved), { signal });
-    if (!embedded) goToView("wide", true);
+    if (!embedded) { goToView("wide", true); setResting(true); }
     renderer.info.reset(); pipeline.composer.render(); canvas.dataset.drawCalls = String(renderer.info.render.calls);
     $("loading").hidden = true; projectHotspots(); frameId = requestAnimationFrame(frame);
     if (params.has("debug")) {
@@ -968,7 +891,7 @@ export function start(root: HTMLElement, { tx, embedded, plate }: WorkshopOption
         // and bring the controls in only when the camera has landed.
         const settle = reducedMotion.matches ? 0 : 1100, flight = reducedMotion.matches ? 0 : 1250;
         later(() => { if (activeView === "painting") goToView("wide"); }, settle);
-        later(() => experience.classList.remove("is-crossing"), settle + flight);
+        later(() => { experience.classList.remove("is-crossing"); setResting(true); }, settle + flight);
       }, { signal });
       $("back").addEventListener("click", () => {
         experience.classList.add("is-crossing"); setRunning(false); goToView("painting");

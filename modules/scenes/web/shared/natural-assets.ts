@@ -19,10 +19,11 @@ export async function loadNaturalAssets(own: Own, renderer: THREE.WebGLRenderer,
     }));
     return { map: maps[0]!, normalMap: maps[1]!, roughnessMap: maps[2]! };
   }
-  const [rock, boulder, grass, branches, earth, bark, clay, thatch, hdr] = await Promise.all([
+  const [rock, boulder, grass, shrub, branches, earth, bark, clay, thatch, hdr] = await Promise.all([
     loadScan(address("stone-tools", stone["river-rock"]), own, renderer),
     loadScan(address("stone-tools", stone["work-boulder"]), own, renderer),
-    agriculture ? loadScan(address("stone-tools", stone["grass-clump"]), own, renderer, true) : null,
+    loadScan(address("stone-tools", stone["grass-clump"]), own, renderer, true),
+    loadScan(address("stone-tools", stone["shrub"]), own, renderer),
     agriculture ? null : loadScan(address("taming-fire", fire["dry-branches"]), own, renderer, true),
     agriculture ? surface("agriculture", farm, "field") : surface("stone-tools", stone, "soil"),
     surface("taming-fire", fire, "bark"),
@@ -32,6 +33,6 @@ export async function loadNaturalAssets(own: Own, renderer: THREE.WebGLRenderer,
   ]);
   own(() => hdr.dispose()); const generator = new THREE.PMREMGenerator(renderer), environment = generator.fromEquirectangular(hdr);
   generator.dispose(); own(() => environment.dispose());
-  return { rock, boulder, grass, branches, earth, bark, clay, thatch, environment: environment.texture };
+  return { rock, boulder, grass, shrub, branches, earth, bark, clay, thatch, environment: environment.texture };
 }
 export type NaturalAssets = Awaited<ReturnType<typeof loadNaturalAssets>>;

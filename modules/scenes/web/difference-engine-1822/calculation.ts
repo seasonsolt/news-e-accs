@@ -11,7 +11,7 @@ export function digits(value: number, width = 5): number[] {
   return String(value).padStart(width, "0").slice(-width).split("").map(Number);
 }
 
-// The walls and the engine are solid for keyboard walking.
+// The apparatus is solid; paths remain open around the work terrace.
 export function canWalkTo(x: number, z: number): boolean {
-  return x > -6.4 && x < 6.4 && z > -3.8 && z < 15.8 && !(x > -2.75 && x < 3.1 && z > -1.4 && z < 1.65);
+  return x > -30 && x < 30 && z > -20 && z < 32 && !(x > -2.75 && x < 3.1 && z > -1.4 && z < 1.65);
 }

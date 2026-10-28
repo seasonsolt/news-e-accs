@@ -24,7 +24,7 @@ test("reset starts a fresh table without retaining the previous calculation", ()
   assert.notEqual(initialRegisters(), initial);
 });
 
-test("walking can reach both sides but cannot enter the engine or pass through the walls", () => {
-  for (const [x, z] of [[0, 5], [4, 0], [-4, 0], [0, -2.5], [4, 14]]) assert.equal(canWalkTo(x, z), true);
-  for (const [x, z] of [[0, 0], [2.7, 1], [7, 2], [-7, 2], [0, -5], [0, 17]]) assert.equal(canWalkTo(x, z), false);
+test("walking reaches the landscape around the terrace but stays outside the engine", () => {
+  for (const [x, z] of [[0, 5], [4, 0], [-4, 0], [0, -2.5], [4, 14], [18, 12], [-18, -12]]) assert.equal(canWalkTo(x, z), true);
+  for (const [x, z] of [[0, 0], [2.7, 1], [31, 2], [-31, 2], [0, -21], [0, 33]]) assert.equal(canWalkTo(x, z), false);
 });

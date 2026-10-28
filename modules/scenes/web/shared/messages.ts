@@ -2,6 +2,7 @@ import { CRAFT_MESSAGES } from "../games/craft.ts";
 import { SCIENCE_MESSAGES } from "../games/science.ts";
 import { MODERN_MESSAGES } from "../games/modern.ts";
 export const messages = { en: {
+    "看看风景": "Take a moment", "探索工坊": "Explore the workshop", "不必赶路，随意走走。": "No hurry. Stay a while.",
   ...CRAFT_MESSAGES, ...SCIENCE_MESSAGES, ...MODERN_MESSAGES,
   "工坊操作": "Workshop controls", "挑战完成": "Challenge complete",
   "用时": "Time", "操作次数": "Operations", "最快": "Fastest", "最少操作": "Fewest operations", "新纪录": "New personal best", "再玩一次": "Play again",
@@ -40,14 +41,14 @@ export const messages = { en: {
   "早期石器制作的艺术概念复原，年代沿用时间线的约 330 万年前入口。石核、锤石与石片只示意剥片关系，不把较晚的对称手斧当作最早石器。": "An artistic interpretation of early toolmaking, reached from the timeline at about 3.3 million years ago. Core, hammerstone and flakes illustrate flaking, without treating later symmetrical handaxes as the earliest tools.",
   "火堆状态": "Hearth", "获得能力": "Capability", "余烬": "Embers", "微弱": "Low", "保留火种": "Keep embers", "添细枝": "Kindling", "起焰": "Flame", "照明": "Light", "添木柴": "Add wood", "稳定": "Steady", "取暖": "Warmth", "照料": "Tend", "持续燃烧": "Sustained", "处理食物": "Prepare food",
   "先守住一小簇余烬。": "Keep a few embers alive.",
-  "岩棚下保留着微弱的余烬。点击火堆，依次添加细枝与木柴，观察火光怎样改变整个空间。": "A few embers survive beneath the rock shelter. Click the hearth to add kindling and wood, and watch the light change the space.",
+  "旷野的石头风挡旁留着微弱的余烬。点击火堆，依次添加细枝与木柴，观察火光怎样改变整个空间。": "A few embers survive beside a stone windbreak in the open landscape. Click the hearth to add kindling and wood, and watch the light change the space.",
   "细枝，让火焰站起来。": "Kindling raises a flame.",
   "细小燃料被放到余烬上，橙色火焰亮起。周围石块与岩壁开始显出暖色。": "Small fuel is placed on the embers. Orange flames warm the surrounding stones and rock walls.",
   "木柴，延续光与热。": "Wood sustains light and heat.",
   "更粗的燃料加入火堆，火焰与投影增强。可以走近观察炭化木纹、灰烬与上升的火星。": "Larger fuel strengthens the flames and shadows. Approach to inspect charred wood, ash and rising sparks.",
   "围绕火，生活有了新的中心。": "A new center for daily life.",
   "火堆稳定燃烧，成为照明、取暖和处理食物的空间。此处不演示点火发明，也不认定所有能力同时出现。": "A steady hearth provides space for light, warmth and food preparation. This does not depict the invention of ignition or claim these uses appeared together.",
-  "年代采用时间线的约 100 万年前入口，不表示用火起源已有确切定论。岩棚、火堆和燃料为概念复原；只借用原画的赭石色与光感，不在此年代安放较晚的洞穴壁画。": "The timeline entrance is about one million years ago, not a settled date for the origin of fire use. Shelter, hearth and fuel are conceptual. The plate guides the ochre palette and light, without placing later cave paintings at this date.",
+  "年代采用时间线的约 100 万年前入口，不表示用火起源已有确切定论。石头风挡、火堆和燃料为概念复原；只借用原画的赭石色与光感，不在此年代安放较晚的洞穴壁画。": "The timeline entrance is about one million years ago, not a settled date for the origin of fire use. Windbreak, hearth and fuel are conceptual. The plate guides the ochre palette and light, without placing later cave paintings at this date.",
   "农时": "Season", "田地": "Field", "储粮": "Stores", "整地": "Prepare", "待播": "Bare soil", "空": "Empty", "播种": "Sow", "幼苗": "Seedlings", "生长": "Grow", "成熟": "Ripe", "待收获": "Await harvest", "收获": "Harvest", "留茬": "Stubble", "已入仓": "Stored",
   "从一小块土地开始。": "Begin with a patch of land.",
   "走进泥土与茅草构成的村落。田垄、种子篮和磨盘分布在身边，点击田地开始一季种植的简化演示。": "Enter a settlement of earth and thatch. Furrows, seed baskets and grinding stones surround you. Click the field for a simplified growing season.",

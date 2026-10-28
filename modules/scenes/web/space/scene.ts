@@ -44,12 +44,14 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
   body(fixed, 1); body(moving, -1);
   const service = k.cylinder(fixed, gold, [0, 0, -.6], .43, .4); service.rotation.x = Math.PI / 2;
   for (const x of [-.7, .7]) { k.box(fixed, dark, [x, 0, -.6], [.65, .035, .65], .004); for (let i = -3; i <= 3; i++) k.rod(fixed, brass, [x - .28, .025, -.6 + i * .08], [x + .28, .025, -.6 + i * .08], .002); }
-  // A large mission plotting panel carries a physical Earth disc and trajectory arcs.
-  k.box(scene, dark, [0, 2.35, -3.48], [3.1, 2.1, .1], .02);
+  // A small freestanding plotting panel leaves the orbital horizon open.
+  const mission = new THREE.Group(); mission.position.set(-2.8, .15, -.3); mission.scale.setScalar(.55); scene.add(mission);
+  for (const x of [-3.55, -2.05]) k.rod(scene, iron, [x, 0, -2.2], [x, 1.95, -2.2], .025);
+  k.box(mission, dark, [0, 2.35, -3.48], [3.1, 2.1, .1], .02);
   const earthMap = k.texture(512, 256, (c, w, h) => { c.fillStyle = "#284d65"; c.fillRect(0, 0, w, h); c.fillStyle = "#6d8a71"; for (let i = 0; i < 65; i++) { const x = (i * 83) % w, y = 30 + (i * 47) % 190; c.beginPath(); c.ellipse(x, y, 12 + i % 20, 7 + i % 12, i, 0, Math.PI * 2); c.fill(); } c.strokeStyle = "#a8b8ab"; for (let y = 0; y < h; y += 32) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); } });
-  const earth = k.sphere(scene, k.material(new THREE.MeshStandardMaterial({ map: earthMap, roughness: .7, emissive: "#204761", emissiveIntensity: .25 })), [0, 2.4, -3.1], .55); preserve.add(earth);
-  const orbit = k.torus(scene, brass, [0, 2.4, -3.15], .85, .008); orbit.rotation.z = -.35;
-  for (let i = 0; i < 44; i++) k.sphere(scene, cyan, [-1.45 + k.random() * 2.9, 1.4 + k.random() * 1.9, -3.4], .004 + k.random() * .006);
+  const earth = k.sphere(mission, k.material(new THREE.MeshStandardMaterial({ map: earthMap, roughness: .7, emissive: "#204761", emissiveIntensity: .25 })), [0, 2.4, -3.1], .55); preserve.add(earth);
+  const orbit = k.torus(mission, brass, [0, 2.4, -3.15], .85, .008); orbit.rotation.z = -.35;
+  for (let i = 0; i < 44; i++) k.sphere(mission, cyan, [-1.45 + k.random() * 2.9, 1.4 + k.random() * 1.9, -3.4], .004 + k.random() * .006);
   const screenMap = k.texture(640, 480, () => {}), screenMat = k.material(new THREE.MeshBasicMaterial({ map: screenMap }));
   const close = { position: [2.1, 2.3, 3.6] as [number, number, number], target: [0, 1.65, -.1] as [number, number, number] };
   const add = (id: string, object: THREE.Object3D, action: string, title: string) => { object.userData.spot = id; preserve.add(object); spots.push({ id, object, action, title, detail: title, view: close }); };

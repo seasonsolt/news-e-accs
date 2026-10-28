@@ -78,7 +78,7 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
   ];
   for(const s of spots){s.object.traverse(o=>o.userData.spot=s.id);preserve.add(s.object);}
   finish(preserve);let angle=0;
-  return{game,views:{wide,close,side,painting:wide},spots,pickables:spots.map(s=>s.object),canMove:(x,z)=>Math.abs(x)<4.2&&z> -2.8&&z<5&&!(x> -2.9&&x<2.4&&z> -1.1&&z<.9),
+  return{game,views:{wide,close,side,painting:wide},spots,pickables:spots.map(s=>s.object),canMove:(x,z)=>!(x> -2.9&&x<2.4&&z> -1.1&&z<.9),
     update(_phase,_time,dt){const s=game.view();const speed=s.pressure>=7?0:s.speed;angle+=dt*speed*.42;fly.rotation.z=angle;beam.rotation.z=Math.sin(angle)*.11;piston.position.y=1.7-Math.sin(angle)*.13;valve.rotation.z=-s.valve*.42;load.rotation.z=s.load*.4;
       jointA.set(Math.cos(beam.rotation.z)*1.22-.2,2.1+Math.sin(beam.rotation.z)*1.22,.41);jointB.set(1.15+Math.cos(angle)*.24,1.03+Math.sin(angle)*.24,.41);direction.subVectors(jointB,jointA);link.position.copy(jointA).add(jointB).multiplyScalar(.5);link.quaternion.setFromUnitVectors(axis,direction.clone().normalize());link.scale.y=direction.length()/originalLength;
       [s.pressure,s.speed].forEach((n,i)=>dialNeedles[i]!.rotation.z=-(-.75+Math.min(8,n)/8*1.5)*Math.PI);[s.targetPressure,s.targetSpeed].forEach((n,i)=>dialTargets[i]!.rotation.z=-(-.75+n/8*1.5)*Math.PI);

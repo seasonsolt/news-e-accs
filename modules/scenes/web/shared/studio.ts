@@ -7,14 +7,14 @@ import { hardware } from "../agents-2026/hardware.ts";
 import { drawWorkspace, drawTerminal, drawHardware } from "../agents-2026/screens.ts";
 import { buildWindows, type WindowAssets } from "../agents-2026/windows.ts";
 import { roomReflections } from "./reflections.ts";
+import { landscape, type LandscapeAssets } from "./landscape.ts";
 
-export function build(scene: THREE.Scene, k: Kit, _world: World, _tx: (s: string) => string, renderer: THREE.WebGLRenderer, floor: Surface, wall: Surface, windowAssets: WindowAssets): Model {
+export function build(scene: THREE.Scene, k: Kit, _world: World, _tx: (s: string) => string, renderer: THREE.WebGLRenderer, floor: Surface, windowAssets: WindowAssets, landscapeAssets: LandscapeAssets): Model {
   const { mesh, box, rod, tube, cylinder, torus, sphere, texture, material, random } = k;
   const h = hardware(k), preserved = new Set<THREE.Object3D>();
-  scene.background = new THREE.Color("#07131f"); scene.fog = new THREE.FogExp2("#0b1926", .013);
-  scene.environmentIntensity = .62;
+  const outdoors = landscape(scene, k, landscapeAssets);
   RectAreaLightUniformsLib.init();
-  scene.add(new THREE.HemisphereLight("#a8bcd1", "#42342b", .12));
+
   // The visible task lamp casts the desk's warm pool and stable, directional shadows.
   const key = new THREE.SpotLight("#ffd6a0", 7, 4, 1.05, .65, 2);
   key.position.set(1.09, 1.365, -.19); key.target.position.set(.45, .79, .35); key.castShadow = true;
@@ -26,14 +26,15 @@ export function build(scene: THREE.Scene, k: Kit, _world: World, _tx: (s: string
 
   // Real-world furniture proportions leave room for articulated hardware and useful walking views.
   const oak = material(new THREE.MeshStandardMaterial({ ...floor, color: "#897b69", roughness: .72, normalScale: new THREE.Vector2(.2, .2) }));
-  const plaster = material(new THREE.MeshStandardMaterial({ ...wall, color: "#938d7c", roughness: .93, normalScale: new THREE.Vector2(.24, .24) }));
+
   const floorG = new THREE.PlaneGeometry(9.4, 8); floorG.rotateX(-Math.PI / 2); floorG.translate(0, -.012, 1);
   const uv = floorG.attributes.uv!; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 3, uv.getY(i) * 3);
   const roomFloor = mesh(scene, floorG, oak); roomFloor.castShadow = false;
-  box(scene, plaster, [-4.65, 1.8, 1.0], [.15, 3.6, 8]); box(scene, h.graphite, [4.65, 1.8, 1], [.15, 3.6, 8]);
-  box(scene, plaster, [0, 3.57, .8], [9.4, .1, 8]);
-  for (let i = 0; i < 20; i++) box(scene, oak, [-4.55, 1.65, -1.8 + i * .14], [.035, 3.2, .045], .005);
-  box(scene, plaster, [0, 1.8, -2.67], [9.4, 3.6, .12]);
+  // The desk sits on an open garden terrace, framed by a light pergola.
+  for (const x of [-4.5, 4.5]) for (const z of [-2.8, 4.6]) box(scene, oak, [x, 1.8, z], [.13, 3.6, .13]);
+  for (const x of [-4.5, 4.5]) box(scene, oak, [x, 3.6, .9], [.16, .15, 7.6]);
+  for (const z of [-2.8, 4.6]) box(scene, oak, [0, 3.6, z], [9.2, .15, .16]);
+  for (const x of [-3.4, -1.15, 1.15, 3.4]) box(scene, h.graphite, [x, 1.78, -2.62], [.065, 3.56, .075]);
   const windows = buildWindows(scene, k, windowAssets, h.graphite, preserved);
   // Walnut grain is a warped fibre field, with a quiet satin finish rather than straight coloured stripes.
   const walnutMap = texture(2048, 1024, (c, w, height) => {
@@ -145,7 +146,8 @@ export function build(scene: THREE.Scene, k: Kit, _world: World, _tx: (s: string
   const reflect = roomReflections(scene, renderer, k.own);
   let lastStage=-1, lastCodeFrame=-1;
   return {
-    views:{wide:{position:[.5,1.95,5.4],target:[.85,1.45,-.55]},close:taskView,side:computeView,painting:{position:[.5,1.95,5.4],target:[.85,1.45,-.55]}},
+    groundHeight: outdoors.height,
+    views:{wide:{position:[2.7,2.2,8.5],target:[.3,1.1,-.5]},close:taskView,side:computeView,painting:{position:[.5,1.95,5.4],target:[.85,1.45,-.55]}},
     spots:[
       {id:"terminal",title:"弧面工作站",detail:"从计划，到实现，再到验证。",object:main.anchor,view:taskView,advance:true},
       {id:"compute",title:"算力机柜",detail:"任务背后是计算设备。指示灯在这里示意任务活动，不是实际负载或性能数据。",object:compute.frontHit,view:computeView},
@@ -153,7 +155,7 @@ export function build(scene: THREE.Scene, k: Kit, _world: World, _tx: (s: string
       {id:"input",title:"分体键盘与控制台",detail:"分体键盘、轨迹球与旋钮控制台组成输入区。点击控制台可以继续推进任务。",object:inputHit,view:inputView},
     ],
     pickables:[main.screen,vertical.screen,compute.frontHit,compute.sideHit,inputHit,deckHit],
-    canMove:(x,z)=>x> -4.3&&x<4.3&&z> -2.35&&z<4.8&&!(x> -1.7&&x<1.6&&z> -.55&&z<.92)&&!(x>1.7&&x<2.5&&z> -.5&&z<.45),
+    canMove:(x,z)=>!(x> -1.7&&x<1.6&&z> -.55&&z<.92)&&!(x>1.7&&x<2.5&&z> -.5&&z<.45),
     update(phase,time,dt){
       const stage=Math.min(3,Math.max(0,Math.round(phase)));
       const codeFrame=stage===2?Math.floor(time*2):0;

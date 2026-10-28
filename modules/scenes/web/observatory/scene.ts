@@ -4,7 +4,7 @@ import { workshop, type WorkshopAssets } from "../games/workshop.ts";
 import { createObservatoryGame } from "../games/science-state.ts";
 
 export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, renderer: THREE.WebGLRenderer): Model {
-  const { wood, stone, brass, iron, paper, glass, finish } = workshop(scene, k, renderer, assets, { theme: "observatory", open: true });
+  const { wood, stone, brass, iron, paper, glass, finish } = workshop(scene, k, renderer, assets, { theme: "observatory" });
   const { mesh, box, cylinder, rod, torus, sphere, material, texture } = k;
   const game = createObservatoryGame(), preserve = new Set<THREE.Object3D>();
   const skyMap = texture(1024, 768, (c,w,h) => {
@@ -13,7 +13,9 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
     c.fillStyle="#e8dfbc";c.beginPath();c.arc(810,170,38,0,Math.PI*2);c.fill();c.fillStyle="#b4b79d";for(let i=0;i<13;i++){c.beginPath();c.arc(790+k.random()*38,145+k.random()*50,2+k.random()*5,0,Math.PI*2);c.fill();}
     c.fillStyle="#0d1820";for(let i=0;i<24;i++)c.fillRect(i*48,h-100-k.random()*80,38,180);
   });
-  const sky = mesh(scene,new THREE.PlaneGeometry(4.5,2.9),material(new THREE.MeshBasicMaterial({map:skyMap,fog:false})),[0,2.35,-3.60]);sky.castShadow=sky.receiveShadow=false;
+  const sky = mesh(scene,new THREE.PlaneGeometry(1.3,.9),material(new THREE.MeshBasicMaterial({map:skyMap,fog:false})),[-2.8,1.65,-2.1]);sky.castShadow=sky.receiveShadow=false;
+  box(scene,wood,[-2.8,1.65,-2.14],[1.42,1.02,.06]);
+  for(const x of [-3.3,-2.3])rod(scene,wood,[x,0,-2.25],[x,2.25,-2.25],.035);
   for(const x of [-2.4,2.4]) {
     cylinder(scene,stone,[x,1.5,-3.3],.14,3);cylinder(scene,stone,[x,.16,-3.3],.24,.18);cylinder(scene,stone,[x,2.95,-3.3],.25,.2);
     for(let y=0;y<3;y+=.25)torus(scene,stone,[x,y,-3.3],.145,.008).rotation.x=Math.PI/2;
@@ -61,7 +63,7 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
   ];
   for(const spot of spots){spot.object.userData.spot=spot.id;preserve.add(spot.object);}
   finish(preserve);let previous="";
-  return {game,views:{wide,close,side,painting:wide},spots,pickables:spots.map(s=>s.object),canMove:(x,z)=>Math.abs(x)<4.2&&z> -2.8&&z<4.8&&!(x> -1.4&&x<.3&&z>-.7&&z<.9),
+  return {game,views:{wide,close,side,painting:wide},spots,pickables:spots.map(s=>s.object),canMove:(x,z)=>!(x> -1.4&&x<.3&&z>-.7&&z<.9),
     update(){const s=game.view();pivot.rotation.y=(s.aim-2.5)*.22;focus.position.z=s.focus*.045;
       const signature=`${s.aim}:${s.focus}:${s.progress}:${s.target}`;if(signature===previous)return;previous=signature;
       const c=chartMap.image.getContext("2d")!;c.fillStyle="#cbb995";c.fillRect(0,0,1024,768);c.strokeStyle="#665741";c.lineWidth=2;
