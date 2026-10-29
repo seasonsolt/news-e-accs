@@ -1,7 +1,9 @@
-// Anonymous interaction counts. The browser reports an allowlisted name and, where needed, an item
-// id or a source domain. Nothing here identifies a reader, and a failed send never affects the page.
+// Anonymous interaction counts. The browser reports an allowlisted name and, where needed, an item id,
+// a source domain or a workshop's page path. Nothing here identifies a reader, and a failed send never
+// affects the page.
+import { isOwner } from "./local-state.ts";
 
-/** Reports one interaction, sent the same way as page views. No-op during SSR. */
+/** Reports one interaction, sent the same way as page views; the owner's own are left out. No-op during SSR. */
 export function recordEngagement(event: string, target = ""): void {
   if (typeof window === "undefined") return;
   void fetch("/api/site/events", {
@@ -10,7 +12,7 @@ export function recordEngagement(event: string, target = ""): void {
     cache: "no-store",
     keepalive: true,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ event, target }),
+    body: JSON.stringify({ event, target, ...(isOwner() ? { own: true } : {}) }),
   }).catch(() => {});
 }
 

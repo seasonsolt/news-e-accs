@@ -2,7 +2,7 @@
 // first and previous visit day) so the server can tell new readers from returning ones without any identifier,
 // and reports where a full page load came from. A failed send never affects the page.
 import { beijingDate } from "@aihot/contracts/time";
-import { KEYS, readRaw, writeRaw } from "./local-state";
+import { isOwner, KEYS, readRaw, writeRaw } from "./local-state";
 
 const UTM = ["source", "medium", "campaign"] as const;
 
@@ -34,8 +34,6 @@ function visitDates(): { first: string | null; prev: string | null } {
 export function markOwner(): void {
   writeRaw(KEYS.owner, "1");
 }
-
-const isOwner = () => readRaw(KEYS.owner) === "1";
 
 /** Reports a page view. A full load (nav false) also reports the referring site and campaign tags. */
 export function reportView(path: string, nav: boolean, search: string): void {

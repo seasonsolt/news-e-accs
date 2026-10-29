@@ -8,6 +8,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { FROM_SCENE, readSceneCommand, type SceneEvent } from "@aihot/web/features/chrono/scene-handoff";
 import { recordWorkshop } from "@aihot/web/lib/local-state";
+import { recordEngagement } from "@aihot/web/lib/engagement";
 import { createMaterials, TextureLoadError, type WorkshopMaterials } from "./materials.ts";
 import { createWorkshopRenderer } from "./rendering.ts";
 import { initialRegisters, advanceRegisters, digits, canWalkTo, type Registers } from "./calculation.ts";
@@ -703,9 +704,12 @@ export function start(root: HTMLElement, { tx, embedded, plate }: WorkshopOption
       $("machine-dot").classList.toggle("is-running", value || !!cycle);
       if (!value && !cycle) $("machine-status").textContent = tx("已暂停 · 可转动一轮");
     }
+    // Every turn starts from the reader's step, crank or run; the first one after loading or a reset is counted (docs/analytics.md).
+    let begun = false;
     function beginCycle() {
       if (cycle) return;
       if (state.n >= 99) { setRunning(false); toast(tx("本次演示已完成 99 轮，可复位重来")); return; }
+      if (!begun) { begun = true; recordEngagement("workshop_start", "/chronicle/difference-engine"); }
       const next = advanceRegisters(state); setWheelTargets(next, !reducedMotion.matches);
       cycle = { start: performance.now(), duration: reducedMotion.matches ? 0 : 1900, next, committed: false, fromAngle: driveAngle };
       updateStep(); $("machine-dot").classList.add("is-running");
@@ -717,7 +721,7 @@ export function start(root: HTMLElement, { tx, embedded, plate }: WorkshopOption
       else { queued = true; updateStep(); }
     }
     function reset() {
-      setRunning(false); cycle = null; queued = false; state = initialRegisters(); history = [{ ...state }]; driveAngle = 0;
+      setRunning(false); cycle = null; queued = false; begun = false; state = initialRegisters(); history = [{ ...state }]; driveAngle = 0;
       setWheelTargets(state, false); refreshLedger(); updateStep();
       $("machine-status").textContent = tx("已复位 · 等待转动手柄"); $("machine-dot").classList.remove("is-running");
       for (const tappet of tappets) tappet.position.y = tappet.userData.baseY as number;
@@ -924,7 +928,7 @@ export function start(root: HTMLElement, { tx, embedded, plate }: WorkshopOption
           state = cycle.next; history.push({ ...state }); refreshLedger(); cycle = null;
           $("machine-status").textContent = tx("第 {0} 轮完成 · {0}² = {1}", state.n, state.a);
           // The table of squares reaching 10² is this workshop's finish; it is remembered in this browser (the era workshops page).
-          if (state.n === 10) { recordWorkshop("/chronicle/difference-engine"); toast(tx("平方数表已算到 10² = 100，这座工坊记为完成。")); }
+          if (state.n === 10) { recordWorkshop("/chronicle/difference-engine"); recordEngagement("workshop_finish", "/chronicle/difference-engine"); toast(tx("平方数表已算到 10² = 100，这座工坊记为完成。")); }
           $("machine-dot").classList.toggle("is-running", running);
           if (queued) { queued = false; beginCycle(); }
           else if (running) later(() => { if (running && !cycle) beginCycle(); }, reducedMotion.matches ? 1800 : 350);

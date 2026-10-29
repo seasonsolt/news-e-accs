@@ -62,6 +62,7 @@ export interface EngagementData {
     firstDays: Record<string, string | null>;
     firstStarDevices: number;
     topStarred: Array<{ id: string; title: string | null; net: number }>;
+    workshops: Array<{ path: string; starts: number; finishes: number }>;
   };
 }
 

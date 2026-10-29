@@ -9,6 +9,7 @@ import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
 import { FROM_SCENE, readSceneCommand, type SceneEvent } from "@aihot/web/features/chrono/scene-handoff";
 import { reducedMotionQuery } from "@aihot/web/lib/motion";
 import { recordWorkshop, workshopTime } from "@aihot/web/lib/local-state";
+import { recordEngagement } from "@aihot/web/lib/engagement";
 import { createGeometryKit, type Model, type View } from "./geometry.ts";
 import { nextPhase, type World } from "./worlds.ts";
 import { loadSurface } from "./surfaces.ts";
@@ -132,12 +133,15 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
     let activeView = "wide", flight: { start: number; from: THREE.Vector3; target: THREE.Vector3; view: View; end?: () => void } | null = null;
     const keys = new Set<string>();
     // One round of play: the reader's operations and active time, and whether the automatic demonstration took a hand in it.
-    let steps = 0, startedAt = 0, idle = 0, hiddenAt = 0, assisted = false, finished = false, shown = false;
-    const newRound = () => { steps = 0; startedAt = 0; idle = 0; assisted = false; finished = false; };
+    let steps = 0, startedAt = 0, idle = 0, hiddenAt = 0, assisted = false, finished = false, shown = false, begun = false;
+    const newRound = () => { steps = 0; startedAt = 0; idle = 0; assisted = false; finished = false; begun = false; };
+    /** The reader's first own operation in a round, counted once (docs/analytics.md); the automatic demonstration never is. */
+    const begin = () => { if (!begun) { begun = true; recordEngagement("workshop_start", world.path); } };
     const flash = (element: HTMLElement, name: string) => { element.classList.remove(name); void element.offsetWidth; element.classList.add(name); };
     /** One operation by the reader: counted, then run through the game's rules. */
     function play(action: string) {
       setRunning(false);
+      begin();
       startedAt ||= performance.now();
       steps++;
       model.game!.act(action);
@@ -186,6 +190,8 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
       const scored = !!model.game && !assisted, run = scored ? { ms: performance.now() - startedAt - idle, steps } : undefined;
       // A demonstration, automatic or of the four finite stages, marks the workshop seen; only the reader's own finish is scored.
       const saved = model.game && assisted ? undefined : recordWorkshop(world.path, run);
+      // Counted only for a round the reader took part in, and for a challenge only when the reader finished it.
+      if (begun && !(model.game && assisted)) recordEngagement("workshop_finish", world.path);
       const show = (id: string, text: string | undefined) => { $(id).textContent = text === undefined ? "—" : text; };
       $("done-heading").textContent = tx(scored ? "挑战完成" : "演示完成");
       $("done-stats").hidden = !run;
@@ -218,7 +224,7 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
       go(spot.view, "detail");
       $("inspector-body").hidden = false; $("inspector-toggle").setAttribute("aria-expanded", "true"); $("inspector-toggle").textContent = "−";
       if (model.game && spot.action) play(spot.action);
-      else if (spot.advance) step();
+      else if (spot.advance) { begin(); step(); }
       else { $("inspector-title").textContent = tx(spot.title); $("inspector-copy").textContent = tx(spot.detail); }
       $("toast").textContent = tx(spot.title); $("toast").hidden = false; toastTime = 3;
     }
@@ -250,12 +256,12 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
     canvas.addEventListener("pointermove", (e) => { canvas.style.cursor = pick(e) ? "pointer" : "grab"; }, { signal });
     canvas.addEventListener("webglcontextlost", (e) => { e.preventDefault(); fatal = true; setRunning(false); $("error").hidden = false; $("error-detail").textContent = tx("图形上下文已中断，请刷新页面。"); }, { signal });
     for (const name of ["wide", "close", "side"] as const) $("view-" + name).addEventListener("click", () => go(model.views[name], name), { signal });
-    $("step").addEventListener("click", step, { signal });
+    $("step").addEventListener("click", () => { begin(); step(); }, { signal });
     function restart() { setRunning(false); newRound(); model.game?.reset(); showPhase(0); visualPhase = 0; elapsed = 0; go(model.views.wide, "wide"); }
     $("run").addEventListener("click", () => { if (model.game ? model.game.snapshot().complete : phase === world.phases.length - 1) { newRound(); model.game?.reset(); showPhase(0); } setRunning(!running); }, { signal });
     $("reset").addEventListener("click", restart, { signal });
     $("done-again").addEventListener("click", () => { restart(); canvas.focus({ preventScroll: true }); }, { signal });
-    for (const button of root.querySelectorAll<HTMLButtonElement>("[data-phase]")) button.addEventListener("click", () => { if (model.game) return; setRunning(false); showPhase(Number(button.dataset.phase)); }, { signal });
+    for (const button of root.querySelectorAll<HTMLButtonElement>("[data-phase]")) button.addEventListener("click", () => { if (model.game) return; setRunning(false); begin(); showPhase(Number(button.dataset.phase)); }, { signal });
     if (model.game) for (const action of model.game.actions) {
       const button = document.createElement("button"); button.className = "game-action"; button.id = `game-action-${action.id}`; button.textContent = tx(action.label);
       $("game-controls").append(button);

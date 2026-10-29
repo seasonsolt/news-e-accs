@@ -20,7 +20,7 @@ after(async () => {
   await app.close();
   // Rows with an empty target are shared counters, so this file owns those event names in the test database.
   await sql`DELETE FROM site_events_daily WHERE target IN (${id}, ${domain}, ${missing}) OR target LIKE ${`%.${id}.example`}
-    OR (target = '' AND event IN ('share_click', 'first_star'))`;
+    OR (target = '' AND event IN ('share_click', 'first_star')) OR event IN ('workshop_start', 'workshop_finish')`;
   await sql`DELETE FROM publications WHERE article_id = ${id}`;
   await sql`DELETE FROM articles WHERE id = ${id}`;
   await sql`DELETE FROM sources WHERE id = ${source}`;
@@ -49,6 +49,15 @@ test("interaction targets are reduced to an allowlisted event and a safe value",
   assert.equal(subscribeErrorReason(0), "network");
   assert.equal(subscribeEventTarget("subscribe_error", { source: "daily_inline", locale: "zh", reason: "" }), null);
   assert.equal(normalizeSiteEvent({ event: "not_an_event" }), null);
+  // A workshop is named by its English page path; anything that is not a page of the site is dropped.
+  assert.deepEqual(normalizeSiteEvent({ event: "workshop_start", target: "/chronicle/iron" }), { event: "workshop_start", target: "/chronicle/iron" });
+  assert.deepEqual(normalizeSiteEvent({ event: "workshop_finish", target: "/chronicle/difference-engine" }), { event: "workshop_finish", target: "/chronicle/difference-engine" });
+  assert.equal(normalizeSiteEvent({ event: "workshop_start", target: "/zh/chronicle/iron" }), null);
+  assert.equal(normalizeSiteEvent({ event: "workshop_start", target: "/chronicle/iron?x=1" }), null);
+  assert.equal(normalizeSiteEvent({ event: "workshop_start", target: "/items/:id" }), null);
+  assert.equal(normalizeSiteEvent({ event: "workshop_start", target: `/items/${id}` }), null);
+  assert.equal(normalizeSiteEvent({ event: "workshop_finish", target: "/no-such-page" }), null);
+  assert.equal(normalizeSiteEvent({ event: "workshop_finish", target: "" }), null);
   assert.equal(normalizeSiteEvent({ event: "share_click", target: "x".repeat(301) }), null);
   assert.equal(normalizeSiteEvent(null), null);
   assert.equal(normalizeSourceDomain(`https://user:secret@www.${domain}/path?token=1`), null);
@@ -60,7 +69,7 @@ test("interaction targets are reduced to an allowlisted event and a safe value",
 });
 
 test("daily interaction counts are anonymous, uncached, and visible only in the admin summary", async () => {
-  await sql`DELETE FROM site_events_daily WHERE target IN (${id}, ${domain}) OR event IN ('share_click', 'first_star')`;
+  await sql`DELETE FROM site_events_daily WHERE target IN (${id}, ${domain}) OR event IN ('share_click', 'first_star', 'workshop_start', 'workshop_finish')`;
   await sql`INSERT INTO sources (id, name, kind, tier) VALUES (${source}, ${source}, 'rss', 'T1')`;
   await sql`INSERT INTO articles (id, source_id, identity_key, url, title, discovered_at, timeline_at)
     VALUES (${id}, ${source}, ${id}, ${`https://${domain}/${id}`}, '互动示例', ${at}, ${at})`;
@@ -85,9 +94,12 @@ test("daily interaction counts are anonymous, uncached, and visible only in the 
   const removed = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "star_remove", target: id } });
   const unknown = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "page_view", target: "/secret" } });
   const address = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "outbound_click", target: "http://10.1.2.3/a" } });
+  const workshop = (event: string, own = false) =>
+    app.inject({ method: "POST", url: "/api/site/events", payload: { event, target: "/chronicle/printing", ...(own && { own }) } });
+  const workshops = [await workshop("workshop_start"), await workshop("workshop_start"), await workshop("workshop_finish"), await workshop("workshop_finish", true)];
   const admin = await app.inject({ method: "GET", url: "/api/admin/analytics?days=7" });
 
-  for (const res of [added, again, shared, outbound, unpublished, removed, unknown, address]) {
+  for (const res of [added, again, shared, outbound, unpublished, removed, unknown, address, ...workshops]) {
     assert.equal(res.statusCode, 204);
     assert.equal(res.headers["cache-control"], "private, no-store");
     assert.equal(res.headers["cdn-cache-control"], "no-store");
@@ -119,6 +131,8 @@ test("daily interaction counts are anonymous, uncached, and visible only in the 
   assert.equal(summary.engagement.firstStarDevices, 3);
   assert.equal(top?.net, 1);
   assert.equal(top?.title, "互动示例");
+  // The owner's own finish is left out.
+  assert.deepEqual(summary.engagement.workshops.map((row) => ({ ...row })), [{ path: "/chronicle/printing", starts: 2, finishes: 1 }]);
 });
 
 test("made-up source domains cannot add more than a day's quota of rows", async () => {

@@ -63,6 +63,9 @@ export function readRaw(key: string, kind: StorageKind = "local"): string | null
   }
 }
 
+/** This browser has opened the admin (readership.ts marks it); its own views and interactions are not counted. */
+export const isOwner = () => readRaw(KEYS.owner) === "1";
+
 /** A stored JSON value; null when it is missing, unreadable or not JSON. */
 export function readJson(key: string, kind: StorageKind = "local"): unknown {
   const raw = readRaw(key, kind);

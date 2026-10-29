@@ -199,6 +199,19 @@ test("engagement reports are fire-and-forget, skipped during SSR, and count midd
   else Reflect.deleteProperty(globalThis, "window");
 });
 
+test("the owner's own interactions are marked so the server leaves them out", async () => {
+  const calls: Array<{ url: string; init: RequestInit }> = [];
+  const { state, values } = await reader();
+  listen(calls);
+  recordEngagement("workshop_start", "/chronicle/iron");
+  values.set(state.KEYS.owner, "1");
+  recordEngagement("workshop_finish", "/chronicle/iron");
+  assert.deepEqual(bodies(calls), [
+    JSON.stringify({ event: "workshop_start", target: "/chronicle/iron" }),
+    JSON.stringify({ event: "workshop_finish", target: "/chronicle/iron", own: true }),
+  ]);
+});
+
 // Readers' browsers already keep their stars, read marks and settings under these names; a renamed key
 // is an empty one for every existing reader. New keys may be added.
 test("the storage keys readers already have data under keep their names", async () => {

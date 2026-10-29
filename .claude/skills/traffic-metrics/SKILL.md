@@ -50,6 +50,7 @@ Search Console 链接（`breakdown` 可换 `page`、`query`、`date`，`num_of_d
 | 留存 Retention | 回访访客占比 | cf-traffic `returning` / `UV` |
 | | RSS 订阅：读者在 UA 里报告的订阅数；订阅源被多少个客户端拉取 | cf-traffic「Feed subscribers」「Machine outlets: feed」 |
 | | 收藏过内容的设备累计数（first_star）、订阅点击与提交 | `deploy/update.sh --stats` |
+| | 工坊开始与完成（workshop_start / workshop_finish，2026-10-29 起，按工坊页面路径）：进了工坊的人有多少亲手操作、玩完 | 后台“增长”的转化页「工坊」表；工坊页面浏览看内容页的 `/chronicle/*` 路由 |
 | 推荐 Referral | 分享点击（share_click） | `deploy/update.sh --stats` |
 | 分发 Distribution | 公开 API、MCP、Agent Markdown（llms.txt、`.md`）被多少个客户端调用 | cf-traffic「Machine outlets」 |
 | 变现 Revenue | 目前没有 | — |

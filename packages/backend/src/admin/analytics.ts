@@ -77,6 +77,16 @@ export async function siteAnalyticsOverview(days = 30) {
          - coalesce(sum(e.count) FILTER (WHERE e.event = 'star_remove'), 0) > 0
     ORDER BY net DESC, e.target
     LIMIT 20`;
+  const workshops = await sql<{ path: string; starts: number; finishes: number }[]>`
+    SELECT target AS path,
+           coalesce(sum(count) FILTER (WHERE event = 'workshop_start'), 0)::bigint AS starts,
+           coalesce(sum(count) FILTER (WHERE event = 'workshop_finish'), 0)::bigint AS finishes
+    FROM site_events_daily
+    WHERE day >= (now() AT TIME ZONE 'Asia/Taipei')::date - ${windowDays - 1}::int
+      AND day <= (now() AT TIME ZONE 'Asia/Taipei')::date
+      AND event IN ('workshop_start', 'workshop_finish')
+    GROUP BY target
+    ORDER BY starts DESC, finishes DESC, target`;
   return {
     days: windowDays,
     totals: totals!,
@@ -92,6 +102,7 @@ export async function siteAnalyticsOverview(days = 30) {
       daily: engagementDaily,
       firstStarDevices: firstStar?.devices ?? 0,
       topStarred,
+      workshops,
     },
   };
 }
