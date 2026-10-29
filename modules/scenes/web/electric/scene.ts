@@ -61,9 +61,7 @@ export function build(scene: THREE.Scene,k:Kit,assets:WorkshopAssets,renderer:TH
   for(let i=0;i<12;i++){const a=i*Math.PI/6;rod(rotor,copper,[Math.cos(a)*.12,Math.sin(a)*.12,-.24],[Math.cos(a)*.12,Math.sin(a)*.12,.24],.011);}
   for(const z of [-.28,.28])torus(rotor,iron,[0,0,z],.13,.018);
   tube(scene,insulation,[[-2.3,1.05,-.1],[-2.05,1.05,-.1],[-1.7,.96,.72],[-1.45,.96,.72]],.013);
-  // A freestanding brass display and paper experiments echo the electric-age palette.
-  for (const x of [-1.85, 1.85]) box(scene,wood,[x,1.8,-3.6],[.07,3.6,.12]);
-  for (const y of [.85,3.6]) box(scene,wood,[0,y,-3.6],[3.77,.08,.12]);
+  // Floral brass wall ornament and paper experiments echo the electric-age plate's palette.
   const leaf= new THREE.Shape();leaf.moveTo(0,0);leaf.bezierCurveTo(-.09,.07,-.08,.20,0,.25);leaf.bezierCurveTo(.08,.20,.09,.07,0,0);
   const leafG=new THREE.ShapeGeometry(leaf,12);
   for(const sign of [-1,1])for(let i=0;i<8;i++){const y=1.15+i*.29,x=sign*(1.15+Math.sin(i*.45)*.35);rod(scene,brass,[x,y,-3.54],[x+sign*.15,y+.26,-3.54],.009);const l=mesh(scene,leafG,brass,[x,y,-3.5]);l.rotation.z=sign*(.6+i*.09);}
@@ -77,7 +75,7 @@ export function build(scene: THREE.Scene,k:Kit,assets:WorkshopAssets,renderer:TH
     {id:"lamps",title:"玻璃灯与灯丝",detail:"点击灯组测试回路；灯丝发光需要闭合的路径。",object:lampGroup,view:close,action:"primary"},
   ];
   for(const s of spots)s.object.traverse(o=>o.userData.spot=s.id);finish(preserve);let previous="";
-  return{game,views:{wide,close,side,painting:wide},spots,pickables:spots.map(s=>s.object),canMove:(x,z)=>!(x> -3.3&&x<1.95&&z>-.8&&z<1.15),
+  return{game,views:{wide,close,side,painting:wide},spots,pickables:spots.map(s=>s.object),canMove:(x,z)=>Math.abs(x)<4.2&&z> -2.8&&z<4.8&&!(x> -3.3&&x<1.95&&z>-.8&&z<1.15),
     update(_phase,_time,dt){const s=game.view();contact.rotation.y=s.route*Math.PI/2;blade.rotation.x=s.closed?0:-.9;
       for(let i=0;i<3;i++){const on=s.lit.includes(i+1);filaments[i]!.emissiveIntensity=on?3.2:0;lampLights[i]!.intensity=on?.55:0;}
       if(s.closed)rotor.rotation.z+=dt*1.8;

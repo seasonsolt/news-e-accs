@@ -136,7 +136,6 @@ test("a milestone with a scene links to the scene's page in the reader's languag
   const scene = await page("/chronicle/difference-engine");
   assert.equal(scene.querySelector('nav[aria-label="主导航"]'), null);
   assert.equal(scene.querySelector("canvas"), null);
-  assert.equal(scene.querySelector("#rest-open")!.textContent, "看看风景");
   assert.match(scene.querySelector("#reference-dialog img")!.getAttribute("src")!, /-hd-1600\.webp$/);
   assert.match(scene.querySelector(".workshop-plate")!.getAttribute("src")!, /-hd-1600\.webp$/);
 });
@@ -151,7 +150,6 @@ test("all workshops have localized bare pages and embedded pages stay out of the
     assert.match(document.querySelector("h2")!.textContent!, new RegExp(zh!));
     assert.equal(document.querySelector('nav[aria-label="主导航"]'), null);
     assert.equal(document.querySelector("canvas"), null);
-    assert.equal(document.querySelector("#rest-open")!.textContent, "看看风景");
     assert.match(document.querySelector("#reference-dialog img")!.getAttribute("src")!, /-hd-1600\.webp$/);
     assert.match(document.querySelector(".workshop-plate")!.getAttribute("src")!, /-hd-1600\.webp$/);
     assert.equal(document.querySelectorAll("[data-phase]").length, 4);
@@ -163,7 +161,6 @@ test("all workshops have localized bare pages and embedded pages stay out of the
     assert.equal(response.status, 200);
     const english = parseHTML(await response.text()).document;
     assert.equal(english.querySelector(".intro h2")!.textContent, en);
-    assert.equal(english.querySelector("#rest-open")!.textContent, "Take a moment");
     assert.doesNotMatch(english.querySelector("main")!.textContent!, /[\u3400-\u9fff]/);
   }
 });

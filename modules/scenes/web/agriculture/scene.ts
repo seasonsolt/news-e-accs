@@ -8,9 +8,9 @@ import { naturalGeometry } from "../shared/natural-geometry.ts";
 
 export function build(scene: THREE.Scene, k: Kit, assets: NaturalAssets): Model {
   const { material, mesh, random, rod, torus }=k, nature=naturalGeometry(scene,k,assets,true),{height,rock,log,preserved}=nature;
-  scene.environment=assets.environment;scene.environmentIntensity=.85;scene.fog=new THREE.FogExp2("#e0dcc5",.0035);
+  scene.environment=assets.environment;scene.environmentIntensity=.45;scene.fog=new THREE.FogExp2("#d3c5a5",.013);
   const sky=new Sky();sky.scale.setScalar(1000);sky.material.uniforms.sunPosition!.value=new THREE.Vector3(-.6,.28,-.8);sky.material.uniforms.turbidity!.value=5;sky.material.uniforms.rayleigh!.value=1.6;scene.add(sky);k.own(()=>{sky.geometry.dispose();sky.material.dispose();});
-  scene.add(new THREE.HemisphereLight("#d7e3ef","#b0a180",1.15));
+  scene.add(new THREE.HemisphereLight("#d7e3ef","#8b7856",.55));
   const sun=new THREE.DirectionalLight("#ffdda1",2.3);sun.position.set(-6,8,-5);sun.castShadow=true;sun.shadow.mapSize.set(innerWidth<761?2048:4096,innerWidth<761?2048:4096);Object.assign(sun.shadow.camera,{left:-13,right:13,top:13,bottom:-13,near:.5,far:45});sun.shadow.normalBias=.013;sun.shadow.bias=-.00007;scene.add(sun);k.own(()=>sun.shadow.dispose());
   const clay=material(new THREE.MeshStandardMaterial({...assets.clay!,color:"#d7bb91",normalScale:new THREE.Vector2(.5,.5),roughness:.95}));
   const pottery=material(new THREE.MeshStandardMaterial({...assets.clay!,color:"#ad7652",normalScale:new THREE.Vector2(.3,.3),roughness:.86}));
@@ -80,7 +80,7 @@ export function build(scene: THREE.Scene, k: Kit, assets: NaturalAssets): Model 
   const fieldHit=hit("field",[1.2,.6,2.2],[4.2,1.4,4.4]),storageHit=hit("storage",[4.1,.45,.55],[1.4,1,1.5]),millHit=hit("mill",[-2.25,.4,3.1],[1.5,.8,1.2]);
   const close:View={position:[3.8,2.15,5.4],target:[1.1,.6,2.1]},side:View={position:[-3.8,1.4,4.9],target:[-2.1,.35,2.9]};
   k.mergeStatic(scene,preserved);
-  return {groundHeight:height,views:{wide:{position:[6.8,2.5,9.7],target:[.3,1,-.5]},close,side,painting:{position:[1,4.2,10.5],target:[.2,1,-1.2]}},spots:[{id:"field",title:"田地 · 推进农时",detail:"从播种，到成熟，再到收获。",object:fieldHit,view:close,advance:true},{id:"storage",title:"种子与储粮",detail:"留下部分谷物作为下一季的种子，另一些储存起来。余粮让生活有了跨越季节的安排。",object:storageHit,view:{position:[5.4,1.35,2.25],target:[4.1,.4,.45]}},{id:"mill",title:"石磨与谷粒",detail:"用上石反复碾磨下石上的谷粒，是处理植物性食物的一种方式。这里展示的是简化的往复式磨盘。",object:millHit,view:side}],pickables:[fieldHit,storageHit,millHit],canMove:(x,z)=>!(x>-.8&&x<3.4&&z>-.1&&z<4.6)&&!(z< -2.2&&z> -5.8&&(x< -2&&x> -5.5||x>2.8&&x<6)),
+  return {views:{wide:{position:[6.2,3.5,8.8],target:[.3,1,-.5]},close,side,painting:{position:[1,4.2,10.5],target:[.2,1,-1.2]}},spots:[{id:"field",title:"田地 · 推进农时",detail:"从播种，到成熟，再到收获。",object:fieldHit,view:close,advance:true},{id:"storage",title:"种子与储粮",detail:"留下部分谷物作为下一季的种子，另一些储存起来。余粮让生活有了跨越季节的安排。",object:storageHit,view:{position:[5.4,1.35,2.25],target:[4.1,.4,.45]}},{id:"mill",title:"石磨与谷粒",detail:"用上石反复碾磨下石上的谷粒，是处理植物性食物的一种方式。这里展示的是简化的往复式磨盘。",object:millHit,view:side}],pickables:[fieldHit,storageHit,millHit],canMove:(x,z)=>!(x>-.8&&x<3.4&&z>-.1&&z<4.6)&&!(z< -2.2&&(x< -2||x>2.8)),
     update(phase,time){stalks.visible=phase<2.85;stubble.visible=phase>=2.85;const growth=phase<1?.02+phase*.16:phase<2?.18+(phase-1)*.82:1-(phase-2)*.9,maturity=THREE.MathUtils.clamp((phase-.9)*1.2,0,1)*(phase>2?Math.max(0,3-phase):1);stalkM.color.set(phase>1.5?"#b6a264":"#82924e");stored.visible=phase>2.65;harvested.visible=phase>2.4;
       plants.forEach((p,i)=>{const h=p.h*growth,sway=Math.sin(time*1.2+p.x+p.z)*.045*growth;dummy.position.set(p.x,.025,p.z);dummy.rotation.set(sway,p.angle,sway);dummy.scale.set(1,Math.max(h,.015),1);dummy.updateMatrix();stalks.setMatrixAt(i,dummy.matrix);dummy.position.set(p.x+.025+Math.sin(sway)*h,h+.025,p.z);dummy.rotation.set(sway,p.angle,sway+.08);dummy.scale.setScalar(maturity);dummy.updateMatrix();heads.setMatrixAt(i,dummy.matrix);});stalks.instanceMatrix.needsUpdate=heads.instanceMatrix.needsUpdate=true;grinder.position.x=-2.25+(phase>2.5?Math.sin(time*2)*.14:0);
     }};

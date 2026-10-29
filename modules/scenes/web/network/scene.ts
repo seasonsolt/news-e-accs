@@ -46,8 +46,6 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
   k.box(scene, beige, [2.7, .97, .12], [1.25, .09, .42], .025);
   for (let row = 0; row < 4; row++) for (let col = 0; col < 13; col++) k.box(scene, row === 3 ? dark : paper, [2.15 + col * .087, 1.027, -.01 + row * .085], [.069, .022, .062], .006);
   const send = k.box(scene, brass, [3.22, 1.04, .25], [.18, .04, .08], .012); add("send", send, "primary", "发送并重组");
-  k.box(scene, wood, [-2.6, .86, .7], [1.15, .12, .85], .02);
-  for (const x of [-3.05, -2.15]) for (const z of [.4, 1]) k.box(scene, iron, [x, .4, z], [.065, .8, .065]);
   k.box(scene, beige, [-2.6, 1.02, .7], [.9, .2, .6], .045);
   for (let i = 0; i < 5; i++) k.sphere(scene, i === 4 ? brass : amber, [-2.9 + i * .14, 1.05, 1.015], .018);
   for (let i = 0; i < 8; i++) k.box(scene, dark, [-2.9 + i * .08, 1.13, .68], [.027, .008, .35], 0);
@@ -60,8 +58,6 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
       if (row < 6) k.tube(scene, row % 2 ? brass : dark, [[x - .3, .3 + row * .28, -2.2], [x - .15, .18 + row * .28, -2.03], [x + .25, .3 + (row + 1) * .28, -2.2]], .009);
     }
   }
-  k.cylinder(scene, iron, [0, .12, -2.6], .46, .24);
-  k.rod(scene, brass, [0, .24, -2.6], [0, 1.95, -2.6], .035);
   const globe = new THREE.Group(); scene.add(globe); globe.position.set(0, 2.55, -2.6); globe.rotation.z = -.2;
   const globeMat = k.material(new THREE.MeshStandardMaterial({ color: "#223d52", metalness: .35, roughness: .45 })); k.sphere(globe, globeMat, [0, 0, 0], .62);
   for (const angle of [0, Math.PI / 3, Math.PI * 2 / 3]) { const longitude = k.torus(globe, brass, [0, 0, 0], .63, .005); longitude.rotation.y = angle; }

@@ -4,7 +4,7 @@ import { workshop, type WorkshopAssets } from "../games/workshop.ts";
 import { FlightGame } from "../games/modern-state.ts";
 
 export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, renderer: THREE.WebGLRenderer): Model {
-  const room = workshop(scene, k, renderer, assets, { theme: "flight" });
+  const room = workshop(scene, k, renderer, assets, { theme: "flight", open: true });
   const { wood, iron, brass, paper, glass } = room, game = new FlightGame(), preserve = new Set<THREE.Object3D>(), spots: Spot[] = [];
   const canvas = k.texture(1024, 512, (c, w, h) => {
     c.fillStyle = "#cbb98c"; c.fillRect(0, 0, w, h);
@@ -59,9 +59,8 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
   const testWing = k.box(scene, linen, [-2.7, 1.3, -.65], [.7, .035, .25], .015); testWing.rotation.x = -.15;
   k.rod(scene, brass, [-2.7, .91, -.65], [-2.7, 1.29, -.65], .012);
   const map = k.texture(768, 512, () => {}), screen = k.material(new THREE.MeshBasicMaterial({ map }));
-  for (const x of [1.95, 3.45]) k.rod(scene, wood, [x, 0, -2.3], [x, 2.3, -2.3], .035);
-  const board = k.box(scene, blue, [2.7, 1.65, -2.3], [1.6, 1.08, .1], .02);
-  const card = k.mesh(scene, new THREE.PlaneGeometry(1.5, 1), screen, [2.7, 1.65, -2.24]); card.castShadow = false; preserve.add(card);
+  const board = k.box(scene, blue, [0, 2.35, -2.65], [2, 1.36, .1], .02);
+  const card = k.mesh(scene, new THREE.PlaneGeometry(1.9, 1.26), screen, [0, 2.35, -2.59]); card.castShadow = false; preserve.add(card);
   const wide = { position: [3.8, 2.8, 5.8] as [number, number, number], target: [0, 1.1, -.2] as [number, number, number] };
   const close = { position: [2.6, 1.9, 3] as [number, number, number], target: [0, 1, .2] as [number, number, number] };
   const add = (id: string, object: THREE.Object3D, action: string, title: string) => { object.userData.spot = id; preserve.add(object); spots.push({ id, object, action, title, detail: title, view: close }); };

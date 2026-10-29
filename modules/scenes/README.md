@@ -1,12 +1,12 @@
 # 加速史场景
 
-从加速史的时代画卷或里程碑插画"走进去"的三维场景。装置保留时代特征，周围是开放地形与自然光；默认收起说明和操作面板，读者可以先看风景，再展开工坊。
+从加速史的时代画卷或里程碑插画"走进去"的三维场景。界面沿用观测舱的主题、字体、黄铜按钮和说明面板。
 
 | 场景 | 地址（中文在前面加 `/zh`） | 时代 `era` / 里程碑 | 可以操作的内容与目标 |
 |---|---|---|---|
 | 2026 智能体工坊 | `/chronicle/agents` | `agents` | coding 工作台、三扇连续全景窗；推进任务换景并探索机架和冷却回路 |
 | 约 330 万年前石器工坊 | `/chronicle/stone-tools` | `homo-stone-tools` | 锤石打制、石核断面与剥落石片 |
-| 约 100 万年前火的工坊 | `/chronicle/fire` | `taming-fire` | 余烬、添细枝、添木柴、持续照料；火焰、火星与石头风挡的光照联动 |
+| 约 100 万年前火的工坊 | `/chronicle/fire` | `taming-fire` | 余烬、添细枝、添木柴、持续照料；火焰、火星与岩壁光照联动 |
 | 约 1.2 万年前农业工坊 | `/chronicle/agriculture` | `agricultural-revolution` | 播种、生长、收获、储粮；查看磨盘与陶器 |
 | 1822 差分机工坊 | `/chronicle/difference-engine` | 里程碑 `difference-engine` | 转动手柄计算平方数表 |
 | 文字工坊 | `/chronicle/writing` | `cities-writing` | 选择谷物或羊群与一至五份数量；按每局随机抽出的三笔委托依次登记 |
@@ -23,14 +23,6 @@
 智能体、石器、用火和农业四个工坊共用 `web/shared/page.tsx` 的界面和 `experience.ts` 的相机、操作点、阶段控制与 iframe 交接。`studio.ts` 搭建现代工作室，用火、农业和石器分别在各自的 `scene.ts` 搭建，扫描模型与自然材质的加载、地形及树枝几何由 `shared/scan-assets.ts`、`natural-assets.ts`、`natural-geometry.ts` 共用。每个场景的取景、对象和阶段变化独立。支持拖动环视、滚轮走近、WASD/方向键移动、物件拾取、单步、自动演示、暂停、复位和阶段选择；减少动态效果时相机与阶段直接切换，环境动画停止。失焦、切到后台或打开说明时暂停自动演示。
 
 开发运行见仓库 `docs/deploy.md`；`npm run dev:web` 连接本地 API。新增场景没有新增接口、数据库、环境变量或浏览时模型调用。初版验证见 [这一批工坊的验收记录](evidence/workshops-2026-10/verification.md)，石器画质修订见 [石器精细化验证](evidence/stone-refinement-2026-10/verification.md)，其余三个工坊见 [2026、用火与农业精细化验证](evidence/three-workshops-refinement-2026-10/verification.md)。2026 的极客设备见 [弧面工作台验证](evidence/agents-workbench-2026-10/verification.md)，最新连续窗景与光影见 [虚拟全景窗验证](evidence/agents-virtual-windows-2026-10/verification.md)。
-
-## 开放环境与停留
-
-本次改造的检查范围见 [开放工坊验证](evidence/open-workshops-2026-10/verification.md)。
-
-十五座工坊均可在原有装置周围移动。十个挑战和现代工作台使用 `shared/landscape.ts` 的地形、远山、河岸、草地或海岸；观星与用火保留柔和暮色，轨道工坊以星空和远处行星作背景。石器与农业保留独立扫描地形，减弱雾和暗色遮罩。差分机移至河岸木廊，装置与平方数计算保持原有逻辑。环境是艺术概念场景，并非历史地理复原。
-
-「看看风景」收起标题、操作点和挑战面板，保留返回与「探索工坊」按钮；独立页加载和 iframe 进入后默认采用这个状态。展开后可照常操作、失败重试与记录进度。WASD、方向键与触控环视仍可使用，相机可越过旧房间边界，地面高度约束避免穿地。水面、云和扫描植被缓慢变化，减少动态效果或切到后台时停止环境动画。
 
 ## 怎么进入
 
@@ -60,7 +52,7 @@
 
 进度只存在读者的浏览器里（`apps/web/app/lib/local-state.ts` 的 `eacc-workshops`，按工坊页面路径记录；读写失败时按未完成处理）。`/chronicle/workshops` 列出全部十五座工坊，已完成的显示 ✓ 和最好成绩，加速史「工坊」图层同样标 ✓ 并显示「已完成 n / N」；服务端渲染不带进度，水合后再补。完成、错误状态的呈现，以及复位、暂停、减少动态效果和 iframe 交接，都沿用 `web/shared/page.tsx` 与 `experience.ts` 的公共运行逻辑；场景自身只负责几何、操作点、状态与动画。
 
-十个挑战的装置由代码三维几何构成：泥板与筹码、砌石炉和风箱、木制螺旋印刷机、望远镜、梁式蒸汽机构、灯丝回路、木骨蒙布双翼机、逻辑实验板、对接舱与网络节点台各有独立形制。开放露台通过 `web/games/workshop.ts` 共用材质、照明、静态合并与场景反射；复用既有 1822 CC0 木材、石材、灰泥以及石器工坊的扫描植被和土壤，没有新增 R2 素材。时代原画提供取景、材质和光色参照，不铺作图片背景充当三维空间。
+十个挑战的装置由代码三维几何构成：泥板与筹码、砌石炉和风箱、木制螺旋印刷机、望远镜、梁式蒸汽机构、灯丝回路、木骨蒙布双翼机、逻辑实验板、对接舱与网络节点台各有独立形制。房间通过 `web/games/workshop.ts` 共用材质、照明、静态合并与实际房间反射；仅复用既有 1822 CC0 木材、石材、灰泥贴图，没有新增素材或 R2 上传项。时代原画提供取景、材质和光色参照，不铺作图片背景充当三维空间。
 
 各场景「关于这一幕」链接到 Met、大英博物馆、International Printing Museum、Museo Galileo、Science Museum Group、Smithsonian、NPS、Computer History Museum、NASA 或 CERN 的机构资料。代表装置与游戏数值用于解释原理，不是精确历史复刻或真实操作参数；入口年代的含义在对应场景说明。十个挑战的验证记录集中在 [时代小游戏验证记录](evidence/ten-era-games-2026-10/verification.md)，具体检查范围和结果以该记录为准。
 
@@ -96,7 +88,7 @@ node modules/scenes/scripts/assets.ts upload difference-engine-1822   # 把 mani
 2. 原画视角要和这个里程碑的插画对齐：隧道停在插画上时，场景以同样的取景（插画 3:2、`object-fit: cover`）开始。
 3. 若有新素材，在 `assets/<id>/sources.json` 记下每张贴图的来源和授权，`build` 之后检查 manifest，再 `upload`；只复用现有材质的代码几何挑战无需新增素材清单或上传。
 
-2026 的露台、设备、屏幕与表面细纹由代码生成，木地板复用 1822 的 CC0 资产，周围植被与土壤复用石器工坊扫描素材。石器、用火和农业共用已准备的岩石扫描；用火另有树皮与枯枝，农业另有田地、泥墙和茅草 PBR。原画继续使用主站已发布的时代插画，不把原画当作三维背景。
+2026 的房间、设备、屏幕与表面细纹由代码生成，木地板和灰泥墙复用 1822 的 CC0 资产。石器、用火和农业共用已准备的岩石扫描；用火另有树皮与枯枝，农业另有田地、泥墙和茅草 PBR。原画继续使用主站已发布的时代插画，不把原画当作三维背景。
 
 本地需要构建 `difference-engine-1822`、`stone-tools`、`taming-fire`、`agriculture`、`agents-2026` 五组素材。发布前依次上传所有新增素材，确认内容哈希地址，再发布支持 GLB/HDR 的入口 Worker 和新闻站。浏览时只请求本站的静态资产，不连接模型或素材供应商。
 
@@ -122,7 +114,7 @@ node modules/scenes/scripts/assets.ts upload difference-engine-1822   # 把 mani
 
 三张全景采用壁纸同款 `realesrgan-x4plus` 本地 4 倍超分，再等比缩至 3840×1280，保留完整 3:1 画面。构建源与原始生成图分别保存在私有 `scene-sources/agents-2026/` 的不同对象中；`sources.json` 指向高清构建源，原图仍按 `generated-sources.json` 的键恢复。处理配方、原图与产物校验记录在 [scene-art-upscale-2026-10-28.json](assets/scene-art-upscale-2026-10-28.json)。发布时先归档新增 PNG 并上传内容哈希 WebP，再发布网页；旧对象保留供旧版页面读取。
 
-用火用真实扫描岩石构成低矮的石头风挡，木柴由带树皮、年轮和弯曲轮廓的实体几何构成；火焰是局部体积内的程序化光线步进，烟与火星另行绘制。原有燃料阶段驱动木柴、火焰和投影强度。
+用火用真实扫描岩石构成岩棚，木柴由带树皮、年轮和弯曲轮廓的实体几何构成；火焰是局部体积内的程序化光线步进，烟与火星另行绘制。原有燃料阶段驱动木柴、火焰和投影强度。
 
 农业保留农时阶段，增加可见门洞、分层茅草、编织围栏与器皿、陶器内壁、谷粒和收割束。麦秆、弯曲叶片、成对谷粒和芒组成两个实例化网格，阶段推进仍控制生长与收获；收获后切换到独立的留茬网格，避免把宽叶片压扁在地上。不把一季演示等同于作物驯化。
 
@@ -132,6 +124,6 @@ node modules/scenes/scripts/assets.ts upload difference-engine-1822   # 把 mani
 
 扫描材质来自 [Poly Haven](https://polyhaven.com/)，授权 [CC0](https://polyhaven.com/license)：木地板、木机架和工作台用 [Old Wooden Floor 03](https://polyhaven.com/a/old_wooden_floor_03)，拱窗和石材用 [Old Stone Wall](https://polyhaven.com/a/old_stone_wall)，灰泥墙用 [Plastered Wall 03](https://polyhaven.com/a/plastered_wall_03)。黄铜、铸铁和钢材的细纹由 `materials.ts` 在浏览器里生成。
 
-`engineering-plate` 是模型生成的装饰性工程蚀刻图，提示词在 `assets/difference-engine-1822/engineering-plate.prompt.txt`，原图在 R2 的 `scene-sources/`。现有高清构建源采用相同 4 倍超分流程后等比缩至 2880×3840，来源与校验同见上述处理记录。它只用于工坊里的纸张和图板，不是历史机构图。
+`engineering-plate` 是模型生成的装饰性工程蚀刻图，提示词在 `assets/difference-engine-1822/engineering-plate.prompt.txt`，原图在 R2 的 `scene-sources/`。现有高清构建源采用相同 4 倍超分流程后等比缩至 2880×3840，来源与校验同见上述处理记录。它只用于房间里的纸张和图板，不是历史机构图。
 
 场景是艺术概念复原：1822 年是巴贝奇提出差分机的年份，完整的工坊和机器不代表当年已有的实物。演示的平方数表用有限差分计算（`calculation.ts`），机械动画只示意原理。

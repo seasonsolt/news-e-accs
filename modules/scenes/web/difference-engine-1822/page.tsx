@@ -61,11 +61,11 @@ function Workshop() {
     <main id="experience" aria-label={tx("1822 年差分机三维工坊")}>
       {/* The plate stands in until the canvas covers it, and stays when there is no WebGL 2 or no script. */}
       <div id="viewport" aria-label={tx("三维场景：拖动环视，滚轮走近，点击机器操作")}><img className="workshop-plate" src={artUrl(PLATE.replace(/-1600\.webp$/, ""), 1600)} alt="" width={1600} height={1067} /></div>
-      <div className="vignette" aria-hidden="true"></div><p className="roam-note">{tx("不必赶路，随意走走。")}</p>
+      <div className="vignette" aria-hidden="true"></div>
       <header className="masthead">
         <button className="pill" id="back" hidden={!embedded}><span aria-hidden="true">←</span> {tx("回到时间线")}</button>
         <Link className="pill brand" to={localePath(CHRONICLE, locale)}><span aria-hidden="true">←</span> {tx("回到时间线")}</Link>
-        <div className="masthead-tools"><button className="pill" id="rest-open" aria-pressed="false">{tx("看看风景")}</button>
+        <div className="masthead-tools">
           <button className="pill" id="reference-open">{tx("查看原画")}</button>
           <button className="pill" id="style-toggle" aria-pressed="true">{tx("画风：原画")}</button>
           <button className="pill" id="about-open">{tx("关于这一幕")}</button>

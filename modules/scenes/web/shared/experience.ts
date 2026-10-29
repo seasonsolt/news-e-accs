@@ -11,7 +11,6 @@ import { reducedMotionQuery } from "@aihot/web/lib/motion";
 import { recordWorkshop, workshopTime } from "@aihot/web/lib/local-state";
 import { createGeometryKit, type Model, type View } from "./geometry.ts";
 import { nextPhase, type World } from "./worlds.ts";
-import { loadLandscapeAssets } from "./landscape.ts";
 import { loadSurface } from "./surfaces.ts";
 import type { GameId } from "../games/types.ts";
 
@@ -66,11 +65,11 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
     const studio = world.id === "agents-2026", stone = world.id === "stone-tools";
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     own(() => { renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove(); });
-    renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = studio ? .95 : 1;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = studio ? 1.25 : world.id === "taming-fire" ? 1.08 : world.challenge ? 1.1 : .98;
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const canvas = renderer.domElement;
     canvas.tabIndex = 0; canvas.setAttribute("aria-label", tx(world.title)); viewport.append(canvas);
-    const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(50, 1, .08, 1200);
+    const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(45, 1, .08, 400);
     const kit = createGeometryKit(own);
     let model: Model;
     if (world.challenge) {
@@ -87,10 +86,10 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
       model = build(scene, kit, assets);
     } else if (studio) {
       const { loadWindows } = await import("../agents-2026/windows.ts");
-      const [surface, windows, landscapeAssets] = await Promise.all([loadSurface("wood", own), loadWindows(own, renderer), loadLandscapeAssets(own, renderer)]);
+      const [surface, wall, windows] = await Promise.all([loadSurface("wood", own), loadSurface("plaster", own), loadWindows(own, renderer)]);
       const { build } = await import("./studio.ts");
       if (disposed) return;
-      model = build(scene, kit, world, tx, renderer, surface, windows, landscapeAssets);
+      model = build(scene, kit, world, tx, renderer, surface, wall, windows);
     } else {
       const { loadNaturalAssets } = await import("./natural-assets.ts");
       const assets = await loadNaturalAssets(own, renderer, world.id === "agriculture");
@@ -107,7 +106,7 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
     const controls = new OrbitControls(camera, canvas);
     own(() => controls.dispose());
     controls.enableDamping = !reduced.matches; controls.dampingFactor = .07;
-    controls.minDistance =  .7; controls.maxDistance = 42;
+    controls.minDistance =  .7; controls.maxDistance = 24;
     controls.maxPolarAngle = Math.PI * .49;
     controls.minPolarAngle = .12; controls.panSpeed = .6; controls.zoomSpeed = .7;
     const composer = new EffectComposer(renderer);
@@ -151,13 +150,6 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
       $("run-label").textContent = tx(running ? "暂停演示" : "自动演示");
       $("machine-dot").classList.toggle("is-running", running);
     }
-    function setResting(on: boolean) {
-      experience.classList.toggle("is-resting", on);
-      $("rest-open").setAttribute("aria-pressed", String(on));
-      $("rest-open").textContent = tx(on ? "探索工坊" : "看看风景");
-      if (on) setRunning(false);
-    }
-    $("rest-open").addEventListener("click", () => setResting(!experience.classList.contains("is-resting")), { signal });
     function showPhase(next: number) {
       const state = model.game?.snapshot();
       phase = state ? THREE.MathUtils.clamp(Math.round(state.progress), 0, world.phases.length - 1) : next; sinceStep = 0;
@@ -223,7 +215,6 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
     own(() => controls.removeEventListener("start", releaseView));
     const markerElements: Array<{ spot: Model["spots"][number]; element: HTMLButtonElement }> = [];
     function inspect(spot: Model["spots"][number]) {
-      setResting(false);
       go(spot.view, "detail");
       $("inspector-body").hidden = false; $("inspector-toggle").setAttribute("aria-expanded", "true"); $("inspector-toggle").textContent = "−";
       if (model.game && spot.action) play(spot.action);
@@ -282,8 +273,8 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
       if (paused || fatal || root.querySelector("dialog[open]") || ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName ?? "")) return;
       const key = e.key.toLowerCase();
       if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) { e.preventDefault(); keys.add(key); releaseView(); }
-      if (e.code === "Space" && !experience.classList.contains("is-resting") && !e.repeat && !["BUTTON", "A"].includes(document.activeElement?.tagName ?? "")) { e.preventDefault(); step(); }
-      if (e.key === "Escape") { if (experience.classList.contains("is-resting")) setResting(false); else go(model.views.wide, "wide"); }
+      if (e.code === "Space" && !e.repeat && !["BUTTON", "A"].includes(document.activeElement?.tagName ?? "")) { e.preventDefault(); step(); }
+      if (e.key === "Escape") go(model.views.wide, "wide");
     }, { signal });
     addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()), { signal });
     const stop = () => { keys.clear(); setRunning(false); };
@@ -339,11 +330,10 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
           if (p === 1) { const end = flight.end; flight = null; end?.(); }
         }
         walk(dt); controls.update();
-        { camera.position.x = THREE.MathUtils.clamp(camera.position.x, -30, 30); camera.position.z = THREE.MathUtils.clamp(camera.position.z, -20, 32); camera.position.y = THREE.MathUtils.clamp(camera.position.y, Math.max(.8, (model.groundHeight?.(camera.position.x, camera.position.z) ?? 0) + 1.1), 12); controls.target.x = THREE.MathUtils.clamp(controls.target.x, -30, 30); controls.target.z = THREE.MathUtils.clamp(controls.target.z, -20, 32); }
+        { camera.position.x = THREE.MathUtils.clamp(camera.position.x, -6.4, 6.4); camera.position.z = THREE.MathUtils.clamp(camera.position.z, -4.5, 9); camera.position.y = THREE.MathUtils.clamp(camera.position.y, .8, 5.2); }
         if (running) { sinceStep += dt; if (sinceStep > (model.game ? 1.5 : 3.8)) { if (model.game) { assisted = true; model.game.demo(); showPhase(0); } else step(); } }
         if (!reduced.matches) { elapsed += dt; visualPhase = THREE.MathUtils.damp(visualPhase, phase, 2.2, dt); }
         else visualPhase = phase;
-        kit.update(elapsed);
         model.update(visualPhase, elapsed, reduced.matches ? 0 : dt);
         toastTime -= dt; if (toastTime <= 0) $("toast").hidden = true;
       }
@@ -364,7 +354,6 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
     const initialPhase = studio ? 2 : 0;
     visualPhase = initialPhase; showPhase(initialPhase); go(model.views[embedded ? "painting" : "wide"], embedded ? "painting" : "wide", true); model.update(initialPhase, 0, 0); resize(); renderScene(); $("loading").hidden = true;
     canvas.dataset.scene = world.id;
-    if (!embedded) setResting(true);
     if (embedded) {
       experience.classList.add("is-embedded", "is-crossing");
       const tell = (type: SceneEvent) => parent.postMessage({ source: FROM_SCENE, type }, location.origin);
@@ -372,7 +361,7 @@ export function start(root: HTMLElement, world: World, { tx, embedded }: { tx: T
         if (readSceneCommand(event, parent, location.origin) !== "enter" || fatal) return;
         paused = false; previous = performance.now(); experience.classList.remove("is-crossing");
         go(model.views.painting, "painting", true); renderScene(); canvas.focus({ preventScroll: true }); tell("entered");
-        go(model.views.wide, "wide"); setResting(true);
+        go(model.views.wide, "wide");
       }, { signal });
       $("back").addEventListener("click", () => { stop(); experience.classList.add("is-crossing"); go(model.views.painting, "painting", false, () => { paused = true; tell("exit"); }); }, { signal });
       tell("ready");

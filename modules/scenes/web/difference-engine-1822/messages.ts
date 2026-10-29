@@ -1,7 +1,6 @@
 // The workshop's copy. Keys are the Chinese edition's text; English translates them.
 export const messages = {
   en: {
-    "看看风景": "Take a moment", "探索工坊": "Explore the workshop", "不必赶路，随意走走。": "No hurry. Stay a while.",
     "走进工坊": "Enter the workshop",
     "平方数表已算到 10² = 100，这座工坊记为完成。": "The table of squares has reached 10² = 100. This workshop is marked complete.",
     "1822 · 差分机工坊": "1822 · The Difference Engine Workshop",

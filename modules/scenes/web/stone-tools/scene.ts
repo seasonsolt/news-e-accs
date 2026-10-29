@@ -7,8 +7,8 @@ import type { Scan, StoneAssets } from "./assets.ts";
 
 export function build(scene: THREE.Scene, k: Kit, assets: StoneAssets): Model {
   const { random, mesh, material } = k, mobile = innerWidth < 761;
-  scene.environment = assets.environment; scene.environmentIntensity = .85;
-  scene.fog = new THREE.FogExp2("#d6e2cc", .0035);
+  scene.environment = assets.environment; scene.environmentIntensity = .4;
+  scene.fog = new THREE.FogExp2("#b8c0ad", .012);
   const sky = new Sky(); sky.scale.setScalar(1000);
   sky.material.uniforms.turbidity!.value = 5.5; sky.material.uniforms.rayleigh!.value = 1.2;
   sky.material.uniforms.mieCoefficient!.value = .006; sky.material.uniforms.mieDirectionalG!.value = .8;
@@ -18,7 +18,7 @@ export function build(scene: THREE.Scene, k: Kit, assets: StoneAssets): Model {
   sun.shadow.mapSize.set(mobile ? 2048 : 4096, mobile ? 2048 : 4096);
   Object.assign(sun.shadow.camera, { left: -10, right: 10, top: 10, bottom: -10, near: .5, far: 40 });
   sun.shadow.normalBias = .012; sun.shadow.bias = -.00008; sun.shadow.radius = 4; scene.add(sun); k.own(() => sun.shadow.dispose());
-  scene.add(new THREE.HemisphereLight("#cfdce8", "#a99a7c", 1.2));
+  scene.add(new THREE.HemisphereLight("#cfdce8", "#7c7059", .45));
   const fill = new THREE.DirectionalLight("#dbe9f2", .35); fill.position.set(2, 4, 6); scene.add(fill);
 
   // A displaced, metre-scaled soil surface, with independent colour, normal, roughness and height scans.
@@ -128,14 +128,13 @@ export function build(scene: THREE.Scene, k: Kit, assets: StoneAssets): Model {
   k.mergeStatic(scene, preserved);
   let shown = -1;
   return {
-    groundHeight: groundHeight,
-    views: { wide: { position: [4.6, 1.7, 6.7], target: [0, .75, -.1] }, close, side, painting: { position: [3.8, 2.45, 5.6], target: [0, .8, -.15] } },
+    views: { wide: { position: [3.3, 2.15, 4.8], target: [0, .75, -.1] }, close, side, painting: { position: [3.8, 2.45, 5.6], target: [0, .8, -.15] } },
     spots: [
       { id: "hammer", title: "锤石 · 打制", detail: "用锤石敲击石核的边缘，剥下锋利的石片。", object: hammer, view: close, advance: true },
       { id: "core", title: "石核与断面", detail: "深色石皮与浅色新断面记录着剥片次序。这里示意早期石核，不复刻某件考古标本。", object: coreGroup, view: side },
       { id: "flakes", title: "锋利的石片", detail: "剥落的石片也能成为切割工具；工具不只包括剩下的石核。", object: flakeAnchor, view: { position: [-2.1, 1.25, 2.4], target: [-1.3, .2, 1] } },
     ], pickables,
-    canMove: (x, z) => !(x > -1.8 && x < 1.8 && z > -1.3 && z < 1.4),
+    canMove: (x, z) => !(x > -1.8 && x < 1.8 && z > -1.3 && z < 1.4) && x > -4.6,
     update(phase) {
       const current = Math.min(3, Math.floor(phase + .25));
       if (current !== shown) { core.geometry = stages[current]!; shown = current; }

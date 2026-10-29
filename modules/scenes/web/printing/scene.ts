@@ -108,7 +108,6 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
   spot("proof-stand", "校对字版", "阅读校样，确认字版后再印刷。", proof, "proof");
   for (const x of [1.89, 2.37]) rod(scene, darkWood, [x, 0, -1.7], [x, 1.65, -2.05], .03);
   // Suspended drying line and individually revealed completed sheets establish a visible result.
-  for (const x of [-1.9, 1.9]) rod(scene, room.wood, [x, 0, -2.75], [x, 2.8, -2.75], .035);
   rod(scene, room.iron, [-1.9, 2.76, -2.75], [1.9, 2.76, -2.75], .01);
   const pages: THREE.Group[] = [];
   for (let i = 0; i < 3; i++) {
@@ -135,6 +134,6 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
       lever.rotation.y = stroke * 1.15; screw.rotation.y = stroke * 1.15; platen.position.y = 1.4 - stroke * .27;
       inkPulse = Math.max(0, inkPulse - delta * 2); balls.position.y = Math.sin(inkPulse * Math.PI) * .15;
     },
-    canMove(x, z) { return !(Math.abs(x) < .95 && z > -1.2 && z < 1) && !(Math.abs(x) > 1.25 && Math.abs(x) < 2.7 && z > -.95 && z < .6); },
+    canMove(x, z) { return Math.abs(x) < 4.3 && z > -3.1 && z < 3.8 && !(Math.abs(x) < .95 && z > -1.2 && z < 1) && !(Math.abs(x) > 1.25 && Math.abs(x) < 2.7 && z > -.95 && z < .6); },
   };
 }

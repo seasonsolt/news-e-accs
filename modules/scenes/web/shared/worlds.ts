@@ -60,12 +60,12 @@ export const WORLDS: Record<WorldId, World> = {
     plate: "/media/art/epochs/taming-fire-1600.webp", action: "照料火堆", unitLabel: "探索距离",
     readingLabels: ["工序", "火堆状态", "获得能力"],
     phases: [
-      { title: "先守住一小簇余烬。", detail: "旷野的石头风挡旁留着微弱的余烬。点击火堆，依次添加细枝与木柴，观察火光怎样改变整个空间。", readings: ["余烬", "微弱", "保留火种"] },
+      { title: "先守住一小簇余烬。", detail: "岩棚下保留着微弱的余烬。点击火堆，依次添加细枝与木柴，观察火光怎样改变整个空间。", readings: ["余烬", "微弱", "保留火种"] },
       { title: "细枝，让火焰站起来。", detail: "细小燃料被放到余烬上，橙色火焰亮起。周围石块与岩壁开始显出暖色。", readings: ["添细枝", "起焰", "照明"] },
       { title: "木柴，延续光与热。", detail: "更粗的燃料加入火堆，火焰与投影增强。可以走近观察炭化木纹、灰烬与上升的火星。", readings: ["添木柴", "稳定", "取暖"] },
       { title: "围绕火，生活有了新的中心。", detail: "火堆稳定燃烧，成为照明、取暖和处理食物的空间。此处不演示点火发明，也不认定所有能力同时出现。", readings: ["照料", "持续燃烧", "处理食物"] },
     ],
-    note: "年代采用时间线的约 100 万年前入口，不表示用火起源已有确切定论。石头风挡、火堆和燃料为概念复原；只借用原画的赭石色与光感，不在此年代安放较晚的洞穴壁画。",
+    note: "年代采用时间线的约 100 万年前入口，不表示用火起源已有确切定论。岩棚、火堆和燃料为概念复原；只借用原画的赭石色与光感，不在此年代安放较晚的洞穴壁画。",
     source: "https://humanorigins.si.edu/evidence/behavior/hearths-shelters", next: "agriculture",
   },
   "agriculture": {

@@ -4,7 +4,7 @@ import { workshop, type WorkshopAssets } from "../games/workshop.ts";
 import { createWritingGame } from "../games/craft-state.ts";
 
 export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, renderer: THREE.WebGLRenderer): Model {
-  const room = workshop(scene, k, renderer, assets, { theme: "clay" });
+  const room = workshop(scene, k, renderer, assets, { theme: "clay", open: true });
   const { box, cylinder, sphere, rod, mesh, material } = k;
   const clay = material(new THREE.MeshStandardMaterial({ ...assets.wall, color: "#ad7951", roughness: .94, normalScale: new THREE.Vector2(.16, .16) }));
   const damp = material(new THREE.MeshPhysicalMaterial({ color: "#b38660", roughness: .65, clearcoat: .17, clearcoatRoughness: .5 }));
@@ -93,7 +93,6 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
   }
   for (let i = 0; i < 18; i++) rod(scene, reed, [-2.5 + i * .009, .08, -2], [-2.4 + i * .016, .85 + (i % 5) * .05, -2.08], .008);
   for (const x of [-1.5, 0, 1.5]) {
-    for (const side of [-1, 1]) box(scene, room.wood, [x + side * .53, 1.13, -3.6], [.055, 2.26, .09]);
     box(scene, clay, [x, 2.18, -3.59], [1.32, .82, .07], .025);
     for (let i = 0; i < 5; i++) for (let j = 0; j < 3; j++) {
       const mark = box(scene, incision, [x - .46 + i * .22, 1.94 + j * .2, -3.545], [.022, .11, .008], .002); mark.rotation.z = (i % 2 ? 1 : -1) * .4;
@@ -122,6 +121,6 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
       const count = Number(state.readings[1]); stones.forEach((s, i) => { s.position.y = i < count ? .09 : .035; });
       pulse = Math.max(0, pulse - delta * 2.5); stylus.position.set(.05, .05 + Math.sin(pulse * Math.PI) * .15, .03); stylus.rotation.z = -.2 - Math.sin(pulse * Math.PI) * .35;
     },
-    canMove(x, z) { return !(Math.abs(x) < 1.5 && Math.abs(z) < .95); },
+    canMove(x, z) { return Math.abs(x) < 4.3 && z > -3.1 && z < 3.8 && !(Math.abs(x) < 1.5 && Math.abs(z) < .95); },
   };
 }
