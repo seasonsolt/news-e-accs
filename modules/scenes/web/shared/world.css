@@ -20,6 +20,7 @@ html[lang=en] .world .intro h1 span { display: block; margin: 10px 0 0; font-siz
 .world .world-links { margin-top: 30px; border-top: 1px solid var(--line); padding-top: 18px; display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-4); }
 .world .hotspot.is-visible { pointer-events: auto; }
 .world-stone-tools .vignette { background: linear-gradient(to top, rgb(17 20 16 / .8), transparent 48%), linear-gradient(to right, rgb(17 20 16 / .32), transparent 40%), linear-gradient(rgb(17 20 16 / .18), transparent 15%); }
+.world.is-challenge .vignette { background: linear-gradient(to top, rgb(18 14 10 / .72), transparent 42%), linear-gradient(to right, rgb(18 14 10 / .3), transparent 38%), linear-gradient(rgb(18 14 10 / .2), transparent 14%); }
 .world .is-near .intro { opacity: .55; }
 .world .is-near .intro .intro-copy { display: none; }
 @media (max-width: 1100px) { .world .inspector { width: 260px; } }

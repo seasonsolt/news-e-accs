@@ -1,6 +1,21 @@
 {
-  "latestVersion": "2026-10-28T01:15",
+  "latestVersion": "2026-10-29T12:16",
   "releases": [
+    {
+      "date": "2026-10-29",
+      "time": "12:16",
+      "kind": "优化",
+      "title": "十座时代工坊迎来白天",
+      "body": [
+        "文字、铁器、印刷、蒸汽、电光、飞行、逻辑、轨道和网络九座工坊开了真正的窗洞，阳光斜照进来，在地板和装置上留下窗格光影；墙面与地板提亮，窗外能看到天空和远山。观星工坊保留夜景，改由月光与灯光照明。"
+      ],
+      "en": {
+        "title": "Daylight in the ten era workshops",
+        "body": [
+          "Nine workshops — writing, iron, printing, steam, electricity, flight, logic, docking and networks — now have real window openings, so sunlight falls across the floor and apparatus in window-shaped patches, with lighter walls and a view of sky and hills. The observatory stays a night scene, lit by moonlight and lamps."
+        ]
+      }
+    },
     {
       "date": "2026-10-28",
       "time": "01:15",
