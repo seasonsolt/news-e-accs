@@ -53,12 +53,13 @@ export function growthFilters(q: Record<string, string | undefined>): Filters {
 const AUTOMATIC_EVENTS = ["subscribe_view", "distribution_visit"];
 
 /**
- * A finished session with no sign that anyone saw it: one page, never visible for a second, no action. Scripted
- * browsers that open a page and drop it look like this. A session is judged only once the gap has passed, so a
- * page still open is not left out before it reports its visible time.
+ * A finished direct visit on a desktop with no sign that anyone saw it: one page, never visible for a second, no
+ * action. Scripted browsers that open a page and drop it look like this. A phone can be closed before it reports
+ * its visible time, and a reader sent by a search or a link rarely leaves no trace by design, so those stay counted.
+ * A session is judged only once the gap has passed, so a page still open is not left out before it reports.
  */
 function unseen() {
-  return sql`(s.views = 1 AND s.engaged_ms = 0 AND s.last_at < ${new Date(Date.now() - SESSION_GAP_MS)}
+  return sql`(s.channel = 'direct' AND s.device = 'desktop' AND s.views = 1 AND s.engaged_ms = 0 AND s.last_at < ${new Date(Date.now() - SESSION_GAP_MS)}
     AND NOT EXISTS (SELECT 1 FROM site_hits e WHERE e.session_id = s.id AND e.kind <> 'view' AND e.kind <> ALL(${AUTOMATIC_EVENTS}::text[])))`;
 }
 

@@ -229,13 +229,14 @@ test("views build sessions per visitor, with source, visible time and interactio
   assert.equal(cohort.weeks[0], 1, "the new reader is this week's cohort; the returning one belongs to an earlier week");
 });
 
-test("a finished one-page session that was never visible and had no action is left out and counted by reason", async () => {
+test("a finished direct desktop visit of one page, never visible and without action, is left out and counted by reason", async () => {
   await sql`TRUNCATE site_sessions CASCADE`;
   await sql`DELETE FROM site_events_daily WHERE event = 'view_filtered'`;
   const then = new Date(Date.now() - 45 * 60_000);
   const day = beijingDate(then);
   const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36";
-  const open = (ip: string, at = then) => recordSessionView({ ip, userAgent: ua, path: "/items/abc", route: "/items/:id", load: true, referrer: "", utm: null,
+  const open = (ip: string, at = then, more: { userAgent?: string; referrer?: string } = {}) => recordSessionView({ ip, userAgent: more.userAgent ?? ua,
+    path: "/items/abc", route: "/items/:id", load: true, referrer: more.referrer ?? "", utm: null,
     via: null, touch: false, country: "CN", language: "zh", firstSeen: day, prevSeen: null, now: at });
   // A scripted browser opens a page, the subscribe box reports itself, and nothing else ever happens.
   await open("192.0.2.1");
@@ -246,12 +247,15 @@ test("a finished one-page session that was never visible and had no action is le
   await open("192.0.2.3");
   await recordSessionEvent({ ip: "192.0.2.3", userAgent: ua, event: "outbound_click", target: "item", now: then });
   await open("192.0.2.4", new Date());
+  // No visible time reported, but sent by a search, or on a phone that may close before it reports: still readers.
+  await open("192.0.2.5", then, { referrer: "https://www.google.com/" });
+  await open("192.0.2.6", then, { userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1" });
 
   const today = beijingDate(new Date());
   const overview = await growthOverview({ range: "custom", from: day, to: today });
-  assert.equal(overview.totals.sessions, 3, "a page still open is not judged before it reports");
+  assert.equal(overview.totals.sessions, 5, "a page still open is not judged before it reports");
   assert.deepEqual(overview.filtered.filter((f) => f.count), [{ reason: "unseen", count: 1 }]);
-  assert.equal((await growthJourneys({ range: "custom", from: day, to: today })).journeys.reduce((n, j) => n + j.sessions, 0), 3);
+  assert.equal((await growthJourneys({ range: "custom", from: day, to: today })).journeys.reduce((n, j) => n + j.sessions, 0), 5);
 });
 
 test("growth summaries need the admin session", async () => {
