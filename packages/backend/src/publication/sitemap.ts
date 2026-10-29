@@ -94,8 +94,10 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
   for (const t of topics) if (t.indexable) entries.push({ loc: `/topics/${t.slug}`, revision: t.revision, changefreq: "daily", priority: 0.6 });
   // A story needs listed evidence of its own. Its identity follows current readable reports as well
   // as the digest, so a correction or regrouping is visible even when latest_at does not advance.
-  const stories = await sql<{ public_id: string; revision: string; title: string; editorial_language: string; created_at: Date }[]>`
-    SELECT st.public_id::text, md5(concat_ws('|', st.title, st.summary, st.digest, st.digest_updated_at::text,
+  // Dated by creation or the last digest rewrite: a new report that leaves the digest alone goes
+  // undated, so lastmod can lag a change but never claims one that did not happen.
+  const stories = await sql<{ public_id: string; revision: string; title: string; editorial_language: string; created_at: Date; t: Date }[]>`
+    SELECT st.public_id::text, greatest(st.created_at, st.digest_updated_at) AS t, md5(concat_ws('|', st.title, st.summary, st.digest, st.digest_updated_at::text,
       st.version::text, members.revision)) AS revision, st.title, st.editorial_language, st.created_at
     FROM stories st JOIN LATERAL (
       SELECT md5(string_agg(concat_ws(':', p.article_id, p.revision::text, fa.role, f.updated_at::text, s.name),
@@ -114,22 +116,23 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
     // native English story has an English headline of its own.
     const fresh = s.editorial_language === "en" && at.getTime() - s.created_at.getTime() < NEWS_WINDOW_MS && news++ < MAX_NEWS;
     entries.push({
-      loc: `/story/${s.public_id}`, revision: s.revision, changefreq: "daily", priority: 0.5,
+      loc: `/story/${s.public_id}`, lastmod: s.t, revision: s.revision, changefreq: "daily", priority: 0.5,
       ...(fresh ? { news: { title: s.title, language: "en", publishedAt: s.created_at } } : {}),
     });
   }
   for (const m of serverModules()) if (m.sitemap?.entries) entries.push(...(await m.sitemap.entries()));
   entries.push(...entries.filter((e) => hasChineseMirror(e.loc)).map((e) => ({ ...e, loc: e.loc === "/" ? "/zh" : `/zh${e.loc}` })));
-  // Material/translation timestamps can also record a retry or a state repair. Hash the content;
-  // without a dedicated public modification clock, omitting lastmod is more accurate than guessing.
-  const items = await sql<{ id: string; revision: string }[]>`
-    SELECT p.article_id AS id,
+  // Material/translation timestamps can also record a retry or a state repair, so they never date a
+  // page. An item is dated by when it first became indexable (its selected release or SEO admission):
+  // that tells search engines which pages are new, and later edits only make lastmod lag.
+  const items = await sql<{ id: string; revision: string; t: Date | null }[]>`
+    SELECT p.article_id AS id, least(p.visible_after, p.seo_indexed_at) AS t,
       md5(concat_ws('|', p.revision::text, a.content_hash, tr.title, tr.body_html, tr.body_text, tr.complete::text, qt.text_zh,
         s.name, s.icon_url, st.public_id::text, st.title)) AS revision
     ${ITEM_FROM}
     WHERE ${storyReportCondition(at)} AND p.indexable
     ORDER BY p.timeline_at DESC, p.article_id DESC ${limits ? sql`LIMIT ${Math.max(0, limits.urls - entries.length)}` : sql``}`;
-  for (const it of items) entries.push({ loc: `/items/${it.id}`, revision: it.revision, changefreq: "monthly", priority: 0.5 });
+  for (const it of items) entries.push({ loc: `/items/${it.id}`, lastmod: it.t, revision: it.revision, changefreq: "monthly", priority: 0.5 });
   return limits ? entries.slice(0, limits.urls) : entries;
 }
 

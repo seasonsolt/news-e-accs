@@ -56,7 +56,17 @@ test('discovery dates follow page content and publication scope', async () => {
   await material('dates-signal', { source: 'discovery-signal' });
   await sql`INSERT INTO reports (kind,key,window_start,window_end,content,generated_at,updated_at)
     VALUES ('daily','2026-10-01','2026-09-30','2026-10-01','{}','2026-10-01T00:00:00Z','2026-10-04T00:00:00Z')`;
+  await sql`UPDATE publications SET visible_after='2026-10-02T03:00:00Z',seo_indexed_at='2026-10-03T00:00:00Z' WHERE article_id='dates-visible'`;
+  await sql`INSERT INTO translations (article_id,revision,body_text,created_at) VALUES ('dates-visible',1,'译文','2026-10-08')`;
+  const publicId = randomUUID();
+  const [story] = await sql<{ id: number }[]>`INSERT INTO stories (public_id,title,created_at,updated_at,digest,digest_updated_at)
+    VALUES (${publicId},'事件','2026-10-02','2026-10-08','摘要','2026-10-05T06:00:00Z') RETURNING id`;
+  const [fact] = await sql<{ id: number }[]>`INSERT INTO facts (public_id,story_id,title) VALUES (${randomUUID()},${story!.id},'事实') RETURNING id`;
+  await sql`INSERT INTO fact_articles (fact_id,article_id,role) VALUES (${fact!.id},'dates-visible','primary')`;
   const entries = await loadDiscoveryEntries(new Date('2026-10-09'));
+  // New pages are dated so search engines can find them; a translation or bookkeeping update is not a date.
+  assert.equal(entries.find(e => e.loc === '/items/dates-visible')?.lastmod?.toISOString(), '2026-10-02T03:00:00.000Z');
+  assert.equal(entries.find(e => e.loc === `/story/${publicId}`)?.lastmod?.toISOString(), '2026-10-05T06:00:00.000Z');
   for (const loc of ['/', '/all', '/hot', '/agent', '/changelog']) {
     assert.equal(entries.find(e => e.loc === loc)?.lastmod, undefined, `${loc} must not borrow the news clock`);
   }
