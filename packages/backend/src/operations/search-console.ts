@@ -16,6 +16,8 @@ const SCOPE = "https://www.googleapis.com/auth/webmasters.readonly";
 const MAX_INSPECTIONS = 1_800;
 const INSPECTION_LANES = 5;
 const INSPECTION_GAP_MS = 120;
+// Google answers a single inspection with a 500 now and then; past this many failures it is down, not flaky.
+const MAX_INSPECTION_FAILURES = 20;
 // Access tokens live an hour; a new one is signed well before that.
 const TOKEN_RENEW_MS = 45 * 60_000;
 
@@ -99,9 +101,11 @@ export async function readSearchConsoleWeek(now = new Date()) {
     queriesError = (error instanceof Error ? error.message : String(error)).slice(0, 200);
   }
 
-  // The discovery URLs are what the site asks Google to index; a quota refusal ends the count where it is.
+  // The discovery URLs are what the site asks Google to index; a quota refusal, or Google failing many of them,
+  // ends the count where it is. A URL whose inspection failed is left uninspected; the week's figures are kept.
   const urls = (await loadDiscoveryEntries(now)).map((e) => e.loc).slice(0, MAX_INSPECTIONS);
-  let stopped: number | null = null;
+  let stopped: number | "failures" | null = null;
+  let failed = 0;
   let next = 0;
   const lane = async () => {
     while (!stopped && next < urls.length) {
@@ -118,9 +122,14 @@ export async function readSearchConsoleWeek(now = new Date()) {
           s.reasons![reason] = (s.reasons![reason] ?? 0) + 1;
         }
       } catch (error) {
-        if ((error as { status?: number }).status !== 429) throw error;
-        stopped = 429;
-        return;
+        if ((error as { status?: number }).status === 429) {
+          stopped = 429;
+          return;
+        }
+        if (++failed >= MAX_INSPECTION_FAILURES) {
+          stopped = "failures";
+          return;
+        }
       }
       await new Promise((resolve) => setTimeout(resolve, INSPECTION_GAP_MS));
     }
@@ -141,5 +150,5 @@ export async function readSearchConsoleWeek(now = new Date()) {
     ON CONFLICT (week) DO UPDATE SET property = EXCLUDED.property, clicks = EXCLUDED.clicks, impressions = EXCLUDED.impressions,
       inspected = EXCLUDED.inspected, indexed = EXCLUDED.indexed, sections = EXCLUDED.sections,
       page_queries = coalesce(EXCLUDED.page_queries, search_console_weekly.page_queries), fetched_at = now()`;
-  return { status: "read" as const, ...reading, urls: urls.length, ...(stopped ? { stopped } : {}), ...(queriesError ? { queriesError } : {}) };
+  return { status: "read" as const, ...reading, urls: urls.length, ...(stopped ? { stopped } : {}), ...(failed ? { inspectionFailures: failed } : {}), ...(queriesError ? { queriesError } : {}) };
 }

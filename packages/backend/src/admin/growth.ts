@@ -4,7 +4,7 @@
 import { addDays, beijingDate } from "@aihot/contracts/time";
 import { sql } from "../db.ts";
 import { SITE_EVENTS } from "../site/analytics.ts";
-import { CHANNELS, FILTER_REASONS } from "../site/sessions.ts";
+import { CHANNELS, FILTER_REASONS, SESSION_GAP_MS } from "../site/sessions.ts";
 
 /** Session columns a breakdown or filter may name. */
 const COLUMNS = {
@@ -49,9 +49,22 @@ export function growthFilters(q: Record<string, string | undefined>): Filters {
   return filters;
 }
 
-/** The sessions in a date span that match the filters, as a condition on site_sessions s. */
+// Events a page sends by itself, without the reader doing anything.
+const AUTOMATIC_EVENTS = ["subscribe_view", "distribution_visit"];
+
+/**
+ * A finished session with no sign that anyone saw it: one page, never visible for a second, no action. Scripted
+ * browsers that open a page and drop it look like this. A session is judged only once the gap has passed, so a
+ * page still open is not left out before it reports its visible time.
+ */
+function unseen() {
+  return sql`(s.views = 1 AND s.engaged_ms = 0 AND s.last_at < ${new Date(Date.now() - SESSION_GAP_MS)}
+    AND NOT EXISTS (SELECT 1 FROM site_hits e WHERE e.session_id = s.id AND e.kind <> 'view' AND e.kind <> ALL(${AUTOMATIC_EVENTS}::text[])))`;
+}
+
+/** The counted sessions in a date span that match the filters, as a condition on site_sessions s. */
 function scope(from: string, to: string, filters: Filters) {
-  let where = sql`s.day BETWEEN ${from}::date AND ${to}::date`;
+  let where = sql`s.day BETWEEN ${from}::date AND ${to}::date AND NOT ${unseen()}`;
   for (const [d, value] of Object.entries(filters) as Array<[Dimension, string]>) {
     if (d === "visitor_type") where = sql`${where} AND ${value === "new" ? sql`s.first_seen = s.day` : sql`s.first_seen < s.day`}`;
     else if (d === "page") where = sql`${where} AND EXISTS (SELECT 1 FROM site_hits p WHERE p.session_id = s.id AND p.kind = 'view' AND p.route = ${value})`;
@@ -159,12 +172,17 @@ async function events(from: string, to: string, filters: Filters) {
     GROUP BY 1 ORDER BY count DESC, 1`;
 }
 
-/** Views left out of the counts, by reason, from the daily counters (filters do not apply). */
+/** Views left out of the counts, by reason: the daily counters, then the unseen sessions (filters do not apply). */
 async function filtered(from: string, to: string) {
   const rows = await sql<{ reason: string; count: number }[]>`
     SELECT target AS reason, sum(count)::int AS count FROM site_events_daily
     WHERE event = 'view_filtered' AND day BETWEEN ${from}::date AND ${to}::date GROUP BY 1`;
-  return FILTER_REASONS.map((reason) => ({ reason, count: rows.find((r) => r.reason === reason)?.count ?? 0 }));
+  const [unseenViews] = await sql<{ count: number }[]>`
+    SELECT count(*)::int AS count FROM site_sessions s WHERE s.day BETWEEN ${from}::date AND ${to}::date AND ${unseen()}`;
+  return [
+    ...FILTER_REASONS.map((reason) => ({ reason, count: rows.find((r) => r.reason === reason)?.count ?? 0 })),
+    { reason: "unseen", count: unseenViews!.count },
+  ];
 }
 
 /** Readers active in the last five minutes and views by minute over the last thirty. */

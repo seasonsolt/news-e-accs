@@ -155,6 +155,31 @@ test("a failed page-query read keeps the week and any earlier snapshot", async (
   assert.deepEqual(row!.page_queries, snapshot, "a failed rerun does not erase the earlier snapshot");
 });
 
+test("a failed inspection skips that URL and keeps the week; Google failing many ends the count", async () => {
+  const answer = (inspection: (n: number) => Response) => {
+    let calls = 0;
+    globalThis.fetch = (async (input: string | URL, init?: RequestInit) => {
+      if (String(input) === "https://oauth2.googleapis.com/token") return Response.json({ access_token: "synthetic-token" });
+      const body = JSON.parse(String(init!.body));
+      if (body.inspectionUrl) return inspection(++calls);
+      return Response.json({ rows: body.dimensions ? [{ keys: ["https://example.test/story/a"], clicks: 1, impressions: 20 }] : [{ clicks: 33, impressions: 500 }] });
+    }) as typeof fetch;
+  };
+  // One inspection fails, the next succeeds, then the quota runs out.
+  answer((n) => n === 1 ? new Response("internal", { status: 500 })
+    : n === 2 ? Response.json({ inspectionResult: { indexStatusResult: { verdict: "PASS" } } })
+    : new Response("quota", { status: 429 }));
+  const flaky = await readSearchConsoleWeek(now);
+  assert.deepEqual([flaky.status, (flaky as { inspected?: number }).inspected, (flaky as { inspectionFailures?: number }).inspectionFailures, (flaky as { stopped?: unknown }).stopped], ["read", 1, 1, 429]);
+  const [row] = await sql<{ clicks: number; inspected: number }[]>`SELECT clicks, inspected FROM search_console_weekly WHERE week = ${week.start}::date`;
+  assert.deepEqual([row!.clicks, row!.inspected], [33, 1], "the week's figures are written");
+
+  answer(() => new Response("internal", { status: 500 }));
+  const down = await readSearchConsoleWeek(now) as { status: string; stopped?: unknown; inspectionFailures?: number };
+  assert.deepEqual([down.status, down.stopped], ["read", "failures"]);
+  assert.ok(down.inspectionFailures! >= 20 && down.inspectionFailures! < 25, "the lanes already waiting finish, no new inspection starts");
+});
+
 test("the readings carry query detail only for the newest detailed week and the week before it", async () => {
   const row = (query: string, impressions: number) => ({ page: "https://example.test/story/a", query, clicks: 1, impressions, ctr: 0.01, position: 5 });
   const snapshot = (...rows: ReturnType<typeof row>[]) => ({ property: "sc-domain:example.test", rows, limitReached: false });

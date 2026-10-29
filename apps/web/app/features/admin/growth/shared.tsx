@@ -23,6 +23,7 @@ export const EVENT_LABELS: Record<string, string> = {
 };
 export const FILTER_LABELS: Record<string, string> = {
   agent: "自报爬虫或无 UA", reloads: "大量整页加载、不站内跳转", automation: "自动化浏览器（webdriver）", owner: "站长本人",
+  unseen: "只开一页、从未显示、没有操作",
 };
 const DEVICE_LABELS: Record<string, string> = { mobile: "手机", tablet: "平板", desktop: "电脑" };
 const VISITOR_LABELS: Record<string, string> = { new: "新访客", returning: "老访客" };

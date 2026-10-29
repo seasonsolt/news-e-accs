@@ -5,7 +5,7 @@ import { closeDb, sql } from "@aihot/backend/db";
 import { siteAnalyticsOverview } from "@aihot/backend/admin/analytics";
 import { funnelCounts, growthFunnel, growthJourneys, growthOverview, growthRange, growthRetention, parseFunnel } from "@aihot/backend/admin/growth";
 import { normalizePagePath, readerFilter } from "@aihot/backend/site/analytics";
-import { classifyChannel, cleanTag, describeAgent } from "@aihot/backend/site/sessions";
+import { classifyChannel, cleanTag, describeAgent, recordSessionEngagement, recordSessionEvent, recordSessionView } from "@aihot/backend/site/sessions";
 import { beijingDate } from "@aihot/contracts/time";
 import { buildApp } from "../apps/api/src/app.ts";
 
@@ -227,6 +227,31 @@ test("views build sessions per visitor, with source, visible time and interactio
   const retention = await growthRetention({});
   const cohort = retention.cohorts.at(-1)!;
   assert.equal(cohort.weeks[0], 1, "the new reader is this week's cohort; the returning one belongs to an earlier week");
+});
+
+test("a finished one-page session that was never visible and had no action is left out and counted by reason", async () => {
+  await sql`TRUNCATE site_sessions CASCADE`;
+  await sql`DELETE FROM site_events_daily WHERE event = 'view_filtered'`;
+  const then = new Date(Date.now() - 45 * 60_000);
+  const day = beijingDate(then);
+  const ua = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36";
+  const open = (ip: string, at = then) => recordSessionView({ ip, userAgent: ua, path: "/items/abc", route: "/items/:id", load: true, referrer: "", utm: null,
+    via: null, touch: false, country: "CN", language: "zh", firstSeen: day, prevSeen: null, now: at });
+  // A scripted browser opens a page, the subscribe box reports itself, and nothing else ever happens.
+  await open("192.0.2.1");
+  await recordSessionEvent({ ip: "192.0.2.1", userAgent: ua, event: "subscribe_view", target: "item_inline:zh", now: then });
+  // Readers: one saw the page for five seconds, one opened the original, one is reading right now.
+  await open("192.0.2.2");
+  await recordSessionEngagement({ ip: "192.0.2.2", userAgent: ua, path: "/items/abc", ms: 5_000, now: then });
+  await open("192.0.2.3");
+  await recordSessionEvent({ ip: "192.0.2.3", userAgent: ua, event: "outbound_click", target: "item", now: then });
+  await open("192.0.2.4", new Date());
+
+  const today = beijingDate(new Date());
+  const overview = await growthOverview({ range: "custom", from: day, to: today });
+  assert.equal(overview.totals.sessions, 3, "a page still open is not judged before it reports");
+  assert.deepEqual(overview.filtered.filter((f) => f.count), [{ reason: "unseen", count: 1 }]);
+  assert.equal((await growthJourneys({ range: "custom", from: day, to: today })).journeys.reduce((n, j) => n + j.sessions, 0), 3);
 });
 
 test("growth summaries need the admin session", async () => {
