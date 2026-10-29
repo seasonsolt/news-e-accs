@@ -1,7 +1,8 @@
-// The e/acc concept pages (/what-is-eacc, /eacc-vs-dacc, /eacc-glossary), moved here from the static
-// tool site with their URLs, text and markup. They rank for "e/acc" in English search; titles and
-// descriptions change only on Search Console evidence (2026-10: /what-is-eacc sat around position 8 for
-// "e/acc" with a 0.2% click rate, so its title and description lead with the meaning now).
+// The e/acc concept pages: /what-is-eacc, /eacc-vs-dacc and /eacc-glossary moved here from the static
+// tool site with their URLs, text and markup, and /eacc-vs-ea written here. They rank for "e/acc" in
+// English search; titles and descriptions change only on Search Console evidence (2026-10: /what-is-eacc
+// sat around position 8 for "e/acc" with a 0.2% click rate, so its title and description lead with the
+// meaning now).
 // Bodies are trusted HTML written here, rendered as English whatever the interface language.
 
 /** The movement itself, linked to its Wikipedia and Wikidata entries in every page's structured data. */
@@ -50,7 +51,7 @@ export type ConceptBlock =
   | { kind: "links"; heading: string; links: ConceptLink[]; id?: string };
 
 export interface ConceptPage {
-  slug: "what-is-eacc" | "eacc-vs-dacc" | "eacc-glossary";
+  slug: "what-is-eacc" | "eacc-vs-dacc" | "eacc-vs-ea" | "eacc-glossary";
   /** The document title, verbatim (it keeps the old " | e-acc.ai" suffix). */
   title: string;
   description: string;
@@ -176,7 +177,8 @@ const WHAT_IS: ConceptPage = {
       html: `
     <p>
       <strong>vs effective altruism:</strong> EA's AI-safety wing wants to slow down at the
-      frontier; e/acc holds that deceleration is the actual existential risk.
+      frontier; e/acc holds that deceleration is the actual existential risk
+      (<a href="/eacc-vs-ea">the full e/acc vs EA comparison</a>).
       <strong>vs d/acc:</strong> Vitalik Buterin's defensive accelerationism (2023) accepts
       acceleration but wants it aimed — defense, decentralization, biosecurity first; e/acc
       mostly reads the filtering as decel with better branding
@@ -228,6 +230,7 @@ const WHAT_IS: ConceptPage = {
       heading: "Related",
       links: [
         { href: "/eacc-vs-dacc", label: "e/acc vs d/acc — where the two accelerationisms split" },
+        { href: "/eacc-vs-ea", label: "e/acc vs EA — effective accelerationism against effective altruism" },
         { href: "/eacc-glossary", label: "e/acc glossary — decel, doomer, p(doom), technocapital, u/acc" },
       ],
     },
@@ -373,6 +376,171 @@ const VS_DACC: ConceptPage = {
   faq: VS_DACC_FAQ,
 };
 
+const VS_EA_FAQ: ConceptFaq[] = [
+  {
+    q: "What is the difference between e/acc and effective altruism?",
+    a: "Both reason about doing the most good at the largest scale. Effective altruism (EA) concludes that some risks, advanced AI above all, are worth slowing down for; effective accelerationism (e/acc) concludes that slowing down is itself the larger risk. Same habit of thinking in expected value, opposite answer on the throttle.",
+  },
+  {
+    q: "Is e/acc named after effective altruism?",
+    a: "Yes. The founding e/acc newsletter of May 2022 says the \"fuzzy overloading\" of EA is intentional, and a co-author summed the movement up as \"EA, but based\". The name borrows EA's ambition and rejects its caution about AI.",
+  },
+  {
+    q: "What does effective altruism believe?",
+    a: "That charity and careers should be chosen by evidence of impact rather than by feeling. In practice its work clusters in three areas: global health and poverty, animal welfare, and reducing catastrophic and existential risks — the last of which made it the main funder of AI-safety research.",
+  },
+  {
+    q: "Why does e/acc oppose effective altruism?",
+    a: "Mainly over AI. EA's AI wing argues for caution, evaluation and governance at the frontier; e/acc sees that as handing a veto over progress to a small group of experts and regulators. The founding post also rejects \"the desire for a panopticon\" it reads into longtermist EA.",
+  },
+  {
+    q: "What did FTX have to do with effective altruism?",
+    a: "Sam Bankman-Fried presented his fortune as \"earning to give\", an EA idea, and funded EA causes through the FTX Future Fund. FTX filed for bankruptcy on 11 November 2022; he was convicted on seven counts of fraud and conspiracy in November 2023 and sentenced to 25 years on 28 March 2024. The collapse is the episode most often cited against EA.",
+  },
+  {
+    q: "Was the OpenAI board crisis an EA versus e/acc fight?",
+    a: "Partly, in how it was read. OpenAI's board removed Sam Altman on 17 November 2023 and he was back on 22 November. Board members who voted him out shared EA's concerns about AI risk, and his return was celebrated online as a win for acceleration. The board's stated reason was that he had not been consistently candid, not a dispute over speed.",
+  },
+];
+
+const VS_EA: ConceptPage = {
+  slug: "eacc-vs-ea",
+  title: "e/acc vs EA (Effective Altruism): What's the Difference? | e-acc.ai",
+  description:
+    "e/acc took its name from effective altruism and its stance against it. What EA believes, why its AI wing urges caution, where e/acc splits off, and what FTX and the OpenAI board changed.",
+  h1: "e/acc vs EA — effective accelerationism and effective altruism, compared",
+  lead: `
+    <p class="prose-lead">
+      <strong>e/acc</strong> is named after <strong>EA</strong>, effective altruism, and
+      defined against it. Both ask how to do the most good at the largest scale, and both
+      answer with numbers rather than feelings. They part on one question: is the biggest
+      risk to the future moving too fast, or not moving fast enough?
+    </p>`,
+  blocks: [
+    {
+      kind: "section",
+      heading: "The short answer",
+      html: `
+    <p>
+      Effective altruism treats some outcomes, misaligned AI above all, as so bad that
+      avoiding them is worth real costs in speed. Effective accelerationism treats the cost
+      of speed lost — disease not cured, energy not harnessed, growth not compounded — as the
+      larger and more certain loss. Both run expected-value arguments; they disagree about
+      which tail to fear.
+    </p>`,
+    },
+    {
+      kind: "section",
+      heading: "What effective altruism is",
+      html: `
+    <p>
+      EA grew out of a philosophical argument and a few charities. Peter Singer's
+      <em>Famine, Affluence, and Morality</em> (1972) argued that distance does not reduce
+      the duty to help. GiveWell (2007) began ranking charities by cost-effectiveness;
+      Toby Ord founded Giving What We Can (2009), whose members pledge a share of their
+      income; the name <em>effective altruism</em> was chosen in 2011 when these groups
+      formed the Centre for Effective Altruism. William MacAskill's <em>Doing Good Better</em>
+      (2015) brought the idea to a wide audience.
+    </p>
+    <p>
+      Its work clusters in three areas: global health and poverty, animal welfare, and
+      catastrophic risk. The third grew with <strong>longtermism</strong> — the view that the
+      people of the far future count as much as people now, set out in Ord's
+      <em>The Precipice</em> (2020) and MacAskill's <em>What We Owe the Future</em> (2022).
+      Its largest funder, Open Philanthropy, has been called
+      <a href="https://coefficientgiving.org/research/open-philanthropy-is-now-coefficient-giving/" target="_blank" rel="noopener">Coefficient Giving</a>
+      since November 2025.
+    </p>`,
+    },
+    {
+      kind: "section",
+      heading: "Why e/acc is named after it",
+      html: `
+    <p>
+      The <a href="https://effectiveaccelerationism.substack.com/p/repost-effective-accelerationism" target="_blank" rel="noopener">founding e/acc newsletter</a>
+      (May 2022) is open about the borrowing: the overlap of "EA" and "Effective A__ism",
+      it says, is intentional. It credits EA with being prescriptive and serious about
+      scale, then rejects its risk-aversion and the surveillance it sees in longtermist
+      safety plans. One co-author's shorthand for the result was "EA, but based".
+    </p>`,
+    },
+    {
+      kind: "section",
+      heading: "Where the two agree",
+      html: `
+    <ul>
+      <li>Moral questions can be reasoned about with numbers, and scale matters.</li>
+      <li>The long-run future is enormous and worth optimizing for.</li>
+      <li>Technology, AI above all, is the most consequential force of this century.</li>
+      <li>Good intentions without measured results are not enough.</li>
+    </ul>`,
+    },
+    {
+      kind: "section",
+      heading: "Where they split",
+      html: `
+    <ul>
+      <li><strong>AI risk.</strong> EA's AI wing gives catastrophic outcomes a high
+        <a href="/eacc-glossary#pdoom">p(doom)</a> and wants alignment, evaluations and
+        compute governance before more capability. e/acc thinks those risks are overstated
+        and that the safest path is more capability, spread widely.</li>
+      <li><strong>Who decides.</strong> EA leans on experts, foundations and policy to steer.
+        e/acc trusts markets, open source and deployment, and distrusts any small group
+        holding a veto — see <a href="/eacc-glossary#decel">decel</a>.</li>
+      <li><strong>The cost of waiting.</strong> For EA, a delay that lowers extinction risk
+        is cheap against a future of trillions. For e/acc, every year of delay has a body
+        count of its own, paid now and with certainty.</li>
+    </ul>`,
+    },
+    {
+      kind: "section",
+      heading: "Two episodes that hardened the line",
+      html: `
+    <p>
+      <strong>FTX.</strong> Sam Bankman-Fried was EA's best-known donor and described his
+      career as "earning to give". FTX filed for bankruptcy on 11 November 2022; he was
+      convicted on all seven counts in November 2023 and sentenced to 25 years on
+      28 March 2024. The FTX Future Fund's team resigned, and MacAskill publicly condemned the
+      deception. For critics, the episode showed what expected-value reasoning can be used
+      to excuse.
+    </p>
+    <p>
+      <strong>The OpenAI board.</strong> On 17 November 2023 OpenAI's board removed Sam Altman;
+      after most of the staff threatened to leave, he returned on 22 November. Concerns about
+      AI risk associated with EA were present on the board that removed him, and his return
+      was celebrated by e/acc accounts as a defeat for the cautious side. The board's stated
+      reason was that he had not been consistently candid, not a dispute over speed.
+    </p>`,
+    },
+    {
+      kind: "section",
+      heading: "Where this site stands",
+      html: `
+    <p>
+      This site is e/acc, and it takes EA seriously: the habit of measuring, the willingness
+      to think about the very long run, the money that has gone to global health. The
+      disagreement is about AI, and about whether the right response to an uncertain risk is
+      to slow down or to build faster and in the open. We would rather argue that with
+      data — the <a href="/chronicle">acceleration timeline</a> and the
+      <a href="/index/cost-of-intelligence">cost of intelligence</a> — than with slogans.
+    </p>`,
+    },
+    { kind: "faq" },
+    {
+      kind: "links",
+      heading: "Keep reading",
+      links: [
+        { href: "/what-is-eacc", label: "what is e/acc — the full explainer" },
+        { href: "/eacc-vs-dacc", label: "e/acc vs d/acc — the two accelerationisms compared" },
+        { href: "/eacc-glossary", label: "e/acc glossary: decel, doomer, p(doom), technocapital" },
+        { href: "https://en.wikipedia.org/wiki/Effective_altruism", label: "Effective altruism (Wikipedia)" },
+        { href: "https://www.effectivealtruism.org/articles/introduction-to-effective-altruism", label: "Introduction to effective altruism (effectivealtruism.org)" },
+      ],
+    },
+  ],
+  faq: VS_EA_FAQ,
+};
+
 const GLOSSARY_TERMS: ConceptTerm[] = [
   {
     id: "accelerationism",
@@ -407,7 +575,7 @@ const GLOSSARY_TERMS: ConceptTerm[] = [
   {
     id: "ea",
     term: "EA (effective altruism)",
-    def: "The movement e/acc's name parodies: an attempt to allocate charitable effort by expected impact. Its AI wing treats catastrophic risk as a top priority and argues for caution at the frontier — the specific position e/acc formed in opposition to.",
+    def: "The movement e/acc's name parodies: an attempt to allocate charitable effort by expected impact. Its AI wing treats catastrophic risk as a top priority and argues for caution at the frontier — the specific position e/acc formed in opposition to. Full comparison on the <a href=\"/eacc-vs-ea\">e/acc vs EA page</a>.",
   },
   {
     id: "extropic",
@@ -478,6 +646,7 @@ const GLOSSARY: ConceptPage = {
       links: [
         { href: "/what-is-eacc", label: "what is e/acc — origin, beliefs, criticism" },
         { href: "/eacc-vs-dacc", label: "e/acc vs d/acc — the two accelerationisms compared" },
+        { href: "/eacc-vs-ea", label: "e/acc vs EA — effective accelerationism and effective altruism" },
         { href: "/chronicle", label: "the AI acceleration timeline" },
         { href: "/pricing", label: "what frontier intelligence actually costs" },
       ],
@@ -486,4 +655,4 @@ const GLOSSARY: ConceptPage = {
   terms: GLOSSARY_TERMS,
 };
 
-export const CONCEPT_PAGES = { "what-is-eacc": WHAT_IS, "eacc-vs-dacc": VS_DACC, "eacc-glossary": GLOSSARY } as const;
+export const CONCEPT_PAGES = { "what-is-eacc": WHAT_IS, "eacc-vs-dacc": VS_DACC, "eacc-vs-ea": VS_EA, "eacc-glossary": GLOSSARY } as const;

@@ -34,6 +34,7 @@ const publicRoutes: RouteConfig = [
   route("chronicle", "routes/chronicle.tsx"),
   route("what-is-eacc", "routes/concept.tsx", { id: "concept-what-is-eacc" }),
   route("eacc-vs-dacc", "routes/concept.tsx", { id: "concept-eacc-vs-dacc" }),
+  route("eacc-vs-ea", "routes/concept.tsx", { id: "concept-eacc-vs-ea" }),
   route("eacc-glossary", "routes/concept.tsx", { id: "concept-eacc-glossary" }),
   route("products", "routes/products.tsx"),
   route("about", "routes/about.tsx"),

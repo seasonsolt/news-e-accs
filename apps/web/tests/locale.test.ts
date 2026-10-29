@@ -28,7 +28,7 @@ test("edition navigation preserves filters and keeps APIs, admin and assets unpr
   for (const path of ["/admin", "/api/site/items", "/feed/picks.xml", "/og/items/123.png", "/assets/file.js", "/items/123/markdown", "//external.example/all"]) {
     assert.equal(localePath(path, "zh"), path);
   }
-  for (const slug of ["what-is-eacc", "eacc-vs-dacc", "eacc-glossary"]) {
+  for (const slug of ["what-is-eacc", "eacc-vs-dacc", "eacc-vs-ea", "eacc-glossary"]) {
     assert.equal(hasChineseRoute(`/${slug}`), true);
     assert.equal(localePath(`/${slug}`, "zh"), `/zh/${slug}`);
     assert.equal(localePath(`/zh/${slug}`, "en"), `/${slug}`);

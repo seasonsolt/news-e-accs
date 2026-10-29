@@ -126,7 +126,8 @@ const WHAT_IS: ConceptPage = {
       heading: "e/acc 与有效利他主义、d/acc 和减速派",
       html: `
     <p>
-      <strong>对比有效利他主义：</strong>有效利他主义的 AI 安全派希望在前沿放慢脚步；e/acc 则认为减速本身才是真正的生存风险。
+      <strong>对比有效利他主义：</strong>有效利他主义的 AI 安全派希望在前沿放慢脚步；e/acc 则认为减速本身才是真正的生存风险
+      （<a href="/zh/eacc-vs-ea">e/acc 与 EA 的完整对比</a>）。
       <strong>对比 d/acc：</strong>Vitalik Buterin 提出的防御性加速主义（2023）接受加速，但希望它有所指向——防御、去中心化、
       生物安全优先；e/acc 大多把这种筛选看作换了包装的减速
       （<a href="/zh/eacc-vs-dacc">e/acc 与 d/acc 的完整对比</a>）。
@@ -174,6 +175,7 @@ const WHAT_IS: ConceptPage = {
       heading: "相关阅读",
       links: [
         { href: "/zh/eacc-vs-dacc", label: "e/acc 与 d/acc：两种加速主义在哪里分道扬镳" },
+        { href: "/zh/eacc-vs-ea", label: "e/acc 与 EA：有效加速主义对有效利他主义" },
         { href: "/zh/eacc-glossary", label: "e/acc 术语表：减速派、末日派、p(doom)、技术资本、u/acc" },
       ],
     },
@@ -310,6 +312,159 @@ const VS_DACC: ConceptPage = {
   faq: VS_DACC_FAQ,
 };
 
+const VS_EA_FAQ: ConceptFaq[] = [
+  {
+    q: "e/acc 和有效利他主义有什么区别？",
+    a: "两者都在想怎样以最大规模做最多的好事。有效利他主义（EA）的结论是：有些风险——首先是先进 AI——值得为之放慢；有效加速主义（e/acc）的结论是：放慢本身才是更大的风险。同样用期望值思考，在油门上给出相反的答案。",
+  },
+  {
+    q: "e/acc 的名字来自有效利他主义吗？",
+    a: "是的。2022 年 5 月的 e/acc 奠基通讯说，与 EA 名字上的“模糊重叠”是有意为之；一位共同作者把这场运动概括为“EA, but based”。名字借用了 EA 的雄心，拒绝了它对 AI 的谨慎。",
+  },
+  {
+    q: "有效利他主义主张什么？",
+    a: "慈善和职业应当按影响的证据来选择，而不是凭感觉。实践中它的工作集中在三个方向：全球健康与贫困、动物福利，以及降低灾难性和生存性风险——最后一项让它成了 AI 安全研究的主要资助方。",
+  },
+  {
+    q: "e/acc 为什么反对有效利他主义？",
+    a: "主要在 AI 上。EA 的 AI 一派主张在前沿保持谨慎、做评估、加强治理；e/acc 认为这等于把对进步的否决权交给一小群专家和监管者。奠基通讯还明确拒绝它在长期主义 EA 里看到的那种“全景监狱”式的愿望。",
+  },
+  {
+    q: "FTX 和有效利他主义有什么关系？",
+    a: "Sam Bankman-Fried 把自己的财富说成“为捐而赚”（earning to give）——这是 EA 的一个理念——并通过 FTX Future Fund 资助 EA 事业。FTX 于 2022 年 11 月 11 日申请破产；他在 2023 年 11 月被裁定欺诈和共谋等七项罪名成立，2024 年 3 月 28 日被判 25 年。这是批评 EA 时最常被提起的事件。",
+  },
+  {
+    q: "OpenAI 董事会风波是 EA 与 e/acc 之争吗？",
+    a: "在外界的解读里，部分是。OpenAI 董事会于 2023 年 11 月 17 日罢免 Sam Altman，他在 11 月 22 日复职。投票罢免他的董事中有人持有 EA 对 AI 风险的担忧，他的回归在网上被当成加速一方的胜利。不过董事会公开给出的理由是他“没有始终坦诚”，而不是对速度的分歧。",
+  },
+];
+
+const VS_EA: ConceptPage = {
+  slug: "eacc-vs-ea",
+  title: "e/acc 与 EA（有效利他主义）：区别在哪里 | e-acc.ai",
+  description:
+    "e/acc 的名字来自有效利他主义，立场也站在它的对面。EA 主张什么、它的 AI 一派为什么主张谨慎、e/acc 在哪里分道扬镳，以及 FTX 和 OpenAI 董事会风波改变了什么。",
+  h1: "e/acc 与 EA：有效加速主义和有效利他主义对比",
+  lead: `
+    <p class="prose-lead">
+      <strong>e/acc</strong> 的名字来自 <strong>EA</strong>——有效利他主义（effective altruism），
+      也是在与它的对立中定义自己的。两者都在问怎样以最大规模做最多的好事，都用数字而不是感觉来回答。
+      它们在一个问题上分开：对未来最大的风险，是走得太快，还是走得不够快？
+    </p>`,
+  blocks: [
+    {
+      kind: "section",
+      id: "the-short-answer",
+      heading: "简短的回答",
+      html: `
+    <p>
+      有效利他主义认为，有些结局——首先是失控的 AI——糟糕到值得付出真实的速度代价去避免。
+      有效加速主义认为，失去的速度——没治好的病、没利用的能源、没复利的增长——才是更大、更确定的损失。
+      两者用的都是期望值论证，分歧在于该害怕哪一条尾巴。
+    </p>`,
+    },
+    {
+      kind: "section",
+      id: "what-effective-altruism-is",
+      heading: "什么是有效利他主义",
+      html: `
+    <p>
+      EA 起源于一个哲学论证和几家慈善机构。Peter Singer 的《饥荒、富裕与道德》（1972）认为，距离不会减轻帮助他人的义务。
+      GiveWell（2007）开始按成本效益给慈善机构排名；Toby Ord 创办了 Giving What We Can（2009），成员承诺捐出一部分收入；
+      2011 年这些团体组成有效利他主义中心（Centre for Effective Altruism）时，选定了“有效利他主义”这个名字。
+      William MacAskill 的《更好地做好事》（Doing Good Better，2015）让这个理念走向大众。
+    </p>
+    <p>
+      它的工作集中在三个方向：全球健康与贫困、动物福利、灾难性风险。第三个方向随着<strong>长期主义</strong>壮大——
+      即遥远未来的人和今天的人同样重要，见 Ord 的《危崖》（The Precipice，2020）和 MacAskill 的《我们欠未来什么》
+      （What We Owe the Future，2022）。它最大的资助方 Open Philanthropy 自 2025 年 11 月起改名为
+      <a href="https://coefficientgiving.org/research/open-philanthropy-is-now-coefficient-giving/" target="_blank" rel="noopener">Coefficient Giving</a>。
+    </p>`,
+    },
+    {
+      kind: "section",
+      id: "why-e-acc-is-named-after-it",
+      heading: "e/acc 为什么以它命名",
+      html: `
+    <p>
+      <a href="https://effectiveaccelerationism.substack.com/p/repost-effective-accelerationism" target="_blank" rel="noopener">e/acc 的奠基通讯</a>
+      （2022 年 5 月）坦白承认这种借用：“EA”和“Effective A__ism”之间的重叠是有意的。
+      它肯定 EA 敢于给出规范性主张、认真对待规模，随后拒绝了它的风险厌恶，以及它在长期主义安全方案里看到的监控倾向。
+      一位共同作者对结果的概括是“EA, but based”。
+    </p>`,
+    },
+    {
+      kind: "section",
+      id: "where-the-two-agree",
+      heading: "两者一致的地方",
+      html: `
+    <ul>
+      <li>道德问题可以用数字来推理，规模很重要。</li>
+      <li>长远的未来极其巨大，值得为之优化。</li>
+      <li>技术——首先是 AI——是本世纪影响最深远的力量。</li>
+      <li>只有好意、没有可衡量的结果，是不够的。</li>
+    </ul>`,
+    },
+    {
+      kind: "section",
+      id: "where-they-split",
+      heading: "在哪里分道扬镳",
+      html: `
+    <ul>
+      <li><strong>AI 风险。</strong>EA 的 AI 一派给灾难性结局很高的
+        <a href="/zh/eacc-glossary#pdoom">p(doom)</a>，希望在增加能力之前先做好对齐、评估和算力治理。
+        e/acc 认为这些风险被高估了，最安全的路是更多的能力，并且广泛分布。</li>
+      <li><strong>谁来决定。</strong>EA 依靠专家、基金会和政策来掌舵。e/acc 信任市场、开源和部署本身，
+        不信任任何手握否决权的小群体——见<a href="/zh/eacc-glossary#decel">减速派</a>。</li>
+      <li><strong>等待的代价。</strong>对 EA 来说，一次能降低灭绝风险的延迟，相对于数以万亿计的未来人口是便宜的。
+        对 e/acc 来说，每一年的延迟都有自己的伤亡，而且是现在、确定地付出。</li>
+    </ul>`,
+    },
+    {
+      kind: "section",
+      id: "two-episodes-that-hardened-the-line",
+      heading: "让界线变得更清楚的两件事",
+      html: `
+    <p>
+      <strong>FTX。</strong>Sam Bankman-Fried 是 EA 最知名的捐赠者，把自己的职业描述为“为捐而赚”。
+      FTX 于 2022 年 11 月 11 日申请破产；他在 2023 年 11 月被裁定七项罪名全部成立，2024 年 3 月 28 日被判 25 年。
+      FTX Future Fund 团队集体辞职，MacAskill 公开谴责了这场欺骗。在批评者看来，这件事说明了期望值推理能被用来为什么开脱。
+    </p>
+    <p>
+      <strong>OpenAI 董事会。</strong>2023 年 11 月 17 日，OpenAI 董事会罢免了 Sam Altman；在大多数员工威胁离职之后，
+      他于 11 月 22 日复职。罢免他的董事会里存在与 EA 相关的 AI 风险担忧，他的回归被 e/acc 账号庆祝为谨慎一方的失败。
+      董事会公开给出的理由是他没有始终坦诚，而不是对速度的分歧。
+    </p>`,
+    },
+    {
+      kind: "section",
+      id: "where-this-site-stands",
+      heading: "本站的立场",
+      html: `
+    <p>
+      本站是 e/acc 的，同时认真对待 EA：衡量的习惯、思考极长远未来的意愿、投向全球健康的钱。
+      分歧在 AI 上，在于面对一个不确定的风险，正确的反应是放慢，还是更快、更公开地建造。
+      我们更愿意用数据——<a href="/zh/chronicle">加速史</a>和<a href="/zh/index/cost-of-intelligence">智能的成本</a>——
+      而不是口号来讨论这件事。
+    </p>`,
+    },
+    { kind: "faq" },
+    {
+      kind: "links",
+      id: "keep-reading",
+      heading: "延伸阅读",
+      links: [
+        { href: "/zh/what-is-eacc", label: "什么是 e/acc：完整解读" },
+        { href: "/zh/eacc-vs-dacc", label: "e/acc 与 d/acc：两种加速主义对比" },
+        { href: "/zh/eacc-glossary", label: "e/acc 术语表：减速派、末日派、p(doom)、技术资本" },
+        { href: "https://en.wikipedia.org/wiki/Effective_altruism", label: "有效利他主义（维基百科，英文）" },
+        { href: "https://www.effectivealtruism.org/articles/introduction-to-effective-altruism", label: "有效利他主义简介（effectivealtruism.org，英文）" },
+      ],
+    },
+  ],
+  faq: VS_EA_FAQ,
+};
+
 const GLOSSARY_TERMS: ConceptTerm[] = [
   {
     id: "accelerationism",
@@ -344,7 +499,7 @@ const GLOSSARY_TERMS: ConceptTerm[] = [
   {
     id: "ea",
     term: "EA（有效利他主义）",
-    def: "e/acc 的名字所戏仿的运动：试图按预期影响来分配慈善投入。其 AI 一派把灾难性风险列为首要议题，主张在前沿保持谨慎——e/acc 正是在反对这一立场中形成的。",
+    def: "e/acc 的名字所戏仿的运动：试图按预期影响来分配慈善投入。其 AI 一派把灾难性风险列为首要议题，主张在前沿保持谨慎——e/acc 正是在反对这一立场中形成的。完整对比见 <a href=\"/zh/eacc-vs-ea\">e/acc 与 EA</a>。",
   },
   {
     id: "extropic",
@@ -413,6 +568,7 @@ const GLOSSARY: ConceptPage = {
       links: [
         { href: "/zh/what-is-eacc", label: "什么是 e/acc：起源、信念与批评" },
         { href: "/zh/eacc-vs-dacc", label: "e/acc 与 d/acc：两种加速主义对比" },
+        { href: "/zh/eacc-vs-ea", label: "e/acc 与 EA：有效加速主义和有效利他主义" },
         { href: "/zh/chronicle", label: "AI 加速史" },
         { href: "/zh/pricing", label: "前沿智能到底要花多少钱" },
       ],
@@ -424,5 +580,6 @@ const GLOSSARY: ConceptPage = {
 export const CONCEPT_PAGES_ZH: { [K in keyof typeof CONCEPT_PAGES]: ConceptPage } = {
   "what-is-eacc": tidyPage(WHAT_IS),
   "eacc-vs-dacc": tidyPage(VS_DACC),
+  "eacc-vs-ea": tidyPage(VS_EA),
   "eacc-glossary": tidyPage(GLOSSARY),
 };
