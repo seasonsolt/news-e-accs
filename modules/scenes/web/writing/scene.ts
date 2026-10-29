@@ -92,10 +92,10 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
     for (let j = 0; j < 3; j++) { const band = k.torus(scene, ink, [x!, .22 * scale! + j * .08, z!], .23 * scale!, .009); band.rotation.x = Math.PI / 2; }
   }
   for (let i = 0; i < 18; i++) rod(scene, reed, [-2.5 + i * .009, .08, -2], [-2.4 + i * .016, .85 + (i % 5) * .05, -2.08], .008);
-  for (const x of [-1.5, 0, 1.5]) {
-    box(scene, clay, [x, 2.18, -3.59], [1.32, .82, .07], .025);
+  for (const x of [-1.05, 0, 1.05]) {
+    box(scene, clay, [x, 2.18, -3.59], [.95, .82, .07], .025);
     for (let i = 0; i < 5; i++) for (let j = 0; j < 3; j++) {
-      const mark = box(scene, incision, [x - .46 + i * .22, 1.94 + j * .2, -3.545], [.022, .11, .008], .002); mark.rotation.z = (i % 2 ? 1 : -1) * .4;
+      const mark = box(scene, incision, [x - .4 + i * .2, 1.94 + j * .2, -3.545], [.022, .11, .008], .002); mark.rotation.z = (i % 2 ? 1 : -1) * .4;
     }
   }
   room.finish(preserve);

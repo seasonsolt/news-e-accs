@@ -110,8 +110,8 @@ export function build(scene: THREE.Scene, k: Kit, assets: WorkshopAssets, render
     else k.torus(scene, room.iron, [x, 1.49 - (i % 3) * .1, -3.25], .06, .012);
   }
   for (let i = 0; i < 13; i++) {
-    const x = -2.8 + i * .45; box(scene, bronze, [x, 3.34, -3.59], [.4, .25, .045]);
-    for (const sign of [-1, 1]) { rod(scene, room.iron, [x + sign * .14, 3.27, -3.56], [x, 3.39, -3.56], .009); }
+    const x = -2.8 + i * .45; box(scene, bronze, [x, 3.64, -3.59], [.4, .25, .045]);
+    for (const sign of [-1, 1]) { rod(scene, room.iron, [x + sign * .14, 3.57, -3.56], [x, 3.69, -3.56], .009); }
   }
   room.finish(preserve);
   return {
