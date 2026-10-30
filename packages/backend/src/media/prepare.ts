@@ -1,4 +1,5 @@
-// Images of a newly selected item, prepared as it is selected: every rendition its card and its
+// Images of a newly selected item, prepared as it is selected: its original page's picture is looked
+// up first (the scheduled lookup would leave it bare for minutes), then every rendition its card and its
 // page ask the image proxy for is fetched and resized once (a first reader otherwise waits seconds
 // for the source site), animations are re-encoded, and the share image is rendered before the
 // content push makes chat apps fetch it.
@@ -9,6 +10,7 @@ import { loadItemOgCard } from "../publication/og.ts";
 import { renderOg } from "./og.ts";
 import { logError } from "../lib/log-error.ts";
 import { MediaBusyError } from "./capacity.ts";
+import { previewArticle } from "./previews.ts";
 
 /** The (source, mode) pairs the proxy URLs in these public answers point at. */
 export function proxiedRenditions(answers: unknown[]): Array<{ url: string; mode: string }> {
@@ -22,6 +24,7 @@ export function proxiedRenditions(answers: unknown[]): Array<{ url: string; mode
 }
 
 export async function prepareArticleMedia(articleId: string): Promise<{ renditions: number; failed: number; animatedSaved: number }> {
+  await previewArticle(articleId);
   const [zh, original] = await Promise.all([loadItemDetail(articleId), loadItemDetail(articleId, "original")]);
   if (zh.kind !== "found" || original.kind !== "found") return { renditions: 0, failed: 0, animatedSaved: 0 };
   let failed = 0;

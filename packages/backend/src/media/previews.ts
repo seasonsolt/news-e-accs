@@ -51,13 +51,14 @@ async function pictureSize(url: string): Promise<{ width: number; height: number
   }
 }
 
-async function lookUp(article: { id: string; source_id: string; url: string; selected: boolean }): Promise<void> {
+/** Looks the picture up and stores it; true when the article now has a picture of its own. */
+async function lookUp(article: { id: string; source_id: string; url: string }): Promise<boolean> {
   const checkedAt = new Date().toISOString();
   const url = await previewPicture(article.url);
   const size = url ? await pictureSize(url) : null;
   if (!url || !size) {
     await sql`UPDATE articles SET preview = ${sql.json({ url: null, checkedAt })} WHERE id = ${article.id}`;
-    return;
+    return false;
   }
   // A site's default picture: mark every article of the source that declares it, this one included.
   const others = await sql`
@@ -66,8 +67,16 @@ async function lookUp(article: { id: string; source_id: string; url: string; sel
     RETURNING id`;
   const preview: ArticlePreview = { url, ...size, ...(others.length ? { shared: true } : {}), checkedAt };
   await sql`UPDATE articles SET preview = ${sql.json(preview as never)} WHERE id = ${article.id}`;
-  // A selected item's renditions were prepared before its picture was known; prepare them again.
-  if (article.selected && !preview.shared) await enqueue(QUEUES.prepareMedia, { articleId: article.id });
+  return !preview.shared;
+}
+
+/** Looks up a web report's preview if it has not been yet, so a newly selected item leads with it at once. */
+export async function previewArticle(articleId: string): Promise<void> {
+  const [row] = await sql<{ id: string; source_id: string; url: string }[]>`
+    SELECT a.id, a.source_id, p.url
+    FROM publications p JOIN articles a ON a.id = p.article_id
+    WHERE a.id = ${articleId} AND p.channel <> 'x' AND a.preview IS NULL`;
+  if (row) await lookUp(row);
 }
 
 /** Looks up the previews of recent public web reports not yet looked up, selected ones first. */
@@ -79,6 +88,9 @@ export async function findPreviews(limit = BATCH): Promise<{ checked: number }> 
       AND p.discovered_at > now() - make_interval(days => ${RECENT_DAYS})
     ORDER BY p.selected DESC, p.discovered_at DESC
     LIMIT ${limit}`;
-  for (const row of rows) await lookUp(row);
+  for (const row of rows) {
+    // A selected item's renditions were prepared before its picture was known; prepare them again.
+    if ((await lookUp(row)) && row.selected) await enqueue(QUEUES.prepareMedia, { articleId: row.id });
+  }
   return { checked: rows.length };
 }

@@ -10,6 +10,7 @@ import { config } from "@aihot/backend/config";
 import { closeDb, sql } from "@aihot/backend/db";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { findPreviews } from "@aihot/backend/media/previews";
+import { prepareArticleMedia } from "@aihot/backend/media/prepare";
 import { loadItemDetail } from "@aihot/backend/publication/detail";
 import { ITEM_COLUMNS, ITEM_FROM, toFeedItemSummary, type ItemRow } from "@aihot/backend/publication/items";
 
@@ -81,6 +82,37 @@ test("a report shows its page's own share picture, never a site default, a small
 
     await findPreviews(100);
     assert.equal((await sql`SELECT count(*)::int AS n FROM articles WHERE source_id = ${source} AND preview IS NOT NULL`)[0]!.n, 5, "each article is looked up once");
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});
+
+test("a newly selected report's picture is looked up as its media is prepared, not minutes later", async () => {
+  const picture = await png(1600, 900);
+  const server = http.createServer((req, res) => {
+    if (req.url === "/wide.png") {
+      res.writeHead(200, { "content-type": "image/png" });
+      res.end(picture);
+    } else {
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.end(`<html><head><meta property="og:image" content="/wide.png"></head><body>Report</body></html>`);
+    }
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
+  const origin = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  try {
+    const source = `previews-now-${tag()}`;
+    const id = `${source}-pick`;
+    const at = new Date(Date.now() - 60_000);
+    await sql`INSERT INTO sources (id,name,kind,tier,participation_mode,next_fetch_at) VALUES (${source},'Previews','rss','T1','editorial','2100-01-01')`;
+    await sql`INSERT INTO articles(id,source_id,identity_key,url,title,discovered_at,timeline_at) VALUES (${id},${source},${id},${`${origin}/pick`},'pick',${at},${at})`;
+    await sql`INSERT INTO publications(article_id,source_id,title,summary,url,timeline_at,discovered_at,sort_at,body_mode,eligible,channel,selected,visible_after)
+      VALUES (${id},${source},'pick','Summary',${`${origin}/pick`},${at},${at},${at},'summary',true,'news',true,${at})`;
+
+    const prepared = await prepareArticleMedia(id);
+    const [{ preview }] = await sql<{ preview: Record<string, unknown> }[]>`SELECT preview FROM articles WHERE id = ${id}`;
+    assert.equal(preview.url, `${origin}/wide.png`);
+    assert.ok(prepared.renditions > 0 && prepared.failed === 0, "the picture's renditions are prepared in the same job");
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
