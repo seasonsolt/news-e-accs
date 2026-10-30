@@ -35,6 +35,14 @@ export interface MediaView {
   srcSet?: string;
 }
 
+/** An original page's share picture (og:image), shown with its report like a link preview. */
+export interface PreviewImage {
+  url: string;
+  srcSet?: string;
+  width: number | null;
+  height: number | null;
+}
+
 export interface XPostView {
   authorName: string;
   handle: string;
@@ -81,6 +89,8 @@ export interface FeedItemSummary extends Pick<ItemSummary, "editorialLanguage" |
   x: (Pick<XPostView, "authorName" | "handle" | "avatarUrl" | "avatarSrcSet" | "media"> & {
     quoted: Omit<NonNullable<XPostView["quoted"]>, "url"> | null;
   }) | null;
+  /** A web report's preview picture; X posts show their own media in `x`. */
+  cover?: PreviewImage | null;
   /**
    * A selected report whose fact is represented by another report (全部动态 and search): that report,
    * so the card can say "同一件事，精选收录的是《…》" instead of claiming a seat of its own.
@@ -468,6 +478,8 @@ export interface SiteItemDetail extends Omit<ItemDetail, "x"> {
   x: Omit<XPostView, "text" | "translation"> | null;
   hasTranslation: boolean;
   bodyLanguage: "zh" | "original";
+  /** A web report's preview picture, where the page shows no body picture of its own. */
+  cover?: PreviewImage | null;
 }
 
 export interface StoryFollowup {

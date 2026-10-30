@@ -290,6 +290,17 @@ export default function ItemPage() {
             {badge && <span className="ml-auto">{badge}</span>}
           </div>
 
+          {/* The original page's own share picture, credited and linked to it like a link preview. */}
+          {item.cover && (
+            <figure className="mt-6">
+              <a href={item.links.original} target="_blank" rel="noopener noreferrer" {...outboundLink(item.links.original)} className="block overflow-hidden rounded-tile border border-line-soft bg-bg-sunk">
+                <img src={item.cover.url} srcSet={item.cover.srcSet} sizes="(min-width: 768px) 720px, calc(100vw - 32px)" width={item.cover.width ?? undefined} height={item.cover.height ?? undefined}
+                  alt="" decoding="async" className="max-h-[420px] w-full object-cover" />
+              </a>
+              <figcaption className="mt-1.5 text-[12px] text-ink-4">{tx("图片来自 {0}", item.source.name)}</figcaption>
+            </figure>
+          )}
+
           {item.fact && !summaryOnly && <FactCard fact={item.fact} />}
 
           {summaryText && (!isX || summaryText.replace(/\s+/g, " ").trim() !== item.title) && (

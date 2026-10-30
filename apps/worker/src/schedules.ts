@@ -14,6 +14,7 @@ import { scheduleMpReconcile } from "@aihot/backend/sources/mp";
 import { followXRenames } from "@aihot/backend/sources/x-renames";
 import { dajialaConfigured } from "@aihot/backend/providers/dajiala";
 import { refreshSourceIcons } from "@aihot/backend/sources/icons";
+import { findPreviews } from "@aihot/backend/media/previews";
 import { computeHotRanking, snapshotHeat } from "@aihot/backend/events/hot";
 import { linkRelatedStories } from "@aihot/backend/events/consolidate";
 import { composeDueReports } from "@aihot/backend/reports/compose";
@@ -81,6 +82,8 @@ export const ENGINE_SCHEDULES: EngineScheduled[] = [
         { name: "sources.x-renames", cron: "50 4 * * *", missed: "once" as const, run: () => followXRenames() },
         // Icons are read from the sources' own sites, so they stop with collection.
         { name: "sources.icons", cron: "40 4 * * *", missed: "once" as const, run: () => refreshSourceIcons() },
+        // Share pictures of recent public reports, read from their original pages.
+        { name: "media.previews", cron: "*/10 * * * *", run: () => findPreviews() },
       ]
     : []),
   // WeChat official accounts through Dajiala (paid), each once per its interval; only with its key.

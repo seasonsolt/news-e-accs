@@ -221,6 +221,7 @@ http.createServer((req, res) => {
   - `publisherUrlPrefixes`：`T1` 信源自己文章网址的前缀，比如 `["https://example.com/blog/"]`。别的信源（聚合站、转帖）带来的这些网址的文章，只要能认定是唯一一个官方信源的，就改记到它名下。网页列表信源不写时，认它自己列表所在的路径（这篇也要在它的列表里出现过）。
   - `publisherRole`：`T1_5` 账号的身份，`organization`（机构官方账号）或 `person`（官方人员）。再填上信源的 `owner_entity_id`（`industry/taxonomy.ts` 的 `ENTITIES` id），这个账号发的、主体正是这家公司的新闻，就能当代表报道（排在 `T1` 之后）。
 - **全文**：`site_fulltext` 决定站内能不能显示全文，`syndicate_fulltext` 决定全文 RSS 能不能带正文。两者**默认都关**，只显示摘要和原文链接；来源明确允许时再打开。公众号、付费墙内容不会因为技术上抓得到就获得全文展示。
+- **预览图**：原文页面声明的分享图（`og:image`，没有就用 `twitter:image`）和链接卡片一样，与摘要一起显示在卡片和文章页上，不受 `site_fulltext` 限制；正文里的其他图片仍只随全文显示。采集打开时，worker 每 10 分钟查一次最近 14 天公开的网页报道（`media.previews`），每篇只查一次，结果存在 `articles.preview`。太小（宽不到 600）、比例太极端的图不用；同一信源有两篇以上声明同一张图的，是网站的默认图，都不显示。
 
 ## 抓取频率
 

@@ -1,7 +1,7 @@
 // Public read layer, item level. Every exit (site API, v1, RSS, MCP, sitemap) reads
 // items through these columns and views; which rows are public is decided by scope.ts.
 import { CATEGORY_KEYS, toPublicApiCategory, type CategoryKey, type ChannelKey, type PublicApiCategoryKey } from "@aihot/contracts/taxonomy";
-import type { FeedItemSummary, ItemSummary, MediaView, XPostView } from "@aihot/contracts/site";
+import type { FeedItemSummary, ItemSummary, MediaView, PreviewImage, XPostView } from "@aihot/contracts/site";
 import { POLICY } from "@aihot/site";
 import { sql, type Db } from "../db.ts";
 import { isChineseText } from "../lib/text.ts";
@@ -49,6 +49,8 @@ export interface ItemRow {
   zh_text: string | null;
   /** Chinese translation of the post an X post quotes. */
   quoted_zh: string | null;
+  /** articles.preview (media/previews.ts); web reports only. */
+  preview: { url: string | null; width?: number; height?: number; shared?: boolean } | null;
 }
 
 /** Untyped manual prose is unverified; raw title fallback follows only the known original language. */
@@ -69,7 +71,8 @@ export const ITEM_COLUMNS = sql`
   a.x_post, a.author, a.language,
   CASE WHEN s.kind = 'x_search' AND ${sourceOwnsPost(sql`s.config`, sql`a.x_post->>'handle'`)} THEN s.icon_url END AS author_avatar_url,
   st.public_id::text AS story_public_id, st.title AS story_title,
-  CASE WHEN p.channel = 'x' THEN tr.body_text END AS zh_text, qt.text_zh AS quoted_zh`;
+  CASE WHEN p.channel = 'x' THEN tr.body_text END AS zh_text, qt.text_zh AS quoted_zh,
+  CASE WHEN p.channel <> 'x' THEN a.preview END AS preview`;
 
 /** Public API listings never render article bodies, X media or story metadata. */
 export type ApiItemRow = Pick<ItemRow, "id" | "title" | "original_title" | "summary" | "source_name" | "url" | "published_at" | "discovered_at" | "category" | "score" | "selected" | "reason">;
@@ -156,6 +159,16 @@ export function xView(row: Pick<ItemRow, "x_post" | "zh_text"> & Partial<Pick<It
   };
 }
 
+/** A web report's own preview picture; a site's default one (shared) is no picture of the report. */
+export function previewView(row: Pick<ItemRow, "preview">, kind: "card" | "hero"): PreviewImage | null {
+  const p = row.preview;
+  if (!p?.url || p.shared) return null;
+  const url = proxiedImage(p.url, kind === "card" ? "card" : "full");
+  if (!url) return null;
+  const srcSet = proxiedImageSet(p.url, kind);
+  return { url, ...(srcSet ? { srcSet } : {}), width: p.width ?? null, height: p.height ?? null };
+}
+
 /**
  * Whether pages show an X post's own text and media. A site that counts them as full text shows them
  * only where the source allows full text, as it does an article's body.
@@ -201,6 +214,7 @@ export function toFeedItemSummary(row: ItemRow): FeedItemSummary {
       ...(x.avatarSrcSet ? { avatarSrcSet: x.avatarSrcSet } : {}), media: x.media,
       quoted: x.quoted ? { authorName: x.quoted.authorName, handle: x.quoted.handle, text: x.quoted.text, translation: x.quoted.translation } : null,
     } : null,
+    cover: previewView(row, "card"),
   };
 }
 

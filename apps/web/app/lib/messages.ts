@@ -349,6 +349,7 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "加载失败，点此重试": "Loading failed. Select to retry.",
   "已经到底了": "You've reached the end",
   "查看图片{0}": "View image{0}",
+  "图片来自 {0}": "Image: {0}",
   "部分信源的采集暂时落后，先不和 6 小时前比较": "Some sources are behind. Comparison with six hours ago is temporarily unavailable.",
   "暂不比较": "Comparison unavailable",
   "新上榜": "New entry",

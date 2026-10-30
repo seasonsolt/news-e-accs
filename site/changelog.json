@@ -1,6 +1,23 @@
 {
-  "latestVersion": "2026-10-30T18:00",
+  "latestVersion": "2026-10-30T18:30",
   "releases": [
+    {
+      "date": "2026-10-30",
+      "time": "18:30",
+      "kind": "优化",
+      "title": "新闻配上原文的预览图",
+      "body": [
+        "网页报道在卡片和文章页上显示原文自己的分享预览图，文章页注明图片来源，点击打开原文。各网站通用的默认图和太小的图不显示。",
+        "X 帖子的配图和原文现在都直接显示在卡片和文章页上。"
+      ],
+      "en": {
+        "title": "News now comes with the original's preview image",
+        "body": [
+          "Web reports show the original page's own share image on their cards and article pages, credited to the source and linked to the original. Site-wide default images and small images are left out.",
+          "X posts now show their own text and images on cards and article pages."
+        ]
+      }
+    },
     {
       "date": "2026-10-30",
       "time": "18:00",

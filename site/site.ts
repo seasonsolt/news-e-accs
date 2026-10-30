@@ -117,7 +117,7 @@ export const POLICY = {
    * X 帖子本身的文字和图片算不算全文：算的话，只在这篇允许站内全文时显示（信源允许全文、正文也取到了）；
    * 不算的话总是显示，和标题、摘要一样。
    */
-  xPostIsFullText: true,
+  xPostIsFullText: false,
 } as const;
 
 /** 导航（电脑侧栏、手机底栏、“我的”页）。 */

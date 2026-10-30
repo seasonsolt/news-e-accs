@@ -8,13 +8,13 @@
 // there stays until the new one is ready.
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import * as cheerio from "cheerio";
 import { z } from "zod";
 import { config } from "../config.ts";
 import { sql } from "../db.ts";
 import { promptText } from "../editorial/prompts.ts";
 import { guardedFetch } from "../lib/http-fetch.ts";
 import { isNonArticleImage } from "../lib/image-url.ts";
+import { previewPicture } from "../media/previews.ts";
 import { logError } from "../lib/log-error.ts";
 import { codexConfigured, codexImage, codexText, saveJpeg } from "../providers/codex.ts";
 import { BudgetExceededError, completeReceipt, paidRequest, ReceiptBusyError, ReceiptUnknownError } from "../providers/receipts.ts";
@@ -138,21 +138,6 @@ async function reportPictures(itemId: string): Promise<{ pictures: Array<{ url: 
 }
 
 /** The page's own preview picture (og:image, twitter:image); null without one or when the page cannot be read. */
-async function previewPicture(page: string): Promise<string | null> {
-  try {
-    const res = await guardedFetch(page, { timeoutMs: 15_000, maxBytes: 4 * 1024 * 1024, headers: { accept: "text/html,application/xhtml+xml" } });
-    if (res.status !== 200 || !/html/i.test(res.headers.get("content-type") ?? "")) return null;
-    const $ = cheerio.load(res.text());
-    const src = ["meta[property='og:image:secure_url']", "meta[property='og:image']", "meta[name='og:image']", "meta[name='twitter:image']", "meta[name='twitter:image:src']", "meta[property='twitter:image']"]
-      .map((q) => $(q).attr("content")?.trim()).find(Boolean);
-    if (!src) return null;
-    const url = new URL(src, res.url);
-    return /^https?:$/.test(url.protocol) ? url.toString() : null;
-  } catch {
-    return null;
-  }
-}
-
 /** The picture at `url` when it is one the column can print (big enough, not a strip or an icon); null otherwise. */
 async function usablePicture(url: string): Promise<Buffer | null> {
   if (isNonArticleImage(url)) return null;

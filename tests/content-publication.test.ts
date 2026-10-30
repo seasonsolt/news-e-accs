@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { after, test } from "node:test";
 import { closeDb, sql } from "@aihot/backend/db";
+import { POLICY } from "@aihot/site";
 import { pickRepresentative, representativePriority } from "@aihot/backend/publication/representative";
 import { loadTimeline } from "@aihot/backend/publication/timeline";
 import { loadStoryFollowups } from "@aihot/backend/publication/followups";
@@ -169,13 +170,13 @@ test("item detail brings its fact with one short quote, the author's role and X 
   assert.equal(d!.authorRole, "principal");
   assert.equal(d!.xCounts, null, "a web report has no counts");
 
-  // An X post the site does not show is full text: its evidence is not quoted; its counts are numbers.
+  // An X post a site counts as full text is not shown here, nor its evidence quoted; its counts are numbers.
   await sql`UPDATE publications SET channel = 'x', body_mode = 'summary' WHERE article_id = ${id}`;
   await sql`UPDATE articles SET raw = '{"views":23000,"favorite":1200,"retweet":"bad"}' WHERE id = ${id}`;
   await sql`UPDATE analyses SET output = output || '{"authorRole":"observer"}' WHERE article_id = ${id}`;
   const x = await loadItemDetail(id, "zh", now);
   const xd = x.kind === "found" ? x.detail : null;
-  assert.equal(xd!.fact!.quote, null);
+  assert.equal(xd!.fact!.quote, POLICY.xPostIsFullText ? null : "Tasks consume usage.");
   assert.equal(xd!.authorRole, null, "observers carry no mark");
   assert.deepEqual(xd!.xCounts, { views: 23000, favorite: 1200, retweet: null, reply: null, collectedAt: at(2).toISOString() });
 

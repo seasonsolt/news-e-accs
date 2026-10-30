@@ -7,7 +7,7 @@ import { stripTagMarkup } from "../lib/text.ts";
 import { proxyBodyImages } from "../media/imgproxy.ts";
 import { sha256 } from "../lib/ids.ts";
 import { textToHtml } from "../content/sanitize.ts";
-import { isChineseBody, ITEM_COLUMNS, ITEM_FROM, seatHolders, showsPost, toItemSummary, xView, type ItemRow } from "./items.ts";
+import { isChineseBody, ITEM_COLUMNS, ITEM_FROM, previewView, seatHolders, showsPost, toItemSummary, xView, type ItemRow } from "./items.ts";
 import { evidenceCondition, listedCondition, ownFactEvidenceCondition } from "./scope.ts";
 import { loadStoriesProse } from "./stories.ts";
 import { hasItemPage } from "./rules.ts";
@@ -204,7 +204,9 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
     markdownAvailable: markdownAvailable(row),
     group,
   };
-  return { kind: "found", detail, item: siteItemDetail(detail, language === "original"), row };
+  const item = siteItemDetail(detail, language === "original");
+  const cover = /<img\b/i.test(item.body?.zh ?? item.body?.original ?? "") ? null : previewView(row, "hero");
+  return { kind: "found", detail, item: cover ? { ...item, cover } : item, row };
 }
 
 /**

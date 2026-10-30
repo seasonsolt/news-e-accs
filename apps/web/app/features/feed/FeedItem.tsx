@@ -74,14 +74,21 @@ export const FeedItem = memo(function FeedItem({ item, group, filters, read = fa
           </IntentLink>
         </p> : <IntentLink viewTransition to={`/items/${item.id}`} onClick={open} aria-label={tx("查看 {0} 的帖子", item.x!.authorName)} className="absolute inset-0" />
       ) : (
-        <>
-          <h3 lang={language} className={`mt-1.5 line-clamp-2 text-[17px] font-[650] leading-[1.5] lg:mt-2 lg:line-clamp-none lg:leading-[1.55] ${read ? "text-ink-4" : "text-ink"}`}>
-            <IntentLink viewTransition to={`/items/${item.id}`} onClick={open} className="after:absolute after:inset-0 after:content-['']">
-              {item.title}
-            </IntentLink>
-          </h3>
-          {item.summary && <p lang={language} className="mt-1 line-clamp-2 text-[14.5px] leading-[1.7] text-ink-3 lg:mt-2 lg:line-clamp-3 lg:text-[15px] lg:leading-[1.75]">{item.summary}</p>}
-        </>
+        <div className="flex gap-3 lg:gap-4">
+          <div className="min-w-0 flex-1">
+            <h3 lang={language} className={`mt-1.5 line-clamp-2 text-[17px] font-[650] leading-[1.5] lg:mt-2 lg:line-clamp-none lg:leading-[1.55] ${read ? "text-ink-4" : "text-ink"}`}>
+              <IntentLink viewTransition to={`/items/${item.id}`} onClick={open} className="after:absolute after:inset-0 after:content-['']">
+                {item.title}
+              </IntentLink>
+            </h3>
+            {item.summary && <p lang={language} className="mt-1 line-clamp-2 text-[14.5px] leading-[1.7] text-ink-3 lg:mt-2 lg:line-clamp-3 lg:text-[15px] lg:leading-[1.75]">{item.summary}</p>}
+          </div>
+          {/* The original page's share picture; the link over the card opens the report. */}
+          {item.cover && (
+            <img src={item.cover.url} srcSet={item.cover.srcSet} sizes="(min-width: 961px) 152px, 96px" alt="" loading="lazy" decoding="async"
+              className="mt-2 aspect-[4/3] w-[96px] shrink-0 self-start rounded-control border border-line-soft bg-bg-sunk object-cover lg:mt-2.5 lg:aspect-[16/10] lg:w-[152px]" />
+          )}
+        </div>
       )}
 
       {isX && item.x!.media.length > 0 && <MediaThumbs media={item.x!.media} className="mt-2.5" />}
