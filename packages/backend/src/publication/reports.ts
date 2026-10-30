@@ -8,6 +8,7 @@ import { proxiedImage, proxiedImageSet } from "../media/imgproxy.ts";
 import { addDays, beijingDate, isoWeekLabel, isoWeekRange, monthRange } from "@aihot/contracts/time";
 import { dailyUrl, itemUrl, periodUrl, siteUrl } from "./links.ts";
 import { publicSourceName } from "./rules.ts";
+import { itemPicture, type ItemRow } from "./items.ts";
 import { listedCondition } from "./scope.ts";
 
 export type { ReportKind };
@@ -31,15 +32,19 @@ interface Availability {
   sourceName: string | null;
   sourceIcon: string | null;
   publishedAt: Date | null;
+  /** The item's own picture (items.ts itemPicture), for its entry. */
+  picture: ReportCitation["picture"];
 }
 
 async function availability(ids: string[]): Promise<Map<string, Availability>> {
   const out = new Map<string, Availability>();
   if (ids.length === 0) return out;
-  const rows = await sql<{ id: string; available: boolean; summary: string | null; first_party: boolean; source_id: string; source_name: string | null; icon_url: string | null; at: Date | null }[]>`
+  const rows = await sql<({ id: string; available: boolean; summary: string | null; first_party: boolean; source_id: string; source_name: string | null; icon_url: string | null; at: Date | null }
+    & Pick<ItemRow, "channel" | "body_mode" | "preview" | "x_post">)[]>`
     SELECT p.article_id AS id, (${listedCondition(new Date())}) AS available, p.summary, (s.tier = 'T1') AS first_party, p.source_id, s.name AS source_name, s.icon_url,
-      coalesce(p.published_at, p.discovered_at) AS at
-    FROM publications p LEFT JOIN sources s ON s.id = p.source_id
+      coalesce(p.published_at, p.discovered_at) AS at, p.channel, p.body_mode, a.preview,
+      CASE WHEN p.channel = 'x' THEN jsonb_build_object('media', a.x_post->'media') END AS x_post
+    FROM publications p LEFT JOIN sources s ON s.id = p.source_id LEFT JOIN articles a ON a.id = p.article_id
     WHERE p.article_id IN ${sql(ids)}`;
   for (const r of rows) {
     out.set(r.id, {
@@ -50,6 +55,7 @@ async function availability(ids: string[]): Promise<Map<string, Availability>> {
       sourceName: r.source_name,
       sourceIcon: r.icon_url,
       publishedAt: r.at,
+      picture: itemPicture(r, "card"),
     });
   }
   return out;
@@ -239,6 +245,7 @@ function citationFrom(raw: Record<string, any>, avail: Map<string, Availability>
     ...(iconSrcSet ? { sourceIconSrcSet: iconSrcSet } : {}),
     firstParty: a?.firstParty ?? false,
     available: true,
+    ...(a?.picture ? { picture: a.picture } : {}),
   };
 }
 
@@ -258,7 +265,10 @@ function citedSources(content: Record<string, any>, kind: "daily" | "periodic", 
 function entryCitation(raw: Record<string, any>, avail: Map<string, Availability>): ReportCitation {
   const citation = citationFrom(raw, avail);
   if (!citation.available) return citation;
-  const related: ReportCitation[] = (raw.related ?? []).map((r: Record<string, any>) => ({ ...citationFrom(r, avail), summary: null }));
+  const related: ReportCitation[] = (raw.related ?? []).map((r: Record<string, any>) => {
+    const { picture: _picture, ...rest } = citationFrom(r, avail);
+    return { ...rest, summary: null };
+  });
   return {
     ...citation,
     ...(Number(raw.sources) > 1 ? { otherSources: Number(raw.sources) - 1 } : {}),

@@ -32,7 +32,11 @@ export function MediaGallery({ media, postUrl }: { media: MediaView[]; postUrl: 
     <>
       <div className={`mt-5 grid gap-2 ${single ? "grid-cols-1" : shown.length === 2 || shown.length === 4 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3"}`}>
         {shown.map((m) => {
-          const img = (
+          // A video whose still is unknown: a plain tile in the video's shape under the play mark.
+          const img = m.kind === "video" && !m.poster ? (
+            <span className={`block w-full bg-gradient-to-br from-bg-sunk to-line-soft ${single ? "" : "h-full"}`}
+              style={single ? { aspectRatio: m.width && m.height ? `${m.width} / ${m.height}` : "16 / 9" } : undefined} />
+          ) : (
             <img
               src={m.poster ?? m.url}
               srcSet={m.srcSet}

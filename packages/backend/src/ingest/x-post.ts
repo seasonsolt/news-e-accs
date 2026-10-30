@@ -3,6 +3,7 @@
 // x_search source whose query reads that handle, so tier and participation stay with the account.
 import { sql } from "../db.ts";
 import type { MediaItem } from "../content/materials.ts";
+import { videoStill } from "../lib/video-url.ts";
 import {
   candidateFromXPost, linksXArticle, withPushedArticle, xPostFromFields, xPushOnly, type XCounts,
 } from "../sources/x.ts";
@@ -67,7 +68,8 @@ function mediaList(value: unknown): MediaItem[] | null {
     const height = dimension(m.height);
     if (!kind || !url || width === "bad" || height === "bad") return null;
     let poster: string | null;
-    if (m.poster === undefined || m.poster === null) poster = kind === "video" ? url : null;
+    // A pushed video names its file; the still is never the file itself.
+    if (m.poster === undefined || m.poster === null) poster = kind === "video" ? videoStill({ url }) : null;
     else {
       const parsed = httpsUrl(m.poster);
       if (!parsed) return null;

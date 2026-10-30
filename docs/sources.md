@@ -307,6 +307,6 @@ Content-Type: application/json
 
 - `tweetId` 是十进制字符串（不要用数字，长 id 会丢精度）。`handle` 1–15 位字母、数字或下划线。`text` 必填，可以是空字符串。`createdAt` 也接受 `created_at`；没有时用条目的 `publishedAt`。
 - `url` 可省略。写了的话必须是这条帖子的 `x.com` 或 `twitter.com` 状态链接。入库地址一律是 `https://x.com/<handle>/status/<tweetId>`。
-- 图片和视频用 `type`（`photo`、`video`、`animated_gif`）或 `kind`（`image`、`video`），地址必须是 `https`。头像里的 `_normal` 会换成 `_bigger`，和采集器一致。
+- 图片和视频用 `type`（`photo`、`video`、`animated_gif`）或 `kind`（`image`、`video`），地址必须是 `https`。视频的 `url` 填它的封面图（X 接口里的 `media_url_https`），或者填视频文件、另用 `poster` 给封面；只有视频文件、没有 `poster` 的，GIF 用 X 自己的缩略图，其他视频在页面上只显示一个播放块。头像里的 `_normal` 会换成 `_bigger`，和采集器一致。
 - 返回在原来的 `created` 之外多两个字段：`rejected`（格式不对、被整条跳过的帖子数）、`unmatched`（没有启用中的 X 信源可归的用户名）。普通推送不带这两个字段。
 - 转发和别人的回复不要推。认证发布方的自己线程可以推。同一条帖子重复推送只计一次，身份相同就和已经采集到的帖子合并。

@@ -25,12 +25,14 @@ export interface SourceRef {
 
 export interface MediaView {
   kind: "image" | "video";
+  /** The image; for a video its still, or the video's own address when it has none (never drawn). */
   url: string;
   /** Full image for an on-demand viewer; list previews stay small. */
   fullUrl?: string;
   width: number | null;
   height: number | null;
   alt: string | null;
+  /** A video's still; null when there is none, and pages show a plain play tile. */
   poster: string | null;
   srcSet?: string;
 }
@@ -360,6 +362,8 @@ export interface ReportCitation {
   related?: ReportCitation[];
   /** A daily entry whose event an earlier daily covered: that issue's date. */
   followUp?: string;
+  /** The cited item's own picture: its page's preview, or the first picture of its X post. */
+  picture?: PreviewImage | null;
 }
 
 export interface ReportDetail {

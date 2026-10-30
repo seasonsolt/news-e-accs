@@ -129,9 +129,11 @@ function Coverage({ c }: { c: ReportCitation }) {
   );
 }
 
-/** One story: source, headline, at most four lines of summary, and the original at the foot. */
+/** One story: source, its picture, headline, at most four lines of summary, and the original at the foot. */
 function Story({ c, dated, className = "" }: { c: ReportCitation; dated: boolean; className?: string }) {
   const tx = useTranslate();
+  const [pictureFailed, setPictureFailed] = useState(false);
+  const picture = c.available && !pictureFailed ? c.picture : null;
   return (
     <article id={anchorOf(c) ?? undefined} className={`flex min-w-0 scroll-mt-[calc(var(--bar-h)+1.5rem)] flex-col py-6 ${className}`}>
       <div className="flex items-center gap-2 text-[12px] text-ink-3">
@@ -141,6 +143,11 @@ function Story({ c, dated, className = "" }: { c: ReportCitation; dated: boolean
       </div>
       {c.available ? (
         <>
+          {picture && (
+            <img src={picture.url} srcSet={picture.srcSet} sizes="(min-width: 1040px) 460px, (min-width: 760px) 45vw, calc(100vw - 32px)"
+              alt="" loading="lazy" decoding="async" onError={() => setPictureFailed(true)}
+              className="mt-3 aspect-[16/9] w-full rounded-control border border-line-soft bg-bg-sunk object-cover" />
+          )}
           <h3 className="mt-3 text-[19px] font-bold leading-[1.5] tracking-[-0.01em] text-ink [overflow-wrap:anywhere] [text-wrap:pretty] @[880px]:text-[20px]">
             {c.itemId ? (
               <IntentLink viewTransition to={`/items/${c.itemId}`} className="transition-colors hover:text-accent">

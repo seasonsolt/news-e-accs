@@ -7,6 +7,7 @@ import { sql, type Db } from "../db.ts";
 import { isChineseText } from "../lib/text.ts";
 import { isEmptyOrLinkOnly } from "../content/posts.ts";
 import { proxiedImage, proxiedImageSet } from "../media/imgproxy.ts";
+import { videoStill } from "../lib/video-url.ts";
 import { sourceOwnsPost } from "../sources/account.ts";
 import { displayTags, publicSourceName } from "./rules.ts";
 import { foldableSelectionCondition, seatedCondition } from "./scope.ts";
@@ -115,19 +116,23 @@ export function tagCondition(tag: string | null | undefined) {
   return sql`AND p.tags @> ${[tag]}::text[]`;
 }
 
+/** A video's view carries its still as `poster`, null when there is none to draw (never the file itself). */
 function mediaView(m: Record<string, any>, mode: "card" | "thumb" | "full" = "thumb", responsive = false): MediaView | null {
-  const url = proxiedImage(m.url, mode);
+  const video = m.kind === "video";
+  const still = video ? videoStill(m as { url: string; poster?: string | null }) : null;
+  // A video without a still keeps its own address, which pages link to and never draw.
+  const url = video && !still ? (typeof m.url === "string" && /^https:\/\//.test(m.url) ? m.url : null) : proxiedImage(video ? still : m.url, mode);
   if (!url) return null;
-  const srcSet = responsive ? proxiedImageSet(m.poster ?? m.url, mode === "full" ? "body" : "card") : null;
+  const srcSet = responsive && (!video || still) ? proxiedImageSet(video ? still : m.url, mode === "full" ? "body" : "card") : null;
   return {
-    kind: m.kind === "video" ? "video" : "image",
+    kind: video ? "video" : "image",
     url,
-    ...(responsive && mode !== "full" ? { fullUrl: proxiedImage(m.url, "full")! } : {}),
+    ...(responsive && mode !== "full" && !video ? { fullUrl: proxiedImage(m.url, "full")! } : {}),
     ...(srcSet ? { srcSet } : {}),
     width: typeof m.width === "number" ? m.width : null,
     height: typeof m.height === "number" ? m.height : null,
     alt: m.alt ?? null,
-    poster: m.poster ? proxiedImage(m.poster, mode === "card" ? "card" : "thumb") : null,
+    poster: (video ? still : m.poster) ? proxiedImage(video ? still : m.poster, mode === "card" ? "card" : "thumb") : null,
   };
 }
 
@@ -159,14 +164,25 @@ export function xView(row: Pick<ItemRow, "x_post" | "zh_text"> & Partial<Pick<It
   };
 }
 
+function pictureView(source: string, width: unknown, height: unknown, kind: "card" | "hero"): PreviewImage | null {
+  const url = proxiedImage(source, kind === "card" ? "card" : "full");
+  if (!url) return null;
+  const srcSet = proxiedImageSet(source, kind);
+  return { url, ...(srcSet ? { srcSet } : {}), width: typeof width === "number" ? width : null, height: typeof height === "number" ? height : null };
+}
+
 /** A web report's own preview picture; a site's default one (shared) is no picture of the report. */
 export function previewView(row: Pick<ItemRow, "preview">, kind: "card" | "hero"): PreviewImage | null {
   const p = row.preview;
-  if (!p?.url || p.shared) return null;
-  const url = proxiedImage(p.url, kind === "card" ? "card" : "full");
-  if (!url) return null;
-  const srcSet = proxiedImageSet(p.url, kind);
-  return { url, ...(srcSet ? { srcSet } : {}), width: p.width ?? null, height: p.height ?? null };
+  return p?.url && !p.shared ? pictureView(p.url, p.width, p.height, kind) : null;
+}
+
+/** A report's picture where it is listed without its media: its preview, or the first picture of an X post pages show. */
+export function itemPicture(row: Pick<ItemRow, "channel" | "body_mode" | "preview" | "x_post">, kind: "card" | "hero"): PreviewImage | null {
+  if (row.channel !== "x") return previewView(row, kind);
+  const first = showsPost(row) ? (row.x_post?.media as Array<Record<string, any>> | undefined)?.[0] : undefined;
+  const still = first ? (first.kind === "video" ? videoStill(first as { url: string; poster?: string | null }) : first.url) : null;
+  return typeof still === "string" ? pictureView(still, first!.width, first!.height, kind) : null;
 }
 
 /**

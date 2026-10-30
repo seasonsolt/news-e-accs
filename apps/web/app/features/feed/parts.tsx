@@ -39,7 +39,10 @@ export function MediaThumbs({ media, className = "" }: { media: MediaView[]; cla
         const Wrapper = m.kind === "image" ? "button" : "span";
         return (
         <Wrapper key={m.url} {...(m.kind === "image" ? { type: "button" as const, "aria-label": tx("查看图片{0}", m.alt ? `：${m.alt}` : ""), onClick: (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); setIndex(images.findIndex((image) => image.src === (m.fullUrl ?? m.url))); } } : {})} className={`relative ${m.kind === "image" ? "z-10 cursor-zoom-in" : ""} shrink-0 overflow-hidden rounded-control border border-line-soft bg-bg-sunk ${shown.length === 1 ? "max-w-[240px]" : "w-[112px]"}`}>
-          <img src={m.poster ?? m.url} srcSet={m.srcSet} sizes={shown.length === 1 ? `${m.width && m.height ? Math.min(240, Math.ceil(112 * m.width / m.height)) : 240}px` : "112px"} width={m.width ?? undefined} height={m.height ?? undefined} alt={m.alt ?? ""} loading="lazy" decoding="async" className={`h-[112px] object-cover ${shown.length === 1 ? "w-auto max-w-[240px]" : "w-[112px]"}`} />
+          {m.kind === "video" && !m.poster ? (
+            <span className={`block h-[112px] bg-gradient-to-br from-bg-sunk to-line-soft ${shown.length === 1 ? "" : "w-[112px]"}`}
+              style={shown.length === 1 ? { width: m.width && m.height ? Math.min(240, Math.ceil(112 * m.width / m.height)) : 200 } : undefined} />
+          ) : <img src={m.poster ?? m.url} srcSet={m.srcSet} sizes={shown.length === 1 ? `${m.width && m.height ? Math.min(240, Math.ceil(112 * m.width / m.height)) : 240}px` : "112px"} width={m.width ?? undefined} height={m.height ?? undefined} alt={m.alt ?? ""} loading="lazy" decoding="async" className={`h-[112px] object-cover ${shown.length === 1 ? "w-auto max-w-[240px]" : "w-[112px]"}`} />}
           {m.kind === "video" && (
             <span className="absolute inset-0 grid place-items-center" aria-hidden="true">
               <span className="grid size-8 place-items-center rounded-full bg-black/55 text-white">

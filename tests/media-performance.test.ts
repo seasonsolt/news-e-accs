@@ -190,6 +190,16 @@ test("site media exposes responsive previews and full lightboxes while RSS retai
   const single = xView(row, true)!.media;
   assert.equal(single.length, 1);
   assert.ok(single[0]!.url.includes("mode=thumb"));
+
+  // A pushed video names its file and no still: a GIF's still is X's thumb, another video's is unknown.
+  const videos = xView({ zh_text: null, x_post: { media: [
+    { kind: "video", url: "https://video.twimg.com/tweet_video/HV2BvitbYAAOLQX.mp4", poster: "https://video.twimg.com/tweet_video/HV2BvitbYAAOLQX.mp4" },
+    { kind: "video", url: "https://video.twimg.com/amplify_video/1/vid/avc1/1920x1080/a.mp4", poster: "https://video.twimg.com/amplify_video/1/vid/avc1/1920x1080/a.mp4" },
+  ] } }, true)!.media;
+  assert.match(videos[0]!.poster!, /tweet_video_thumb%2FHV2BvitbYAAOLQX\.jpg&mode=card/);
+  assert.equal(videos[1]!.poster, null, "a video file is never drawn as its own still");
+  assert.equal(videos[1]!.url, "https://video.twimg.com/amplify_video/1/vid/avc1/1920x1080/a.mp4");
+  assert.equal(videos[1]!.srcSet, undefined);
 });
 
 test("concurrent cold OG and poster requests all succeed with identical cached bytes", async () => {

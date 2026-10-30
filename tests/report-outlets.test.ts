@@ -249,3 +249,18 @@ test('an expired report index waits for the current withdrawal result',async(t)=
   t.mock.timers.tick(60_001);
   assert.equal((await v1Dailies(50)).items.find(r=>r.date===key)!.leadTitle,replacement.title);
 });
+
+test('a daily entry carries its own picture: the page preview, never a site default, and not under related entries', async (t) => {
+  t.mock.timers.enable({ apis: ['Date'], now: Date.now() + 1_800_003 });
+  const pictured = await citation('Pictured entry');
+  const shared = await citation('Default picture entry');
+  const key = '2096-01-09';
+  await sql`UPDATE articles SET preview = ${sql.json({ url: 'https://example.com/picture.png', width: 1600, height: 900, checkedAt: generatedAt.toISOString() })} WHERE id = ${pictured.itemId}`;
+  await sql`UPDATE articles SET preview = ${sql.json({ url: 'https://example.com/logo.png', width: 1200, height: 630, shared: true, checkedAt: generatedAt.toISOString() })} WHERE id = ${shared.itemId}`;
+  await issue('daily', key, { highlights: [pictured.itemId], sections: [{ label: 'News', items: [{ ...pictured, related: [pictured] }, shared] }] });
+  const [entry, other] = (await loadReport('daily', key))!.sections[0]!.items;
+  assert.match(entry!.picture!.url, /picture\.png&mode=card&/);
+  assert.deepEqual([entry!.picture!.width, entry!.picture!.height], [1600, 900]);
+  assert.equal(entry!.related![0]!.picture, undefined);
+  assert.equal(other!.picture, undefined);
+});

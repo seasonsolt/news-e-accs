@@ -11,3 +11,25 @@ export function isVideoPageUrl(input: string): boolean {
   if (host === "vimeo.com" || host === "www.vimeo.com") return /^\/\d+(?:\/[a-zA-Z0-9]+)?\/?$/.test(url.pathname);
   return host === "player.vimeo.com" && /^\/video\/\d+\/?$/.test(url.pathname);
 }
+
+/** A video file or stream (MP4, WebM, MOV, HLS, DASH), which no image renderer can draw. */
+export function isVideoFileUrl(input: string): boolean {
+  let url: URL;
+  try { url = new URL(input); } catch { return false; }
+  return url.hostname === "video.twimg.com" || /\.(?:mp4|m4v|webm|mov|m3u8|mpd)$/i.test(url.pathname);
+}
+
+/**
+ * The still X keeps beside a GIF post's video (tweet_video/<id>.mp4 → tweet_video_thumb/<id>.jpg).
+ * Other X videos name their still with a token of its own, so only the post's data can give it.
+ */
+export function xVideoStill(input: string): string | null {
+  const m = /^https:\/\/video\.twimg\.com\/tweet_video\/([A-Za-z0-9_-]+)\.mp4$/.exec(input);
+  return m ? `https://pbs.twimg.com/tweet_video_thumb/${m[1]}.jpg` : null;
+}
+
+/** A video's still: its poster unless that is the video itself, else the still X keeps for a GIF. */
+export function videoStill(media: { url: string; poster?: string | null }): string | null {
+  if (media.poster && !isVideoFileUrl(media.poster)) return media.poster;
+  return isVideoFileUrl(media.url) ? xVideoStill(media.url) : media.url;
+}
