@@ -1,7 +1,7 @@
 import { Link } from "../../lib/navigation";
 import { useTranslate } from "../../lib/i18n";
 import { useLocation } from "react-router";
-import { TABBAR, tabIsActive } from "./nav";
+import { tabBar, tabIsActive } from "./nav";
 import { useChangelogDot } from "./changelog";
 import { useAt, withAt } from "../../features/chrono/at";
 
@@ -11,10 +11,11 @@ export function MobileTabBar({ changelogVersion }: { changelogVersion: string | 
   const { pathname } = useLocation();
   const dot = useChangelogDot(changelogVersion);
   const at = useAt();
+  const tabs = tabBar();
   return (
     <nav aria-label={tx("底部导航")} className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
-      <div className="mx-auto grid h-[54px] max-w-[640px]" style={{ gridTemplateColumns: `repeat(${TABBAR.length}, minmax(0, 1fr))` }}>
-        {TABBAR.map((t) => {
+      <div className="mx-auto grid h-[54px] max-w-[640px]" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
+        {tabs.map((t) => {
           const active = tabIsActive(t, pathname);
           const Icon = t.icon;
           return (

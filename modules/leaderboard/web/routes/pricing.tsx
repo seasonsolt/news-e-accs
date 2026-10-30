@@ -225,7 +225,7 @@ export default function PricingPage() {
         compact
         art="cat-models"
         label={tx("API 价格")}
-        kicker={<Link to="/leaderboard" className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /><Text value="返回模型前沿" /></Link>}
+        kicker={<Link to="/frontier" className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /><Text value="返回前沿" /></Link>}
         title={tx("大模型 API 价格对比 2026：全部模型")}
         description={tx("{0} 个模型的 API 价格，统一换算为美元 / 每百万 Token。", rows.length)}
       />

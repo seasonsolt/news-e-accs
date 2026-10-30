@@ -22,8 +22,8 @@ export default function LeaderboardFrame() {
     <div className="pb-10">
       <Deck
         art="cat-models"
-        label={tx("模型前沿")}
-        kicker={tx("{0} 模型前沿 · 汇总公开评测的共识排名", SITE.name)}
+        label={tx("模型榜")}
+        kicker={tx("{0} 模型榜 · 汇总公开评测的共识排名", SITE.name)}
         title={tx("算力的前沿，此刻在哪")}
         description={tx("汇集多种能力的真实评测，按多项公开评测的共同证据排名。共识分不是正确率，缺测不记零分，价格不参与排名。")}
         aside={FEATURES.timeMachine && <TimeDial bounds={root?.timeBounds ?? null} className="w-[300px] max-w-full" />}

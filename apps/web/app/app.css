@@ -925,7 +925,7 @@ html[data-onboarding] .ambient-backdrop-image { background-image: none; }
 
 /* The site's top bar: the deck's first line on every page. */
 .site-nav { position: relative; z-index: 45; background: var(--deck); color: var(--deck-ink); }
-.site-nav-inner { display: flex; align-items: center; gap: 16px; max-width: var(--page-max-wide); min-height: 60px; margin: 0 auto; padding: 0 16px; }
+.site-nav-inner { position: relative; display: flex; align-items: center; gap: 16px; max-width: var(--page-max-wide); min-height: 60px; margin: 0 auto; padding: 0 16px; }
 @media (min-width: 961px) { .site-nav-inner { min-height: 72px; padding: 0 32px; } }
 .site-nav-brand { display: flex; flex: none; align-items: center; color: var(--deck-ink); }
 .site-nav-brand .text-accent { color: var(--brass); }
@@ -936,17 +936,30 @@ html[data-onboarding] .ambient-backdrop-image { background-image: none; }
 .site-nav-link:hover { color: var(--deck-ink); }
 .site-nav-link[aria-current="page"] { background: rgb(217 164 65 / .2); color: var(--brass-hi); }
 .site-nav-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--heat); }
-.site-nav-k { display: inline-flex; flex: none; align-items: center; gap: 9px; min-height: 36px; margin-left: auto; padding: 0 14px; border: 1px solid rgb(217 164 65 / .45); border-radius: 999px; font: 500 13px var(--font-mono); color: var(--deck-ink); }
-@media (min-width: 961px) { .site-nav-k { margin-left: 0; } }
+.site-nav-actions { display: flex; flex: none; align-items: center; gap: 8px; margin-left: auto; }
+@media (min-width: 961px) { .site-nav-actions { margin-left: 0; } }
+.site-nav-icon { display: inline-grid; place-items: center; width: 40px; height: 40px; border: 1px solid #2c2318; border-radius: 999px; color: var(--deck-dim); }
+.site-nav-icon:hover { color: var(--deck-ink); border-color: rgb(217 164 65 / .45); }
+.site-nav-lang { display: inline-flex; align-items: center; height: 40px; padding: 3px; border: 1px solid #2c2318; border-radius: 999px; }
+@media (max-width: 960px) { .site-nav-actions .site-nav-lang { display: none; } }
+.site-nav-lang button { min-width: 34px; height: 32px; padding: 0 8px; border-radius: 999px; font-size: 13px; font-weight: 500; color: var(--deck-dim); }
+.site-nav-lang button[aria-pressed="true"] { background: rgb(244 236 220 / .1); color: var(--deck-ink); }
+.site-nav-lang button:not([aria-pressed="true"]):not(:disabled):hover { color: var(--deck-ink); }
+.site-nav-lang button:disabled { opacity: .4; cursor: not-allowed; }
+.site-nav-subscribe { display: none; align-items: center; min-height: 40px; padding: 0 18px; border-radius: 999px; background: var(--brass); color: #1a1209; font-size: 14px; font-weight: 600; }
+@media (min-width: 961px) { .site-nav-subscribe { display: inline-flex; } }
+.site-nav-subscribe:hover { background: var(--brass-hi); }
+.site-nav-k { display: inline-flex; flex: none; align-items: center; gap: 9px; min-height: 36px; padding: 0 14px; border: 1px solid rgb(217 164 65 / .45); border-radius: 999px; font: 500 13px var(--font-mono); color: var(--deck-ink); }
 @media (max-width: 420px) { .site-nav-k { gap: 6px; padding: 0 10px; font-size: 12px; } }
 .site-nav-k:hover { border-color: var(--brass); }
 .site-nav-k-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--heat); box-shadow: 0 0 10px var(--heat); }
-.site-more { position: relative; }
 .site-more[open] > summary { color: var(--deck-ink); background: rgb(244 236 220 / .08); }
-.site-more-panel { position: absolute; top: calc(100% + 8px); right: 0; z-index: 50; display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 18px; padding: 18px; border-radius: var(--radius-panel); background: linear-gradient(var(--deck-2), var(--deck)); border: 1px solid #2c2318; box-shadow: inset 0 1px 0 rgb(217 164 65 / .35), 0 18px 40px -12px rgb(0 0 0 / .6); }
+.site-more-panel { position: absolute; top: calc(100% - 6px); right: 0; left: 0; z-index: 50; display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: 22px; width: max-content; max-width: calc(100% - 32px); margin: 0 auto; padding: 22px; border-radius: var(--radius-panel); background: linear-gradient(var(--deck-2), var(--deck)); border: 1px solid #2c2318; box-shadow: inset 0 1px 0 rgb(217 164 65 / .35), 0 18px 40px -12px rgb(0 0 0 / .6); }
 .site-more-title { margin-bottom: 6px; font: 500 11px var(--font-mono); letter-spacing: .12em; color: var(--brass); }
-.site-more-link { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 8px; border-radius: 8px; font-size: 13.5px; color: var(--deck-dim); white-space: nowrap; }
-.site-more-link:hover { background: rgb(244 236 220 / .07); color: var(--deck-ink); }
+.site-more-link { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 8px; }
+.site-more-link:hover { background: rgb(244 236 220 / .07); }
+.site-more-label { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; color: var(--deck-ink); }
+.site-more-note { font-size: 12.5px; line-height: 1.4; color: var(--deck-dim); }
 
 /* A page's deck: spans the page from inside the centred column, to the page's width (--page-width, set by
    Deck.tsx) rather than 100vw, which counts the scrollbar in some browsers. The gutter is reserved so the

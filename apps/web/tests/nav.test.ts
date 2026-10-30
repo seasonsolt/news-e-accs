@@ -7,25 +7,30 @@ let server: Awaited<ReturnType<typeof createServer>>;
 before(async () => { server = await createServer({ configFile: false, root: new URL("../", import.meta.url).pathname, resolve: { alias: { "@aihot/web/": new URL("../app/", import.meta.url).pathname } }, server: { middlewareMode: true, ws: false }, appType: "custom" }); });
 after(async () => { await server?.close(); });
 
-test("Acceleration has its own tab next to the picks in both locales; All lives under More", async () => {
-  const { TOPNAV, TABBAR, MORE_MENU, MORE_PATHS, tabIsActive } = await server.ssrLoadModule("/app/components/shell/nav.ts") as typeof Navigation;
+test("the deck has picks, daily, acceleration and the frontier; everything else sits under More in both locales", async () => {
+  const { TOPNAV, MORE_MENU, MORE_PATHS, tabBar, tabIsActive, isMenuPage } = await server.ssrLoadModule("/app/components/shell/nav.ts") as typeof Navigation;
   const home = TOPNAV.find((item) => item.to === "/")!;
   assert.equal(home.label, "精选");
-  assert.ok(TOPNAV.some((item) => item.to === "/chronicle"));
-  assert.ok(TOPNAV.every((item) => item.to !== "/all"));
+  assert.deepEqual(TOPNAV.map((item) => item.to), ["/", "/daily", "/chronicle"]);
   for (const path of ["/", "/zh"]) assert.equal(tabIsActive(home, path), true, path);
   for (const path of ["/chronicle", "/zh/chronicle", "/hot", "/all"]) assert.equal(tabIsActive(home, path), false, path);
-  assert.deepEqual(TABBAR.map((item) => item.to), ["/", "/chronicle", "/hot", "/daily", "/more"]);
-  assert.equal(MORE_PATHS.includes("/hot"), false);
+  const tabs = tabBar();
+  assert.deepEqual(tabs.map((item) => item.to), ["/", "/daily", "/chronicle", "/frontier", "/more"]);
+  assert.equal(tabs[1]!.label, "日报");
+  const frontier = tabs.find((item) => item.to === "/frontier")!;
+  for (const path of ["/frontier", "/zh/leaderboard/category/coding", "/pricing/compare/a-vs-b", "/index/cost-of-intelligence"]) assert.equal(tabIsActive(frontier, path), true, path);
+  assert.equal(isMenuPage("/zh/pricing"), true);
+  const more = tabs.at(-1)!;
+  for (const path of ["/zh/all", "/hot", "/products/wallpaper", "/eacc-vs-ea", "/subscribe"]) assert.equal(tabIsActive(more, path), true, path);
+  for (const path of ["/chronicle/workshops", "/zh/weekly", "/pricing"]) assert.equal(tabIsActive(more, path), false, path);
   assert.equal(MORE_PATHS.includes("/chronicle"), false);
-  const more = TABBAR.at(-1)!;
-  assert.equal(tabIsActive(more, "/zh/hot"), false);
-  assert.equal(tabIsActive(more, "/zh/chronicle"), false);
-  assert.equal(tabIsActive(more, "/zh/all"), true);
-  assert.equal(MORE_MENU.find((group) => group.title === "阅读")?.items.find((item) => item.to === "/all")?.label, "全部动态");
+  assert.deepEqual(MORE_MENU.map((group) => group.title), ["阅读", "了解 e/acc", "创作", "我的", "本站"]);
+  assert.ok(MORE_MENU.every((group) => group.items.every((item) => item.note)), "each More entry says what it holds");
+  const paths = MORE_MENU.flatMap((group) => group.items.map((item) => item.to));
+  assert.equal(new Set(paths).size, paths.length, "no page is listed twice");
 });
 
-test("hidden trending and a disabled time machine drop tabs without competing More highlights", async () => {
+test("hidden trending and a disabled time machine drop their entries and keep More highlighting their pages", async () => {
   const { FEATURES: features } = await server.ssrLoadModule("@aihot/industry/features") as { FEATURES: { timeMachine: boolean } };
   const { NAV: nav } = await server.ssrLoadModule("@aihot/site") as { NAV: { hidden: readonly string[] } };
   const originalFeature = features.timeMachine;
@@ -33,17 +38,15 @@ test("hidden trending and a disabled time machine drop tabs without competing Mo
   try {
     nav.hidden = ["/hot"];
     const hidden = await server.ssrLoadModule("/app/components/shell/nav.ts?hidden-hot") as typeof Navigation;
-    assert.deepEqual(hidden.TABBAR.map((item) => item.to), ["/", "/chronicle", "/daily", "/more"]);
-    assert.equal(hidden.tabIsActive(hidden.TABBAR.at(-1)!, "/products"), true);
+    assert.ok(hidden.MORE_MENU[0]!.items.every((item) => item.to !== "/hot"));
+    assert.equal(hidden.tabIsActive(hidden.tabBar().at(-1)!, "/hot"), true);
     features.timeMachine = false;
     nav.hidden = [];
     const disabled = await server.ssrLoadModule("/app/components/shell/nav.ts?time-machine-off") as typeof Navigation;
     assert.ok(disabled.TOPNAV.every((item) => item.to !== "/chronicle"));
-    assert.deepEqual(disabled.TABBAR.map((item) => item.to), ["/", "/products", "/hot", "/daily", "/more"]);
-    assert.equal(disabled.tabIsActive(disabled.TABBAR.at(-1)!, "/zh/products"), false);
-    assert.equal(disabled.tabIsActive(disabled.TABBAR.at(-1)!, "/zh/hot"), false);
-    assert.equal(disabled.tabIsActive(disabled.TABBAR.at(-1)!, "/zh/chronicle"), true);
-    assert.ok(disabled.TOPNAV.every((item) => item.to !== "/all"));
+    assert.deepEqual(disabled.tabBar().map((item) => item.to), ["/", "/daily", "/frontier", "/more"]);
+    assert.equal(disabled.tabIsActive(disabled.tabBar().at(-1)!, "/zh/chronicle"), true);
+    assert.ok(disabled.MORE_MENU.flatMap((group) => group.items).every((item) => !item.to.startsWith("/chronicle")));
     const home = await server.ssrLoadModule("/app/routes/home.tsx?time-machine-off") as typeof import("../app/routes/home.tsx");
     const originalFetch = globalThis.fetch;
     const paths: string[] = [];

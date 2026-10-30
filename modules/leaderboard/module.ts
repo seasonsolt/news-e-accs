@@ -1,6 +1,7 @@
 import { defineModule, type ModulePage } from "@aihot/contracts/modules";
 
 const pages: ModulePage[] = [
+  { path: "frontier", file: "web/routes/frontier.tsx", id: "frontier" },
   { path: "leaderboard/sources", file: "web/routes/leaderboard-sources.tsx", id: "leaderboard-sources" },
   { path: "leaderboard/sources/:key", file: "web/routes/leaderboard-source.tsx", id: "leaderboard-source" },
   { path: "leaderboard/rules", file: "web/routes/leaderboard-rules.tsx", id: "leaderboard-rules" },
@@ -32,6 +33,6 @@ export default defineModule({
     { match: "exact", path: "/benchmark", status: 301, location: "/leaderboard/category/coding", why: "retired e-acc.ai Pages benchmark" },
   ],
   apiPaths: [/^\/api\/site\/leaderboard\//, /^\/(model-providers|leaderboard-sources)\//],
-  localizedPaths: [/^\/leaderboard(?:\/.*)?$/, /^\/pricing(?:\/compare\/[^/]+)?$/],
+  localizedPaths: [/^\/frontier$/, /^\/leaderboard(?:\/.*)?$/, /^\/pricing(?:\/compare\/[^/]+)?$/],
   timePaths: [/^\/leaderboard(?:\/|$)/],
 });

@@ -5,8 +5,8 @@ import { CHINESE, ENGLISH } from "./i18n/messages.ts";
 export default defineWebModule({
   name: "leaderboard",
   messages: { en: ENGLISH, zh: CHINESE },
-  sidebar: { section: "模型", items: [{ to: "/leaderboard", label: "模型前沿", icon: IconChart }] },
-  tools: [{ to: "/leaderboard", label: "模型榜", icon: <IconChart size={18} /> }],
+  // 前沿 gathers the leaderboard, the prices and the indices module's cost of intelligence (web/routes/frontier.tsx).
+  sidebar: { section: "前沿", items: [{ to: "/frontier", label: "前沿", icon: IconChart, also: ["/leaderboard", "/pricing", "/index"] }] },
   admin: { runs: () => import("./web/admin/runs.tsx") },
   storyPage: () => import("./web/StoryModels.tsx"),
   darkMarks: ["/model-providers/moonshot.svg"],

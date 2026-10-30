@@ -87,6 +87,6 @@ test("module UI copy has English entries and status keys preserve the Chinese la
       assert.ok(key in ENGLISH || key in engineEnglish, `${file}: missing English UI entry for ${key}`);
     }
   }
-  assert.equal(engineEnglish["模型前沿"], "Model frontier", "engine navigation keeps its shared label");
+  assert.equal(ENGLISH["前沿"], "Frontier", "the navigation names the frontier hub");
   assert.equal(engineEnglish["观察中"], "Monitoring", "leaderboard statuses do not override event labels");
 });

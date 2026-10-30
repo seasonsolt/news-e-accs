@@ -1,6 +1,23 @@
 {
-  "latestVersion": "2026-10-29T12:16",
+  "latestVersion": "2026-10-30T18:00",
   "releases": [
+    {
+      "date": "2026-10-30",
+      "time": "18:00",
+      "kind": "优化",
+      "title": "导航重新分层，新增「前沿」",
+      "body": [
+        "顶部导航收成精选、日报、加速史和前沿四项。前沿是新的总览页，把模型榜、模型价格和智能成本指数放在一起，并显示当前的卡尔达肖夫指数。",
+        "「更多」按阅读、了解 e/acc、创作、我的、本站分组，每一项都有一句说明。热点、全部动态和产品目录都移到了这里。顶栏新增搜索和订阅按钮，语言改成 EN / 中文 切换。手机底栏与电脑一致。"
+      ],
+      "en": {
+        "title": "A clearer menu, and a new Frontier page",
+        "body": [
+          "The top bar is now Picks, Daily, Acceleration and Frontier. Frontier is a new overview that brings together the model leaderboard, model prices and the cost-of-intelligence index, along with today's Kardashev rating.",
+          "More is grouped into Read, Understand e/acc, Make, Yours and This site, with a line on what each page holds. Trending, All news and Products now live there. The top bar gains search and Subscribe buttons, and the language is a two-button English / Chinese toggle. The phone tab bar matches the desktop."
+        ]
+      }
+    },
     {
       "date": "2026-10-29",
       "time": "12:16",

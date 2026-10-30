@@ -43,7 +43,7 @@ export default function LeaderboardSourcesPage() {
         compact
         art="cat-models"
         label={tx("评测来源")}
-        kicker={<Link to="/leaderboard" className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /><Text value="返回模型前沿" /></Link>}
+        kicker={<Link to="/leaderboard" className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /><Text value="返回模型榜" /></Link>}
         title={tx("评测来源")}
         description={tx("每个来源测什么、怎样更新、是否进入排名，都可以在这里找到。")}
       />

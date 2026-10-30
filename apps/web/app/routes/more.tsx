@@ -13,8 +13,9 @@ import { setFontPreference, useFontPreference } from "../lib/local-state";
 import { Select } from "../components/ui/Controls";
 import { ThemeSwitch } from "../components/shell/ThemeSwitch";
 import { MotionSwitch } from "../features/motion/MotionSwitch";
-import { TOOLS, inNav, TABBAR } from "../components/shell/nav";
-import { IconBolt, IconBookmark, IconChevronRight, IconFlame, IconGrid, IconHeart, IconHistory, IconHourglass, IconList, IconMessage, IconMoon, IconPlug } from "../components/icons";
+import { MORE_MENU } from "../components/shell/nav";
+import { recordEngagement } from "../lib/engagement";
+import { IconBolt, IconChevronRight, IconMoon } from "../components/icons";
 import { TimeDial } from "../features/chrono/TimeMachine";
 import { useAt, withAt } from "../features/chrono/at";
 import { Deck } from "../components/shell/Deck";
@@ -27,43 +28,17 @@ export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown
   return pageMeta({ title: "更多", path: "/more", noindex: true }, localeFromMatches(matches ?? []));
 }
 
-type Row = { to: string; label: string; icon: ReactNode; document?: boolean };
+type Row = { to: string; label: string; icon: ReactNode; note?: string };
 
-const GROUPS: Array<{ title: string; rows: Row[] }> = [
-  {
-    title: "内容",
-    rows: [
-      ...(FEATURES.timeMachine ? [{ to: "/chronicle", label: "加速史", icon: <IconHourglass size={18} /> }] : []),
-      { to: "/all", label: "全部动态", icon: <IconList size={18} /> },
-      { to: "/products", label: "产品目录", icon: <IconGrid size={18} /> },
-      { to: "/topics", label: "主题索引", icon: <IconGrid size={18} /> },
-      { to: "/agent", label: "Agent 接入", icon: <IconPlug size={18} /> },
-    ],
-  },
-  {
-    title: "偏好",
-    rows: [
-      ...(inNav("/hot") && !TABBAR.some((item) => item.to === "/hot") ? [{ to: "/hot", label: "热点榜", icon: <IconFlame size={18} /> }] : []),
-      { to: "/starred", label: "收藏", icon: <IconBookmark size={18} /> },
-    ],
-  },
-  {
-    title: "e-acc.ai 工具",
-    rows: [
-      // The modules' tools first, then the site's own tool pages.
-      ...webModules().flatMap((m) => m.tools ?? []).map((t) => ({ to: t.to, label: t.label, icon: t.icon })),
-      ...TOOLS.map((t) => ({ to: t.to, label: t.label, icon: <t.icon size={18} /> })),
-    ],
-  },
-  {
-    title: "关于",
-    rows: [
-      { to: "/about", label: `关于 ${SITE.name}`, icon: <IconHeart size={18} /> },
-      { to: "/changelog", label: "更新日志", icon: <IconHistory size={18} /> },
-      { to: "/feedback", label: "意见反馈", icon: <IconMessage size={18} /> },
-    ],
-  },
-];
+/** The 更多 menu's groups (nav.ts), then the modules' tools; 订阅日报 is the card above them. */
+function groups(): Array<{ title: string; rows: Row[] }> {
+  const menu = MORE_MENU.map((g) => ({
+    title: g.title,
+    rows: g.items.filter((item) => item.to !== "/subscribe").map((item) => ({ to: item.to, label: item.label, note: item.note, icon: <item.icon size={18} /> })),
+  }));
+  const tools = webModules().flatMap((m) => m.tools ?? []);
+  return [...menu, ...(tools.length ? [{ title: "工具", rows: tools }] : [])];
+}
 
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -83,15 +58,25 @@ export default function MorePage() {
   const changelogDot = useChangelogDot(root?.changelogVersion ?? null);
   return (
     <div className="mx-auto max-w-[var(--page-max-reading)] pb-8">
-      <Deck compact label={tx("更多")} title={tx("更多")} description={tx("订阅、主题、收藏、工具与偏好设置。")} />
-      <div className="mt-5 space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0 2xl:grid-cols-3">
-        {GROUPS.map((g) => (
+      <Deck compact label={tx("更多")} title={tx("更多")} description={tx("阅读、了解 e/acc、创作、收藏与偏好设置。")} />
+      <Link to="/subscribe" onClick={() => recordEngagement("subscribe_click")} className="card mt-5 flex items-center justify-between gap-3 p-4">
+        <span className="flex flex-col gap-0.5">
+          <span className="text-[16px] font-semibold text-ink"><Text value="订阅每日日报" /></span>
+          <span className="text-[13px] text-ink-3"><Text value="邮件或 RSS，免费。" /></span>
+        </span>
+        <span className="deck-button is-primary shrink-0"><Text value="订阅" /></span>
+      </Link>
+      <div className="mt-3 space-y-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0 2xl:grid-cols-3">
+        {[...groups(), { title: "偏好", rows: [] }].map((g) => (
           <Group key={g.title} title={tx(g.title)}>
             {g.rows.map((r) => (
               <li key={r.to}>
-                <Link to={withAt(r.to, at)} className="flex h-[50px] items-center gap-3 px-4 text-[15px] font-medium text-ink transition-colors active:bg-bg-sunk lg:hover:bg-bg-sunk">
+                <Link to={withAt(r.to, at)} className="flex min-h-[50px] items-center gap-3 px-4 py-2 text-[15px] font-medium text-ink transition-colors active:bg-bg-sunk lg:hover:bg-bg-sunk">
                   <span className="text-ink-3">{r.icon}</span>
-                  <span className="flex flex-1 items-center gap-2">{tx(r.label)}{r.to === "/changelog" && changelogDot && <span className="size-1.5 rounded-full bg-hot" aria-label={tx("有新的更新")} />}</span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="flex items-center gap-2">{tx(r.label)}{r.to === "/changelog" && changelogDot && <span className="size-1.5 rounded-full bg-hot" aria-label={tx("有新的更新")} />}</span>
+                    {r.note && <span className="truncate text-[12.5px] font-normal text-ink-4">{tx(r.note)}</span>}
+                  </span>
                   <IconChevronRight size={16} className="text-ink-4" />
                 </Link>
               </li>

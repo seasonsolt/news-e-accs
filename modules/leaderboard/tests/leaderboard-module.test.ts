@@ -425,17 +425,18 @@ test("built pages keep both language URLs, layout, history and the default share
     res.end(response.rawPayload);
   }), { COLLECT_ENABLED: "false", MODEL_CALLS_ENABLED: "false", FEISHU_INTERNAL_ENABLED: "false" });
   try {
-    for (const path of ["/leaderboard", ...categoryKeys.map((key) => `/leaderboard/category/${key}`), "/leaderboard/sources", "/leaderboard/sources/livebench-coding", "/leaderboard/rules", `/leaderboard/${slugs[0]}`, "/pricing"]) {
+    for (const path of ["/frontier", "/leaderboard", ...categoryKeys.map((key) => `/leaderboard/category/${key}`), "/leaderboard/sources", "/leaderboard/sources/livebench-coding", "/leaderboard/rules", `/leaderboard/${slugs[0]}`, "/pricing"]) {
       for (const prefix of ["", "/zh"]) {
         const response = await fetch(web.origin + prefix + path);
         assert.equal(response.status, 200, prefix + path);
         const html = await response.text();
         assert.equal(html.includes("/og/pages/leaderboard.png"), false);
         assert.match(html, /\/og\/site\.png/);
-        assert.ok(html.includes(`href="${prefix}/leaderboard"`), prefix + path);
+        // The navigation's 前沿 entry, which every one of these pages sits under.
+        assert.ok(html.includes(`href="${prefix}/frontier"`), prefix + path);
         assert.equal(html.includes("${SITE.name}"), false);
         assert.equal(html.includes("AIHOT"), false);
-        assert.equal(response.headers.get("cache-control"), `public, max-age=300, s-maxage=${path === "/leaderboard/sources" || path.startsWith("/leaderboard/sources/") ? 300 : 600}, must-revalidate`);
+        assert.equal(response.headers.get("cache-control"), `public, max-age=300, s-maxage=${path === "/frontier" || path === "/leaderboard/sources" || path.startsWith("/leaderboard/sources/") ? 300 : 600}, must-revalidate`);
         assert.match(response.headers.get("x-accel-expires")!, /^@\d+$/);
         assert.doesNotMatch(response.headers.get("vary") ?? "", /(?:Cookie|Accept-Language)/i);
         assert.ok(html.includes(`rel="canonical" href="${web.origin}${prefix}${path}"`), prefix + path);
@@ -461,11 +462,12 @@ test("built pages keep both language URLs, layout, history and the default share
     assert.equal((await fetch(`${web.origin}/leaderboard/category/overall`)).status, 404);
     assert.equal((await fetch(`${web.origin}/leaderboard/category/writing`, { redirect: "manual" })).status, 307);
     assert.equal((await fetch(`${web.origin}/leaderboard/methodology`, { redirect: "manual" })).status, 308);
-    const tools = await fetch(`${web.origin}/zh/more`);
-    assert.equal(tools.status, 200);
-    const toolsHtml = await tools.text();
-    assert.ok(toolsHtml.includes('href="/zh/leaderboard"'));
-    assert.ok(toolsHtml.includes("模型榜"));
+    // 前沿 gathers the board and the prices.
+    const hub = await fetch(`${web.origin}/zh/frontier`);
+    assert.equal(hub.status, 200);
+    const hubHtml = await hub.text();
+    for (const href of ['href="/zh/leaderboard"', 'href="/zh/pricing"']) assert.ok(hubHtml.includes(href), href);
+    assert.ok(hubHtml.includes("模型榜"));
     assert.equal((await fetch(`${web.origin}/zh/leaderboard/category/missing`)).status, 404);
 
     await withPricedModels(async () => {

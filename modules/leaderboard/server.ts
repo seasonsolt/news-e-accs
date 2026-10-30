@@ -58,6 +58,7 @@ export default defineServerModule({
   },
   sitemap: {
     pages: [
+      { loc: "/frontier", changefreq: "daily", priority: 0.8 },
       { loc: "/leaderboard", changefreq: "daily", priority: 0.8 },
       { loc: "/leaderboard/sources", changefreq: "weekly", priority: 0.5 },
       { loc: "/leaderboard/rules", changefreq: "monthly", priority: 0.4 },

@@ -5,7 +5,7 @@ import { FEATURES } from "@aihot/industry/features";
 import { webModules } from "../../site-modules";
 import type { ReactNode } from "react";
 import {
-  IconApps, IconBolt, IconBookmark, IconChart, IconDoc, IconFlame, IconGrid, IconHeart, IconHistory, IconHourglass, IconInfo, IconList, IconMail, IconMessage, IconPlug,
+  IconApps, IconBolt, IconBookmark, IconDoc, IconFlame, IconGrid, IconHeart, IconHistory, IconHourglass, IconImage, IconInfo, IconList, IconMail, IconMessage, IconPlug, IconSparkles,
 } from "../icons";
 
 /** Whether an engine page is a way in from the navigation (site.ts NAV.hidden); a hidden page still opens. */
@@ -15,70 +15,100 @@ export interface NavItem {
   to: string;
   label: string;
   icon: (p: { size?: number }) => ReactNode;
+  /** One line under the label in 更多, saying what the page holds. */
+  note?: string;
   /** Match the path exactly (the home page). */
   end?: boolean;
+  /** Other sections this item's page gathers: they keep the item highlighted and count as menu pages. */
+  also?: string[];
   /** Shows the unread dot while the changelog has news. */
   changelog?: boolean;
 }
 
-/** The site's tool and reference pages: the price comparison (leaderboard module) and the e/acc concept pages (industry/concepts.ts). */
-export const TOOLS: NavItem[] = [
-  { to: "/pricing", label: "模型价格", icon: IconChart },
-  { to: "/what-is-eacc", label: "什么是 e/acc", icon: IconInfo },
-];
-
-/** The deck's top navigation: the reading sections, in the order a reader moves through them. */
+/**
+ * The deck's top navigation: the reading sections, in the order a reader moves through them. The modules'
+ * sections (their `sidebar` items) follow; the phone's tab bar has the same sections.
+ */
 export const TOPNAV: NavItem[] = [
   { to: "/", label: "精选", icon: IconBolt, end: true },
-  // The acceleration (the chronicle) is the site's signature view: right after the picks.
-  ...(FEATURES.timeMachine ? [{ to: "/chronicle", label: "加速史", icon: IconHourglass }] : []),
-  ...(inNav("/hot") ? [{ to: "/hot", label: "热点", icon: IconFlame }] : []),
   { to: "/daily", label: withSubject("日报"), icon: IconDoc },
-  { to: "/products", label: "产品目录", icon: IconApps },
+  // The acceleration (the chronicle) is the site's signature view.
+  ...(FEATURES.timeMachine ? [{ to: "/chronicle", label: "加速史", icon: IconHourglass }] : []),
 ];
 
-/** Everything else, under 更多 in the deck (and on the phone's 更多 page). */
+/** Everything else, under 更多 in the deck and on the phone's 更多 page: a group for each reason to look. */
 export const MORE_MENU: Array<{ title: string; items: NavItem[] }> = [
   {
     title: "阅读",
     items: [
-      { to: "/all", label: "全部动态", icon: IconList },
-      { to: "/products", label: "产品目录", icon: IconApps },
-      { to: "/subscribe", label: "订阅日报", icon: IconMail },
-      ...(inNav("/topics") ? [{ to: "/topics", label: "主题", icon: IconGrid }] : []),
-      { to: "/starred", label: "收藏", icon: IconBookmark },
+      { to: "/all", label: "全部动态", icon: IconList, note: "每条通过筛选的动态，可搜索和筛选" },
+      ...(inNav("/hot") ? [{ to: "/hot", label: "热点", icon: IconFlame, note: "按此刻的报道热度排的事件" }] : []),
+      ...(inNav("/topics") ? [{ to: "/topics", label: "主题", icon: IconGrid, note: "公司、产品与话题" }] : []),
+      { to: "/weekly", label: "周报与月报", icon: IconDoc, note: "每周一和每月 1 日的回顾" },
     ],
   },
-  { title: "工具", items: TOOLS },
-  {
-    title: "关于",
+  ...(FEATURES.eaccConcepts ? [{
+    title: "了解 e/acc",
     items: [
-      { to: "/agent", label: "Agent 接入", icon: IconPlug },
-      { to: "/about", label: "关于", icon: IconHeart },
-      { to: "/changelog", label: "更新日志", icon: IconHistory, changelog: true },
-      { to: "/feedback", label: "反馈", icon: IconMessage },
+      { to: "/what-is-eacc", label: "什么是 e/acc", icon: IconInfo, note: "起源、主张与批评" },
+      { to: "/eacc-vs-dacc", label: "e/acc 与 d/acc", icon: IconInfo, note: "先加速，还是先防御" },
+      { to: "/eacc-vs-ea", label: "e/acc 与 EA", icon: IconInfo, note: "两者在 AI 上的分歧" },
+      { to: "/eacc-glossary", label: "e/acc 术语表", icon: IconInfo, note: "常用说法一页看全" },
+    ],
+  }] : []),
+  {
+    title: "创作",
+    items: [
+      // The workshops are the scenes module's gallery of the chronicle's playable eras.
+      ...(FEATURES.timeMachine ? [{ to: "/chronicle/workshops", label: "工坊", icon: IconSparkles, note: "走进加速史里的各个时代" }] : []),
+      { to: "/products/wallpaper", label: "壁纸", icon: IconImage, note: "每天一张 4K 壁纸" },
+      { to: "/products", label: "产品目录", icon: IconApps, note: "已上线和即将推出的产品" },
+    ],
+  },
+  {
+    title: "我的",
+    items: [
+      { to: "/subscribe", label: "订阅日报", icon: IconMail, note: "用邮件或 RSS 收日报" },
+      { to: "/starred", label: "收藏", icon: IconBookmark, note: "保存在这台设备上" },
+    ],
+  },
+  {
+    title: "本站",
+    items: [
+      { to: "/about", label: "关于", icon: IconHeart, note: "怎么采集和挑选" },
+      { to: "/agent", label: "Agent 接入", icon: IconPlug, note: "MCP、公开 API 与 Markdown" },
+      { to: "/changelog", label: "更新日志", icon: IconHistory, note: "最近改了什么", changelog: true },
+      { to: "/feedback", label: "反馈", icon: IconMessage, note: "更正与建议" },
     ],
   },
 ];
 
-export const TABBAR: NavItem[] = [
-  { to: "/", label: "精选", icon: IconBolt, end: true },
-  ...(FEATURES.timeMachine ? [{ to: "/chronicle", label: "加速史", icon: IconHourglass }] : [{ to: "/products", label: "产品目录", icon: IconApps }]),
-  ...(inNav("/hot") ? [{ to: "/hot", label: "热点", icon: IconFlame }] : []),
-  { to: "/daily", label: "日报", icon: IconDoc },
-  { to: "/more", label: "更多", icon: IconApps, changelog: true },
-];
+const MORE_TAB: NavItem = { to: "/more", label: "更多", icon: IconApps, changelog: true };
 
-/** Pages reached from the mobile "更多" tab keep that tab highlighted. */
-export const MORE_PATHS = ["/all", "/products", "/more", ...(FEATURES.timeMachine ? [] : ["/chronicle"]), "/hot", "/topics", "/starred", "/agent", "/about", "/changelog", "/feedback", "/terms", "/privacy"]
-  .filter((path) => !TABBAR.some((item) => item.to !== "/more" && item.to === path));
+/** The modules' sections in the deck and the tab bar (their `sidebar` items), after the engine's. */
+export function moduleSections(): NavItem[] {
+  return webModules().flatMap((m) => m.sidebar?.items ?? []);
+}
+
+/** The phone's tab bar: the deck's sections under their short names, the modules' after them, then 更多. */
+export function tabBar(): NavItem[] {
+  return [...TOPNAV.map((item) => (item.to === "/daily" ? { ...item, label: "日报" } : item)), ...moduleSections(), MORE_TAB];
+}
+
+/** A page a section of the deck already answers for: under its path, or a weekly or monthly report. */
+const inSection = (path: string) => /^\/(weekly|monthly)(\/|$)/.test(path) || TOPNAV.some((item) => !item.end && (path === item.to || path.startsWith(`${item.to}/`)));
+
+/** Pages reached from the mobile "更多" tab keep that tab highlighted; hidden engine pages still count. */
+export const MORE_PATHS = ["/more", ...MORE_MENU.flatMap((g) => g.items.map((item) => item.to)), "/chronicle", "/hot", "/topics", "/terms", "/privacy"]
+  .filter((path, i, all) => all.indexOf(path) === i && !inSection(path));
 
 export function tabIsActive(item: NavItem, pathname: string): boolean {
   pathname = publicPath(pathname);
+  const under = (p: string) => pathname === p || pathname.startsWith(`${p}/`);
   if (item.end) return pathname === item.to;
-  if (item.to === "/more") return [...MORE_PATHS, ...webModules().flatMap((m) => (m.tools ?? []).map((t) => t.to))].some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  if (item.to === "/more") return [...MORE_PATHS, ...webModules().flatMap((m) => (m.tools ?? []).map((t) => t.to))].some(under);
   if (item.to === "/daily") return /^\/(daily|weekly|monthly)(\/|$)/.test(pathname);
-  return pathname === item.to || pathname.startsWith(`${item.to}/`);
+  return [item.to, ...(item.also ?? [])].some(under);
 }
 
 /**
@@ -89,7 +119,8 @@ export function tabIsActive(item: NavItem, pathname: string): boolean {
 export function isMenuPage(pathname: string): boolean {
   const path = publicPath(pathname);
   const modules = webModules().flatMap((m) => [...(m.sidebar?.items ?? []), ...(m.tools ?? []), ...(m.home?.links ?? [])]);
-  return [...TOPNAV, ...MORE_MENU.flatMap((g) => g.items), ...TABBAR, ...modules].some((item) => item.to === path) || /^\/(weekly|monthly)$/.test(path);
+  const sections = [...TOPNAV, ...moduleSections()].flatMap((item) => item.also ?? []);
+  return [...TOPNAV, ...MORE_MENU.flatMap((g) => g.items), MORE_TAB, ...modules].some((item) => item.to === path) || sections.includes(path) || /^\/(weekly|monthly)$/.test(path);
 }
 
 /**

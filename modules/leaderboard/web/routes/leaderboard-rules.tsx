@@ -177,7 +177,7 @@ export default function LeaderboardRulesPage() {
         compact
         art="cat-models"
         label={tx("排名怎么算")}
-        kicker={<Link to="/leaderboard" className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /><Text value="返回模型前沿" /></Link>}
+        kicker={<Link to="/leaderboard" className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /><Text value="返回模型榜" /></Link>}
         title={tx("排名怎么算")}
         description={tx("综合多家公开评测，了解排名背后的证据与方法。")}
       />
