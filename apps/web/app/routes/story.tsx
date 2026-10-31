@@ -312,7 +312,7 @@ export default function StoryPage() {
               <IconUsers size={15} /> <b className="num font-semibold text-[var(--deck-ink)]">{story.sourceCount}</b><Text value="个报道来源" /></span>
             {story.latestAt && (
               <span className="inline-flex items-center gap-1.5" suppressHydrationWarning>
-                <IconClock size={15} /> {tx(relativeTime(story.latestAt))}<Text value="更新" /></span>
+                <IconClock size={15} /> {tx("{0}更新", tx(relativeTime(story.latestAt)))}</span>
             )}
           </span>
         }

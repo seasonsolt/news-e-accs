@@ -15,7 +15,6 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "固定一档能力，看它的价格随时间怎么下降。": "Hold a level of capability fixed and watch its price fall over time.",
   "{0} 个模型 · 截至 {1}": "{0} models · as of {1}",
   "文明": "Civilization",
-  "在加速史里看": "See it in the acceleration",
   "人类一次能源功率在卡尔达肖夫指数上的位置，I 型文明为 1。": "Humanity's primary power on the Kardashev scale, where a Type I civilization is 1.",
   "模型榜的分数是共识指数，不是正确率。": "Leaderboard scores are a consensus index, not accuracy.",
   "看第一名的评测证据": "See the leader's benchmark evidence",

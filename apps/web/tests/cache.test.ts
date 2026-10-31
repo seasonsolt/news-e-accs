@@ -8,6 +8,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import type { AddressInfo } from "node:net";
 import { after, before, beforeEach, test } from "node:test";
 import { fileURLToPath } from "node:url";
+import type { ChronicleResponse } from "@aihot/contracts/chronicle";
 import { CATEGORY_KEYS } from "@aihot/contracts/taxonomy";
 import { parseHTML } from "linkedom";
 import type { LbBoardResponse } from "@aihot/leaderboard/contracts";
@@ -58,6 +59,12 @@ function sharedCache(response: Response, maxSeconds: number) {
 const site = (process.env.SITE_URL || "https://e-acc.ai").replace(/\/+$/, "");
 const mediaPath = "/media/art/epochs/sapiens-language-800.webp";
 const mediaCacheControl = "public, max-age=86400, s-maxage=604800, stale-while-revalidate=2592000";
+/** The API's English edition of the fixture: its reader-facing text in English, as the real API serves it. */
+const englishChronicle: ChronicleResponse = {
+  eras: chronicle.eras.map((e) => ({ ...e, title: `Era ${e.id}`, summary: "An era", artStyle: "Engraving", ...(e.epoch ? { epoch: `Epoch ${e.id}` } : {}) })),
+  milestones: chronicle.milestones.map((m) => ({ ...m, title: `Moment ${m.id}`, detail: "A moment" })),
+  metrics: chronicle.metrics,
+};
 let web: ChildProcess;
 let origin: string;
 let logs = "";
@@ -81,7 +88,7 @@ function apiResponse(req: IncomingMessage, res: ServerResponse) {
     res.setHeader("Cache-Control", "public, max-age=30, s-maxage=30");
     return res.end(JSON.stringify({ filters, cards: [], nextCursor: null, refreshAt, dayCounts: [], hot: null, generatedAt: "2026-09-28T00:00:00Z" }));
   }
-  if (url.pathname === "/api/site/chronicle") return res.end(JSON.stringify(chronicle));
+  if (url.pathname === "/api/site/chronicle") return res.end(JSON.stringify(url.searchParams.get("lang") === "en" ? englishChronicle : chronicle));
   if (url.pathname === "/api/site/chronicle/bounds") return res.end(JSON.stringify({ earliest: "2026-09-01", feed: "2026-09-01", hot: "2026-09-01", daily: "2026-09-01", today: "2026-10-09", kardashev: null }));
   if (url.pathname === "/api/site/leaderboard/boards/overall") {
     const board: LbBoardResponse = {

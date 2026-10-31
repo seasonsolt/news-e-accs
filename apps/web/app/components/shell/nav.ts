@@ -112,15 +112,16 @@ export function tabIsActive(item: NavItem, pathname: string): boolean {
 }
 
 /**
- * The pages the menus lead to (the top bar, 更多, the phone tab bar and the modules' entries). They read
- * at night in either theme, as one immersive set with the front page (root.tsx, app.css); the pages
- * opened from them (an item, a report, a topic) keep the reader's theme.
+ * The pages that read at night in either theme, as one immersive set with the front page (root.tsx,
+ * app.css): those the menus lead to (the top bar, 更多, the phone tab bar and the modules' entries) and the
+ * event pages the front page and the trending list open. Other pages opened from them (an item, a report,
+ * a topic) keep the reader's theme.
  */
-export function isMenuPage(pathname: string): boolean {
+export function isNightPage(pathname: string): boolean {
   const path = publicPath(pathname);
   const modules = webModules().flatMap((m) => [...(m.sidebar?.items ?? []), ...(m.tools ?? []), ...(m.home?.links ?? [])]);
   const sections = [...TOPNAV, ...moduleSections()].flatMap((item) => item.also ?? []);
-  return [...TOPNAV, ...MORE_MENU.flatMap((g) => g.items), MORE_TAB, ...modules].some((item) => item.to === path) || sections.includes(path) || /^\/(weekly|monthly)$/.test(path);
+  return [...TOPNAV, ...MORE_MENU.flatMap((g) => g.items), MORE_TAB, ...modules].some((item) => item.to === path) || sections.includes(path) || /^\/(weekly|monthly)$/.test(path) || path.startsWith("/story/");
 }
 
 /**

@@ -16,7 +16,7 @@ import "./app.css";
 import { SiteNav } from "./components/shell/SiteNav";
 import { SiteFooter } from "./components/shell/SiteFooter";
 import { MobileTabBar } from "./components/shell/MobileTabBar";
-import { isMenuPage } from "./components/shell/nav";
+import { isNightPage } from "./components/shell/nav";
 import { BackToTop, NavigationProgress } from "./components/shell/Chrome";
 import { useScreen } from "./components/shell/screens";
 import { LanguageHint } from "./components/shell/LanguageHint";
@@ -113,7 +113,7 @@ export function meta({ error, loaderData }: Route.MetaArgs) {
 /** The deck's top bar, the page (or an error), the footer and the phone tab bar. */
 function SiteShell({ changelogVersion, timeBounds, children }: { changelogVersion: string | null; timeBounds: TimeMachineBounds | null; children: ReactNode }) {
   const navigation = useNavigation();
-  const night = isMenuPage(useLocation().pathname);
+  const night = isNightPage(useLocation().pathname);
   return (
     <div className="flex min-h-dvh flex-col">
       <NavigationProgress active={navigation.state === "loading"} />

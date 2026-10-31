@@ -8,7 +8,7 @@ before(async () => { server = await createServer({ configFile: false, root: new 
 after(async () => { await server?.close(); });
 
 test("the deck has picks, daily, acceleration and the frontier; everything else sits under More in both locales", async () => {
-  const { TOPNAV, MORE_MENU, MORE_PATHS, tabBar, tabIsActive, isMenuPage } = await server.ssrLoadModule("/app/components/shell/nav.ts") as typeof Navigation;
+  const { TOPNAV, MORE_MENU, MORE_PATHS, tabBar, tabIsActive, isNightPage } = await server.ssrLoadModule("/app/components/shell/nav.ts") as typeof Navigation;
   const home = TOPNAV.find((item) => item.to === "/")!;
   assert.equal(home.label, "精选");
   assert.deepEqual(TOPNAV.map((item) => item.to), ["/", "/daily", "/chronicle"]);
@@ -19,7 +19,9 @@ test("the deck has picks, daily, acceleration and the frontier; everything else 
   assert.equal(tabs[1]!.label, "日报");
   const frontier = tabs.find((item) => item.to === "/frontier")!;
   for (const path of ["/frontier", "/zh/leaderboard/category/coding", "/pricing/compare/a-vs-b", "/index/cost-of-intelligence"]) assert.equal(tabIsActive(frontier, path), true, path);
-  assert.equal(isMenuPage("/zh/pricing"), true);
+  assert.equal(isNightPage("/zh/pricing"), true);
+  assert.equal(isNightPage("/zh/story/447297b4"), true);
+  assert.equal(isNightPage("/items/447297b4"), false);
   const more = tabs.at(-1)!;
   for (const path of ["/zh/all", "/hot", "/products/wallpaper", "/eacc-vs-ea", "/subscribe"]) assert.equal(tabIsActive(more, path), true, path);
   for (const path of ["/chronicle/workshops", "/zh/weekly", "/pricing"]) assert.equal(tabIsActive(more, path), false, path);

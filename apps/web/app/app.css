@@ -977,7 +977,7 @@ html { scrollbar-gutter: stable; }
 .home-hero.is-front .deck-plate { object-position: 65% 42%; }
 .home-hero.is-front .deck-shade { background: linear-gradient(to top, var(--deck) 0, rgb(18 14 10 / .84) 24%, rgb(18 14 10 / .2) 58%, rgb(18 14 10 / .55) 100%), linear-gradient(90deg, rgb(10 8 6 / .82), rgb(10 8 6 / .2) 55%, rgb(10 8 6 / 0) 78%); }
 .home-page .deck-desc { max-width: 32rem; font-size: 16px; line-height: 1.75; }
-/* The pages the menus lead to read at night in either theme (nav.ts isMenuPage): the decks' dark runs on
+/* Night pages (nav.ts isNightPage) read at night in either theme: the decks' dark runs on
    into the page, with no seam. The front page's plate fills the first screen. */
 .night-page, :root:has(.night-page) { --bg: var(--deck); --daybar: var(--deck); }
 .night-page .home-hero.is-front { display: flex; flex-direction: column; justify-content: flex-end; min-height: clamp(600px, calc(100svh - 120px), 860px); padding: 64px 0 20px; }
@@ -996,6 +996,65 @@ html { scrollbar-gutter: stable; }
 .home-lead-title { font-size: 20px; font-weight: 650; line-height: 1.45; color: #fff7e8; }
 .home-lead-summary { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; font-size: 14.5px; line-height: 1.7; color: rgb(244 236 220 / .74); }
 .home-lead-go { font-size: 14px; color: var(--brass-hi); }
+/* The chronicle on the front page: its latest moment beside the line, the axis and four readings along the foot. */
+.now-card { flex: 1 1 340px; max-width: 420px; display: flex; flex-direction: column; overflow: hidden; border-radius: var(--radius-card); border: 1px solid rgb(244 236 220 / .16); background: rgb(18 14 10 / .82); color: var(--deck-ink); transition: border-color .15s; }
+.now-card:hover { border-color: rgb(217 164 65 / .6); }
+.now-card-art { position: relative; display: block; aspect-ratio: 3 / 2; overflow: hidden; border-bottom: 1px solid rgb(244 236 220 / .1); background: var(--deck-2); }
+.now-card-art img { width: 100%; height: 100%; object-fit: cover; }
+.now-card-badge { position: absolute; left: 14px; top: 14px; padding: 2px 9px; border-radius: 9999px; background: var(--brass); font: 600 11px/1.6 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: #1a1209; }
+.now-card-body { display: flex; flex-direction: column; gap: 8px; padding: 18px 22px 20px; }
+.now-card-date { font: 500 12px/1.5 var(--font-mono); letter-spacing: .04em; color: var(--deck-dim); }
+.now-card-title { font-family: var(--font-display); font-size: 26px; font-weight: 700; line-height: 1.2; color: #fff7e8; }
+.now-card-title:lang(en) { font-weight: 400; line-height: 1.1; }
+.now-card-summary { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; font-size: 14px; line-height: 1.65; color: rgb(244 236 220 / .74); }
+.now-card-go { font-size: 14px; color: var(--brass-hi); }
+.now-instruments { margin-top: 44px; color: var(--deck-ink); }
+.now-axis { display: block; color: inherit; }
+.now-axis-caption { display: block; margin-bottom: 24px; font: 500 11.5px/1.5 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--deck-dim); }
+.now-axis-track { position: relative; display: block; height: 34px; }
+.now-axis-bands { position: absolute; inset: 0; overflow: hidden; border-radius: var(--radius-control); }
+.now-axis-epoch { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; padding: 0 10px; overflow: hidden; border-left: 2px solid var(--deck); background: rgb(244 236 220 / .08); font-size: 12.5px; white-space: nowrap; color: rgb(244 236 220 / .72); transition: background-color .15s; }
+.now-axis-epoch:first-child { border-left: 0; }
+.now-axis-epoch.is-current { background: rgb(217 164 65 / .22); color: #fff7e8; }
+.now-axis-epoch.is-forecast { background: repeating-linear-gradient(135deg, rgb(244 236 220 / .07) 0 6px, transparent 6px 12px); color: var(--deck-dim); }
+.now-axis-epoch > span { overflow: hidden; text-overflow: ellipsis; }
+.now-axis:hover .now-axis-epoch.is-current { background: rgb(217 164 65 / .32); }
+.now-axis-needle { position: absolute; top: -8px; bottom: -8px; width: 2px; transform: translateX(-50%); background: var(--brass-hi); box-shadow: 0 0 14px rgb(240 210 138 / .8); }
+.now-axis-needle > span { position: absolute; bottom: 100%; left: 50%; transform: translate(-50%, -4px); padding: 0 8px; border-radius: 9999px; background: var(--brass); font: 600 11px/1.6 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; color: #1a1209; }
+.now-readouts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 22px 0 0; border-top: 1px solid rgb(244 236 220 / .14); }
+.now-readout { min-width: 0; padding: 16px 20px 4px; border-left: 1px solid rgb(244 236 220 / .1); }
+.now-readout:first-child { padding-left: 0; border-left: 0; }
+.now-readout dt { font: 500 11.5px/1.5 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--deck-dim); }
+.now-readout dd { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin: 8px 0 0; font: 500 30px/1.1 var(--font-sans); font-variant-numeric: tabular-nums; color: #fff7e8; }
+.now-readout.is-lead dd { color: var(--brass-hi); }
+.now-readout-unit { font-size: 13px; color: var(--deck-dim); }
+.home-today { margin-top: 48px; }
+.home-today-title { padding-bottom: 14px; border-bottom: 1px solid rgb(244 236 220 / .18); font-family: var(--font-display); font-size: clamp(30px, 4vw, 44px); font-weight: 700; line-height: 1.1; color: var(--ink); }
+.home-today-title:lang(en) { font-weight: 400; }
+.home-today-title em { font-style: italic; color: var(--brass-hi); }
+.home-today .home-lead { max-width: none; margin-top: 20px; }
+.home-today .home-lead-title { font-family: var(--font-display); font-size: clamp(24px, 2.6vw, 32px); font-weight: 700; line-height: 1.25; }
+.home-today .home-lead-title:lang(en) { font-weight: 400; line-height: 1.15; }
+@media (max-width: 640px) {
+  .now-card { max-width: none; flex-direction: row; }
+  .now-card-art { flex: none; width: 112px; aspect-ratio: auto; border-bottom: 0; border-right: 1px solid rgb(244 236 220 / .1); }
+  .now-card-badge { left: 8px; top: 8px; padding: 0 6px; font-size: 10px; }
+  .now-card-body { gap: 4px; padding: 12px 14px; }
+  .now-card-title { font-size: 19px; }
+  .now-card-summary, .now-card-go { display: none; }
+  .now-instruments { margin-top: 28px; }
+  .now-axis-caption { margin-bottom: 34px; font-size: 10.5px; }
+  .now-axis-track { height: 28px; }
+  .now-axis-epoch { padding: 0 6px; font-size: 11px; }
+  .now-readouts { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 16px; }
+  .now-readout { padding: 12px 0 10px 14px; }
+  .now-readout:nth-child(odd) { padding-left: 0; border-left: 0; }
+  .now-readout:nth-child(n+3) { border-top: 1px solid rgb(244 236 220 / .1); }
+  .now-readout dd { font-size: 22px; }
+  .home-today { margin-top: 36px; }
+  .home-today .home-lead-summary { display: -webkit-box; }
+  .home-today .home-lead-go { display: inline; }
+}
 @media (max-width: 960px) {
   .home-page .deck-plate { object-position: 78% 40%; }
   .night-page .home-hero.is-front { min-height: calc(100svh - 130px - env(safe-area-inset-bottom)); padding-top: 40px; }

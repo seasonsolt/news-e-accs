@@ -7,6 +7,7 @@ import type { TimelineCard } from "@aihot/contracts/site";
 import { beijingDate, beijingTime } from "@aihot/contracts/time";
 import { Deck, Plate } from "../../components/shell/Deck";
 import { KardashevMeter } from "../chrono/KardashevMeter";
+import { NowCard, NowInstruments, type ChronicleNow } from "../chrono/ChronicleNow";
 import { recordEngagement } from "../../lib/engagement";
 import { weekdayShort } from "../../lib/format";
 import { webModules } from "../../site-modules";
@@ -35,7 +36,7 @@ export function leadCard(cards: TimelineCard[]): TimelineCard | null {
     .reduce<TimelineCard | null>((best, c) => (!best || sourcesOf(c) > sourcesOf(best) || (sourcesOf(c) === sourcesOf(best) && (c.item.score ?? 0) > (best.item.score ?? 0)) ? c : best), null);
 }
 
-function LeadStory({ card, past }: { card: TimelineCard; past: boolean }) {
+export function LeadStory({ card, past }: { card: TimelineCard; past: boolean }) {
   const tx = useTranslate();
   const sources = sourcesOf(card);
   return (
@@ -52,12 +53,13 @@ function LeadStory({ card, past }: { card: TimelineCard; past: boolean }) {
 }
 
 /**
- * The deck above 精选 and 全部动态: the front page's night plate across the first screen, the line, the
- * day's lead story beside it and the Kardashev rail along its foot. Both feeds and all their categories
+ * The deck above 精选 and 全部动态: the front page's night plate across the first screen, the line, and
+ * beside it the chronicle's latest moment with the axis and civilization readings along its foot (the
+ * front page, with the time machine), else the day's lead story and the Kardashev rail. Both feeds and all their categories
  * share it, so switching feed or category changes only the list below and the filter row stays where it
  * was. A tag page (reached from a link, not a tab) gets the compact deck with the tag as its title.
  */
-export function FeedDeck({ label, heading, at, tag, front = false, lead, subscribeRef }: { label: string; heading: string; at?: string | null; tag?: string | null; /** The front page: the plate fills the first screen. */ front?: boolean; lead?: TimelineCard | null; subscribeRef?: Ref<HTMLSpanElement> }) {
+export function FeedDeck({ label, heading, at, tag, front = false, lead, chronicle, subscribeRef }: { label: string; heading: string; at?: string | null; tag?: string | null; /** The front page: the plate fills the first screen. */ front?: boolean; lead?: TimelineCard | null; chronicle?: ChronicleNow | null; subscribeRef?: Ref<HTMLSpanElement> }) {
   const tx = useTranslate();
   const root = useRouteLoaderData<typeof rootLoader>("root");
   const k = root?.timeBounds?.kardashev ?? null;
@@ -82,9 +84,9 @@ export function FeedDeck({ label, heading, at, tag, front = false, lead, subscri
             </div>
             {featuredProduct()?.url && <Link to={featuredProduct()!.url!} className="home-hero-wallpaper home-hero-extra"><Text value="设为 4K 壁纸 →" /></Link>}
           </div>
-          {lead && <LeadStory card={lead} past={!!at} />}
+          {chronicle ? <NowCard now={chronicle} at={at ?? null} /> : lead && <LeadStory card={lead} past={!!at} />}
         </div>
-        {k !== null && <KardashevMeter k={k} />}
+        {chronicle ? <NowInstruments now={chronicle} at={at ?? null} /> : k !== null && <KardashevMeter k={k} />}
       </div>
     </section>
   );

@@ -1,11 +1,13 @@
 import { localePath, requestLocale } from "../lib/locale";
-import { localeFromMatches, useTranslate } from "../lib/i18n";
+import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE } from "@aihot/site";
 import { useRef } from "react";
 import { redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/home";
 import type { TimelineResponse } from "@aihot/contracts/site";
-import { cachedPage, loadOr404 } from "../lib/api.server";
+import type { ChronicleResponse } from "@aihot/contracts/chronicle";
+import { FEATURES } from "@aihot/industry/features";
+import { apiGet, cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { filterParams, hasFeedFilters, listPath, organizationLd, pageMeta, readFilters, websiteLd } from "../lib/seo";
 import { inNav } from "../components/shell/nav";
@@ -14,7 +16,8 @@ import { useSubscribeView } from "../features/subscribe/useSubscribeView";
 import { CategoryBanner } from "../features/art/CategoryBanner";
 import { Timeline } from "../features/feed/Timeline";
 import { HotTopics } from "../features/feed/HotTopics";
-import { FeedDeck, leadCard } from "../features/feed/FeedDeck";
+import { FeedDeck, LeadStory, leadCard } from "../features/feed/FeedDeck";
+import { chronicleNow } from "../features/chrono/ChronicleNow";
 import { CategoryTabs, FeedSwitch, SearchField, SearchIconLink } from "../features/feed/Filters";
 import { requestAt } from "../features/chrono/at";
 
@@ -29,8 +32,12 @@ export async function loader({ request }: Route.LoaderArgs) {
   const at = requestAt(request);
   const filters = { ...readFilters(url.searchParams), topic: null, at };
   const upstream = new Headers();
-  const data = await loadOr404<TimelineResponse>(listPath("/api/site/timeline", { ...filterParams(filters), at }), { responseHeaders: upstream, request, signal: request.signal });
-  return cachedPage(60, { data, filters }, upstream);
+  const [data, chronicle] = await Promise.all([
+    loadOr404<TimelineResponse>(listPath("/api/site/timeline", { ...filterParams(filters), at }), { responseHeaders: upstream, request, signal: request.signal }),
+    // Like the masthead's time machine (root), the chronicle only dresses the deck: without it the deck keeps the day's lead.
+    FEATURES.timeMachine ? apiGet<ChronicleResponse>("/api/site/chronicle", { request, signal: request.signal }).catch(() => null) : null,
+  ]);
+  return cachedPage(60, { data, filters, chronicle: chronicle && chronicleNow(chronicle, at) }, upstream);
 }
 
 export function meta({ matches, loaderData }: Route.MetaArgs) {
@@ -43,7 +50,8 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
 export default function Home() {
   const tx = useTranslate();
   const subscribeLink = useRef<HTMLSpanElement>(null);
-  const { data, filters } = useLoaderData<typeof loader>();
+  const { data, filters, chronicle } = useLoaderData<typeof loader>();
+  const lead = leadCard(data.cards);
   // A first visit to the unfiltered front page opens on the newsletter onboarding (shown before paint
   // by the boot script); everyone else, crawlers included, reads the news below.
   const front = filters.channel === "all" && !filters.category && !filters.tag && !filters.at;
@@ -51,7 +59,15 @@ export default function Home() {
   return (
     <div className="home-page pb-6">
       {front && <Onboarding mode="overlay" />}
-      <FeedDeck label={tx("精选")} heading={tx(SITE.homeHeading)} at={filters.at} tag={filters.tag} front lead={leadCard(data.cards)} subscribeRef={subscribeLink} />
+      <FeedDeck label={tx("精选")} heading={tx(SITE.homeHeading)} at={filters.at} tag={filters.tag} front lead={lead} chronicle={chronicle} subscribeRef={subscribeLink} />
+
+      {/* With the chronicle beside the line, the day's lead opens the news below it. */}
+      {chronicle && lead && !filters.tag && (
+        <section className="home-today" aria-labelledby="home-today-title">
+          <h2 id="home-today-title" className="home-today-title"><Text value="今天，" /><em><Text value="在曲线上" /></em></h2>
+          <LeadStory card={lead} past={!!filters.at} />
+        </section>
+      )}
 
       <div className="mt-6 hidden items-center justify-between gap-4 lg:mt-8 lg:flex">
         <div className="flex min-w-0 flex-1 items-center gap-3">

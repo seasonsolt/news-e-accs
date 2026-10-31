@@ -1,6 +1,25 @@
 {
-  "latestVersion": "2026-10-31T11:00",
+  "latestVersion": "2026-10-31T14:00",
   "releases": [
+    {
+      "date": "2026-10-31",
+      "time": "14:00",
+      "kind": "优化",
+      "title": "首页第一屏看见加速史",
+      "body": [
+        "首页第一屏的右侧换成加速史的「此刻」：最近一个有配图的里程碑，点开就进加速史。",
+        "第一屏底部是从大爆炸到预测的整条对数时间轴，指针停在今天，下面四个读数：卡尔达肖夫指数、人类一次能源功率、每美元算力和世界人口。今日头条移到第一屏下方「今天，在曲线上」，热点和精选照旧。",
+        "热点事件页也换成首页的夜色，标题下的时间改为「X 前更新」。"
+      ],
+      "en": {
+        "title": "The front page opens on the Acceleration timeline",
+        "body": [
+          "The right side of the front page's first screen now shows Acceleration's \"Right now\": the latest illustrated milestone, which opens the timeline.",
+          "Along the foot of the first screen runs the whole log timeline from the Big Bang to the forecasts, with a needle at today and four readings below it: the Kardashev index, human primary power, compute per dollar and world population. Today's lead story moves just below, under \"Today, on the curve\"; trending and picks are unchanged.",
+          "Trending event pages now share the front page's night look, and the line under the title reads \"Updated … ago\"."
+        ]
+      }
+    },
     {
       "date": "2026-10-31",
       "time": "11:00",
