@@ -1,6 +1,23 @@
 {
-  "latestVersion": "2026-10-30T18:30",
+  "latestVersion": "2026-10-31T11:00",
   "releases": [
+    {
+      "date": "2026-10-31",
+      "time": "11:00",
+      "kind": "优化",
+      "title": "「前沿」页直接读数",
+      "body": [
+        "页头下方一排读数：第一名的共识指数和价格、智能成本降了多少倍、当前的卡尔达肖夫指数。",
+        "下面的卡片直接画出内容：模型榜前五名带厂商标志和分数条，前五名的输入输出价格画在对数刻度上，智能成本画出各档能力的价格阶梯，卡尔达肖夫指数用刻度尺显示。"
+      ],
+      "en": {
+        "title": "Frontier now shows its readings",
+        "body": [
+          "A row of readings sits under the page header: the leading model's consensus index and price, how many times cheaper the same intelligence has become, and today's Kardashev rating.",
+          "The cards below draw their content: the top five models with their makers' logos and score bars, those models' input and output prices on a log scale, the cost of intelligence as price steps for each capability tier, and the Kardashev rating on its scale."
+        ]
+      }
+    },
     {
       "date": "2026-10-30",
       "time": "18:30",

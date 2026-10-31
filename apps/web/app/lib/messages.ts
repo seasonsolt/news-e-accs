@@ -69,7 +69,6 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "跳到正文": "Skip to content",
   "有新的更新": "New updates",
   "{0} 首页": "{0} home",
-  "模型价格": "Model pricing",
   "什么是 e/acc": "What is e/acc?",
   "了解 e/acc": "Understand e/acc",
   "创作": "Make",
