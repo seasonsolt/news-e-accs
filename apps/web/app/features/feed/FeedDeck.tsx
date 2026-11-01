@@ -10,7 +10,6 @@ import { KardashevMeter } from "../chrono/KardashevMeter";
 import { NowCard, NowInstruments, type ChronicleNow } from "../chrono/ChronicleNow";
 import { recordEngagement } from "../../lib/engagement";
 import { weekdayShort } from "../../lib/format";
-import { webModules } from "../../site-modules";
 import type { loader as rootLoader } from "../../root";
 
 /** The day the page shows (the time machine's, else today), in the deck's kicker. */
@@ -79,8 +78,6 @@ export function FeedDeck({ label, heading, at, tag, front = false, lead, chronic
               <span ref={subscribeRef} className="inline-flex">
                 <Link to="/subscribe" onClick={() => recordEngagement("subscribe_click")} className="deck-button is-primary"><Text value="订阅每日 08:00 日报" /></Link>
               </span>
-              <Link to="/chronicle" className="deck-button"><Text value="打开加速史" /></Link>
-              {webModules().flatMap((m) => m.home?.links ?? []).map((l) => <Link key={l.to} to={l.to} className="deck-button home-hero-extra"><Text value={l.label} /></Link>)}
             </div>
             {featuredProduct()?.url && <Link to={featuredProduct()!.url!} className="home-hero-wallpaper home-hero-extra"><Text value="设为 4K 壁纸 →" /></Link>}
           </div>

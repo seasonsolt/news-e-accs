@@ -41,7 +41,6 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "周报": "Weekly",
   "月报": "Monthly",
   "加速史": "Acceleration",
-  "打开加速史": "Explore the acceleration",
   "此刻": "Right now",
   "那一刻": "That moment",
   "那一天": "That day",

@@ -168,7 +168,7 @@ test("the index is routed to the api, listed in the sitemap and llms.txt, and re
       assert.ok(html.includes(`&lt;a href=&quot;${web.origin}${prefix}/index/cost-of-intelligence&quot;&gt;`), `${prefix}: and links back to the page`);
     }
     for (const prefix of ["", "/zh"]) {
-      assert.match(await (await fetch(`${web.origin}${prefix || "/"}`)).text(), new RegExp(`href="${prefix}/index/cost-of-intelligence"`), `${prefix || "/"}: the front page links the index`);
+      assert.match(await (await fetch(`${web.origin}${prefix}/frontier`)).text(), new RegExp(`href="${prefix}/index/cost-of-intelligence"`), `${prefix}/frontier: the hub links the index`);
     }
     const listing = await app.inject({ method: "POST", url: "/api/mcp",
       headers: { host: "localhost", "content-type": "application/json", accept: "application/json, text/event-stream" },

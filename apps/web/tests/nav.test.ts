@@ -20,6 +20,7 @@ test("the deck has picks, daily, acceleration and the frontier; everything else 
   const frontier = tabs.find((item) => item.to === "/frontier")!;
   for (const path of ["/frontier", "/zh/leaderboard/category/coding", "/pricing/compare/a-vs-b", "/index/cost-of-intelligence"]) assert.equal(tabIsActive(frontier, path), true, path);
   assert.equal(isNightPage("/zh/pricing"), true);
+  assert.equal(isNightPage("/index/cost-of-intelligence"), true);
   assert.equal(isNightPage("/zh/story/447297b4"), true);
   assert.equal(isNightPage("/items/447297b4"), false);
   const more = tabs.at(-1)!;

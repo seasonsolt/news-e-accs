@@ -119,7 +119,7 @@ export function tabIsActive(item: NavItem, pathname: string): boolean {
  */
 export function isNightPage(pathname: string): boolean {
   const path = publicPath(pathname);
-  const modules = webModules().flatMap((m) => [...(m.sidebar?.items ?? []), ...(m.tools ?? []), ...(m.home?.links ?? [])]);
+  const modules = webModules().flatMap((m) => [...(m.sidebar?.items ?? []), ...(m.tools ?? [])]);
   const sections = [...TOPNAV, ...moduleSections()].flatMap((item) => item.also ?? []);
   return [...TOPNAV, ...MORE_MENU.flatMap((g) => g.items), MORE_TAB, ...modules].some((item) => item.to === path) || sections.includes(path) || /^\/(weekly|monthly)$/.test(path) || path.startsWith("/story/");
 }

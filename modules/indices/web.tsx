@@ -11,5 +11,4 @@ export default defineWebModule({
     api: { group: "Cost of intelligence", rows: [["/api/v1/agent/cost-of-intelligence", "AI capability prices and halving times", "Once a week"]] },
   } }),
   messages: { zh: CHINESE },
-  home: { links: [{ to: "/index/cost-of-intelligence", label: "The cost of intelligence" }] },
 });

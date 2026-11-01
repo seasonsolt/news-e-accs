@@ -126,8 +126,6 @@ export interface WebModule {
   tabs?: Tab[];
   /** The 我的 page: rows ahead of the engine's tools. */
   tools?: Array<{ to: string; label: string; icon: ReactNode }>;
-  /** The front page's opening: buttons after the engine's 订阅 and 加速史 (routes/home.tsx). */
-  home?: { links?: Array<{ to: string; label: string }> };
   /**
    * The chronicle (routes/chronicle.tsx): scenes entered from an era's or milestone's plate. On a
    * desktop the observatory opens `path` in a frame over the plate and hands over by the messages of
