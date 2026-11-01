@@ -10,13 +10,14 @@ import { marked } from "marked";
 import { after, before, test } from "node:test";
 import { config } from "@aihot/backend/config";
 import { closeDb, sql } from "@aihot/backend/db";
-import { overrideFields, setVisibility } from "@aihot/backend/admin/content";
+import { overrideFields, setSeoIndexed, setVisibility } from "@aihot/backend/admin/content";
 import { updateSource } from "@aihot/backend/admin/sources";
 import { upsertMaterial } from "@aihot/backend/content/materials";
 import { getBoss, stopBoss } from "@aihot/backend/jobs/queue";
 import { publishArticle, republishSource } from "@aihot/backend/publication/publish";
 import { computeHotRanking } from "@aihot/backend/events/hot";
 import { latestHotRanking } from "@aihot/backend/publication/hot";
+import { loadDiscoveryEntries } from "@aihot/backend/publication/sitemap";
 import { loadItemShare } from "@aihot/backend/publication/og";
 import { buildApp } from "../apps/api/src/app.ts";
 
@@ -345,6 +346,23 @@ test("item pages follow one rule: unsummarised editorial items keep one, hot_sig
   assert.equal(storyPage.status, 200, "a story whose only page is unsummarised still has a page");
   assert.ok(storyPage.body.includes(plain), "it lists the unsummarised editorial report");
   assert.ok(!storyPage.body.includes(signal) && !storyPage.body.includes(`SIGNAL-SUMMARY-${T}`), "and not the hot_signal one");
+});
+
+test("a selected item stays noindex and out of discovery until an editor marks it", async () => {
+  const id = await article();
+  await storyFor(id);
+  await publishArticle(id, released());
+  const page = async () => JSON.parse((await get(`/api/site/items/${id}`)).body) as { selected: boolean; indexable: boolean };
+  const discovered = async () => (await loadDiscoveryEntries()).some((e) => e.loc === `/items/${id}`);
+  const first = await page();
+  assert.deepEqual([first.selected, first.indexable], [true, false]);
+  assert.equal(await discovered(), false);
+  await setSeoIndexed(id, { indexed: true, reason: "一手长文" }, "test");
+  assert.equal((await page()).indexable, true);
+  assert.equal(await discovered(), true);
+  await setSeoIndexed(id, { indexed: false, reason: "取消收录" }, "test");
+  assert.equal((await page()).indexable, false);
+  assert.equal(await discovered(), false);
 });
 
 test("unresolved selection does not delay a withdrawal or its sync watermark", async () => {

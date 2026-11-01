@@ -123,10 +123,10 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
   for (const m of serverModules()) if (m.sitemap?.entries) entries.push(...(await m.sitemap.entries()));
   entries.push(...entries.filter((e) => hasChineseMirror(e.loc)).map((e) => ({ ...e, loc: e.loc === "/" ? "/zh" : `/zh${e.loc}` })));
   // Material/translation timestamps can also record a retry or a state repair, so they never date a
-  // page. An item is dated by when it first became indexable (its selected release or SEO admission):
-  // that tells search engines which pages are new, and later edits only make lastmod lag.
+  // page. An item is dated by when an editor admitted it for indexing: that tells search engines
+  // which pages are new, and later edits only make lastmod lag.
   const items = await sql<{ id: string; revision: string; t: Date | null }[]>`
-    SELECT p.article_id AS id, least(p.visible_after, p.seo_indexed_at) AS t,
+    SELECT p.article_id AS id, p.seo_indexed_at AS t,
       md5(concat_ws('|', p.revision::text, a.content_hash, tr.title, tr.body_html, tr.body_text, tr.complete::text, qt.text_zh,
         s.name, s.icon_url, st.public_id::text, st.title)) AS revision
     ${ITEM_FROM}

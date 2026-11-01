@@ -185,7 +185,7 @@ export default function ContentItem({ loaderData }: Route.ComponentProps) {
                     [
                       "正文展示",
                       `${p.body_mode}${p.syndicate ? " · 对外可带全文" : ""}${
-                        p.indexable ? (p.seo_indexed_at ? " · 可收录（手动标记）" : " · 可收录（精选自动）") : p.seo_excluded_at ? " · 不收录（手动排除）" : " · 不收录"
+                        p.indexable ? " · 可收录（手动标记）" : p.seo_excluded_at ? " · 不收录（手动排除）" : " · 不收录"
                       }`,
                     ],
                   ]}
@@ -297,8 +297,8 @@ export default function ContentItem({ loaderData }: Route.ComponentProps) {
         title={p?.indexable ? "取消搜索收录" : "标记为可收录"}
         description={
           p?.indexable
-            ? "详情页改回 noindex 并移出站点地图；即使是精选，也不再自动收录，直到重新标记。"
-            : "详情页默认 noindex，精选内容自动收录。标记后（仅在公开状态下）改为 index、进入站点地图，并在下一次 IndexNow 提交。适合有独立价值、摘要与正文完整的内容。"
+            ? "详情页改回 noindex 并移出站点地图，直到重新标记。"
+            : "详情页默认 noindex，精选内容也一样。标记后（仅在公开状态下）改为 index、进入站点地图，并在下一次 IndexNow 提交。只适合有独立价值的内容，比如一手的长文或独家材料；转述别家报道的不要标记。"
         }
         confirmLabel={p?.indexable ? "取消收录" : "标记收录"}
         busy={pending === "seo"}

@@ -65,7 +65,7 @@ test('discovery dates follow page content and publication scope', async () => {
   await sql`INSERT INTO fact_articles (fact_id,article_id,role) VALUES (${fact!.id},'dates-visible','primary')`;
   const entries = await loadDiscoveryEntries(new Date('2026-10-09'));
   // New pages are dated so search engines can find them; a translation or bookkeeping update is not a date.
-  assert.equal(entries.find(e => e.loc === '/items/dates-visible')?.lastmod?.toISOString(), '2026-10-02T03:00:00.000Z');
+  assert.equal(entries.find(e => e.loc === '/items/dates-visible')?.lastmod?.toISOString(), '2026-10-03T00:00:00.000Z');
   assert.equal(entries.find(e => e.loc === `/story/${publicId}`)?.lastmod?.toISOString(), '2026-10-05T06:00:00.000Z');
   for (const loc of ['/', '/all', '/hot', '/agent', '/changelog']) {
     assert.equal(entries.find(e => e.loc === loc)?.lastmod, undefined, `${loc} must not borrow the news clock`);

@@ -316,7 +316,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
   const visibleAfter = selected ? (previous?.selected && previous.visible_after ? previous.visible_after : options.releasedAt ?? now) : null;
 
   const indexable = isIndexable({
-    visibility, sourceMode: source.participation_mode, hasSummary: !!summary, selected, seoIndexedAt: previous?.seo_indexed_at ?? null, seoExcludedAt: previous?.seo_excluded_at ?? null,
+    visibility, sourceMode: source.participation_mode, hasSummary: !!summary, seoIndexedAt: previous?.seo_indexed_at ?? null, seoExcludedAt: previous?.seo_excluded_at ?? null,
   });
   const searchText = collapseWhitespace(
     [title, originalTitle, summary, publicSourceName(source.name), ...displayTags(tags), ...(analysis?.subjects ?? [])].filter(Boolean).join(" "),
@@ -432,8 +432,8 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
 }
 
 /**
- * An editor's search-index decision: marking indexes the page; unmarking excludes it, so a
- * selected page is not indexed again automatically. The decision and projection commit with the audit.
+ * An editor's search-index decision: marking indexes the page; unmarking excludes it and records
+ * when. The decision and projection commit with the audit.
  */
 export async function setSeoDecision(tx: Tx, articleId: string, indexed: boolean): Promise<PublishResult | null> {
   await tx`UPDATE publications SET seo_indexed_at = CASE WHEN ${indexed} THEN coalesce(seo_indexed_at, now()) ELSE NULL END,
