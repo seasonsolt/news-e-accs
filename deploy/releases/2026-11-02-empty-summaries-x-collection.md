@@ -16,7 +16,8 @@ node --env-file=/srv/eacc/.env deploy/releases/2026-11-02-restore-written-copies
 node --env-file=/srv/eacc/.env deploy/releases/2026-11-02-restore-written-copies.ts --apply
 ```
 
-本地原始回答回放识别到 20 篇可恢复内容，其中 2 篇达到其原有精选门槛；精选仍需通过正常归组确认。
+本地原始回答回放识别到 20 篇；生产预演补齐信源上下文后，又识别出 5 篇仅因作者名“宝玉”被误拦的英文摘要。
+核对原始回答后，共恢复 25 篇，其中 3 篇达到其原有精选门槛；精选仍需通过正常归组确认。
 无需数据库迁移、新环境变量或重新评分。
 
 ## X 采集
@@ -24,3 +25,13 @@ node --env-file=/srv/eacc/.env deploy/releases/2026-11-02-restore-written-copies
 使用者取消 Grok bot 订阅后，按 deploy/README.md 的原有回滚步骤，将生产 `X_PUSH_ONLY` 改为 `false`，
 重启 API 和 worker。SocialData 密钥仍有效，沿用原预算：每分钟 20、每小时 150、每天 500 次。
 保留现有信源、推送内容、搜索水位和去重身份，按原定时任务续采；无需改信源名单或重建采集机制。
+
+## 执行结果
+
+- 修复版本 `4dd1f8d588e93bf4f9ce188e5da1056f8cf6692b` 经 `deploy/update.sh` 上线；API、web、worker 与发布冒烟检查正常。
+- Node 24 正式验证：后端 1,262 项通过、18 项跳过；前端 198 项通过、1 项跳过；类型、构建、全站和 MCP 检查通过。
+- 数据备份：`/srv/eacc/backups/eacc-before-empty-summary-20261102-4dd1f8d.dump`。
+- 25 篇恢复均进入公开内容池；与恢复前逐条对比，分数、双评分、门槛和回执列表无变化。再次预演为 0 篇，未重复恢复。
+- 小米 HachimoDock 文章已在公开浏览器验证显示完整摘要（532 字符）；原评分 75，未改变精选决定。
+- 72 个启用 X 账号均完成至少一次 SocialData 成功采集。补采新增 4 条，其中 2 条旧帖以 `stale-on-discovery` 归档。
+- 首轮分钟预算触发的批次在预算窗口清空后补采完成；没有调高预算。切换使部分已存帖子的正文发生修订，后续处理沿用正常 worker 队列。
