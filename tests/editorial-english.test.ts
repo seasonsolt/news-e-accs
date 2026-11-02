@@ -34,6 +34,24 @@ test('English copy accepts sparse facts, preserves numbers, and requires English
   assert.equal(guard.summary, '');
 });
 
+test('a source-backed Chinese platform name does not erase an English summary or hide the article', () => {
+  const input = { title: '小米开源了个150元的AI小玩意', text: '小米开源 HachimoDock，硬件自制成本约150元，硬件BOM、结构模型和组装教程发布在嘉立创。', sourceKind: 'rss' };
+  const summary = 'Xiaomi has open-sourced HachimoDock, an AI desktop companion with a reported DIY hardware cost of about 150 yuan. Hardware bills of materials, structural models, and assembly tutorials are available on 嘉立创.';
+  const copy = finalizeCopy(input, { title: 'Xiaomi open-sources HachimoDock, an AI desktop companion costing about 150 yuan to build', summary });
+  assert.equal(copy.summary, summary);
+  assert.equal(copy.identityGuard.outcome, 'pass');
+  const run: AnalysisRun = { prefilter: { label: 'PASS', reason: '', model: 'fixture', receiptId: 1, reused: true },
+    scores: { model: 'fixture', threshold: 76, values: [77, 73], receiptIds: [2, 3], reused: true },
+    writing: { ...copy, kind: 'understand', model: 'fixture', reason: null, receiptIds: [4], reused: true }, structure: null };
+  const out = normalizeAnalysis(run);
+  assert.equal(out.relevance, 'pass');
+  assert.equal(out.summary, summary);
+  assert.equal(out.selected, false);
+
+  assert.equal(finalizeCopy(input, { title: copy.title, summary: summary.replace('嘉立创', '未知平台') }).summary, '');
+  assert.equal(finalizeCopy(input, { title: copy.title, summary: '小米开源 HachimoDock，硬件自制成本约150元。' }).summary, '');
+});
+
 test('short X output retains original line breaks, URLs and quote attribution instructions', () => {
   const post = 'Model 2.5 is available.\nhttps://example.com/model';
   const prompt = buildShortTweetPrompt({ title: 'Go build!', text: post, mainText: 'Go build!', quotedText: post, quotedAuthor: 'lab', sourceKind: 'x_search' });

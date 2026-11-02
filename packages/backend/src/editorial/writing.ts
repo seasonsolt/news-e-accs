@@ -47,10 +47,18 @@ export function cleanArticleTextForLLM(s: string): string {
     .trim();
 }
 
-/** Deterministic prose guard; quoted original-language text may remain verbatim. */
-export function looksEnglish(text: string): boolean {
+/** Quoted text and sparse original-script names from the source may remain in English prose. */
+function englishProse(text: string, originalText: string): boolean {
   const prose = text.replace(/https?:\/\/\S+/g, " ").replace(/"[^"\n]*"|“[^”\n]*”/g, " ");
-  return /[A-Za-z]{2}/.test(prose) && !/[一-鿿぀-ヿ가-힯Ѐ-ӿ]/.test(prose);
+  if (!/[A-Za-z]{2}/.test(prose)) return false;
+  const retained = prose.match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Cyrillic}]+/gu) ?? [];
+  // The material must support every retained term, and prose must still be overwhelmingly Latin.
+  return retained.every(term => originalText.includes(term))
+    && retained.join("").length * 10 <= (prose.match(/[A-Za-z]/g)?.length ?? 0);
+}
+
+export function looksEnglish(text: string): boolean {
+  return englishProse(text, "");
 }
 
 // The material as the prefilter and the content understanding read it
@@ -249,7 +257,8 @@ export const isShortTweetInput = (input: TranslateInput) => input.sourceKind ===
 export function finalizeCopy(input: TranslateInput, copy: { title: string; summary: string }) {
   let summary = copy.summary;
   if (!isShortTweetInput(input) && summary && !answerFirstSummaryLengthOk(summary)) summary = compactAnswerFirstSummary(summary);
-  return enforceIdentity(input, { title: looksEnglish(copy.title) ? copy.title : "", summary: looksEnglish(summary) ? summary : "" });
+  const original = [input.title, input.text, input.mainText, input.quotedText, input.sourceName].filter(Boolean).join("\n");
+  return enforceIdentity(input, { title: englishProse(copy.title, original) ? copy.title : "", summary: englishProse(summary, original) ? summary : "" });
 }
 
 // Title/summary prompts for items the content understanding does not write
