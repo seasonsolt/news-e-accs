@@ -109,7 +109,7 @@ flowchart LR
 | `/llms.txt` `/llms-full.txt` `/sitemap.xml` `/robots.txt` | 给大模型和搜索引擎的说明。`llms-full.txt` 是最近 7 天日报和当前热点的 Markdown，每条带事件页和原文链接；`robots.txt` 等根目录文件在 `site/public/` |
 | `/admin` | 后台 |
 
-精选、热点榜、模型榜与报告支持 `?at=YYYY-MM-DD`：截至该北京日 23:59:59.999，只通过公开读取层读取已发布记录；今天等同实时，未来和非法日期由接口返回 400。历史精选不走实时缓存，游标绑定日期，热点与模型榜的历史缓存不覆盖实时缓存。30 天以前的热点榜只保留每个北京日最后一份已发布记录；已删历史不恢复，模型价格仍为当前价。公开资讯内容仍匿名读取；界面语言只由 URL 决定，语言偏好 cookie 和 onboarding 状态只在浏览器读取，不触发模型。公开 HTML/data 使用路由声明的缓存期限；服务端输出不能依赖 cookie、`Accept-Language` 或用户代理（仅 bot 流式发送时机除外），见 [界面国际化](internationalization.md)；历史页 noindex，canonical 不带 `at`。MCP 和 API v1 暂不提供历史切片。
+精选、热点榜、模型榜与报告支持 `?at=YYYY-MM-DD`（其余页面始终显示当前内容，带 `at` 的地址 301 到不带它的地址，站内链接也不带）：截至该北京日 23:59:59.999，只通过公开读取层读取已发布记录；今天等同实时，未来和非法日期由接口返回 400。历史精选不走实时缓存，游标绑定日期，热点与模型榜的历史缓存不覆盖实时缓存。30 天以前的热点榜只保留每个北京日最后一份已发布记录；已删历史不恢复，模型价格仍为当前价。公开资讯内容仍匿名读取；界面语言只由 URL 决定，语言偏好 cookie 和 onboarding 状态只在浏览器读取，不触发模型。公开 HTML/data 使用路由声明的缓存期限；服务端输出不能依赖 cookie、`Accept-Language` 或用户代理（仅 bot 流式发送时机除外），见 [界面国际化](internationalization.md)；历史页 noindex，canonical 不带 `at`。MCP 和 API v1 暂不提供历史切片。
 
 站点地图、IndexNow 和 Search Console 任务读同一份发现清单（`publication/sitemap.ts` 的 `loadDiscoveryEntries`，模块用 `sitemap.pages/entries` 补充）。只列可被收录的页面：noindex 页、分页和筛选变体不列；中文版只在网页自己总会用 hreflang 链到它时才列。`lastmod` 只用真实的公开内容变化时间，例如条目首次可收录、报告更新、事件摘要重写；不借用新闻活动时间，也不用素材、译文、重试这类记账时间戳；没有可靠时间就不写，内容变化交给 `revision`。`lastmod` 可以比实际变化晚，不能提前。新闻站点地图只放 48 小时内的英文原生事件页。新增页面类型时，在 `tests/discovery-*.test.ts` 断言它在清单里，以及它的 `lastmod` 取自哪里。
 

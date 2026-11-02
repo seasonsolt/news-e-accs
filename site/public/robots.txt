@@ -8,5 +8,7 @@ Disallow: /starred
 Disallow: /feedback
 Disallow: /all?
 Disallow: /zh/all?
+Disallow: /*?at=
+Disallow: /*&at=
 
 Sitemap: {{siteUrl}}/sitemap.xml

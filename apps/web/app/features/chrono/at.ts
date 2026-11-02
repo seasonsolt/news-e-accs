@@ -1,6 +1,6 @@
 import { publicPath } from "../../lib/locale.ts";
-// The time machine's place in the URL: `?at=YYYY-MM-DD` (a Beijing day) puts the whole site on that
-// day. It lives in the address, never in a cookie, so a slice is server-rendered, shareable and
+// The time machine's place in the URL: `?at=YYYY-MM-DD` (a Beijing day) puts the pages that follow
+// time on that day. It lives in the address, never in a cookie, so a slice is server-rendered, shareable and
 // cached as its own page (tests/cache.test.ts keeps public pages cookie-free).
 import { FEATURES } from "@aihot/industry/features";
 import { MODULES } from "@aihot/site/modules";
@@ -24,20 +24,27 @@ export function useAt(): string | null {
   return parseAt(useLocation().search);
 }
 
-/** Pages whose content follows the time machine; the rest show the present beneath its bar. */
+/** Pages whose content follows the time machine. The rest always show the present, so they never carry `at`. */
 export function followsTime(pathname: string): boolean {
   pathname = publicPath(pathname);
   return MODULES.some((m) => m.timePaths?.some((pattern) => pattern.test(pathname))) || pathname === "/" || pathname === "/hot" || /^\/(daily|weekly|monthly)(\/|$)/.test(pathname);
 }
 
-/** `to` with `at` set (or removed when null), keeping its other parameters and hash. */
+/** The address without `at` when it sits on a page that does not follow time, else null. */
+export function timelessAddress(pathname: string, search: string): string | null {
+  if (!/[?&]at=/.test(search) || followsTime(pathname)) return null;
+  const query = search.slice(1).split("&").filter((part) => !part.startsWith("at=")).join("&");
+  return `${pathname}${query ? `?${query}` : ""}`;
+}
+
+/** `to` with `at` set where the page follows time (removed otherwise, or when null), keeping its other parameters and hash. */
 export function withAt(to: string, at: string | null): string {
   const hashAt = to.indexOf("#");
   const hash = hashAt >= 0 ? to.slice(hashAt) : "";
   const rest = hashAt >= 0 ? to.slice(0, hashAt) : to;
   const [path, query = ""] = rest.split("?") as [string, string?];
   const sp = new URLSearchParams(query);
-  if (at) sp.set("at", at);
+  if (at && followsTime(path)) sp.set("at", at);
   else sp.delete("at");
   const qs = sp.toString();
   return `${path}${qs ? `?${qs}` : ""}${hash}`;

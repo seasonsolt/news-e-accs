@@ -308,7 +308,6 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "后一天": "Next day",
   "本站记录始于 {0}": "This site's records begin on {0}",
   "本站那时还没有记录": "No site records for that time",
-  "本页内容不随时间变化": "This page does not vary by date",
   "时光机停在": "Viewing history for ",
   "‹ 前一天": "‹ Previous day",
   "后一天 ›": "Next day ›",

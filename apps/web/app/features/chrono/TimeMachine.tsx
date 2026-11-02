@@ -100,7 +100,7 @@ export function TimeDial({ bounds, className = "" }: { bounds: TimeMachineBounds
   );
 }
 
-/** Over every page while the site shows a past day: which day, a step either way, and the way back. */
+/** Over a page showing a past day: which day, a step either way (none before the records begin), and the way back. */
 export function TimeBar({ bounds }: { bounds: TimeMachineBounds | null }) {
   const tx = useTranslate();
   const at = useAt();
@@ -111,7 +111,8 @@ export function TimeBar({ bounds }: { bounds: TimeMachineBounds | null }) {
   const prev = stepAt(at, -1, today);
   const next = stepAt(at, 1, today);
   const beforeRecord = !!bounds?.earliest && at < bounds.earliest;
-  const note = beforeRecord ? tx("本站那时还没有记录") : !followsTime(pathname) ? tx("本页内容不随时间变化") : null;
+  const atStart = !!bounds?.earliest && at <= bounds.earliest;
+  const note = beforeRecord ? tx("本站那时还没有记录") : null;
   return (
     <div role="region" aria-label={tx("时光机")} className="time-bar sticky top-0 z-30 -mx-4 mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 lg:top-3 lg:mx-0 lg:px-3">
       <span className="flex min-w-0 items-center gap-2.5">
@@ -122,7 +123,7 @@ export function TimeBar({ bounds }: { bounds: TimeMachineBounds | null }) {
         </span>
       </span>
       <span className="ml-auto flex flex-wrap items-center gap-1.5">
-        <Link to={withAt(here, prev)} className="time-bar-button" aria-label={tx("前一天")}><Text value="‹ 前一天" /></Link>
+        {!atStart && <Link to={withAt(here, prev)} className="time-bar-button" aria-label={tx("前一天")}><Text value="‹ 前一天" /></Link>}
         <Link to={withAt(here, next)} className="time-bar-button" aria-label={tx("后一天")}><Text value="后一天 ›" /></Link>
         <Link to={chronicleHref(at)} className="time-bar-button"><Text value="加速史" /></Link>
         <Link to={withAt(here, null)} className="time-bar-button is-primary"><Text value="回到现在" /></Link>

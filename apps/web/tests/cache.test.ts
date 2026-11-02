@@ -814,6 +814,9 @@ test("report kind, topic pagination and redirects retain Chinese paths in HTML a
   const topic = parseHTML(await (await fetch(origin + "/zh/topics/robots/page/2")).text()).document;
   assert.ok(topic.querySelector('a[href="/zh/topics/robots"]'));
   assert.match(topic.querySelector('link[rel="canonical"]')!.getAttribute("href")!, /\/zh\/topics\/robots\/page\/2$/);
+  const timeless = await fetch(origin + "/zh/all?at=2023-02-16&category=industry&page=27", { redirect: "manual" });
+  assert.equal(timeless.status, 301);
+  assert.equal(timeless.headers.get("location"), "/zh/all?category=industry&page=27");
   for (const [path, target, status] of [["/zh/topics/robots/page/1?q=robot", "/zh/topics/robots?q=robot", 308], ["/zh?q=robot", "/zh/all?q=robot", 302], ["/zh/story/merged", "/zh/story/surviving-story", 308], ["/zh/all/?q=robot", "/zh/all?q=robot", 301]] as const) {
     const response = await fetch(origin + path, { redirect: "manual" });
     assert.equal(response.status, status, path);

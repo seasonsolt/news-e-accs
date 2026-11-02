@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import { eraAt, type ChronicleEra, type ChronicleMilestone } from "@aihot/contracts/chronicle";
-import { parseAt, stepAt, withAt } from "../app/features/chrono/at.ts";
+import { parseAt, stepAt, timelessAddress, withAt } from "../app/features/chrono/at.ts";
 import { distanceLabel, keepAxisInView, MIN_AXIS_SPAN, nearbyPlates, panAxisWindow, projectAxis, stepEra, stepPicture, timeParam, untilLabel, zoomAxisWindow } from "../app/features/chrono/format.ts";
 import { ApiError, apiErrorResponse, loadOr404 } from "../app/lib/api.server.ts";
 import { artSrcSet, artUrl, artWidth, loadArtImage } from "../app/features/chrono/art.ts";
@@ -171,6 +171,14 @@ test("past days are URL state, today and the future are live", () => {
   assert.equal(withAt("/hot?at=2026-09-01&other=1#rank", null), "/hot?other=1#rank");
   assert.equal(withAt("/hot#rank", null), "/hot#rank");
   assert.equal(withAt("/hot?at=2026-09-01", "2026-09-02"), "/hot?at=2026-09-02");
+  // Pages that show the present never gain an address per day.
+  assert.equal(withAt("/all?category=industry&page=3", "2026-09-01"), "/all?category=industry&page=3");
+  assert.equal(withAt("/story/x?at=2026-09-01#sources", "2026-09-02"), "/story/x#sources");
+  assert.equal(timelessAddress("/zh/all", "?at=2023-02-16&category=industry&page=27"), "/zh/all?category=industry&page=27");
+  assert.equal(timelessAddress("/story/x", "?at=2023-02-16"), "/story/x");
+  assert.equal(timelessAddress("/all", "?category=industry"), null);
+  assert.equal(timelessAddress("/all", "?format=x"), null);
+  for (const path of ["/", "/zh", "/hot", "/daily/2023-02-16", "/leaderboard"]) assert.equal(timelessAddress(path, "?at=2023-02-16"), null, path);
 });
 
 test("moment URLs preserve era boundaries and nearby calendar dates", () => {

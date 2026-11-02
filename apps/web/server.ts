@@ -10,6 +10,7 @@ import { pathToFileURL } from "node:url";
 import { createRequestListener } from "@react-router/node";
 import type { ServerBuild } from "react-router";
 import { isApiOwned, resolveRedirect } from "@aihot/contracts/http-policy";
+import { timelessAddress } from "./app/features/chrono/at.ts";
 import { BROWSER_MAX_SECONDS } from "./app/lib/api.server.ts";
 import { proxyToApi } from "./app/lib/api-proxy.server.ts";
 import { compressResponse } from "./app/lib/compress.server.ts";
@@ -238,6 +239,12 @@ async function handle(req: import("node:http").IncomingMessage, res: import("nod
   }
 
   if ((req.method === "GET" || req.method === "HEAD") && pathname.includes(".") && (await serveStatic(pathname, req, res))) return;
+  // `at` on a page that ignores it is one page under an address per day; crawlers walked them all past the cache.
+  const timeless = (req.method === "GET" || req.method === "HEAD") && !pathname.includes(".") ? timelessAddress(pathname, search) : null;
+  if (timeless) {
+    res.writeHead(301, { Location: timeless, "Cache-Control": "public, max-age=86400" });
+    return res.end();
+  }
   pageResponse(req, res);
   return withTiming(() => ssr(req, res));
 }
