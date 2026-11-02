@@ -500,9 +500,8 @@ export async function scheduleDueSources(): Promise<{ enqueued: number; shards: 
   return { enqueued, shards: pushOnly ? 0 : await scheduleXShards() };
 }
 
-/** Minutes between reads of a shard: editorial accounts every half hour, hot-signal accounts hourly. */
-const X_SHARD_MINUTES: Record<string, number> = { editorial: 30, hot_signal: 60 };
-const shardMinutes = (mode: string) => X_SHARD_MINUTES[mode] ?? 60;
+/** Both editorial and hot-signal X shards are read hourly. */
+const X_SHARD_MINUTES = 60;
 
 /**
  * Daily: adapt each source's interval to its recent output (active 15 min … quiet 120 min).
@@ -523,7 +522,7 @@ export async function adaptIntervals(): Promise<{ updated: number }> {
     // Listings read through Jina are not looked at more than hourly: busy ones would outrun its daily budget.
     const min = r.paid_listing ? 60 : 15;
     // X accounts read by shard follow the shard's pace, whatever their own volume.
-    const target = shardHandle(r) ? shardMinutes(r.participation_mode) : perDay <= 0.15 ? max : Math.round(Math.min(max, Math.max(min, (24 * 60) / (perDay * 3))));
+    const target = shardHandle(r) ? X_SHARD_MINUTES : perDay <= 0.15 ? max : Math.round(Math.min(max, Math.max(min, (24 * 60) / (perDay * 3))));
     const res = await sql`UPDATE sources SET interval_minutes = ${target} WHERE id = ${r.id} AND interval_minutes <> ${target}`;
     updated += res.count;
   }

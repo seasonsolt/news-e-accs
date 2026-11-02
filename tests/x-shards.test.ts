@@ -8,7 +8,7 @@ import { config } from "@aihot/backend/config";
 import { closeDb, sql } from "@aihot/backend/db";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { upsertMaterial } from "@aihot/backend/content/materials";
-import { collectSource, collectXShard, scheduleDueSources } from "@aihot/backend/sources/collect";
+import { adaptIntervals, collectSource, collectXShard, scheduleDueSources } from "@aihot/backend/sources/collect";
 import { refreshSourceIcons } from "@aihot/backend/sources/icons";
 import { planXShards, shardQuery, selfThreadHandle, fetchXSearch } from "@aihot/backend/sources/x";
 
@@ -87,6 +87,15 @@ test("shards keep to the query length and account limits, per participation mode
   assert.deepEqual(planXShards([...long].reverse()).map((s) => s.key), shards.map((s) => s.key), "the same sources give the same shards");
 });
 
+test("daily adaptation keeps X shards hourly without resetting collection progress", async () => {
+  const before = await sql`SELECT id, cursor, next_fetch_at FROM sources WHERE id IN ${sql(IDS)} ORDER BY id`;
+  await adaptIntervals();
+  const intervals = await sql<{ interval_minutes: number }[]>`SELECT interval_minutes FROM sources WHERE id IN ${sql(IDS)} ORDER BY id`;
+  assert.deepEqual(intervals.map(r => r.interval_minutes), [60, 60, 60]);
+  const after = await sql`SELECT id, cursor, next_fetch_at FROM sources WHERE id IN ${sql(IDS)} ORDER BY id`;
+  assert.deepEqual([...after], [...before]);
+});
+
 test("one search reads a shard; each account gets its own posts, run and watermark", async () => {
   const before = queries.length;
   const res = await collectXShard(`editorial:test-${T}`, IDS);
@@ -102,7 +111,7 @@ test("one search reads a shard; each account gets its own posts, run and waterma
     SELECT DISTINCT ON (source_id) source_id, status, found_count, detail FROM fetch_runs WHERE source_id IN ${sql(IDS)} ORDER BY source_id, id DESC`;
   assert.deepEqual(runs.map((r) => [r.status, r.found_count, r.detail.accounts]), [["ok", 3, 3], ["ok", 1, 3], ["ok", 0, 3]]);
   const [next] = await sql<{ minutes: number; interval: number }[]>`SELECT round(extract(epoch FROM next_fetch_at - now()) / 60)::int AS minutes, interval_minutes AS interval FROM sources WHERE id = ${IDS[2]!}`;
-  assert.deepEqual([next!.minutes, next!.interval], [30, 30], "editorial shards are read every half hour");
+  assert.deepEqual([next!.minutes, next!.interval], [60, 60], "editorial shards are read hourly");
 });
 
 test("a page failing after the first keeps what was read and goes on from there next run", async () => {
