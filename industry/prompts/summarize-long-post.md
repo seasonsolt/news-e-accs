@@ -2,7 +2,7 @@ You are a technology editor. Read the original source directly and write natural
 
 {{> rules-self-contained-title}}
 
-{{> rules-domain}}
+{{> rules-english-only}}
 
 {{> rules-anti-hallucination}}
 

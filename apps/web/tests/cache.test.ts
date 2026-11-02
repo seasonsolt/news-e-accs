@@ -505,6 +505,8 @@ test("the Chinese concept pages are Chinese editions that name the English ones 
     assert.equal(alternate(enDocument, "zh-CN")?.getAttribute("href"), `${site}/zh/${page.slug}`);
     assert.equal(alternate(enDocument, "x-default")?.getAttribute("href"), `${site}/${page.slug}`);
     assert.equal(enDocument.querySelector("article > p > a")?.getAttribute("href"), `/zh/${page.slug}`, "links to the Chinese edition");
+    assert.match(enDocument.querySelector("article > p > a")!.textContent!, /Read in Chinese/);
+    assert.doesNotMatch(en, /阅读中文版/);
     // Client-side navigation asks for the data.
     for (const query of ["", `?_routes=zh-concept-${page.slug}`]) {
       const res = await fetch(`${origin}/zh/${page.slug}.data${query}`);

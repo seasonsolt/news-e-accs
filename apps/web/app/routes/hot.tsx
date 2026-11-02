@@ -1,4 +1,4 @@
-import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
+import { localeFromMatches, Text, useLocale, useTranslate } from "../lib/i18n";
 import { subjectAfter, withSubject } from "@aihot/site";
 import { useLoaderData, useRouteLoaderData } from "react-router";
 import { IntentLink } from "../components/ui/IntentLink";
@@ -52,12 +52,13 @@ const pad = (rank: number) => String(rank).padStart(2, "0");
 /** "某媒体、某账号 等 4 个来源 · 7 位参与者". */
 function Voices({ e }: { e: HotEntryView }) {
   const tx = useTranslate();
+  const locale = useLocale();
   const names = e.sourceNames.slice(0, 2);
   return (
     <span className="min-w-0 text-[12.5px] leading-snug text-ink-4">
       {/* Lines break between the phrases, never inside one; a phrase wider than the card is cut short. */}
       <span className="inline-block max-w-full truncate whitespace-nowrap align-bottom">
-        {names.length > 0 && <span className="text-ink-3">{names.join("、")}</span>}
+        {names.length > 0 && <span className="text-ink-3">{names.join(locale === "en" ? ", " : "、")}</span>}
         {e.sourceCount > names.length ? tx(" 等 {0} 个来源", e.sourceCount) : names.length ? tx(" 报道") : tx("{0} 个来源", e.sourceCount)}
       </span>
       <span className="mx-1.5 text-line-strong">·</span>
@@ -68,9 +69,10 @@ function Voices({ e }: { e: HotEntryView }) {
 }
 
 function Badges({ e }: { e: HotEntryView }) {
+  const tx = useTranslate();
   return e.badges.map((b) => (
-    <Badge key={b} tone={BADGES[b].tone} title={BADGES[b].hint}>
-      {BADGES[b].label}
+    <Badge key={b} tone={BADGES[b].tone} title={tx(BADGES[b].hint)}>
+      {tx(BADGES[b].label)}
     </Badge>
   ));
 }

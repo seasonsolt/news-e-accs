@@ -8,6 +8,7 @@ export { isChineseText as looksZh } from "../lib/text.ts";
 import { onlyXArticleLink } from "../sources/x.ts";
 import type { AnalyzeInputArticle } from "./input.ts";
 import { promptText } from "./prompts.ts";
+import { englishReaderText } from "@aihot/contracts/english-surface";
 
 export const PREFILTER_SYSTEM = promptText("prefilter");
 export const UNDERSTAND_SYSTEM = promptText("understand");
@@ -47,18 +48,15 @@ export function cleanArticleTextForLLM(s: string): string {
     .trim();
 }
 
-/** Quoted text and sparse original-script names from the source may remain in English prose. */
-function englishProse(text: string, originalText: string): boolean {
-  const prose = text.replace(/https?:\/\/\S+/g, " ").replace(/"[^"\n]*"|“[^”\n]*”/g, " ");
-  if (!/[A-Za-z]{2}/.test(prose)) return false;
-  const retained = prose.match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Cyrillic}]+/gu) ?? [];
-  // The material must support every retained term, and prose must still be overwhelmingly Latin.
-  return retained.every(term => originalText.includes(term))
-    && retained.join("").length * 10 <= (prose.match(/[A-Za-z]/g)?.length ?? 0);
+/** English reader text is Latin. A Chinese name or quotation is not English, even when the source used it. */
+function englishProse(text: string): boolean {
+  const prose = text.replace(/https?:\/\/\S+/g, " ");
+  if (/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Cyrillic}]/u.test(prose)) return false;
+  return !/[\p{L}]/u.test(prose) || /[A-Za-z]{2}/.test(prose);
 }
 
 export function looksEnglish(text: string): boolean {
-  return englishProse(text, "");
+  return englishProse(text);
 }
 
 // The material as the prefilter and the content understanding read it
@@ -257,8 +255,12 @@ export const isShortTweetInput = (input: TranslateInput) => input.sourceKind ===
 export function finalizeCopy(input: TranslateInput, copy: { title: string; summary: string }) {
   let summary = copy.summary;
   if (!isShortTweetInput(input) && summary && !answerFirstSummaryLengthOk(summary)) summary = compactAnswerFirstSummary(summary);
-  const original = [input.title, input.text, input.mainText, input.quotedText, input.sourceName].filter(Boolean).join("\n");
-  return enforceIdentity(input, { title: englishProse(copy.title, original) ? copy.title : "", summary: englishProse(summary, original) ? summary : "" });
+  // A known outlet name is mapped and a trailing CJK sentence dropped; anything else with CJK is rejected.
+  const readable = (text: string) => {
+    const cleaned = englishReaderText(text) ?? "";
+    return englishProse(cleaned) ? cleaned : "";
+  };
+  return enforceIdentity(input, { title: readable(copy.title), summary: readable(summary) });
 }
 
 // Title/summary prompts for items the content understanding does not write

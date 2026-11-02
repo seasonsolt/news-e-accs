@@ -1,6 +1,6 @@
 {{> content-understanding}}
 
-{{> rules-domain}}
+{{> rules-english-only}}
 
 {{> rules-anti-hallucination}}
 

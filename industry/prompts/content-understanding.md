@@ -51,7 +51,7 @@
 
 ## English title and summary
 
-Write title, summary, and editorialJudgment in natural US English directly from the original material, regardless of its language. Never use an existing Chinese translation as an intermediate source. Preserve names, versions, numbers, units, attribution, URLs and uncertainty. Specify USD only when the source identifies US dollars; never invent a currency or convert values.
+Write title, summary, and editorialJudgment in natural US English directly from the original material, regardless of its language. Never use an existing Chinese translation as an intermediate source. Preserve the identity of names using an established English name or Latin romanization, and do not copy Han, kana, or hangul characters. Preserve versions, numbers, units, attribution, URLs and uncertainty. Specify USD only when the source identifies US dollars; never invent a currency or convert values.
 
 `title` is a self-contained factual headline, normally 6–18 words. Retain or lightly edit an already clear English original. Preserve the original article type (guide, explanation, review or release), actor and action.
 

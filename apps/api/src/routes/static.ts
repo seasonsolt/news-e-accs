@@ -108,15 +108,24 @@ export async function sendFile(req: FastifyRequest, reply: FastifyReply, file: s
 }
 
 export function registerStatic(app: FastifyInstance) {
-  app.get("/sitemap.xml", async (req, reply) => {
+  const serveSitemap = async (req: FastifyRequest, reply: FastifyReply, path: string) => {
     try {
-      const { xml, expiresAt } = await loadSitemap();
+      const { files, expiresAt } = await loadSitemap();
+      const xml = files[path];
+      if (!xml) return reply.code(404).type("text/plain; charset=utf-8").send("Not found");
       const seconds = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
-      return sendTextWithEtag(req, reply, xml, { etagPrefix: "sitemap", cacheControl: seconds > 0 ? `public, max-age=0, s-maxage=${seconds}, must-revalidate` : "no-store", contentType: "application/xml" });
+      return sendTextWithEtag(req, reply, xml, { etagPrefix: `sitemap:${path}`, cacheControl: seconds > 0 ? `public, max-age=0, s-maxage=${seconds}, must-revalidate` : "no-store", contentType: "application/xml" });
     } catch (error) {
       req.log.error({ err: error }, "sitemap unavailable");
       return reply.code(503).header("Retry-After", "300").header("Cache-Control", "no-store").send("Sitemap temporarily unavailable");
     }
+  };
+  app.get("/sitemap.xml", (req, reply) => serveSitemap(req, reply, "/sitemap.xml"));
+  // Child documents of a sitemap index. /sitemap.xml stays the robots.txt entry either way.
+  app.get("/sitemaps/:file", (req, reply) => {
+    const file = (req.params as { file: string }).file;
+    if (!/^sitemap-\d+\.xml$/.test(file)) return reply.code(404).type("text/plain; charset=utf-8").send("Not found");
+    return serveSitemap(req, reply, `/sitemaps/${file}`);
   });
 
   app.get("/llms.txt", async (req, reply) => {

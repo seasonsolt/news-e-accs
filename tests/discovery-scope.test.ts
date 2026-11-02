@@ -6,6 +6,7 @@ import { after, test } from "node:test";
 import { sql, closeDb } from "@aihot/backend/db";
 import { topicDiscovery } from "@aihot/backend/publication/topics";
 import { loadLlmsAvailability } from "@aihot/backend/publication/llms";
+import { packSitemap } from "@aihot/backend/publication/sitemap";
 import { randomUUID } from "node:crypto";
 import { buildApp } from "../apps/api/src/app.ts";
 
@@ -64,4 +65,20 @@ test("the sitemap pairs mirrored editions and names only fresh native English st
   assert.match(about, /hreflang="x-default" href="[^"]+\/about"/);
   assert.ok(about.indexOf("</priority>") < about.indexOf("<xhtml:link"), "extension elements follow the core ones");
   assert.ok(!entry(fresh).includes("hreflang"), "content pages wait for both editions");
+  assert.ok(!body.includes("/zh/story/"), "story editions are not advertised");
+  assert.match(body, /<loc>[^<]*\/zh\/daily\/archive<\/loc>/);
+});
+
+test("a sitemap that no longer fits one file stays available at /sitemap.xml as an index", () => {
+  const entries = Array.from({ length: 5 }, (_, i) => ({ loc: `/bulk/${i}`, changefreq: "daily", priority: 0.5 }));
+  const files = packSitemap(entries, { urls: 2, bytes: 5_000_000 });
+  assert.match(files["/sitemap.xml"]!, /<sitemapindex/);
+  assert.match(files["/sitemap.xml"]!, /\/sitemaps\/sitemap-1\.xml/);
+  assert.match(files["/sitemap.xml"]!, /\/sitemaps\/sitemap-3\.xml/);
+  assert.match(files["/sitemaps/sitemap-1.xml"]!, /<urlset/);
+  assert.match(files["/sitemaps/sitemap-1.xml"]!, /\/bulk\/0</);
+  assert.match(files["/sitemaps/sitemap-3.xml"]!, /\/bulk\/4</);
+  const single = packSitemap(entries);
+  assert.match(single["/sitemap.xml"]!, /<urlset/);
+  assert.equal(single["/sitemaps/sitemap-1.xml"], undefined);
 });
