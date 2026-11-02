@@ -7,8 +7,9 @@ export const FEATURES = {
    */
   timeMachine: true,
   /**
-   * e/acc 概念页：/what-is-eacc、/eacc-vs-dacc、/eacc-vs-ea、/eacc-glossary（内容在 industry/concepts.ts，
-   * 中文版在 concepts-zh.ts）。/eacc-vs-ea 是本站新写的，其余三页从 e-acc.ai 的静态工具站搬来，网址和正文不变；别的站点设为 false。
+   * e/acc 概念页：/what-is-eacc、/eacc-vs-dacc、/eacc-vs-ea、/eacc-manifesto、/eacc-token、/eacc-glossary
+   * （内容在 industry/concepts.ts，中文版在 concepts-zh.ts）。/eacc-vs-ea、/eacc-manifesto、/eacc-token 是本站新写的，
+   * 其余三页从 e-acc.ai 的静态工具站搬来，网址和正文不变；别的站点设为 false。
    */
   eaccConcepts: true,
 } as const;

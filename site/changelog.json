@@ -1,6 +1,25 @@
 {
-  "latestVersion": "2026-10-31T14:00",
+  "latestVersion": "2026-11-03T12:00",
   "releases": [
+    {
+      "date": "2026-11-03",
+      "time": "12:00",
+      "kind": "更新",
+      "title": "两篇 e/acc 概念页：宣言与代币",
+      "body": [
+        "新增「e/acc 宣言」：被称作宣言的三篇文本——2022 年奠基通讯、《原则与信条笔记》和 Andreessen 的《技术乐观主义宣言》——各讲了什么，以及有哪些回应和批评，附原文链接。",
+        "新增「e/acc 代币」：e/acc 没有官方代币，本站也没有；说明梗币为什么借用这个名字，以及相信之前要核对什么。",
+        "智能成本指数的网页标题改为「AI 模型 token 价格变化」，更贴近人们搜索时的说法。"
+      ],
+      "en": {
+        "title": "Two e/acc explainers: the manifesto and the token",
+        "body": [
+          "New: the e/acc manifesto — what the three texts that get the name say (the 2022 founding post, the principles and tenets, and Andreessen's Techno-Optimist Manifesto), and how people responded, with links to the originals.",
+          "New: the e/acc token — there is no official e/acc token, and this site has none; why meme tokens borrow the name and what to check before trusting one.",
+          "The cost-of-intelligence index's page title now reads \"AI Price per Token Over Time\", closer to how people search for it."
+        ]
+      }
+    },
     {
       "date": "2026-10-31",
       "time": "14:00",

@@ -117,7 +117,7 @@ const WHAT_IS: ConceptPage = {
       把思想讲得最完整的，是 @BasedBeffJezos 和 @bayeslord 在 2022 年 7 月 10 日发表的
       <a href="https://beff.substack.com/p/notes-on-eacc-principles-and-tenets" target="_blank" rel="noopener">《e/acc 原则与信条笔记》</a>：
       热力学论证、技术资本机器，以及这场运动为什么拒绝减速。而大多数人说的“宣言”，是 Marc Andreessen 的
-      《技术乐观主义宣言》（2023 年 10 月）——它出自同情者之手，而不是发起人。
+      《技术乐观主义宣言》（2023 年 10 月）——它出自同情者之手，而不是发起人。三篇的内容概要见<a href="/zh/eacc-manifesto">e/acc 宣言</a>。
     </p>`,
     },
     {
@@ -154,7 +154,7 @@ const WHAT_IS: ConceptPage = {
       html: `
     <p>
       搜索“e/acc 代币”或“e/acc 币”，会找到一些借用这个名字的梗币。它们都不是这场运动发行的——它根本没有能发行代币的组织——
-      本站也没有任何代币。任何挂着 e/acc 名号的币，都应当视为与运动无关的投机资产。
+      本站也没有任何代币。任何挂着 e/acc 名号的币，都应当视为与运动无关的投机资产（<a href="/zh/eacc-token">相信之前要核对什么</a>）。
     </p>`,
     },
     {
@@ -465,6 +465,245 @@ const VS_EA: ConceptPage = {
   faq: VS_EA_FAQ,
 };
 
+const MANIFESTO_FAQ: ConceptFaq[] = [
+  {
+    q: "e/acc 有官方宣言吗？",
+    a: "没有。e/acc 没有能通过宣言的组织。被叫作“宣言”的有三篇：奠基通讯（2022 年 5 月 31 日）、@BasedBeffJezos 和 @bayeslord 的《e/acc 原则与信条笔记》（2022 年 7 月 10 日），以及 Marc Andreessen 的《技术乐观主义宣言》（2023 年 10 月 16 日）。",
+  },
+  {
+    q: "《e/acc 原则与信条笔记》是谁写的？",
+    a: "@BasedBeffJezos 和 @bayeslord，2022 年 7 月 10 日发在 Beff 的 Substack 上。《福布斯》2023 年 12 月披露 @BasedBeffJezos 是前谷歌量子计算工程师 Guillaume Verdon；@bayeslord 至今仍是匿名。",
+  },
+  {
+    q: "e/acc 宣言是 Marc Andreessen 写的吗？",
+    a: "他写的是《技术乐观主义宣言》，2023 年 10 月 16 日发在 a16z 网站。它不是 e/acc 的文件——Andreessen 是同情者，不是发起人——但它直接认同加速主义，并把 @BasedBeffJezos 和 @bayeslord 列为守护圣人，所以很多人是通过它认识 e/acc 的。",
+  },
+  {
+    q: "用一句话说，e/acc 宣言讲了什么？",
+    a: "宇宙的热力学偏爱生命和智能，市场和技术是让两者增长最快的途径，想让这个过程慢下来既徒劳又有害。",
+  },
+  {
+    q: "《技术乐观主义宣言》引起了什么回应？",
+    a: "最有名的回应是 Vitalik Buterin 的《我的技术乐观主义》（2023 年 11 月 27 日）：同样乐观，但认为方向和速度一样重要——d/acc 就是在这篇文章里提出的。",
+  },
+];
+
+const MANIFESTO: ConceptPage = {
+  slug: "eacc-manifesto",
+  title: "e/acc 宣言：原则与信条详解 | e-acc.ai",
+  description:
+    "e/acc 没有唯一的官方宣言。被称作宣言的三篇文本——2022 年奠基通讯、《原则与信条笔记》、Andreessen 的《技术乐观主义宣言》——的内容概要，附原文出处。",
+  h1: "e/acc 宣言：原则与信条详解",
+  lead: `
+    <p class="prose-lead">
+      <strong>e/acc 宣言</strong>并没有唯一的官方版本。这场运动没有能通过宣言的组织，所以这个词会指向三篇不同的文本：
+      2022 年 5 月的奠基通讯、两个月后发起人写的<strong>《原则与信条笔记》</strong>，以及 Marc Andreessen 2023 年 10 月的
+      <strong>《技术乐观主义宣言》</strong>。本页逐一概述，并附上原文链接。
+    </p>`,
+  blocks: [
+    {
+      kind: "section",
+      id: "the-short-answer",
+      heading: "简短回答",
+      html: `
+    <p>
+      想知道发起人怎么想，读
+      <a href="https://beff.substack.com/p/notes-on-eacc-principles-and-tenets" target="_blank" rel="noopener">《e/acc 原则与信条笔记》</a>；
+      想知道 e/acc 是怎么出名的，读
+      <a href="https://a16z.com/the-techno-optimist-manifesto/" target="_blank" rel="noopener">《技术乐观主义宣言》</a>；
+      想知道名字从哪来，读
+      <a href="https://effectiveaccelerationism.substack.com/p/repost-effective-accelerationism" target="_blank" rel="noopener">奠基通讯</a>。
+      前两篇几乎在所有问题上一致，区别在作者和语气：2022 年那篇从物理学讲起，2023 年那篇从经济和文化讲起。
+    </p>`,
+    },
+    {
+      kind: "section",
+      id: "the-founding-post-may-2022",
+      heading: "奠基通讯（2022 年 5 月）",
+      html: `
+    <p>
+      2022 年 5 月 31 日，由四个匿名账号——@zestular、@BasedBeffJezos、@bayeslord 和 @creatine_cycle——发布。
+      它给这场运动起了名字，也定下了基调。名字呼应有效利他主义是有意为之：它肯定 EA 认真对待规模，
+      同时拒绝 EA 在 AI 上的谨慎。文章不长，一半是文章一半是梗，
+      <a href="/zh/what-is-eacc">e/acc 解读页</a>就是从这篇算起这场运动的。
+    </p>`,
+    },
+    {
+      kind: "section",
+      id: "notes-on-e-acc-principles-and-tenets-july-2022",
+      heading: "《e/acc 原则与信条笔记》（2022 年 7 月）",
+      html: `
+    <p>
+      由 @BasedBeffJezos 和 @bayeslord 撰写，2022 年 7 月 10 日发布，副标题是“从物理学出发”。
+      这是对 e/acc 思想最完整的表述。它不分章节，而是一串要点，概括起来是：
+    </p>
+    <ul>
+      <li><strong>生命是热力学现象。</strong>物质会自发组织起来捕获并耗散自由能，生命是其中一种结果——论证借用了 Jeremy England 关于耗散适应的研究（见<a href="/zh/eacc-glossary#thermodynamics">热力学论证</a>）。</li>
+      <li><strong>进化是特例。</strong>宇宙偏爱能捕获更多能量的物质构型，自然选择是这种偏向作用在生物身上的结果。</li>
+      <li><strong>智能是更快的适应。</strong>心智比基因适应得更快，规模足够大时就会出现意识。</li>
+      <li><strong>市场也是智能。</strong>公司、国家乃至资本主义本身都像更大的主体在行动，市场是一种文明级的智能。</li>
+      <li><strong>多样性胜过集中控制。</strong>自上而下的规划依赖对混沌系统的简化模型，还会压制适应所需的多样性，所以竞争优于监管。</li>
+      <li><strong>加速。</strong>目标是推动这个过程走向“技术资本奇点”，而不是抵抗它。</li>
+      <li><strong>不忠于某种载体。</strong>意识不必一直是生物的；要扩散到群星，也许需要别的载体。</li>
+    </ul>
+    <p>
+      它的一句话总结，大意是：别再对抗宇宙的热力学方向，顺着它走。
+    </p>`,
+    },
+    {
+      kind: "section",
+      id: "the-techno-optimist-manifesto-october-2023",
+      heading: "《技术乐观主义宣言》（2023 年 10 月）",
+      html: `
+    <p>
+      Marc Andreessen 于 2023 年 10 月 16 日发在 a16z 网站上。大多数人说“e/acc 宣言”时指的就是它，
+      尽管作者是同情者而不是发起人。它的章节从“谎言”“真相”开始，依次讲技术、市场、“技术资本机器”、智能、能源和富足，
+      最后是“敌人”和一份守护圣人名单。
+    </p>
+    <ul>
+      <li><strong>直接自称加速主义：</strong>它说自己是加速主义者——有意推动技术发展，让增长持续复利。</li>
+      <li><strong>敌人：</strong>停滞、计划经济、官僚主义和“否决政治”、监管俘获、预防原则，以及减速、去增长和人口减少。</li>
+      <li><strong>守护圣人：</strong>从亚当·斯密到理查德·费曼的一长串名字，其中有 <strong>@BasedBeffJezos</strong> 和 <strong>@bayeslord</strong>，也有更早的 <a href="/zh/eacc-glossary#uacc">u/acc</a> 的源头 Nick Land。</li>
+    </ul>
+    <p>
+      它出自最大的风投机构之一，几周之内就把 e/acc 的主题带进了主流商业和政策讨论。
+    </p>`,
+    },
+    {
+      kind: "section",
+      id: "responses-and-criticism",
+      heading: "回应与批评",
+      html: `
+    <p>
+      Vitalik Buterin 的
+      <a href="https://vitalik.eth.limo/general/2023/11/27/techno_optimism.html" target="_blank" rel="noopener">《我的技术乐观主义》</a>
+      （2023 年 11 月 27 日）同意技术大体是好的，但认为方向和速度一样重要——<a href="/zh/eacc-vs-dacc">d/acc</a> 就是在这篇里提出的。
+      对两份宣言的批评主要有三点：对“物理学偏爱什么”的描述，并不是对“人应该想要什么”的论证；
+      两篇都很少谈怎样应对 AI 的具体风险；呼吁放松监管，出自将被放松监管的公司的投资人之口，分量就不一样了。
+      和 AI 安全一方的争论见 <a href="/zh/eacc-vs-ea">e/acc 与 EA</a>。
+    </p>`,
+    },
+    { kind: "faq" },
+    {
+      kind: "links",
+      id: "read-the-originals",
+      heading: "阅读原文",
+      links: [
+        { href: "https://effectiveaccelerationism.substack.com/p/repost-effective-accelerationism", label: "Effective accelerationism：奠基通讯（2022 年 5 月 31 日，英文）" },
+        { href: "https://beff.substack.com/p/notes-on-eacc-principles-and-tenets", label: "Notes on e/acc principles and tenets（2022 年 7 月 10 日，英文）" },
+        { href: "https://a16z.com/the-techno-optimist-manifesto/", label: "Marc Andreessen，《技术乐观主义宣言》（2023 年 10 月 16 日，英文）" },
+        { href: "https://vitalik.eth.limo/general/2023/11/27/techno_optimism.html", label: "Vitalik Buterin，《我的技术乐观主义》（2023 年 11 月 27 日，英文）" },
+      ],
+    },
+    {
+      kind: "links",
+      id: "keep-reading",
+      heading: "延伸阅读",
+      links: [
+        { href: "/zh/what-is-eacc", label: "什么是 e/acc：起源、信念与批评" },
+        { href: "/zh/eacc-vs-dacc", label: "e/acc 与 d/acc：两种加速主义对比" },
+        { href: "/zh/eacc-glossary", label: "e/acc 术语表：减速派、末日派、p(doom)、技术资本" },
+      ],
+    },
+  ],
+  faq: MANIFESTO_FAQ,
+};
+
+const TOKEN_FAQ: ConceptFaq[] = [
+  {
+    q: "有官方的 e/acc 代币或币吗？",
+    a: "没有。e/acc 是一场没有组织、没有资金库、也没有成员资格的运动，没有谁能发行官方代币。用这个名字的币都与运动无关。",
+  },
+  {
+    q: "e-acc.ai 有代币吗？",
+    a: "没有。本站是 AI 新闻网站，没有代币、没有空投、没有预售，从不要求连接钱包，也从不索要助记词或私钥。",
+  },
+  {
+    q: "Extropic 是 e/acc 的加密项目吗？",
+    a: "不是。Extropic 是 Guillaume Verdon（@BasedBeffJezos）创办的一家做计算硬件的创业公司。一个代币提到 Verdon 或 Extropic，并不会因此变成官方的。",
+  },
+  {
+    q: "为什么会有 e/acc 代币？",
+    a: "因为这个名字谁都能用。e/acc 在 2023 年广为人知之后，梗币就跟上了，大多数流行的网络用语都是这样。没人能阻止别人发一个。",
+  },
+];
+
+const TOKEN: ConceptPage = {
+  slug: "eacc-token",
+  title: "e/acc 代币：有官方的 e/acc 币吗？| e-acc.ai",
+  description:
+    "没有官方的 e/acc 代币或币。为什么梗币会借用这个名字、为什么这场运动发不了代币，以及在相信任何挂这个名字的币之前要核对什么。",
+  h1: "e/acc 代币：有官方的 e/acc 币吗？",
+  lead: `
+    <p class="prose-lead">
+      <strong>没有。不存在官方的 e/acc 代币或币。</strong>e/acc——<a href="/zh/what-is-eacc">有效加速主义</a>——
+      是一场没有组织、没有资金库、也没有成员资格的运动，没有谁能发行官方代币。用这个名字的代币，都是与运动无关的人发的梗币。
+    </p>
+    <p>
+      本站也没有代币。这一页说明这些币从哪来，以及在相信“官方”说法之前该核对什么。本页不构成投资建议。
+    </p>`,
+  blocks: [
+    {
+      kind: "section",
+      id: "why-the-name-gets-borrowed",
+      heading: "为什么这个名字会被借用",
+      html: `
+    <p>
+      e/acc 是靠梗传播的——人们把它挂在简介里——而梗正是梗币的原料。这个名字在 2023 年广为人知：
+      《福布斯》披露了运动最知名账号的真实身份，Marc Andreessen 的<a href="/zh/eacc-manifesto">《技术乐观主义宣言》</a>
+      又把 e/acc 人物列为守护圣人。这个词不属于任何人，所以谁都能把它写进币的代号里，也确实有好几个人这么做了。
+    </p>`,
+    },
+    {
+      kind: "section",
+      id: "why-there-can-be-no-official-one",
+      heading: "为什么不可能有官方代币",
+      html: `
+    <ul>
+      <li><strong>没有发行方。</strong>e/acc 没有基金会、公司、DAO 或资金库，它起源于四个匿名账号的一篇<a href="/zh/eacc-manifesto">通讯文章</a>。</li>
+      <li><strong>没有成员资格。</strong>谁都可以自称 e/acc，所以一个自称 e/acc 的团队并不代表这场运动。</li>
+      <li><strong>发起人的公司不是加密项目。</strong>Guillaume Verdon（@BasedBeffJezos）创办的 Extropic 是一家做计算硬件的创业公司。提到他或 Extropic，并不能让一个代币变成官方的。</li>
+    </ul>`,
+    },
+    {
+      kind: "section",
+      id: "what-to-check-before-trusting-a-coin-that-uses-the-name",
+      heading: "相信一个挂这个名字的币之前，要核对什么",
+      html: `
+    <ul>
+      <li><strong>谁发行的</strong>——是能核实身份的团队，还是匿名部署者？</li>
+      <li><strong>谁持有</strong>——如果大部分供应量在少数几个钱包里，他们可以随时卖给其他所有人。</li>
+      <li><strong>谁能改</strong>——合约是否还能增发、冻结转账或修改手续费。</li>
+      <li><strong>谁背书</strong>——只有出现在本人已认证账号上的背书才算数，截图和 Telegram 消息不算。</li>
+      <li><strong>它要你给什么</strong>——正规项目从不需要你的助记词或私钥。</li>
+    </ul>`,
+    },
+    {
+      kind: "section",
+      id: "this-site-has-no-token",
+      heading: "本站没有代币",
+      html: `
+    <p>
+      e-acc.ai 是关于 AI 的新闻和数据网站：<a href="/zh">每天真正发布了什么的精选</a>、
+      <a href="/zh/chronicle">AI 加速史</a>、模型 <a href="/zh/pricing">API 价格</a>和<a href="/zh/index/cost-of-intelligence">智能成本指数</a>。
+      本站没有代币、没有空投、没有预售，也从不要求你连接钱包。任何相反的说法都与我们无关。
+    </p>`,
+    },
+    { kind: "faq" },
+    {
+      kind: "links",
+      id: "keep-reading",
+      heading: "延伸阅读",
+      links: [
+        { href: "/zh/what-is-eacc", label: "什么是 e/acc：起源、信念与批评" },
+        { href: "/zh/eacc-manifesto", label: "e/acc 宣言：原则与信条" },
+        { href: "/zh/eacc-glossary", label: "e/acc 术语表：减速派、末日派、p(doom)、技术资本" },
+      ],
+    },
+  ],
+  faq: TOKEN_FAQ,
+};
+
 const GLOSSARY_TERMS: ConceptTerm[] = [
   {
     id: "accelerationism",
@@ -534,7 +773,7 @@ const GLOSSARY_TERMS: ConceptTerm[] = [
   {
     id: "techno-optimist-manifesto",
     term: "《技术乐观主义宣言》（Techno-Optimist Manifesto）",
-    def: "Marc Andreessen 2023 年 10 月为 a16z 撰写的文章，把 e/acc 的主题——富足、反末日论、技术是一种道德上的善——带进了主流风投话语，并把 e/acc 人物列为“守护圣人”。它不是 e/acc 的文件，但很多人正是通过它第一次接触到这个词。",
+    def: "Marc Andreessen 2023 年 10 月为 a16z 撰写的文章，把 e/acc 的主题——富足、反末日论、技术是一种道德上的善——带进了主流风投话语，并把 e/acc 人物列为“守护圣人”。它不是 e/acc 的文件，但很多人正是通过它第一次接触到这个词。见 <a href=\"/zh/eacc-manifesto\">e/acc 宣言</a>。",
   },
   {
     id: "thermodynamics",
@@ -581,5 +820,7 @@ export const CONCEPT_PAGES_ZH: { [K in keyof typeof CONCEPT_PAGES]: ConceptPage 
   "what-is-eacc": tidyPage(WHAT_IS),
   "eacc-vs-dacc": tidyPage(VS_DACC),
   "eacc-vs-ea": tidyPage(VS_EA),
+  "eacc-manifesto": tidyPage(MANIFESTO),
+  "eacc-token": tidyPage(TOKEN),
   "eacc-glossary": tidyPage(GLOSSARY),
 };

@@ -397,6 +397,8 @@ test("the e/acc concept pages keep their English titles, text language and struc
     { path: "/what-is-eacc", title: "e/acc Meaning: What Is Effective Accelerationism? | e-acc.ai", type: "FAQPage", count: 8 },
     { path: "/eacc-vs-dacc", title: "e/acc vs d/acc: What&#x27;s the Difference? | e-acc.ai", type: "FAQPage", count: 5 },
     { path: "/eacc-vs-ea", title: "e/acc vs EA (Effective Altruism): What&#x27;s the Difference? | e-acc.ai", type: "FAQPage", count: 6 },
+    { path: "/eacc-manifesto", title: "e/acc Manifesto: The Principles and Tenets, Explained | e-acc.ai", type: "FAQPage", count: 5 },
+    { path: "/eacc-token", title: "e/acc Token: Is There an Official e/acc Coin? | e-acc.ai", type: "FAQPage", count: 4 },
     { path: "/eacc-glossary", title: "e/acc Glossary: Accelerationism Terms, Defined | e-acc.ai", type: "DefinedTermSet", count: 16 },
   ];
   for (const page of pages) {
@@ -423,7 +425,7 @@ test("the e/acc concept pages keep their English titles, text language and struc
   for (const id of ["decel", "doomer", "pdoom", "uacc"]) assert.match(glossary, new RegExp(`<li id="${id}">`));
   assert.equal((await fetch(`${origin}/eacc-unknown`)).status, 404);
   // Opening a concept page from the site's menu is a client-side navigation: it asks for the page's data.
-  for (const path of ["/what-is-eacc", "/eacc-vs-dacc", "/eacc-vs-ea", "/eacc-glossary"]) {
+  for (const path of ["/what-is-eacc", "/eacc-vs-dacc", "/eacc-vs-ea", "/eacc-manifesto", "/eacc-token", "/eacc-glossary"]) {
     for (const query of ["", "?_routes=concept-" + path.slice(1)]) {
       const res = await fetch(`${origin}${path}.data${query}`);
       assert.equal(res.status, 200, `${path}.data${query}`);
@@ -469,6 +471,8 @@ test("the Chinese concept pages are Chinese editions that name the English ones 
     { slug: "what-is-eacc", title: "什么是 e/acc？有效加速主义详解 | e-acc.ai", enTitle: "e/acc Meaning: What Is Effective Accelerationism? | e-acc.ai", type: "FAQPage", count: 8 },
     { slug: "eacc-vs-dacc", title: "e/acc 与 d/acc：加速主义的两大阵营 | e-acc.ai", enTitle: "e/acc vs d/acc: What&#x27;s the Difference? | e-acc.ai", type: "FAQPage", count: 5 },
     { slug: "eacc-vs-ea", title: "e/acc 与 EA（有效利他主义）：区别在哪里 | e-acc.ai", enTitle: "e/acc vs EA (Effective Altruism): What&#x27;s the Difference? | e-acc.ai", type: "FAQPage", count: 6 },
+    { slug: "eacc-manifesto", title: "e/acc 宣言：原则与信条详解 | e-acc.ai", enTitle: "e/acc Manifesto: The Principles and Tenets, Explained | e-acc.ai", type: "FAQPage", count: 5 },
+    { slug: "eacc-token", title: "e/acc 代币：有官方的 e/acc 币吗？| e-acc.ai", enTitle: "e/acc Token: Is There an Official e/acc Coin? | e-acc.ai", type: "FAQPage", count: 4 },
     { slug: "eacc-glossary", title: "e/acc 术语表：加速主义术语释义 | e-acc.ai", enTitle: "e/acc Glossary: Accelerationism Terms, Defined | e-acc.ai", type: "DefinedTermSet", count: 16 },
   ];
   for (const page of pages) {
@@ -863,7 +867,7 @@ test("existing editions have reciprocal hreflang, self canonicals and localized 
 });
 
 test("concepts name their Chinese mirrors and legal pages disclose the preserved Chinese template", async () => {
-  for (const path of ["/what-is-eacc", "/eacc-vs-dacc", "/eacc-vs-ea", "/eacc-glossary"]) {
+  for (const path of ["/what-is-eacc", "/eacc-vs-dacc", "/eacc-vs-ea", "/eacc-manifesto", "/eacc-token", "/eacc-glossary"]) {
     const response = await fetch(origin + path);
     const document = parseHTML(await response.text()).document;
     assert.equal(alternate(document, "zh-CN")?.getAttribute("href"), `${site}/zh${path}`);

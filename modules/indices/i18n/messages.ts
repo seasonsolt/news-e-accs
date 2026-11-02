@@ -2,7 +2,8 @@
 export const CHINESE: Readonly<Record<string, string>> = {
   "Cost of intelligence": "智能成本",
   "The cost of intelligence": "智能成本指数",
-  "How fast the price of a fixed level of AI capability falls: the cheapest first-party API price for models at each GPQA Diamond score, since GPT-4.": "同样的 AI 能力降价有多快：自 GPT-4 以来，在每个 GPQA Diamond 分数档上，能买到的最便宜的官方 API 价格。",
+  "AI Price per Token Over Time: The Cost of Intelligence Index": "AI 模型 token 价格变化：智能成本指数",
+  "LLM API price per million tokens over time: the cheapest price for GPT-4-level and o1-level AI, tracked since 2023 by GPQA Diamond score, with sources and a CSV.": "大模型 API 每百万 token 的价格怎么变：按 GPQA Diamond 分数档，追踪 2023 年以来 GPT-4 水平和 o1 水平 AI 的最低价格，附出处和 CSV。",
   "GPQA ≥ {0}": "GPQA ≥ {0}",
   "{0} level": "{0} 水平",
   "Halves every {0} months": "每 {0} 个月减半",

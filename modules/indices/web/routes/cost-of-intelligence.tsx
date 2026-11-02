@@ -33,9 +33,11 @@ export function meta({ matches, data }: { matches?: Array<{ id: string; data?: u
   const locale = localeFromMatches(matches ?? []);
   const tx = (message: string, ...values: unknown[]) => translate(locale, message, ...values);
   const title = tx("The cost of intelligence");
-  const description = tx("How fast the price of a fixed level of AI capability falls: the cheapest first-party API price for models at each GPQA Diamond score, since GPT-4.");
+  // The document title names what people search for (2026-11: "The cost of intelligence" had no impressions
+  // in 90 days); the dataset and the page keep the index's own name.
+  const description = tx("LLM API price per million tokens over time: the cheapest price for GPT-4-level and o1-level AI, tracked since 2023 by GPQA Diamond score, with sources and a CSV.");
   return pageMeta({
-    title,
+    title: tx("AI Price per Token Over Time: The Cost of Intelligence Index"),
     description,
     path: PATH,
     image: chartPath(locale),

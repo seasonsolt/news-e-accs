@@ -39,7 +39,7 @@ const MAX_NEWS = 1000;
  * stories and reports, including the latest-report pages, offer it only once both editions are ready,
  * so the page's own hreflang leads to them instead.
  */
-const CHINESE_PAGES = new Set(["/", "/all", "/hot", "/topics", "/agent", "/about", "/changelog", "/chronicle", "/daily/archive", "/what-is-eacc", "/eacc-vs-dacc", "/eacc-vs-ea", "/eacc-glossary"]);
+const CHINESE_PAGES = new Set(["/", "/all", "/hot", "/topics", "/agent", "/about", "/changelog", "/chronicle", "/daily/archive", "/what-is-eacc", "/eacc-vs-dacc", "/eacc-vs-ea", "/eacc-manifesto", "/eacc-token", "/eacc-glossary"]);
 function hasChineseMirror(loc: string): boolean {
   return CHINESE_PAGES.has(loc) || /^\/topics\/[^/]+$/.test(loc)
     || MODULES.some((m) => m.localizedPaths?.some((pattern) => pattern.test(loc)));
@@ -89,7 +89,7 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
     { loc: "/changelog", revision: sha256(stableJson(loadChangelog())), changefreq: "weekly", priority: 0.5 },
   );
   if (FEATURES.timeMachine) entries.push({ loc: "/chronicle", changefreq: "weekly", priority: 0.5 });
-  if (FEATURES.eaccConcepts) for (const loc of ["/what-is-eacc", "/eacc-vs-dacc", "/eacc-vs-ea", "/eacc-glossary"]) entries.push({ loc, changefreq: "monthly", priority: 0.7 });
+  if (FEATURES.eaccConcepts) for (const loc of ["/what-is-eacc", "/eacc-vs-dacc", "/eacc-vs-ea", "/eacc-manifesto", "/eacc-token", "/eacc-glossary"]) entries.push({ loc, changefreq: "monthly", priority: 0.7 });
   for (const r of reports) entries.push({ loc: `/${r.kind}/${r.key}`, lastmod: r.t, revision: r.revision, changefreq: "monthly", priority: 0.6 });
   // Later topic pages stay indexable and linked from the first one; discovery lists only that first
   // page, so the inventory does not grow with every twenty reports.

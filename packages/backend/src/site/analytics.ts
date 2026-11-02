@@ -7,7 +7,7 @@ import { sql } from "../db.ts";
 
 const STATIC_PATHS = new Set([
   "/", "/all", "/hot", "/daily", "/daily/archive", "/weekly", "/monthly", "/topics", "/chronicle",
-  "/what-is-eacc", "/eacc-vs-dacc", "/eacc-vs-ea", "/eacc-glossary", "/products", "/about", "/terms", "/privacy",
+  "/what-is-eacc", "/eacc-vs-dacc", "/eacc-vs-ea", "/eacc-manifesto", "/eacc-token", "/eacc-glossary", "/products", "/about", "/terms", "/privacy",
   "/changelog", "/feedback", "/subscribe", "/more", "/starred", "/agent",
   "/leaderboard", "/leaderboard/sources", "/leaderboard/rules",
 ]);
