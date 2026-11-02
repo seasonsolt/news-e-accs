@@ -311,9 +311,9 @@ export default function HotPage() {
             {Object.values(BADGES).map((b) => (
               <div key={b.label} className="flex items-center gap-1.5">
                 <dt>
-                  <Badge tone={b.tone}>{b.label}</Badge>
+                  <Badge tone={b.tone}><Text value={b.label} /></Badge>
                 </dt>
-                <dd>{b.hint}</dd>
+                <dd><Text value={b.hint} /></dd>
               </div>
             ))}
           </dl>
