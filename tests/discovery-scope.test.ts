@@ -6,8 +6,6 @@ import { after, test } from "node:test";
 import { sql, closeDb } from "@aihot/backend/db";
 import { topicDiscovery } from "@aihot/backend/publication/topics";
 import { loadLlmsAvailability } from "@aihot/backend/publication/llms";
-import { contentSource } from "@aihot/backend/publication/content-source";
-import { loadStoriesProse } from "@aihot/backend/publication/stories";
 import { packSitemap } from "@aihot/backend/publication/sitemap";
 import { randomUUID } from "node:crypto";
 import { buildApp } from "../apps/api/src/app.ts";
@@ -55,17 +53,6 @@ test("the sitemap pairs mirrored editions and names only fresh native English st
   const fresh = await story("Fresh <English> story", "en", new Date(Date.now() - 3_600_000).toISOString());
   const old = await story("Older English story", "en", new Date(Date.now() - 3 * 86_400_000).toISOString());
   const chinese = await story("中文事件", "zh", new Date(Date.now() - 3_600_000).toISOString());
-  const [freshRow] = await sql<{ id: number }[]>`SELECT id FROM stories WHERE public_id = ${fresh}::uuid`;
-  const prose = [...(await loadStoriesProse([Number(freshRow!.id)], new Date())).values()][0];
-  assert.ok(prose, "the fresh story has public prose");
-  const edition = contentSource("story", fresh, prose, "zh");
-  // A mixed fixture can report source language "unknown", which is ready in a language only with a
-  // matching stored edition. Save both so the Chinese URL is a real alternate.
-  for (const lang of ["zh", "en"] as const) {
-    const translations = Object.fromEntries(edition.segments.map((segment) => [segment.key, lang === "zh" ? "中文译文保持完整" : segment.text.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim()]));
-    await sql`INSERT INTO content_translations (kind, content_id, lang, source_language, source_hash, source_segments, translations, provenance, model)
-      VALUES ('story', ${fresh}, ${lang}, ${edition.sourceLanguage ?? "unknown"}, ${edition.sourceHash}, ${sql.json(edition.segments)}, ${sql.json(translations)}, 'offline-agent', 'test')`;
-  }
   const { body } = await app.inject("/sitemap.xml");
   assert.match(body, /xmlns:news="http:\/\/www\.google\.com\/schemas\/sitemap-news\/0\.9"/);
   const entry = (publicId: string) => body.split("<url>").find((part) => part.includes(`/story/${publicId}</loc>`)) ?? "";
@@ -77,13 +64,8 @@ test("the sitemap pairs mirrored editions and names only fresh native English st
   assert.match(about, /hreflang="zh-CN" href="[^"]+\/zh\/about"/);
   assert.match(about, /hreflang="x-default" href="[^"]+\/about"/);
   assert.ok(about.indexOf("</priority>") < about.indexOf("<xhtml:link"), "extension elements follow the core ones");
-  const freshChinese = body.split("<url>").find((part) => part.includes(`/zh/story/${fresh}</loc>`)) ?? "";
-  assert.match(freshChinese, new RegExp(`hreflang="zh-CN" href="[^"]+/zh/story/${fresh}"`));
-  assert.match(freshChinese, /hreflang="en"/);
-  assert.match(freshChinese, /hreflang="x-default"/);
-  assert.match(entry(fresh), new RegExp(`hreflang="zh-CN" href="[^"]+/zh/story/${fresh}"`));
-  assert.ok(!entry(old).includes("hreflang"), "a story without a stored Chinese edition is not advertised as bilingual");
-  assert.ok(!body.includes(`/zh/story/${old}`));
+  assert.ok(!entry(fresh).includes("hreflang"), "content pages wait for both editions");
+  assert.ok(!body.includes("/zh/story/"), "story editions are not advertised");
   assert.match(body, /<loc>[^<]*\/zh\/daily\/archive<\/loc>/);
 });
 

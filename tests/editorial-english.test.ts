@@ -52,6 +52,8 @@ test('Chinese characters in an English summary are rejected instead of published
   assert.equal(out.summary, copy.summary);
   assert.equal(out.selected, false);
   assert.equal(finalizeCopy(input, { title: copy.title, summary: '小米开源 HachimoDock，硬件自制成本约150元。' }).summary, '');
+  assert.equal(finalizeCopy(input, { title: copy.title, summary: '嘉立创 hosts the HachimoDock tutorials. The dock costs about 150 yuan.' }).summary, '', 'a leading CJK name is rejected, not cut out');
+  assert.equal(finalizeCopy(input, { title: '嘉立创 hosts HachimoDock', summary }).title, '');
 });
 
 test('short X output retains original line breaks, URLs and quote attribution instructions', () => {
@@ -105,33 +107,36 @@ test('sweep never conflates different language editions of the same record', asy
   assert.equal(result.translated, 2); assert.deepEqual(translated, ['zh', 'en']);
 });
 
-test('English reader text drops CJK and uses English source names, leaving tag keys alone', () => {
+test('English reader text maps known names and drops only whole trailing CJK sentences', () => {
   assert.equal(englishDisplayName('量子位'), 'QbitAI');
   assert.equal(englishDisplayName('雷锋网'), 'Leiphone');
   assert.equal(englishDisplayName('宝玉 · X'), 'Baoyu');
   assert.equal(englishDisplayName('Z.ai 智谱 · X'), 'Z.ai Zhipu');
+  assert.equal(englishDisplayName('机器之心'), '机器之心', 'an unknown name is kept, not replaced by a placeholder');
   assert.equal(englishReaderText('Xiaomi released a dock. Tutorials are on 嘉立创.'), 'Xiaomi released a dock.');
-  assert.equal(englishReaderText('莱芒生物 explains the trial.'), 'explains the trial.');
+  assert.equal(englishReaderText('莱芒生物 explains the trial. It enrolled 40 patients.'), null, 'a leading sentence is never cut');
+  assert.equal(englishReaderText('A deal between 晶泰科技 and partners.'), null);
   const page = presentEnglish({
-    title: '莱芒生物 explains the trial.',
+    title: 'OpenAI 发布 GPT-5.5 Turbo',
     summary: 'Xiaomi released a dock. Tutorials are on 嘉立创.',
     source: { name: '量子位' },
-    author: '量子位的朋友们',
+    author: '机器之心',
     tags: ['评测/基准'],
     x: { authorName: '宝玉' },
   });
-  assert.equal(page.title, 'explains the trial.');
-  assert.equal(page.summary, 'Xiaomi released a dock.');
+  assert.equal(page.title, 'OpenAI 发布 GPT-5.5 Turbo', 'unmarked prose is not rewritten');
+  assert.equal(page.summary, 'Xiaomi released a dock. Tutorials are on 嘉立创.');
   assert.equal(page.source.name, 'QbitAI');
-  assert.equal(page.author, 'QbitAI');
+  assert.equal(page.author, '机器之心');
   assert.equal(page.x.authorName, 'Baoyu');
   assert.deepEqual(page.tags, ['评测/基准']);
   const fallback = presentEnglish({ title: '示例标题', contentLanguage: { language: 'zh' }, source: { name: '量子位' } });
   assert.equal(fallback.title, '示例标题');
   assert.equal(fallback.source.name, '量子位');
-  const english = presentEnglish({ title: '量子位发布', contentLanguage: { language: 'en' }, source: { name: '量子位' } });
+  const english = presentEnglish({ title: '量子位发布', summary: 'Xiaomi released a dock. 教程发布在嘉立创。', contentLanguage: { language: 'en' }, source: { name: '量子位' } });
   assert.equal(english.source.name, 'QbitAI');
-  assert.equal(english.title, 'QbitAI');
+  assert.equal(english.title, '量子位发布', 'a sentence that cannot be cleaned whole stays as stored');
+  assert.equal(english.summary, 'Xiaomi released a dock.');
 });
 
 test('locked legacy Chinese titles retain Chinese digests; normal updates become English', () => {

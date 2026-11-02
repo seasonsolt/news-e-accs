@@ -16,7 +16,6 @@ import { escapeXml } from "../lib/text.ts";
 import { siteUrl } from "./links.ts";
 import { evidenceCondition, listedCondition, selectedCondition, storyReportCondition } from "./scope.ts";
 import { topicDiscovery } from "./topics.ts";
-import { reciprocalChinesePaths } from "./sitemap-editions.ts";
 import { serverModules, type SitemapEntry } from "../modules.ts";
 
 /** One sitemap file stays under Google's 50,000 URL cap and about 5 MB, so a proxy can cache it. */
@@ -24,7 +23,6 @@ const PART_URLS = 45_000;
 const PART_BYTES = 4_500_000;
 const TTL_MS = 5 * 60 * 1000;
 const CACHE_FILE = path.join(config.dataDir, "sitemap-last.json");
-const LEGACY_CACHE_FILE = path.join(config.dataDir, "sitemap-last.xml");
 
 interface SitemapDocument { files: Record<string, string>; expiresAt: number }
 
@@ -37,9 +35,9 @@ const NEWS_WINDOW_MS = 48 * 60 * 60 * 1000;
 const MAX_NEWS = 1000;
 
 /**
- * Pages whose Chinese edition the web always offers as an alternate (apps/web/app/lib/seo.ts). The daily
- * archive is one of them: both languages are real pages. Items, stories and reports, including the
- * latest-report pages, are added below only once both editions are stored, matching the page hreflang.
+ * Pages whose Chinese edition the web always offers as an alternate (apps/web/app/lib/seo.ts). Items,
+ * stories and reports, including the latest-report pages, offer it only once both editions are ready,
+ * so the page's own hreflang leads to them instead.
  */
 const CHINESE_PAGES = new Set(["/", "/all", "/hot", "/topics", "/agent", "/about", "/changelog", "/chronicle", "/daily/archive", "/what-is-eacc", "/eacc-vs-dacc", "/eacc-vs-ea", "/eacc-glossary"]);
 function hasChineseMirror(loc: string): boolean {
@@ -48,9 +46,8 @@ function hasChineseMirror(loc: string): boolean {
 }
 
 /**
- * One inventory for XML discovery and change notifications. The XML document publishes that inventory
- * (split into parts when one file would pass the URL or byte cap) rather than a shorter display list,
- * so an older story leaving a cap is never announced as a removal.
+ * One inventory for XML discovery and change notifications. A sitemap bounds its advertised history;
+ * notifications read the complete inventory, so crossing that display limit is never a withdrawal.
  * Collection pages have content identities, not invented modification dates: a removed member can
  * change a page without leaving a reliable timestamp on its surviving members.
  */
@@ -138,22 +135,7 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
     WHERE ${storyReportCondition(at)} AND p.indexable
     ORDER BY p.timeline_at DESC, p.article_id DESC ${limits ? sql`LIMIT ${Math.max(0, limits.urls - entries.length)}` : sql``}`;
   for (const it of items) entries.push({ loc: `/items/${it.id}`, lastmod: it.t, revision: it.revision, changefreq: "monthly", priority: 0.5 });
-  await addReciprocalChineseEditions(entries, at);
   return limits ? entries.slice(0, limits.urls) : entries;
-}
-
-/** Stories, reports and indexed items whose two editions are both stored get a Chinese URL. */
-async function addReciprocalChineseEditions(entries: Entry[], at: Date) {
-  const ready = await reciprocalChinesePaths(entries, at);
-  const have = new Set(entries.map((entry) => entry.loc));
-  for (const entry of [...entries]) {
-    if (!ready.has(entry.loc)) continue;
-    const loc = entry.loc === "/" ? "/zh" : `/zh${entry.loc}`;
-    if (have.has(loc)) continue;
-    have.add(loc);
-    // The news block names the English headline. The Chinese URL does not repeat it.
-    entries.push({ loc, lastmod: entry.lastmod, revision: entry.revision, changefreq: entry.changefreq, priority: entry.priority });
-  }
 }
 
 const URLSET_HEAD = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">\n`;
@@ -233,7 +215,6 @@ export function loadSitemap(): Promise<SitemapDocument> {
 
 function documentFromCache(text: string, mtimeMs: number): SitemapDocument | null {
   if (mtimeMs + TTL_MS <= Date.now()) return null;
-  if (text.startsWith("<?xml")) return { files: { "/sitemap.xml": text }, expiresAt: mtimeMs + TTL_MS };
   try {
     const files = JSON.parse(text) as Record<string, string>;
     if (!files["/sitemap.xml"]) return null;
@@ -246,7 +227,7 @@ function documentFromCache(text: string, mtimeMs: number): SitemapDocument | nul
 async function refreshSitemap(): Promise<SitemapDocument> {
   try {
     const at = Date.now();
-    const files = packSitemap(await loadDiscoveryEntries(new Date(at)));
+    const files = packSitemap(await loadDiscoveryEntries(new Date(at), { stories: 500, urls: PART_URLS }));
     lastGood = { files, expiresAt: at + TTL_MS };
     await mkdir(path.dirname(CACHE_FILE), { recursive: true });
     // The file's timestamp preserves the same deadline when another process loads it after restart.
@@ -254,8 +235,7 @@ async function refreshSitemap(): Promise<SitemapDocument> {
     return lastGood;
   } catch (error) {
     if (lastGood && lastGood.expiresAt > Date.now()) return lastGood;
-    const saved = await Promise.all([readFile(CACHE_FILE, "utf8"), stat(CACHE_FILE)]).catch(() => null)
-      ?? await Promise.all([readFile(LEGACY_CACHE_FILE, "utf8"), stat(LEGACY_CACHE_FILE)]).catch(() => null);
+    const saved = await Promise.all([readFile(CACHE_FILE, "utf8"), stat(CACHE_FILE)]).catch(() => null);
     const restored = saved ? documentFromCache(saved[0], saved[1].mtimeMs) : null;
     if (restored) return (lastGood = restored);
     throw error;

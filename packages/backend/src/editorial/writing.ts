@@ -49,15 +49,14 @@ export function cleanArticleTextForLLM(s: string): string {
 }
 
 /** English reader text is Latin. A Chinese name or quotation is not English, even when the source used it. */
-function englishProse(text: string, originalText: string): boolean {
-  void originalText;
+function englishProse(text: string): boolean {
   const prose = text.replace(/https?:\/\/\S+/g, " ");
   if (/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Cyrillic}]/u.test(prose)) return false;
   return !/[\p{L}]/u.test(prose) || /[A-Za-z]{2}/.test(prose);
 }
 
 export function looksEnglish(text: string): boolean {
-  return englishProse(text, "");
+  return englishProse(text);
 }
 
 // The material as the prefilter and the content understanding read it
@@ -256,12 +255,10 @@ export const isShortTweetInput = (input: TranslateInput) => input.sourceKind ===
 export function finalizeCopy(input: TranslateInput, copy: { title: string; summary: string }) {
   let summary = copy.summary;
   if (!isShortTweetInput(input) && summary && !answerFirstSummaryLengthOk(summary)) summary = compactAnswerFirstSummary(summary);
+  // A known outlet name is mapped and a trailing CJK sentence dropped; anything else with CJK is rejected.
   const readable = (text: string) => {
-    const cleaned = englishReaderText(text);
-    if (!englishProse(cleaned, "")) return "";
-    // Stripping a Chinese sentence can leave a product token. That is not an English field.
-    if (/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(text) && (cleaned.match(/\b[A-Za-z]{2,}\b/g)?.length ?? 0) < 3) return "";
-    return cleaned;
+    const cleaned = englishReaderText(text) ?? "";
+    return englishProse(cleaned) ? cleaned : "";
   };
   return enforceIdentity(input, { title: readable(copy.title), summary: readable(summary) });
 }
