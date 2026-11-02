@@ -87,7 +87,7 @@ const TEXT = {
     htmlLang: "en",
     faq: "Frequently asked questions",
     terms: "Terms",
-    other: "阅读中文版",
+    other: "Read in Chinese",
     otherLang: "zh-CN",
     ctaTitle: "Get the e/acc daily briefing",
     ctaBody: "A few AI stories worth reading, every day: model releases, price changes and compute expansion. Free, with one-click unsubscribe. Choose the English or Chinese edition.",

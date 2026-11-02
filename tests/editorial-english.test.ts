@@ -7,6 +7,7 @@ import { buildShortTweetPrompt, compactAnswerFirstSummary, finalizeCopy, looksEn
 import { normalizeAnalysis, PROMPT_VERSIONS, type AnalysisRun } from '@aihot/backend/editorial/analyze';
 import { contentTranslationPrompt, runContentTranslationSweep } from '@aihot/backend/editorial/content-translate';
 import { contentSource } from '@aihot/backend/publication/content-source';
+import { englishDisplayName, englishReaderText, presentEnglish } from '@aihot/contracts/english-surface';
 import { storyDigestLanguage } from '@aihot/backend/events/digest';
 import { promptText } from '@aihot/backend/editorial/prompts';
 
@@ -27,28 +28,29 @@ test('English copy accepts sparse facts, preserves numbers, and requires English
   assert.equal(copy.summary, 'The lab releases Model 2.5 for USD 10.');
   assert.equal(copy.identityGuard.outcome, 'pass');
   assert.equal(finalizeCopy(input, { title: '实验室发布新模型', summary: '实验室发布了新模型。' }).title, '');
-  assert.equal(looksEnglish('The post says “发布模型” in its original wording.'), true);
+  assert.equal(looksEnglish('The post says “发布模型” in its original wording.'), false);
   assert.equal(looksEnglish('实验室 releases model'), false);
+  assert.ok(promptText('understand').includes('Do not use Han'));
+  assert.ok(!promptText('understand').includes('官方中文品牌'));
   const guard = finalizeCopy(input, { title: 'OpenAI releases Model 2.5', summary: 'OpenAI releases a new model.' });
   assert.equal(guard.title, original.title);
   assert.equal(guard.summary, '');
 });
 
-test('a source-backed Chinese platform name does not erase an English summary or hide the article', () => {
+test('Chinese characters in an English summary are rejected instead of published', () => {
   const input = { title: '小米开源了个150元的AI小玩意', text: '小米开源 HachimoDock，硬件自制成本约150元，硬件BOM、结构模型和组装教程发布在嘉立创。', sourceKind: 'rss' };
   const summary = 'Xiaomi has open-sourced HachimoDock, an AI desktop companion with a reported DIY hardware cost of about 150 yuan. Hardware bills of materials, structural models, and assembly tutorials are available on 嘉立创.';
   const copy = finalizeCopy(input, { title: 'Xiaomi open-sources HachimoDock, an AI desktop companion costing about 150 yuan to build', summary });
-  assert.equal(copy.summary, summary);
+  assert.equal(copy.title, 'Xiaomi open-sources HachimoDock, an AI desktop companion costing about 150 yuan to build');
+  assert.equal(copy.summary, 'Xiaomi has open-sourced HachimoDock, an AI desktop companion with a reported DIY hardware cost of about 150 yuan.');
   assert.equal(copy.identityGuard.outcome, 'pass');
   const run: AnalysisRun = { prefilter: { label: 'PASS', reason: '', model: 'fixture', receiptId: 1, reused: true },
     scores: { model: 'fixture', threshold: 76, values: [77, 73], receiptIds: [2, 3], reused: true },
     writing: { ...copy, kind: 'understand', model: 'fixture', reason: null, receiptIds: [4], reused: true }, structure: null };
   const out = normalizeAnalysis(run);
   assert.equal(out.relevance, 'pass');
-  assert.equal(out.summary, summary);
+  assert.equal(out.summary, copy.summary);
   assert.equal(out.selected, false);
-
-  assert.equal(finalizeCopy(input, { title: copy.title, summary: summary.replace('嘉立创', '未知平台') }).summary, '');
   assert.equal(finalizeCopy(input, { title: copy.title, summary: '小米开源 HachimoDock，硬件自制成本约150元。' }).summary, '');
 });
 
@@ -88,7 +90,9 @@ test('edition receipts distinguish source, target and source fingerprint', () =>
   assert.ok(first.subject.includes(':en->zh')); assert.ok(second.subject.includes(':zh->en'));
   assert.notEqual(first.subject, second.subject);
   assert.ok(first.system.includes('Simplified Chinese')); assert.ok(second.system.includes('US English'));
-  assert.equal(first.promptVersion, 'content-edition-v2');
+  assert.equal(first.promptVersion, 'content-edition-v3');
+  assert.match(second.system, /must not contain Han/);
+  assert.doesNotMatch(first.system, /must not contain Han/);
   const changed = contentTranslationPrompt(contentSource('item', 'id', { editorialLanguage: 'en', title: 'Model 2.6 launches' }, 'zh'));
   assert.notEqual(first.subject, changed.subject);
 });
@@ -99,6 +103,35 @@ test('sweep never conflates different language editions of the same record', asy
   const result = await runContentTranslationSweep('', 2, { priority: async () => [entries[0]!], scan: async () => ({ entries, scanned: 2, nextCursor: 'item:id' }),
     translate: async entry => { translated.push(entry.targetLanguage!); }, checkpoint: async () => {} });
   assert.equal(result.translated, 2); assert.deepEqual(translated, ['zh', 'en']);
+});
+
+test('English reader text drops CJK and uses English source names, leaving tag keys alone', () => {
+  assert.equal(englishDisplayName('量子位'), 'QbitAI');
+  assert.equal(englishDisplayName('雷锋网'), 'Leiphone');
+  assert.equal(englishDisplayName('宝玉 · X'), 'Baoyu');
+  assert.equal(englishDisplayName('Z.ai 智谱 · X'), 'Z.ai Zhipu');
+  assert.equal(englishReaderText('Xiaomi released a dock. Tutorials are on 嘉立创.'), 'Xiaomi released a dock.');
+  assert.equal(englishReaderText('莱芒生物 explains the trial.'), 'explains the trial.');
+  const page = presentEnglish({
+    title: '莱芒生物 explains the trial.',
+    summary: 'Xiaomi released a dock. Tutorials are on 嘉立创.',
+    source: { name: '量子位' },
+    author: '量子位的朋友们',
+    tags: ['评测/基准'],
+    x: { authorName: '宝玉' },
+  });
+  assert.equal(page.title, 'explains the trial.');
+  assert.equal(page.summary, 'Xiaomi released a dock.');
+  assert.equal(page.source.name, 'QbitAI');
+  assert.equal(page.author, 'QbitAI');
+  assert.equal(page.x.authorName, 'Baoyu');
+  assert.deepEqual(page.tags, ['评测/基准']);
+  const fallback = presentEnglish({ title: '示例标题', contentLanguage: { language: 'zh' }, source: { name: '量子位' } });
+  assert.equal(fallback.title, '示例标题');
+  assert.equal(fallback.source.name, '量子位');
+  const english = presentEnglish({ title: '量子位发布', contentLanguage: { language: 'en' }, source: { name: '量子位' } });
+  assert.equal(english.source.name, 'QbitAI');
+  assert.equal(english.title, 'QbitAI');
 });
 
 test('locked legacy Chinese titles retain Chinese digests; normal updates become English', () => {

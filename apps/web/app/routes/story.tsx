@@ -56,7 +56,9 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
     content: s,
     alternates: loaderData.alternateEdition,
     title: s.title,
-    description: overview ? clipText(overview) : `${s.sourceCount} 个报道来源 ${s.reportCount} 篇报道，完整时间线与最新进展。`,
+    description: overview ? clipText(overview) : locale === "en"
+      ? `${s.sourceCount} reporting sources and ${s.reportCount} reports, with the full timeline and the latest developments.`
+      : `${s.sourceCount} 个报道来源 ${s.reportCount} 篇报道，完整时间线与最新进展。`,
     path: `/story/${s.publicId}`,
     image: `/og/stories/${s.publicId}.png`,
     type: "article",

@@ -22,7 +22,7 @@ export async function loader({ request }: { request: Request }) {
 }
 
 export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
-  return pageMeta({ title: `${withSubject("日报")} · 历史存档`, description: `${SITE.name} 历史日报，按日期归档。`, path: "/daily/archive", image: "/og/pages/daily.png" }, localeFromMatches(matches ?? []));
+  return pageMeta({ title: `${withSubject("日报")} · 历史存档`, description: `${SITE.name} 历史日报，按日期归档。`, path: "/daily/archive", image: "/og/pages/daily.png", alternates: true }, localeFromMatches(matches ?? []));
 }
 
 export default function DailyArchive() {

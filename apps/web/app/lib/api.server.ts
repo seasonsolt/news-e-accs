@@ -2,6 +2,7 @@
 // process never touches the database; SSR reads the api over loopback with keep-alive, one or two
 // requests per page.
 import { data, redirect, type HeadersArgs } from "react-router";
+import { presentEnglish } from "@aihot/contracts/english-surface";
 import { contentUrl } from "./content-fetch.ts";
 import { logError } from "./errors.server.ts";
 import { localePath, requestLocale, type Locale } from "./locale.ts";
@@ -41,7 +42,10 @@ export async function apiGet<T>(path: string, init?: { lang?: Locale; request?: 
       throw new ApiError(res.status, body?.code ?? null, retry ? Number(retry) : null, res.status === 308 ? (body?.mergedInto ?? null) : null, res.headers.get("X-Request-Id"));
     }
     res.headers.forEach((value, name) => init?.responseHeaders?.set(name, value));
-    return (await res.json()) as T;
+    const payload = (await res.json()) as T;
+    // English pages do not render CJK. The API still returns an honest fallback for other clients.
+    const locale = init?.lang ?? (init?.request ? requestLocale(init.request) : "en");
+    return locale === "en" ? presentEnglish(payload) : payload;
   } catch (error) {
     if (!init?.signal?.aborted && (!(error instanceof ApiError) || error.status >= 500)) {
       logError(error, { msg: "ssr api request failed", method: "GET", path,

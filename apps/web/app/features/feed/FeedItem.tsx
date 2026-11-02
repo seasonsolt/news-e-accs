@@ -35,7 +35,8 @@ export interface FeedItemProps {
 
 export const FeedItem = memo(function FeedItem({ item, group, filters, read = false, onOpen, showTags = false, at, foldReason = false }: FeedItemProps) {
   const tx = useTranslate();
-  const language = contentHtmlLanguage(item, useLocale()) ?? "und";
+  const locale = useLocale();
+  const language = contentHtmlLanguage(item, locale) ?? "und";
   const isX = item.channel === "x" && !!item.x;
   const open = () => {
     rememberPreview(item);
@@ -113,7 +114,7 @@ export const FeedItem = memo(function FeedItem({ item, group, filters, read = fa
         <p className="relative z-10 mt-2 line-clamp-1 text-[12.5px] text-ink-4">
           {tx("同一新闻，精选展示")}
           <Link viewTransition to={`/items/${item.sameEvent.id}`} className="text-ink-3 transition-colors hover:text-accent">
-            《{item.sameEvent.title}》
+            {locale === "en" ? `"${item.sameEvent.title}"` : `《${item.sameEvent.title}》`}
           </Link>
         </p>
       )}

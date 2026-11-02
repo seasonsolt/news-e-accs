@@ -16,13 +16,17 @@ import { escapeXml } from "../lib/text.ts";
 import { siteUrl } from "./links.ts";
 import { evidenceCondition, listedCondition, selectedCondition, storyReportCondition } from "./scope.ts";
 import { topicDiscovery } from "./topics.ts";
+import { reciprocalChinesePaths } from "./sitemap-editions.ts";
 import { serverModules, type SitemapEntry } from "../modules.ts";
 
-const MAX_URLS = 45_000;
+/** One sitemap file stays under Google's 50,000 URL cap and about 5 MB, so a proxy can cache it. */
+const PART_URLS = 45_000;
+const PART_BYTES = 4_500_000;
 const TTL_MS = 5 * 60 * 1000;
-const CACHE_FILE = path.join(config.dataDir, "sitemap-last.xml");
+const CACHE_FILE = path.join(config.dataDir, "sitemap-last.json");
+const LEGACY_CACHE_FILE = path.join(config.dataDir, "sitemap-last.xml");
 
-interface SitemapDocument { xml: string; expiresAt: number }
+interface SitemapDocument { files: Record<string, string>; expiresAt: number }
 
 let lastGood: SitemapDocument | null = null;
 
@@ -33,19 +37,20 @@ const NEWS_WINDOW_MS = 48 * 60 * 60 * 1000;
 const MAX_NEWS = 1000;
 
 /**
- * Pages whose Chinese edition the web always offers as an alternate (apps/web/app/lib/seo.ts). Items,
- * stories and reports, including the latest-report pages, offer it only once both editions are ready,
- * so the page's own hreflang leads to them instead.
+ * Pages whose Chinese edition the web always offers as an alternate (apps/web/app/lib/seo.ts). The daily
+ * archive is one of them: both languages are real pages. Items, stories and reports, including the
+ * latest-report pages, are added below only once both editions are stored, matching the page hreflang.
  */
-const CHINESE_PAGES = new Set(["/", "/all", "/hot", "/topics", "/agent", "/about", "/changelog", "/chronicle", "/what-is-eacc", "/eacc-vs-dacc", "/eacc-vs-ea", "/eacc-glossary"]);
+const CHINESE_PAGES = new Set(["/", "/all", "/hot", "/topics", "/agent", "/about", "/changelog", "/chronicle", "/daily/archive", "/what-is-eacc", "/eacc-vs-dacc", "/eacc-vs-ea", "/eacc-glossary"]);
 function hasChineseMirror(loc: string): boolean {
   return CHINESE_PAGES.has(loc) || /^\/topics\/[^/]+$/.test(loc)
     || MODULES.some((m) => m.localizedPaths?.some((pattern) => pattern.test(loc)));
 }
 
 /**
- * One inventory for XML discovery and change notifications. A sitemap bounds its advertised history;
- * notifications read the complete inventory, so crossing that display limit is never a withdrawal.
+ * One inventory for XML discovery and change notifications. The XML document publishes that inventory
+ * (split into parts when one file would pass the URL or byte cap) rather than a shorter display list,
+ * so an older story leaving a cap is never announced as a removal.
  * Collection pages have content identities, not invented modification dates: a removed member can
  * change a page without leaving a reliable timestamp on its surviving members.
  */
@@ -133,34 +138,90 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
     WHERE ${storyReportCondition(at)} AND p.indexable
     ORDER BY p.timeline_at DESC, p.article_id DESC ${limits ? sql`LIMIT ${Math.max(0, limits.urls - entries.length)}` : sql``}`;
   for (const it of items) entries.push({ loc: `/items/${it.id}`, lastmod: it.t, revision: it.revision, changefreq: "monthly", priority: 0.5 });
+  await addReciprocalChineseEditions(entries, at);
   return limits ? entries.slice(0, limits.urls) : entries;
 }
 
-async function build(at: Date): Promise<string> {
-  const entries = await loadDiscoveryEntries(at, { stories: 500, urls: MAX_URLS });
-  const body = entries
-    .slice(0, MAX_URLS)
-    .map((e) => {
-      const parts = [`<loc>${escapeXml(siteUrl(e.loc))}</loc>`];
-      if (e.lastmod) parts.push(`<lastmod>${e.lastmod.toISOString()}</lastmod>`);
-      if (e.changefreq) parts.push(`<changefreq>${e.changefreq}</changefreq>`);
-      if (e.priority !== undefined) parts.push(`<priority>${e.priority}</priority>`);
-      // Extension elements follow the core ones (sitemaps.org schema). Both editions of a mirrored page
-      // name each other, as the pages' own hreflang links do.
-      const english = e.loc === "/zh" ? "/" : e.loc.replace(/^\/zh(?=\/)/, "");
-      if (hasChineseMirror(english)) {
-        for (const [language, loc] of [["en", english], ["zh-CN", english === "/" ? "/zh" : `/zh${english}`], ["x-default", english]]) {
-          parts.push(`<xhtml:link rel="alternate" hreflang="${language}" href="${escapeXml(siteUrl(loc!))}"/>`);
-        }
-      }
-      if (e.news) {
-        parts.push(`<news:news>\n<news:publication><news:name>${escapeXml(SITE.name)}</news:name><news:language>${e.news.language}</news:language></news:publication>\n`
-          + `<news:publication_date>${e.news.publishedAt.toISOString()}</news:publication_date>\n<news:title>${escapeXml(e.news.title)}</news:title>\n</news:news>`);
-      }
-      return `<url>\n${parts.join("\n")}\n</url>`;
-    })
-    .join("\n");
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">\n${body}\n</urlset>\n`;
+/** Stories, reports and indexed items whose two editions are both stored get a Chinese URL. */
+async function addReciprocalChineseEditions(entries: Entry[], at: Date) {
+  const ready = await reciprocalChinesePaths(entries, at);
+  const have = new Set(entries.map((entry) => entry.loc));
+  for (const entry of [...entries]) {
+    if (!ready.has(entry.loc)) continue;
+    const loc = entry.loc === "/" ? "/zh" : `/zh${entry.loc}`;
+    if (have.has(loc)) continue;
+    have.add(loc);
+    // The news block names the English headline. The Chinese URL does not repeat it.
+    entries.push({ loc, lastmod: entry.lastmod, revision: entry.revision, changefreq: entry.changefreq, priority: entry.priority });
+  }
+}
+
+const URLSET_HEAD = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">\n`;
+const URLSET_TAIL = `\n</urlset>\n`;
+
+function englishPath(loc: string): string {
+  return loc === "/zh" ? "/" : loc.replace(/^\/zh(?=\/)/, "");
+}
+
+function renderUrl(entry: Entry, paired: boolean): string {
+  const parts = [`<loc>${escapeXml(siteUrl(entry.loc))}</loc>`];
+  if (entry.lastmod) parts.push(`<lastmod>${entry.lastmod.toISOString()}</lastmod>`);
+  if (entry.changefreq) parts.push(`<changefreq>${entry.changefreq}</changefreq>`);
+  if (entry.priority !== undefined) parts.push(`<priority>${entry.priority}</priority>`);
+  // Extension elements follow the core ones (sitemaps.org schema). Both editions name each other,
+  // as the pages' own hreflang links do.
+  if (paired) {
+    const english = englishPath(entry.loc);
+    for (const [language, loc] of [["en", english], ["zh-CN", english === "/" ? "/zh" : `/zh${english}`], ["x-default", english]] as const) {
+      parts.push(`<xhtml:link rel="alternate" hreflang="${language}" href="${escapeXml(siteUrl(loc))}"/>`);
+    }
+  }
+  if (entry.news) {
+    parts.push(`<news:news>\n<news:publication><news:name>${escapeXml(SITE.name)}</news:name><news:language>${entry.news.language}</news:language></news:publication>\n`
+      + `<news:publication_date>${entry.news.publishedAt.toISOString()}</news:publication_date>\n<news:title>${escapeXml(entry.news.title)}</news:title>\n</news:news>`);
+  }
+  return `<url>\n${parts.join("\n")}\n</url>`;
+}
+
+function packBlocks(blocks: string[], limits: { urls: number; bytes: number }): string[][] {
+  const parts: string[][] = [];
+  let current: string[] = [];
+  let bytes = URLSET_HEAD.length + URLSET_TAIL.length;
+  for (const block of blocks) {
+    const next = block.length + 1;
+    if (current.length > 0 && (current.length >= limits.urls || bytes + next > limits.bytes)) {
+      parts.push(current);
+      current = [];
+      bytes = URLSET_HEAD.length + URLSET_TAIL.length;
+    }
+    current.push(block);
+    bytes += next;
+  }
+  if (current.length) parts.push(current);
+  return parts.length ? parts : [[]];
+}
+
+/** `/sitemap.xml` is the urlset while it fits, and a sitemap index once it must be split. */
+export function packSitemap(entries: Entry[], limits: { urls: number; bytes: number } = { urls: PART_URLS, bytes: PART_BYTES }): Record<string, string> {
+  const locs = new Set(entries.map((entry) => entry.loc));
+  const paired = (loc: string) => {
+    const english = englishPath(loc);
+    const chinese = english === "/" ? "/zh" : `/zh${english}`;
+    return locs.has(english) && locs.has(chinese);
+  };
+  const blocks = entries.map((entry) => renderUrl(entry, paired(entry.loc)));
+  const parts = packBlocks(blocks, limits);
+  const urlset = (blocksInPart: string[]) => `${URLSET_HEAD}${blocksInPart.join("\n")}${URLSET_TAIL}`;
+  if (parts.length === 1) return { "/sitemap.xml": urlset(parts[0]!) };
+  const files: Record<string, string> = {};
+  const index: string[] = [];
+  parts.forEach((part, i) => {
+    const path = `/sitemaps/sitemap-${i + 1}.xml`;
+    files[path] = urlset(part);
+    index.push(`<sitemap>\n<loc>${escapeXml(siteUrl(path))}</loc>\n</sitemap>`);
+  });
+  files["/sitemap.xml"] = `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${index.join("\n")}\n</sitemapindex>\n`;
+  return files;
 }
 
 const rebuilding = shared<void, SitemapDocument>(() => "sitemap", refreshSitemap);
@@ -170,21 +231,33 @@ export function loadSitemap(): Promise<SitemapDocument> {
   return rebuilding();
 }
 
+function documentFromCache(text: string, mtimeMs: number): SitemapDocument | null {
+  if (mtimeMs + TTL_MS <= Date.now()) return null;
+  if (text.startsWith("<?xml")) return { files: { "/sitemap.xml": text }, expiresAt: mtimeMs + TTL_MS };
+  try {
+    const files = JSON.parse(text) as Record<string, string>;
+    if (!files["/sitemap.xml"]) return null;
+    return { files, expiresAt: mtimeMs + TTL_MS };
+  } catch {
+    return null;
+  }
+}
+
 async function refreshSitemap(): Promise<SitemapDocument> {
   try {
     const at = Date.now();
-    const xml = await build(new Date(at));
-    lastGood = { xml, expiresAt: at + TTL_MS };
+    const files = packSitemap(await loadDiscoveryEntries(new Date(at)));
+    lastGood = { files, expiresAt: at + TTL_MS };
     await mkdir(path.dirname(CACHE_FILE), { recursive: true });
     // The file's timestamp preserves the same deadline when another process loads it after restart.
-    await writeFile(CACHE_FILE, xml).then(() => utimes(CACHE_FILE, new Date(at), new Date(at))).catch(() => {});
+    await writeFile(CACHE_FILE, JSON.stringify(files)).then(() => utimes(CACHE_FILE, new Date(at), new Date(at))).catch(() => {});
     return lastGood;
   } catch (error) {
     if (lastGood && lastGood.expiresAt > Date.now()) return lastGood;
-    const saved = await Promise.all([readFile(CACHE_FILE, "utf8"), stat(CACHE_FILE)]).catch(() => null);
-    if (saved && saved[1].mtimeMs + TTL_MS > Date.now()) {
-      return (lastGood = { xml: saved[0], expiresAt: saved[1].mtimeMs + TTL_MS });
-    }
+    const saved = await Promise.all([readFile(CACHE_FILE, "utf8"), stat(CACHE_FILE)]).catch(() => null)
+      ?? await Promise.all([readFile(LEGACY_CACHE_FILE, "utf8"), stat(LEGACY_CACHE_FILE)]).catch(() => null);
+    const restored = saved ? documentFromCache(saved[0], saved[1].mtimeMs) : null;
+    if (restored) return (lastGood = restored);
     throw error;
   }
 }
