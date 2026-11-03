@@ -13,7 +13,7 @@ set -euo pipefail
 ROOT=${ROOT:-/srv/eacc}
 NODE_BIN=${NODE_BIN:-/opt/node24/bin}
 UNIT_DIR=${UNIT_DIR:-/etc/systemd/system}
-KEEP=5
+KEEP=3
 APP=$ROOT/app
 BUILDS=$ROOT/builds
 LOG=$BUILDS/deploys.log
