@@ -526,6 +526,12 @@ test("built pages keep both language URLs, layout, history and the default share
         const unfeatured = await (await fetch(`${web.origin}${prefix}/pricing/compare/${slugs[0]}-vs-${slugs[30]}`)).text();
         assert.ok(unfeatured.includes('name="robots" content="noindex, follow"'), `${prefix} other pairs are not indexed`);
         assert.equal((await fetch(`${web.origin}${prefix}/pricing/compare/${slugs[0]}-vs-nope`)).status, 404, prefix);
+        // A model page names its list price up front; the English title leads with pricing, the Chinese with rank.
+        const model = await (await fetch(`${web.origin}${prefix}/leaderboard/${slugs[0]}`)).text();
+        assert.match(model, prefix ? /<title>Stored model 0 排名与各榜成绩/ : /<title>Stored model 0 API Pricing, Benchmarks and Ranking/);
+        assert.match(model, prefix ? /name="description" content="每百万 token：输入 \$2、输出 \$10。查看 Stored model 0/ : /name="description" content="API pricing: \$2 input and \$10 output per million tokens\. View /);
+        const source = await (await fetch(`${web.origin}${prefix}/leaderboard/sources/livebench-coding`)).text();
+        assert.match(source, prefix ? /<title>[^<]+ 排行榜：各模型成绩/ : /<title>[^<]+ Leaderboard: AI Model Scores/);
       }
     });
 

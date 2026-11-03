@@ -23,7 +23,7 @@ export function meta({ matches, loaderData }: MetaArgs<typeof loader>) {
   const { source } = loaderData;
   const path = `/leaderboard/sources/${source.key}`;
   return pageMeta({
-    title: tx("{0} · 评测来源", source.name),
+    title: tx("{0} 排行榜：各模型成绩", source.name),
     description: source.description,
     path,
     jsonLd: [

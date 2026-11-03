@@ -26,12 +26,18 @@ export function meta({ matches, loaderData }: MetaArgs<typeof loader>) {
   const locale = localeFromMatches(matches ?? []);
   const tx = (message: string, ...values: unknown[]) => translate(locale, message, ...values);
   if (!loaderData) return pageMeta({ title: "页面不存在", path: "/leaderboard", noindex: true }, locale);
-  const { model } = loaderData;
+  const { model, price } = loaderData;
   const path = `/leaderboard/${model.slug}`;
+  // English searches ask for a model's price, Chinese ones for its rank (Search Console, 2026-11): the English
+  // title leads with pricing, and both descriptions open with the list price when there is one.
+  const pricing = price?.input != null && price.output != null
+    ? tx("每百万 token：输入 {0}、输出 {1}。", listPrice(price.input, price.currency), listPrice(price.output, price.currency))
+    : "";
+  const about = tx("查看 {0} 的 {1} 共识分、当前排名，以及它在各家公开评测榜单中的名次和原始分数。", model.name, SITE.name);
   return pageMeta({
     noindex: !!loaderData.at,
     title: tx("{0} 排名与各榜成绩", model.name),
-    description: tx("查看 {0} 的 {1} 共识分、当前排名，以及它在各家公开评测榜单中的名次和原始分数。", model.name, SITE.name),
+    description: [pricing, about].filter(Boolean).join(locale === "zh" ? "" : " "),
     path,
     jsonLd: [
       {
