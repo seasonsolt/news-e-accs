@@ -127,6 +127,19 @@ api 自己的响应带 `app`。`x-eacc-edge-cache: HIT` 时这些是缓存那一
 
 改配置：编辑服务器上的 `/srv/eacc/.env`，然后 `ssh dmit systemctl restart eacc-api eacc-worker eacc-web`。
 
+### 登记到官方 MCP Registry
+
+`/api/mcp` 以 `ai.e-acc/eacc` 登记在 [MCP Registry](https://registry.modelcontextprotocol.io)，Glama 等目录从那里收录。登记信息在 `mcp-registry/server.json`，
+域名验证用 `site/public/.well-known/mcp-registry-auth` 里的公钥；私钥只在本机 `.data/mcp-registry/key.pem`，不进仓库。
+改了说明或工具后，把 `version` 加一再发布（`mcp-publisher` 从 [registry 的 Releases](https://github.com/modelcontextprotocol/registry/releases) 下载）：
+
+```bash
+mcp-publisher login http --domain e-acc.ai --private-key "$(openssl pkey -in .data/mcp-registry/key.pem -noout -text | grep -A3 'priv:' | tail -n +2 | tr -d ' :\n')"
+cd deploy/mcp-registry && mcp-publisher publish
+```
+
+私钥丢了就重新生成一对，换掉 `mcp-registry-auth` 里的公钥并发布网站，再登录。
+
 ### 用外部推送代替 SocialData 采集 X
 
 新闻站代码发布（`deploy/update.sh`，见上）之后，在服务器上改 `/srv/eacc/.env`，不需要新的数据库迁移：

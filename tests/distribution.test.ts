@@ -231,6 +231,13 @@ test('native English and stored Chinese DTOs agree across site, v1, feeds, Markd
 });
 
 
+test('the MCP Registry domain key is served as text at the site root', async () => {
+  const response = await app.inject('/.well-known/mcp-registry-auth');
+  assert.equal(response.statusCode, 200);
+  assert.match(response.headers['content-type'] as string, /^text\/plain/);
+  assert.match(response.body, /^v=MCPv1; k=ed25519; p=[A-Za-z0-9+/]{43}=\n$/);
+});
+
 test('OpenAPI describes explicit edition selection while preserving historical monitor date semantics', async () => {
   const response = await app.inject('/openapi-v1.json'); assert.equal(response.statusCode, 200);
   const document = response.json();

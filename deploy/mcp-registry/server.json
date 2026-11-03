@@ -1,0 +1,14 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "ai.e-acc/eacc",
+  "title": "e/acc",
+  "description": "AI news for agents: daily, weekly and monthly briefings, trending events and model prices. No key.",
+  "version": "1.0.0",
+  "websiteUrl": "https://e-acc.ai/agent",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://e-acc.ai/api/mcp"
+    }
+  ]
+}
