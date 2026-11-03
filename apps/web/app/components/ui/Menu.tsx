@@ -40,7 +40,7 @@ export function Menu({ trigger, label, children, labeled = false }: {
       <Presence show={open} enter="anim-drop-in" exit="anim-drop-out" duration={140}>
         <div
           role="menu"
-          className="absolute top-10 z-50 min-w-[168px] overflow-hidden rounded-tile border border-line bg-raised py-1 shadow-[var(--shadow-pop)] right-0 origin-top-right"
+          className="absolute top-[calc(100%+8px)] z-50 min-w-[168px] overflow-hidden rounded-tile border border-line bg-raised py-1 shadow-[var(--shadow-pop)] right-0 origin-top-right"
         >
           {children(() => setOpen(false))}
         </div>

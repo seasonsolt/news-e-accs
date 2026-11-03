@@ -1,3 +1,4 @@
+import { Picture } from "../../components/ui/Picture";
 import { useTranslate } from "../../lib/i18n";
 import { useState } from "react";
 import type { MediaView } from "@aihot/contracts/site";
@@ -37,7 +38,7 @@ export function MediaGallery({ media, postUrl }: { media: MediaView[]; postUrl: 
             <span className={`block w-full bg-gradient-to-br from-bg-sunk to-line-soft ${single ? "" : "h-full"}`}
               style={single ? { aspectRatio: m.width && m.height ? `${m.width} / ${m.height}` : "16 / 9" } : undefined} />
           ) : (
-            <img
+            <Picture
               src={m.poster ?? m.url}
               srcSet={m.srcSet}
               sizes={single ? "auto, (min-width: 460px) 420px, calc(100vw - 32px)" : "auto, (min-width: 800px) 248px, (min-width: 640px) calc(33.333vw - 19px), calc(50vw - 24px)"}

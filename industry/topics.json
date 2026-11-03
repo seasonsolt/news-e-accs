@@ -85,9 +85,10 @@
     },
     {
       "slug": "kimi",
-      "name": "Kimi / 月之暗面",
+      "name": "月之暗面 / Kimi",
       "group": "company",
       "entityId": "kimi",
+      "aliases": ["Kimi / 月之暗面"],
       "definition": "月之暗面 Kimi 系列模型与产品动态：K 系列开源模型、长上下文技术与产品演进的追踪。",
       "en": {
         "name": "Kimi / Moonshot AI",

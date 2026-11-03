@@ -1,3 +1,4 @@
+import { Picture } from "../../components/ui/Picture";
 import { DailyBriefing } from "./DailyBriefing";
 import { contentHtmlLanguage } from "../../lib/content-language";
 import { Link } from "../../lib/navigation";
@@ -21,6 +22,7 @@ import { IconArrowLeft, IconArrowRight, IconArrowUpRight } from "../../component
 import { Kicker } from "../../components/ui/Kicker";
 import type { OutlineEntry } from "../../components/ui/OutlineSheet";
 import { SourceAvatar } from "../../components/ui/SourceAvatar";
+import { monthDay } from "../../lib/format";
 import { ReadingGear } from "../art/ReadingGear";
 import { SubscribeCta } from "../subscribe/SubscribeCta";
 import { Deck } from "../../components/shell/Deck";
@@ -123,8 +125,10 @@ function Coverage({ c }: { c: ReportCitation }) {
   const tx = useTranslate();
   return (
     <>
-      {!!c.otherSources && <span className="shrink-0 text-ink-4">{tx("另有 {0} 家信源报道", c.otherSources)}</span>}
-      {c.followUp && <Badge title={tx("{0}的日报报道过这件事，这里是新进展", tx("{0}月{1}日", Number(c.followUp.slice(5, 7)), Number(c.followUp.slice(8, 10))))}><Text value="跟进" /></Badge>}
+      {!!c.otherSources && (c.storyId
+        ? <IntentLink viewTransition to={`/story/${c.storyId}`} className="shrink-0 text-ink-4 hover:text-accent">{tx("另有 {0} 家信源报道", c.otherSources)}</IntentLink>
+        : <span className="shrink-0 text-ink-4">{tx("另有 {0} 家信源报道", c.otherSources)}</span>)}
+      {c.followUp && <Badge title={tx("{0}的日报报道过这件事，这里是新进展", monthDay(c.followUp))}><Text value="跟进" /></Badge>}
     </>
   );
 }
@@ -144,7 +148,7 @@ function Story({ c, dated, className = "" }: { c: ReportCitation; dated: boolean
       {c.available ? (
         <>
           {picture && (
-            <img src={picture.url} srcSet={picture.srcSet} sizes="(min-width: 1040px) 460px, (min-width: 760px) 45vw, calc(100vw - 32px)"
+            <Picture src={picture.url} srcSet={picture.srcSet} sizes="(min-width: 1040px) 460px, (min-width: 760px) 45vw, calc(100vw - 32px)"
               alt="" loading="lazy" decoding="async" onError={() => setPictureFailed(true)}
               className="mt-3 aspect-[16/9] w-full rounded-control border border-line-soft bg-bg-sunk object-cover" />
           )}
@@ -241,8 +245,8 @@ function LeadPicture({ cover, onError, priority = false, className = "" }: { cov
   return (
     <figure className={className}>
       <div className="overflow-hidden well rounded-panel" style={{ aspectRatio: shown }}>
-        <img src={cover.url} srcSet={cover.srcSet}
-          sizes={priority ? "(min-width: 1700px) 780px, (min-width: 1580px) calc(100vw - 920px), (min-width: 1420px) calc(100vw - 880px), (min-width: 1024px) calc(100vw - 540px), (min-width: 640px) 608px, calc(100vw - 32px)" : "auto, (min-width: 1180px) 300px, (min-width: 640px) 608px, calc(100vw - 32px)"}
+        <Picture src={cover.url} srcSet={cover.srcSet}
+          sizes={priority ? "(min-width: 1700px) 780px, (min-width: 1580px) calc(100vw - 920px), (min-width: 1420px) calc(100vw - 880px), (min-width: 1176px) calc(100vw - 540px), (min-width: 1140px) calc(100vw - 600px), (min-width: 941px) calc(100vw - 260px), (min-width: 700px) calc(100vw - 144px), (min-width: 640px) 608px, calc(100vw - 32px)" :"auto, (min-width: 1180px) 300px, (min-width: 640px) 608px, calc(100vw - 32px)"}
           width={cover.width ?? undefined} height={cover.height ?? undefined}
           alt="" loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} decoding="async" onError={onError} className="size-full object-cover" />
       </div>
@@ -404,6 +408,7 @@ export function SectionPage({ id, no, label, children }: { id: string; no?: numb
 /** Two columns with a hairline between them, once the page is wide enough (快讯). */
 const COLUMNS = "@[760px]:columns-2 @[760px]:gap-x-12 @[760px]:[column-rule:1px_solid_var(--line)]";
 
+/** Issues change through these links, never by a sideways swipe: on iOS that would fight the edge swipe back. */
 function Neighbours({ report, index }: { report: ReportDetail; index: ReportNavigationEntry[] }) {
   const tx = useTranslate();
   const titleOf = (key: string) => index.find((e) => e.key === key)?.title ?? `AI ${tx(KIND_LABEL[report.kind])} · ${key}`;

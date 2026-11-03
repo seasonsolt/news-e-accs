@@ -34,10 +34,10 @@ before(async () => {
 after(async () => { await app.close(); await provider.close(); await stopBoss(); await closeDb(); });
 
 /** A post found and published a minute ago (released by `released`): a rolling window that ends at the reader's clock holds it. */
-async function post(name: string, text: string) {
+async function post(name: string, text: string, sourceId = source) {
   const url = `https://x.com/fixture/status/${name}-${source}`;
   const minuteAgo = new Date(Date.now() - 60_000);
-  const material = await upsertMaterial({ sourceId: source, url, title: text, bodyText: text, bodyStatus: "ok", via: "fetch", publishedAt: minuteAgo, discoveredAt: minuteAgo,
+  const material = await upsertMaterial({ sourceId, url, title: text, bodyText: text, bodyStatus: "ok", via: "fetch", publishedAt: minuteAgo, discoveredAt: minuteAgo,
     xPost: { tweetId: name, authorName: "Fixture", handle: "fixture", text,
       media: [{ kind: "image", url: "https://example.org/screenshot.png", width: 757, height: 549 }] } });
   return { id: material.articleId, url };
@@ -149,4 +149,54 @@ test("a textless or link-only post the site does not show is neither in the pool
     const [edited] = await sql`SELECT eligible FROM publications WHERE article_id=${id}`;
     assert.equal(edited!.eligible, true, `${name}: editor-written copy is listed`);
   }
+});
+
+test("a saved X Article reaches public readers and full-text exports without buying it again", async () => {
+  const { id } = await post("saved-article", "An introduction to the measured research results. https://x.com/i/article/987654");
+  const text = "SAVED ARTICLE EVIDENCE: measured results and limitations from the published long article.";
+  await sql`UPDATE articles SET language='en', x_article=${sql.json({ title: "Saved research article", text })},
+    body_text=${`https://x.com/i/article/987654\n\n# Saved research article\n\n${text}`} WHERE id=${id}`;
+  await sql`INSERT INTO analyses(article_id,input_revision,origin,relevance,editorial_language,title,summary,score,selected)
+    VALUES(${id},1,'model','pass','en','Saved research article','A summary of the saved article',${SELECTING_SCORE},true)`;
+  await publishArticle(id, released());
+  // Existing X translations cover only x_post.text, not the saved long article.
+  await sql`INSERT INTO translations(article_id,revision,body_text,body_html,complete,origin)
+    VALUES(${id},1,'旧的帖子介绍译文','<p>旧的帖子介绍译文</p>',true,'model')`;
+  const before = provider.hits();
+  for (const suffix of ["", "/original"]) {
+    const detail = (await app.inject({ method: "GET", url: `/api/site/items/${id}${suffix}` })).json();
+    assert.ok(detail.body?.original?.includes(text), "a translated introduction cannot replace the saved long article");
+    assert.equal(detail.hasTranslation, false, "the introduction is not a complete article translation");
+  }
+  for (const path of [`/items/${id}/markdown`, "/feed/v2/full.xml"]) {
+    const res = await app.inject({ method: "GET", url: path });
+    assert.equal(res.statusCode, 200, path);
+    assert.ok(res.body.includes(text), path);
+  }
+  assert.equal(provider.hits(), before, "reading already stored content cannot buy another response");
+});
+
+
+test("saved long articles remain private when only the X post itself may be shown", async () => {
+  const restricted = `${source}-restricted`;
+  await sql`INSERT INTO sources (id,name,kind,tier,participation_mode,site_fulltext,syndicate_fulltext,next_fetch_at)
+    VALUES (${restricted},'Restricted article test','x_search','T1','editorial',false,true,'2100-01-01')`;
+  const { id } = await post("restricted-article", "https://x.com/i/article/987655", restricted);
+  const text = "RESTRICTED_ARTICLE_EVIDENCE: saved for analysis, not licensed for full-text display.";
+  await sql`UPDATE articles SET x_article=${sql.json({ title: "Restricted long article", text })}, body_text=${text} WHERE id=${id}`;
+  await sql`INSERT INTO analyses(article_id,input_revision,origin,relevance,editorial_language,title,summary,score,selected)
+    VALUES(${id},1,'model','pass','en','Restricted article','A short summary within the licence',${SELECTING_SCORE},true)`;
+  await publishArticle(id, released());
+  const before = provider.hits();
+  for (const path of [`/api/site/items/${id}`, `/api/site/items/${id}/original`, `/items/${id}/markdown`, "/feed/full.xml"]) {
+    const res = await app.inject({ method: "GET", url: path });
+    assert.equal(res.statusCode, 200, path);
+    assert.ok(!res.body.includes(text), `${path}: a saved article is not a grant of full-text permission`);
+  }
+  // A site that counts an X post as full text (POLICY.xPostIsFullText) shows none of it here, its link included.
+  if (!POLICY.xPostIsFullText) {
+    const detail = (await app.inject({ method: "GET", url: `/api/site/items/${id}/original` })).json();
+    assert.ok(detail.body?.original?.includes("https://x.com/i/article/987655"), "the original post keeps its link");
+  }
+  assert.equal(provider.hits(), before);
 });

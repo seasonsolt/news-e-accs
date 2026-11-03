@@ -1,4 +1,5 @@
 // Cache identity and card data shared by API readers and worker renderers; no fonts or native codecs.
+import { FALLBACK_FONTS } from "./fonts.ts";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -28,11 +29,11 @@ export interface Poster {
 }
 
 export function ogEtag(card: OgCard): string {
-  return createHash("sha256").update(OG_TEMPLATE_VERSION).update(JSON.stringify(card)).digest("hex").slice(0, 24);
+  return createHash("sha256").update(OG_TEMPLATE_VERSION).update(FALLBACK_FONTS.join()).update(JSON.stringify(card)).digest("hex").slice(0, 24);
 }
 
 export function posterEtag(p: Poster): string {
-  return createHash("sha256").update(POSTER_TEMPLATE_VERSION).update(JSON.stringify(p)).digest("hex").slice(0, 24);
+  return createHash("sha256").update(POSTER_TEMPLATE_VERSION).update(FALLBACK_FONTS.join()).update(JSON.stringify(p)).digest("hex").slice(0, 24);
 }
 
 export function readCardPng(name: string): Promise<Buffer | null> {

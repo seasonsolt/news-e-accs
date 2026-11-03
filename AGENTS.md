@@ -18,7 +18,7 @@
   ```bash
   npm run typecheck
   DATABASE_URL=postgres://127.0.0.1:5432/<名字>_test npm test   # 名字必须以 _test 或 _ci 结尾；没有会自动建好并迁移，账号要能建库
-  npm run build -w @aihot/web && node --test apps/web/tests/*.test.ts
+  npm run build -w @aihot/web && npm run test:web
   node scripts/smoke.ts --base http://localhost:3000             # 站点跑起来以后
   ```
 - 我们自己的生产站（e-acc.ai）只用 `deploy/update.sh` 发布和回滚，见 `deploy/README.md`；不要在服务器上手动拉代码、构建或改 systemd 文件。入口 Worker 在 `deploy/edge/`，发布方法也在 `deploy/README.md`。

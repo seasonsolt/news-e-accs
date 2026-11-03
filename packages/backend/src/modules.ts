@@ -179,6 +179,14 @@ export interface RequestNotices {
   feed: (req: FastifyRequest, feedPath: string) => FeedNotice | null;
 }
 
+/** A use of sources a module declares (ServerModule.sourceUses). */
+export interface SourceUse {
+  /** Its name in the admin's source list. */
+  label: string;
+  /** The longest it lets its sources wait between reads, in minutes; a faster pace of their own stays. */
+  minutes?: number;
+}
+
 export interface ServerModule {
   /** Its folder under modules/. */
   name: string;
@@ -250,6 +258,8 @@ export interface ServerModule {
     fetchNow?: (source: { id: string; config: Record<string, unknown> }) => Promise<Record<string, unknown>>;
   }>;
   /** Lines of the Monday source-health report (operations/reports.ts), after the source counts. */
+  /** Additional module purposes for a source; absent uses keep the news pipeline alone. */
+  sourceUses?: Record<string, SourceUse>;
   sourceHealth?: (now: number) => Promise<string[]>;
   /** Job queues of its own (jobs/queue.ts). */
   queues?: ModuleQueue[];

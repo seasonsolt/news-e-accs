@@ -15,13 +15,19 @@ const CACHE_DIR = path.join(config.dataDir, "ogcache");
 
 let fontsPromise: Promise<Array<{ name: string; data: Buffer; weight: 400 | 700; style: "normal" }>> | null = null;
 
+import { FALLBACK_FONTS, FONT_DIR } from "./fonts.ts";
+export { fallbackFontFiles, FALLBACK_FONTS } from "./fonts.ts";
+
+
 function fonts() {
   fontsPromise ??= Promise.all([
-    readFile(path.join(REPO_ROOT, "assets/og-fonts/noto-sans-sc-400.ttf")),
-    readFile(path.join(REPO_ROOT, "assets/og-fonts/noto-sans-sc-700.ttf")),
-  ]).then(([regular, bold]) => [
-    { name: "Noto Sans SC", data: regular, weight: 400, style: "normal" },
-    { name: "Noto Sans SC", data: bold, weight: 700, style: "normal" },
+    readFile(path.join(FONT_DIR, "noto-sans-sc-400.ttf")),
+    readFile(path.join(FONT_DIR, "noto-sans-sc-700.ttf")),
+    ...FALLBACK_FONTS.map((f) => readFile(path.join(FONT_DIR, f))),
+  ]).then(([regular, bold, ...more]) => [
+    { name: "Noto Sans SC", data: regular!, weight: 400, style: "normal" },
+    { name: "Noto Sans SC", data: bold!, weight: 700, style: "normal" },
+    ...more.map((data, i) => ({ name: FALLBACK_FONTS[i]!.replace(/-(400|700)\.ttf$/, ""), data, weight: (FALLBACK_FONTS[i]!.endsWith("-700.ttf") ? 700 : 400) as 400 | 700, style: "normal" as const })),
   ]);
   return fontsPromise;
 }

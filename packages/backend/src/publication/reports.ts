@@ -34,17 +34,18 @@ interface Availability {
   publishedAt: Date | null;
   /** The item's own picture (items.ts itemPicture), for its entry. */
   picture: ReportCitation["picture"];
+  storyId: string | null;
 }
 
 async function availability(ids: string[]): Promise<Map<string, Availability>> {
   const out = new Map<string, Availability>();
   if (ids.length === 0) return out;
-  const rows = await sql<({ id: string; available: boolean; summary: string | null; first_party: boolean; source_id: string; source_name: string | null; icon_url: string | null; at: Date | null }
+  const rows = await sql<({ id: string; available: boolean; summary: string | null; first_party: boolean; source_id: string; source_name: string | null; icon_url: string | null; story_id: string | null; at: Date | null }
     & Pick<ItemRow, "channel" | "body_mode" | "preview" | "x_post">)[]>`
     SELECT p.article_id AS id, (${listedCondition(new Date())}) AS available, p.summary, (s.tier = 'T1') AS first_party, p.source_id, s.name AS source_name, s.icon_url,
-      coalesce(p.published_at, p.discovered_at) AS at, p.channel, p.body_mode, a.preview,
+      st.public_id::text AS story_id, coalesce(p.published_at, p.discovered_at) AS at, p.channel, p.body_mode, a.preview,
       CASE WHEN p.channel = 'x' THEN jsonb_build_object('media', a.x_post->'media') END AS x_post
-    FROM publications p LEFT JOIN sources s ON s.id = p.source_id LEFT JOIN articles a ON a.id = p.article_id
+    FROM publications p LEFT JOIN sources s ON s.id = p.source_id LEFT JOIN articles a ON a.id = p.article_id LEFT JOIN stories st ON st.id = p.story_id
     WHERE p.article_id IN ${sql(ids)}`;
   for (const r of rows) {
     out.set(r.id, {
@@ -56,6 +57,7 @@ async function availability(ids: string[]): Promise<Map<string, Availability>> {
       sourceIcon: r.icon_url,
       publishedAt: r.at,
       picture: itemPicture(r, "card"),
+      storyId: r.story_id,
     });
   }
   return out;
@@ -269,9 +271,10 @@ function entryCitation(raw: Record<string, any>, avail: Map<string, Availability
     const { picture: _picture, ...rest } = citationFrom(r, avail);
     return { ...rest, summary: null };
   });
+  const storyId = raw.itemId ? avail.get(raw.itemId)?.storyId : null;
   return {
     ...citation,
-    ...(Number(raw.sources) > 1 ? { otherSources: Number(raw.sources) - 1 } : {}),
+    ...(Number(raw.sources) > 1 ? { otherSources: Number(raw.sources) - 1, ...(storyId ? { storyId } : {}) } : {}),
     ...(related.length ? { related } : {}),
     ...(typeof raw.followUp === "string" ? { followUp: raw.followUp } : {}),
   };

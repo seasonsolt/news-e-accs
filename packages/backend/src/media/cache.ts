@@ -2,15 +2,25 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { AVIF_MODE_SUFFIX } from "@aihot/contracts/site";
 import { config } from "../config.ts";
 export const SVG_PASSTHROUGH_MAX_BYTES = 128 * 1024;
 export class ImageBudgetExceeded extends Error {}
-export interface PreparedImage { body: Buffer; type: string; pendingAnimation?: boolean }
+export interface PreparedImage { body: Buffer; type: string; pendingAnimation?: boolean; pendingAvif?: boolean }
 export function imageCacheFile(url: string, mode: string): string {
   const key = createHash("sha256").update(`${mode}|${url}`).digest("hex");
   return path.join(config.dataDir, "imgcache", key.slice(0, 2), key);
 }
 export async function readPreparedImage(url: string, mode: string): Promise<PreparedImage | null> {
+  if (mode.endsWith(AVIF_MODE_SUFFIX)) {
+    const file = imageCacheFile(url, mode);
+    const body = await readFile(file).catch((error: NodeJS.ErrnoException) => { if (error.code === "ENOENT") return null; throw error; });
+    if (body) return { body, type: "image/avif" };
+    const image = await readPreparedImage(url, mode.slice(0, -AVIF_MODE_SUFFIX.length));
+    if (!image || image.pendingAnimation || !["image/jpeg", "image/webp"].includes(image.type)) return image;
+    const prepared = await readFile(`${file}.prepared`).then(() => true, () => false);
+    return prepared ? image : { ...image, pendingAvif: true };
+  }
   const file = imageCacheFile(url, mode);
   try {
     const [body, savedType] = await Promise.all([readFile(file), readFile(`${file}.type`, "utf8")]);

@@ -46,7 +46,12 @@
 - `DEPLOYMENT`：这个部署自己的安排：凭据文件放在哪、生产 API 启动时额外检查哪些凭据（`requiredSecrets`，默认空）、CDN 回源用的域名、后台登录回跳用的请求头、图片代理的流量上限、采集和图片直连（不走出网代理）的域名、精选评测默认用的样本，都可以不填。
 - `FEED_COPY`、`PUBLIC_CATEGORIES`：“全部动态”RSS 说明里补充的不含内容；公开接口（API、RSS、MCP）里和网页不同的类别：`merge` 把一类并进另一类发布，`feedLabels` 换掉分类 RSS 标题里的名字，上线后不要改。
 
-站点地址不写在这里，部署时用环境变量 `SITE_URL` 设置。
+- **站点地址不在 `site.ts` 里**：部署时用环境变量 `SITE_URL` 设置（`SITE.defaultUrl` 只是没设 `SITE_URL` 时的本地兜底）。
+- **一起改的名字**：改 `SITE.name` 时顺手把 `SITE.organization.name`（给搜索引擎看的结构化数据）一起改掉；`SITE.crawlerName` 写你自己的抓取标识，别冒用别人的站名。
+- **上线或有人接入后不要再改的标识**：`SITE.mcpPrefix`（MCP 工具名前缀）、`PUBLIC_CATEGORIES`（公开接口与订阅源的类别合并和改名）、`ABOUT.termsAnchor`（外部写死过的锚点）；`SITE.interfaceVersion` 只升不降，改了已有公开字段或含义时升主版本。
+- **出刊时间写整点或半点**：`EDITION_TIMES`（北京时间 `HH:mm`）由每半小时一次的排程检查，日报窗口、缺期告警和各处时间文案都读它。
+- **导航隐藏的范围**：`NAV.hidden` 目前只开放 `"/hot"` 和 `"/topics"`（一并处理侧栏、底栏、“我的”页、返回链接、面包屑，以及隐藏 `"/hot"` 时的首页热点条和事件页名次；直接打开地址仍能访问）。
+- **限流说明与实际一致**：前面的反向代理真的按 IP 限流了，再填 `ACCESS.ratePerMinute`。
 
 ## 2. 分类、标签和主题：`industry/taxonomy.ts`、`industry/topics.json`
 
@@ -105,7 +110,7 @@
 
 ## 5. 门槛与校准：`industry/selection.ts`
 
-两次评分之和 ≥ 2 × 门槛才够分（够分的还要过归组时的去重，见 [精选与校准](selection.md)）。默认门槛（T1 60、T1_5 65、T2 76）是 AIHOT 在 AI 领域校准出来的，换了行业和提示词，需要重新校准：
+两次评分之和 ≥ 2 × 门槛才够分（够分的还要过归组时的去重，见 [精选与校准](selection.md)）。默认门槛（T1 60、T1_5 65、T2 76）是 AIHOT 在 AI 领域校准出来的。`classes` 是抬高门槛的信源类别（示例是 AI 行业的“生态与基础设施”“评测榜单”，换行业时换成你的类别或删空），`browseFloor` 是浏览“全部动态”的最低分（默认 40）。换了行业和提示词，需要重新校准：
 
 1. 从你的信源里挑 100–200 条资料，自己标“该选 / 不该选”，存成 `.data/gold.jsonl`（格式见 [精选与校准](selection.md)，`industry/gold.example.jsonl` 有两条示例）。
 2. 运行 `node --env-file=.env scripts/eval-selection.ts --gold .data/gold.jsonl`，看准确率、查准率、查全率，和不同门槛下的结果。
@@ -127,6 +132,7 @@
 - `logo.svg`：站点标志，导航栏的站名前和后台也用它；`icon.png`（512）、`icon-192.png`、`apple-icon.png`（180）、`favicon.ico`：站点图标。换了 `logo.svg` 以后，用 `node scripts/brand-icons.ts` 重新生成这四个位图。
 - `Logo.tsx`：网页左上角的站名标志（`SiteMark` 加站名文字）；`RingMark` 是加载动画的齿轮。
 - `wordmark.svg`、`wordmark-dark.svg`（可选）：分享图和海报上的字标，深色版用在深色的分享图上；没有就用站名文字。
+- 分享图的字体（可选，放在 `assets/og-fonts/`）：分享图用 Noto Sans SC 子集（GB2312 + 基本拉丁），繁体、日文汉字、假名、韩文和带变音符的拉丁字母会画不出来。信源有这些文字时，放进 `<名字>-400.ttf` 和 `<名字>-700.ttf`，缺的字依次从这些字体里取（按文件名排序）；换了字体要重启服务，分享图缓存随之换新。不放就和原来一样。
 - `nameplates/`：日报、周报、月报页顶部的报头字（比如“AI日报”）。换了行业词以后重新生成：
   ```bash
   npm pack @fontsource/noto-sans-sc@5.3.0 && tar xzf fontsource-noto-sans-sc-5.3.0.tgz
@@ -154,9 +160,12 @@
 ```bash
 npm run typecheck
 DATABASE_URL=postgres://…/myhot_test npm test     # 库名必须以 _test 或 _ci 结尾，数据库账号要能建库
+npm run build -w @aihot/web && npm run test:web
 node scripts/smoke.ts --base http://localhost:3000   # 站点跑起来以后
 ```
 
 改写提示词、重新校准门槛不会让测试失败：测试按每一步实际渲染出的提示词认请求，门槛从 `industry/selection.ts` 读。`tests/` 里有些测试用的是示例行业的分类、标签和公司（比如 `ai-models`、“模型发布”、Anthropic）。改了 `industry/taxonomy.ts` 以后这些测试会失败，把例子换成你行业里的对应项即可，测的规则本身不用改。
 
 然后打开网站看一眼首页、全部动态、日报、主题页和关于页，再去后台“信源”页看信源是不是都抓成功了。
+
+本站保留 `classes` 机制，但默认不给信源分配类别；未分类时仍使用原分级门槛。本站 `browseFloor: 0`，暂不过滤“全部动态”，开启需使用者决定门槛。

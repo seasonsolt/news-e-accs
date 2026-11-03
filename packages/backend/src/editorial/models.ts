@@ -23,7 +23,7 @@ export interface Capability {
 
 export const CAPABILITIES = {
   prefilter: { label: "精选预筛（是否属于这个行业，宽召回）", env: "PREFILTER_MODEL", default: DEFAULTS.prefilter ?? "default", purposes: ["prefilter_article"] },
-  score: { label: "精选评分（两次独立评分，按信源分级门槛）", env: "SCORE_MODEL", default: DEFAULTS.score ?? "default", purposes: ["score_article"] },
+  score: { label: "精选评分（两次独立评分，按信源分级与类别的门槛）", env: "SCORE_MODEL", default: DEFAULTS.score ?? "default", purposes: ["score_article"] },
   understand: { label: "内容理解（入选和接近入选的标题、摘要、推荐理由，能看图时看首图）", env: "UNDERSTAND_MODEL", default: DEFAULTS.understand ?? "default", purposes: ["understand_article"] },
   summarize: { label: "标题摘要（其余文章的英文标题与摘要）", env: "SUMMARIZE_MODEL", default: DEFAULTS.summarize ?? "default", purposes: ["summarize_article"] },
   wording: { label: "改用词（英文标题、摘要、理由用了本站不用的词时，只改这些词）", env: "WORDING_MODEL", default: DEFAULTS.wording ?? "default", purposes: ["mend_wording"], idle: () => !READER_WORDING.length },
@@ -49,7 +49,7 @@ export function capabilities(): Record<string, Capability> {
 /** Names of the active steps currently routed to a service, using the same choices as model calls. */
 export async function stepsOnService(service: string, models?: ReadonlySet<string>): Promise<string[]> {
   const current = await modelSources();
-  return Object.entries(capabilities())
+  const steps = Object.entries(capabilities())
     .filter(([key, c]) => {
       if (c.idle?.()) return false;
       const primary = current[key]!.model;
@@ -59,16 +59,18 @@ export async function stepsOnService(service: string, models?: ReadonlySet<strin
       });
     })
     .map(([, c]) => c.label.split("（")[0]!);
+  return [...new Set(steps)];
 }
 
-let cache: { at: number; overrides: Record<string, string> } | null = null;
+let cache: { at: number; switches: Record<string, string> } | null = null;
 
-async function overrides(): Promise<Record<string, string>> {
-  if (cache && Date.now() - cache.at < 60_000) return cache.overrides;
+/** The name each admin switch holds, registered or not. */
+async function switches(): Promise<Record<string, string>> {
+  if (cache && Date.now() - cache.at < 60_000) return cache.switches;
   const rows = await sql<{ key: string; value: { model?: string } }[]>`SELECT key, value FROM settings WHERE key LIKE 'models.%'`;
   const map: Record<string, string> = {};
-  for (const r of rows) if (r.value?.model && MODELS[r.value.model]) map[r.key.slice("models.".length)] = r.value.model;
-  cache = { at: Date.now(), overrides: map };
+  for (const r of rows) if (r.value?.model) map[r.key.slice("models.".length)] = r.value.model;
+  cache = { at: Date.now(), switches: map };
   return map;
 }
 
@@ -90,18 +92,24 @@ export function capabilityAcceptsModel(capability: Capability, model: { vision?:
 export async function modelFor(capability: CapabilityKey | (string & {})): Promise<string> {
   const c = capabilities()[capability];
   if (!c) throw new Error(`unknown model step: ${capability}`);
-  const chosen = (await overrides())[capability] ?? process.env[c.env] ?? c.default;
+  const held = (await switches())[capability];
+  const chosen = held && MODELS[held] ? held : process.env[c.env] ?? c.default;
   return MODELS[chosen] ? chosen : c.default;
 }
 
-/** Where the current choice comes from, for the admin page. */
-export async function modelSources(): Promise<Record<string, { model: string; source: "admin" | "env" | "default" }>> {
-  const o = await overrides();
-  const out: Record<string, { model: string; source: "admin" | "env" | "default" }> = {};
+/** Where the current choice comes from, for the admin page; `invalid` is an unregistered name passed over to reach it. */
+export async function modelSources(): Promise<Record<string, { model: string; source: "admin" | "env" | "default"; invalid?: string }>> {
+  const held = await switches();
+  const out: Record<string, { model: string; source: "admin" | "env" | "default"; invalid?: string }> = {};
   for (const [key, c] of Object.entries(capabilities())) {
-    if (o[key]) out[key] = { model: o[key]!, source: "admin" };
-    else if (process.env[c.env] && MODELS[process.env[c.env]!]) out[key] = { model: process.env[c.env]!, source: "env" };
-    else out[key] = { model: c.default, source: "default" };
+    const pick = held[key];
+    const env = process.env[c.env];
+    if (pick && MODELS[pick]) {
+      out[key] = { model: pick, source: "admin" };
+      continue;
+    }
+    const invalid = pick ?? (env && !MODELS[env] ? env : undefined);
+    out[key] = { ...(env && MODELS[env] ? { model: env, source: "env" as const } : { model: c.default, source: "default" as const }), ...(invalid ? { invalid } : {}) };
   }
   return out;
 }

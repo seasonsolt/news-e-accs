@@ -1,7 +1,5 @@
 import { Link } from "../../lib/navigation";
-import { contentFetch } from "../../lib/content-fetch";
 import { useTranslate, Text } from "../../lib/i18n";
-import { useEffect, useRef, useState } from "react";
 
 import type { StoryFollowup, StoryFollowupsResponse, StoryRef } from "@aihot/contracts/site";
 import { MoreLink } from "../../components/ui/Page";
@@ -12,38 +10,13 @@ export interface CurrentReport { id: string; title: string; timelineAt: string }
 
 /**
  * "这件事的进展": the event's developments as a dated line, newest first, with this page's own report
- * marked where it falls and a link to the whole event. Loaded after the page so the article renders
- * without waiting for it.
+ * marked where it falls and a link to the whole event, included in the first HTML.
  */
-export function StoryFollowups({ story, current }: { story: StoryRef; current: CurrentReport }) {
-  const [items, setItems] = useState<StoryFollowup[] | null>(null);
-  const [more, setMore] = useState(false);
-  const anchor = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const controller = new AbortController();
-    let started = false;
-    setItems(null);
-    const load = () => {
-      if (started) return;
-      started = true;
-      contentFetch(`/api/site/stories/${encodeURIComponent(story.publicId)}/followups`, { signal: controller.signal })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((body: StoryFollowupsResponse | null) => {
-          if (!body || controller.signal.aborted) return;
-          setItems(body.items.filter((d) => d.representative.id !== current.id));
-          setMore(body.more);
-        }).catch(() => {});
-    };
-    const observer = typeof IntersectionObserver === "undefined" ? null : new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) { observer?.disconnect(); load(); }
-    }, { rootMargin: "500px" });
-    if (observer && anchor.current) observer.observe(anchor.current);
-    else load();
-    return () => { observer?.disconnect(); controller.abort(); };
-  }, [story.publicId, current.id]);
-  return <div ref={anchor}>
+export function StoryFollowups({ followups, story, current }: { followups: StoryFollowupsResponse | null; story: StoryRef; current: CurrentReport }) {
+  const items = followups?.items.filter((d) => d.representative.id !== current.id) ?? [];
+  return <div>
     <noscript><Link to={`/story/${story.publicId}`}><Text value="查看事件全部后续" /></Link></noscript>
-    {items && items.length > 0 && <Timeline items={items} more={more} story={story} current={current} />}
+    {items.length > 0 && <Timeline items={items} more={followups!.more} story={story} current={current} />}
   </div>;
 }
 

@@ -18,7 +18,7 @@ function KindSwitch({ kind }: { kind: ReportKind }) {
   return <PillTabs fill layoutId="report-kind" label={tx("切换日报、周报、月报")} active={kind} items={KINDS.map((k) => ({ key: k, label: tx(KIND_LABEL[k]), to: withAt(KIND_PATH[k], at), prefetch: "intent" as const }))} />;
 }
 
-/** Desktop archive column: every issue of this kind, grouped, the current one highlighted. */
+/** Wide desktop archive column: every issue of this kind, grouped, the current one highlighted. */
 export function ReportArchive({ kind, index, current }: { kind: ReportKind; index: ReportNavigationEntry[]; current: string | null }) {
   const tx = useTranslate();
   const at = useAt();
@@ -97,7 +97,7 @@ function ArchiveGroup({ g, kind, current, initiallyOpen }: {
   );
 }
 
-/** Phones, under the bar: the three latest issues and a way further back. */
+/** Phones under the bar, narrow desktops above the paper: the three latest issues and a way further back. */
 export function ReportPhoneNav({ kind, index, current, today }: { kind: ReportKind; index: ReportNavigationEntry[]; current: string | null; today: string }) {
   const tx = useTranslate();
   const at = useAt();

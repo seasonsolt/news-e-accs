@@ -48,7 +48,7 @@ async function prepare<T>(request: MediaRequest, read: () => Promise<T | null>):
     if (!job) throw new MediaBusyError();
     if (job.state === "completed") {
       if (job.output?.status === "budget") throw new ImageBudgetExceeded();
-      if (job.output?.status === "unavailable") throw new Error("worker could not prepare the image");
+      if (job.output?.status === "unavailable") throw Object.assign(new Error("worker could not prepare the image"), { failureSeconds: job.output.failureSeconds });
       if (job.output?.status !== "ready") throw new MediaBusyError();
       const value = await read();
       if (value === null) throw new Error("worker output is missing");

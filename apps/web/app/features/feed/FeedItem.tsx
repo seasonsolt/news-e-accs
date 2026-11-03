@@ -1,3 +1,4 @@
+import { Picture } from "../../components/ui/Picture";
 import { contentHtmlLanguage } from "../../lib/content-language";
 import { Link } from "../../lib/navigation";
 import { ContentLanguage } from "../../components/ContentLanguage";
@@ -86,7 +87,7 @@ export const FeedItem = memo(function FeedItem({ item, group, filters, read = fa
           </div>
           {/* The original page's share picture; the link over the card opens the report. */}
           {item.cover && (
-            <img src={item.cover.url} srcSet={item.cover.srcSet} sizes="(min-width: 961px) 152px, 96px" alt="" loading="lazy" decoding="async"
+            <Picture src={item.cover.url} srcSet={item.cover.srcSet} sizes="(min-width: 961px) 152px, 96px" alt="" loading="lazy" decoding="async"
               className="mt-2 aspect-[4/3] w-[96px] shrink-0 self-start rounded-control border border-line-soft bg-bg-sunk object-cover lg:mt-2.5 lg:aspect-[16/10] lg:w-[152px]" />
           )}
         </div>

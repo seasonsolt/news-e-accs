@@ -1,6 +1,8 @@
 import { UNSAFE_decodeViaTurboStream } from "react-router";
 // Run after `npm run build -w @aihot/web`. Real production server/router, synthetic HTTP API only.
 import assert from "node:assert/strict";
+import { ADMIN } from "@aihot/site";
+import { SIGN_IN_HOME } from "@aihot/contracts/admin";
 import { spawn, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
 import { readdir, rm, stat, writeFile } from "node:fs/promises";
@@ -13,7 +15,7 @@ import { CATEGORY_KEYS } from "@aihot/contracts/taxonomy";
 import { parseHTML } from "linkedom";
 import type { LbBoardResponse } from "@aihot/leaderboard/contracts";
 import { chronicle } from "./chrono-fixture.ts";
-import { startWebServer } from "./web-server.ts";
+import { fakeApi, startWebServer } from "./web-server.ts";
 
 const seoSource = { id: "src", name: "示例媒体", kind: "rss", firstParty: false, iconUrl: null };
 const seoItem = {
@@ -554,11 +556,17 @@ test("missing routes cannot be hidden by a root-only request; errors and redirec
 });
 
 test("admin data and actions never become public cache entries", async () => {
-  const admin = await fetch(`${origin}/admin/sources.data?_routes=admin-layout`);
-  assert.equal(admin.status, 202);
-  assert.equal(admin.headers.get("Cache-Control"), "private, no-store");
-  assert.equal(admin.headers.get("X-Accel-Expires"), "0");
-  assert.match(await admin.text(), /api\/auth\/login/);
+  if (ADMIN) {
+    const admin = await fetch(`${origin}/admin/sources.data?_routes=admin-layout`);
+    assert.equal(admin.status, 202);
+    assert.equal(admin.headers.get("Cache-Control"), "private, no-store");
+    assert.equal(admin.headers.get("X-Accel-Expires"), "0");
+    assert.match(await admin.text(), /api\/auth\/login/);
+  } else {
+    const none = await fetch(`${origin}/admin/sources`);
+    assert.equal(none.status, 404, "a site without admin pages has none");
+    await none.text();
+  }
   const action = await fetch(`${origin}/hot.data`, { method: "POST" });
   assert.equal(action.status, 405);
   assert.equal(action.headers.get("Cache-Control"), "private, no-store");
@@ -948,5 +956,33 @@ test('mixed historical story developments render with an honest pending notice i
     const response=await fetch(origin+path); assert.equal(response.status,200);
     const main=parseHTML(await response.text()).document.querySelector('main')!;
     assert.ok(main.textContent!.includes(notice)); assert.match(main.textContent!,/历史事实 1/); assert.match(main.textContent!,/历史事实 2/);
+  }
+});
+
+test("a signed-in admin is sent past the sign-in page", async () => {
+  const api = fakeApi((url, res, req) => {
+    if (url.pathname === "/api/admin/me") {
+      if (req.headers.cookie?.includes("aihot_admin=fixture")) return { name: "Fixture admin", csrf: "fixture", dev: false };
+      res.statusCode = 401;
+      return { code: "unauthorized" };
+    }
+    if (url.pathname === "/api/auth/options") return { password: true, feishu: false };
+  });
+  const signedIn = await startWebServer(api);
+  try {
+    const res = await fetch(`${signedIn.origin}/admin/login?return=%2Fadmin%2Fcontent`, { headers: { cookie: "aihot_admin=fixture" }, redirect: "manual" });
+    assert.equal(res.status, 302);
+    assert.equal(res.headers.get("location"), "/admin/content");
+    await res.text();
+    for (const [target, location] of [["javascript:alert(1)", SIGN_IN_HOME], ["//evil.example/admin", SIGN_IN_HOME], ["/x/..//evil.example", SIGN_IN_HOME], ["https://evil.example/admin", "/admin"], ["/free-preview", "/free-preview"]]) {
+      const away = await fetch(`${signedIn.origin}/admin/login?return=${encodeURIComponent(target!)}`, { headers: { cookie: "aihot_admin=fixture" }, redirect: "manual" });
+      assert.equal(away.headers.get("location"), location, target);
+      await away.text();
+    }
+    const anonymous = await fetch(`${signedIn.origin}/admin/login?return=%2Fadmin`, { redirect: "manual" });
+    assert.equal(anonymous.status, 200, "without a session the page still offers the ways in");
+    await anonymous.text();
+  } finally {
+    await signedIn.stop();
   }
 });

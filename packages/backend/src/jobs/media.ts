@@ -1,11 +1,12 @@
 // All public cold-image decode/render work runs here, including misses requested by the API.
 import type { PgBoss } from "pg-boss";
 import type { MediaRequest } from "../media/request.ts";
-import { produceImage, ImageBudgetExceeded } from "../media/images.ts";
+import { produceAvif, produceImage, failureSeconds, ImageBudgetExceeded } from "../media/images.ts";
 import { renderOg } from "../media/og.ts";
 import { renderWechatCover } from "../media/wechat-cover.ts";
 import { renderPoster } from "../media/poster.ts";
 import { MediaBusyError } from "../media/capacity.ts";
+import { AVIF_MODE_SUFFIX } from "@aihot/contracts/site";
 import { logError } from "../lib/log-error.ts";
 import { QUEUES, work, type JobData } from "./queue.ts";
 
@@ -17,7 +18,7 @@ export async function registerMediaJobs(boss: PgBoss) {
     // Disconnected/timed-out cold requests must not leave a long backlog of expensive stale work.
     if (Date.now() >= deadline) return { status: "busy" };
     try {
-      if (request.kind === "image") await produceImage(request.url, request.mode);
+      if (request.kind === "image") await (request.mode.endsWith(AVIF_MODE_SUFFIX) ? produceAvif(request.url, request.mode.slice(0, -AVIF_MODE_SUFFIX.length)) : produceImage(request.url, request.mode));
       else if (request.kind === "og") await renderOg(request.card);
       else if (request.kind === "poster") await renderPoster(request.poster);
       else await renderWechatCover(request.cover);
@@ -26,7 +27,7 @@ export async function registerMediaJobs(boss: PgBoss) {
       if (error instanceof MediaBusyError) return { status: "busy" };
       if (error instanceof ImageBudgetExceeded) return { status: "budget" };
       console.warn(JSON.stringify({ level: "warn", msg: "media worker preparation failed", kind: request.kind, err: logError(error) }));
-      return { status: "unavailable" };
+      return { status: "unavailable", failureSeconds: failureSeconds(error) };
     }
   };
   // Download waits cannot occupy the consumers that render cards/posters. Native decode/render

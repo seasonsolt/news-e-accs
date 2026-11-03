@@ -112,7 +112,7 @@ export function registerStatic(app: FastifyInstance) {
     try {
       const { files, expiresAt } = await loadSitemap();
       const xml = files[path];
-      if (!xml) return reply.code(404).type("text/plain; charset=utf-8").send("Not found");
+      if (xml === undefined) return reply.code(404).type("text/plain; charset=utf-8").send("Not found");
       const seconds = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
       return sendTextWithEtag(req, reply, xml, { etagPrefix: `sitemap:${path}`, cacheControl: seconds > 0 ? `public, max-age=0, s-maxage=${seconds}, must-revalidate` : "no-store", contentType: "application/xml" });
     } catch (error) {

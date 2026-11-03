@@ -7,7 +7,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { createMcpHandler, McpServer, type McpHttpHandler } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { MCP_OUTCOMES, type McpOutcome, type McpUsage } from "@aihot/backend/site/mcp-analytics";
-import { POLICY, SITE } from "@aihot/site";
+import { DEPLOYMENT, POLICY, SITE } from "@aihot/site";
 import { PUBLIC_INTERFACE_VERSION } from "@aihot/contracts/http-policy";
 import { MCP_TOOL_NAMES as T, mcpToolName } from "@aihot/contracts/mcp";
 import { PUBLIC_API_CATEGORY_KEYS } from "@aihot/contracts/taxonomy";
@@ -340,6 +340,7 @@ const SITE_ADDRESS = new URL(config.siteUrl);
 function allowedHosts(hosts: string[]): Set<string> {
   return new Set([
     SITE_ADDRESS.hostname,
+    ...(DEPLOYMENT.originHost ? [DEPLOYMENT.originHost] : []),
     ...hosts,
     "localhost",
     "127.0.0.1",

@@ -15,8 +15,10 @@ export const RHYTHM_MULTIPLE = 4;
 /**
  * Failing often enough to be worth fixing, for runs and detail pages alike: at least five failures in the
  * seven days and at least a tenth of the tries. Production, 30 days to 2026-10-17: every source with a
- * broken detail page (refused, 500 every time, pages too large, a spent budget) failed 17–100% of its
- * reads; one-off timeouts, TLS drops and pages not yet online were 0.2–4% and gone by the next run.
+ * broken detail page (500 every time, pages too large, a spent budget) failed 17–100% of its reads.
+ * Network errors and the origin's own status are not counted for runs (TRANSIENT): 10-19..11-01 sources at
+ * 10–16% of them, healing by the next run, were closed as accepted 21 times; kept up they reach five in a
+ * row ("failing"), and many sources at once are content.fetch.
  */
 function failsOften(failures: number, tries: number): boolean {
   return failures >= 5 && failures / tries >= 0.1;
@@ -33,6 +35,9 @@ export interface SourceHealthRow {
   last_error: string | null;
   runs: number;
   failed: number;
+  /** Failed runs that are neither TRANSIENT nor a spent budget: the page came back and we could not read it. */
+  unusable: number;
+  last_unusable_at: Date | null;
   discoveries: number;
   items: number;
   undated: number;
@@ -43,7 +48,8 @@ export interface SourceHealthRow {
   presentation_failed_at: Date | null;
   last_failed_at: Date | null;
   last_detail_failure_at: Date | null;
-  last_quality_at: Date | null;
+  last_undated_at: Date | null;
+  last_repeated_at: Date | null;
   /** Whether this source ever produced an article at all, in or out of the window. */
   ever_output: boolean;
 }
@@ -60,18 +66,22 @@ export interface QuietSource extends SourceHealthRow {
 
 export const SOURCE_USE_NAMES: Record<string, string> = { editorial: "编辑内容", hot_signal: "热度信号" };
 
-/** A fixable source problem. A blocked presentation needs proof that the same article was updated. */
-export type SourceProblem = "failing" | "unstable" | "quality" | "details" | "presentation";
+/** A fixable source problem. */
+export type SourceProblem = "failing" | "unstable" | "undated" | "revisions" | "details" | "presentation";
 /** Each fixable problem as it is listed, per source: `action` is for the daily follow-up. */
 export const SOURCE_PROBLEMS: { problem: SourceProblem; title: string; describe: (s: SourceHealthRow) => string; observedAt: (s: SourceHealthRow) => Date | null; action: string }[] = [
   { problem: "failing", observedAt: s => s.last_failed_at, title: "连续抓取失败", describe: s => `连续失败 ${s.fail_count} 次${s.last_error ? `，${s.last_error}` : ""}`, action: "转给 AI 检查抓取错误" },
-  { problem: "unstable", observedAt: s => s.last_failed_at, title: "反复抓取失败", describe: s => `近 7 天失败 ${s.failed}/${s.runs} 次`, action: "即使最近成功也需检查，避免继续漏收" },
-  { problem: "quality", observedAt: s => s.last_quality_at, title: "文章质量待核实",
-    describe: s => `近 7 天${[s.undated && `缺发布时间 ${s.undated} 篇`, s.repeated && `反复修订 ${s.repeated} 篇`].filter(Boolean).join("、")}`,
-    action: "缺时间可能让新闻按历史文章处理，反复修订需核对正文是否混入变化内容" },
+  { problem: "unstable", observedAt: s => s.last_unusable_at, title: "反复读不出条目", describe: s => `近 7 天 ${s.unusable}/${s.runs} 次抓到了页面却没解析出条目`, action: "即使最近成功也需检查，避免继续漏收" },
+  { problem: "undated", observedAt: s => s.last_undated_at, title: "文章缺发布时间", describe: s => `近 7 天缺发布时间 ${s.undated} 篇`,
+    action: "缺时间可能让新闻按历史文章处理" },
+  { problem: "revisions", observedAt: s => s.last_repeated_at, title: "文章反复修订", describe: s => `近 7 天反复修订 ${s.repeated} 篇`,
+    action: "需核对正文是否混入变化内容" },
   { problem: "presentation", observedAt: s => s.presentation_failed_at, title: "正文展示待处理", describe: s => s.presentation_failures.map(f => `${f.url}：${f.error}`).join("；"), action: "保留了前版原文与译文，请预览正文展示刷新并核实需正常重翻的文章" },
   { problem: "details", observedAt: s => s.last_detail_failure_at, title: "详情补全失败", describe: s => `近 7 天失败 ${s.detail_failures}/${s.detail_attempts} 页`, action: "查看抓取记录中的详情地址与错误" },
 ];
+
+/** A run error that is the network or the origin's answer, not our reading of the page (fetch_runs.error, 10-01..11-01). */
+const TRANSIENT = sql`~ ${"^([A-Za-z]*Error: )?(fetch failed|The operation was aborted due to timeout|Client network socket disconnected|other side closed|Connect Timeout Error|DNS lookup failed|((jina|socialdata) )?HTTP [0-9]{3})"}`;
 
 /** Matches a saved error that is a spent provider budget. */
 const spentBudget = sql`LIKE ${budgetMessage("%", "%")}`;
@@ -86,21 +96,6 @@ export function rhythmMultiple(s: QuietSource): number | null {
   return s.quiet_days / s.median_gap_days;
 }
 
-/** One quiet source in the weekly report: its own numbers, so a reader can see why it is listed. Three
- * cases read differently: output that is only outside the window, output too thin to time, and a source
- * that never gave us anything — a broken collection, or nothing published since it was added. */
-export function rhythmText(s: QuietSource): string {
-  const times = rhythmMultiple(s);
-  if (times === null) {
-    const run = `近 7 天 ${s.runs} 次抓取、0 条新内容`;
-    if (!s.ever_output) return `${run}；从未收到过内容`;
-    return s.evidence_days > 0
-      ? `${run}；窗口内可比较的历史只有 ${s.evidence_days} 天`
-      : `${run}；近 ${RHYTHM_WINDOW_DAYS} 天窗口内没有可比较的产出`;
-  }
-  return `近 ${s.quiet_days} 天没有新内容，平时约 ${s.median_gap_days} 天一条（${Number(times.toFixed(1))} 倍）`;
-}
-
 /** Seven days of outcomes, including intermittent failures that a later success clears on sources.
  * Provider budget waits and process shutdowns are not counted as detail failures by the collector.
  * A request timeout remains a failure. */
@@ -113,6 +108,8 @@ export async function sourceHealth(now = Date.now()) {
         coalesce(sum((detail->>'detailAttempts')::int), 0)::int AS detail_attempts,
         coalesce(sum((detail->>'detailFailures')::int), 0)::int AS detail_failures,
         max(coalesce(finished_at, started_at)) FILTER (WHERE status = 'failed' AND coalesce(error, '') NOT ${spentBudget}) AS last_failed_at,
+        count(*) FILTER (WHERE status = 'failed' AND coalesce(error, '') NOT ${spentBudget} AND NOT coalesce(error, '') ${TRANSIENT})::int AS unusable,
+        max(coalesce(finished_at, started_at)) FILTER (WHERE status = 'failed' AND coalesce(error, '') NOT ${spentBudget} AND NOT coalesce(error, '') ${TRANSIENT}) AS last_unusable_at,
         max(coalesce(finished_at, started_at)) FILTER (WHERE (detail->>'detailFailures')::int > 0) AS last_detail_failure_at
       FROM fetch_runs WHERE started_at >= ${since} GROUP BY source_id
     ), presentation_events AS (
@@ -148,10 +145,10 @@ export async function sourceHealth(now = Date.now()) {
       SELECT a.source_id, count(*)::int AS n, max(r.last_revision_at) AS last_repeated_at FROM revisions r JOIN articles a ON a.id = r.article_id GROUP BY a.source_id
     )
     SELECT s.id,s.name,s.participation_mode,s.created_at,s.health,s.fail_count,s.last_ok_at,left(s.last_error,200) AS last_error,
-      coalesce(r.runs,0) AS runs, coalesce(r.failed,0) AS failed, coalesce(r.detail_attempts,0) AS detail_attempts, coalesce(r.detail_failures,0) AS detail_failures,
+      coalesce(r.runs,0) AS runs, coalesce(r.failed,0) AS failed, coalesce(r.unusable,0) AS unusable, r.last_unusable_at, coalesce(r.detail_attempts,0) AS detail_attempts, coalesce(r.detail_failures,0) AS detail_failures,
       coalesce(d.n,0) AS discoveries, coalesce(a.n,0) AS items, coalesce(a.undated,0) AS undated, coalesce(e.n,0) AS repeated,
-      coalesce(presentation.failures, '[]'::jsonb) AS presentation_failures,presentation.failed_at AS presentation_failed_at,
-      r.last_failed_at, r.last_detail_failure_at, greatest(a.last_undated_at,e.last_repeated_at) AS last_quality_at,
+      coalesce(presentation.failures, '[]'::jsonb) AS presentation_failures, presentation.failed_at AS presentation_failed_at,
+      r.last_failed_at, r.last_detail_failure_at, a.last_undated_at, e.last_repeated_at,
       (EXISTS (SELECT 1 FROM articles history WHERE history.source_id = s.id)
         OR EXISTS (SELECT 1 FROM article_discoveries history WHERE history.source_id = s.id)) AS ever_output
     FROM sources s LEFT JOIN runs r ON r.source_id = s.id LEFT JOIN discoveries d ON d.source_id = s.id
@@ -172,12 +169,13 @@ export async function sourceHealth(now = Date.now()) {
       mode, name, sources,
       failing: sources.filter(s => s.health === "failing"),
       /** Failing often without failing now: a source failing now is listed as failing, not twice. */
-      unstable: sources.filter(s => s.health !== "failing" && failsOften(s.failed, s.runs)),
+      unstable: sources.filter(s => s.health !== "failing" && failsOften(s.unusable, s.runs)),
       /** The quiet ones past their own rhythm, most overdue first. */
       overdue,
       /** The quiet ones without enough history to judge, including sources that never produced anything. */
       unknown: own.filter(s => rhythmMultiple(s) === null),
-      quality: mode === "editorial" ? sources.filter(s => s.undated > 0 || s.repeated > 0) : [],
+      undated: mode === "editorial" ? sources.filter(s => s.undated > 0) : [],
+      revisions: mode === "editorial" ? sources.filter(s => s.repeated > 0) : [],
       presentation: sources.filter(s => s.presentation_failures.length > 0),
       details: sources.filter(s => failsOften(s.detail_failures, s.detail_attempts)),
     };
@@ -224,9 +222,4 @@ async function withRhythm(sources: SourceHealthRow[], now: number): Promise<Quie
     const r = measured.get(s.id);
     return { ...s, evidence_days: r?.evidence_days ?? 0, median_gap_days: r?.median_gap_days ?? null, quiet_days: r?.quiet_days ?? null };
   });
-}
-
-/** Every listed source with its own numbers. */
-export function sourceHealthList<T extends SourceHealthRow>(rows: T[], describe: (row: T) => string): string {
-  return rows.map(s => `${s.name}（${s.id}）：${describe(s)}`).join("；");
 }

@@ -27,6 +27,7 @@ import { ArticleBody } from "../features/item/ArticleBody";
 import { scrollToAnchor } from "../lib/motion";
 import { useContainedScroll } from "../components/ui/Page";
 import { copyText } from "../lib/clipboard";
+import { loadFollowups } from "../features/item/followups.server";
 import { StoryFollowups } from "../features/item/StoryFollowups";
 import { AuthorRoleMark, FactCard, StoryDigest, XCountsLine } from "../features/item/FactCard";
 import { MediaGallery } from "../features/item/MediaGallery";
@@ -48,8 +49,8 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   // What to read next is optional: the page renders without it.
   const next = apiGet<Reads>("/api/site/next-reads", { request, signal: request.signal }).catch(() => null);
   const item = await loadOr404<SiteItemDetail>(`/api/site/items/${encodeURIComponent(params.id)}`, { request, signal: request.signal });
-  const [alternateEdition, nextReads] = await Promise.all([hasAlternateEdition(`/api/site/items/${encodeURIComponent(params.id)}`, item, request), next]);
-  return cachedPage(600, { item, alternateEdition, nextReads });
+  const [alternateEdition, nextReads, followups] = await Promise.all([hasAlternateEdition(`/api/site/items/${encodeURIComponent(params.id)}`, item, request), next, loadFollowups(item, request)]);
+  return cachedPage(600, { item, alternateEdition, nextReads, followups });
 }
 
 export function meta({ matches, loaderData, location }: Route.MetaArgs) {
@@ -102,7 +103,7 @@ function inWeChat(): boolean {
 export default function ItemPage() {
   const tx = useTranslate();
   const locale = useLocale();
-  const { item, nextReads } = useLoaderData<typeof loader>();
+  const { item, nextReads, followups } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const hasTranslation = item.hasTranslation;
   const lang = item.bodyLanguage;
@@ -369,7 +370,7 @@ export default function ItemPage() {
           {isX && item.x!.quoted?.text && <QuotedPost quoted={item.x!.quoted} original={lang === "original"} />}
 
           {item.story?.digest && <StoryDigest digest={item.story.digest} lang={contentHtmlLanguage(item.story, locale) ?? "und"} />}
-          {item.story && <StoryFollowups story={item.story} current={{ id: item.id, title: item.title, timelineAt: item.timelineAt }} />}
+          {item.story && <StoryFollowups followups={followups} story={item.story} current={{ id: item.id, title: item.title, timelineAt: item.timelineAt }} />}
 
           {(item.topics.length > 0 || item.tags.length > 0) && (
             <div className="mt-9 flex flex-wrap gap-1.5">

@@ -3,6 +3,7 @@
 import { redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/admin-login";
 import { SITE } from "@aihot/site";
+import { safeReturn, SIGN_IN_HOME } from "@aihot/contracts/admin";
 import { apiGet } from "../lib/api.server";
 import { adminSignedIn } from "../lib/admin.server";
 import { Wordmark } from "@aihot/site/brand/Logo.tsx";
@@ -16,8 +17,7 @@ const ERRORS: Record<string, string> = {
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
-  const returnTo = url.searchParams.get("return") ?? "/admin";
-  const target = /^\/admin(?:[/?#]|$)/.test(returnTo) && !returnTo.includes("\\") ? returnTo : "/admin";
+  const target = safeReturn(url.searchParams.get("return") ?? SIGN_IN_HOME);
   if (await adminSignedIn(request).catch(() => false)) throw redirect(target);
   const options = await apiGet<{ password: boolean; feishu: boolean; access: boolean }>("/api/auth/options", { request, signal: request.signal }).catch(() => ({ password: true, feishu: false, access: false }));
   return { returnTo: target, error: url.searchParams.get("error"), ...options };

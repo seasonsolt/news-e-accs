@@ -5,6 +5,7 @@ import type { FeedItemSummary, MediaView } from "@aihot/contracts/site";
 import { IconBookmark } from "../../components/icons";
 import { SourceAvatar } from "../../components/ui/SourceAvatar";
 import { Lightbox } from "../../components/ui/Lightbox";
+import { Picture } from "../../components/ui/Picture";
 import { toggleStar, useIsStarred } from "../../lib/local-state";
 import { ClickSpark } from "../motion/react-bits/ClickSpark";
 
@@ -42,7 +43,7 @@ export function MediaThumbs({ media, className = "" }: { media: MediaView[]; cla
           {m.kind === "video" && !m.poster ? (
             <span className={`block h-[112px] bg-gradient-to-br from-bg-sunk to-line-soft ${shown.length === 1 ? "" : "w-[112px]"}`}
               style={shown.length === 1 ? { width: m.width && m.height ? Math.min(240, Math.ceil(112 * m.width / m.height)) : 200 } : undefined} />
-          ) : <img src={m.poster ?? m.url} srcSet={m.srcSet} sizes={shown.length === 1 ? `${m.width && m.height ? Math.min(240, Math.ceil(112 * m.width / m.height)) : 240}px` : "112px"} width={m.width ?? undefined} height={m.height ?? undefined} alt={m.alt ?? ""} loading="lazy" decoding="async" className={`h-[112px] object-cover ${shown.length === 1 ? "w-auto max-w-[240px]" : "w-[112px]"}`} />}
+          ) : <Picture src={m.poster ?? m.url} srcSet={m.srcSet} sizes={shown.length === 1 ? `${m.width && m.height ? Math.min(240, Math.ceil(112 * m.width / m.height)) : 240}px` : "112px"} width={m.width ?? undefined} height={m.height ?? undefined} alt={m.alt ?? ""} loading="lazy" decoding="async" className={`h-[112px] object-cover ${shown.length === 1 ? "w-auto max-w-[240px]" : "w-[112px]"}`} />}
           {m.kind === "video" && (
             <span className="absolute inset-0 grid place-items-center" aria-hidden="true">
               <span className="grid size-8 place-items-center rounded-full bg-black/55 text-white">

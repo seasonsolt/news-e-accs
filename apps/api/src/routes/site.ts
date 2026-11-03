@@ -6,6 +6,7 @@ import type { ReportIndexResponse, ReportLatestPage, ReportNavigationResponse, N
 import { InvalidCursorError } from "@aihot/backend/lib/cursor";
 import { FEATURES } from "@aihot/industry/features";
 import { exportMarkdown, loadItemDetail } from "@aihot/backend/publication/detail";
+import { itemUrl } from "@aihot/backend/publication/links";
 import { distributionLanguage, EditionUnavailableError } from "@aihot/backend/publication/distribution";
 import { loadPool, SearchBusyError } from "@aihot/backend/publication/pool";
 import { loadTimeline } from "@aihot/backend/publication/timeline";
@@ -300,6 +301,7 @@ export function registerSite(app: FastifyInstance) {
       .header("Content-Disposition", `attachment; filename="${md.filename}"`)
       .header("Cache-Control", "public, max-age=300, s-maxage=300")
       .header("X-Robots-Tag", "noindex")
+      .header("Link", `<${itemUrl(id)}>; rel="canonical"`)
       .send(md.body);
   }));
 }

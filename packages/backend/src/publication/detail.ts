@@ -145,7 +145,7 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
   let body: ItemDetail["body"] = null;
   let outline: OutlineEntry[] = [];
   if (showsPost(row)) {
-    const text = String(row.x_post?.text ?? row.body_text ?? "");
+    const text = post?.text ?? String(row.x_post?.text ?? row.body_text ?? "");
     if (post?.translation || text.trim()) {
       body = {
         zh: post?.translation ? textToHtml(post.translation) : null,

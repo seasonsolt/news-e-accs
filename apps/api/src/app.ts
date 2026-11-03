@@ -2,6 +2,7 @@ import Fastify, { LogController, type FastifyInstance, type FastifyReply, type F
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage } from "node:http";
 import { OAUTH_PROBE_PATHS, resolveRedirect } from "@aihot/contracts/http-policy";
+import { ADMIN } from "@aihot/site";
 import { sql } from "@aihot/backend/db";
 import { MediaBusyError } from "@aihot/backend/media/capacity";
 import { recordMcpUsage } from "@aihot/backend/site/mcp-analytics";
@@ -101,7 +102,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   registerSite(app);
   registerOg(app);
   registerAdminAuth(app);
-  registerAdmin(app);
+  if (ADMIN) registerAdmin(app);
   registerAnalytics(app);
   registerIngest(app);
   registerWechatVideo(app);
