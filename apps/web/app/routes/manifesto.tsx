@@ -131,6 +131,7 @@ export default function ManifestoPage() {
           <p className="manifesto-explainer">{text.explainer.text} <Link to={text.explainer.href}>{text.explainer.label}</Link></p>
         </aside>
         <article className="manifesto-article">
+          <p className="manifesto-definition">{text.definition}</p>
           {text.sections.map((s) => (
             <section key={s.id} id={s.id} className="manifesto-section" aria-labelledby={`${s.id}-heading`}>
               <p className="manifesto-numeral" aria-hidden="true">{s.numeral}</p>

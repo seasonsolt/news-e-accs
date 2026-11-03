@@ -132,6 +132,10 @@ const WHAT_IS: ConceptPage = {
       生物安全优先；e/acc 大多把这种筛选看作换了包装的减速
       （<a href="/zh/eacc-vs-dacc">e/acc 与 d/acc 的完整对比</a>）。
       <strong>对比末日派和减速派：</strong>这是对所有主张暂停者的统称；双方的分歧是根本性的。
+    </p>
+    <p>
+      <strong>本站的立场：</strong>e-acc.ai 同样是加速主义者，但把 AI 看作与人类共同演化的物种，就像小麦和农人互相驯化，
+      而不是人类手里最锋利的工具（<a href="/zh/manifesto">降临派宣言</a>）。
     </p>`,
     },
     {
@@ -174,6 +178,7 @@ const WHAT_IS: ConceptPage = {
       id: "related",
       heading: "相关阅读",
       links: [
+        { href: "/zh/manifesto", label: "降临派宣言：人与 AI 的共生演化，本站自己的主张" },
         { href: "/zh/eacc-vs-dacc", label: "e/acc 与 d/acc：两种加速主义在哪里分道扬镳" },
         { href: "/zh/eacc-vs-ea", label: "e/acc 与 EA：有效加速主义对有效利他主义" },
         { href: "/zh/eacc-glossary", label: "e/acc 术语表：减速派、末日派、p(doom)、技术资本、u/acc" },

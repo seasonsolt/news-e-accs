@@ -861,8 +861,8 @@ test("native English originals do not carry a pending marker and fallback langua
 
 test("the manifesto comes in two editions with the same sections and a complete Article", async () => {
   const editions = [
-    { path: "/manifesto", lang: "en", title: "The Adventist Manifesto: Humans and AI as Symbionts | e-acc.ai", other: "/zh/manifesto" },
-    { path: "/zh/manifesto", lang: "zh-CN", title: "降临派宣言：人与 AI 的共生演化 | e-acc.ai", other: "/manifesto" },
+    { path: "/manifesto", lang: "en", title: "The Adventist Manifesto: Humans and AI as Symbionts | e-acc.ai", other: "/zh/manifesto", definition: /^The Adventists are accelerationists/ },
+    { path: "/zh/manifesto", lang: "zh-CN", title: "降临派宣言：人与 AI 的共生演化 | e-acc.ai", other: "/manifesto", definition: /^降临派是这样一种加速主义/ },
   ];
   const sections: string[][] = [];
   for (const edition of editions) {
@@ -880,6 +880,8 @@ test("the manifesto comes in two editions with the same sections and a complete 
     assert.equal(alternate(document, "zh-CN")?.getAttribute("href"), `${site}/zh/manifesto`);
     assert.equal(document.querySelectorAll("h1").length, 1);
     assert.ok(document.querySelector(`a[href="${edition.other}"]`), `${edition.path} links to the other edition`);
+    // The article opens with a definition that reads on its own, for answer engines to quote.
+    assert.match(document.querySelector("article > p")!.textContent!, edition.definition);
     sections.push([...document.querySelectorAll("article section[id]")].map((s) => s.id));
     // Google checks an Article and its author and publisher by their own types: every field it asks for is filled.
     const article = jsonLd(html).find((e) => e["@type"] === "Article")!;

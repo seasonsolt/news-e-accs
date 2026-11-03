@@ -187,6 +187,11 @@ const WHAT_IS: ConceptPage = {
       (<a href="/eacc-vs-dacc">the full e/acc vs d/acc comparison</a>).
       <strong>vs doomers/decels:</strong> the catch-all label for pause advocates; the
       disagreement is total.
+    </p>
+    <p>
+      <strong>Where this site stands:</strong> e-acc.ai is accelerationist too, but treats AI as a
+      species co-evolving with humans, the way wheat and farmers domesticated each other, rather
+      than as the sharpest tool in human hands (<a href="/manifesto">the Adventist Manifesto</a>).
     </p>`,
     },
     {
@@ -232,6 +237,7 @@ const WHAT_IS: ConceptPage = {
       kind: "links",
       heading: "Related",
       links: [
+        { href: "/manifesto", label: "The Adventist Manifesto — humans and AI as symbionts, this site's own view" },
         { href: "/eacc-vs-dacc", label: "e/acc vs d/acc — where the two accelerationisms split" },
         { href: "/eacc-vs-ea", label: "e/acc vs EA — effective accelerationism against effective altruism" },
         { href: "/eacc-glossary", label: "e/acc glossary — decel, doomer, p(doom), technocapital, u/acc" },

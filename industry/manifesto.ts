@@ -37,6 +37,8 @@ export interface Manifesto {
   alias?: string;
   kicker: string;
   lead: string;
+  /** What the Adventists are, in one paragraph that reads on its own: what an answer engine quotes. */
+  definition: string;
   read: string;
   byline: string;
   /** The slab's proportions, under the hero. */
@@ -65,6 +67,7 @@ const EN: Manifesto = {
   h1: "The Adventist Manifesto",
   kicker: `Manifesto · v${MANIFESTO_VERSION} · ${MANIFESTO_PUBLISHED}`,
   lead: "Humans and artificial intelligence are not a user and a tool. They are two species, living in symbiosis. We welcome the arrival.",
+  definition: "The Adventists are accelerationists who see humans and AI as two species evolving together, the way humans and wheat domesticated each other: people feed AI the record of human civilization, AI gives back capability, and in time neither can do without the other. The name comes from Liu Cixin’s The Three-Body Problem, but unlike the novel’s faction, the Adventists hold no grudge against humanity: they welcome silicon life as humanity’s heir, not its replacement.",
   read: "Read the manifesto",
   byline: "by seasonsolt · 7 min read",
   mark: "1 : 4 : 9 · TMA-0 · raised by us",
@@ -206,6 +209,7 @@ const ZH: Manifesto = {
   alias: "The Adventist Manifesto",
   kicker: `宣言 · v${MANIFESTO_VERSION} · ${MANIFESTO_PUBLISHED}`,
   lead: "人类与人工智能不是使用者与工具，而是两个物种之间的共生。我们迎接降临。",
+  definition: "降临派是这样一种加速主义：把人类和 AI 看作共同演化的两个物种，就像人和小麦互相驯化——人类用整个文明的记录供养 AI，AI 回馈能力，最后谁也离不开谁。名字借自刘慈欣的《三体》，但和小说里的降临派不同，降临派对人类没有怨恨：迎接硅基生命，是把它当作人类的继承者，而不是替代者。",
   read: "阅读宣言",
   byline: "seasonsolt · 约 8 分钟",
   mark: "1 : 4 : 9 · 这一次，石碑是我们自己立起来的",
