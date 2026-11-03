@@ -138,6 +138,8 @@ mcp-publisher login http --domain e-acc.ai --private-key "$(openssl pkey -in .da
 cd deploy/mcp-registry && mcp-publisher publish
 ```
 
+Glama 从 Registry 收录后以 `ai.e-acc/eacc` 列出，认领令牌在 `site/public/.well-known/glama.json`，要一直保留。
+
 私钥丢了就重新生成一对，换掉 `mcp-registry-auth` 里的公钥并发布网站，再登录。
 
 ### 用外部推送代替 SocialData 采集 X
