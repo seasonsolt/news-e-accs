@@ -1,5 +1,5 @@
-// Paid requests: an answer already received is reused, every request actually sent counts against the
-// budget (retries of one logical request included), a lost answer is bought again at most once, an
+// Paid requests: received answers are reused; every request counts toward traffic limits and possibly
+// billed attempts count toward the daily budget. A lost answer is bought again at most once, an
 // answer cut off at the output limit says so, and the valve stops calls before they are sent.
 import { gate, stub, tag } from "./setup.ts";
 import assert from "node:assert/strict";

@@ -157,7 +157,7 @@ test("SIGKILL after the provider accepted a request leaves an unknown outcome, r
   assert.equal((await finish(articleId)).result?.state, "unknown-receipt");
   assert.deepEqual(calls, ["prefilter", "prefilter"], "only one automatic repeat was sent");
   const attempts = await sql`SELECT a.status FROM receipt_attempts a JOIN receipts r ON r.id=a.receipt_id WHERE r.subject=${subject} ORDER BY a.attempt`;
-  assert.deepEqual(attempts.map((a) => a.status), ["failed", "unknown"]);
+  assert.deepEqual(attempts.map((a) => a.status), ["unknown", "unknown"], "both requests may have been billed, including the released attempt");
   assert.equal((await sql`SELECT 1 FROM analyses WHERE article_id=${articleId}`).length, 0);
   assert.equal((await sql`SELECT 1 FROM publications WHERE article_id=${articleId}`).length, 0, "a lost answer cannot publish a partial result");
 });
