@@ -138,7 +138,7 @@ mcp-publisher login http --domain e-acc.ai --private-key "$(openssl pkey -in .da
 cd deploy/mcp-registry && mcp-publisher publish
 ```
 
-Glama 从 Registry 收录后以 `ai.e-acc/eacc` 列出，认领令牌在 `site/public/.well-known/glama.json`，要一直保留。
+Glama 从 Registry 收录后以 `ai.e-acc/eacc` 列出，已由 Cloudflare DNS 的 TXT 记录 `_glama-claim.e-acc.ai` 认领（Glama 的校验请求不带 User-Agent，会被 WAF 挡掉，所以不用 HTTP 文件）。这条记录要一直保留。
 
 私钥丢了就重新生成一对，换掉 `mcp-registry-auth` 里的公钥并发布网站，再登录。
 
