@@ -271,3 +271,9 @@
 ## 2026-10-27 历史配图巡检与节点补全
 
 修正13处时代／事件配图，新增4个历史节点，并给洛夫莱斯程序和图灵机补独立图。17张原创画面的最终提示词、原图、历史依据、退役素材与复现说明见[本批素材记录](../tools/art/chronicle-quality-2026-10-27/README.md)。新增事件的日期边界及一手来源见[事实核查](chronicle/history-additions-2026-10-27.md)。
+
+# 降临派宣言首屏（/manifesto，2026-11-03）
+
+用 codex CLI 的图片生成画（1536×1024），原图存为 `~/Desktop/eacc-art/manifesto-monolith.png`，再跑 `tools/make-art.sh` 生成首屏的 `manifesto-monolith-{1600,800}.webp` 和分享卡片 `manifesto-monolith-og.jpg`（1200×630）。第一版带透视、看得到顶面，不像《2001》，改成下面这版正面平视：
+
+> An homage to the monolith in Stanley Kubrick's 2001: A Space Odyssey (1968), but original — no characters, no apes, no film stills. THE SLAB: seen dead-on from the front, camera at a low height looking straight at its broad face, symmetrical, NO visible top face, NO perspective tilt. Its broad face is exactly 4 wide by 9 tall, perfectly rectangular, razor-sharp edges, uniform deep jet black with a very slight glossy sheen, no texture. It stands perfectly vertical, its center about 62% from the left, its height about 55% of the frame, its base on the horizon at about 74% down. Kubrick-style composition: stark, formal, symmetrical stillness, lots of empty sky. Setting: a vast flat field of ripe golden wheat to a dead-flat horizon, foreground ears softly out of focus. Light: the sun has just set exactly behind the slab: a thin amber-orange glow (#ff6a1a into brass #d9a441) along the horizon, brightest behind the slab so both vertical edges get a hairline warm rim. The sky darkens quickly to warm brown-black (#120e0a), a few faint stars, a faint thin crescent of a huge planet high in the upper left. The left 40% and the top third nearly empty dark #120e0a for text; all edges fade into #120e0a. Photoreal, cinematic 70mm film look, subtle grain. No people, no text, no logos, no watermark, no lens-flare rings.

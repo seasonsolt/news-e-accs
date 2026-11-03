@@ -1,4 +1,5 @@
 import { featuredProduct } from "@aihot/industry/products";
+import { FEATURES } from "@aihot/industry/features";
 import { Link } from "../../lib/navigation";
 import { Text, useTranslate } from "../../lib/i18n";
 import type { Ref } from "react";
@@ -80,6 +81,7 @@ export function FeedDeck({ label, heading, at, tag, front = false, lead, chronic
               </span>
             </div>
             {featuredProduct()?.url && <Link to={featuredProduct()!.url!} className="home-hero-wallpaper home-hero-extra"><Text value="设为 4K 壁纸 →" /></Link>}
+            {FEATURES.eaccConcepts && <Link to="/manifesto" className="home-hero-wallpaper home-hero-extra"><Text value="读《降临派宣言》→" /></Link>}
           </div>
           {chronicle ? <NowCard now={chronicle} at={at ?? null} /> : lead && <LeadStory card={lead} past={!!at} />}
         </div>

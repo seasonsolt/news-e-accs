@@ -5,6 +5,7 @@ import { IntentLink } from "../components/ui/IntentLink";
 import { useLoaderData } from "react-router";
 import type { SiteContact, SiteStats } from "@aihot/contracts/site";
 import { ABOUT, POLICY, REPORTS, SITE } from "@aihot/site";
+import { FEATURES } from "@aihot/industry/features";
 import { apiGet, cachedPage } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { organizationLd, pageMeta } from "../lib/seo";
@@ -228,6 +229,7 @@ export default function AboutPage() {
       <div className="flex flex-wrap gap-2.5">
         <IntentLink to="/" className="deck-button is-primary"><Text value="看今天的精选" /><IconArrowRight size={15} className="ml-1" /></IntentLink>
         <IntentLink to="/daily" className="deck-button"><Text value="读最新" />{tx("日报")}</IntentLink>
+        {FEATURES.eaccConcepts && <IntentLink to="/manifesto" className="deck-button"><Text value="降临派宣言" /></IntentLink>}
       </div>
     </Deck>
     <div className="mx-auto max-w-[var(--page-max-reading)] pb-14">

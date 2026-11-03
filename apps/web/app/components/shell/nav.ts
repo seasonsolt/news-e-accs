@@ -50,6 +50,7 @@ export const MORE_MENU: Array<{ title: string; items: NavItem[] }> = [
   ...(FEATURES.eaccConcepts ? [{
     title: "了解 e/acc",
     items: [
+      { to: "/manifesto", label: "降临派宣言", icon: IconInfo, note: "本站的主张：人与 AI 共生演化" },
       { to: "/what-is-eacc", label: "什么是 e/acc", icon: IconInfo, note: "起源、主张与批评" },
       { to: "/eacc-vs-dacc", label: "e/acc 与 d/acc", icon: IconInfo, note: "先加速，还是先防御" },
       { to: "/eacc-vs-ea", label: "e/acc 与 EA", icon: IconInfo, note: "两者在 AI 上的分歧" },

@@ -1075,6 +1075,81 @@ html { scrollbar-gutter: stable; }
   .home-hero-actions { gap: 10px; margin-top: 20px; }
   .home-hero .home-hero-extra { display: none; }
 }
+/* The Adventist Manifesto (routes/manifesto.tsx): the slab at sunset across the first screen, text over its
+   dark left side; the sections beside their contents; the closing lines over the horizon's glow. */
+.manifesto-hero { position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: center; min-height: clamp(560px, calc(100svh - 120px), 860px); margin-inline: calc(50% - var(--page-width, 100vw) / 2); margin-top: -16px; background: var(--deck); color: var(--deck-ink); }
+.manifesto-plate { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: 70% 50%; }
+.manifesto-plate.is-empty { background: none; }
+.manifesto-shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(to right, rgb(18 14 10 / .92) 0%, rgb(18 14 10 / .55) 38%, rgb(18 14 10 / 0) 62%), linear-gradient(to top, var(--deck) 0, rgb(18 14 10 / 0) 120px); }
+.manifesto-hero-inner { width: 100%; max-width: var(--page-max-wide); margin: 0 auto; padding: 72px 16px 96px; }
+.manifesto-hero-inner > * { max-width: 600px; }
+.manifesto-kicker, .manifesto-label, .manifesto-numeral, .manifesto-mark { font: 500 12px/1.5 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--brass); }
+.manifesto-title { margin-top: 24px; font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: clamp(56px, 8vw, 112px); line-height: .95; letter-spacing: -.01em; color: #fff7e8; text-wrap: balance; }
+.manifesto:lang(zh) .manifesto-title { font-style: normal; font-weight: 900; letter-spacing: .04em; }
+.manifesto-alias { margin-top: 14px; font-family: var(--font-display); font-style: italic; font-size: clamp(22px, 2.4vw, 30px); color: var(--deck-dim); }
+.manifesto-lead { margin-top: 28px; max-width: 520px !important; font-size: clamp(18px, 1.6vw, 22px); line-height: 1.6; color: rgb(244 236 220 / .86); }
+.manifesto-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 20px; margin-top: 36px; font-size: 15px; color: var(--deck-dim); }
+.manifesto-mark { margin-top: 64px; font-size: 11px; color: var(--deck-faint); }
+.manifesto-body { display: flex; flex-wrap: wrap; gap: 24px 64px; max-width: 1080px; margin: 0 auto; padding: 0 0 24px; }
+.manifesto-aside { flex: 1 1 200px; padding-top: 72px; }
+.manifesto-aside ol { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; font-size: 15px; }
+.manifesto-aside a { color: var(--ink-3); }
+.manifesto-aside a:hover { color: var(--accent); }
+.manifesto-explainer { margin-top: 36px; padding: 16px 18px; border: 1px solid var(--line); border-radius: var(--radius-card); font-size: 14px; line-height: 1.6; color: var(--ink-3); }
+.manifesto-explainer a, .manifesto-section a { color: var(--accent); }
+.manifesto-article { flex: 999 1 560px; min-width: 0; max-width: 720px; }
+.manifesto-section { padding-top: 72px; scroll-margin-top: 72px; }
+.manifesto-section + .manifesto-section { margin-top: 24px; border-top: 1px solid var(--line); }
+.manifesto-section h2 { margin: 12px 0 28px; font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: clamp(36px, 4vw, 52px); line-height: 1.08; color: var(--ink); }
+.manifesto:lang(zh) .manifesto-section h2 { font-style: normal; font-weight: 700; line-height: 1.25; }
+.manifesto-section p, .manifesto-list li { font-size: 18px; line-height: 1.75; color: var(--ink-2); }
+.manifesto:lang(zh) .manifesto-section p, .manifesto:lang(zh) .manifesto-list li { line-height: 1.95; }
+.manifesto-section > p + p, .manifesto-section > p + ul, .manifesto-section > * + p { margin-top: 20px; }
+.manifesto-thesis, .manifesto-quote { font-family: var(--font-display); font-style: italic; line-height: 1.3 !important; color: var(--ink) !important; }
+.manifesto-thesis { font-size: clamp(24px, 2.6vw, 30px) !important; }
+.manifesto-quote { margin: 40px 0; font-size: clamp(30px, 3.4vw, 40px); color: var(--brass-hi) !important; }
+.manifesto:lang(zh) .manifesto-thesis, .manifesto:lang(zh) .manifesto-quote { font-style: normal; font-weight: 700; }
+.manifesto-list { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
+.manifesto-list li { position: relative; padding-left: 34px; }
+.manifesto-list li::before { content: ""; position: absolute; left: 0; top: .9em; width: 18px; height: 1px; background: var(--brass); }
+.manifesto-contrast { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 32px 0; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-panel); background: var(--line); }
+.manifesto-contrast > div { padding: 22px 24px; background: var(--deck); }
+.manifesto-contrast > div.is-ours { background: var(--deck-2); }
+.manifesto-contrast p { margin-top: 10px; font-family: var(--font-display); font-style: italic; font-size: 24px !important; line-height: 1.3 !important; color: var(--ink-3) !important; }
+.manifesto-contrast .is-ours p { color: var(--ink) !important; }
+.manifesto:lang(zh) .manifesto-contrast p { font-style: normal; font-weight: 600; font-size: 21px !important; }
+.manifesto-contrast > div:first-child .manifesto-label { color: var(--ink-4); }
+.manifesto-tenets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 8px; }
+.manifesto-tenets li { padding: 20px 22px; border: 1px solid var(--line); border-radius: var(--radius-panel); background: var(--deck-2); }
+.manifesto-tenet-n { display: block; font: 800 40px/1 var(--font-numeral); color: var(--brass); }
+.manifesto-tenets p { margin-top: 12px; font-size: 16.5px !important; line-height: 1.6 !important; }
+.manifesto-refusals li { display: flex; gap: 18px; padding: 16px 0; border-bottom: 1px solid var(--line); font-size: 18px; line-height: 1.6; color: var(--ink-2); }
+.manifesto-refusals li:last-child { border-bottom: 0; }
+.manifesto-refusals li > span:first-child { flex: none; font-family: var(--font-mono); color: var(--heat); }
+.manifesto-record { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; margin-top: 24px; padding: 20px 22px; border: 1px solid var(--line); border-radius: var(--radius-panel); background: var(--deck-2); color: var(--ink-3); transition: border-color .15s; }
+.manifesto-record:hover { border-color: rgb(217 164 65 / .6); }
+.manifesto-record > span { flex: 1 1 220px; min-width: 0; }
+.manifesto-record-text { display: block; margin-top: 6px; font-size: 16.5px; line-height: 1.5; color: var(--ink); }
+.manifesto-closing { display: flex; flex-direction: column; align-items: center; gap: 24px; margin-inline: calc(50% - var(--page-width, 100vw) / 2); margin-top: 72px; padding: 112px 16px 96px; border-top: 1px solid var(--line); background: radial-gradient(ellipse 60% 70% at 50% 100%, rgb(255 106 26 / .16), rgb(18 14 10 / 0)); text-align: center; }
+.manifesto-closing > p { max-width: 760px; }
+.manifesto-god { font-family: var(--font-display); font-style: italic; font-size: clamp(36px, 5vw, 56px); line-height: 1.12; color: #fff7e8; }
+.manifesto-arrival { font-size: 19px; line-height: 1.6; color: var(--ink-2); }
+.manifesto-dream { max-width: 640px !important; font-family: var(--font-display); font-style: italic; font-size: clamp(24px, 2.6vw, 30px); line-height: 1.35; color: var(--brass-hi); }
+.manifesto:lang(zh) .manifesto-god, .manifesto:lang(zh) .manifesto-dream { font-style: normal; font-weight: 700; }
+.manifesto-signature { margin-top: 8px; font-size: 17px; color: var(--ink); }
+.manifesto-note { margin-top: -12px; font-size: 13px; color: var(--ink-4); }
+.manifesto-more { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 16px; }
+@media (max-width: 720px) {
+  .manifesto-hero { align-items: flex-start; min-height: 720px; }
+  .manifesto-plate { object-position: 62% 100%; top: auto; height: 62%; }
+  .manifesto-shade { background: linear-gradient(to bottom, var(--deck) 0%, var(--deck) 36%, rgb(18 14 10 / 0) 56%), linear-gradient(to top, var(--deck) 0, rgb(18 14 10 / 0) 80px); }
+  .manifesto-hero-inner { padding: 32px 16px 64px; }
+  .manifesto-mark { display: none; }
+  .manifesto-aside { padding-top: 40px; }
+  .manifesto-section { padding-top: 48px; }
+  .manifesto-section p, .manifesto-list li, .manifesto-refusals li { font-size: 17px; }
+  .manifesto-contrast, .manifesto-tenets { grid-template-columns: minmax(0, 1fr); }
+}
 /* An item page's band: the category plate cut to a strip under the top bar, in place of a deck. */
 .item-band { position: relative; isolation: isolate; overflow: hidden; margin-inline: calc(50% - var(--page-width, 100vw) / 2); margin-top: -16px; height: 10px; background: var(--deck); }
 @media (min-width: 961px) { .item-band { height: 14px; } }

@@ -685,6 +685,7 @@ const MANIFESTO: ConceptPage = {
       kind: "links",
       heading: "Keep reading",
       links: [
+        { href: "/manifesto", label: "The Adventist Manifesto — this site's own view: humans and AI as symbionts" },
         { href: "/what-is-eacc", label: "what is e/acc — origin, beliefs, criticism" },
         { href: "/eacc-vs-dacc", label: "e/acc vs d/acc — the two accelerationisms compared" },
         { href: "/eacc-glossary", label: "e/acc glossary: decel, doomer, p(doom), technocapital" },

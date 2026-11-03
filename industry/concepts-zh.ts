@@ -600,6 +600,7 @@ const MANIFESTO: ConceptPage = {
       id: "keep-reading",
       heading: "延伸阅读",
       links: [
+        { href: "/zh/manifesto", label: "降临派宣言：本站自己的主张——人与 AI 的共生演化" },
         { href: "/zh/what-is-eacc", label: "什么是 e/acc：起源、信念与批评" },
         { href: "/zh/eacc-vs-dacc", label: "e/acc 与 d/acc：两种加速主义对比" },
         { href: "/zh/eacc-glossary", label: "e/acc 术语表：减速派、末日派、p(doom)、技术资本" },

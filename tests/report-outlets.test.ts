@@ -131,7 +131,7 @@ test('discovery lists the readable site before the machine interfaces, in Englis
     modules: { api: [], pace: [], pages: [], topics: [], access: [], usage: [], guideClients: [], ways: [] } });
   assert.ok(text.indexOf('## Website') < text.indexOf('## Public data for agents'), 'answer engines meet the pages first');
   assert.match(text, /\[Full recent content\]\([^)]+\/llms-full\.txt\)/);
-  if (FEATURES.eaccConcepts) for (const slug of ['what-is-eacc', 'eacc-vs-dacc', 'eacc-vs-ea', 'eacc-manifesto', 'eacc-token', 'eacc-glossary']) assert.ok(text.includes(`/${slug})`), slug);
+  if (FEATURES.eaccConcepts) for (const slug of ['what-is-eacc', 'eacc-vs-dacc', 'eacc-vs-ea', 'eacc-manifesto', 'eacc-token', 'eacc-glossary', 'manifesto']) assert.ok(text.includes(`/${slug})`), slug);
   assert.doesNotMatch(text, /每天|每周一|每月/, 'edition times are written in English');
   assert.doesNotMatch(text, /\p{Script=Han}/u, 'topic groups and every other line are in English');
 });

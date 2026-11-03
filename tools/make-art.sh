@@ -26,6 +26,7 @@ ART=(
   "cat-tips|Sepia Steampunk Engineer’s Workshop.png"
   "topics|Steampunk Card Catalog Library.png"
   "empty|Sleepy Automaton in the Steampunk Workshop.png"
+  "manifesto-monolith|manifesto-monolith.png"
 )
 
 for a in "${ART[@]}"; do
@@ -41,6 +42,10 @@ done
 # The newsletter's header (newsletter/mail.ts): one JPEG, sized for a 600px-wide letter on retina screens.
 if [ -f "$SRC/Victorian Pneumatic Mailroom Engraving.png" ]; then
   ffmpeg -loglevel error -y -i "$SRC/Victorian Pneumatic Mailroom Engraving.png" -vf "scale=900:-1" -q:v 7 "$OUT/subscribe-email.jpg"
+fi
+# The manifesto's share card (industry/manifesto.ts): 1200×630, cut so the slab keeps its top.
+if [ -f "$SRC/manifesto-monolith.png" ]; then
+  ffmpeg -loglevel error -y -i "$SRC/manifesto-monolith.png" -vf "scale=1200:-1,crop=1200:630:0:90" -q:v 4 "$OUT/manifesto-monolith-og.jpg"
 fi
 # Chronicle plates use their era or milestone id, not a fixed list.
 shopt -s nullglob

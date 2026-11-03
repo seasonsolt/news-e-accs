@@ -1,6 +1,23 @@
 {
-  "latestVersion": "2026-11-03T12:00",
+  "latestVersion": "2026-11-03T18:00",
   "releases": [
+    {
+      "date": "2026-11-03",
+      "time": "18:00",
+      "kind": "更新",
+      "title": "降临派宣言",
+      "body": [
+        "新增「降临派宣言」：本站自己的主张——人与 AI 像人和小麦一样共生演化，我们迎接硅基生命的降临；也写明我们和 e/acc（拯救派）、和《三体》降临派的分歧，以及我们不做的事。中英文两版。",
+        "入口在「更多」菜单的「了解 e/acc」、首页首屏和关于页。"
+      ],
+      "en": {
+        "title": "The Adventist Manifesto",
+        "body": [
+          "New: the Adventist Manifesto, this site's own view — humans and AI co-evolve the way humans and wheat did, and we welcome the arrival of silicon life. It also says where we part from e/acc (the Redemptionists) and from The Three-Body Problem, and what we will not do. In English and Chinese.",
+          "Find it under Understand e/acc in the More menu, on the front page and on the about page."
+        ]
+      }
+    },
     {
       "date": "2026-11-03",
       "time": "12:00",

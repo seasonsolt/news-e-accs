@@ -38,6 +38,7 @@ const publicRoutes: RouteConfig = [
   route("eacc-manifesto", "routes/concept.tsx", { id: "concept-eacc-manifesto" }),
   route("eacc-token", "routes/concept.tsx", { id: "concept-eacc-token" }),
   route("eacc-glossary", "routes/concept.tsx", { id: "concept-eacc-glossary" }),
+  route("manifesto", "routes/manifesto.tsx"),
   route("products", "routes/products.tsx"),
   route("about", "routes/about.tsx"),
   route("terms", "routes/terms.tsx"),

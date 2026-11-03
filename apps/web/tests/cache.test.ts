@@ -859,6 +859,44 @@ test("native English originals do not carry a pending marker and fallback langua
   assert.equal(chineseFallback.querySelector('meta[property="og:locale"]')?.getAttribute("content"), "en");
 });
 
+test("the manifesto comes in two editions with the same sections and a complete Article", async () => {
+  const editions = [
+    { path: "/manifesto", lang: "en", title: "The Adventist Manifesto: Humans and AI as Symbionts | e-acc.ai", other: "/zh/manifesto" },
+    { path: "/zh/manifesto", lang: "zh-CN", title: "降临派宣言：人与 AI 的共生演化 | e-acc.ai", other: "/manifesto" },
+  ];
+  const sections: string[][] = [];
+  for (const edition of editions) {
+    // The address decides the language, whatever the reader prefers.
+    const res = await fetch(`${origin}${edition.path}`, { headers: { "Accept-Language": edition.lang === "en" ? "zh-CN" : "en-US" } });
+    assert.equal(res.status, 200, edition.path);
+    sharedCache(res, 300);
+    const html = await res.text();
+    const document = parseHTML(html).document;
+    assert.equal(document.documentElement.lang, edition.lang);
+    assert.ok(html.includes(`<title>${edition.title}</title>`), edition.path);
+    assert.match(html, new RegExp(`<link rel="canonical" href="${site}${edition.path}"/>`));
+    assert.equal(document.querySelector('meta[property="og:image"]')?.getAttribute("content"), `${site}/media/art/manifesto-monolith-og.jpg`);
+    assert.equal(alternate(document, "en")?.getAttribute("href"), `${site}/manifesto`);
+    assert.equal(alternate(document, "zh-CN")?.getAttribute("href"), `${site}/zh/manifesto`);
+    assert.equal(document.querySelectorAll("h1").length, 1);
+    assert.ok(document.querySelector(`a[href="${edition.other}"]`), `${edition.path} links to the other edition`);
+    sections.push([...document.querySelectorAll("article section[id]")].map((s) => s.id));
+    // Google checks an Article and its author and publisher by their own types: every field it asks for is filled.
+    const article = jsonLd(html).find((e) => e["@type"] === "Article")!;
+    assert.ok(article, edition.path);
+    for (const key of ["headline", "description", "url", "image", "datePublished", "dateModified", "inLanguage"]) assert.ok(article[key], `${edition.path} ${key}`);
+    const author = article.author as Record<string, string>;
+    const publisher = article.publisher as Record<string, string>;
+    assert.equal(author["@type"], "Person");
+    assert.ok(author.name && author.url);
+    assert.equal(publisher["@type"], "Organization");
+    assert.ok(publisher.name && publisher.url && publisher.logo);
+    assert.equal((await fetch(`${origin}${edition.path}.data`)).status, 200);
+  }
+  assert.equal(sections[0]!.length, 9);
+  assert.deepEqual(sections[1], sections[0], "the editions keep the same anchors");
+});
+
 test("existing editions have reciprocal hreflang, self canonicals and localized structured URLs", async () => {
   for (const prefix of ["", "/zh"]) {
     const response = await fetch(origin + prefix + "/items/bilingual");

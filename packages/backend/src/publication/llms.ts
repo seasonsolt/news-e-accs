@@ -4,6 +4,7 @@ import { PUBLIC_INTERFACE_VERSION } from "@aihot/contracts/http-policy";
 import { MCP_TOOL_NAMES as T, MCP_TOOLS, mcpToolName } from "@aihot/contracts/mcp";
 import { PUBLIC_API_CATEGORY_KEYS } from "@aihot/contracts/taxonomy";
 import { CONCEPT_PAGES } from "@aihot/industry/concepts";
+import { MANIFESTO } from "@aihot/industry/manifesto";
 import { ACCESS, EDITION_TIMES, POLICY, SITE } from "@aihot/site";
 import { siteUrl } from "./links.ts";
 import { sql } from "../db.ts";
@@ -78,6 +79,7 @@ export function llmsTxt(opts: {
   lines.push(`- [Topics](${u("/topics")}): Latest news by ${topicGroups("en").map((g) => g.name.toLowerCase()).join(", ")}${opts.topics.length ? ` (${opts.topics.length} topics, listed below)` : ""}.`);
   if (FEATURES.timeMachine) lines.push(`- [Chronicle](${u("/chronicle")}): Historical ?at=YYYY-MM-DD slices retain their Beijing calendar boundaries.`);
   if (FEATURES.eaccConcepts) for (const c of Object.values(CONCEPT_PAGES)) lines.push(`- [${c.h1}](${u(`/${c.slug}`)}): ${c.description}`);
+  if (FEATURES.eaccConcepts) lines.push(`- [${MANIFESTO.en.h1}](${u("/manifesto")}): ${MANIFESTO.en.description}`);
   lines.push(...opts.modules.pages);
   if (opts.topics.length) {
     lines.push("", "## Topics", "");
