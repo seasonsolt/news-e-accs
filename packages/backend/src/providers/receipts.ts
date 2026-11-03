@@ -1,7 +1,7 @@
 // Paid requests (models, SocialData, Jina; historical Dajiala records retained) go through here.
 //
 // 1. A logical request has a stable key bound to task, input revision, provider, model, prompt and config.
-// 2. Before calling, a placeholder row and an attempt row are persisted; budgets count attempts.
+// 2. Before calling, a placeholder and attempt reserve budget. Definite unbilled failures release the daily allowance.
 // 3. The raw response is saved before any business write; recovery reuses a received response.
 // 4. A request whose outcome is unknown (timeout after sending, crash mid-flight) is not re-sent by the
 //    caller. ops.recover releases it once after 30 minutes (operations/recover.ts), so a lost answer
@@ -230,12 +230,13 @@ async function checkBudget(tx: Db, service: string, model?: string | null): Prom
   const [budget] = await tx<{ per_minute: number; per_hour: number; per_day: number }[]>`
     SELECT per_minute, per_hour, per_day FROM budgets WHERE service = ${service}`;
   if (!budget) return; // default rows come with the migrations; a service an operator removed is unlimited
-  // Every request sent counts, retries of the same logical request included.
+  // Short windows bound request traffic, including rejections. The daily allowance counts reserved,
+  // received and unknown attempts; a provider's definite unbilled refusal releases it.
   const [counts] = await tx<{ minute: number; hour: number; day: number }[]>`
     SELECT
       count(*) FILTER (WHERE started_at > now() - interval '1 minute') AS minute,
       count(*) FILTER (WHERE started_at > now() - interval '1 hour') AS hour,
-      count(*) AS day
+      count(*) FILTER (WHERE status <> 'failed') AS day
     FROM receipt_attempts
     WHERE service = ${service} AND origin = 'live' AND started_at > now() - interval '1 day'`;
   const c = counts!;
@@ -389,10 +390,14 @@ export function awaitingRelease(receipt: ReturnType<typeof sql> = sql`receipts`)
  * Releases an unknown receipt: marked failed, so the next attempt of its request calls again (who
  * releases and when: operations/recover.ts). Null when the receipt is not, or no longer, unknown.
  */
-export async function releaseUnknownReceipt(db: Db, id: number, error: string): Promise<{ subject: string | null; purpose: string } | null> {
+export async function releaseUnknownReceipt(db: Db, id: number, error: string, billed: boolean | null = null): Promise<{ subject: string | null; purpose: string } | null> {
   const [released] = await db<{ subject: string | null; purpose: string }[]>`
     UPDATE receipts SET status = 'failed', error = ${error}, updated_at = now() WHERE id = ${id} AND status = 'unknown' RETURNING subject, purpose`;
-  if (released) await db`UPDATE receipt_attempts SET status = 'failed', error = ${error} WHERE receipt_id = ${id} AND status = 'unknown'`;
+  // Releasing permits a new request; it does not prove the old one was free. Only the latest
+  // attempt is released, preserving earlier unknown costs and the one-time automatic-release marker.
+  if (released) await db`UPDATE receipt_attempts SET status = ${billed === false ? 'failed' : 'unknown'}, error = ${error}
+    WHERE receipt_id = ${id} AND status = 'unknown'
+      AND attempt = (SELECT max(attempt) FROM receipt_attempts WHERE receipt_id = ${id})`;
   return released ?? null;
 }
 

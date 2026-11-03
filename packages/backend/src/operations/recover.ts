@@ -17,7 +17,7 @@ export const AUTO_RELEASE_NOTE = "自动放行：结果未知超过 30 分钟，
 
 async function release(id: number, error: string, actor: string, note: string, billed: boolean | null) {
   return sql.begin(async (tx) => {
-    const receipt = await releaseUnknownReceipt(tx, id, error);
+    const receipt = await releaseUnknownReceipt(tx, id, error, billed);
     if (!receipt) return null;
     const requeued = await resumeAfterRelease(receipt, tx);
     await audit(actor, "receipt.release", `receipt:${id}`, note, { status: "unknown" }, { status: "failed", billed, requeued }, { db: tx });

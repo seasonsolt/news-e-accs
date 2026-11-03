@@ -122,7 +122,8 @@ export default function SettingsAdmin({ loaderData: s }: Route.ComponentProps) {
           />
         </Card>
       </div>
-      <Card className="mt-5" title="付费请求上限" right={<span>已用：近 1 小时 / 近 24 小时</span>} pad={false}>
+      <Card className="mt-5" title="付费请求上限" right={<span>已用：近 1 小时请求 / 近 24 小时预算</span>} pad={false}>
+        <p className="px-4 pt-3 text-xs text-ink-3">明确未计费的失败不占每日预算；已返回结果、处理中和计费未知的请求仍计入。每分钟、每小时按全部请求限速。</p>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-[13px]">
             <thead>
