@@ -146,8 +146,6 @@ export function registerStatic(app: FastifyInstance) {
   app.get("/robots.txt", (req, reply) => sendFile(req, reply, path.join(PUBLIC, "robots.txt"), { cacheControl: "public, max-age=3600", fill: true }));
   app.get("/.well-known/security.txt", (req, reply) => sendFile(req, reply, path.join(PUBLIC, ".well-known/security.txt"), { cacheControl: "public, max-age=86400", fill: true }));
   // The public key that lets the site publish its MCP server to the official MCP Registry under its own domain.
-  // Glama's proof that the site's owner controls the connector it lists from that registry entry.
-  app.get("/.well-known/glama.json", (req, reply) => sendFile(req, reply, path.join(PUBLIC, ".well-known/glama.json"), { cacheControl: "public, max-age=3600" }));
   app.get("/.well-known/mcp-registry-auth", (req, reply) => sendFile(req, reply, path.join(PUBLIC, ".well-known/mcp-registry-auth"), { type: "text/plain; charset=utf-8", cacheControl: "public, max-age=3600" }));
   app.get("/manifest.webmanifest", (req, reply) => sendFile(req, reply, path.join(PUBLIC, "manifest.webmanifest"), { cacheControl: "public, max-age=86400, stale-while-revalidate=604800", fill: true }));
   app.get("/openapi-v1.json", (req, reply) => sendFile(req, reply, path.join(PUBLIC, "openapi-v1.json"), { cacheControl: "public, max-age=300, must-revalidate", publicApi: true, fill: true }));

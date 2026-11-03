@@ -236,9 +236,6 @@ test('the MCP Registry domain key is served as text at the site root', async () 
   assert.equal(response.statusCode, 200);
   assert.match(response.headers['content-type'] as string, /^text\/plain/);
   assert.match(response.body, /^v=MCPv1; k=ed25519; p=[A-Za-z0-9+/]{43}=\n$/);
-  const glama = await app.inject('/.well-known/glama.json');
-  assert.equal(glama.statusCode, 200);
-  assert.match(glama.json().claim, /^glama_claim_/);
 });
 
 test('OpenAPI describes explicit edition selection while preserving historical monitor date semantics', async () => {
