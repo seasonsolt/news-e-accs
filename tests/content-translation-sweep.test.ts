@@ -43,6 +43,17 @@ test('completed pages do not consume the translation limit; stopping mid-page ne
   assert.equal(second.translated, 1); assert.deepEqual(q.calls, ['02500', '02501']);
 });
 
+test('the five-minute tick translates only the priority lane: no scan, no cursor move, the whole limit for headlines', async () => {
+  const rows = [entry('a'), entry('b'), entry('c')];
+  const q = queue(rows, [], [rows[2]!, rows[1]!, rows[0]!]);
+  const result = await runContentTranslationSweep('item:a', 2, q.deps, false);
+  assert.deepEqual(q.calls, ['c', 'b']); assert.equal(result.translated, 2); assert.equal(result.scanned, 0);
+  assert.equal(result.cursor, 'item:a'); assert.deepEqual(q.sizes, []); assert.deepEqual(q.cursors, []);
+  const daily = await runContentTranslationSweep('item:a', 2, { ...q.deps, priority: async () => [] });
+  assert.deepEqual(q.calls, ['c', 'b', 'a'], 'the daily pass finds what no headline lane listed');
+  assert.equal(daily.translated, 1);
+});
+
 test('a source edited before the saved cursor is found in the same tick, even when later rows are complete', async () => {
   const old = [entry('a'), entry('b'), entry('z')];
   const changed = entry('a', '修改后的公开标题');

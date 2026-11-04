@@ -41,8 +41,10 @@ const dailyHour = Number(EDITION_TIMES.daily.slice(0, 2));
 
 export const ENGINE_SCHEDULES: EngineScheduled[] = [
   { name: "content.sweep", cron: "*/5 * * * *", run: sweepUnprocessed },
-  // Full-text translations of newly selected items (model calls; off with MODEL_CALLS_ENABLED=false).
+  // The other language's edition of what readers see now (hot strip, ranking, first feed page, newest daily);
+  // once a day the whole site, for edits to older entries (model calls; off with MODEL_CALLS_ENABLED=false).
   { name: "content.localize", cron: "*/5 * * * *", run: () => translateContentPending() },
+  { name: "content.localize-sweep", cron: "40 4 * * *", missed: "once", run: () => translateContentPending(50, true) },
   { name: "content.translate", cron: "*/5 * * * *", run: () => translatePending() },
   { name: "hot.rank", cron: "*/5 * * * *", run: () => computeHotRanking() },
   { name: "hot.snapshot", cron: "2 * * * *", run: () => snapshotHeat() },

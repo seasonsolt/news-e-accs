@@ -94,7 +94,7 @@ node scripts/content-translations.ts --import /tmp/content-zh-001.json
 
 批次保存 targetLanguage，每条保存 sourceLanguage/targetLanguage，report 使用 sourceRevision。source segments、fingerprint、精确翻译 keys、非空 prose、当前可见身份与 body markup 全部验证；不伪造离线 paid receipts。权威扫描包含全部当前可读 publication，不以 pool/sitemap 替代历史完整性；正文范围仍受许可限制。checkpoint/cursor 与目标语言一致。
 
-`content.localize` 仅在 `CONTENT_TRANSLATION_ENABLED` 和 `MODEL_CALLS_ENABLED` 同时启用时调用既有 translate 模型，经 receipt/按请求数量的预算熔断；默认关闭。en/zh 使用独立 cursor，开始扫描前持久化下一轮目标；语言 lane 失败后仍允许另一 lane 在剩余额度内推进，最终记录失败。失败 lane 不推进游标；部分完成后失败会预留整段 allowance，不突破合并额度，单条额度的轮次通过下次轮换保证公平。不可用 prose/markup 将已收到回执标记 failed，允许受预算管控的重试；unknown outcome 保持阻断，不再次请求。回执 subject、prompt version 与语言方向身份保持现有规则。`translatePending` 保留既有中文全文流程，native en 的许可英文正文不多买中文中转。队列/预算/错误可能导致辅助版延迟，不承诺实时双语。
+`content.localize` 每 5 分钟只补译读者此刻看得到的内容（热点条、热点榜、信息流第一页和最新日报）；`content.localize-sweep` 每天 04:40（北京时间）扫一遍全站，补上旧条目修改后的版本，一次最多 50 条，没扫完的次日从断点接着扫。两者都仅在 `CONTENT_TRANSLATION_ENABLED` 和 `MODEL_CALLS_ENABLED` 同时启用时调用既有 translate 模型，经 receipt/按请求数量的预算熔断；默认关闭。en/zh 使用独立 cursor，开始扫描前持久化下一轮目标；语言 lane 失败后仍允许另一 lane 在剩余额度内推进，最终记录失败。失败 lane 不推进游标；部分完成后失败会预留整段 allowance，不突破合并额度，单条额度的轮次通过下次轮换保证公平。不可用 prose/markup 将已收到回执标记 failed，允许受预算管控的重试；unknown outcome 保持阻断，不再次请求。回执 subject、prompt version 与语言方向身份保持现有规则。`translatePending` 保留既有中文全文流程，native en 的许可英文正文不多买中文中转。队列/预算/错误可能导致辅助版延迟，不承诺实时双语。
 
 ## 验证与上线前置
 

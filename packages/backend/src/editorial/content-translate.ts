@@ -19,20 +19,23 @@ interface SweepDependencies {
 }
 
 /** The limit counts translated editions, never already completed candidate rows. Kept separate
- * from provider calls so cursor/retry behavior can be tested with the paid-service valves closed. */
-export async function runContentTranslationSweep(startCursor: string, limit: number, deps: SweepDependencies) {
+ * from provider calls so cursor/retry behavior can be tested with the paid-service valves closed.
+ * Without `historical` only the priority lane runs: rebuilding every public entry to find the few
+ * that changed held the one-core server's CPU for most of a minute, so the full pass runs once a day. */
+export async function runContentTranslationSweep(startCursor: string, limit: number, deps: SweepDependencies, historical = true) {
   const take = Math.min(50, Math.max(1, Math.floor(limit)));
   let translated = 0, scanned = 0, cursor = startCursor, wrapped = false;
   const processed = new Set<string>();
   const keyOf = (entry: TranslationEntry) => `${entry.kind}:${entry.id}`;
   const editionKey = (entry: TranslationEntry) => `${keyOf(entry)}:${entry.sourceLanguage ?? "zh"}->${entry.targetLanguage ?? "en"}@${entry.sourceHash}`;
-  // Reserve a historical slot, so sustained new headlines cannot starve older bodies/reports.
+  // A historical pass reserves a slot, so sustained new headlines cannot starve older bodies/reports.
   for (const entry of await deps.priority()) {
-    if (translated >= take - 1) break;
+    if (translated >= (historical ? take - 1 : take)) break;
     const done = await deps.translate(entry);
     processed.add(editionKey(entry));
     if (done !== false) translated++;
   }
+  if (!historical) return { translated, scanned, cursor };
   while (translated < take) {
     const page = await deps.scan(cursor, SCAN_PAGE_SIZE);
     scanned += page.scanned;
@@ -136,7 +139,7 @@ export async function runContentTranslationLanes(first: 'en' | 'zh', limit: numb
   return { translated, scanned, ...(Object.keys(errors).length ? { errors } : {}) };
 }
 
-export async function translateContentPending(limit = 5) {
+export async function translateContentPending(limit = 5, historical = false) {
   if (process.env.CONTENT_TRANSLATION_ENABLED !== 'true' || !config.modelCallsEnabled) return { disabled: true, translated: 0 };
   const [state] = await sql<{ value: { nextLanguage?: 'en' | 'zh' } }[]>`SELECT value FROM settings WHERE key='content.translation.next-language'`;
   const result = await runContentTranslationLanes(state?.value?.nextLanguage ?? 'zh', limit, {
@@ -152,7 +155,7 @@ export async function translateContentPending(limit = 5) {
         checkpoint: async cursor => {
           await sql`INSERT INTO settings(key,value) VALUES(${key},${sql.json({ cursor })}) ON CONFLICT(key) DO UPDATE SET value=excluded.value`;
         },
-      });
+      }, historical);
     },
   });
   if (result.errors) throw new Error(`Content edition lanes failed after independent progress: ${JSON.stringify(result)}`);
