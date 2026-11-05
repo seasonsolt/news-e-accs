@@ -154,7 +154,6 @@ export interface TimelineResponse {
   filters: TimelineFilters;
   cards: TimelineCard[];
   nextCursor: string | null;
-  hot: HotStripEntry[] | null;
   dayCounts: Record<string, number>;
 }
 
@@ -166,7 +165,7 @@ export interface PoolResponse {
   total: number;
   todayCount: number;
   freshness: string;
-  /** The home page's hot strip, on the first page of a listing (not search). */
+  /** The hot strip, on the first page of a listing (not search). */
   hot: HotStripEntry[] | null;
 }
 

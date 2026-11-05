@@ -1,7 +1,7 @@
 import { localePath, requestLocale } from "../lib/locale";
+import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE } from "@aihot/site";
-import { useRef } from "react";
 import { redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/home";
 import type { TimelineResponse } from "@aihot/contracts/site";
@@ -9,17 +9,15 @@ import type { ChronicleResponse } from "@aihot/contracts/chronicle";
 import { FEATURES } from "@aihot/industry/features";
 import { apiGet, cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
+import { webModules } from "../site-modules";
 import { filterParams, hasFeedFilters, listPath, organizationLd, pageMeta, readFilters, websiteLd } from "../lib/seo";
-import { inNav } from "../components/shell/nav";
-import { Onboarding } from "../features/onboarding/Onboarding";
-import { useSubscribeView } from "../features/subscribe/useSubscribeView";
+import { Deck } from "../components/shell/Deck";
 import { CategoryBanner } from "../features/art/CategoryBanner";
 import { Timeline } from "../features/feed/Timeline";
-import { HotTopics } from "../features/feed/HotTopics";
-import { FeedDeck, LeadStory, leadCard } from "../features/feed/FeedDeck";
-import { chronicleNow } from "../features/chrono/ChronicleNow";
+import { HomeHero, leadCard, TodayLabel } from "../features/feed/HomeHero";
+import { chronicleNow, costReading, type CostIndex } from "../features/chrono/ChronicleNow";
 import { CategoryTabs, FeedSwitch, SearchField, SearchIconLink } from "../features/feed/Filters";
-import { requestAt } from "../features/chrono/at";
+import { requestAt, withAt } from "../features/chrono/at";
 
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
@@ -32,12 +30,14 @@ export async function loader({ request }: Route.LoaderArgs) {
   const at = requestAt(request);
   const filters = { ...readFilters(url.searchParams), topic: null, at };
   const upstream = new Headers();
-  const [data, chronicle] = await Promise.all([
+  const [data, chronicle, cost] = await Promise.all([
     loadOr404<TimelineResponse>(listPath("/api/site/timeline", { ...filterParams(filters), at }), { responseHeaders: upstream, request, signal: request.signal }),
     // Like the masthead's time machine (root), the chronicle only dresses the deck: without it the deck keeps the day's lead.
     FEATURES.timeMachine ? apiGet<ChronicleResponse>("/api/site/chronicle", { request, signal: request.signal }).catch(() => null) : null,
+    // Today's figure, so a past day of the time machine goes without it; like the chronicle, it can fail without the page.
+    !at && webModules().some((m) => m.name === "indices") ? apiGet<CostIndex>("/api/site/indices/cost-of-intelligence", { request, signal: request.signal }).then(costReading).catch(() => null) : null,
   ]);
-  return cachedPage(60, { data, filters, chronicle: chronicle && chronicleNow(chronicle, at) }, upstream);
+  return cachedPage(60, { data, filters, chronicle: chronicle && chronicleNow(chronicle, at), cost }, upstream);
 }
 
 export function meta({ matches, loaderData }: Route.MetaArgs) {
@@ -49,42 +49,39 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
 
 export default function Home() {
   const tx = useTranslate();
-  const subscribeLink = useRef<HTMLSpanElement>(null);
-  const { data, filters, chronicle } = useLoaderData<typeof loader>();
-  const lead = leadCard(data.cards);
-  // A first visit to the unfiltered front page opens on the newsletter onboarding (shown before paint
-  // by the boot script); everyone else, crawlers included, reads the news below.
-  const front = filters.channel === "all" && !filters.category && !filters.tag && !filters.at;
-  useSubscribeView(subscribeLink, "home_button", front);
+  const { data, filters, chronicle, cost } = useLoaderData<typeof loader>();
+  // Old links and the switch from /all can still narrow the picks; those pages keep the full filter row.
+  const narrowed = !!filters.tag || !!filters.category || filters.channel !== "all";
   return (
     <div className="home-page pb-6">
-      {front && <Onboarding mode="overlay" />}
-      <FeedDeck label={tx("精选")} heading={tx(SITE.homeHeading)} at={filters.at} tag={filters.tag} front lead={lead} chronicle={chronicle} subscribeRef={subscribeLink} />
-
-      {/* With the chronicle beside the line, the day's lead opens the news below it. */}
-      {chronicle && lead && !filters.tag && (
-        <section className="home-today" aria-labelledby="home-today-title">
-          <h2 id="home-today-title" className="home-today-title"><Text value="今天，" /><em><Text value="在曲线上" /></em></h2>
-          <LeadStory card={lead} past={!!filters.at} />
-        </section>
+      {narrowed ? (
+        <Deck compact art="home-intelligence" label={tx("精选")} kicker={<TodayLabel at={filters.at} />} title={filters.tag ? `#${filters.tag}` : tx("精选")} />
+      ) : (
+        <HomeHero label={tx("精选")} heading={tx(SITE.homeHeading)} at={filters.at} lead={leadCard(data.cards)} chronicle={chronicle} cost={cost} />
       )}
 
-      <div className="mt-6 hidden items-center justify-between gap-4 lg:mt-8 lg:flex">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          <FeedSwitch base="/" layoutId="home-feed-desk" />
-          <CategoryTabs base="/" category={filters.category} channel={filters.channel} layoutId="home-cat-desk" className="min-w-0" />
+      {narrowed ? (
+        <>
+          <div className="mt-6 hidden items-center justify-between gap-4 lg:mt-8 lg:flex">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <FeedSwitch base="/" layoutId="home-feed-desk" />
+              <CategoryTabs base="/" category={filters.category} channel={filters.channel} layoutId="home-cat-desk" className="min-w-0" />
+            </div>
+            <SearchField variant="track" keep={{ category: filters.category }} />
+          </div>
+          <h2 className="mt-6 font-display text-[28px] italic text-ink lg:hidden">{filters.tag ? `#${filters.tag}` : tx("最新精选")}</h2>
+          <div className="-mx-4 mt-3 flex items-center gap-2 pl-4 pr-2 lg:hidden">
+            <FeedSwitch base="/" layoutId="home-feed-mobile" />
+            <CategoryTabs base="/" category={filters.category} channel={filters.channel} layoutId="home-cat-mobile" size="sm" className="min-w-0 flex-1" />
+            <SearchIconLink />
+          </div>
+        </>
+      ) : (
+        <div className="mt-6 flex items-center justify-between gap-4 lg:mt-8">
+          <FeedSwitch base="/" layoutId="home-feed" />
+          <Link to={withAt("/all", filters.at)} prefetch="intent" className="home-browse"><Text value="搜索和分类" /> →</Link>
         </div>
-        <SearchField variant="track" keep={{ category: filters.category }} />
-      </div>
-
-      <div className="mt-6">{data.hot && inNav("/hot") && <HotTopics entries={data.hot} />}</div>
-
-      <h2 className="mt-6 font-display text-[28px] italic text-ink lg:hidden">{filters.tag ? `#${filters.tag}` : tx("最新精选")}</h2>
-      <div className="-mx-4 mt-3 flex items-center gap-2 pl-4 pr-2 lg:hidden">
-        <FeedSwitch base="/" layoutId="home-feed-mobile" />
-        <CategoryTabs base="/" category={filters.category} channel={filters.channel} layoutId="home-cat-mobile" size="sm" className="min-w-0 flex-1" />
-        <SearchIconLink />
-      </div>
+      )}
 
       <CategoryBanner category={filters.category} channel={filters.channel} />
       <Timeline initial={data} filters={data.filters} foldReasons />

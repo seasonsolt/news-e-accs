@@ -55,7 +55,7 @@ export async function startMotionFixture() {
       const page = Number(url.searchParams.get("cursor") ?? "0");
       const cards = category ? Array.from({ length: page ? 6 : 12 }, (_, i) => card(page ? 12 + (page - 1) * 6 + i : i)) : [];
       if (category && !page && phase) cards.unshift(card(99 + phase));
-      const response: TimelineResponse = { filters: { channel: "all", category, tag: null, topic: null }, cards, nextCursor: category && page < 3 ? String(page + 1) : null, dayCounts: {}, hot: null };
+      const response: TimelineResponse = { filters: { channel: "all", category, tag: null, topic: null }, cards, nextCursor: category && page < 3 ? String(page + 1) : null, dayCounts: {} };
       return res.end(JSON.stringify(response));
     }
     res.statusCode = 404;

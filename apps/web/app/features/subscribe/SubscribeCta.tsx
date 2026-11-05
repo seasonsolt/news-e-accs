@@ -1,4 +1,4 @@
-// One email field on the pages readers actually land on. Same double opt-in as the home overlay.
+// One email field on the pages readers actually land on. Same double opt-in as /subscribe.
 // The form is in the document (no client-only injection, no image) so it does not compete with LCP.
 // The phone bar is mounted only after a reader has scrolled about 60%, and only on a phone.
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
@@ -152,7 +152,7 @@ function StickyBar({ source, sample, inline }: { source: InlineSource; sample?: 
       if (stopped || subscribeBarDismissed() || phase.kind === "sent") return;
       const max = document.documentElement.scrollHeight - window.innerHeight;
       const progress = max > 80 ? window.scrollY / max : 0;
-      setShown(isPhone() && progress >= 0.6 && !inlineVisible() && !document.documentElement.hasAttribute("data-onboarding"));
+      setShown(isPhone() && progress >= 0.6 && !inlineVisible());
     };
     const onScroll = () => { if (!frame) frame = requestAnimationFrame(update); };
     const start = () => {

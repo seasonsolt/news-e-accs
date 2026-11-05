@@ -39,8 +39,6 @@ test("home and empty report history are noindex without cookies", async () => {
     const document = await page(path);
     assert.match(document.querySelector('meta[name="robots"]')!.getAttribute("content")!, /noindex/);
     assert.doesNotMatch(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!, /at=/);
-    assert.equal(document.querySelector(".onboarding-overlay"), null);
-    assert.ok([...document.querySelectorAll("script")].every((script) => !script.textContent?.includes("eacc-onboarded")), "history must not run the pre-paint onboarding lock");
     if (path.startsWith("/?")) assert.ok(document.querySelector('a[href="/zh/hot?at=2026-09-01"]'));
   }
 });

@@ -91,7 +91,7 @@ export function SiteNav({ changelogVersion, kardashev }: { changelogVersion: str
           <MoreMenu dot={dot} />
         </nav>
         <div className="site-nav-actions">
-          <Link to={withAt("/all", at)} prefetch="intent" className="site-nav-icon" aria-label={tx("搜索全部动态")} title={tx("搜索全部动态")}>
+          <Link to={withAt("/all?search=1", at)} prefetch="intent" className="site-nav-icon" aria-label={tx("搜索全部动态")} title={tx("搜索全部动态")}>
             <IconSearch size={18} />
           </Link>
           <LanguageSwitch compact />

@@ -1,6 +1,25 @@
 {
-  "latestVersion": "2026-11-03T18:00",
+  "latestVersion": "2026-11-05T18:00",
   "releases": [
+    {
+      "date": "2026-11-05",
+      "time": "18:00",
+      "kind": "更新",
+      "title": "首页重做：降临是一条曲线",
+      "body": [
+        "第一屏换成新的主张和主图：夜色麦田里的一块黑色石碑。标语是「降临不是一个日期，而是一条曲线」。",
+        "手机打开就能看到今日头条、时间轴和一句智能成本读数，宣言入口也回到手机上。",
+        "首页去掉首访订阅引导、首屏订阅按钮和热点条；分类和搜索收进全部动态，订阅仍在顶部和订阅页。"
+      ],
+      "en": {
+        "title": "A new front page: the arrival is a curve",
+        "body": [
+          "The first screen has a new line and a new image: a black slab in a field of wheat at night. The line reads “The arrival is not a date. It is a curve.”",
+          "Phones now open on today's lead, the timeline and one reading of the cost of intelligence, and the manifesto link is back on phones.",
+          "The first-visit subscribe screen, the subscribe button in the first screen and the hot strip have left the front page. Categories and search now live on All, and Subscribe stays in the top bar and on its own page."
+        ]
+      }
+    },
     {
       "date": "2026-11-03",
       "time": "18:00",

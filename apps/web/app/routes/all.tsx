@@ -16,7 +16,7 @@ import { PillTabs } from "../components/ui/Tabs";
 import { DayList, Pagination } from "../features/feed/DayList";
 import { EmptyState } from "../components/ui/Page";
 import { Deck } from "../components/shell/Deck";
-import { FeedDeck } from "../features/feed/FeedDeck";
+import { TodayLabel } from "../features/feed/HomeHero";
 import { HotTopics } from "../features/feed/HotTopics";
 import { inNav } from "../components/shell/nav";
 
@@ -93,7 +93,7 @@ export default function AllPage() {
       {f.q ? (
         <Deck compact art="ambient-engine-room" label={tx("全部动态")} kicker={tx("搜索")} title={title ?? tx("全部 AI 动态")} />
       ) : (
-        <FeedDeck label={tx("全部动态")} heading={tx(ALL_TITLE)} tag={f.tag} />
+        <Deck compact art="home-intelligence" label={tx("全部动态")} kicker={<TodayLabel />} title={title ?? tx(ALL_TITLE)} />
       )}
       {/* Desktop, as on 精选: one filter row with the search field aligned on the right, then the hot strip. */}
       <div className="hidden lg:block">

@@ -15,7 +15,6 @@ import { before, after, test } from "node:test";
 import { chromium, webkit, expect, type Browser, type BrowserContextOptions, type Locator } from "@playwright/test";
 import type { FeedItemSummary, SiteItemDetail, ReportDetail } from "@aihot/contracts/site";
 import { startWebServer, type WebServer } from "./web-server.ts";
-import { KEYS } from "../app/lib/local-state.ts";
 
 const at = '2026-10-04T08:00:00.000Z';
 const item: FeedItemSummary = {id:'navigation-fixture',title:'性能检查文章',summary:'固定摘要',reason:'固定推荐理由',source:{name:'Fixture'},publishedAt:at,timelineAt:at,category:'ai-models',tags:[],score:80,selected:true,channel:'news',x:null};
@@ -27,12 +26,7 @@ const readerBody=(english=false)=>Array.from({length:30},(_,i)=>english?`<p>Read
   +'<img src="/reader-image/tiny.svg" alt="小图标" width="16" height="16" loading="lazy"><a href="https://example.org"><img src="/reader-image/linked.svg" alt="链接图片" width="640" height="360" loading="lazy"></a>';
 const report = (kind:'daily'|'weekly'|'monthly'): ReportDetail => ({kind,key:kind==='daily'?'2026-10-04':kind==='weekly'?'2026-W40':'2026-10',issueNumber:1,title:'Fixture '+kind,windowStart:at,windowEnd:at,generatedAt:at,lead:{title:'Fixture '+kind,leadParagraph:'Fixture report'},leadItemId:null,overview:null,highlights:[],sections:[],flashes:[],cover:null,metrics:{},readingMinutes:1,prev:null,next:null});
 const hits: string[] = [];
-async function readerContext(browser:Browser,options:BrowserContextOptions={}) {
-  const context=await browser.newContext(options);
-  // Use the site's persisted skip choice before its first paint.
-  await context.addInitScript(({key})=>localStorage.setItem(key,'1'),{key:KEYS.onboarded});
-  return context;
-}
+const readerContext=(browser:Browser,options:BrowserContextOptions={})=>browser.newContext(options);
 // Touch and hover handlers exist only once React has hydrated the link; a slow runner may still be hydrating after load.
 const hydrated=(link:Locator)=>expect.poll(()=>link.evaluate(el=>Object.keys(el).some(key=>key.startsWith('__reactProps$')))).toBe(true);
 // Tall enough that the first card is on screen without scrolling. The router finishes its first load by
@@ -62,9 +56,9 @@ const api=createServer((req,res)=>{
     const shown={...item,title:category?'分类 '+category:'性能检查文章'};
     if(url.searchParams.get('tag')==='long-reading'){
       const cards=Array.from({length:180},(_,i)=>({key:'long-'+i,anchorAt:i<60?at:'2026-10-03T08:00:00.000Z',item:{...item,id:'long-'+i,title:'长列表文章 '+i,summary:'用于核实深处阅读返回的固定摘要。'.repeat(3)},group:null}));
-      return res.end(JSON.stringify({filters:{channel:'all',category:null,tag:'long-reading'},cards,nextCursor:null,hot:null,dayCounts:{'2026-10-04':60,'2026-10-03':120}}));
+      return res.end(JSON.stringify({filters:{channel:'all',category:null,tag:'long-reading'},cards,nextCursor:null,dayCounts:{'2026-10-04':60,'2026-10-03':120}}));
     }
-    return res.end(JSON.stringify({filters:{channel:'all',category,tag:null},cards:[{key:shown.id,anchorAt:at,item:shown,group:null}],nextCursor:null,hot:null,dayCounts:{'2026-10-04':1}}));
+    return res.end(JSON.stringify({filters:{channel:'all',category,tag:null},cards:[{key:shown.id,anchorAt:at,item:shown,group:null}],nextCursor:null,dayCounts:{'2026-10-04':1}}));
   }
   if(p==='/api/site/pool'){
     const page=Number(url.searchParams.get('page')||1);
@@ -102,7 +96,7 @@ test('SSR list and visited query variants return offline without another read',a
   const context=await readerContext(safari,{viewport:{width:390,height:844}});
   const page=await context.newPage();
   try{
-    await page.goto(origin+'/');
+    await page.goto(origin+'/?channel=firstParty');
     // This exercises client history/cache, so wait for hydration before leaving the SSR page.
     await hydrated(page.getByRole('link',{name:'性能检查文章',exact:true}));
     await page.getByRole('link',{name:'性能检查文章',exact:true}).click();
@@ -188,7 +182,7 @@ test('intent on a selected link preserves visited data and the next revisit star
   await context.route('**/*.data*',route=>route.continue());
   page.on('request',request=>{if(request.url().includes('.data'))requests.push(request.url());});
   try{
-    await page.goto(origin+'/');
+    await page.goto(origin+'/?channel=firstParty');
     // A click before hydration is a document load, which leaves the client cache this test is about empty.
     await hydrated(page.locator('#main').getByRole('link',{name:'Models',exact:true}));
     await page.locator('#main').getByRole('link',{name:'Models',exact:true}).click();
@@ -266,7 +260,7 @@ test('phone search links to all news, focuses on opening, submits only on demand
     const start=hits.length;
     await page.goto(origin+'/');
     assert.equal(hits.slice(start).filter(x=>x.startsWith('/api/site/pool')).length,0);
-    const search=page.locator('#main').getByRole('link',{name:'Search',exact:true});
+    const search=page.getByRole('link',{name:'Search all news',exact:true});
     await expect(search).toHaveAttribute('href','/all?search=1');
     await search.click();
     await expect(page).toHaveURL(origin+'/all?search=1');

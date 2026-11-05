@@ -5,8 +5,7 @@ import { Text, useLocale, useTranslate } from "../../lib/i18n";
 import { localePath } from "../../lib/locale";
 // Newsletter onboarding: a full-bleed, rounded film of the acceleration (public/media, rendered by
 // tools/make-media.sh from ascent.ts, captioned with the era on screen) behind the site name, the sign-up, the manifesto and a way to skip straight to
-// the news. On a first visit to the front page it covers the screen (html[data-onboarding], set before
-// paint by ONBOARDING_BOOT_SCRIPT); /subscribe shows it as a page, and there it also confirms the
+// the news. /subscribe shows it as a page, and there it also confirms the
 // link from the confirmation letter: the page confirms by script as it opens (mail scanners that fetch
 // the link do not run it), with the button kept for a retry. Everything moving here is decoration and
 // stops under prefers-reduced-motion.
@@ -15,7 +14,6 @@ import type { SubscribeSource } from "@aihot/contracts/subscribe";
 import type { ReportDetail, ReportLatestPage } from "@aihot/contracts/site";
 import { SITE } from "@aihot/site";
 
-import { markOnboarded } from "../../lib/local-state";
 import { recordSubscribe, requestConfirm, requestSubscribe } from "../subscribe/flow";
 import { useSubscribeView } from "../subscribe/useSubscribeView";
 import { useMotionAllowed } from "../motion/preferences";
@@ -36,11 +34,8 @@ const MANIFESTO: Array<[string, string]> = [
 
 type Phase = { kind: "idle" } | { kind: "sending" } | { kind: "sent"; email: string } | { kind: "confirmed" } | { kind: "error"; message: string };
 
-/**
- * `overlay`: the front page's first-visit screen, closed by subscribing or skipping. `page`: /subscribe,
- * where `token` (from the confirmation letter) is confirmed on arrival, with a button to try again.
- */
-export function Onboarding({ mode, token = null, source: pageSource = "subscribe_page" }: { mode: "overlay" | "page"; token?: string | null; source?: SubscribeSource }) {
+/** /subscribe, where `token` (from the confirmation letter) is confirmed on arrival, with a button to try again. */
+export function Onboarding({ token = null, source = "subscribe_page" }: { token?: string | null; source?: SubscribeSource }) {
   const tx = useTranslate();
   const locale = useLocale();
   const motionAllowed = useMotionAllowed();
@@ -51,12 +46,9 @@ export function Onboarding({ mode, token = null, source: pageSource = "subscribe
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [email, setEmail] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
-  const source = mode === "overlay" ? "home_overlay" : pageSource;
   const [daily, setDaily] = useState<ReportDetail | null>(null);
-  const confirming = mode === "page" && !!token;
+  const confirming = !!token;
   useSubscribeView(formRef, source, !confirming);
-  // Visibility still gates the wordmark sheen; CSS owns the poster's pre-hydration first frame.
-  const [shown, setShown] = useState(mode === "page");
 
   // No film URL in SSR: even preload="none" can fetch metadata, and play() competes with the LCP
   // poster. Wait for window load, decode the matching poster and give it a paint, then start at idle.
@@ -65,8 +57,7 @@ export function Onboarding({ mode, token = null, source: pageSource = "subscribe
   useEffect(() => {
     const v = video.current;
     if (!v) return;
-    const visible = () => mode === "page" || document.documentElement.hasAttribute("data-onboarding");
-    const canPlay = () => visible() && motionAllowed && document.visibilityState === "visible";
+    const canPlay = () => motionAllowed && document.visibilityState === "visible";
     let loaded = document.readyState === "complete";
     let pending = false;
     let cancelled = false;
@@ -97,7 +88,6 @@ export function Onboarding({ mode, token = null, source: pageSource = "subscribe
       });
     };
     const sync = () => {
-      setShown(visible());
       if (!canPlay()) v.pause();
       else if (v.hasAttribute("src")) void v.play().catch(() => {});
       else schedule();
@@ -107,8 +97,6 @@ export function Onboarding({ mode, token = null, source: pageSource = "subscribe
     v.addEventListener("timeupdate", onTime);
     window.addEventListener("load", onLoad, { once: true });
     sync();
-    const observer = new MutationObserver(sync);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-onboarding"] });
     document.addEventListener("visibilitychange", sync);
     return () => {
       cancelled = true;
@@ -116,29 +104,11 @@ export function Onboarding({ mode, token = null, source: pageSource = "subscribe
       cancelAnimationFrame(frame);
       if (idle) window.cancelIdleCallback(idle);
       window.clearTimeout(timer);
-      observer.disconnect();
       document.removeEventListener("visibilitychange", sync);
       v.removeEventListener("timeupdate", onTime);
       v.pause();
     };
-  }, [mode, motionAllowed]);
-
-  // Escape skips the overlay, as a dialog's close would.
-  useEffect(() => {
-    if (mode !== "overlay") return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && document.documentElement.hasAttribute("data-onboarding") && !manifesto.current?.open) finish(true);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [mode]);
-
-  // Only leaving without subscribing is a dismiss. The buttons after a sent or confirmed letter just close the film.
-  function finish(dismiss: boolean) {
-    if (dismiss) recordSubscribe("subscribe_dismiss", "home_overlay", locale);
-    markOnboarded();
-    video.current?.pause();
-  }
+  }, [motionAllowed]);
 
   async function subscribe(e: FormEvent) {
     e.preventDefault();
@@ -151,7 +121,6 @@ export function Onboarding({ mode, token = null, source: pageSource = "subscribe
     }
     recordSubscribe("subscribe_success", source, locale);
     setPhase({ kind: "sent", email: email.trim() });
-    markOnboarded();
   }
 
   async function confirmToken() {
@@ -163,41 +132,31 @@ export function Onboarding({ mode, token = null, source: pageSource = "subscribe
       return setPhase({ kind: "error", message: error.detail });
     }
     setPhase({ kind: "confirmed" });
-    if (mode === "page") {
-      void fetch(`/api/site/reports/daily/latest-page?lang=${result.language}`)
-        .then(async (res) => res.ok ? (await res.json() as ReportLatestPage).report : null)
-        .then(setDaily).catch(() => setDaily(null));
-    }
-    markOnboarded();
+    void fetch(`/api/site/reports/daily/latest-page?lang=${result.language}`)
+      .then(async (res) => res.ok ? (await res.json() as ReportLatestPage).report : null)
+      .then(setDaily).catch(() => setDaily(null));
   }
 
   // Opening the letter's link is the reader's confirmation; confirming twice is harmless.
   useEffect(() => {
-    if (mode === "page" && token) void confirmToken();
-  }, [mode, token]);
+    if (token) void confirmToken();
+  }, [token]);
 
-  // Leaving for the news: the overlay just closes; the page links home.
-  const toNews = (label: string, primary = false, dismiss = false) => {
+  const toNews = (label: string, primary = false) => {
     const cls = primary
       ? "inline-flex h-11 items-center rounded-full bg-gradient-to-br from-[#f0c56a] via-[#d9a441] to-[#9a5b1f] px-7 text-[15px] font-semibold text-[#1a1208] shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition-transform duration-200 hover:scale-[1.03]"
       : "text-[14px] text-[#f6ead2]/80 underline decoration-[#f6ead2]/30 underline-offset-4 transition-colors hover:text-[#f6ead2] hover:decoration-[#f6ead2]/70";
-    return mode === "overlay" ? (
-      <button type="button" onClick={() => finish(dismiss)} className={cls}>
-        {label}
-      </button>
-    ) : (
-      <Link to="/" onClick={() => markOnboarded()} className={cls}>
+    return (
+      <Link to="/" className={cls}>
         {label}
       </Link>
     );
   };
 
-  // The front page's own h1 is the news; the overlay's name is a second-level heading there.
-  const Title = mode === "page" ? "h1" : "h2";
-  const card = (
+  return (
     <section
-      aria-labelledby={`onboarding-title-${mode}`}
-      className={`relative isolate overflow-hidden rounded-[32px] bg-[#15110d] text-[#f6ead2] [clip-path:inset(0_round_32px)] lg:rounded-[48px] lg:[clip-path:inset(0_round_48px)] ${mode === "overlay" ? "h-full" : "steam-hero-page mb-8"}`}
+      aria-labelledby="onboarding-title"
+      className={`relative isolate overflow-hidden rounded-[32px] bg-[#15110d] text-[#f6ead2] [clip-path:inset(0_round_32px)] lg:rounded-[48px] lg:[clip-path:inset(0_round_48px)] steam-hero-page mb-8`}
     >
       {/* clip-path, not just overflow + radius: the latter lets the spinning gears' layers poke through the corners. */}
       <div className="onboarding-poster absolute inset-0 -z-30" aria-hidden="true" />
@@ -215,9 +174,9 @@ export function Onboarding({ mode, token = null, source: pageSource = "subscribe
 
       <div className="relative flex h-full flex-col items-center justify-center gap-5 overflow-y-auto px-5 pb-16 pt-12 text-center lg:gap-7">
         <p className="mono text-[11px] uppercase tracking-[0.32em] text-[#e8c98a]"><DecryptedText text={tx("e-acc.ai · 加速日报")} /></p>
-        <Title id={`onboarding-title-${mode}`} aria-label={SITE.name} className="font-display text-[clamp(84px,17vw,200px)] italic leading-[0.9] tracking-[-0.02em] [text-shadow:0_2px_30px_rgba(0,0,0,0.55)]">
-          <BrassSheen text={SITE.name} visible={shown} />
-        </Title>
+        <h1 id="onboarding-title" aria-label={SITE.name} className="font-display text-[clamp(84px,17vw,200px)] italic leading-[0.9] tracking-[-0.02em] [text-shadow:0_2px_30px_rgba(0,0,0,0.55)]">
+          <BrassSheen text={SITE.name} visible />
+        </h1>
 
         {phase.kind === "sent" ? (
           <Notice title={tx("去邮箱点一下确认")} body={tx("确认邮件已经发到 {0}。点信里的「确认订阅」，就能在所选语言的日报就绪后收到邮件。没收到的话，看看「推广」和「垃圾邮件」。", phase.email)}>
@@ -226,28 +185,25 @@ export function Onboarding({ mode, token = null, source: pageSource = "subscribe
         ) : phase.kind === "confirmed" ? (
           <>
             <Notice title={tx("订阅成功")} body={tx("所选语言的日报就绪后会送到你的邮箱，每一封信的末尾都可以一键退订。用 Gmail 的话，第一封日报如果在「推广」里，把它拖到「主要」，以后就都在收件箱最前面了。")}>
-              {mode === "page" ? (
-                // The latest issue in the confirmed language: what the first letter will look like.
-                <div className="flex w-full flex-col items-center gap-4">
-                  {token && featuredProduct()?.url && <Link to={{ pathname: featuredProduct()!.url!, hash: `token=${encodeURIComponent(token)}` }} className="rounded-full border border-[#f6ead2]/40 px-5 py-3"><Text value="领取 4K 壁纸（送 100 积分）" /></Link>}
-                  {daily && (
-                    <div className="w-full rounded-[20px] border border-[#f6ead2]/25 bg-[#1a120a]/45 px-5 py-4 text-left backdrop-blur-md">
-                      <p className="mono text-[11px] uppercase tracking-[0.2em] text-[#e8c98a]"><Text value="最近一期日报" /> · {daily.key}</p>
-                      <p className="mt-1.5 text-[17px] font-semibold leading-snug">{daily.lead?.title ?? daily.title}</p>
-                      <ul className="mt-2 space-y-1.5 text-[14px] leading-snug text-[#f6ead2]/80">
-                        {daily.highlights.slice(0, 3).map((item, i) => <li key={i}>· {item.title}</li>)}
-                      </ul>
-                    </div>
-                  )}
-                  <Link
-                    to={daily ? `/daily/${daily.key}` : "/daily"}
-                    onClick={() => markOnboarded()}
-                    className="inline-flex h-11 items-center rounded-full bg-gradient-to-br from-[#f0c56a] via-[#d9a441] to-[#9a5b1f] px-7 text-[15px] font-semibold text-[#1a1208] shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition-transform duration-200 hover:scale-[1.03]"
-                  >
-                    {tx("阅读这期日报")}
-                  </Link>
-                </div>
-              ) : toNews(tx("去看今天的新闻"), true)}
+              {/* The latest issue in the confirmed language: what the first letter will look like. */}
+              <div className="flex w-full flex-col items-center gap-4">
+                {token && featuredProduct()?.url && <Link to={{ pathname: featuredProduct()!.url!, hash: `token=${encodeURIComponent(token)}` }} className="rounded-full border border-[#f6ead2]/40 px-5 py-3"><Text value="领取 4K 壁纸（送 100 积分）" /></Link>}
+                {daily && (
+                  <div className="w-full rounded-[20px] border border-[#f6ead2]/25 bg-[#1a120a]/45 px-5 py-4 text-left backdrop-blur-md">
+                    <p className="mono text-[11px] uppercase tracking-[0.2em] text-[#e8c98a]"><Text value="最近一期日报" /> · {daily.key}</p>
+                    <p className="mt-1.5 text-[17px] font-semibold leading-snug">{daily.lead?.title ?? daily.title}</p>
+                    <ul className="mt-2 space-y-1.5 text-[14px] leading-snug text-[#f6ead2]/80">
+                      {daily.highlights.slice(0, 3).map((item, i) => <li key={i}>· {item.title}</li>)}
+                    </ul>
+                  </div>
+                )}
+                <Link
+                  to={daily ? `/daily/${daily.key}` : "/daily"}
+                  className="inline-flex h-11 items-center rounded-full bg-gradient-to-br from-[#f0c56a] via-[#d9a441] to-[#9a5b1f] px-7 text-[15px] font-semibold text-[#1a1208] shadow-[0_2px_10px_rgba(0,0,0,0.35)] transition-transform duration-200 hover:scale-[1.03]"
+                >
+                  {tx("阅读这期日报")}
+                </Link>
+              </div>
             </Notice>
             <TearTicket date={beijingDate(Date.now())} />
           </>
@@ -267,9 +223,9 @@ export function Onboarding({ mode, token = null, source: pageSource = "subscribe
         ) : (
           <>
             <form ref={formRef} className="relative w-full max-w-md" onSubmit={subscribe}>
-              <label htmlFor={`onboarding-email-${mode}`} className="sr-only"><Text value="邮箱地址" /></label>
+              <label htmlFor="onboarding-email" className="sr-only"><Text value="邮箱地址" /></label>
               <input
-                id={`onboarding-email-${mode}`}
+                id="onboarding-email"
                 type="email"
                 name="email"
                 required
@@ -306,20 +262,20 @@ export function Onboarding({ mode, token = null, source: pageSource = "subscribe
             <div className="mt-1 flex flex-wrap items-center justify-center gap-3">
               <button type="button" onClick={() => manifesto.current?.showModal()} className="steam-shine relative h-10 overflow-hidden rounded-full border border-[#f6ead2]/35 bg-[#f6ead2]/12 px-8 text-[14px] font-semibold text-[#f6ead2] backdrop-blur-md transition-colors hover:bg-[#f6ead2]/20"><Text value="宣言 Manifesto" /></button>
             </div>
-            <div className="mt-2">{toNews(tx("先不订阅，直接看新闻 →"), false, true)}</div>
+            <div className="mt-2">{toNews(tx("先不订阅，直接看新闻 →"))}</div>
           </>
         )}
       </div>
 
       <dialog
         ref={manifesto}
-        aria-labelledby={`manifesto-title-${mode}`}
+        aria-labelledby="manifesto-title"
         onClick={(e) => e.target === e.currentTarget && e.currentTarget.close()}
         className="steam-manifesto m-auto w-[min(92vw,560px)] rounded-sheet border border-line bg-surface p-0 text-left text-ink shadow-pop backdrop:bg-[#0d0906]/70 backdrop:backdrop-blur-sm"
       >
         <div className="px-6 pb-6 pt-7 sm:px-8">
           <div className="flex items-start justify-between gap-4">
-            <h2 id={`manifesto-title-${mode}`} className="font-display text-[44px] italic leading-none text-ink">
+            <h2 id="manifesto-title" className="font-display text-[44px] italic leading-none text-ink">
               Manifesto
             </h2>
             <button type="button" onClick={() => manifesto.current?.close()} aria-label={tx("关闭")} className="-mr-2 flex size-9 items-center justify-center rounded-full text-ink-3 hover:bg-bg-sunk hover:text-ink">
@@ -346,15 +302,6 @@ export function Onboarding({ mode, token = null, source: pageSource = "subscribe
         </div>
       </dialog>
     </section>
-  );
-
-  // The overlay is always rendered and shown by CSS, so the first frame is already right.
-  return mode === "overlay" ? (
-    <div className="onboarding-overlay fixed inset-0 z-[80] bg-[#15110d] p-2 sm:p-3" role="dialog" aria-modal="true" aria-labelledby="onboarding-title-overlay">
-      {card}
-    </div>
-  ) : (
-    card
   );
 }
 

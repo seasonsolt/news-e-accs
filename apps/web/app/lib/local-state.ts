@@ -14,7 +14,6 @@ export const KEYS = {
   motion: "eacc-reduce-motion",
   changelogSeen: "aihot-changelog-seen-version",
   feedbackDraft: "aihot-feedback-draft-v1",
-  onboarded: "eacc-onboarded",
   subscribeBar: "eacc-subscribe-bar-dismissed",
   recentSearches: "aihot-recent-searches",
   firstStar: "eacc-first-star",
@@ -365,13 +364,6 @@ export function setReduceMotion(reduced: boolean) {
 
 export const MOTION_BOOT_SCRIPT = `(function(){try{if(localStorage.getItem('${KEYS.motion}')==='reduced')document.documentElement.setAttribute('data-motion','reduced')}catch(e){}})();`;
 
-// --- newsletter onboarding ---
-/** Subscribed or skipped: the front page opens straight on the news from then on. */
-export function markOnboarded() {
-  writeRaw(KEYS.onboarded, new Date().toISOString());
-  document.documentElement.removeAttribute("data-onboarding");
-}
-
 /** The phone subscribe bar was closed on this device. The choice stays in the browser and is not uploaded. */
 export function subscribeBarDismissed(): boolean {
   return readRaw(KEYS.subscribeBar) !== null;
@@ -380,15 +372,6 @@ export function subscribeBarDismissed(): boolean {
 export function dismissSubscribeBar() {
   writeRaw(KEYS.subscribeBar, new Date().toISOString());
 }
-
-/**
- * Inline script run before paint: a first visit to the front page opens on the newsletter onboarding
- * (html[data-onboarding] shows it, see app.css). Crawlers and readers who already chose see the news;
- * so does anyone whose storage is unavailable, as the choice could not be remembered. Discover the
- * matching poster here, before styles or hydration, but never spend returning readers' bandwidth on it.
- * Complementary media queries keep the preload and the CSS poster in step in either orientation.
- */
-export const ONBOARDING_BOOT_SCRIPT = `(function(){try{if(location.pathname!=='/'||/bot|crawl|spider|slurp|preview|lighthouse|headless/i.test(navigator.userAgent))return;if(localStorage.getItem('${KEYS.onboarded}'))return;document.documentElement.setAttribute('data-onboarding','');['portrait','landscape'].forEach(function(o){var l=document.createElement('link');l.rel='preload';l.as='image';l.setAttribute('fetchpriority','high');l.media='(orientation: '+o+')';l.href='/media/ascent-historical-v2-'+(o==='portrait'?'9x16':'16x9')+'-poster.jpg';document.head.appendChild(l)})}catch(e){}})();`;
 
 /** Puts a theme on the page: the document's data-theme and the browser's theme colour. */
 export function applyTheme(theme: "light" | "dark", followsSystem: boolean) {

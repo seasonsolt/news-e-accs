@@ -598,20 +598,11 @@
 /* ---------------------------------------------------------------------------
    Newsletter onboarding (features/onboarding/Onboarding.tsx)
    --------------------------------------------------------------------------- */
-/* The first-visit overlay is always in the front page's markup and shown only when the boot script
-   marked <html> (ONBOARDING_BOOT_SCRIPT): no flash of the news, and crawlers never see it. */
-.onboarding-overlay { display: none; }
-html[data-onboarding] .onboarding-overlay { display: block; }
-html[data-onboarding] .language-hint { display: none; }
-html[data-onboarding] body { overflow: hidden; }
-/* A pre-paint poster under the source-less film, using the same cover crop as its first frame. Only
-   the active overlay or /subscribe can fetch it; hidden overlays never acquire a background URL. */
-html[data-onboarding] .onboarding-poster,
+/* A pre-paint poster under the source-less film, using the same cover crop as its first frame. */
 .steam-hero-page .onboarding-poster {
   background: url("/media/ascent-historical-v2-16x9-poster.jpg") center / cover no-repeat;
 }
 @media (orientation: portrait) {
-  html[data-onboarding] .onboarding-poster,
   .steam-hero-page .onboarding-poster {
     background-image: url("/media/ascent-historical-v2-9x16-poster.jpg");
   }
@@ -713,9 +704,6 @@ html[data-onboarding] .onboarding-poster,
   -webkit-mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.6) 20%, rgba(0, 0, 0, 0.08) 38%, rgba(0, 0, 0, 0.08) 62%, rgba(0, 0, 0, 0.6) 80%, #000 100%);
   mask-image: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0.6) 20%, rgba(0, 0, 0, 0.08) 38%, rgba(0, 0, 0, 0.08) 62%, rgba(0, 0, 0, 0.6) 80%, #000 100%);
 }
-/* The first-visit film covers this layer. Removing the URL, rather than hiding the layer, prevents
-   a competing image request; dismissing the overlay restores it without changing drift or parallax. */
-html[data-onboarding] .ambient-backdrop-image { background-image: none; }
 /* Phones have no margins: the hall shows above the feed and fades out down the page. */
 @media (max-width: 960px) {
   .ambient-backdrop-image {
@@ -974,43 +962,30 @@ html { scrollbar-gutter: stable; }
 .home-page .deck-inner { max-width: 1264px; }
 .home-page .deck-plate { object-position: 65% 62%; }
 .home-page .deck-shade { background: linear-gradient(90deg, rgb(10 8 6 / .88), rgb(10 8 6 / .25) 70%), linear-gradient(0deg, rgb(10 8 6 / .85), transparent 65%); }
-.home-hero.is-front .deck-plate { object-position: 65% 42%; }
-.home-hero.is-front .deck-shade { background: linear-gradient(to top, var(--deck) 0, rgb(18 14 10 / .84) 24%, rgb(18 14 10 / .2) 58%, rgb(18 14 10 / .55) 100%), linear-gradient(90deg, rgb(10 8 6 / .82), rgb(10 8 6 / .2) 55%, rgb(10 8 6 / 0) 78%); }
 .home-page .deck-desc { max-width: 32rem; font-size: 16px; line-height: 1.75; }
 /* Night pages (nav.ts isNightPage) read at night in either theme: the decks' dark runs on
    into the page, with no seam. The front page's plate fills the first screen. */
 .night-page, :root:has(.night-page) { --bg: var(--deck); --daybar: var(--deck); }
-.night-page .home-hero.is-front { display: flex; flex-direction: column; justify-content: flex-end; min-height: clamp(600px, calc(100svh - 120px), 860px); padding: 64px 0 20px; }
-.home-hero .deck-inner { width: 100%; }
-.home-hero-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 28px 48px; }
-.home-hero-copy { flex: 999 1 520px; min-width: 0; max-width: 46rem; }
-.home-hero-title { margin-top: 14px; font-family: var(--font-display); font-size: clamp(44px, 6.2vw, 92px); font-weight: 700; line-height: 1.08; letter-spacing: .02em; color: #fff7e8; text-wrap: balance; text-shadow: 0 2px 30px rgb(0 0 0 / .45); }
+.night-page .home-hero { display: flex; flex-direction: column; min-height: clamp(640px, calc(100svh - 72px), 1040px); padding: 72px 0 32px; }
+.home-page .home-hero .deck-plate { object-position: 60% 100%; }
+.home-page .home-hero .deck-shade { background: linear-gradient(to top, var(--deck) 0, rgb(18 14 10 / .82) 15%, rgb(18 14 10 / .22) 30%, rgb(18 14 10 / 0) 40%), linear-gradient(90deg, rgb(10 8 6 / .5), rgb(10 8 6 / 0) 52%); }
+.home-hero .deck-inner { display: flex; flex: 1 1 auto; flex-direction: column; gap: 28px; width: 100%; }
+.home-hero-copy { flex: 1 1 auto; min-width: 0; max-width: 56rem; }
+.home-hero-title { margin-top: 18px; font-family: var(--font-display); font-size: clamp(44px, 5.8vw, 84px); font-weight: 700; line-height: 1.06; letter-spacing: .02em; color: #fff7e8; text-wrap: balance; }
 .home-hero-title:lang(en) { font-weight: 400; font-style: italic; letter-spacing: -.01em; }
-.home-hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
-.home-hero .deck-button.is-primary { background: linear-gradient(var(--brass-hi), var(--brass)); color: #2a1f16; }
-.home-hero-wallpaper { display: inline-flex; align-items: center; min-height: 36px; margin-top: 10px; font-size: 14px; color: var(--brass-hi); }
-.home-lead { flex: 1 1 340px; max-width: 420px; display: flex; flex-direction: column; gap: 10px; padding: 22px 24px; border-radius: var(--radius-card); border: 1px solid rgb(244 236 220 / .16); background: rgb(18 14 10 / .78); color: var(--deck-ink); transition: border-color .15s; }
+.home-hero-desc-more:lang(en)::before { content: " "; }
+.home-hero .deck-desc { max-width: 34rem; font-size: 17px; line-height: 1.7; }
+.home-hero-manifesto { display: inline-flex; align-items: center; min-height: 44px; margin-top: 8px; font-size: 15px; color: var(--brass-hi); }
+.home-lead { display: grid; grid-template-columns: 180px minmax(0, 1fr) auto; align-items: center; gap: 8px 28px; padding: 18px 24px; border-radius: var(--radius-card); border: 1px solid rgb(244 236 220 / .18); background: rgb(18 14 10 / .66); color: var(--deck-ink); transition: border-color .15s; }
 .home-lead:hover { border-color: rgb(217 164 65 / .6); }
-.home-lead-kicker { display: flex; flex-wrap: wrap; gap: 4px 10px; font: 500 12px/1.5 var(--font-mono); letter-spacing: .12em; color: var(--brass); }
-.home-lead-kicker > span { letter-spacing: .04em; color: rgb(244 236 220 / .62); }
-.home-lead-title { font-size: 20px; font-weight: 650; line-height: 1.45; color: #fff7e8; }
-.home-lead-summary { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; font-size: 14.5px; line-height: 1.7; color: rgb(244 236 220 / .74); }
-.home-lead-go { font-size: 14px; color: var(--brass-hi); }
-/* The chronicle on the front page: its latest moment beside the line, the axis and four readings along the foot. */
-.now-card { flex: 1 1 340px; max-width: 420px; display: flex; flex-direction: column; overflow: hidden; border-radius: var(--radius-card); border: 1px solid rgb(244 236 220 / .16); background: rgb(18 14 10 / .82); color: var(--deck-ink); transition: border-color .15s; }
-.now-card:hover { border-color: rgb(217 164 65 / .6); }
-.now-card-art { position: relative; display: block; aspect-ratio: 3 / 2; overflow: hidden; border-bottom: 1px solid rgb(244 236 220 / .1); background: var(--deck-2); }
-.now-card-art img { width: 100%; height: 100%; object-fit: cover; }
-.now-card-badge { position: absolute; left: 14px; top: 14px; padding: 2px 9px; border-radius: 9999px; background: var(--brass); font: 600 11px/1.6 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: #1a1209; }
-.now-card-body { display: flex; flex-direction: column; gap: 8px; padding: 18px 22px 20px; }
-.now-card-date { font: 500 12px/1.5 var(--font-mono); letter-spacing: .04em; color: var(--deck-dim); }
-.now-card-title { font-family: var(--font-display); font-size: 26px; font-weight: 700; line-height: 1.2; color: #fff7e8; }
-.now-card-title:lang(en) { font-weight: 400; line-height: 1.1; }
-.now-card-summary { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; font-size: 14px; line-height: 1.65; color: rgb(244 236 220 / .74); }
-.now-card-go { font-size: 14px; color: var(--brass-hi); }
-.now-instruments { margin-top: 44px; color: var(--deck-ink); }
-.now-axis { display: block; color: inherit; }
-.now-axis-caption { display: block; margin-bottom: 24px; font: 500 11.5px/1.5 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--deck-dim); }
+.home-lead-kicker { display: flex; flex-direction: column; gap: 2px; font: 500 12px/1.5 var(--font-mono); letter-spacing: .1em; color: var(--brass); }
+.home-lead-kicker > span { letter-spacing: .04em; color: rgb(244 236 220 / .68); }
+.home-lead-title { font-family: var(--font-display); font-size: 24px; font-weight: 700; line-height: 1.3; color: #fff7e8; }
+.home-lead-title:lang(en) { font-size: 27px; font-weight: 400; line-height: 1.2; }
+.home-lead-go { font-size: 14px; white-space: nowrap; color: var(--brass-hi); }
+/* The axis along the foot of the first screen, its caption and today's reading underneath. */
+.now-instruments { color: var(--deck-ink); }
+.now-axis { display: block; padding-top: 30px; color: inherit; }
 .now-axis-track { position: relative; display: block; height: 34px; }
 .now-axis-bands { position: absolute; inset: 0; overflow: hidden; border-radius: var(--radius-control); }
 .now-axis-epoch { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; padding: 0 10px; overflow: hidden; border-left: 2px solid var(--deck); background: rgb(244 236 220 / .08); font-size: 12.5px; white-space: nowrap; color: rgb(244 236 220 / .72); transition: background-color .15s; }
@@ -1021,59 +996,45 @@ html { scrollbar-gutter: stable; }
 .now-axis:hover .now-axis-epoch.is-current { background: rgb(217 164 65 / .32); }
 .now-axis-needle { position: absolute; top: -8px; bottom: -8px; width: 2px; transform: translateX(-50%); background: var(--brass-hi); box-shadow: 0 0 14px rgb(240 210 138 / .8); }
 .now-axis-needle > span { position: absolute; bottom: 100%; left: 50%; transform: translate(-50%, -4px); padding: 0 8px; border-radius: 9999px; background: var(--brass); font: 600 11px/1.6 var(--font-mono); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; color: #1a1209; }
-.now-readouts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 22px 0 0; border-top: 1px solid rgb(244 236 220 / .14); }
-.now-readout { min-width: 0; padding: 16px 20px 4px; border-left: 1px solid rgb(244 236 220 / .1); }
-.now-readout:first-child { padding-left: 0; border-left: 0; }
-.now-readout dt { font: 500 11.5px/1.5 var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--deck-dim); }
-.now-readout dd { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin: 8px 0 0; font: 500 30px/1.1 var(--font-sans); font-variant-numeric: tabular-nums; color: #fff7e8; }
-.now-readout.is-lead dd { color: var(--brass-hi); }
-.now-readout-unit { font-size: 13px; color: var(--deck-dim); }
-.home-today { margin-top: 48px; }
-.home-today-title { padding-bottom: 14px; border-bottom: 1px solid rgb(244 236 220 / .18); font-family: var(--font-display); font-size: clamp(30px, 4vw, 44px); font-weight: 700; line-height: 1.1; color: var(--ink); }
-.home-today-title:lang(en) { font-weight: 400; }
-.home-today-title em { font-style: italic; color: var(--brass-hi); }
-.home-today .home-lead { max-width: none; margin-top: 20px; }
-.home-today .home-lead-title { font-family: var(--font-display); font-size: clamp(24px, 2.6vw, 32px); font-weight: 700; line-height: 1.25; }
-.home-today .home-lead-title:lang(en) { font-weight: 400; line-height: 1.15; }
-@media (max-width: 640px) {
-  .now-card { max-width: none; flex-direction: row; }
-  .now-card-art { flex: none; width: 112px; aspect-ratio: auto; border-bottom: 0; border-right: 1px solid rgb(244 236 220 / .1); }
-  .now-card-badge { left: 8px; top: 8px; padding: 0 6px; font-size: 10px; }
-  .now-card-body { gap: 4px; padding: 12px 14px; }
-  .now-card-title { font-size: 19px; }
-  .now-card-summary, .now-card-go { display: none; }
-  .now-instruments { margin-top: 28px; }
-  .now-axis-caption { margin-bottom: 34px; font-size: 10.5px; }
-  .now-axis-track { height: 28px; }
-  .now-axis-epoch { padding: 0 6px; font-size: 11px; }
-  .now-readouts { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 16px; }
-  .now-readout { padding: 12px 0 10px 14px; }
-  .now-readout:nth-child(odd) { padding-left: 0; border-left: 0; }
-  .now-readout:nth-child(n+3) { border-top: 1px solid rgb(244 236 220 / .1); }
-  .now-readout dd { font-size: 22px; }
-  .home-today { margin-top: 36px; }
-  .home-today .home-lead-summary { display: -webkit-box; }
-  .home-today .home-lead-go { display: inline; }
-}
+.now-foot { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 24px; margin-top: 16px; }
+.now-axis-caption { font: 500 11.5px/1.5 var(--font-mono); letter-spacing: .14em; text-transform: uppercase; color: rgb(244 236 220 / .68); }
+.now-reading { font-size: 14px; color: var(--deck-ink); }
+.now-reading b { font-weight: 600; color: var(--brass-hi); }
+.now-reading:hover { color: #fff7e8; }
+.home-browse { display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; color: var(--ink-3); }
+.home-browse:hover { color: var(--ink); }
 @media (max-width: 960px) {
   .home-page .deck-plate { object-position: 78% 40%; }
-  .night-page .home-hero.is-front { min-height: calc(100svh - 130px - env(safe-area-inset-bottom)); padding-top: 40px; }
-  .home-hero-row { gap: 22px; }
-  .home-lead { max-width: none; padding: 16px 18px; }
-  .home-lead-title { font-size: 17px; }
-  .home-lead-summary { display: none; }
+  .night-page .home-hero { min-height: calc(100svh - 130px - env(safe-area-inset-bottom)); padding: 40px 0 14px; }
+  .home-lead { grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 12px 14px; background: rgb(18 14 10 / .8); }
+  .home-lead-kicker { flex-direction: row; justify-content: space-between; gap: 8px; font-size: 11.5px; letter-spacing: .06em; }
+  .home-lead-kicker > span { letter-spacing: .02em; }
   .home-lead-go { display: none; }
   .home-page .deck-desc { font-size: 14.5px; }
-  .home-page .deck-button { min-height: 44px; padding-inline: 16px; font-size: 14px; }
 }
-/* Phones keep the first screen to the line, two buttons, the lead and the rail. */
+/* Phones get the whole story above the tab bar: the line, the lead, the axis, one reading. */
 @media (max-width: 640px) {
-  .home-hero.is-front .deck-shade { background: linear-gradient(to top, var(--deck) 0, rgb(18 14 10 / .9) 40%, rgb(18 14 10 / .35) 75%, rgb(18 14 10 / .6) 100%); }
-  .home-hero .deck-heading { font-size: 13px; font-weight: 500; color: rgb(244 236 220 / .72); }
-  .home-hero-title { font-size: 44px; }
-  .home-hero-title:lang(en) { font-size: 40px; line-height: 1.05; }
-  .home-hero-actions { gap: 10px; margin-top: 20px; }
-  .home-hero .home-hero-extra { display: none; }
+  .night-page .home-hero { padding-top: 18px; }
+  .home-page .home-hero .deck-plate { object-position: 74% 50%; }
+  .home-page .home-hero .deck-shade { background: linear-gradient(to top, var(--deck) 0, rgb(18 14 10 / .78) 19%, rgb(18 14 10 / .12) 34%, rgb(18 14 10 / 0) 44%), linear-gradient(90deg, rgb(10 8 6 / .5), rgb(10 8 6 / 0) 70%); }
+  .home-hero .deck-inner { gap: 0; }
+  .home-hero .deck-heading { font-size: 13px; font-weight: 500; color: rgb(244 236 220 / .88); }
+  .home-hero .deck-kicker, .now-axis-caption, .now-reading-reference, .now-reading-month { display: none; }
+  .home-hero-title { margin-top: 14px; font-size: 37px; line-height: 1.28; letter-spacing: 0; }
+  .home-hero-title:lang(en) { margin-top: 12px; font-size: 48px; line-height: 1.04; }
+  .home-hero .deck-desc { margin-top: 12px; max-width: 300px; font-size: 15px; line-height: 1.6; color: rgb(244 236 220 / .86); }
+  .home-hero-desc-more:lang(en) { display: none; }
+  .home-hero-manifesto { margin-top: 0; font-size: 14.5px; }
+  .home-lead-title { font-size: 18px; font-weight: 600; line-height: 1.4; }
+  .home-lead-title:lang(en) { font-size: 21px; line-height: 1.18; }
+  .now-axis { padding-top: 26px; }
+  .now-axis-track { height: 24px; }
+  .now-axis-needle { top: -6px; bottom: -6px; }
+  .now-axis-needle > span { padding: 0 7px; font-size: 10.5px; }
+  .now-axis-epoch { padding: 0 7px; font-size: 11.5px; }
+  .now-axis-epoch-rest, .now-axis-epoch.is-forecast > span:lang(en) { display: none; }
+  .now-foot { margin-top: 10px; }
+  .now-reading { font-size: 13px; line-height: 1.4; }
 }
 /* The Adventist Manifesto (routes/manifesto.tsx): the slab at sunset across the first screen, text over its
    dark left side; the sections beside their contents; the closing lines over the horizon's glow. */

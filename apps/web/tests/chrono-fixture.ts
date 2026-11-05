@@ -49,7 +49,7 @@ export async function startChronoFixture() {
       return send(body);
     }
     if (path === "/api/site/timeline") {
-      const body: TimelineResponse = { filters: { channel: "all", category: null, tag: null, topic: null, at }, cards: [], nextCursor: null, dayCounts: {}, hot: Array.from({ length: 3 }, (_, i) => ({ rank: i + 1, title: `精选页热点 ${i}`, heat: 42, trend: "flat" as const, storyPublicId: "archive-story", itemId: null, participants: [], participantCount: 0 })) };
+      const body: TimelineResponse = { filters: { channel: "all", category: null, tag: null, topic: null, at }, cards: [], nextCursor: null, dayCounts: {} };
       return send(body);
     }
     if (path === "/api/site/reports/daily/at/2026-09-02") return send({ key: "2026-09-01" });

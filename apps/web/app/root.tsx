@@ -23,14 +23,13 @@ import { LanguageHint } from "./components/shell/LanguageHint";
 import { FirstStarHint } from "./components/shell/FirstStarHint";
 import { buttonClass } from "./components/ui/Controls";
 import { DECK_BLEED_SCRIPT } from "./components/shell/Deck";
-import { rememberPage, noteExistingStars, APPEARANCE_BOOT_SCRIPT, MOTION_BOOT_SCRIPT, ONBOARDING_BOOT_SCRIPT, useAppearanceSync } from "./lib/local-state";
+import { rememberPage, noteExistingStars, APPEARANCE_BOOT_SCRIPT, MOTION_BOOT_SCRIPT, useAppearanceSync } from "./lib/local-state";
 import { apiGet } from "./lib/api.server";
 import { useHydratedFlag } from "./lib/hydration";
 import { webModules } from "./site-modules";
 import { EmptyArt } from "./features/art/EmptyArt";
 import { NotFoundBoard } from "./features/motion/NotFoundBoard";
 import { TimeBar } from "./features/chrono/TimeMachine";
-import { useAt } from "./features/chrono/at";
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/favicon.ico", sizes: "any" },
@@ -72,7 +71,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 export const shouldRevalidate: ShouldRevalidateFunction = ({ currentUrl, nextUrl }) => requestLocale(new Request(currentUrl)) !== requestLocale(new Request(nextUrl));
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const at = useAt();
   const locale = useLocale();
   const site = useRouteLoaderData<typeof loader>("root");
   const [documentRelease] = useState(site?.release ?? null);
@@ -87,7 +85,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="apple-mobile-web-app-title" content={SITE.name} />
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: MOTION_BOOT_SCRIPT }} />
-        {!at && <script dangerouslySetInnerHTML={{ __html: ONBOARDING_BOOT_SCRIPT }} />}
         {webModules().map((m) => m.root?.bootScript && <script key={m.name} dangerouslySetInnerHTML={{ __html: m.root.bootScript }} />)}
         <Meta />
         <Links />

@@ -31,7 +31,7 @@ export default function Subscribe() {
   const token = params.get("token");
   return (
     <div className="pt-3 lg:pt-0">
-      {token ? <Onboarding mode="page" token={token} /> : <SubscribePage report={report} source={subscribeSource(params.get("from")) ?? "subscribe_page"} />}
+      {token ? <Onboarding token={token} /> : <SubscribePage report={report} source={subscribeSource(params.get("from")) ?? "subscribe_page"} />}
       {SITE.contactEmail && !token && (
         <p className="text-center text-[13px] text-ink-4">
           <Text value="赞助日报、商务合作：" />

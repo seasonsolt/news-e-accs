@@ -60,8 +60,8 @@ test("hidden trending and a disabled time machine drop their entries and keep Mo
       };
       const response = await home.loader({ request: new Request("https://e-acc.ai/?at=2026-09-01") } as Parameters<typeof home.loader>[0]);
       assert.equal(response.data.filters.at, null);
-      assert.equal(paths.length, 1);
       assert.match(paths[0]!, /\/api\/site\/timeline/);
+      assert.ok(paths.every((path) => !path.includes("/chronicle")));
     } finally { globalThis.fetch = originalFetch; }
   } finally {
     features.timeMachine = originalFeature;

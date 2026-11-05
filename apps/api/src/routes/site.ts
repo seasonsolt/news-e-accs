@@ -109,15 +109,11 @@ export function registerSite(app: FastifyInstance) {
     const filters = parseFilters(q);
     const limit = Math.min(Math.max(Number(q.limit) || 20, 1), 40);
     const at = parseAt(q.at);
-    const firstPage = !q.cursor;
-    const [data, hot] = await Promise.all([
-      loadTimeline({ ...filters, cursor: q.cursor || null, limit, at }),
-      firstPage ? loadHotStrip(at ? beijingDayEnd(at) : null) : null,
-    ]);
+    const data = await loadTimeline({ ...filters, cursor: q.cursor || null, limit, at });
     // Any cache in front and the home page built from this answer share one absolute deadline.
     // A past day's slice is settled and keeps longer.
     if (!at) reply.header("X-Accel-Expires", `@${Math.floor(Date.now() / 1000) + 60}`);
-    return sendJsonWithEtag(req, reply, { ...data, hot }, { etagPrefix: "tl", cacheControl: at ? PAST_SLICE_CACHE : "public, max-age=60, s-maxage=60" });
+    return sendJsonWithEtag(req, reply, data, { etagPrefix: "tl", cacheControl: at ? PAST_SLICE_CACHE : "public, max-age=60, s-maxage=60" });
   }));
 
   app.get("/api/site/pool", siteHandler(async (req, reply) => {

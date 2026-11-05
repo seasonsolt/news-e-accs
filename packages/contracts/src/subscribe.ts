@@ -1,6 +1,7 @@
 // Anonymous newsletter funnel. Counts are keyed by an allowlisted source, locale and, for failures,
 // a reason. The target never carries an address.
 
+// home_overlay and home_button no longer fire; stored signups and past events still carry them.
 export const SUBSCRIBE_SOURCES = [
   "home_overlay", "home_button", "subscribe_page", "daily_inline", "item_inline", "chronicle_inline", "sticky_mobile", "story_inline", "concept", "wallpaper",
 ] as const;

@@ -38,16 +38,10 @@ test("every subscribe form posts the page locale", async () => {
   const root = new URL("../app/", import.meta.url);
   const onboarding = readFileSync(new URL("features/onboarding/Onboarding.tsx", root), "utf8");
   const cta = readFileSync(new URL("features/subscribe/SubscribeCta.tsx", root), "utf8");
-  const home = readFileSync(new URL("features/feed/FeedDeck.tsx", root), "utf8");
   assert.match(onboarding, /const locale = useLocale\(\)/);
   assert.match(onboarding, /requestSubscribe\(email, locale, source\)/);
   assert.match(cta, /const locale = useLocale\(\)/);
   assert.match(cta, /requestSubscribe\(email, locale, source\)/);
-  assert.match(home, /<Link to="\/subscribe"/);
-  assert.match(onboarding, /function finish\(dismiss: boolean\)/);
-  assert.match(onboarding, /if \(dismiss\) recordSubscribe\("subscribe_dismiss"/);
-  assert.match(onboarding, /先不订阅，直接看新闻 →"\), false, true\)/);
-  assert.doesNotMatch(onboarding, /先去看看今天的新闻"\), true, true\)/);
   const view = readFileSync(new URL("features/subscribe/useSubscribeView.ts", root), "utf8");
   assert.match(view, /useLocation\(\)\.pathname/);
   assert.match(cta, /useLocation\(\)\.pathname/);
