@@ -312,6 +312,7 @@ test("URL editions isolate HTML and Router data while preferences cannot change 
   assert.equal(english.status, 200);
   assert.match(englishHtml, /<html lang="en"/);
   assert.match(englishHtml, /The arrival is not a date\./);
+  assert.match(englishHtml, /<a[^>]*href="\/chronicle"[^>]*>Explore the Acceleration →<\/a>/);
   assert.match(englishHtml.replaceAll("<!-- -->", ""), /GPT-4-level intelligence: <\/span><b>715× cheaper<\/b> since <span[^>]*>March <\/span>2023, halving every 3\.8 months/);
   assert.doesNotMatch(englishHtml, /English editions appear when available/);
   const chinese = await fetch(`${origin}/zh`, { headers: { "Accept-Language": "zh-TW,en;q=0.8" } });

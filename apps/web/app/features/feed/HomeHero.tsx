@@ -4,6 +4,7 @@ import { Text, useTranslate } from "../../lib/i18n";
 import type { TimelineCard } from "@aihot/contracts/site";
 import { beijingDate, beijingTime } from "@aihot/contracts/time";
 import { Plate } from "../../components/shell/Deck";
+import { chronicleHref } from "../chrono/TimeMachine";
 import { NowInstruments, type ChronicleNow, type CostReading } from "../chrono/ChronicleNow";
 import { weekdayShort } from "../../lib/format";
 
@@ -54,7 +55,8 @@ export function HomeHero({ label, heading, at, lead, chronicle, cost }: { label:
   const tx = useTranslate();
   return (
     <section className="deck home-hero" aria-label={label}>
-      <Plate src="/media/art/home-wheat-monolith" className="deck-plate" />
+      {/* Cover-fit to the hero's height, so a phone shows a slice of a much wider picture. */}
+      <Plate src="/media/art/home-wheat-monolith" className="deck-plate" highResolution sizes="max(100vw, calc(min(100svh, 1040px) * 1.5))" />
       <div className="deck-shade" aria-hidden="true" />
       <div className="deck-inner">
         <div className="home-hero-copy">
@@ -62,7 +64,10 @@ export function HomeHero({ label, heading, at, lead, chronicle, cost }: { label:
           <div className="deck-kicker"><TodayLabel at={at} /><Text value="· 智能体时代" /></div>
           <p className="home-hero-title"><Text value="降临不是一个日期，" /><br /><Text value="而是一条曲线。" /></p>
           <p className="deck-desc">{tx("人和 AI 正在共同演化，就像人和小麦。")}<span className="home-hero-desc-more">{tx("我们每天记下这条曲线走到了哪里。")}</span></p>
-          {FEATURES.eaccConcepts && <Link to="/manifesto" className="home-hero-manifesto"><Text value="读《降临派宣言》→" /></Link>}
+          <div className="home-hero-links">
+            {chronicle && <Link to={chronicleHref(at ?? null)} className="home-hero-chronicle"><Text value="走进加速史 →" /></Link>}
+            {FEATURES.eaccConcepts && <Link to="/manifesto" className="home-hero-manifesto"><Text value="读《降临派宣言》→" /></Link>}
+          </div>
         </div>
         {lead && <LeadStory card={lead} past={!!at} />}
         {chronicle && <NowInstruments now={chronicle} at={at ?? null} cost={cost} />}

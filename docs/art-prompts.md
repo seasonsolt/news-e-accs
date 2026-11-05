@@ -280,6 +280,15 @@
 
 # 首页首屏（/，2026-11-05）
 
-用 codex CLI 的图片生成画（1536×1024），以旧的首页主图作风格参考。原图存为 `~/Desktop/eacc-art/home-wheat-monolith.png`，再跑 `tools/make-art.sh` 生成 `home-wheat-monolith-{1600,800}.webp`。麦田是宣言里“人和小麦”的比喻，石碑呼应《降临派宣言》首屏；标题压在左侧，手机裁到石碑一侧。
+用 codex CLI 的图片生成画（1536×1024），以旧的首页主图作风格参考。原图存为 `~/Desktop/eacc-art/home-wheat-monolith.png`，按加速史图版的同一条流程放大（`tools/art/chronicle-upscale-2026-10-27/README.md`）：
+
+```bash
+realesrgan-ncnn-vulkan -i home-wheat-monolith.png -o x4.png -n realesrgan-x4plus -m models -s 4
+cwebp -q 78 -resize 3840 0 x4.png -o apps/web/public/media/art/home-wheat-monolith-3840.webp
+cwebp -q 82 -resize 1600 0 apps/web/public/media/art/home-wheat-monolith-3840.webp -o apps/web/public/media/art/home-wheat-monolith-hd-1600.webp
+cwebp -q 82 -resize 800 0 apps/web/public/media/art/home-wheat-monolith-3840.webp -o apps/web/public/media/art/home-wheat-monolith-hd-800.webp
+```
+
+麦田是宣言里“人和小麦”的比喻，石碑呼应《降临派宣言》首屏；标题压在左侧，手机裁到石碑一侧。
 
 > Match the painterly, cinematic, grainy palette of the attached reference (warm dark umber, brass and amber light, near-black shadows). Subject: a vast field of ripe wheat at deep night, seen from low in the wheat, stretching to a thin curved horizon that glows faintly amber. Standing in the field at about 68% of the image width, a single smooth, perfectly black upright slab about three times the height of the wheat, with no markings, its edges catching a thin line of brass light. Above, a huge star-filled night sky with a faint Milky Way. A tiny lone human figure stands in the wheat some distance from the slab, facing it, very small. The left 55% of the image must be calm, dark, low-detail negative space, suitable for overlaid headline text. No text, no logos, no letters, no watermark, no glowing beams, no cooling towers.

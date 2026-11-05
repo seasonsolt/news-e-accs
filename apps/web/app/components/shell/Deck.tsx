@@ -14,7 +14,7 @@ import { artSizes, artSrcSet, artUrl } from "../../features/chrono/art";
 export const DECK_BLEED_SCRIPT = `(function(){var d=document.documentElement;function s(){d.style.setProperty('--page-width',d.clientWidth+'px')}s();if(window.ResizeObserver)new ResizeObserver(s).observe(d);else window.addEventListener('resize',s)})();`;
 
 /** An illustration under /media/art/ (at 800 and 1600), fading in; a missing one leaves the dark band. */
-export function Plate({ src, alt = "", className, highResolution = false }: { src: string; alt?: string; className: string; highResolution?: boolean }) {
+export function Plate({ src, alt = "", className, highResolution = false, sizes }: { src: string; alt?: string; className: string; sizes?: string; highResolution?: boolean }) {
   const image = useRef<HTMLImageElement>(null);
   const [broken, setBroken] = useState(false);
   const [aspect, setAspect] = useState(1.5);
@@ -31,7 +31,7 @@ export function Plate({ src, alt = "", className, highResolution = false }: { sr
       ref={image}
       src={highResolution ? artUrl(src, 1600) : `${src}-1600.webp`}
       srcSet={highResolution ? artSrcSet(src) : `${src}-800.webp 800w, ${src}-1600.webp 1600w`}
-      sizes={highResolution ? artSizes(aspect) : "100vw"}
+      sizes={sizes ?? (highResolution ? artSizes(aspect) : "100vw")}
       alt={alt}
       fetchPriority="high"
       decoding="async"

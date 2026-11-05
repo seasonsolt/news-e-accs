@@ -47,6 +47,7 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "从大爆炸到预测的对数时间轴，指针在{0}": "Log timeline from the Big Bang to the forecasts, needle at {0}",
   "设为 4K 壁纸 →": "Get it as a 4K wallpaper →",
   "读《降临派宣言》→": "Read the Adventist Manifesto →",
+  "走进加速史 →": "Explore the Acceleration →",
   "领取 4K 壁纸（送 100 积分）": "Get 4K wallpapers (100 credits included)",
   "加速史：从大爆炸到智能体时代的 AI 与文明时间线": "Acceleration: an AI and civilization timeline from the Big Bang to the agent era",
   "更多": "More",

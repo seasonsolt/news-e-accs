@@ -27,7 +27,6 @@ ART=(
   "topics|Steampunk Card Catalog Library.png"
   "empty|Sleepy Automaton in the Steampunk Workshop.png"
   "manifesto-monolith|manifesto-monolith.png"
-  "home-wheat-monolith|home-wheat-monolith.png"
 )
 
 for a in "${ART[@]}"; do
