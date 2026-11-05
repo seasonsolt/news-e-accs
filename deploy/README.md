@@ -47,6 +47,7 @@ npx cf deploy --secrets-file <临时文件>
 git push origin HEAD:main     # 低风险改动本地验证后直接推送 main
 deploy/update.sh              # 部署 origin/main
 deploy/update.sh <提交>        # 部署指定提交
+VERIFY_RUNNER=<命令> deploy/update.sh  # 用别的命令做发布验证，参数和 deploy/verify.sh 相同
 deploy/update.sh --status     # 当前版本、服务状态、最近几次部署
 deploy/update.sh --stats [7|30|90]  # 首方页面访问和互动次数（与后台统计页同一份汇总，只读，默认 30 天）
 deploy/update.sh --rollback   # 切回上一个版本；--rollback <提交> 切到指定版本

@@ -26,7 +26,8 @@ git -C "$HERE" merge-base --is-ancestor "$sha" origin/main || { echo "error: $sh
 
 base=$(remote status | sed -n 's/^==> live: //p')
 [[ "$base" =~ ^[0-9a-f]{40}$ ]] || { echo "error: cannot identify the previous release for migration validation" >&2; exit 1; }
-"$HERE/verify.sh" "$sha" "$base"
+# VERIFY_RUNNER swaps in another command with verify.sh's arguments, such as a faster machine's wrapper.
+"${VERIFY_RUNNER:-$HERE/verify.sh}" "$sha" "$base"
 
 echo "deploying $(git -C "$HERE" log --oneline -1 "$sha") to $HOST"
 remote deploy "$sha"
