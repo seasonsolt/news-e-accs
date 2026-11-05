@@ -22,6 +22,7 @@
   node scripts/smoke.ts --base http://localhost:3000             # 站点跑起来以后
   ```
 - 我们自己的生产站（e-acc.ai）只用 `deploy/update.sh` 发布和回滚，见 `deploy/README.md`；不要在服务器上手动拉代码、构建或改 systemd 文件。入口 Worker 在 `deploy/edge/`，发布方法也在 `deploy/README.md`。
+- 发布验证优先放到远程 Linux 机器上跑：`VERIFY_RUNNER=<维护者本机的验证命令> deploy/update.sh`，提交前预检也用同一个命令。远程机器连不上时才退回本机 Docker。机器的名字和地址不写进仓库。
 - `tests/` 里部分测试用的是示例行业的分类、标签和公司，改了 `industry/taxonomy.ts` 后把这些例子换成新行业的对应项。
 
 ## 要守住的规则
