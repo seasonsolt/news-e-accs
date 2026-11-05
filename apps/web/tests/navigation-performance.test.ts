@@ -200,6 +200,26 @@ test('intent on a selected link preserves visited data and the next revisit star
   }finally{await context.close();}
 });
 
+test('a link still under the pointer when its own slow navigation lands keeps that page for the next visit',async()=>{
+  const context=await readerContext(chrome,desk);const page=await context.newPage();
+  const requests:string[]=[];
+  page.on('request',request=>{if(request.url().includes('.data'))requests.push(request.url());});
+  try{
+    await page.goto(origin+'/?channel=firstParty');
+    await hydrated(page.locator('#main').getByRole('link',{name:'Models',exact:true}));
+    // Slower than the intent delay, so the hovered link starts preloading before it becomes the current page.
+    await context.route('**/*.data*',async route=>{await new Promise(done=>setTimeout(done,300));await route.continue();});
+    await page.locator('#main').getByRole('link',{name:'Models',exact:true}).click();
+    await expect(page.getByRole('link',{name:'分类 ai-models',exact:true})).toBeVisible();
+    await page.locator('#main').getByRole('link',{name:'Products',exact:true}).click();
+    await expect(page.getByRole('link',{name:'分类 ai-products',exact:true})).toBeVisible();
+    const before=requests.length;
+    await page.locator('#main').getByRole('link',{name:'Models',exact:true}).click();
+    await expect(page.getByRole('link',{name:'分类 ai-models',exact:true})).toBeVisible();
+    assert.deepEqual(requests.slice(before),[]);
+  }finally{await context.close();}
+});
+
 test('a revisit never renews the original deadline; an expired read shows an error and a reload asks again',async()=>{
   const context=await readerContext(chrome);const page=await context.newPage();
   try{

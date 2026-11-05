@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useHref, useLocation, type LinkProps } from "react-router";
+import { PrefetchPageLinks, useHref, useLocation, type LinkProps } from "react-router";
 import { Link } from "../../lib/navigation";
 import { useLocale } from "../../lib/i18n";
 import { localePath } from "../../lib/locale";
@@ -17,7 +17,8 @@ export function IntentLink({ onFocus, onBlur, onMouseEnter, onMouseLeave, onTouc
   const target = new URL(href, 'http://page.local');
   const differentPage = target.pathname + target.search !== location.pathname + location.search;
   // Router prefetch also asks shouldRevalidate. A selected/remembered page needs neither its
-  // assets nor that revalidation decision, which is reserved for an actual refresh.
+  // assets nor that revalidation decision, which is reserved for an actual refresh. Link's own
+  // prefetch="render" stays on once set, so a link reached by its own click would keep asking.
   const shouldPrefetch = ready && differentPage && !hasFreshPage(target);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clear = () => {
@@ -30,7 +31,7 @@ export function IntentLink({ onFocus, onBlur, onMouseEnter, onMouseLeave, onTouc
   };
   const cancel = () => { clear(); setReady(false); };
   useEffect(() => { cancel(); return clear; }, [props.to]);
-  return <Link {...props} prefetch={shouldPrefetch ? "render" : "none"}
+  return <><Link {...props} prefetch="none"
     onFocus={(e) => { onFocus?.(e); if (!e.defaultPrevented) start(); }}
     onBlur={(e) => { onBlur?.(e); cancel(); }}
     onMouseEnter={(e) => { onMouseEnter?.(e); if (!e.defaultPrevented) start(); }}
@@ -39,5 +40,5 @@ export function IntentLink({ onFocus, onBlur, onMouseEnter, onMouseLeave, onTouc
     onTouchMove={(e) => { onTouchMove?.(e); cancel(); }}
     onTouchEnd={(e) => { onTouchEnd?.(e); cancel(); }}
     onTouchCancel={(e) => { onTouchCancel?.(e); cancel(); }}
-  />;
+  />{shouldPrefetch ? <PrefetchPageLinks page={href} /> : null}</>;
 }
