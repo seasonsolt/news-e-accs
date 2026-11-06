@@ -23,4 +23,25 @@ python3 tools/upscale-chronicle.py tools/art/chronicle-upscale-2026-10-27/manife
 
 `make-depth.py` 的 `*-1600.webp` 也会匹配 `-hd-1600.webp`，产生多余的 `-hd-depth.webp`，跑完要删掉，不提交。
 
-这批没有做壁纸，也没有排进 `/admin/wallpapers`。
+## 壁纸
+
+按手机专属版的标准制作：桌面版由 `moments/` 原图放大裁切，手机版用 codex 重新构图（`wallpapers/portrait/`），预览是 AI 合成的双手机场景图（`wallpapers/mockups/`，1600 宽）。提示词在 `wallpapers/prompts/`，标题在 `wallpapers/titles.json`。成品三件套在 `wallpapers/out/`，体积大，不进仓库。
+
+```bash
+tools/art/chronicle-2026-11/wallpapers/gen.sh portrait <id>
+tools/art/chronicle-2026-11/wallpapers/gen.sh mockup <id>
+REALESRGAN=<路径> tools/make-wallpaper.sh tools/art/chronicle-2026-11/moments/<id>.png tools/art/chronicle-2026-11/wallpapers/out
+REALESRGAN=<路径> bash tools/make-phone-wallpaper.sh tools/art/chronicle-2026-11/wallpapers/portrait/<id>.png tools/art/chronicle-2026-11/wallpapers/out/<id>-phone.jpg
+cwebp -q 72 -resize 1600 0 tools/art/chronicle-2026-11/wallpapers/mockups/<id>.png -o tools/art/chronicle-2026-11/wallpapers/out/<id>-preview.webp
+```
+
+计划排期（`/admin/wallpapers`，3 月 6 日之前已排满）：
+
+| 北京日期 | 文件名前缀 | 中文标题 | 英文标题 |
+|---|---|---|---|
+| 2027-03-07 | `openclaw-personal-agent` | 排队的人 | The Night Queue |
+| 2027-03-08 | `seedance-2` | 光里凝成的世界 | A World Out of Light |
+| 2027-03-09 | `sora-app-shutdown` | 空白的银幕 | The Blank Screen |
+| 2027-03-10 | `when-ai-builds-itself` | 一代造一代 | Each Builds the Next |
+| 2027-03-11 | `memory-hardware-rally` | 存储静物 | The Still Life of Memory |
+| 2027-03-12 | `qwen-3-8-27b` | 瓶中的数据中心 | A Data Centre in a Bottle |
