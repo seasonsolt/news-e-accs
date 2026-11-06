@@ -11,6 +11,7 @@ import type { loader as rootLoader } from "../root";
 import { loadOr404 } from "../lib/api.server";
 import { pageMeta } from "../lib/seo";
 import { IconArrowRight, IconHourglass } from "../components/icons";
+import { recordEngagement } from "../lib/engagement";
 import { Capabilities } from "../features/chrono/Capabilities";
 import { ChronicleAxis } from "../features/chrono/ChronicleAxis";
 import { CivilizationGauges } from "../features/chrono/CivilizationGauges";
@@ -93,6 +94,16 @@ export default function ChroniclePage() {
     alt: era ? plateOf(era, focus).alt : "",
     sceneTitle: scene ? tx(scene.label) : "",
   });
+  // Moving along the axis stays within one page view, so the page reports it itself: once on leaving the first
+  // picture, once on reaching the sixth. Only moments the reader stopped on count, not those a drag passes over.
+  const stoppedAt = restingPicture(pictures, moment(location.search, now), now);
+  const seen = useRef(new Set<number>());
+  useEffect(() => {
+    if (seen.current.has(stoppedAt)) return;
+    seen.current.add(stoppedAt);
+    if (seen.current.size === 2) recordEngagement("chronicle_move");
+    if (seen.current.size === 6) recordEngagement("chronicle_deep");
+  }, [stoppedAt]);
   const busy = tunnel.mode !== "stage";
   const commit = (next: number) => {
     if (busy) return;

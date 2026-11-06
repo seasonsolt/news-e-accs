@@ -5,8 +5,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router";
 import { createServer } from "vite";
 import { parseHTML } from "linkedom";
+import { chromium, expect } from "@playwright/test";
 import type { ChronicleMetric } from "@aihot/contracts/chronicle";
-import { startChronoFixture } from "./chrono-fixture.ts";
+import { chronicle, startChronoFixture } from "./chrono-fixture.ts";
 
 let fixture: Awaited<ReturnType<typeof startChronoFixture>>;
 before(async () => { fixture = await startChronoFixture(); });
@@ -186,6 +187,42 @@ test("civilization comparison notes localize large counts and preserve Chinese o
       assert.equal(render("/zh/chronicle"), zh);
     }
   } finally { await server.close(); }
+});
+
+test("the timeline reports the first move and the sixth moment once each, and a reader who only looks reports nothing", async () => {
+  // Enough pictures on the axis to reach a sixth: the shared fixture has too few, and other tests count them.
+  const added = chronicle.milestones.filter((m) => ["electricity", "moon", "record"].includes(m.id));
+  for (const m of added) Object.assign(m, { art: "difference-engine", artStyle: "铜版画" });
+  const browser = await chromium.launch();
+  try {
+    const tab = await browser.newPage();
+    const events: string[] = [];
+    await tab.route("**/api/site/events", async (route) => {
+      events.push(route.request().postDataJSON().event);
+      await route.fulfill({ status: 204 });
+    });
+    await tab.goto(`${fixture.origin}/zh/chronicle?t=1769`, { waitUntil: "domcontentloaded" });
+    const previous = tab.getByRole("button", { name: "上一个里程碑" });
+    const next = tab.getByRole("button", { name: "下一个里程碑" });
+    await expect.poll(() => next.evaluate((el) => Object.keys(el).some((key) => key.startsWith("__reactProps$")))).toBe(true);
+    assert.deepEqual(events, []);
+
+    const step = async (button: typeof next) => {
+      const from = tab.url();
+      await button.click();
+      await expect.poll(() => tab.url()).not.toBe(from);
+    };
+    await step(next);
+    await expect.poll(() => events).toEqual(["chronicle_move"]);
+    await step(previous);
+    await step(next);
+    assert.deepEqual(events, ["chronicle_move"]);
+    for (let i = 0; i < 4; i++) await step(next);
+    await expect.poll(() => events).toEqual(["chronicle_move", "chronicle_deep"]);
+  } finally {
+    await browser.close();
+    for (const m of added) { delete m.art; delete m.artStyle; }
+  }
 });
 
 test("unknown and out-of-range moments are bounded; future energy is unknown", async () => {

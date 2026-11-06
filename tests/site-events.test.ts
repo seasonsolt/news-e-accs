@@ -33,6 +33,8 @@ test("interaction targets are reduced to an allowlisted event and a safe value",
   assert.equal(normalizeSiteEvent({ event: "star_add", target: "" }), null);
   assert.equal(normalizeSiteEvent({ event: "star_add", target: "x".repeat(81) }), null);
   assert.deepEqual(normalizeSiteEvent({ event: "first_star" }), { event: "first_star", target: "" });
+  assert.deepEqual(normalizeSiteEvent({ event: "chronicle_move" }), { event: "chronicle_move", target: "" });
+  assert.equal(normalizeSiteEvent({ event: "chronicle_deep", target: "/chronicle" }), null);
   assert.equal(normalizeSiteEvent({ event: "subscribe_submit" }), null);
   assert.deepEqual(normalizeSiteEvent({ event: "subscribe_submit", target: "daily_inline:zh" }), { event: "subscribe_submit", target: "daily_inline:zh" });
   assert.equal(normalizeSiteEvent({ event: "subscribe_submit", target: "user@example.com" }), null);
