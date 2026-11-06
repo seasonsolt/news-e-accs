@@ -272,6 +272,10 @@
 
 修正13处时代／事件配图，新增4个历史节点，并给洛夫莱斯程序和图灵机补独立图。17张原创画面的最终提示词、原图、历史依据、退役素材与复现说明见[本批素材记录](../tools/art/chronicle-quality-2026-10-27/README.md)。新增事件的日期边界及一手来源见[事实核查](chronicle/history-additions-2026-10-27.md)。
 
+## 2026 年度节点（2026-11-06）
+
+新增6个2026年节点的配图，用 codex CLI 绘制。提示词、原图和复现步骤见[本批素材记录](../tools/art/chronicle-2026-11/README.md)，事实依据见[核查记录](chronicle/year-review-2026.md)。
+
 # 降临派宣言首屏（/manifesto，2026-11-03）
 
 用 codex CLI 的图片生成画（1536×1024），原图存为 `~/Desktop/eacc-art/manifesto-monolith.png`，再跑 `tools/make-art.sh` 生成首屏的 `manifesto-monolith-{1600,800}.webp` 和分享卡片 `manifesto-monolith-og.jpg`（1200×630）。第一版带透视、看得到顶面，不像《2001》，改成下面这版正面平视：

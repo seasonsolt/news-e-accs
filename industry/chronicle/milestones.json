@@ -2593,6 +2593,43 @@
       "source": "https://www.anthropic.com/news/claude-opus-4-5"
     },
     {
+      "id": "openclaw-personal-agent",
+      "t": 2026.0795,
+      "precision": "day",
+      "date": "2026-01-30",
+      "title": "OpenClaw 定名",
+      "detail": "彼得·施泰因贝格尔2025年11月开源的个人智能体在1月底定名OpenClaw，3月初已获24.7万GitHub星；第三方技能的数据外泄风险也随之暴露。",
+      "category": "ai",
+      "capability": "在自己的电脑上常驻一个能代办事务的 AI",
+      "source": "https://en.wikipedia.org/wiki/OpenClaw",
+      "art": "openclaw-personal-agent",
+      "artStyle": "纪实街拍摄影"
+    },
+    {
+      "id": "seedance-2",
+      "t": 2026.1151,
+      "precision": "day",
+      "date": "2026-02-12",
+      "title": "Seedance 2.0",
+      "detail": "字节发布音视频联合生成模型，可同时接受文本、图像、音频和视频输入，并控制表演、光影和运镜。",
+      "category": "ai",
+      "source": "https://seed.bytedance.com/en/seedance2_0",
+      "art": "seedance-2",
+      "artStyle": "电影剧照"
+    },
+    {
+      "id": "sora-app-shutdown",
+      "t": 2026.2247,
+      "precision": "day",
+      "date": "2026-03-24",
+      "title": "OpenAI 宣布关停 Sora",
+      "detail": "应用上线不足半年，OpenAI决定停止Sora消费端应用和API，迪士尼10亿美元的投资计划随之取消。",
+      "category": "ai",
+      "source": "https://www.engadget.com/ai/openai-is-shutting-down-its-sora-video-generation-app-211023358.html",
+      "art": "sora-app-shutdown",
+      "artStyle": "1970年代彩色反转片"
+    },
+    {
       "id": "artemis-ii-record",
       "t": 2026.2603,
       "precision": "day",
@@ -2613,6 +2650,18 @@
       "detail": "OpenAI旗舰更新上线ChatGPT和Codex，API次日开放。",
       "category": "ai",
       "source": "https://openai.com/index/introducing-gpt-5-5/"
+    },
+    {
+      "id": "when-ai-builds-itself",
+      "t": 2026.4219,
+      "precision": "day",
+      "date": "2026-06-04",
+      "title": "《当AI建造自身》",
+      "detail": "Anthropic披露，截至5月其合并的代码80%以上由Claude编写；它称递归自我改进尚未到来，也并非必然，但可能比多数机构准备的更快。",
+      "category": "ai",
+      "source": "https://www.anthropic.com/institute/recursive-self-improvement",
+      "art": "when-ai-builds-itself",
+      "artStyle": "二十世纪中期数学石版画"
     },
     {
       "id": "claude-fable-5",
@@ -2643,6 +2692,18 @@
       "detail": "接近Opus的能力、Sonnet的价格，面向低成本运行智能体。",
       "category": "ai",
       "source": "https://www.anthropic.com/news/claude-sonnet-5"
+    },
+    {
+      "id": "memory-hardware-rally",
+      "t": 2026.4932,
+      "precision": "day",
+      "date": "2026-06-30",
+      "title": "硬件股领涨标普500",
+      "detail": "2026上半年标普500涨幅前20名全部涨超一倍，半导体和计算机硬件占据多数，闪迪涨幅约764%；AI数据中心让内存和硬盘供不应求。",
+      "category": "compute",
+      "source": "https://www.itiger.com/news/2647558439",
+      "art": "memory-hardware-rally",
+      "artStyle": "荷兰黄金时代静物油画"
     },
     {
       "id": "grok-4-5",
@@ -2725,6 +2786,19 @@
       "detail": "在Artificial Analysis智能指数上与GPT-5.6 Sol持平。",
       "category": "ai",
       "source": "https://x.ai/news/grok-4-6"
+    },
+    {
+      "id": "qwen-3-8-27b",
+      "t": 2026.6164,
+      "precision": "day",
+      "date": "2026-08-14",
+      "title": "Qwen3.8-27B",
+      "detail": "阿里以Apache 2.0许可开放270亿参数的紧凑模型，支持图像和视频输入，消费级显卡和大内存Mac就能运行。",
+      "category": "ai",
+      "capability": "在个人设备上运行接近前沿的开放模型",
+      "source": "https://huggingface.co/Qwen/Qwen3.8-27B",
+      "art": "qwen-3-8-27b",
+      "artStyle": "微缩移轴摄影"
     },
     {
       "id": "nvidia-openai-ohio",

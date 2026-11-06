@@ -1562,6 +1562,38 @@
       "detail": "REA connects reverse-engineering tools to coding agents. An October hands-on test used Opus 5.5 with REA to rebuild an app’s keep-awake feature. We see falling barriers to understanding and reconstruction as the dawn of a software openness era; the original software has not thereby become open source or openly licensed.",
       "capability": "AI-assisted software feature reconstruction",
       "artStyle": "Contemporary computational cutaway concept art"
+    },
+    "openclaw-personal-agent": {
+      "title": "OpenClaw gets its name",
+      "detail": "Peter Steinberger's open-source personal agent, first released in November 2025, took the name OpenClaw in late January and passed 247,000 GitHub stars by early March; the data-exfiltration risk of third-party skills surfaced alongside it.",
+      "capability": "A resident AI on your own computer that handles tasks for you",
+      "artStyle": "Documentary street photography"
+    },
+    "seedance-2": {
+      "title": "Seedance 2.0",
+      "detail": "ByteDance releases a joint audio-video generation model that takes text, image, audio and video inputs together and directs performance, lighting and camera movement.",
+      "artStyle": "Cinematic film still"
+    },
+    "sora-app-shutdown": {
+      "title": "OpenAI says goodbye to Sora",
+      "detail": "Less than six months after the app launched, OpenAI decides to discontinue Sora in its consumer app and API, and Disney's planned $1 billion investment falls away.",
+      "artStyle": "1970s colour reversal film"
+    },
+    "when-ai-builds-itself": {
+      "title": "“When AI builds itself”",
+      "detail": "Anthropic reports that as of May more than 80% of the code it merged was authored by Claude. It says recursive self-improvement has not arrived and is not inevitable, but could come sooner than most institutions are prepared for.",
+      "artStyle": "Mid-century mathematical lithograph"
+    },
+    "memory-hardware-rally": {
+      "title": "Hardware leads the S&P 500",
+      "detail": "Every one of the S&P 500's top 20 stocks at least doubled in the first half of 2026, most of them chip and computer hardware makers, with SanDisk up about 764% as AI data centres left memory and drives in short supply.",
+      "artStyle": "Dutch Golden Age still-life oil"
+    },
+    "qwen-3-8-27b": {
+      "title": "Qwen3.8-27B",
+      "detail": "Alibaba opens a compact 27-billion-parameter model under Apache 2.0, with image and video input, that runs on consumer graphics cards and high-memory Macs.",
+      "capability": "Running a near-frontier open model on a personal device",
+      "artStyle": "Tilt-shift miniature photography"
     }
   },
   "metrics": {

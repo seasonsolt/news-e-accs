@@ -4465,6 +4465,180 @@
           "bytes": 98402
         }
       }
+    },
+    {
+      "group": "moments",
+      "art": "openclaw-personal-agent",
+      "currentSha256": "d772fae0235ba4d328023fb56d3795069d34e05b7599a5d7a198358253dd924d",
+      "source": {
+        "path": "tools/art/chronicle-2026-11/moments/openclaw-personal-agent.png",
+        "sha256": "303f2fa7eabe4ffce5f3529a4b54ab2e34b8605db303719c9368f109b24b024b"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "b41b9c94fe217f13b3b28ea1a4a487965d758c793fa646b40bda0fa1d0d65759",
+          "bytes": 557638
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "2be93ba892975f91010935421007c32d40cd69fe7b35e61c20970a63cab3f785",
+          "bytes": 63260
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "9e4d251e11a99f3d38c9de539167e5cef95baebf1fc70a8ba3f9bb7449b5652c",
+          "bytes": 185068
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "seedance-2",
+      "currentSha256": "01d103e6586f1de8d2a37449573b9bd746ae48debaf61e6687628fbf352cc5f9",
+      "source": {
+        "path": "tools/art/chronicle-2026-11/moments/seedance-2.png",
+        "sha256": "d219f66c42f0add3e9c368f03e39bb2bc9366ebeda97976c5525fc2290ef3b05"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "aee29460681a5d3dc2cf0a1943442de99b92bfcc11b38734d666aabed1d03bf8",
+          "bytes": 437728
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "36484d3cc4cfdcf650b7cc2a1787fbd4b211d1d57df4c4dcc9b53af0b6773190",
+          "bytes": 46820
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "b3e5c1ceb416e641c9cdf5d3424a6cf09935af542249a151c47b792cd4ed0d2b",
+          "bytes": 143818
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "sora-app-shutdown",
+      "currentSha256": "5bdd6f7650e9d32669d8390851ffa5bfde0dfcdb085fdadd99f9d9fcb076c03b",
+      "source": {
+        "path": "tools/art/chronicle-2026-11/moments/sora-app-shutdown.png",
+        "sha256": "c1adbc3ec27713563807cb4d517e0dd62f2297f9157ebddf1a355942690d44c0"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "2d71489688199c04c5ecb046b43d2690c3f8cb4dcdcdb468c44e9e2fd5d15925",
+          "bytes": 667982
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "8d186cef2aa23c91a017fb1e175f21ba0b35b48dbe1906f6ee0d5761d6a0c06c",
+          "bytes": 32200
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "03e5377a474e0e0b2dce1daa681608495bd7f73814da20d807fc56b63873c4e9",
+          "bytes": 136960
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "when-ai-builds-itself",
+      "currentSha256": "6e98aa9d3a4c281d5dee692881fc2f1e6cd5934c6dcb82202ea486ee7d9d422b",
+      "source": {
+        "path": "tools/art/chronicle-2026-11/moments/when-ai-builds-itself.png",
+        "sha256": "a31b1b4c3686f1fd131dd8d103f116ce19b9fc4049cb53d875b6e3207df6adde"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "988ff2c0eead093b1f622654e88a306883b27a5db7ae8c02c76e0a342c939a4d",
+          "bytes": 1196724
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "138d6661e2aa6580ace4f0b8675a1351b5759cbb0eef3f6bb1987b77ba957826",
+          "bytes": 60210
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "e4b17f7001a4aaa342de89b0f923c007808fd65ae73ef791f6cd10f2b818ab64",
+          "bytes": 239140
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "memory-hardware-rally",
+      "currentSha256": "6abeb0a63b5fc3bf469545906648a6d215ada0369569d15c872967db5f5a20a4",
+      "source": {
+        "path": "tools/art/chronicle-2026-11/moments/memory-hardware-rally.png",
+        "sha256": "02792f124a0f4f7e4f0502cc7dfbad0da2f266bc81035c42280463dde4849c4e"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "b5025dcb867e5a56194c9c9916f0b4b05834e917498505f01ed722160da117c6",
+          "bytes": 738998
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "b0314c7c66526a27d3a94b9f57fc5224d55b35ffcb4222d6d67caf319e8f0e06",
+          "bytes": 61798
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "10ac43279bf0368594ad0cc9efc0d26e3038ba6de73e9926edf4f2d10cfe65fa",
+          "bytes": 204678
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "qwen-3-8-27b",
+      "currentSha256": "56d41b47024b7c0a2048450cfd60dcd007976ed6aa8e988eee7eff1ca8903814",
+      "source": {
+        "path": "tools/art/chronicle-2026-11/moments/qwen-3-8-27b.png",
+        "sha256": "a0e5254d56969e487dbd8166c24c04f45137be4f1fb8abb7d96914863200b2bc"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "2af2d2b007a6c24bd27fbe981db02cb8da55cba9676ea3edac822ab28d8f93b0",
+          "bytes": 468248
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "c7343d0ae77e702a79016d6fe3d98cf5c0a6ff22453483958a38d1e3ade78105",
+          "bytes": 51462
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "1a379f00a8b01d5f58d35241e414580722f309ef326a404cfc1c58b239b66134",
+          "bytes": 150666
+        }
+      }
     }
   ],
   "profile": {
