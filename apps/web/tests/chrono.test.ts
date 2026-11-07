@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import { eraAt, type ChronicleEra, type ChronicleMilestone } from "@aihot/contracts/chronicle";
 import { parseAt, stepAt, timelessAddress, withAt } from "../app/features/chrono/at.ts";
-import { distanceLabel, keepAxisInView, MIN_AXIS_SPAN, nearbyPlates, panAxisWindow, projectAxis, stepEra, stepPicture, timeParam, untilLabel, zoomAxisWindow } from "../app/features/chrono/format.ts";
+import { calendarTicks, distanceLabel, keepAxisInView, MIN_AXIS_SPAN, nearbyPlates, panAxisWindow, projectAxis, stepEra, stepPicture, timeParam, untilLabel, zoomAxisWindow } from "../app/features/chrono/format.ts";
 import { ApiError, apiErrorResponse, loadOr404 } from "../app/lib/api.server.ts";
 import { artSrcSet, artUrl, artWidth, loadArtImage } from "../app/features/chrono/art.ts";
 
@@ -207,4 +207,16 @@ test("API errors map without a second request and preserve cancellation", async 
     await assert.rejects(loadOr404("/missing"), (e: { init?: { status: number } }) => e.init?.status === 404);
     assert.equal(calls, 1);
   } finally { globalThis.fetch = original; }
+});
+
+test("zoomed scale counts in years, then months, then days", () => {
+  assert.deepEqual(calendarTicks(2100 - 1000, 2100), []);
+  assert.deepEqual(calendarTicks(2019.5, 2026.5).map(([, label]) => label), ["2020", "2021", "2022", "2023", "2024", "2025", "2026"]);
+  const months = calendarTicks(2026, 2026.75).map(([, label]) => label);
+  assert.ok(months.includes("2026-03") && months.every((label) => /^2026-\d\d$/.test(label)), months.join());
+  const days = calendarTicks(2026.7, 2026.72).map(([, label]) => label);
+  assert.ok(days.length >= 3 && days.every((label) => /^\d\d-\d\d$/.test(label)), days.join());
+  for (const [from, to] of [[2019.5, 2026.5], [2026, 2026.75], [2026.7, 2026.72]] as const) {
+    for (const [t] of calendarTicks(from, to)) assert.ok(t > from && t < to);
+  }
 });

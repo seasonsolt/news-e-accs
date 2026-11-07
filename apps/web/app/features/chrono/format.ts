@@ -1,5 +1,5 @@
 // Reader-facing numbers and axis windows for the four-dimensional view: 79.6 亿人, 1.9×10¹³ 瓦, 3 天.
-import { eraAt, toAxis, type ChronicleEra, type ChronicleMetric, type ChronicleMilestone } from "@aihot/contracts/chronicle";
+import { eraAt, toAxis, yearToDate, dateToYear, type ChronicleEra, type ChronicleMetric, type ChronicleMilestone } from "@aihot/contracts/chronicle";
 
 const SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
 
@@ -156,6 +156,37 @@ export function compactTick(label: string): string {
   const n = Number(m[1]) * (m[2] === "亿年" ? 1e8 : m[2] === "万年" ? 1e4 : 1);
   const value = new Intl.NumberFormat("en", { notation: "compact" }).format(n);
   return `${m[3] === "后" ? "+" : ""}${value} ${m[2] === "个月" ? "mo" : "yr"}`;
+}
+
+/** Calendar ticks for a zoomed window of time: years, then months, then days. Empty above a human lifetime, where powers of ten read better. */
+export function calendarTicks(from: number, to: number): Array<[number, string]> {
+  const span = to - from;
+  if (span > 60) return [];
+  const pick = (steps: number[], units: number) => steps.find((s) => units / s <= 7) ?? steps.at(-1)!;
+  const ticks: Array<[number, string]> = [];
+  if (span >= 3) {
+    const step = pick([1, 2, 5, 10], span);
+    for (let y = Math.ceil(from / step) * step; y <= to; y += step) ticks.push([y, String(y)]);
+  } else if (span >= .25) {
+    const step = pick([1, 2, 3, 6], span * 12);
+    for (let m = Math.ceil(Math.floor(from) * 12 / step) * step; m / 12 <= to + 1 / 12; m += step) {
+      const date = `${Math.floor(m / 12)}-${String(m % 12 + 1).padStart(2, "0")}`;
+      ticks.push([dateToYear(`${date}-01`), date]);
+    }
+  } else {
+    const step = pick([1, 2, 7, 14], span * 365);
+    const day = 864e5;
+    const start = yearToDate(from);
+    if (!start) return [];
+    const first = Date.parse(start);
+    for (let ms = Math.ceil(first / day / step) * step * day; ms <= first + (span + 1 / 365) * 365.2425 * day; ms += step * day) {
+      const date = new Date(ms).toISOString().slice(0, 10);
+      ticks.push([dateToYear(date), date.slice(5)]);
+    }
+  }
+  // At the edges a label would hang off the deck.
+  const margin = span * .04;
+  return ticks.filter(([t]) => t >= from + margin && t <= to - margin);
 }
 
 /**

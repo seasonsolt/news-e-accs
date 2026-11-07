@@ -1427,18 +1427,19 @@ html { scrollbar-gutter: stable; }
 .chronicle-scale span { position: absolute; transform: translateX(-50%); font: 11px var(--font-mono); color: var(--deck-faint); white-space: nowrap; }
 .chronicle-scale span:first-child { transform: translateX(0); }
 .chronicle-scale span:last-child { transform: translateX(-100%); }
+.chronicle-scale[data-calendar] span { transform: translateX(-50%); }
 /* Unzoomed, every other power of ten: the full row runs together on a narrower deck. */
 @media (min-width: 641px) {
-  .chronicle-scale:not([data-zoomed]) span:is([data-tick-index="1"], [data-tick-index="3"], [data-tick-index="5"], [data-tick-index="7"], [data-tick-index="9"], [data-tick-index="11"], [data-tick-index="13"], [data-tick-index="14"]) { display: none; }
+  .chronicle-scale:not([data-zoomed]) span:is([data-tick-index="1"], [data-tick-index="2"], [data-tick-index="3"], [data-tick-index="5"], [data-tick-index="7"], [data-tick-index="11"], [data-tick-index="13"], [data-tick-index="14"]) { display: none; }
 }
 @media (max-width: 640px) {
   .chronicle-scale:not([data-zoomed]) span { display: none; }
   .chronicle-scale:not([data-zoomed]) span[data-tick-index="0"],
-  .chronicle-scale:not([data-zoomed]) span[data-tick-index="6"],
+  .chronicle-scale:not([data-zoomed]) span[data-tick-index="8"],
   .chronicle-scale:not([data-zoomed]) span[data-tick-index="9"],
-  .chronicle-scale:not([data-zoomed]) span[data-tick-index="12"],
-  .chronicle-scale:not([data-zoomed]) span[data-tick-index="15"] { display: block; }
+  .chronicle-scale:not([data-zoomed]) span[data-tick-index="12"] { display: block; }
 }
+@media (max-width: 900px) { .chronicle-scale:not([data-zoomed]) span[data-tick-index="15"] { display: none; } }
 .chronicle-zoom { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 .chronicle-zoom > span { font: 11px var(--font-mono); color: var(--deck-faint); }
 .chronometer-controls { grid-area: controls; position: relative; display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 32px; margin-top: 6px; }

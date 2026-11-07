@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } fr
 import { axisTicks, fromAxis, timeLabel, toAxis, type ChronicleEra, type ChronicleMilestone } from "@aihot/contracts/chronicle";
 
 import { useMotionAllowed } from "../motion/preferences";
-import { compactTick, keepAxisInView, panAxisWindow, projectAxis, stepEra, stepPicture, zoomAxisWindow, type AxisWindow, type WorkshopStop } from "./format";
+import { calendarTicks, compactTick, keepAxisInView, panAxisWindow, projectAxis, stepEra, stepPicture, zoomAxisWindow, type AxisWindow, type WorkshopStop } from "./format";
 
 const SNAP_PX = 8;
 
@@ -36,6 +36,7 @@ export function ChronicleAxis({ eras, milestones, now, t, picture, workshops = [
   const nowU = toAxis(now, now);
   const span = view.hi - view.lo;
   const zoomed = span < 1;
+  const calendar = zoomed ? calendarTicks(fromAxis(view.lo, now), fromAxis(view.hi, now)) : [];
   // The few broad epochs that name the whole axis; zoomed in, the eras name themselves instead.
   const epochs = eras.flatMap((era, i) => {
     if (!era.epoch) return [];
@@ -192,8 +193,9 @@ export function ChronicleAxis({ eras, milestones, now, t, picture, workshops = [
         )}
         {u >= view.lo && u <= view.hi && <span className="chronicle-needle" style={{ left: `${projectAxis(u, view) * 100}%` }} aria-hidden="true" />}
       </div>
-      <div className="chronicle-scale" data-zoomed={zoomed || undefined} aria-hidden="true">
-        {axisTicks(now).map(([tt, label], i) => {
+      <div className="chronicle-scale" data-zoomed={zoomed || undefined} data-calendar={calendar.length > 0 || undefined} aria-hidden="true">
+        {calendar.map(([tt, label]) => <span key={label} style={{ left: `${projectAxis(toAxis(tt, now), view) * 100}%` }}>{label}</span>)}
+        {!calendar.length && axisTicks(now).map(([tt, label], i) => {
           const tickU = toAxis(tt, now);
           return (
             // Narrow tracks keep the edges and present moment, with enough room between the labels.

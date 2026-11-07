@@ -103,39 +103,51 @@ export function yearToDate(t: number): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// The axis: symmetric log of the distance from now, so every power of ten gets the same width
+// The axis: logarithmic in distance from now, with the width of each span set by hand. Equal width per
+// power of ten would crush the last century, where most of the milestones sit, and spend a quarter of the
+// axis on forecasts, so the width follows where things happen: the nearer now, the more room.
 // ---------------------------------------------------------------------------
 
-/** Distance from now (in years) where the axis turns from linear to logarithmic: about 3.7 days. */
-export const AXIS_LINEAR_YEARS = 0.01;
 export const BIG_BANG = -13.787e9;
 /** How far ahead the forecasts reach. */
 export const AXIS_FUTURE_YEARS = 100;
+/** [years from now, axis position]: the past year gets a fifth of the axis, about 17px a month on a desktop deck. */
+const AXIS_STOPS: Array<[number, number]> = [[-1e9, .08], [-1e6, .14], [-1e3, .21], [-100, .31], [-10, .53], [-1, .74], [0, .93]];
 
-function symlog(dYears: number): number {
-  return Math.sign(dYears) * Math.log10(1 + Math.abs(dYears) / AXIS_LINEAR_YEARS);
+/** Log of the distance from now, close to linear within the last year. */
+function warp(dYears: number): number {
+  return Math.sign(dYears) * Math.log10(1 + Math.abs(dYears));
 }
 
-function symexp(x: number): number {
-  return Math.sign(x) * AXIS_LINEAR_YEARS * (10 ** Math.abs(x) - 1);
+function unwarp(x: number): number {
+  return Math.sign(x) * (10 ** Math.abs(x) - 1);
+}
+
+function axisKnots(now: number): Array<[number, number]> {
+  return [[warp(BIG_BANG - now), 0], ...AXIS_STOPS.map(([d, u]): [number, number] => [warp(d), u]), [warp(AXIS_FUTURE_YEARS), 1]];
 }
 
 /** Position of time `t` on the axis, 0 (the Big Bang) to 1 (the far future); `now` sits in between. */
 export function toAxis(t: number, now: number): number {
-  const lo = symlog(BIG_BANG - now);
-  const hi = symlog(AXIS_FUTURE_YEARS);
-  const x = symlog(Math.min(Math.max(t, BIG_BANG), now + AXIS_FUTURE_YEARS) - now);
-  return (x - lo) / (hi - lo);
+  if (t <= BIG_BANG) return 0;
+  if (t >= now + AXIS_FUTURE_YEARS) return 1;
+  const x = warp(t - now);
+  const knots = axisKnots(now);
+  const i = knots.findIndex(([kx]) => kx > x);
+  const [x0, u0] = knots[i - 1]!;
+  const [x1, u1] = knots[i]!;
+  return u0 + (x - x0) / (x1 - x0) * (u1 - u0);
 }
 
 /** The time at axis position `u` (0..1). */
 export function fromAxis(u: number, now: number): number {
   if (u <= 0) return BIG_BANG;
   if (u >= 1) return now + AXIS_FUTURE_YEARS;
-  const lo = symlog(BIG_BANG - now);
-  const hi = symlog(AXIS_FUTURE_YEARS);
-  const x = lo + Math.min(Math.max(u, 0), 1) * (hi - lo);
-  return now + symexp(x);
+  const knots = axisKnots(now);
+  const i = knots.findIndex(([, ku]) => ku > u);
+  const [x0, u0] = knots[i - 1]!;
+  const [x1, u1] = knots[i]!;
+  return now + unwarp(x0 + (u - u0) / (u1 - u0) * (x1 - x0));
 }
 
 /** Ticks at whole powers of ten before and after now, as [time, label]. */

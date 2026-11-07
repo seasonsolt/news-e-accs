@@ -5,7 +5,7 @@ import { AXIS_FUTURE_YEARS, BIG_BANG, capabilitiesAt, dateToYear, decimalYear, e
 import { beijingDayEnd } from "@aihot/contracts/time";
 
 const now = 2026.75;
-test("symlog endpoints, inverse and monotonicity", () => {
+test("axis endpoints, inverse and monotonicity", () => {
   assert.equal(toAxis(BIG_BANG, now), 0);
   assert.equal(toAxis(now + AXIS_FUTURE_YEARS, now), 1);
   assert.equal(fromAxis(0, now), BIG_BANG);
@@ -25,6 +25,14 @@ test("symlog endpoints, inverse and monotonicity", () => {
     const u = i / 100;
     assert.ok(Math.abs(toAxis(fromAxis(u, now), now) - u) < 1e-9);
   }
+});
+
+test("the axis gives recent time more room than the deep past", () => {
+  const width = (from: number, to: number) => toAxis(to, now) - toAxis(from, now);
+  assert.ok(width(now - 1, now) > .15);
+  for (const months of [1, 6, 11]) assert.ok(width(now - months / 12, now - (months - 1) / 12) > .01, String(months));
+  assert.ok(width(1900, now) > .5);
+  assert.ok(width(now, now + AXIS_FUTURE_YEARS) < .1);
 });
 
 test("metrics interpolate geometrically and never invent a forecast", () => {
