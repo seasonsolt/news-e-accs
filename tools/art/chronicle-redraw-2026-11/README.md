@@ -50,4 +50,18 @@ uv run tools/make-depth.py apps/web/public/media/art/moments             # 只�
 
 `make-depth.py` 的 `*-1600.webp` 也会匹配 `-hd-1600.webp`，产生多余的 `-hd-depth.webp`，跑完要删掉，不提交。
 
-被替换的旧图：1600 宽版本归档在 `retired/`，`tools/art/phone-editions-2026-10/manifest.json` 里已发布手机壁纸的 `source` 改指归档。已排期的壁纸是独立文件，不受这次重绘影响，仍是旧画面。
+被替换的旧图：1600 宽版本归档在 `retired/`，`tools/art/phone-editions-2026-10/manifest.json` 里已发布手机壁纸的 `source` 改指归档。排期里的壁纸另见下面的“壁纸”。
+
+## 壁纸
+
+受影响的 28 张壁纸都排在 2027 年 1 到 3 月，还没发布。按手机专属版的标准重做三件套：桌面版由 `plates/` 原图放大裁切，手机版用 codex 重新构图，预览是 AI 合成的双手机场景图。提示词在 `wallpapers/prompts/`，日期和标题沿用原排期，见 `wallpapers/schedule.json`。中间产物和成品体积大，放在 `.data/wallpaper-redraw/`，不进仓库。`social-web-v2` 是新图，没有排期。
+
+```bash
+tools/art/chronicle-redraw-2026-11/wallpapers/gen.sh portrait <art>...
+tools/art/chronicle-redraw-2026-11/wallpapers/gen.sh mockup <art>...
+REALESRGAN=<路径> tools/make-wallpaper.sh tools/art/chronicle-redraw-2026-11/plates/<art>.png .data/wallpaper-redraw/out
+REALESRGAN=<路径> bash tools/make-phone-wallpaper.sh .data/wallpaper-redraw/portrait/<art>.png .data/wallpaper-redraw/out/<art>-phone.jpg
+cwebp -q 72 -resize 1600 0 .data/wallpaper-redraw/mockups/<art>.png -o .data/wallpaper-redraw/out/<art>-preview.webp
+```
+
+开场片已用新图重新渲染，文件名升到 `ascent-historical-v3`，避开旧片的长缓存。

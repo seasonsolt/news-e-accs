@@ -68,6 +68,6 @@ render() { # $1=W $2=H $3=name
   echo "$name.mp4 $(du -h "$OUT/media/$name.mp4" | cut -f1)"
 }
 
-render 1280 720 ascent-historical-v2-16x9
-render 720 1280 ascent-historical-v2-9x16
+render 1280 720 ascent-historical-v3-16x9
+render 720 1280 ascent-historical-v3-9x16
 

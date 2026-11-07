@@ -600,11 +600,11 @@
    --------------------------------------------------------------------------- */
 /* A pre-paint poster under the source-less film, using the same cover crop as its first frame. */
 .steam-hero-page .onboarding-poster {
-  background: url("/media/ascent-historical-v2-16x9-poster.jpg") center / cover no-repeat;
+  background: url("/media/ascent-historical-v3-16x9-poster.jpg") center / cover no-repeat;
 }
 @media (orientation: portrait) {
   .steam-hero-page .onboarding-poster {
-    background-image: url("/media/ascent-historical-v2-9x16-poster.jpg");
+    background-image: url("/media/ascent-historical-v3-9x16-poster.jpg");
   }
 }
 /* On /subscribe it sits in the shell as a card a screen tall: the main column's top padding and a

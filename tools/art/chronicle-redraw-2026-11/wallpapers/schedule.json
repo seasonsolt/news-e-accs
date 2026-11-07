@@ -1,0 +1,198 @@
+[
+ {
+  "art": "internet-v2",
+  "id": 79,
+  "day": "2027-01-04",
+  "titleZh": "互联网",
+  "titleEn": "The Internet"
+ },
+ {
+  "art": "amazon-s3-v2",
+  "id": 84,
+  "day": "2027-01-09",
+  "titleZh": "云计算",
+  "titleEn": "Cloud Computing"
+ },
+ {
+  "art": "mobile-internet-v2",
+  "id": 85,
+  "day": "2027-01-10",
+  "titleZh": "移动互联网",
+  "titleEn": "The Mobile Internet"
+ },
+ {
+  "art": "crispr-v2",
+  "id": 89,
+  "day": "2027-01-14",
+  "titleZh": "CRISPR 基因编辑",
+  "titleEn": "CRISPR Gene Editing"
+ },
+ {
+  "art": "deep-learning-lab-v2",
+  "id": 90,
+  "day": "2027-01-15",
+  "titleZh": "深度学习",
+  "titleEn": "Deep Learning"
+ },
+ {
+  "art": "alexnet-classification-v2",
+  "id": 91,
+  "day": "2027-01-16",
+  "titleZh": "AlexNet",
+  "titleEn": "AlexNet"
+ },
+ {
+  "art": "alphago-match-v2",
+  "id": 94,
+  "day": "2027-01-19",
+  "titleZh": "深度强化学习与 AlphaGo",
+  "titleEn": "Deep Reinforcement Learning and AlphaGo"
+ },
+ {
+  "art": "language-pretraining-v2",
+  "id": 96,
+  "day": "2027-01-21",
+  "titleZh": "语言预训练",
+  "titleEn": "Language Pretraining"
+ },
+ {
+  "art": "coding-copilot-v2",
+  "id": 103,
+  "day": "2027-01-28",
+  "titleZh": "AI 编程助手",
+  "titleEn": "AI Coding Assistants"
+ },
+ {
+  "art": "text-to-image-v2",
+  "id": 105,
+  "day": "2027-01-30",
+  "titleZh": "生成式图像",
+  "titleEn": "Generative Images"
+ },
+ {
+  "art": "large-models-v2",
+  "id": 107,
+  "day": "2027-02-01",
+  "titleZh": "对话式大模型",
+  "titleEn": "Conversational Large Models"
+ },
+ {
+  "art": "chatgpt-v2",
+  "id": 108,
+  "day": "2027-02-02",
+  "titleZh": "ChatGPT 上线",
+  "titleEn": "ChatGPT launches"
+ },
+ {
+  "art": "multimodal-understanding-v2",
+  "id": 110,
+  "day": "2027-02-04",
+  "titleZh": "多模态大模型",
+  "titleEn": "Multimodal Large Models"
+ },
+ {
+  "art": "model-tool-use-v2",
+  "id": 111,
+  "day": "2027-02-05",
+  "titleZh": "工具调用",
+  "titleEn": "Tool Use"
+ },
+ {
+  "art": "text-to-video-v2",
+  "id": 113,
+  "day": "2027-02-07",
+  "titleZh": "生成式视频",
+  "titleEn": "Generative Video"
+ },
+ {
+  "art": "realtime-voice-vision-v2",
+  "id": 114,
+  "day": "2027-02-08",
+  "titleZh": "实时语音与视觉交互",
+  "titleEn": "Real-Time Voice and Vision"
+ },
+ {
+  "art": "reasoning-model-v2",
+  "id": 115,
+  "day": "2027-02-09",
+  "titleZh": "推理模型",
+  "titleEn": "Reasoning Models"
+ },
+ {
+  "art": "openai-o1-v2",
+  "id": 116,
+  "day": "2027-02-10",
+  "titleZh": "o1：推理模型",
+  "titleEn": "o1: reasoning models"
+ },
+ {
+  "art": "computer-use-v2",
+  "id": 118,
+  "day": "2027-02-12",
+  "titleZh": "AI 学会操作电脑",
+  "titleEn": "AI learns to use a computer"
+ },
+ {
+  "art": "gpt-5-v2",
+  "id": 125,
+  "day": "2027-02-19",
+  "titleZh": "GPT-5",
+  "titleEn": "GPT-5"
+ },
+ {
+  "art": "gpt-6-sol-luna-v2",
+  "id": 129,
+  "day": "2027-02-23",
+  "titleZh": "GPT-6 Sol 与 Luna",
+  "titleEn": "GPT-6 Sol and Luna"
+ },
+ {
+  "art": "forecast-agent-teams-v2",
+  "id": 130,
+  "day": "2027-02-24",
+  "titleZh": "长任务智能体协作（推测）",
+  "titleEn": "Long-Horizon Agent Teams (speculative)"
+ },
+ {
+  "art": "forecast-personal-ai-v2",
+  "id": 131,
+  "day": "2027-02-25",
+  "titleZh": "个人 AI 与端侧协同（推测）",
+  "titleEn": "Personal AI and On-Device Coordination (speculative)"
+ },
+ {
+  "art": "forecast-useful-robots-v2",
+  "id": 132,
+  "day": "2027-02-26",
+  "titleZh": "机器人进入受控场景（推测）",
+  "titleEn": "Robots in Controlled Settings (speculative)"
+ },
+ {
+  "art": "forecast-science-loop-v2",
+  "id": 133,
+  "day": "2027-02-27",
+  "titleZh": "AI 科研与实验闭环（推测）",
+  "titleEn": "Closed-Loop AI Research (speculative)"
+ },
+ {
+  "art": "forecast-grid-compute-v2",
+  "id": 134,
+  "day": "2027-02-28",
+  "titleZh": "算力与电网协同扩建（推测）",
+  "titleEn": "Coordinated Build-Out of Compute and Grid (speculative)"
+ },
+ {
+  "art": "forecast-interactive-worlds-v2",
+  "id": 135,
+  "day": "2027-03-01",
+  "titleZh": "交互世界与仿真训练（推测）",
+  "titleEn": "Interactive Worlds and Simulation Training (speculative)"
+ },
+ {
+  "art": "abundance-speculative-v2",
+  "id": 136,
+  "day": "2027-03-02",
+  "titleZh": "能源与算力丰裕（推测）",
+  "titleEn": "Energy and Compute Abundance (speculative)"
+ }
+]

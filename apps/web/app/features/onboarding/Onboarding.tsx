@@ -68,14 +68,14 @@ export function Onboarding({ token = null, source = "subscribe_page" }: { token?
     const start = () => {
       pending = false;
       if (cancelled || !canPlay()) return;
-      if (!v.hasAttribute("src")) v.src = window.matchMedia("(orientation: portrait)").matches ? "/media/ascent-historical-v2-9x16.mp4" : "/media/ascent-historical-v2-16x9.mp4";
+      if (!v.hasAttribute("src")) v.src = window.matchMedia("(orientation: portrait)").matches ? "/media/ascent-historical-v3-9x16.mp4" : "/media/ascent-historical-v3-16x9.mp4";
       void v.play().catch(() => {});
     };
     const schedule = () => {
       if (!loaded || pending) return;
       pending = true;
       const poster = new Image();
-      poster.src = window.matchMedia("(orientation: portrait)").matches ? "/media/ascent-historical-v2-9x16-poster.jpg" : "/media/ascent-historical-v2-16x9-poster.jpg";
+      poster.src = window.matchMedia("(orientation: portrait)").matches ? "/media/ascent-historical-v3-9x16-poster.jpg" : "/media/ascent-historical-v3-16x9-poster.jpg";
       void poster.decode().catch(() => {}).then(() => {
         if (cancelled) return;
         // Two frames put an actual paint between image decoding and even an immediately idle page.
