@@ -2,30 +2,30 @@
   "audit": [
     {
       "group": "epochs",
-      "art": "abundance-speculative",
-      "currentSha256": "11159ba360dc6ae7caaee98996ddf49c4b236f8b6d6a7e7939e7abf2e83011f6",
+      "art": "abundance-speculative-v2",
+      "currentSha256": "dc4d6db536d0a189e61ec5213611885548453786637dd80addf9bb5332ba0446",
       "source": {
-        "path": "~/Desktop/eacc-art/epochs/abundance-speculative.png",
-        "sha256": "683eb93f89edcbf082dc31d29e2807bbe379dbcc5f1f051d311b793989017727"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/abundance-speculative-v2.png",
+        "sha256": "a7a5568d915ca513b219aa0613c479d5434b38119b8abba6ba6ae21611ba9545"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "07e7b62d6966973617a574a90f4ae8092efbe8da3030807ae18bccbccf417226",
-          "bytes": 869692
+          "sha256": "e580bc42c7f9200dcd130f1881ebb57b4c407d8d423e1cbecded281f5c9d7cac",
+          "bytes": 535118
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "18d14c6875cbd8d124d4cfc414dc3069fc9f7090da49e7b673c2d51cf81100db",
-          "bytes": 87204
+          "sha256": "cdf8f93ca1ced032e080610d1006fa72daec1a6c1f6a275f5586804c8daf7d03",
+          "bytes": 59680
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "11f7412c1b8dc465889587478703979f486c810bf6d7d8c65bc419a7afb16653",
-          "bytes": 276248
+          "sha256": "f4cd7107e7af5e27ff3f337e2674961187fea556eb071974b2b2d8e3136afab6",
+          "bytes": 174690
         }
       }
     },
@@ -89,30 +89,30 @@
     },
     {
       "group": "epochs",
-      "art": "alphago-match",
-      "currentSha256": "052e1bbae0cf5d752ffc9f870ad5d02d084c983e213c6d0ea304630f67a25a8c",
+      "art": "alphago-match-v2",
+      "currentSha256": "41010ca443fe4036b13c89ffe67f367e667e7a821e56bd11b60d54754873fd01",
       "source": {
-        "path": "tools/art/alphago-match.png",
-        "sha256": "98ba715462b3ac65b468f32c57c0a6319a55ae338326c99409570c7b36c2fafa"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/alphago-match-v2.png",
+        "sha256": "049d09fbb4b61e79684230ce801a4b1fa26f69afa00c7e9130cbdb511c4dee97"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "23bdcf9d029a88b75b36aa1ed3e83f0e7e479aa7d080a495d0232a47dabae78c",
-          "bytes": 374764
+          "sha256": "abc5bb79dedc8bdf8827cc44a538243c18915adbc9eb59d9aab751564493e637",
+          "bytes": 130118
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "b08e568019f1bf1b4cfb4ea98de91e03b46e51a8e759457391317707c1b6d3dc",
-          "bytes": 42358
+          "sha256": "03b403dd57423e2a6d25511a94db926a52aaad1b0c86e9056d3cb90b46b591da",
+          "bytes": 17754
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "51e491cd20fd527c91871a5961607d0cf0d05e1be20abf4563a54b0b5de93f38",
-          "bytes": 118704
+          "sha256": "56df8229f8e4ae2abde8cdc34040626b46b3bb95e6c9fbed5790343aacbf9c46",
+          "bytes": 43918
         }
       }
     },
@@ -234,30 +234,30 @@
     },
     {
       "group": "epochs",
-      "art": "coding-copilot",
-      "currentSha256": "3a3bc357ce221dad4b252937b0b8a953882f30f55395c86d098daff8ac8ce55a",
+      "art": "coding-copilot-v2",
+      "currentSha256": "f75e507aa251b4ba5b4bea3c1f49f3809caa3e41cd5bcd57cc59613742dec9fc",
       "source": {
-        "path": "tools/art/coding-copilot.png",
-        "sha256": "9e0233a84109c9a257d6a68e3d399f2b4b29a027ee694831b18a0d07b0651739"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/coding-copilot-v2.png",
+        "sha256": "b98be292eb38645c868b193568b2f3239d1da6be116706108c822ec88c2f6bfb"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "9dd15c53a34afdefe017ade7b296894346b07cb26dcdfa06d1a2a782138b2d79",
-          "bytes": 283092
+          "sha256": "d3bd482c7ddfc7afcba1d720fde41a20f74c131966c7f66a63b7a5c701a05500",
+          "bytes": 315992
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "565e656d355ce39c5c60f2e633375a41566ddf885c3b37ab1dc871f6bfeffffc",
-          "bytes": 42252
+          "sha256": "50767bbe08840d5dca5c05d1298919aec315bc19c57d91209d79a7c408eb337d",
+          "bytes": 43004
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "e33446f33679af0f9316f0da44c99b27fbf3ff5f74b936066e2c8427b649da23",
-          "bytes": 107690
+          "sha256": "9194faa4b1ef0ae5194183a543d011d7de9a87e07a4af601ceddbdf30990dbd7",
+          "bytes": 111416
         }
       }
     },
@@ -321,30 +321,30 @@
     },
     {
       "group": "epochs",
-      "art": "deep-learning-lab",
-      "currentSha256": "8e75aad4bff40715537daf64e6fecac175ef7ee394f7e8708ccf7a33efd60ba4",
+      "art": "deep-learning-lab-v2",
+      "currentSha256": "ce9566bb326eaa566684f763a08090f5067834caf902a96e43e8f774cf114d0d",
       "source": {
-        "path": "tools/art/deep-learning-lab.png",
-        "sha256": "ba884106c55009c8bbb50e2c68c82f3cd07c9b5267bd8755ab6c146ed3e77832"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/deep-learning-lab-v2.png",
+        "sha256": "fd34cd90740a7afe32a66c96815673e0c13ecb4bc8dd45d1a24c78f5bc56f475"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "862c923dbbe1ada33395c87594c80b78d056a9a82c91e9da362306ae9db06073",
-          "bytes": 265868
+          "sha256": "6c78d4e700bd5633b6d14b3295ff43eeab0fed4184ab69b4b45b508b673a4e26",
+          "bytes": 322690
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "47f878efc6e7236c0654de70bf24e0233eccafbb2ad5d5c6b4be66fb5f1301ce",
-          "bytes": 36008
+          "sha256": "4a132985567be833c06e730eb59f856d47722aa0a278a455146067bc0fabb1f4",
+          "bytes": 38476
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "fefa6d4dd299e7e8827893163da6ec711d109f28fa4987128b244541657cff0d",
-          "bytes": 92900
+          "sha256": "95af99c2f6512477f13ab42da11889d29a524d4f6d48db8bc6c530c4e7df9406",
+          "bytes": 108730
         }
       }
     },
@@ -466,175 +466,175 @@
     },
     {
       "group": "epochs",
-      "art": "forecast-agent-teams",
-      "currentSha256": "240d242c3a514dd52685a2b333618238f1fcbe4377fcb0445735622b05ca53d8",
+      "art": "forecast-agent-teams-v2",
+      "currentSha256": "c0d8fe125faf86e94f1a295406e035c2d86d2ddb629cc61bddd1ddc6b5c716ba",
       "source": {
-        "path": "tools/art/forecast-agent-teams.png",
-        "sha256": "7159f6378588ea2b70bb6bacaf1c4f1be84e688bf3956d56a8bb4f7db47897be"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/forecast-agent-teams-v2.png",
+        "sha256": "6f6c228f630347d3c1442f0785c9581c159e4fd07f50894f9be15eaeeab824aa"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "45e1ea30ae07c81fd841f23325d7dbf91e297e8ddccfb60d13b0a7cb733d4ed5",
-          "bytes": 425976
+          "sha256": "827e79528af084e90a2ee52be8d670a12e252df63aca00bb302c8da5d1138427",
+          "bytes": 321556
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "f811635bb45757fd1cc1bcb448a214f50a8542208b63ce5d3a2b4ca422b04d65",
-          "bytes": 51036
+          "sha256": "e14407de39c9840feef7afbe15266a16851938df866e4777557a6109c811effd",
+          "bytes": 40796
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "f2022d3246905a6b18aa4339ec08417b42159cff6702b1a4ad7f6d5178fa2264",
-          "bytes": 140958
+          "sha256": "76a2d2a2059db13accbf3f207daf4cd7a88c694123240b18a1e8677576ce9189",
+          "bytes": 113156
         }
       }
     },
     {
       "group": "epochs",
-      "art": "forecast-grid-compute",
-      "currentSha256": "e0d188939bb2969e15998f8075d8d3f5cc319b480efe9086badc2f50ec2c5c97",
+      "art": "forecast-grid-compute-v2",
+      "currentSha256": "787e65ce71fe6f6acdc0fdc784a77ae3c1ea7a9b92294ea89885df3edc509cc3",
       "source": {
-        "path": "tools/art/forecast-grid-compute.png",
-        "sha256": "bfd80785008ed51e4dcd6481f9840aa44c6c32e0ac92279a8ea9bc6e63928f08"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/forecast-grid-compute-v2.png",
+        "sha256": "9052f40c321acf01b282aace17ddcd107482cb77f44c86d46b2f4534b3dfe4ed"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "eed4cf0a496b1fb2082cf8348933377dc4524bcf84d9f47e732e3f97d985fd12",
-          "bytes": 626424
+          "sha256": "6eefe504d5e4cf6c06b9b0a825b86437f30a0dc36169410adfd0a85901be3d64",
+          "bytes": 1054568
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "5e79dda4e947922d22a551c98affbf79d7a7e6ddc9c71e1efef5d023dcd4aabe",
-          "bytes": 61336
+          "sha256": "3c863d70df921e0a886e86d5a729e93622815367fa63c9931cf90a6dd7aa050d",
+          "bytes": 71108
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "5031ddcdc2204462ece5c6a2a8f9d898a6e0cf4eaad209087e1fb5499db09a13",
-          "bytes": 192242
+          "sha256": "db3c0764c48fe4d34161fc2660562cac307968466489069da9693d5605d5e3f3",
+          "bytes": 257976
         }
       }
     },
     {
       "group": "epochs",
-      "art": "forecast-interactive-worlds",
-      "currentSha256": "d3eb038d0b6a9b98c19ca4abb842986203d783e42d3be7cbfbd6cddb87ce6330",
+      "art": "forecast-interactive-worlds-v2",
+      "currentSha256": "22eecda4af0284231023b632c96fcb74dbe56d5fe7ca3c3bb6a588c03136cd91",
       "source": {
-        "path": "tools/art/forecast-interactive-worlds.png",
-        "sha256": "363f54293f1c9e6d4b89ee1b411b3f3a7e79b53569707365f28c5dc5d8123eeb"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/forecast-interactive-worlds-v2.png",
+        "sha256": "ccc512eaf8c138e876d52f7773cfe0d0c0cac75e8605257149e79ce09c8470c1"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "150e255317289688d1230877e9d389c04cb5f828348e09c0574a24140e18af71",
-          "bytes": 547040
+          "sha256": "396067309c4301be47d6b3cc3641c893f83986705528f25102154cd3fe744f91",
+          "bytes": 364502
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "a1a12ff483e7d1a4478b96534d1315d2bf18d21dc64cec4f79ef28f37ac188c2",
-          "bytes": 59538
+          "sha256": "c4b7bac123385d44877ade88cb1599f523a8cf03d57a2dcc780752fa571b6858",
+          "bytes": 34710
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "d74d4c64326191d7cacf6025fc18b3ac687a7adf4813761974ffea200075ccf3",
-          "bytes": 174346
+          "sha256": "51999a9cb7e6ed4f1f8978e07355bc4ae82347fba18bfc0c13fddbf8920e1a5b",
+          "bytes": 106752
         }
       }
     },
     {
       "group": "epochs",
-      "art": "forecast-personal-ai",
-      "currentSha256": "4782bb2e829f590920030282ab0c5a6ecd6651048695cb7f82478263c7c48c8d",
+      "art": "forecast-personal-ai-v2",
+      "currentSha256": "c2db90a442689cd7ef91faf9ef8b841486e3f09efc7fb62905138308d4e73208",
       "source": {
-        "path": "tools/art/forecast-personal-ai.png",
-        "sha256": "a7fe22d916a5a3c5cd86b327bd5210832b735cb46826cf279d8e33ebd2227470"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/forecast-personal-ai-v2.png",
+        "sha256": "7dfd55af64d2741bf2932f8c313226a24030a89ab1b7ec2578b090758667564b"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "d3f955af26d4f68ec6469f336724c0bd564012e569b912c887665f20ec2a4671",
-          "bytes": 415418
+          "sha256": "d00568113ce3e79598be4e9a3745542e2d501dd4981d6fde7c7a6f48d945d75f",
+          "bytes": 151786
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "fdbbd2db7bd001264aeae5c4e6c078a596c29fda8e00d08f7ff819912947c378",
-          "bytes": 61326
+          "sha256": "cf850ca57611080e119396226e29de7a78a9bddf75d7327eb5ae785153376702",
+          "bytes": 19570
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "f00c91a5e5d1ded77d60391a32bf8f6b31233cca0d58343d89ebc57a54da733d",
-          "bytes": 150904
+          "sha256": "3d850acff5e5ac5b51637d3103c5a5739ca4732b39aa1c5c4a1f7d9c2aad0444",
+          "bytes": 51258
         }
       }
     },
     {
       "group": "epochs",
-      "art": "forecast-science-loop",
-      "currentSha256": "3e096b807b77f49c0ac67d802d3e777ec3254723ee5bba8e954004e1d92fcfa0",
+      "art": "forecast-science-loop-v2",
+      "currentSha256": "b8ba3c57b473032879eaf3d7c0f2d00c36e70f0463dec2755e41a92342aad9ba",
       "source": {
-        "path": "tools/art/forecast-science-loop.png",
-        "sha256": "3a6153495c4924e1f89fcbab5a8e5baf1788be07e6efcc14464dfcaedbe044d0"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/forecast-science-loop-v2.png",
+        "sha256": "28b36f182286948f0313917ca6179af458da5c52a81dd8b426ddaf9b9e128545"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "949b092217722647253df7550fcf5aeb8cd5330b295914e19e7f91aae467890a",
-          "bytes": 276014
+          "sha256": "40b3ac04d0949b469c8303dc78671fabc07bf0e822008b683279f1e8c09199c0",
+          "bytes": 386574
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "c6d072d92cac28f0641a006ffd7556404ea47d01243cfd5e942c9c63596e8a84",
-          "bytes": 45068
+          "sha256": "4dc5be7deb3404e6d4653b2068038bddc5d41a63d1585a2e28e6de8c73cbb306",
+          "bytes": 48956
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "2a2884871348cee008c711430dc1b0e355fca093fd5efd2d5ed25a890d393852",
-          "bytes": 107910
+          "sha256": "7c762674dad32d1ad3caa91066d9df37ff8b19eb312a2685b09951b88b217a15",
+          "bytes": 134026
         }
       }
     },
     {
       "group": "epochs",
-      "art": "forecast-useful-robots",
-      "currentSha256": "45ebda7d4f7bfff7cbdf6d1e3d3e1173d146ddeba03b3165110cbc3e4c341a3f",
+      "art": "forecast-useful-robots-v2",
+      "currentSha256": "3542b09b514cbf5205a7ee80f66932faa3b3bb78f531ee9e436a3092da6313a5",
       "source": {
-        "path": "tools/art/forecast-useful-robots.png",
-        "sha256": "08eb23853b0bbdee44d57e462994dc0b4dc544652d8334edbbcbe0b9b138ba02"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/forecast-useful-robots-v2.png",
+        "sha256": "683af98f4f5de7a416e0d8d8018fcbfe126b7f4d10e1c65fd9dd893b3f470e35"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "51b4e209450e09ef264ef8546f45e14530c545b266a434b71b7f069227b435e8",
-          "bytes": 391872
+          "sha256": "f97eb3bd7d71555b3cc38cdd626252877a9487348ba70f7c9b22690f103fde4b",
+          "bytes": 677884
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "0239a3b70ac80141a83da2b52eb7c6eaa62374c955192d77341f9b72621369b2",
-          "bytes": 57392
+          "sha256": "989c5ebc58630c4baa756051b1836ca20ca3769b84ac4298bde9ade296227b01",
+          "bytes": 70788
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "30d4210e10e56f2b740b2256b0a21fcc03011d80f569afad628d148308c3d6e6",
-          "bytes": 143750
+          "sha256": "a52a93a78f33fecc7bce4e34a2c1b09cc373ec7cf8f2d6ac7904e2ae528ac259",
+          "bytes": 212962
         }
       }
     },
@@ -669,30 +669,30 @@
     },
     {
       "group": "epochs",
-      "art": "internet",
-      "currentSha256": "f617cae4dc28597f4d2d4040dd75b277bd246d2eb36ee17a125f6bffef53852f",
+      "art": "internet-v2",
+      "currentSha256": "1bf74d49191a0c7f82eee74b554b6f3490a574fdf319bc745eb250ad5b7432a7",
       "source": {
-        "path": "~/Desktop/eacc-art/epochs/internet.png",
-        "sha256": "26d4e3fbfe4261a83ae4f92c3523828d194abec009b1931e699cac0b8e815771"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/internet-v2.png",
+        "sha256": "7100d4fe7495f6bfa5f1157841fedc1507def5e0a13fd60feff8551a373f0683"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "13217ffaa74ca26c1cb72b87801ac3b00681271cd0266922c0894cb989a44d41",
-          "bytes": 759642
+          "sha256": "932f55ce175f705d28f5689a32365a00b80b4bc34bbd2e44fabaf837033a3351",
+          "bytes": 829966
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "0a7ff2c3fa237796dfcfaa1c86882ad4730d5d6f4093dac70a00a68ddba95be4",
-          "bytes": 76498
+          "sha256": "4a00dcdddfc6d65544411f2b5f33cb8beae313d816daf3c0ccc3981fa75c0c01",
+          "bytes": 68788
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "8ec5888fde5f0ae36541a58431fbb0b3db5d60efcb8d536fff5fed0577be8d58",
-          "bytes": 228064
+          "sha256": "a01b3647dd02812a51f0b09178ac97bf332337f8f28c3f1ed90d63d5d8cf1835",
+          "bytes": 220780
         }
       }
     },
@@ -727,59 +727,59 @@
     },
     {
       "group": "epochs",
-      "art": "language-pretraining",
-      "currentSha256": "1eb2f33c71a005e47b8b184b713d674a7bf60851b6435b909de205b174a93c8e",
+      "art": "language-pretraining-v2",
+      "currentSha256": "f765ddbe5bccb1023f0a25261d2b22dac278e3f3716c4bdbb9e16d99096f269d",
       "source": {
-        "path": "tools/art/language-pretraining.png",
-        "sha256": "c5760f2c4f52f5e22a01df517248ace735240fcdf0d7357ece9d96883f515bce"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/language-pretraining-v2.png",
+        "sha256": "b2206bbfb0e8d081f5419a2b211483e570a883d81a1281d16b03fcb4d8e9c43e"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "c83c72697de61dc51553934e5585ee289114ec6da5044fe4f7c3c79c33fdd152",
-          "bytes": 373106
+          "sha256": "c6cac26773b3bfc7be83d5cb38b36e3dacd1583dfed48e8ab527241d79c9ef65",
+          "bytes": 594022
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "4ab54ad09c51473a6283a57cf12dfbbda4856702c2fb98bdb71ca1c042fe06ee",
-          "bytes": 50282
+          "sha256": "028541aa10d30ef5cd8ad1e3f78716b36e2dbf8d6bf3ffebd86a378c1abd734a",
+          "bytes": 68518
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "100537c4af955e437d818d3ff366aa0633398f97dfee83fef0f12b2f0712a081",
-          "bytes": 130550
+          "sha256": "01a9b690856f3cbdf1385206eeecb212ec96fa57b7be350790312cc2fa18853f",
+          "bytes": 196092
         }
       }
     },
     {
       "group": "epochs",
-      "art": "large-models",
-      "currentSha256": "209743ae081bcaf3e0fc2c7473345b0356f9cf2dabaf591eb706a590ab5ea298",
+      "art": "large-models-v2",
+      "currentSha256": "b5b3f3e7460a7eba1eff1cf00f7165ebe5fdc4b2936b7762ec4116a6a9ad3708",
       "source": {
-        "path": "~/Desktop/eacc-art/epochs/large-models.png",
-        "sha256": "a4fabc0f1925cc5e10ab5f7fc99f285d46a55ab5d9a1ad6db71fd8bb475c05c8"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/large-models-v2.png",
+        "sha256": "eca946deb080befc5dc22b46d175e11c6d09d823b005005c8f78424f9316f8f6"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "9c169f2ef44218ba3ee96a1308ee08eb806a7e4a4029d3f0858d30611cdc1acc",
-          "bytes": 481902
+          "sha256": "fe744c4f8582dc6488908510c0425270f0ee51578febddd0e59b11e8a233dc10",
+          "bytes": 508136
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "7859b4113cbb89db046ff36fdbc55a20ea92a667d2c40c434ab1e9784a4def39",
-          "bytes": 65408
+          "sha256": "c71eaf085c802456fae27b849819b9d5b4ac6bad6fa24b9286014054f0aa656f",
+          "bytes": 50798
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "0f8ee0eef9fc6a601e2fe5b6bec7b71114ffdf0b222c519649ed881b5fe9f5bf",
-          "bytes": 179618
+          "sha256": "0f9938aeecc4303d9182cfbf18117c428b4bf48ff16debed6400cba0152388bf",
+          "bytes": 153052
         }
       }
     },
@@ -814,88 +814,88 @@
     },
     {
       "group": "epochs",
-      "art": "mobile-internet",
-      "currentSha256": "b80c47cf12ace7590f3c42fdf61f40da6a5268ac068e9c8b391def7e5f1cc9d5",
+      "art": "mobile-internet-v2",
+      "currentSha256": "72ba5ce087841e14035dcda208f63f1e75773c90ddd5ebac9901165410e72a48",
       "source": {
-        "path": "~/Desktop/eacc-art/epochs/mobile-internet.png",
-        "sha256": "33b22da44bcfec58459a4d8b1d2120f2ff3f8a5e413c84cf418117aa70df2c45"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/mobile-internet-v2.png",
+        "sha256": "e87dad4fec31f20f32346fb956d63ba1f19951e15acb9f3c7fe95af8c12317a5"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "b169278a829387f9afcdcc384d2ea52ac2dd29f005b65851d02c963432f5642d",
-          "bytes": 148098
+          "sha256": "f5837e6cf25fb9121eaa44c394ca1f171d7eb913014d3a72536d1c2a05e37cef",
+          "bytes": 296236
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "e96c97e11019c2649100da0eaf34cc70b9ecfe96ed9280691c4461a180fdbe42",
-          "bytes": 26412
+          "sha256": "a3e6982c496a8a55d72ea7cc78f48a084bf862e9b1beab48de62f08f22b208c0",
+          "bytes": 46624
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "6f7b37f72c0689f932b490740a39ced57cb54e62b72b59a020d34956e972c3de",
-          "bytes": 57904
+          "sha256": "31472044f9580a59ce36cdd0f3c06a7b37cc4700b8042adf9d20c28e861c8fe0",
+          "bytes": 112794
         }
       }
     },
     {
       "group": "epochs",
-      "art": "model-tool-use",
-      "currentSha256": "c74d6d5459f79ed5899b93441872e4fa87171080f9678295da2c7720fc403a3d",
+      "art": "model-tool-use-v2",
+      "currentSha256": "95e8a6186f214e7c05ec486e739e04c50c373219730ade6f915974e50c61b166",
       "source": {
-        "path": "tools/art/model-tool-use.png",
-        "sha256": "14a512dedb945121e09aa67f1d595cdbca489683a3e3dc3a8fd0ebd3678eddd6"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/model-tool-use-v2.png",
+        "sha256": "ef1dac7716e1bcdfa0bc3f5c911216ae22c6bb7abbbc2f56f5caa5d00e135523"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "65c2c720d0cbdd3713c5053517c3da0226d75ed50178292d9634b46126694600",
-          "bytes": 320656
+          "sha256": "67fe61013f20dbdcde1d0aee2f744ae2abcf1f012d4da98b28f94b385cf5e6d5",
+          "bytes": 540850
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "9dc51b20754c1f189f29e361b8a59e9c4ef87682f3a8b0bd6bfcd988ee447c92",
-          "bytes": 32432
+          "sha256": "5c75ffa1b7ec5f10014e1010769023d3328a1634c6a15083f758608508728de8",
+          "bytes": 45620
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "08fd35cd8f6ce3ed118dfcf478817f28d2d76b3d25f0e93695ff2591c71f3dfb",
-          "bytes": 95592
+          "sha256": "6bc1377ac6041847c3655c3b8f7c0e1d7b4893ec8bde8b64d874c6ce13945532",
+          "bytes": 151486
         }
       }
     },
     {
       "group": "epochs",
-      "art": "multimodal-understanding",
-      "currentSha256": "e988ef61502080405e73f74a4d4c5e339b89da9cb107d7beba5268b12556cae6",
+      "art": "multimodal-understanding-v2",
+      "currentSha256": "1a319274ded59a4b71d2b4faf906bc049060dd03065f5f5453fb02cde8d0db26",
       "source": {
-        "path": "tools/art/multimodal-understanding.png",
-        "sha256": "bf3745f3e092876e639bb8f7d61746802917dcf865058c54371a566d8499907c"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/multimodal-understanding-v2.png",
+        "sha256": "f4b7158861458fac57aebdf364c528687b35fa6a07ff34fe87d08475500c5c5d"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "27393f4db59033af75f7a05bb794ecbba29dbdbe9a8da2225c2b7462581d8aa2",
-          "bytes": 305678
+          "sha256": "39d0c8a17ad979150e64d1bf9d5db63958a5bbe78c3dd2d1649219e3012c4231",
+          "bytes": 590528
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "22d243c48f5a70840b44cea8ed58e995a388e43176fe01d37784c4676bcaab7d",
-          "bytes": 41100
+          "sha256": "edc8653b104b68a7977553bcca72872384c813fbce31426de928a0efba4c56ef",
+          "bytes": 32660
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "298a5f8e5efc28874bf7aea5bc7994dadfa787128b2ac358608512ee50d6b377",
-          "bytes": 107650
+          "sha256": "e39ac3f662248249c8f24e4ac0cda8dcb1ef9971043315fa32e53116cf2f57dd",
+          "bytes": 119798
         }
       }
     },
@@ -988,59 +988,59 @@
     },
     {
       "group": "epochs",
-      "art": "realtime-voice-vision",
-      "currentSha256": "2d8482ad3efc8aa93486ed509c10852ab3db540a1370cd91fa03fda8dbfefb1a",
+      "art": "realtime-voice-vision-v2",
+      "currentSha256": "54337b4fc671922c7553ba49722e6dea1d05c025316db892db74c0649ec5c73a",
       "source": {
-        "path": "tools/art/realtime-voice-vision.png",
-        "sha256": "ab02aa83793f2b1b8233073757fb0f8bd0425e0d3eb60f2e418109bb824eca98"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/realtime-voice-vision-v2.png",
+        "sha256": "2fa411aa436cebf15ed055adbb7d76223ca28ea74debab1c92794e313db47676"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "aa489ea0d09601834e2146090008b2182fe73cf7279245d1e6a2460ef289775a",
-          "bytes": 264694
+          "sha256": "7371556caf182e86b3df63464f28731db5f316c96490668755f6f1306a444d11",
+          "bytes": 760106
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "a773465fb1ce014f76e6aaaf89e9c603a9ff91f53af5779eb69c916591d256d7",
-          "bytes": 39928
+          "sha256": "cb616d53db163e0f3914862482eff14ab83e457fd3d2c693171301074524e776",
+          "bytes": 81516
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "729e90dcbbd8aba0d6574c22157ff2e681b430f72ff2a2e62b4e3654b94c2165",
-          "bytes": 98622
+          "sha256": "14db1c1cc5384eef46440e37333a7ec6d2c66c41c16aafb17e85c8e42cfd2999",
+          "bytes": 243694
         }
       }
     },
     {
       "group": "epochs",
-      "art": "reasoning-model",
-      "currentSha256": "df9acd74bddbab3dfa971bb0e7aa3db7b992d4905b53613dd6ff6627ceae76e5",
+      "art": "reasoning-model-v2",
+      "currentSha256": "1106eacff810d91616a76054f071048e2151a553c2c5a689f31af943a104d48c",
       "source": {
-        "path": "tools/art/reasoning-model.png",
-        "sha256": "23b77bfb72794d02249e5af7c5cac36863baf6252b217aa4b9bd7d0aae7ec87c"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/reasoning-model-v2.png",
+        "sha256": "77091907bb88aedb075a6057b75f7c7bfeb07626b577781ab945065f395c500e"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "2e4df516915bd72ad6be9706cee0a74120991d443846100b80932b5b5e64d9c1",
-          "bytes": 268956
+          "sha256": "12e04624f03816f218e497533fa51a179a2ddc7d193ec65f7c113e35eba7216e",
+          "bytes": 1077984
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "1a8264cb0604341d4f02678c8b3087278ca8e675cc2bf75e658929885d34bd93",
-          "bytes": 33708
+          "sha256": "b3db4dab7ab041f44605a87c7949de254ef1c8d412b7040a55e06461cf944fd4",
+          "bytes": 77650
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "8ab29d116a564f8e3c7cd23cde5d6b59ac3b88b92855f4e9fd26f598c36b2796",
-          "bytes": 88148
+          "sha256": "39b72d3967eeaac66ae9bff004d0afa2bf34ae385fc5d2ee8b64287e664c5839",
+          "bytes": 292414
         }
       }
     },
@@ -1099,6 +1099,35 @@
           "height": 1067,
           "sha256": "98576b9cfaf81d5509199211260558b709f24a16530d45210e7f467d4c94ee20",
           "bytes": 448714
+        }
+      }
+    },
+    {
+      "group": "epochs",
+      "art": "social-web-v2",
+      "currentSha256": "dab9dea2808eafb114019972d91f9d694173f5083840273d8a2b0ecc591812f1",
+      "source": {
+        "path": "tools/art/chronicle-redraw-2026-11/plates/social-web-v2.png",
+        "sha256": "757ed5c1e4c100da3e7ad24d90e042d14a564d4e0480fdb033c8f346fc0227ab"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "5a48cb237b7b9d9874f1ab7108feed7185cc2d6a3a6a9f87999c20b9571e0e8f",
+          "bytes": 650130
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "e43c0eca3ea2614f7cf7524d888ae478ace8881ef31fcf07a91522443a58382d",
+          "bytes": 50978
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "bede003df6bba7b971ee55423a35f5df9a8c50c51f6a4c1c24f0750d9219f679",
+          "bytes": 170384
         }
       }
     },
@@ -1220,59 +1249,59 @@
     },
     {
       "group": "epochs",
-      "art": "text-to-image",
-      "currentSha256": "b4a259094ee83f61d2ebeaea1d2c3f4ed4d45f15a9749b03c7afc58823218d26",
+      "art": "text-to-image-v2",
+      "currentSha256": "286fc5e1e07918bb92ee064e71039cd14044c3d9269c70c607bae4f24e9cc916",
       "source": {
-        "path": "tools/art/text-to-image.png",
-        "sha256": "1a3d7c42fe9229d64414a25b1a166cb087c1f0bfa01a29365d5da673726c7eef"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/text-to-image-v2.png",
+        "sha256": "1d340bb77e15aca945be54ef5b35d35e263b628aad5aa62b46b16c6706f0396e"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "f2439afe471dd85c374213083837e4cb1d2e5bb9d1c7488c7c21004e61620df6",
-          "bytes": 328458
+          "sha256": "1ef47123722a75ade7f01876f0039dcda0c80db6e185eb63f502f8e06b93dd14",
+          "bytes": 195006
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "ef8bc1525ab81ce211f53ec75fbe92122e9b4e507c237db1c63de9f268b4f62b",
-          "bytes": 44018
+          "sha256": "70230e1ac9e62797ef2aad46aa432c7caa635a8a4c14b8a06d7f5d5a490dc601",
+          "bytes": 21858
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "d831e780580b040cce9dd4a2ee7382a21ce06640f77f11e752fff29f026dcf69",
-          "bytes": 111524
+          "sha256": "0e74650d90222403105a5f11b0761d166a7ad0049fde54a370527401a59ce415",
+          "bytes": 61238
         }
       }
     },
     {
       "group": "epochs",
-      "art": "text-to-video",
-      "currentSha256": "e429f27265040f5bfb179473aff22a7cf5bab14f6c5833095089caacc0e52ce0",
+      "art": "text-to-video-v2",
+      "currentSha256": "02e810f4de8e8924b7b7ddaf37b80e5098104d1f8c7313640e6263d2e2ec6314",
       "source": {
-        "path": "tools/art/text-to-video.png",
-        "sha256": "5ae7973966e44d7b3eb527a9382e342c836c5155800bfb5dcab7118716180c46"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/text-to-video-v2.png",
+        "sha256": "c899d6067a4e8a235c7094101f7eb6cf440f62fbe5143a0e72d4e53007764bbc"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "a3304f28fde8619c255b2b21abacab9076e0debfd0f2252430d4a3a491e7ac4a",
-          "bytes": 293444
+          "sha256": "df46b0d5fe594860e5f2ecc0bb09119725a30ddd9c35bb3ccbc6f6ccd781348e",
+          "bytes": 407670
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "779c4f33fd372f80c08767288213debc9db2389f9dee9ae62c2ddc509406abb0",
-          "bytes": 35476
+          "sha256": "f8d53d63da5fdcf68ad887062cb6e6f20eeb05bb416c98bd88b21928ad4990d1",
+          "bytes": 40508
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "fecc2fd07e34aeb1bbf3545fa1cd357bdcd2c5e68cdcc132ec5f220818534706",
-          "bytes": 95814
+          "sha256": "2111e2a93379ea5842b9305e1dfa2f3a14c5a4153865e86d26d025847bcf94f2",
+          "bytes": 119666
         }
       }
     },
@@ -1452,59 +1481,59 @@
     },
     {
       "group": "moments",
-      "art": "alexnet-classification",
-      "currentSha256": "ab099bf46d3b9c1f6b7f1b6b23362966f78b75924291abbca7e80d25a8edd436",
+      "art": "alexnet-classification-v2",
+      "currentSha256": "7ea3b123681dd190f17b14bd0b7f4cdc75b5c70680961888cba1ebe9e47020a7",
       "source": {
-        "path": "tools/art/alexnet-classification.png",
-        "sha256": "48f6e7f1d6c9a42999794b7d80bfc36e3040f14bdcc60f5a300a44b91daa2ffc"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/alexnet-classification-v2.png",
+        "sha256": "0720b7703f36f76b131c8f73dec043abbc1b1a5b1722b9853f7ccac0bb9befb0"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "dd9b82a9a390a05e6777b62e43b08375df3d9970b15c59008d0f9370ca2fe27c",
-          "bytes": 239548
+          "sha256": "006bc4b80421f28683cf8e5fd2de2a87bd1411f33790bda0a249c8be8d7bfe99",
+          "bytes": 588956
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "8063ba73c42b268af2792f7113e4ef2a14f11c24269ecc37074ca61f879de559",
-          "bytes": 34442
+          "sha256": "02149cc250406acc3f5ee9d11565b46a4aad1624f87f3959c785ebad34c628cc",
+          "bytes": 70576
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "4235148451766137b8327d916250eba61b735ac1d3248f9a6941c5912ee77f0e",
-          "bytes": 86168
+          "sha256": "6c78b5e5d43578ab41483478b2bd025823975b569acc8527d630f44ee08ebe7b",
+          "bytes": 195562
         }
       }
     },
     {
       "group": "moments",
-      "art": "amazon-s3",
-      "currentSha256": "27ef07913df0edd1a497050f7a5e0153022ed3f593ed09151e7055669d7c5d80",
+      "art": "amazon-s3-v2",
+      "currentSha256": "af34d36ccec7fdcb8ae24c9fa6e4f6710195e9226ac576d23719b1a6ded01dba",
       "source": {
-        "path": "~/Desktop/eacc-art/moments/amazon-s3.png",
-        "sha256": "0c9603df4761a773e06fa91b297a4d0d2b682940a8e313e6b7b6a66674719ac5"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/amazon-s3-v2.png",
+        "sha256": "22c6b8786b76d1ad054eac5cb426bc7b35c4dd907bbbc579f3cbbdc9a2a787c8"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "77233f2bc011b6c671aa635f258d3887c7a186f1447c76c05ff8b1daa313e25f",
-          "bytes": 287910
+          "sha256": "bc30c910154967f50bd5dd59f3425467821a2e35bdf9eb4a849939a4ae931cb2",
+          "bytes": 367362
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "fbbdb8985fd4ca376fc415a93fd79026223b3fdc9d799ec24e0d5d31059b1c16",
-          "bytes": 39084
+          "sha256": "eb66508e52f77e24bdbdce34740a2cef21fc2523490882dce2dca0ed97a7ba9f",
+          "bytes": 36506
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "b32c7dca13aa54cd82932d44b49dbdee9a239785618563b3e5789410b3dbdbaa",
-          "bytes": 103256
+          "sha256": "83915d18c3cab7a0423005a61928f299fc787126ac0f01af5f7a6694029fe3a8",
+          "bytes": 107070
         }
       }
     },
@@ -1800,30 +1829,30 @@
     },
     {
       "group": "moments",
-      "art": "chatgpt",
-      "currentSha256": "7acc8169b16811e1f334ac0fe8b57d1292522043166fcc86a04f431b422ab427",
+      "art": "chatgpt-v2",
+      "currentSha256": "a7b27adbe6d01bcd54fadbc993f513a99c3ae880d95a99d3b6e890309f744b6a",
       "source": {
-        "path": "~/Desktop/eacc-art/moments/chatgpt.png",
-        "sha256": "e813e4c3ce37d8a4e6f4023e541c198a241d0a2c731f0f75290d1c1c2bf3099d"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/chatgpt-v2.png",
+        "sha256": "1a4e4b6fef11079371044ad02b9b7f2efa01df9b513cf1e46458918370a9c9f4"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "1d220781cd08b3403e24d9a1a424c5e6a90414275cf0c78e891333fd7df9db9e",
-          "bytes": 345918
+          "sha256": "8ebf174ebba950e014fa3fa306d32b03dc7869f6b06c5fc208354199c17510e8",
+          "bytes": 294240
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "04ce40773a6d22eb266068306e35116d648d45cb8a9ffdd84aca84c12dc7b8f8",
-          "bytes": 47836
+          "sha256": "81d8f02c97b210e50b29258576c8d4ddec5dd1393a5972d8bc792440617a6ee9",
+          "bytes": 31170
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "497eca35f56cff0f27860c1015e03a057645f6e298bf0d688badee6bdeab792b",
-          "bytes": 123406
+          "sha256": "981c58b5ed95e94a14a8c88320e7dae77eeecc6d4575565acd26a656e6a93a1b",
+          "bytes": 92000
         }
       }
     },
@@ -1945,30 +1974,30 @@
     },
     {
       "group": "moments",
-      "art": "computer-use",
-      "currentSha256": "983d8c2b98bf1ac8b88a9eb554a2187bb3a7152a63ba0ce272acf9caad6f5053",
+      "art": "computer-use-v2",
+      "currentSha256": "3cefeded958587c80be6b05dcea3de5ff9418c37fc210fc40bb65c6628eb3e6f",
       "source": {
-        "path": "~/Desktop/eacc-art/moments/computer-use.png",
-        "sha256": "da808a20ecb593f35dc2a81137f06a2df91642abe5770ba609e9bfc44b268e82"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/computer-use-v2.png",
+        "sha256": "94a934a72a1adc2106805e5c99b1c67e7d9f265f149ddc7792cbd1fb87c5d027"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "abc284f03f3c5fad065f5ed8585265b2a8af3921bdaf589b058c27fc91c53a17",
-          "bytes": 165232
+          "sha256": "e47d532ba97e8e7a52512815c1e6802b098868a07cffe40168f0050631cd9a87",
+          "bytes": 204570
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "36bd6c0c2f0cbab37ff4c763ae886cda935f5d683f144b03b21ae2fa0ab04f5c",
-          "bytes": 25436
+          "sha256": "6d4df3b929492c36a0b09e01754fb8d7e161be0d392fdfd3dce51cd5609517cb",
+          "bytes": 26936
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "9351b11e8a17e66a8bf16105638db52555f644704496c6ba1ae18ea3511a882f",
-          "bytes": 60316
+          "sha256": "8c1edb3b461fcec4ec0735f3a30c564afb4abef693eadbecfe13122c0e15e4a1",
+          "bytes": 68268
         }
       }
     },
@@ -2003,30 +2032,30 @@
     },
     {
       "group": "moments",
-      "art": "crispr",
-      "currentSha256": "a5e61adf69ed7cbad6c41806e1dfec64f48aa7f38ac7bededa0b4dc1fb05334a",
+      "art": "crispr-v2",
+      "currentSha256": "13629ec5bdce84fa1f9bb1226b663d2101ae64f1a760e4aabafdca42b89c156e",
       "source": {
-        "path": "~/Desktop/eacc-art/moments/crispr.png",
-        "sha256": "cda0560d9ef0e3929a58cb89e3c54c781d57c8284144fdf40ccf886e5d3f1860"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/crispr-v2.png",
+        "sha256": "e08dd3525e237f5805ea310587e1ad5e43057bd39ccac1795ff2b5506b317584"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "7df2c1c0d36e36a90a2c5716de84db45160bb4b87868d976a5cd24fb479e1590",
-          "bytes": 438608
+          "sha256": "b028f8ae5a4ddc386cbda9536eab454b4accea74535ab3b656c5d337b0e685b4",
+          "bytes": 1104548
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "357ff1e890885cadbc0b1354a423957baca9c0f0159b014d489bea4d6b58c24c",
-          "bytes": 63898
+          "sha256": "95c19d41fb06886d19814eec06309c4abc8bbf17df7789e931f1af1a5c957dd9",
+          "bytes": 37430
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "5aed5876c1671dd9d65970581d69c2a559d061ac5a181ffca53fc7468ede1499",
-          "bytes": 163794
+          "sha256": "1c0aef104916bfbe24e99a9b271d7439018146dab21d69b848d4f2245f6e1ce2",
+          "bytes": 170366
         }
       }
     },
@@ -2438,175 +2467,175 @@
     },
     {
       "group": "moments",
-      "art": "forecast-agent-teams",
-      "currentSha256": "240d242c3a514dd52685a2b333618238f1fcbe4377fcb0445735622b05ca53d8",
+      "art": "forecast-agent-teams-v2",
+      "currentSha256": "c0d8fe125faf86e94f1a295406e035c2d86d2ddb629cc61bddd1ddc6b5c716ba",
       "source": {
-        "path": "tools/art/forecast-agent-teams.png",
-        "sha256": "7159f6378588ea2b70bb6bacaf1c4f1be84e688bf3956d56a8bb4f7db47897be"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/forecast-agent-teams-v2.png",
+        "sha256": "6f6c228f630347d3c1442f0785c9581c159e4fd07f50894f9be15eaeeab824aa"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "45e1ea30ae07c81fd841f23325d7dbf91e297e8ddccfb60d13b0a7cb733d4ed5",
-          "bytes": 425976
+          "sha256": "827e79528af084e90a2ee52be8d670a12e252df63aca00bb302c8da5d1138427",
+          "bytes": 321556
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "f811635bb45757fd1cc1bcb448a214f50a8542208b63ce5d3a2b4ca422b04d65",
-          "bytes": 51036
+          "sha256": "e14407de39c9840feef7afbe15266a16851938df866e4777557a6109c811effd",
+          "bytes": 40796
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "f2022d3246905a6b18aa4339ec08417b42159cff6702b1a4ad7f6d5178fa2264",
-          "bytes": 140958
+          "sha256": "76a2d2a2059db13accbf3f207daf4cd7a88c694123240b18a1e8677576ce9189",
+          "bytes": 113156
         }
       }
     },
     {
       "group": "moments",
-      "art": "forecast-grid-compute",
-      "currentSha256": "e0d188939bb2969e15998f8075d8d3f5cc319b480efe9086badc2f50ec2c5c97",
+      "art": "forecast-grid-compute-v2",
+      "currentSha256": "787e65ce71fe6f6acdc0fdc784a77ae3c1ea7a9b92294ea89885df3edc509cc3",
       "source": {
-        "path": "tools/art/forecast-grid-compute.png",
-        "sha256": "bfd80785008ed51e4dcd6481f9840aa44c6c32e0ac92279a8ea9bc6e63928f08"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/forecast-grid-compute-v2.png",
+        "sha256": "9052f40c321acf01b282aace17ddcd107482cb77f44c86d46b2f4534b3dfe4ed"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "eed4cf0a496b1fb2082cf8348933377dc4524bcf84d9f47e732e3f97d985fd12",
-          "bytes": 626424
+          "sha256": "6eefe504d5e4cf6c06b9b0a825b86437f30a0dc36169410adfd0a85901be3d64",
+          "bytes": 1054568
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "5e79dda4e947922d22a551c98affbf79d7a7e6ddc9c71e1efef5d023dcd4aabe",
-          "bytes": 61336
+          "sha256": "3c863d70df921e0a886e86d5a729e93622815367fa63c9931cf90a6dd7aa050d",
+          "bytes": 71108
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "5031ddcdc2204462ece5c6a2a8f9d898a6e0cf4eaad209087e1fb5499db09a13",
-          "bytes": 192242
+          "sha256": "db3c0764c48fe4d34161fc2660562cac307968466489069da9693d5605d5e3f3",
+          "bytes": 257976
         }
       }
     },
     {
       "group": "moments",
-      "art": "forecast-interactive-worlds",
-      "currentSha256": "d3eb038d0b6a9b98c19ca4abb842986203d783e42d3be7cbfbd6cddb87ce6330",
+      "art": "forecast-interactive-worlds-v2",
+      "currentSha256": "22eecda4af0284231023b632c96fcb74dbe56d5fe7ca3c3bb6a588c03136cd91",
       "source": {
-        "path": "tools/art/forecast-interactive-worlds.png",
-        "sha256": "363f54293f1c9e6d4b89ee1b411b3f3a7e79b53569707365f28c5dc5d8123eeb"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/forecast-interactive-worlds-v2.png",
+        "sha256": "ccc512eaf8c138e876d52f7773cfe0d0c0cac75e8605257149e79ce09c8470c1"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "150e255317289688d1230877e9d389c04cb5f828348e09c0574a24140e18af71",
-          "bytes": 547040
+          "sha256": "396067309c4301be47d6b3cc3641c893f83986705528f25102154cd3fe744f91",
+          "bytes": 364502
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "a1a12ff483e7d1a4478b96534d1315d2bf18d21dc64cec4f79ef28f37ac188c2",
-          "bytes": 59538
+          "sha256": "c4b7bac123385d44877ade88cb1599f523a8cf03d57a2dcc780752fa571b6858",
+          "bytes": 34710
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "d74d4c64326191d7cacf6025fc18b3ac687a7adf4813761974ffea200075ccf3",
-          "bytes": 174346
+          "sha256": "51999a9cb7e6ed4f1f8978e07355bc4ae82347fba18bfc0c13fddbf8920e1a5b",
+          "bytes": 106752
         }
       }
     },
     {
       "group": "moments",
-      "art": "forecast-personal-ai",
-      "currentSha256": "4782bb2e829f590920030282ab0c5a6ecd6651048695cb7f82478263c7c48c8d",
+      "art": "forecast-personal-ai-v2",
+      "currentSha256": "c2db90a442689cd7ef91faf9ef8b841486e3f09efc7fb62905138308d4e73208",
       "source": {
-        "path": "tools/art/forecast-personal-ai.png",
-        "sha256": "a7fe22d916a5a3c5cd86b327bd5210832b735cb46826cf279d8e33ebd2227470"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/forecast-personal-ai-v2.png",
+        "sha256": "7dfd55af64d2741bf2932f8c313226a24030a89ab1b7ec2578b090758667564b"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "d3f955af26d4f68ec6469f336724c0bd564012e569b912c887665f20ec2a4671",
-          "bytes": 415418
+          "sha256": "d00568113ce3e79598be4e9a3745542e2d501dd4981d6fde7c7a6f48d945d75f",
+          "bytes": 151786
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "fdbbd2db7bd001264aeae5c4e6c078a596c29fda8e00d08f7ff819912947c378",
-          "bytes": 61326
+          "sha256": "cf850ca57611080e119396226e29de7a78a9bddf75d7327eb5ae785153376702",
+          "bytes": 19570
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "f00c91a5e5d1ded77d60391a32bf8f6b31233cca0d58343d89ebc57a54da733d",
-          "bytes": 150904
+          "sha256": "3d850acff5e5ac5b51637d3103c5a5739ca4732b39aa1c5c4a1f7d9c2aad0444",
+          "bytes": 51258
         }
       }
     },
     {
       "group": "moments",
-      "art": "forecast-science-loop",
-      "currentSha256": "3e096b807b77f49c0ac67d802d3e777ec3254723ee5bba8e954004e1d92fcfa0",
+      "art": "forecast-science-loop-v2",
+      "currentSha256": "b8ba3c57b473032879eaf3d7c0f2d00c36e70f0463dec2755e41a92342aad9ba",
       "source": {
-        "path": "tools/art/forecast-science-loop.png",
-        "sha256": "3a6153495c4924e1f89fcbab5a8e5baf1788be07e6efcc14464dfcaedbe044d0"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/forecast-science-loop-v2.png",
+        "sha256": "28b36f182286948f0313917ca6179af458da5c52a81dd8b426ddaf9b9e128545"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "949b092217722647253df7550fcf5aeb8cd5330b295914e19e7f91aae467890a",
-          "bytes": 276014
+          "sha256": "40b3ac04d0949b469c8303dc78671fabc07bf0e822008b683279f1e8c09199c0",
+          "bytes": 386574
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "c6d072d92cac28f0641a006ffd7556404ea47d01243cfd5e942c9c63596e8a84",
-          "bytes": 45068
+          "sha256": "4dc5be7deb3404e6d4653b2068038bddc5d41a63d1585a2e28e6de8c73cbb306",
+          "bytes": 48956
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "2a2884871348cee008c711430dc1b0e355fca093fd5efd2d5ed25a890d393852",
-          "bytes": 107910
+          "sha256": "7c762674dad32d1ad3caa91066d9df37ff8b19eb312a2685b09951b88b217a15",
+          "bytes": 134026
         }
       }
     },
     {
       "group": "moments",
-      "art": "forecast-useful-robots",
-      "currentSha256": "45ebda7d4f7bfff7cbdf6d1e3d3e1173d146ddeba03b3165110cbc3e4c341a3f",
+      "art": "forecast-useful-robots-v2",
+      "currentSha256": "3542b09b514cbf5205a7ee80f66932faa3b3bb78f531ee9e436a3092da6313a5",
       "source": {
-        "path": "tools/art/forecast-useful-robots.png",
-        "sha256": "08eb23853b0bbdee44d57e462994dc0b4dc544652d8334edbbcbe0b9b138ba02"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/forecast-useful-robots-v2.png",
+        "sha256": "683af98f4f5de7a416e0d8d8018fcbfe126b7f4d10e1c65fd9dd893b3f470e35"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "51b4e209450e09ef264ef8546f45e14530c545b266a434b71b7f069227b435e8",
-          "bytes": 391872
+          "sha256": "f97eb3bd7d71555b3cc38cdd626252877a9487348ba70f7c9b22690f103fde4b",
+          "bytes": 677884
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "0239a3b70ac80141a83da2b52eb7c6eaa62374c955192d77341f9b72621369b2",
-          "bytes": 57392
+          "sha256": "989c5ebc58630c4baa756051b1836ca20ca3769b84ac4298bde9ade296227b01",
+          "bytes": 70788
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "30d4210e10e56f2b740b2256b0a21fcc03011d80f569afad628d148308c3d6e6",
-          "bytes": 143750
+          "sha256": "a52a93a78f33fecc7bce4e34a2c1b09cc373ec7cf8f2d6ac7904e2ae528ac259",
+          "bytes": 212962
         }
       }
     },
@@ -2699,59 +2728,59 @@
     },
     {
       "group": "moments",
-      "art": "gpt-5",
-      "currentSha256": "5fcade7c572e10bbf784948a53a2186462cd230fbbbbb83923e947d98a7f51c9",
+      "art": "gpt-5-v2",
+      "currentSha256": "0928f7794243d8f96c67dc7e178b710ff4d518a4017665090f8d2a7327053d54",
       "source": {
-        "path": "~/Desktop/eacc-art/moments/gpt-5.png",
-        "sha256": "d6396a78cb7ae862ec9c44d15c1ffd13b10bc1bcdf2164bc5e30911b20680a89"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/gpt-5-v2.png",
+        "sha256": "d39abcb8cf0d52c2e296fa7f5aa6419e4a1cd598e76d2296189a2ab88d5d9fc8"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "e2274b289551cb92b029361e717b367ea5c04fafb77fad87ff7aa9cd3626f935",
-          "bytes": 224056
+          "sha256": "ab9c796f37d10c3ef516773b0cbf3b923698c043f8bcc268a97421c6165d798c",
+          "bytes": 691954
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "fdd5362bdf191303944859c1126271856133fbc7a85055f22b6429be267d5d53",
-          "bytes": 28840
+          "sha256": "60b9bc39868d7aad1ca1e094c91b85e27b59edaa252f9d7e551154fcaad8e974",
+          "bytes": 42010
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "e88dc606afba5509b0c2b388c0a7e08fc36f4d68375b4c600edf017c3feac6ff",
-          "bytes": 77186
+          "sha256": "837ec0ec0fcc13741a9d1390dc631d1ff88deeb36eb2519126873529652608f7",
+          "bytes": 173678
         }
       }
     },
     {
       "group": "moments",
-      "art": "gpt-6-sol-luna",
-      "currentSha256": "7ba0e0e3d15c04f58e88385e77c2642289ff521b72e6c3e561f530daee8f0818",
+      "art": "gpt-6-sol-luna-v2",
+      "currentSha256": "30a24b6b5a030a07dafc863adf88031f5dcd793a259ee07658ebe00c694afcc7",
       "source": {
-        "path": "~/Desktop/eacc-art/moments/gpt-6-sol-luna.png",
-        "sha256": "c12819cdbbf42b161dfa8d2a0e6684c54151a228d28729e6262b9146ea698f9e"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/gpt-6-sol-luna-v2.png",
+        "sha256": "4fb1e61d7da24e46e1b277910628467365b8aa974e77c6abcd15c3a0078e0a34"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "e3722b5cda60efe006656293be79cfab9ef195971b4493ef321f1c9dd98426a9",
-          "bytes": 605702
+          "sha256": "b9affac9edda1489de759efc1d94917c14eacc3c86561426e6f1e6eb6f7e7fd3",
+          "bytes": 129118
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "ce7b29380f027971b63ec6ff8d58f6a31612fc8115d3c3db915688024a009941",
-          "bytes": 66852
+          "sha256": "faf541ed5c31fd4d99513c3d8a1a8154ad1dd88f434fba7ce5a1e780bcd835f1",
+          "bytes": 10706
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "083714b5bed7b79fce3478b8a2a213a348db28e07f6ba056cec214caeef0fd0f",
-          "bytes": 202294
+          "sha256": "0a361987839b9adbcfa6493b669e9f28811f9abca08a49dcdd98f7c081800448",
+          "bytes": 34372
         }
       }
     },
@@ -3308,6 +3337,35 @@
     },
     {
       "group": "moments",
+      "art": "memory-hardware-rally",
+      "currentSha256": "6abeb0a63b5fc3bf469545906648a6d215ada0369569d15c872967db5f5a20a4",
+      "source": {
+        "path": "tools/art/chronicle-2026-11/moments/memory-hardware-rally.png",
+        "sha256": "02792f124a0f4f7e4f0502cc7dfbad0da2f266bc81035c42280463dde4849c4e"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "b5025dcb867e5a56194c9c9916f0b4b05834e917498505f01ed722160da117c6",
+          "bytes": 738998
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "b0314c7c66526a27d3a94b9f57fc5224d55b35ffcb4222d6d67caf319e8f0e06",
+          "bytes": 61798
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "10ac43279bf0368594ad0cc9efc0d26e3038ba6de73e9926edf4f2d10cfe65fa",
+          "bytes": 204678
+        }
+      }
+    },
+    {
+      "group": "moments",
       "art": "morse-telegraph",
       "currentSha256": "43c07f2f0f7c86c3096a72913e69bd1f6751e79057c714b5280df8866ae81921",
       "source": {
@@ -3598,30 +3656,59 @@
     },
     {
       "group": "moments",
-      "art": "openai-o1",
-      "currentSha256": "4d1765001b23f811c92914b434c88f1f8ef2f99e7cf2d45e378eda8cd795f63b",
+      "art": "openai-o1-v2",
+      "currentSha256": "aa65503f3e72bcb71929925d769e68e22f1630de6ee6c74d34923d38e67cd395",
       "source": {
-        "path": "~/Desktop/eacc-art/moments/openai-o1.png",
-        "sha256": "cd4dda7593d45f7e394cafab9eb7eb154fb6b84080928f88c5cfc9319ef571de"
+        "path": "tools/art/chronicle-redraw-2026-11/plates/openai-o1-v2.png",
+        "sha256": "59de45fac50a34e5688388e1787fcdb0db7c694ad1347f8897a685e20d9cb817"
       },
       "outputs": {
         "3840": {
           "width": 3840,
           "height": 2560,
-          "sha256": "ec295fe1f3cf1f081b156ece8ce6ad29deab45fb258a22865475d88c344f0659",
-          "bytes": 225496
+          "sha256": "25d73e23056e2c4bf52cd941f51ecafb2331b9eefc2c599f1767dda3ba84045f",
+          "bytes": 399332
         },
         "hd-800": {
           "width": 800,
           "height": 534,
-          "sha256": "f08340ec1e66d5e4a7a1fda34367200dbcf4d545a4fb3f9d07119efed58296b0",
-          "bytes": 28806
+          "sha256": "07474df795329109f575c35709dc3fc56dc4eaaf45b1c7820756cca5e02a1b8d",
+          "bytes": 43204
         },
         "hd-1600": {
           "width": 1600,
           "height": 1067,
-          "sha256": "6ea213a0d3f2a62ff0bed9fcb8177e6ef9679f704d6603d4e073b7ec3d9dbb37",
-          "bytes": 77624
+          "sha256": "0776bf8c156a2a47d6183745a3c69fef18695e6b9e7313dff2e519d88d5d9caf",
+          "bytes": 125454
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "openclaw-personal-agent",
+      "currentSha256": "d772fae0235ba4d328023fb56d3795069d34e05b7599a5d7a198358253dd924d",
+      "source": {
+        "path": "tools/art/chronicle-2026-11/moments/openclaw-personal-agent.png",
+        "sha256": "303f2fa7eabe4ffce5f3529a4b54ab2e34b8605db303719c9368f109b24b024b"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "b41b9c94fe217f13b3b28ea1a4a487965d758c793fa646b40bda0fa1d0d65759",
+          "bytes": 557638
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "2be93ba892975f91010935421007c32d40cd69fe7b35e61c20970a63cab3f785",
+          "bytes": 63260
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "9e4d251e11a99f3d38c9de539167e5cef95baebf1fc70a8ba3f9bb7449b5652c",
+          "bytes": 185068
         }
       }
     },
@@ -3738,6 +3825,35 @@
           "height": 1067,
           "sha256": "44d0bb72cf3215a49ab8aadd6e740de597a0a5ac668d00ff2748e565e89aae84",
           "bytes": 295992
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "qwen-3-8-27b",
+      "currentSha256": "56d41b47024b7c0a2048450cfd60dcd007976ed6aa8e988eee7eff1ca8903814",
+      "source": {
+        "path": "tools/art/chronicle-2026-11/moments/qwen-3-8-27b.png",
+        "sha256": "a0e5254d56969e487dbd8166c24c04f45137be4f1fb8abb7d96914863200b2bc"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "2af2d2b007a6c24bd27fbe981db02cb8da55cba9676ea3edac822ab28d8f93b0",
+          "bytes": 468248
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "c7343d0ae77e702a79016d6fe3d98cf5c0a6ff22453483958a38d1e3ade78105",
+          "bytes": 51462
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "1a379f00a8b01d5f58d35241e414580722f309ef326a404cfc1c58b239b66134",
+          "bytes": 150666
         }
       }
     },
@@ -3888,6 +4004,35 @@
     },
     {
       "group": "moments",
+      "art": "seedance-2",
+      "currentSha256": "01d103e6586f1de8d2a37449573b9bd746ae48debaf61e6687628fbf352cc5f9",
+      "source": {
+        "path": "tools/art/chronicle-2026-11/moments/seedance-2.png",
+        "sha256": "d219f66c42f0add3e9c368f03e39bb2bc9366ebeda97976c5525fc2290ef3b05"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "aee29460681a5d3dc2cf0a1943442de99b92bfcc11b38734d666aabed1d03bf8",
+          "bytes": 437728
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "36484d3cc4cfdcf650b7cc2a1787fbd4b211d1d57df4c4dcc9b53af0b6773190",
+          "bytes": 46820
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "b3e5c1ceb416e641c9cdf5d3424a6cf09935af542249a151c47b792cd4ed0d2b",
+          "bytes": 143818
+        }
+      }
+    },
+    {
+      "group": "moments",
       "art": "sidereus-nuncius",
       "currentSha256": "da9acabd11e99bf42ef0ae977ca52b0340354108ef94a1e303afb73dbfe514c2",
       "source": {
@@ -3970,6 +4115,35 @@
           "height": 1067,
           "sha256": "764f4ccc2175563fe140e42a8f7cb073a734f285ad18a06473b6b9c0f8787d95",
           "bytes": 301390
+        }
+      }
+    },
+    {
+      "group": "moments",
+      "art": "sora-app-shutdown",
+      "currentSha256": "5bdd6f7650e9d32669d8390851ffa5bfde0dfcdb085fdadd99f9d9fcb076c03b",
+      "source": {
+        "path": "tools/art/chronicle-2026-11/moments/sora-app-shutdown.png",
+        "sha256": "c1adbc3ec27713563807cb4d517e0dd62f2297f9157ebddf1a355942690d44c0"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "2d71489688199c04c5ecb046b43d2690c3f8cb4dcdcdb468c44e9e2fd5d15925",
+          "bytes": 667982
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "8d186cef2aa23c91a017fb1e175f21ba0b35b48dbe1906f6ee0d5761d6a0c06c",
+          "bytes": 32200
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "03e5377a474e0e0b2dce1daa681608495bd7f73814da20d807fc56b63873c4e9",
+          "bytes": 136960
         }
       }
     },
@@ -4352,6 +4526,35 @@
     },
     {
       "group": "moments",
+      "art": "when-ai-builds-itself",
+      "currentSha256": "6e98aa9d3a4c281d5dee692881fc2f1e6cd5934c6dcb82202ea486ee7d9d422b",
+      "source": {
+        "path": "tools/art/chronicle-2026-11/moments/when-ai-builds-itself.png",
+        "sha256": "a31b1b4c3686f1fd131dd8d103f116ce19b9fc4049cb53d875b6e3207df6adde"
+      },
+      "outputs": {
+        "3840": {
+          "width": 3840,
+          "height": 2560,
+          "sha256": "988ff2c0eead093b1f622654e88a306883b27a5db7ae8c02c76e0a342c939a4d",
+          "bytes": 1196724
+        },
+        "hd-800": {
+          "width": 800,
+          "height": 534,
+          "sha256": "138d6661e2aa6580ace4f0b8675a1351b5759cbb0eef3f6bb1987b77ba957826",
+          "bytes": 60210
+        },
+        "hd-1600": {
+          "width": 1600,
+          "height": 1067,
+          "sha256": "e4b17f7001a4aaa342de89b0f923c007808fd65ae73ef791f6cd10f2b818ab64",
+          "bytes": 239140
+        }
+      }
+    },
+    {
+      "group": "moments",
       "art": "wifi-80211b",
       "currentSha256": "96fc31139cda3ba5d5c9bfc2949a3c2fbb6310c8465c38890fb0a28f9ab396d4",
       "source": {
@@ -4463,180 +4666,6 @@
           "height": 1067,
           "sha256": "0fe15227ec706618dce90fa1ccad907582b9f272a60d02c6c0ceeeb7d11f0f14",
           "bytes": 98402
-        }
-      }
-    },
-    {
-      "group": "moments",
-      "art": "openclaw-personal-agent",
-      "currentSha256": "d772fae0235ba4d328023fb56d3795069d34e05b7599a5d7a198358253dd924d",
-      "source": {
-        "path": "tools/art/chronicle-2026-11/moments/openclaw-personal-agent.png",
-        "sha256": "303f2fa7eabe4ffce5f3529a4b54ab2e34b8605db303719c9368f109b24b024b"
-      },
-      "outputs": {
-        "3840": {
-          "width": 3840,
-          "height": 2560,
-          "sha256": "b41b9c94fe217f13b3b28ea1a4a487965d758c793fa646b40bda0fa1d0d65759",
-          "bytes": 557638
-        },
-        "hd-800": {
-          "width": 800,
-          "height": 534,
-          "sha256": "2be93ba892975f91010935421007c32d40cd69fe7b35e61c20970a63cab3f785",
-          "bytes": 63260
-        },
-        "hd-1600": {
-          "width": 1600,
-          "height": 1067,
-          "sha256": "9e4d251e11a99f3d38c9de539167e5cef95baebf1fc70a8ba3f9bb7449b5652c",
-          "bytes": 185068
-        }
-      }
-    },
-    {
-      "group": "moments",
-      "art": "seedance-2",
-      "currentSha256": "01d103e6586f1de8d2a37449573b9bd746ae48debaf61e6687628fbf352cc5f9",
-      "source": {
-        "path": "tools/art/chronicle-2026-11/moments/seedance-2.png",
-        "sha256": "d219f66c42f0add3e9c368f03e39bb2bc9366ebeda97976c5525fc2290ef3b05"
-      },
-      "outputs": {
-        "3840": {
-          "width": 3840,
-          "height": 2560,
-          "sha256": "aee29460681a5d3dc2cf0a1943442de99b92bfcc11b38734d666aabed1d03bf8",
-          "bytes": 437728
-        },
-        "hd-800": {
-          "width": 800,
-          "height": 534,
-          "sha256": "36484d3cc4cfdcf650b7cc2a1787fbd4b211d1d57df4c4dcc9b53af0b6773190",
-          "bytes": 46820
-        },
-        "hd-1600": {
-          "width": 1600,
-          "height": 1067,
-          "sha256": "b3e5c1ceb416e641c9cdf5d3424a6cf09935af542249a151c47b792cd4ed0d2b",
-          "bytes": 143818
-        }
-      }
-    },
-    {
-      "group": "moments",
-      "art": "sora-app-shutdown",
-      "currentSha256": "5bdd6f7650e9d32669d8390851ffa5bfde0dfcdb085fdadd99f9d9fcb076c03b",
-      "source": {
-        "path": "tools/art/chronicle-2026-11/moments/sora-app-shutdown.png",
-        "sha256": "c1adbc3ec27713563807cb4d517e0dd62f2297f9157ebddf1a355942690d44c0"
-      },
-      "outputs": {
-        "3840": {
-          "width": 3840,
-          "height": 2560,
-          "sha256": "2d71489688199c04c5ecb046b43d2690c3f8cb4dcdcdb468c44e9e2fd5d15925",
-          "bytes": 667982
-        },
-        "hd-800": {
-          "width": 800,
-          "height": 534,
-          "sha256": "8d186cef2aa23c91a017fb1e175f21ba0b35b48dbe1906f6ee0d5761d6a0c06c",
-          "bytes": 32200
-        },
-        "hd-1600": {
-          "width": 1600,
-          "height": 1067,
-          "sha256": "03e5377a474e0e0b2dce1daa681608495bd7f73814da20d807fc56b63873c4e9",
-          "bytes": 136960
-        }
-      }
-    },
-    {
-      "group": "moments",
-      "art": "when-ai-builds-itself",
-      "currentSha256": "6e98aa9d3a4c281d5dee692881fc2f1e6cd5934c6dcb82202ea486ee7d9d422b",
-      "source": {
-        "path": "tools/art/chronicle-2026-11/moments/when-ai-builds-itself.png",
-        "sha256": "a31b1b4c3686f1fd131dd8d103f116ce19b9fc4049cb53d875b6e3207df6adde"
-      },
-      "outputs": {
-        "3840": {
-          "width": 3840,
-          "height": 2560,
-          "sha256": "988ff2c0eead093b1f622654e88a306883b27a5db7ae8c02c76e0a342c939a4d",
-          "bytes": 1196724
-        },
-        "hd-800": {
-          "width": 800,
-          "height": 534,
-          "sha256": "138d6661e2aa6580ace4f0b8675a1351b5759cbb0eef3f6bb1987b77ba957826",
-          "bytes": 60210
-        },
-        "hd-1600": {
-          "width": 1600,
-          "height": 1067,
-          "sha256": "e4b17f7001a4aaa342de89b0f923c007808fd65ae73ef791f6cd10f2b818ab64",
-          "bytes": 239140
-        }
-      }
-    },
-    {
-      "group": "moments",
-      "art": "memory-hardware-rally",
-      "currentSha256": "6abeb0a63b5fc3bf469545906648a6d215ada0369569d15c872967db5f5a20a4",
-      "source": {
-        "path": "tools/art/chronicle-2026-11/moments/memory-hardware-rally.png",
-        "sha256": "02792f124a0f4f7e4f0502cc7dfbad0da2f266bc81035c42280463dde4849c4e"
-      },
-      "outputs": {
-        "3840": {
-          "width": 3840,
-          "height": 2560,
-          "sha256": "b5025dcb867e5a56194c9c9916f0b4b05834e917498505f01ed722160da117c6",
-          "bytes": 738998
-        },
-        "hd-800": {
-          "width": 800,
-          "height": 534,
-          "sha256": "b0314c7c66526a27d3a94b9f57fc5224d55b35ffcb4222d6d67caf319e8f0e06",
-          "bytes": 61798
-        },
-        "hd-1600": {
-          "width": 1600,
-          "height": 1067,
-          "sha256": "10ac43279bf0368594ad0cc9efc0d26e3038ba6de73e9926edf4f2d10cfe65fa",
-          "bytes": 204678
-        }
-      }
-    },
-    {
-      "group": "moments",
-      "art": "qwen-3-8-27b",
-      "currentSha256": "56d41b47024b7c0a2048450cfd60dcd007976ed6aa8e988eee7eff1ca8903814",
-      "source": {
-        "path": "tools/art/chronicle-2026-11/moments/qwen-3-8-27b.png",
-        "sha256": "a0e5254d56969e487dbd8166c24c04f45137be4f1fb8abb7d96914863200b2bc"
-      },
-      "outputs": {
-        "3840": {
-          "width": 3840,
-          "height": 2560,
-          "sha256": "2af2d2b007a6c24bd27fbe981db02cb8da55cba9676ea3edac822ab28d8f93b0",
-          "bytes": 468248
-        },
-        "hd-800": {
-          "width": 800,
-          "height": 534,
-          "sha256": "c7343d0ae77e702a79016d6fe3d98cf5c0a6ff22453483958a38d1e3ade78105",
-          "bytes": 51462
-        },
-        "hd-1600": {
-          "width": 1600,
-          "height": 1067,
-          "sha256": "1a379f00a8b01d5f58d35241e414580722f309ef326a404cfc1c58b239b66134",
-          "bytes": 150666
         }
       }
     }

@@ -1635,8 +1635,8 @@
       "category": "compute",
       "capability": "云计算",
       "source": "https://en.wikipedia.org/wiki/Amazon_S3",
-      "art": "amazon-s3",
-      "artStyle": "2000年代玻璃质感产品图"
+      "art": "amazon-s3-v2",
+      "artStyle": "2000年代企业年报摄影"
     },
     {
       "id": "deep-autoencoder",
@@ -1793,8 +1793,8 @@
       "category": "human",
       "capability": "基因编辑",
       "source": "https://en.wikipedia.org/wiki/CRISPR_gene_editing",
-      "art": "crispr",
-      "artStyle": "2010年代数据可视化"
+      "art": "crispr-v2",
+      "artStyle": "科学期刊封面剪纸"
     },
     {
       "id": "tesla-model-s",
@@ -1838,8 +1838,8 @@
       "category": "ai",
       "capability": "深度学习",
       "source": "https://en.wikipedia.org/wiki/AlexNet",
-      "art": "alexnet-classification",
-      "artStyle": "2010年代实验室写实插画"
+      "art": "alexnet-classification-v2",
+      "artStyle": "2012年数码快照"
     },
     {
       "id": "china-4g",
@@ -2264,8 +2264,8 @@
       "category": "ai",
       "capability": "大语言模型",
       "source": "https://openai.com/index/chatgpt/",
-      "art": "chatgpt",
-      "artStyle": "2020年代生成式AI美学"
+      "art": "chatgpt-v2",
+      "artStyle": "2022年纪实摄影"
     },
     {
       "id": "fusion-ignition",
@@ -2440,8 +2440,8 @@
       "category": "ai",
       "capability": "推理模型",
       "source": "https://openai.com/index/learning-to-reason-with-llms/",
-      "art": "openai-o1",
-      "artStyle": "2020年代生成式AI美学"
+      "art": "openai-o1-v2",
+      "artStyle": "长曝光静物摄影"
     },
     {
       "id": "nobel-physics-2024",
@@ -2486,8 +2486,8 @@
       "category": "ai",
       "capability": "智能体",
       "source": "https://www.anthropic.com/news/3-5-models-and-computer-use",
-      "art": "computer-use",
-      "artStyle": "2020年代生成式AI美学"
+      "art": "computer-use-v2",
+      "artStyle": "操作手册线稿"
     },
     {
       "id": "deepseek-v3",
@@ -2559,8 +2559,8 @@
       "detail": "OpenAI用一个路由把推理模型和快速模型合为一体。",
       "category": "ai",
       "source": "https://openai.com/index/introducing-gpt-5/",
-      "art": "gpt-5",
-      "artStyle": "极简编辑插画"
+      "art": "gpt-5-v2",
+      "artStyle": "夜间铁路航拍"
     },
     {
       "id": "gpt-5-1",
@@ -2601,9 +2601,7 @@
       "detail": "彼得·施泰因贝格尔2025年11月开源的个人智能体在1月底定名OpenClaw，3月初已获24.7万GitHub星；第三方技能的数据外泄风险也随之暴露。",
       "category": "ai",
       "capability": "在自己的电脑上常驻一个能代办事务的 AI",
-      "source": "https://en.wikipedia.org/wiki/OpenClaw",
-      "art": "openclaw-personal-agent",
-      "artStyle": "纪实街拍摄影"
+      "source": "https://en.wikipedia.org/wiki/OpenClaw"
     },
     {
       "id": "seedance-2",
@@ -2616,6 +2614,18 @@
       "source": "https://seed.bytedance.com/en/seedance2_0",
       "art": "seedance-2",
       "artStyle": "电影剧照"
+    },
+    {
+      "id": "openclaw-install-queue",
+      "t": 2026.1753,
+      "precision": "day",
+      "date": "2026-03-06",
+      "title": "排队装“龙虾”",
+      "detail": "近千人来到深圳腾讯大厦楼下排队，请腾讯云工程师免费安装OpenClaw，“养龙虾”成了全民话题：闲鱼上有人收费上门代装，也有门店的Mac mini卖断货。",
+      "category": "ai",
+      "source": "https://www.nbd.com.cn/articles/2026-03-07/4283117.html",
+      "art": "openclaw-personal-agent",
+      "artStyle": "纪实街拍摄影"
     },
     {
       "id": "sora-app-shutdown",
@@ -2851,8 +2861,8 @@
       "detail": "OpenAI推出GPT-6主力与轻量模型，API价格比5.6系列减半。",
       "category": "ai",
       "source": "https://thenextweb.com/news/openai-gpt-6-sol-luna-api-price-cut",
-      "art": "gpt-6-sol-luna",
-      "artStyle": "超现实电路光景"
+      "art": "gpt-6-sol-luna-v2",
+      "artStyle": "大画幅风光摄影"
     },
     {
       "id": "gemini-4-argon",
@@ -2890,8 +2900,8 @@
         "by": "本站情景推演（2026-10-08）",
         "url": "https://github.com/seasonsolt/news-e-accs/blob/main/docs/near-term-forecasts.md"
       },
-      "art": "forecast-agent-teams",
-      "artStyle": "近未来情景写实插画（推测）"
+      "art": "forecast-agent-teams-v2",
+      "artStyle": "近未来纪实摄影"
     },
     {
       "id": "forecast-personal-ai-speculative",
@@ -2906,8 +2916,8 @@
         "by": "本站情景推演（2026-10-08）",
         "url": "https://github.com/seasonsolt/news-e-accs/blob/main/docs/near-term-forecasts.md"
       },
-      "art": "forecast-personal-ai",
-      "artStyle": "近未来情景写实插画（推测）"
+      "art": "forecast-personal-ai-v2",
+      "artStyle": "近未来纪实摄影"
     },
     {
       "id": "forecast-controlled-robotics-speculative",
@@ -2922,8 +2932,8 @@
         "by": "本站情景推演（2026-10-08）",
         "url": "https://github.com/seasonsolt/news-e-accs/blob/main/docs/near-term-forecasts.md"
       },
-      "art": "forecast-useful-robots",
-      "artStyle": "近未来情景写实插画（推测）"
+      "art": "forecast-useful-robots-v2",
+      "artStyle": "近未来纪实摄影"
     },
     {
       "id": "forecast-kurzweil-2029",
@@ -2952,8 +2962,8 @@
         "by": "本站情景推演（2026-10-08）",
         "url": "https://github.com/seasonsolt/news-e-accs/blob/main/docs/near-term-forecasts.md"
       },
-      "art": "forecast-science-loop",
-      "artStyle": "近未来情景写实插画（推测）"
+      "art": "forecast-science-loop-v2",
+      "artStyle": "近未来纪实摄影"
     },
     {
       "id": "forecast-epoch-2e29",
@@ -2996,8 +3006,8 @@
         "by": "本站情景推演（2026-10-08）",
         "url": "https://github.com/seasonsolt/news-e-accs/blob/main/docs/near-term-forecasts.md"
       },
-      "art": "forecast-grid-compute",
-      "artStyle": "近未来情景写实插画（推测）"
+      "art": "forecast-grid-compute-v2",
+      "artStyle": "近未来航空摄影"
     },
     {
       "id": "forecast-interactive-worlds-speculative",
@@ -3012,8 +3022,8 @@
         "by": "本站情景推演（2026-10-08）",
         "url": "https://github.com/seasonsolt/news-e-accs/blob/main/docs/near-term-forecasts.md"
       },
-      "art": "forecast-interactive-worlds",
-      "artStyle": "近未来情景写实插画（推测）"
+      "art": "forecast-interactive-worlds-v2",
+      "artStyle": "近未来片场摄影"
     },
     {
       "id": "forecast-metaculus-agi",

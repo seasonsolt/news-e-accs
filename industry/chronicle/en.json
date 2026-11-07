@@ -133,22 +133,22 @@
     "social-web": {
       "title": "Social Networks",
       "summary": "Blogs, social networks, video sites and online shopping let ordinary people publish content and run shops, and the internet shifts from browsing to participation.",
-      "artStyle": "1990s pixel art"
+      "artStyle": "2000s compact-camera snapshots"
     },
     "mobile-internet": {
       "title": "The Mobile Internet",
       "summary": "Smartphones and cloud computing keep billions of people online at all times, and data volumes grow explosively.",
-      "artStyle": "2010s flat design"
+      "artStyle": "2010s subway documentary photography"
     },
     "deep-learning": {
       "title": "Deep Learning",
       "summary": "GPU-trained neural networks achieve breakthroughs in image and speech recognition, and residual networks then make much deeper models trainable.",
-      "artStyle": "2010s realistic lab illustration"
+      "artStyle": "2010s lab film photography"
     },
     "deep-reinforcement-learning": {
       "title": "Deep Reinforcement Learning and AlphaGo",
       "summary": "Deep networks are combined with reinforcement learning, and AlphaGo defeats Lee Sedol at Go, bringing machines' ability to learn strategy into public view.",
-      "artStyle": "Contemporary realistic technology illustration"
+      "artStyle": "2016 tournament press photography"
     },
     "transformer": {
       "title": "The Transformer",
@@ -158,7 +158,7 @@
     "pretraining": {
       "title": "Language Pretraining",
       "summary": "GPT and BERT first learn from large amounts of unlabeled text and are then adapted to specific tasks, turning language models from specialized tools into reusable foundations.",
-      "artStyle": "Contemporary realistic technology illustration"
+      "artStyle": "2010s industrial monochrome photography"
     },
     "foundation-models": {
       "title": "Scaling and Few-Shot Learning",
@@ -168,42 +168,42 @@
     "ai-copilots": {
       "title": "AI Coding Assistants",
       "summary": "Copilot brings code generation into the editor, moving AI from lab demos into everyday workflows as programmers get suggestions from natural language and context.",
-      "artStyle": "Contemporary realistic technology illustration"
+      "artStyle": "2021 home-office documentary photography"
     },
     "generative-ai": {
       "title": "Generative Images",
       "summary": "DALL·E 2, Midjourney and Stable Diffusion turn text into images, giving painting and design generative tools the general public can use.",
-      "artStyle": "Contemporary realistic technology illustration"
+      "artStyle": "Darkroom photography"
     },
     "large-models": {
       "title": "Conversational Large Models",
       "summary": "Instruction tuning and human feedback make language models better at following user intent, and ChatGPT brings writing, Q&A and programming into ordinary people's daily lives.",
-      "artStyle": "Diffusion-model 3D render"
+      "artStyle": "2023 documentary photography"
     },
     "multimodal": {
       "title": "Multimodal Large Models",
       "summary": "GPT-4 demonstrates image understanding as language models begin to connect text and vision, and models such as Gemini push multimodal capabilities further.",
-      "artStyle": "Contemporary realistic technology illustration"
+      "artStyle": "Editorial still-life photography"
     },
     "tool-use": {
       "title": "Tool Use",
       "summary": "Function calling arrives in large-model APIs, letting models call external programs to look up information, run code and take actions, paving the way for agentic workflows.",
-      "artStyle": "Contemporary realistic technology illustration"
+      "artStyle": "Mid-century silkscreen poster"
     },
     "generative-video": {
       "title": "Generative Video",
       "summary": "Sora shows progress in text-to-video generation as generated content moves from still frames to continuous shots; demo capabilities still fall short of practical usability.",
-      "artStyle": "Contemporary realistic technology illustration"
+      "artStyle": "Macro still-life photography"
     },
     "realtime-multimodal": {
       "title": "Real-Time Voice and Vision",
       "summary": "GPT-4o demonstrates low-latency voice and vision interaction, and AI assistants begin moving from typing and waiting for answers toward more natural real-time conversation.",
-      "artStyle": "Contemporary realistic technology illustration"
+      "artStyle": "Everyday documentary photography"
     },
     "reasoning": {
       "title": "Reasoning Models",
       "summary": "o1 makes reasoning compute before answering a new scaling direction, improving math and coding ability; reasoning performance still needs case-by-case verification.",
-      "artStyle": "Contemporary realistic technology illustration"
+      "artStyle": "Hand-drawn survey map"
     },
     "agents": {
       "title": "AI Agents",
@@ -214,37 +214,37 @@
       "epoch": "Speculative",
       "title": "Long-Horizon Agent Teams (speculative)",
       "summary": "Scenario forecast (2027–2029): teams of agents may continuously divide up, check and deliver work in software development and research. This assumes mature permissions, verification and failure recovery; humans remain responsible for complex tasks.",
-      "artStyle": "Near-future realistic scenario illustration (speculative)"
+      "artStyle": "Near-future documentary photography"
     },
     "personal-ai-speculative": {
       "title": "Personal AI and On-Device Coordination (speculative)",
       "summary": "Scenario forecast (2027–2030): personal assistants may coordinate across phones and computers, with more everyday tasks done on-device. Adoption depends on power consumption, privacy permissions and reliable memory; complex tasks may still rely on the cloud.",
-      "artStyle": "Near-future realistic scenario illustration (speculative)"
+      "artStyle": "Near-future documentary photography"
     },
     "controlled-robotics-speculative": {
       "title": "Robots in Controlled Settings (speculative)",
       "summary": "Scenario forecast (2028–2031): robots in warehouses, factories and labs may take on more multi-step operations, expanding first in roles with controlled environments. Cost, safety and fault handling still limit adoption; a robot in every home is not the baseline scenario.",
-      "artStyle": "Near-future realistic scenario illustration (speculative)"
+      "artStyle": "Near-future documentary photography"
     },
     "science-loop-speculative": {
       "title": "Closed-Loop AI Research (speculative)",
       "summary": "Scenario forecast (2029–2031): in some materials and life-science projects, AI may link hypotheses, experimental design and result analysis, with automated equipment shortening iterations. Only reproducible experimental validation counts as a breakthrough, and it does not mean drugs will be approved right away.",
-      "artStyle": "Near-future realistic scenario illustration (speculative)"
+      "artStyle": "Near-future documentary photography"
     },
     "grid-compute-speculative": {
       "title": "Coordinated Build-Out of Compute and Grid (speculative)",
       "summary": "Scenario forecast (2028–2031): AI demand may drive a coordinated build-out of data centers, power grids, energy storage and cooling. The IEA's 2030 electricity demand projections ground the demand side; the build-out pace in this e-acc.ai scenario remains constrained by grid connection, financing and supply chains, and does not imply energy has become limitlessly cheap.",
-      "artStyle": "Near-future realistic scenario illustration (speculative)"
+      "artStyle": "Near-future aerial photography"
     },
     "interactive-worlds-speculative": {
       "title": "Interactive Worlds and Simulation Training (speculative)",
       "summary": "Scenario forecast (2029–2031): interactive generated worlds may be used for creative work, training and robot simulation. Long-term consistency, physical accuracy and cost will determine where they are usable; a playable scene is not a trustworthy simulation of reality.",
-      "artStyle": "Near-future realistic scenario illustration (speculative)"
+      "artStyle": "Near-future studio photography"
     },
     "abundance-speculative": {
       "title": "Energy and Compute Abundance (speculative)",
       "summary": "Speculative: if fusion, solar and AI keep advancing, energy and compute could become extremely cheap; nothing is settled yet.",
-      "artStyle": "Solarpunk illustration (speculative)"
+      "artStyle": "Solarpunk gouache concept painting"
     },
     "kardashev-i-speculative": {
       "title": "Toward Kardashev Type I (speculative)",
@@ -982,7 +982,7 @@
       "title": "Cloud Computing",
       "detail": "Amazon launches the S3 storage service; storage and compute can be rented on demand.",
       "capability": "Cloud computing",
-      "artStyle": "2000s glossy product imagery"
+      "artStyle": "Mid-2000s corporate annual-report photography"
     },
     "deep-autoencoder": {
       "title": "Deep Learning Revival",
@@ -1052,7 +1052,7 @@
       "title": "CRISPR Gene Editing",
       "detail": "Doudna and Charpentier show that CRISPR-Cas9 can cut DNA at chosen sites.",
       "capability": "Gene editing",
-      "artStyle": "2010s data visualization"
+      "artStyle": "Science-journal cut-paper cover art"
     },
     "tesla-model-s": {
       "title": "Model S Deliveries",
@@ -1072,7 +1072,7 @@
       "title": "AlexNet",
       "detail": "A deep convolutional network trained on GPUs wins the ImageNet competition, slashing the error rate.",
       "capability": "Deep learning",
-      "artStyle": "2010s realistic laboratory illustration"
+      "artStyle": "2012 digital snapshot"
     },
     "china-4g": {
       "title": "China Issues 4G Licenses",
@@ -1259,7 +1259,7 @@
       "title": "ChatGPT launches",
       "detail": "OpenAI releases a conversational language model, bringing large language models to the public.",
       "capability": "Large language models",
-      "artStyle": "2020s generative AI aesthetic"
+      "artStyle": "2022 documentary photography"
     },
     "fusion-ignition": {
       "title": "Fusion ignition",
@@ -1336,7 +1336,7 @@
       "title": "o1: reasoning models",
       "detail": "Models think before answering, making test-time compute a new scaling dimension.",
       "capability": "Reasoning models",
-      "artStyle": "2020s generative AI aesthetic"
+      "artStyle": "Long-exposure still-life photography"
     },
     "nobel-physics-2024": {
       "title": "Physics Nobel for neural networks",
@@ -1356,7 +1356,7 @@
       "title": "AI learns to use a computer",
       "detail": "Anthropic introduces \"computer use\": the model can see the screen, move the cursor, click and type.",
       "capability": "AI agents",
-      "artStyle": "2020s generative AI aesthetic"
+      "artStyle": "Instruction-manual line drawing"
     },
     "deepseek-v3": {
       "title": "DeepSeek-V3",
@@ -1387,7 +1387,7 @@
     "gpt-5": {
       "title": "GPT-5",
       "detail": "OpenAI unifies a reasoning model and a fast model behind a single router.",
-      "artStyle": "Minimalist editorial illustration"
+      "artStyle": "Night aerial railway photography"
     },
     "gpt-5-1": {
       "title": "GPT-5.1",
@@ -1475,7 +1475,7 @@
     "gpt-6-sol-luna": {
       "title": "GPT-6 Sol and Luna",
       "detail": "OpenAI launches GPT-6's flagship and lightweight models at half the API price of the 5.6 series.",
-      "artStyle": "Surreal circuit-lightscape"
+      "artStyle": "Large-format landscape photography"
     },
     "gemini-4-argon": {
       "title": "Gemini 4 Argon",
@@ -1484,19 +1484,19 @@
     "forecast-agent-teams-speculative": {
       "title": "Agent teams on long tasks (speculative)",
       "detail": "Scenario forecast (2027–2029): teams of AI agents may divide work, check each other and deliver continuously in software development and research. This assumes mature permissions, verification and failure recovery; humans remain accountable for complex tasks. Confidence in direction: medium. Year is a browsing anchor.",
-      "artStyle": "Near-future scenario realist illustration (speculative)",
+      "artStyle": "Near-future documentary photography",
       "forecastBy": "e-acc.ai scenario (2026-10-08)"
     },
     "forecast-personal-ai-speculative": {
       "title": "Personal AI and on-device coordination (speculative)",
       "detail": "Scenario forecast (2027–2030): personal assistants may work across phones and computers, with more everyday tasks handled on-device. Adoption depends on power use, privacy permissions and reliable memory; complex tasks may still rely on the cloud. Confidence in direction: medium. Year is a browsing anchor.",
-      "artStyle": "Near-future scenario realist illustration (speculative)",
+      "artStyle": "Near-future documentary photography",
       "forecastBy": "e-acc.ai scenario (2026-10-08)"
     },
     "forecast-controlled-robotics-speculative": {
       "title": "Robots enter controlled settings (speculative)",
       "detail": "Scenario forecast (2028–2031): robots in warehouses, factories and labs may take on more multi-step operations, expanding first in jobs with controlled environments. Cost, safety and fault handling still limit adoption; a robot in every home is not the baseline scenario. Confidence in direction: medium to low. Year is a browsing anchor.",
-      "artStyle": "Near-future scenario realist illustration (speculative)",
+      "artStyle": "Near-future documentary photography",
       "forecastBy": "e-acc.ai scenario (2026-10-08)"
     },
     "forecast-kurzweil-2029": {
@@ -1507,7 +1507,7 @@
     "forecast-science-loop-speculative": {
       "title": "Closed-loop AI science (speculative)",
       "detail": "Scenario forecast (2029–2031): in some materials and life-science problems, AI may link hypotheses, experimental design and analysis, with automated equipment shortening iterations. Only reproducible experimental validation counts as a breakthrough, and it does not mean drugs will be approved right away. Confidence in direction: medium to low. Year is a browsing anchor.",
-      "artStyle": "Near-future scenario realist illustration (speculative)",
+      "artStyle": "Near-future documentary photography",
       "forecastBy": "e-acc.ai scenario (2026-10-08)"
     },
     "forecast-epoch-2e29": {
@@ -1523,13 +1523,13 @@
     "forecast-grid-compute-speculative": {
       "title": "Compute and grid build out together (speculative)",
       "detail": "Scenario forecast (2028–2031): AI demand may drive coordinated expansion of data centers, power grids, energy storage and cooling. The IEA's 2030 electricity projection grounds the demand; the build-out pace in this scenario remains constrained by grid connection, financing and supply chains, and does not imply energy has become limitlessly cheap. Confidence in direction: fairly high on demand, medium on build-out pace. Year is a browsing anchor.",
-      "artStyle": "Near-future scenario realist illustration (speculative)",
+      "artStyle": "Near-future aerial photography",
       "forecastBy": "e-acc.ai scenario (2026-10-08)"
     },
     "forecast-interactive-worlds-speculative": {
       "title": "Interactive worlds and simulation training (speculative)",
       "detail": "Scenario forecast (2029–2031): interactive generated worlds may be used for creative work, training and robot simulation. Long-run consistency, physical accuracy and cost will determine where they are usable; a playable scene is not a trustworthy simulation of reality. Confidence in direction: medium to low. Year is a browsing anchor.",
-      "artStyle": "Near-future scenario realist illustration (speculative)",
+      "artStyle": "Near-future studio photography",
       "forecastBy": "e-acc.ai scenario (2026-10-08)"
     },
     "forecast-metaculus-agi": {
@@ -1566,13 +1566,17 @@
     "openclaw-personal-agent": {
       "title": "OpenClaw gets its name",
       "detail": "Peter Steinberger's open-source personal agent, first released in November 2025, took the name OpenClaw in late January and passed 247,000 GitHub stars by early March; the data-exfiltration risk of third-party skills surfaced alongside it.",
-      "capability": "A resident AI on your own computer that handles tasks for you",
-      "artStyle": "Documentary street photography"
+      "capability": "A resident AI on your own computer that handles tasks for you"
     },
     "seedance-2": {
       "title": "Seedance 2.0",
       "detail": "ByteDance releases a joint audio-video generation model that takes text, image, audio and video inputs together and directs performance, lighting and camera movement.",
       "artStyle": "Cinematic film still"
+    },
+    "openclaw-install-queue": {
+      "title": "Queueing to install the \"lobster\"",
+      "detail": "Nearly a thousand people lined up outside Tencent's Shenzhen headquarters for Tencent Cloud engineers to install OpenClaw for free. \"Raising a lobster\" became a national craze: sellers offered paid home installs, and some shops sold out of Mac minis.",
+      "artStyle": "Documentary street photography"
     },
     "sora-app-shutdown": {
       "title": "OpenAI says goodbye to Sora",

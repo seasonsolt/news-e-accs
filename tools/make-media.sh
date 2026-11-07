@@ -29,8 +29,8 @@ CLIPS=(
   "steam-age|steam-age-1600.webp|2.0|0.55 0.45"
   "electric-age|electric-age-1600.webp|1.5|0.50 0.45"
   "space-age|space-age-1600.webp|1.2|0.60 0.45"
-  "internet|internet-1600.webp|1.0|0.50 0.45"
-  "large-models|large-models-1600.webp|1.0|0.50 0.45"
+  "internet-v2|internet-v2-1600.webp|1.0|0.50 0.45"
+  "large-models-v2|large-models-v2-1600.webp|1.0|0.50 0.45"
   "agents|agents-1600.webp|1.1|0.60 0.55"
   "kardashev-i-speculative|kardashev-i-speculative-1600.webp|5.0|0.50 0.50"
 )

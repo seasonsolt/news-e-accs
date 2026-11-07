@@ -23,8 +23,8 @@ export const ASCENT: ReadonlyArray<{ art: string; hold: number; zh: string; en: 
   { art: "steam-age", hold: 2.0, zh: "1769 · 蒸汽时代", en: "1769 · The steam age" },
   { art: "electric-age", hold: 1.5, zh: "1879 · 电气时代", en: "1879 · The electric age" },
   { art: "space-age", hold: 1.2, zh: "1957 · 太空时代", en: "1957 · The space age" },
-  { art: "internet", hold: 1.0, zh: "1991 · 互联网", en: "1991 · The internet" },
-  { art: "large-models", hold: 1.0, zh: "2022 · 对话式大模型", en: "2022 · Conversational models" },
+  { art: "internet-v2", hold: 1.0, zh: "1991 · 互联网", en: "1991 · The internet" },
+  { art: "large-models-v2", hold: 1.0, zh: "2022 · 对话式大模型", en: "2022 · Conversational models" },
   { art: "agents", hold: 1.1, zh: "2025 · 智能体时代", en: "2025 · The agent era" },
   { art: "kardashev-i-speculative", hold: 5.0, zh: "2080（推测）· 迈向 I 型文明", en: "2080 (speculative) · Toward a Type I civilization" },
 ];

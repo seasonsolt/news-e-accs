@@ -1,0 +1,147 @@
+[
+ {
+  "art": "amazon-s3-v2",
+  "style": "2000年代企业年报摄影",
+  "styleEn": "Mid-2000s corporate annual-report photography"
+ },
+ {
+  "art": "crispr-v2",
+  "style": "科学期刊封面剪纸",
+  "styleEn": "Science-journal cut-paper cover art"
+ },
+ {
+  "art": "chatgpt-v2",
+  "style": "2022年纪实摄影",
+  "styleEn": "2022 documentary photography"
+ },
+ {
+  "art": "openai-o1-v2",
+  "style": "长曝光静物摄影",
+  "styleEn": "Long-exposure still-life photography"
+ },
+ {
+  "art": "computer-use-v2",
+  "style": "操作手册线稿",
+  "styleEn": "Instruction-manual line drawing"
+ },
+ {
+  "art": "alexnet-classification-v2",
+  "style": "2012年数码快照",
+  "styleEn": "2012 digital snapshot"
+ },
+ {
+  "art": "gpt-5-v2",
+  "style": "夜间铁路航拍",
+  "styleEn": "Night aerial railway photography"
+ },
+ {
+  "art": "gpt-6-sol-luna-v2",
+  "style": "大画幅风光摄影",
+  "styleEn": "Large-format landscape photography"
+ },
+ {
+  "art": "forecast-agent-teams-v2",
+  "style": "近未来纪实摄影",
+  "styleEn": "Near-future documentary photography"
+ },
+ {
+  "art": "forecast-personal-ai-v2",
+  "style": "近未来纪实摄影",
+  "styleEn": "Near-future documentary photography"
+ },
+ {
+  "art": "forecast-useful-robots-v2",
+  "style": "近未来纪实摄影",
+  "styleEn": "Near-future documentary photography"
+ },
+ {
+  "art": "forecast-science-loop-v2",
+  "style": "近未来纪实摄影",
+  "styleEn": "Near-future documentary photography"
+ },
+ {
+  "art": "forecast-grid-compute-v2",
+  "style": "近未来航空摄影",
+  "styleEn": "Near-future aerial photography"
+ },
+ {
+  "art": "forecast-interactive-worlds-v2",
+  "style": "近未来片场摄影",
+  "styleEn": "Near-future studio photography"
+ },
+ {
+  "art": "large-models-v2",
+  "style": "2023年纪实摄影",
+  "styleEn": "2023 documentary photography"
+ },
+ {
+  "art": "internet-v2",
+  "style": "1990年代像素风",
+  "styleEn": "1990s pixel art"
+ },
+ {
+  "art": "social-web-v2",
+  "style": "2000年代卡片机快照",
+  "styleEn": "2000s compact-camera snapshots"
+ },
+ {
+  "art": "mobile-internet-v2",
+  "style": "2010年代地铁纪实摄影",
+  "styleEn": "2010s subway documentary photography"
+ },
+ {
+  "art": "abundance-speculative-v2",
+  "style": "太阳朋克水粉概念画",
+  "styleEn": "Solarpunk gouache concept painting"
+ },
+ {
+  "art": "deep-learning-lab-v2",
+  "style": "2010年代实验室胶片",
+  "styleEn": "2010s lab film photography"
+ },
+ {
+  "art": "alphago-match-v2",
+  "style": "2016年赛事新闻摄影",
+  "styleEn": "2016 tournament press photography"
+ },
+ {
+  "art": "language-pretraining-v2",
+  "style": "2010年代工业黑白摄影",
+  "styleEn": "2010s industrial monochrome photography"
+ },
+ {
+  "art": "coding-copilot-v2",
+  "style": "2021年居家办公纪实",
+  "styleEn": "2021 home-office documentary photography"
+ },
+ {
+  "art": "text-to-image-v2",
+  "style": "暗房摄影",
+  "styleEn": "Darkroom photography"
+ },
+ {
+  "art": "multimodal-understanding-v2",
+  "style": "编辑静物摄影",
+  "styleEn": "Editorial still-life photography"
+ },
+ {
+  "art": "model-tool-use-v2",
+  "style": "中世纪现代丝网海报",
+  "styleEn": "Mid-century silkscreen poster"
+ },
+ {
+  "art": "text-to-video-v2",
+  "style": "微距静物摄影",
+  "styleEn": "Macro still-life photography"
+ },
+ {
+  "art": "realtime-voice-vision-v2",
+  "style": "生活纪实摄影",
+  "styleEn": "Everyday documentary photography"
+ },
+ {
+  "art": "reasoning-model-v2",
+  "style": "手绘地形图",
+  "styleEn": "Hand-drawn survey map"
+ }
+]

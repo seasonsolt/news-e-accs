@@ -4,7 +4,7 @@
 
 | 里程碑 | 画风 | 构图 |
 |---|---|---|
-| `openclaw-personal-agent` | 纪实街拍摄影 | 排队抱着小主机的人，路面上有龙虾钳的影子 |
+| `openclaw-install-queue`（图片键 `openclaw-personal-agent`） | 纪实街拍摄影 | 排队抱着小主机的人，路面上有龙虾钳的影子 |
 | `seedance-2` | 电影剧照 | 成千上万条竖屏短片汇成一束光，凝成一场真实的戏 |
 | `sora-app-shutdown` | 1970 年代彩色反转片 | 荒漠里废弃的汽车影院，银幕空白，远处工厂亮着灯 |
 | `when-ai-builds-itself` | 二十世纪中期数学石版画 | 机械臂一代造一代，人越来越小，尽头只剩一张空凳子 |

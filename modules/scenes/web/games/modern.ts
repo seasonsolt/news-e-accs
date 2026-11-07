@@ -52,7 +52,7 @@ export const MODERN_WORLDS = {
     ...common, id: "network", path: "/chronicle/network", time: 1991.5945, figure: "1991", title: t("网络分片工坊", "The Packet Workshop"),
     readingLabels: [t("当前分片", "Current fragment"), t("选定路径", "Selected route"), t("送达片数", "Fragments delivered")],
     subtitle: t("消息穿过夜色里的线路。绕开断路，把分散的片段重新连成一句话。", "Messages travel through the night. Route around broken links and reassemble the fragments."),
-    plate: "/media/art/epochs/internet-1600.webp", action: t("发送并重组", "Send and reassemble"),
+    plate: "/media/art/epochs/internet-v2-1600.webp", action: t("发送并重组", "Send and reassemble"),
     phases: [
       phase("先选择第一片。", "分片必须按一、二、三发送。节点图的红色线路表示当前分片无法通行。", "Select the first fragment.", "Send fragments one, two, three in order. Red links cannot carry the selected fragment.", 0),
       phase("绕开失效的线路。", "每片可用的路径不同。切换分片后，再观察节点图和路径指示。", "Route around a failed link.", "Each fragment has different available routes. Recheck the diagram after changing the fragment.", 1),

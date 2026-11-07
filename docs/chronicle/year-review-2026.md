@@ -6,7 +6,8 @@
 
 | 节点 | 日期 | 依据 | 与转写不同的地方 |
 |---|---|---|---|
-| OpenClaw | 2026-01-30 定名 | [Wikipedia](https://en.wikipedia.org/wiki/OpenClaw)：2025-11-24 首发（Warelay），依次改名 CLAWDIS、Clawdbot、Moltbot，1 月 30 日定名；2026-03-02 时 24.7 万星 | 转写说 2025 年 12 月发布，实为 11 月。“排队装机、抢 Mac mini”没有另找来源，只出现在画面里，不写进条目 |
+| OpenClaw | 2026-01-30 定名 | [Wikipedia](https://en.wikipedia.org/wiki/OpenClaw)：2025-11-24 首发（Warelay），依次改名 CLAWDIS、Clawdbot、Moltbot，1 月 30 日定名；2026-03-02 时 24.7 万星 | 转写说 2025 年 12 月发布，实为 11 月 |
+| 排队装“龙虾” | 2026-03-06 | [每日经济新闻](https://www.nbd.com.cn/articles/2026-03-07/4283117.html)：近千人到深圳腾讯大厦排队，腾讯云工程师现场免费安装，闲鱼等平台出现收费上门代装。Mac mini 断货据[老虎社区转载的报道](https://www.itiger.com/news/1187863347) | 现场人数另有“数百人”的说法，这里取多数报道。现场排队从上午开始，插画画成夜景，不是现场照片 |
 | Seedance 2.0 | 2026-02-12 | [财新时间线](https://www.caixinglobal.com/2026-02-15/bytedance-unveils-doubao-20-ai-model-to-tackle-complex-tasks-102414865.html) 给日期，[官方页](https://seed.bytedance.com/en/seedance2_0) 给能力。有来源写 2 月 9 日，这里取财新 | “一直没被超过”“广义 RSI”是博主判断，不写进条目 |
 | 宣布关停 Sora | 2026-03-24 | [Engadget](https://www.engadget.com/ai/openai-is-shutting-down-its-sora-video-generation-app-211023358.html)：停止消费端应用和 API，迪士尼退出 10 亿美元投资 | 这是宣布日。关停的是 Sora 应用和 API，不是“Sora 2”这个模型名；最终下线日没有查到 |
 | 《当 AI 建造自身》 | 2026-06-04 | [Anthropic 原文](https://www.anthropic.com/institute/recursive-self-improvement)，日期据 [Scientific American](https://www.scientificamerican.com/article/anthropic-warns-ai-may-soon-begin-recursive-self-improvement/) | 原文明确说递归自我改进尚未到来、并非必然，所以条目不写“RSI 来了” |

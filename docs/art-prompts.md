@@ -296,3 +296,7 @@ cwebp -q 82 -resize 800 0 apps/web/public/media/art/home-wheat-monolith-3840.web
 麦田是宣言里“人和小麦”的比喻，石碑呼应《降临派宣言》首屏；标题压在左侧，手机裁到石碑一侧。
 
 > Match the painterly, cinematic, grainy palette of the attached reference (warm dark umber, brass and amber light, near-black shadows). Subject: a vast field of ripe wheat at deep night, seen from low in the wheat, stretching to a thin curved horizon that glows faintly amber. Standing in the field at about 68% of the image width, a single smooth, perfectly black upright slab about three times the height of the wheat, with no markings, its edges catching a thin line of brass light. Above, a huge star-filled night sky with a faint Milky Way. A tiny lone human figure stands in the wheat some distance from the slab, facing it, very small. The left 55% of the image must be calm, dark, low-detail negative space, suitable for overlaid headline text. No text, no logos, no letters, no watermark, no glowing beams, no cooling towers.
+
+## 2026-11 通用渲染感配图重绘
+
+用 codex CLI 重绘 28 张早期配图，并给“社交网络”时代新画一张独立画面。范围、提示词和复现步骤见[本批素材记录](../tools/art/chronicle-redraw-2026-11/README.md)；本文前面表格里对应的提示词是被替换的旧图记录。
