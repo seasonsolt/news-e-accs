@@ -39,7 +39,7 @@ for a in "${ART[@]}"; do
     cwebp -quiet -q 68 -resize 800 0 "$SRC/$file" -o "$OUT/$name-800.webp"
   fi
 done
-# The newsletter's header (newsletter/mail.ts): one JPEG, sized for a 600px-wide letter on retina screens.
+# The old letters' header: letters already sent still load it, so the file stays where it is.
 if [ -f "$SRC/Victorian Pneumatic Mailroom Engraving.png" ]; then
   ffmpeg -loglevel error -y -i "$SRC/Victorian Pneumatic Mailroom Engraving.png" -vf "scale=900:-1" -q:v 7 "$OUT/subscribe-email.jpg"
 fi

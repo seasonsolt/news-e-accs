@@ -1,7 +1,7 @@
 import { sql } from "@aihot/backend/db";
 import { checkSubscribeRequest, checkDailyLetters, normalizeEmail, NewsletterRejected, RESEND_COOLDOWN_MS, subscribe, subscribeLanguage } from "@aihot/backend/newsletter/subscribe";
 import { sendEmail } from "@aihot/backend/providers/resend";
-import { frame, button } from "@aihot/backend/newsletter/mail";
+import { button, esc, frame, masthead, notice } from "@aihot/backend/newsletter/mail";
 import { siteUrl } from "@aihot/backend/publication/links";
 import { issueKey } from "./keys.ts";
 
@@ -32,7 +32,12 @@ export async function claimEmail(raw: string, lang: unknown, ip: string, userAge
     const url = siteUrl(`${language === "zh" ? "/zh" : ""}/products/wallpaper#token=${subscriber.token}`);
     const title = language === "zh" ? "你的壁纸链接" : "Your wallpaper link";
     const warning = language === "zh" ? "打开这封信里的链接会换一条新的专属链接，旧链接随即失效。请不要转发。" : "Opening this link issues a new personal link and retires the old one. Do not forward this letter.";
-    await sendEmail({ idempotencyKey: `wallpaper-link:${subscriber.id}:${sent.getTime()}`, to: email, subject: title, html: frame(`<tr><td style="padding:28px">${button(url, title)}</td></tr>`, warning, language), text: `${title}\n\n${url}\n\n${warning}` });
+    const open = language === "zh" ? "打开你的壁纸链接 →" : "Open your wallpaper link →";
+    const kicker = language === "zh" ? "4K 壁纸 · 专属链接" : "4K WALLPAPERS · PERSONAL LINK";
+    const before = language === "zh" ? "打开之前" : "BEFORE YOU OPEN IT";
+    const sentBy = language === "zh" ? `这封邮件来自 ${new URL(siteUrl("/")).host}，因为这个邮箱申请了壁纸链接。` : `Sent by ${new URL(siteUrl("/")).host} because this address asked for its wallpaper link.`;
+    const html = frame({ inner: `${masthead(kicker, title, language)}<tr><td class="pad" style="padding:22px 32px 0;">${button(url, open)}</td></tr>${notice(before, warning)}`, footer: esc(sentBy), language, plate: "daily", preheader: warning });
+    await sendEmail({ idempotencyKey: `wallpaper-link:${subscriber.id}:${sent.getTime()}`, to: email, subject: title, html, text: `${title}\n\n${url}\n\n${warning}` });
   });
   return { ok: true };
 }

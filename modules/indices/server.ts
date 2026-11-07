@@ -1,3 +1,4 @@
+import { costReading } from "@aihot/contracts/chronicle";
 import { COST_OF_INTELLIGENCE_TOOL } from "./contracts.ts";
 import { z } from "zod";
 import { defineServerModule } from "@aihot/backend/modules";
@@ -9,6 +10,7 @@ import { loadCostOfIntelligence } from "./backend/publication.ts";
 export default defineServerModule({
   name: "indices",
   http: registerIndices,
+  newsletter: { cost: async () => costReading(await loadCostOfIntelligence()) },
   agent: {
     abilities: [{
       path: "/cost-of-intelligence",

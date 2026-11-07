@@ -11,6 +11,7 @@ import { editionReady, type DistributionLanguage } from "../publication/distribu
 import { loadReport } from "../publication/reports.ts";
 import { ResendError, resendConfigured, sendBroadcast } from "../providers/resend.ts";
 import { dailyIssueMail, issueSections } from "./mail.ts";
+import { letterReading } from "./reading.ts";
 
 export type IssueOutcome =
   | { status: "disabled" | "not_configured" | "no_report" | "no_subscribers" | "already" }
@@ -48,6 +49,8 @@ export async function sendDailyIssue(date = calendarDate(Date.now(), config.repo
   // Nobody to mail yet: leave the day unclaimed, so a reader who confirms later this morning still gets it.
   const [{ n }] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM newsletter_subscribers WHERE status = 'confirmed' AND unsubscribed_at IS NULL AND language = ${language}`;
   if (n === 0) return { status: "no_subscribers" };
+  // Before the claim: a day that is claimed is never tried again.
+  const reading = await letterReading(language);
 
   const [claimed] = await sql`INSERT INTO newsletter_language_sends (report_key, language, status) VALUES (${date}, ${language}, 'sending') ON CONFLICT (report_key, language) DO NOTHING RETURNING report_key`;
   if (!claimed) return { status: "already" };
@@ -57,7 +60,7 @@ export async function sendDailyIssue(date = calendarDate(Date.now(), config.repo
     return { status: "skipped", reason: "empty report" };
   }
   try {
-    const mail = dailyIssueMail(report, language);
+    const mail = dailyIssueMail(report, language, reading);
     const broadcastId = await sendBroadcast({ name: `daily ${date} ${language}`, ...mail }, language);
     await sql`UPDATE newsletter_language_sends SET status = 'sent', broadcast_id = ${broadcastId}, sent_at = now() WHERE report_key = ${date} AND language = ${language}`;
     return { status: "sent", broadcastId };

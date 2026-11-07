@@ -1,6 +1,7 @@
 // The time machine (四维视角): the curated civilization timeline (industry/chronicle/) and the pure
 // math web and backend share: decimal years, the two-sided log axis, metric interpolation, labels.
 // Times are astronomical decimal years (year 0 = 1 BCE; the Big Bang is about -13.787e9).
+import { beijingDate } from "./time.ts";
 
 export type ChronicleCategory = "cosmos" | "life" | "human" | "energy" | "compute" | "ai" | "culture";
 export type ChroniclePrecision = "ga" | "ma" | "ka" | "year" | "month" | "day";
@@ -229,5 +230,47 @@ export function capabilitiesAt(milestones: readonly ChronicleMilestone[], t: num
   return {
     held: withCap.filter((m) => m.t <= t),
     next: withCap.filter((m) => m.t > t).slice(0, upcoming),
+  };
+}
+
+export interface ChronicleNow {
+  epochs: Array<{ id: string; title: string; from: number; to: number; forecast: boolean }>;
+  /** This day on the axis, 0..1. */
+  u: number;
+}
+
+/** What the reading takes of the indices module's answer (modules/indices/contracts.ts). */
+export interface CostIndex {
+  tiers: Array<{ reference: string; ratio: number | null; halvingMonths: number | null; points: Array<{ date: string }> }>;
+}
+
+export interface CostReading {
+  reference: string;
+  ratio: number;
+  halvingMonths: number;
+  /** The day the line starts, YYYY-MM-DD. */
+  since: string;
+}
+
+/** The tier the index's own page leads with: the longest record with a fall to show. */
+export function costReading(index: CostIndex): CostReading | null {
+  const tier = index.tiers.find((t) => t.ratio);
+  const since = tier?.points[0]?.date;
+  return tier?.ratio && tier.halvingMonths && since ? { reference: tier.reference, ratio: tier.ratio, halvingMonths: tier.halvingMonths, since } : null;
+}
+
+/** The chronicle as it stands on `at` (a past day of the time machine), else today. */
+export function chronicleNow(chronicle: ChronicleResponse, at: string | null): ChronicleNow | null {
+  // By the day, not the instant, so every request of a day gets the same summary.
+  const now = dateToYear(beijingDate(Date.now()));
+  const t = at ? dateToYear(at) : now;
+  if (!eraAt(chronicle.eras, t)) return null;
+  return {
+    epochs: chronicle.eras.flatMap((e, i) => {
+      if (!e.epoch) return [];
+      const next = chronicle.eras.slice(i + 1).find((n) => n.epoch);
+      return [{ id: e.id, title: e.epoch, from: toAxis(e.from, now), to: next ? toAxis(next.from, now) : 1, forecast: !!e.forecast }];
+    }),
+    u: toAxis(t, now),
   };
 }

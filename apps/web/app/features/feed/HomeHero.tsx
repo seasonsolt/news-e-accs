@@ -5,7 +5,8 @@ import type { TimelineCard } from "@aihot/contracts/site";
 import { beijingDate, beijingTime } from "@aihot/contracts/time";
 import { Plate } from "../../components/shell/Deck";
 import { chronicleHref } from "../chrono/TimeMachine";
-import { NowInstruments, type ChronicleNow, type CostReading } from "../chrono/ChronicleNow";
+import type { ChronicleNow, CostReading } from "@aihot/contracts/chronicle";
+import { NowInstruments } from "../chrono/ChronicleNow";
 import { weekdayShort } from "../../lib/format";
 
 /** The day the page shows (the time machine's, else today), in a deck's kicker. */

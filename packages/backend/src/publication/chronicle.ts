@@ -60,7 +60,7 @@ export async function timeMachineBounds(): Promise<TimeMachineBounds> {
 }
 
 /** Today's Kardashev rating from the energy series, to three decimals. */
-function kardashevNow(): number | null {
+export function kardashevNow(): number | null {
   const energy = loadChronicle().metrics.find((m) => m.key === "energy");
   const now = decimalYear(Date.now());
   const watts = energy ? interpolateMetric(energy.points, now, now, energy.forecastFrom) : null;

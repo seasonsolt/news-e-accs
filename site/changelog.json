@@ -1,6 +1,25 @@
 {
-  "latestVersion": "2026-11-05T18:00",
+  "latestVersion": "2026-11-07T12:00",
   "releases": [
+    {
+      "date": "2026-11-07",
+      "time": "12:00",
+      "kind": "更新",
+      "title": "订阅邮件换上夜色",
+      "body": [
+        "日报、确认信和壁纸信都换成和网站一样的夜色麦田：头条放在最前面，后面是编号栏目。",
+        "日报补上了快讯，头条不再在栏目里重复一遍。",
+        "每封日报最后多了今日读数：K 值、智能成本和时间轴上的“现在”。"
+      ],
+      "en": {
+        "title": "The newsletter goes dark",
+        "body": [
+          "The daily issue, confirmation and wallpaper letters now share the site's night wheat field: the lead story comes first, followed by numbered sections.",
+          "The daily issue now includes briefs, and the lead story is no longer repeated in its section.",
+          "Each daily issue ends with today's reading: the K value, the cost of intelligence and \"now\" on the timeline."
+        ]
+      }
+    },
     {
       "date": "2026-11-05",
       "time": "18:00",

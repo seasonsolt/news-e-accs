@@ -206,7 +206,14 @@ test('native English and stored Chinese DTOs agree across site, v1, feeds, Markd
       VALUES ('daily',${key},'en','2098-10-09T12:00:00Z','2098-10-10T12:00:00Z',${sql.json(content)},now())`;
     const report = await loadReport('daily', key); assert.ok(report); assert.equal(report.reportTimeZone, 'America/New_York');
     const english = await localizePublication(report, 'en'); assert.equal(editionReady(english, 'en'), true);
-    assert.match(dailyIssueMail(english, 'en').text, /Native report citation/);
+    assert.match(dailyIssueMail(english, 'en').text, /Native lead/);
+    const citation = english.sections[0]!.items[0]!;
+    const letter = dailyIssueMail({ ...english, lead: { title: 'The lead', leadParagraph: 'Lead paragraph.' }, leadItemId: citation.itemId, flashes: [{ ...citation, itemId: null, title: 'A brief' }, { ...citation, itemId: null, title: 'A withdrawn brief', available: false }] }, 'en',
+      { axis: { epochs: [{ id: 'all', title: 'Machines', from: 0, to: 1, forecast: false }], u: 0.9 }, kardashev: 0.731, cost: { reference: 'GPT-4', ratio: 715.2, halvingMonths: 3.8, since: '2023-03-14' } });
+    assert.doesNotMatch(letter.text, /Native report citation/, 'the lead is told once');
+    assert.match(letter.text, /A brief/); assert.doesNotMatch(letter.text, /A withdrawn brief/);
+    assert.match(letter.html, /K = 0\.731/); assert.match(letter.html, /715×/); assert.match(letter.text, /since March 2023, halving every 3\.8 months/);
+    assert.match(letter.html, /RESEND_UNSUBSCRIBE_URL/); assert.match(letter.text, /RESEND_UNSUBSCRIBE_URL/);
     const legacy = (await app.inject(`/api/v1/dailies/${key}`)).json().report;
     assert.equal(legacy.contentLanguage.requested, 'zh'); assert.equal(legacy.contentLanguage.language, 'en');
     assert.equal(legacy.reportTimeZone, 'America/New_York');

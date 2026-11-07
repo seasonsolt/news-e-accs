@@ -15,7 +15,7 @@ import { Deck } from "../components/shell/Deck";
 import { CategoryBanner } from "../features/art/CategoryBanner";
 import { Timeline } from "../features/feed/Timeline";
 import { HomeHero, leadCard, TodayLabel } from "../features/feed/HomeHero";
-import { chronicleNow, costReading, type CostIndex } from "../features/chrono/ChronicleNow";
+import { chronicleNow, costReading, type CostIndex } from "@aihot/contracts/chronicle";
 import { CategoryTabs, FeedSwitch, SearchField, SearchIconLink } from "../features/feed/Filters";
 import { requestAt, withAt } from "../features/chrono/at";
 

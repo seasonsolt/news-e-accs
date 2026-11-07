@@ -1041,7 +1041,7 @@ test("native English report sends immediately and Chinese waits for its matching
   await sql`UPDATE reports SET editorial_language='en',content=${sql.json(content)},revision=revision+1 WHERE kind='daily' AND key=${TODAY}`;
   const start = since();
   assert.equal((await sendDailyIssue(TODAY, 'en')).status, 'sent');
-  assert.match(hits.slice(start).find(hit => hit.path === '/broadcasts')!.body.text, /Native model release/);
+  assert.match(hits.slice(start).find(hit => hit.path === '/broadcasts')!.body.text, /Native release/);
   assert.deepEqual(await sendDailyIssue(TODAY, 'zh'), { status: 'skipped', reason: 'edition not ready' });
   assert.deepEqual(await wechatExport(TODAY), { date: TODAY, status: 'not_ready', reason: 'edition not ready' }, 'the 公众号 export waits for the Chinese edition too');
   assert.equal((await sql`SELECT 1 FROM newsletter_language_sends WHERE report_key=${TODAY} AND language='zh'`).length, 0);
@@ -1049,7 +1049,7 @@ test("native English report sends immediately and Chinese waits for its matching
   await saveTranslation({ ...entry, translations: Object.fromEntries(entry.segments.map(segment => [segment.key, '匹配的中文日报'])) }, 'offline-agent', 'integration-fixture', [], true);
   assert.equal((await sendDailyIssue(TODAY, 'zh')).status, 'sent');
   assert.match(hits.at(-1)!.body.text, /匹配的中文日报/);
-  assert.doesNotMatch(hits.at(-1)!.body.text, /Native model release/);
+  assert.doesNotMatch(hits.at(-1)!.body.text, /Native release/);
   assert.deepEqual(await sendDailyIssue(TODAY, 'en'), { status: 'already' });
 });
 
