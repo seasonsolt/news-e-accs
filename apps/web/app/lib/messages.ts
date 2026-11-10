@@ -1264,6 +1264,10 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "请求太密：按 Retry-After 等待，不要并发重试。": "Too many requests: wait for Retry-After. Don't retry in parallel.",
   "指数退避，先用上次成功的结果；公开服务不承诺 SLA。": "Use exponential backoff and the last successful result. The public service offers no SLA.",
   "能匿名调用不等于所有用途都获许可{0}，见": "Anonymous access doesn't grant permission for every use{0}. See ",
+  // Upstream sync 2026-11-10: the story's first report, the daily an item ran in, the engine credit.
+  "首报": " first reported",
+  "收录于 {0}": "In {0}",
+  "由 {0} 驱动": "Powered by {0}",
 };
 
 // Native English site identity has explicit Chinese UI counterparts.

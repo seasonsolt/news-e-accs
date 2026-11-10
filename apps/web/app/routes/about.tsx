@@ -27,7 +27,8 @@ export async function loader({ request }: { request: Request }) {
 
 export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown }> } = {}) {
   const locale = localeFromMatches(matches ?? []);
-  return pageMeta({ title: "关于", description: locale === "en" ? `How ${SITE.name} collects, selects and groups AI news from public sources.` : translate("zh", ABOUT.description), path: "/about", image: "/og/pages/about.png", jsonLd: organizationLd() }, locale);
+  // The Chinese edition is titled by what the site is (SEO_TITLES.about, its tagline in Chinese); the English one keeps its own.
+  return pageMeta({ ...(locale === "zh" ? { title: `关于 ${SITE.name}：${translate("zh", SITE.tagline)}`, rawTitle: true } : { title: "关于" }), description: locale === "en" ? `How ${SITE.name} collects, selects and groups AI news from public sources.` : translate("zh", ABOUT.description), path: "/about", image: "/og/pages/about.png", jsonLd: organizationLd() }, locale);
 }
 
 const NO_SOURCES: RiverSource[] = [];

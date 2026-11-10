@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router";
 import type { ItemAvailability } from "@aihot/contracts/site";
 import { CATEGORY_LABELS } from "@aihot/contracts/taxonomy";
+import { shortAddresses } from "@aihot/contracts/addresses";
 import { SITE } from "@aihot/site";
 import { Presence } from "../components/ui/Presence";
 import { Menu, MenuItem } from "../components/ui/Menu";
@@ -320,7 +321,7 @@ function SavedCard({ item: s, availability, read, onRemove }: { item: LocalStarr
           {s.title}
         </Link>
       </h3>
-      {s.summary && <p className="mt-1.5 line-clamp-2 text-[14px] leading-[1.75] text-ink-3">{s.summary}</p>}
+      {s.summary && <p className="mt-1.5 line-clamp-2 text-[14px] leading-[1.75] text-ink-3">{shortAddresses(s.summary)}</p>}
       {fresh > 0 && availability?.story && (
         <Link to={`/story/${availability.story.id}`} className="relative z-10 mt-2 inline-flex text-[13px] font-medium text-accent hover:text-accent-ink">
           {tx("这件事有 {0} 条新进展 →", fresh)}

@@ -20,6 +20,7 @@ export function SiteFooter() {
           <Link to="/privacy" className="hover:text-ink-2"><Text value="隐私说明" /></Link>
           <a href={`/feed/v2${locale === "zh" ? "/zh" : ""}/picks.xml`} className="hover:text-ink-2">RSS</a>
           {SITE.contactEmail && <a href={`mailto:${SITE.contactEmail}`} className="hover:text-ink-2">{SITE.contactEmail}</a>}
+          {SITE.poweredBy && <a href={SITE.poweredBy.url} target="_blank" rel="noopener" className="hover:text-ink-2">{tx("由 {0} 驱动", SITE.poweredBy.name)}</a>}
           {SITE.icp && (
             <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-ink-2">
               {SITE.icp}

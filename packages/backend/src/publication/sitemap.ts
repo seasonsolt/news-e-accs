@@ -3,13 +3,14 @@
 import { mkdir, readFile, stat, utimes, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { FEATURES } from "@aihot/industry/features";
+import { STORY_INDEX_MIN_REPORTS } from "@aihot/contracts/site";
 import { ABOUT, ACCESS, AGENT, POLICY, SITE } from "@aihot/site";
 import { MODULES } from "@aihot/site/modules";
 import { config, REPO_ROOT } from "../config.ts";
 import { sha256, stableJson } from "../lib/ids.ts";
 import { loadChangelog } from "../site/meta.ts";
 import { latestHotRanking } from "./hot.ts";
-import { ITEM_FROM } from "./items.ts";
+import { eventPageCondition, ITEM_FROM, thinPageCondition } from "./items.ts";
 import { sql } from "../db.ts";
 import { shared } from "../lib/cache.ts";
 import { escapeXml } from "../lib/text.ts";
@@ -28,8 +29,12 @@ interface SitemapDocument { files: Record<string, string>; expiresAt: number }
 
 let lastGood: SitemapDocument | null = null;
 
-/** A story's Google News fields while the page is under two days old (news sitemap rules). */
-type Entry = SitemapEntry & { news?: { title: string; language: string; publishedAt: Date } };
+/**
+ * `news`: a story's Google News fields while the page is under two days old (news sitemap rules).
+ * `newsAt`: the page's own date (a selection's release, a report's publication or correction), which
+ * orders new pages for Baidu's push (operations/baidu-push.ts); the sitemap does not print it.
+ */
+type Entry = SitemapEntry & { news?: { title: string; language: string; publishedAt: Date }; newsAt?: Date | null };
 
 const NEWS_WINDOW_MS = 48 * 60 * 60 * 1000;
 const MAX_NEWS = 1000;
@@ -59,9 +64,10 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
            md5(string_agg(p.article_id || ':' || p.revision::text, ',' ORDER BY p.timeline_at DESC, p.article_id)
              FILTER (WHERE ${listedCondition(at)})) AS listed
     FROM publications p WHERE ${listedCondition(at)}`;
-  const reports = await sql<{ kind: string; key: string; t: Date | null; revision: string }[]>`
+  const reports = await sql<{ kind: string; key: string; t: Date | null; changed: Date; revision: string }[]>`
     SELECT r.kind, r.key,
       CASE WHEN citations.revision IS NULL THEN greatest(r.updated_at, r.generated_at) END AS t,
+      greatest(r.updated_at, r.generated_at) AS changed,
       md5(concat_ws('|', r.revision::text, r.updated_at::text, citations.revision)) AS revision
     FROM reports r LEFT JOIN LATERAL (
       SELECT md5(string_agg(p.article_id || ':' || p.revision::text || ':' || (${listedCondition(at)})::text,
@@ -90,20 +96,21 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
   );
   if (FEATURES.timeMachine) entries.push({ loc: "/chronicle", changefreq: "weekly", priority: 0.5 });
   if (FEATURES.eaccConcepts) for (const loc of ["/what-is-eacc", "/eacc-vs-dacc", "/eacc-vs-ea", "/eacc-manifesto", "/eacc-token", "/eacc-glossary", "/manifesto"]) entries.push({ loc, changefreq: "monthly", priority: 0.7 });
-  for (const r of reports) entries.push({ loc: `/${r.kind}/${r.key}`, lastmod: r.t, revision: r.revision, changefreq: "monthly", priority: 0.6 });
+  for (const r of reports) entries.push({ loc: `/${r.kind}/${r.key}`, lastmod: r.t, newsAt: r.changed, revision: r.revision, changefreq: "monthly", priority: 0.6 });
   // Later topic pages stay indexable and linked from the first one; discovery lists only that first
   // page, so the inventory does not grow with every twenty reports.
   for (const t of topics) if (t.indexable) entries.push({ loc: `/topics/${t.slug}`, revision: t.revision, changefreq: "daily", priority: 0.6 });
-  // A story needs listed evidence of its own. Its identity follows current readable reports as well
-  // as the digest, so a correction or regrouping is visible even when latest_at does not advance.
-  // Dated by creation or the last digest rewrite: a new report that leaves the digest alone goes
+  // A story needs listed evidence of its own, and STORY_INDEX_MIN_REPORTS reports: with fewer its page is
+  // noindex everywhere, so neither the sitemap nor notifications list it. Its identity follows current
+  // readable reports as well as the digest, so a correction or regrouping is visible even when latest_at
+  // does not advance. Dated by creation or the last digest rewrite: a new report that leaves the digest alone goes
   // undated, so lastmod can lag a change but never claims one that did not happen.
   const stories = await sql<{ public_id: string; revision: string; title: string; editorial_language: string; created_at: Date; t: Date }[]>`
     SELECT st.public_id::text, greatest(st.created_at, st.digest_updated_at) AS t, md5(concat_ws('|', st.title, st.summary, st.digest, st.digest_updated_at::text,
       st.version::text, members.revision)) AS revision, st.title, st.editorial_language, st.created_at
     FROM stories st JOIN LATERAL (
       SELECT md5(string_agg(concat_ws(':', p.article_id, p.revision::text, fa.role, f.updated_at::text, s.name),
-        ',' ORDER BY p.article_id, f.id)) AS revision
+        ',' ORDER BY p.article_id, f.id)) AS revision, count(DISTINCT p.article_id) AS reports
       FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id JOIN publications p ON p.article_id = fa.article_id
       JOIN sources s ON s.id = p.source_id
       WHERE f.story_id = st.id AND ${storyReportCondition(at)}
@@ -111,6 +118,7 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
     WHERE st.merged_into IS NULL AND EXISTS (
       SELECT 1 FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id JOIN publications p ON p.article_id = fa.article_id
       WHERE f.story_id = st.id AND ${evidenceCondition()} AND ${listedCondition(at)})
+      AND members.reports >= ${STORY_INDEX_MIN_REPORTS}
     ORDER BY st.latest_at DESC NULLS LAST, st.id DESC ${limits ? sql`LIMIT ${limits.stories}` : sql``}`;
   let news = 0;
   for (const s of stories) {
@@ -126,15 +134,17 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
   entries.push(...entries.filter((e) => hasChineseMirror(e.loc)).map((e) => ({ ...e, loc: e.loc === "/" ? "/zh" : `/zh${e.loc}` })));
   // Material/translation timestamps can also record a retry or a state repair, so they never date a
   // page. An item is dated by when an editor admitted it for indexing: that tells search engines
-  // which pages are new, and later edits only make lastmod lag.
-  const items = await sql<{ id: string; revision: string; t: Date | null }[]>`
+  // which pages are new, and later edits only make lastmod lag. Thin pages, and articles whose event
+  // page stands for them, stay out of the sitemap but not out of notifications: other engines index them.
+  const items = await sql<{ id: string; revision: string; t: Date | null; released: Date | null }[]>`
     SELECT p.article_id AS id, p.seo_indexed_at AS t,
-      md5(concat_ws('|', p.revision::text, a.content_hash, tr.title, tr.body_html, tr.body_text, tr.complete::text, qt.text_zh,
-        s.name, s.icon_url, st.public_id::text, st.title)) AS revision
+      md5(concat_ws('|', p.revision::text, a.content_hash, a.cover::text, tr.title, tr.body_html, tr.body_text, tr.complete::text, qt.text_zh,
+        s.name, s.icon_url, st.public_id::text, st.title)) AS revision,
+      CASE WHEN p.selected THEN p.visible_after END AS released
     ${ITEM_FROM}
-    WHERE ${storyReportCondition(at)} AND p.indexable
+    WHERE ${storyReportCondition(at)} AND p.indexable ${limits ? sql`AND NOT ${thinPageCondition()} AND NOT ${eventPageCondition(at)}` : sql``}
     ORDER BY p.timeline_at DESC, p.article_id DESC ${limits ? sql`LIMIT ${Math.max(0, limits.urls - entries.length)}` : sql``}`;
-  for (const it of items) entries.push({ loc: `/items/${it.id}`, lastmod: it.t, revision: it.revision, changefreq: "monthly", priority: 0.5 });
+  for (const it of items) entries.push({ loc: `/items/${it.id}`, lastmod: it.t, newsAt: it.released, revision: it.revision, changefreq: "monthly", priority: 0.5 });
   return limits ? entries.slice(0, limits.urls) : entries;
 }
 

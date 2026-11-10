@@ -2,12 +2,14 @@
 import type { ItemDetail, OutlineEntry, SiteItemDetail, StoryRef } from "@aihot/contracts/site";
 import { SITE } from "@aihot/site";
 import { bodyToMarkdown } from "../content/markdown.ts";
+import { withCover, type Cover } from "../content/cover.ts";
 import { sql } from "../db.ts";
-import { stripTagMarkup } from "../lib/text.ts";
+import { isChineseText, stripTagMarkup } from "../lib/text.ts";
 import { proxyBodyImages } from "../media/imgproxy.ts";
 import { sha256 } from "../lib/ids.ts";
 import { textToHtml } from "../content/sanitize.ts";
-import { isChineseBody, ITEM_COLUMNS, ITEM_FROM, previewView, seatHolders, showsPost, toItemSummary, xView, type ItemRow } from "./items.ts";
+import { xArticleBody } from "../content/posts.ts";
+import { eventPageCondition, isChineseBody, ITEM_COLUMNS, ITEM_FROM, previewView, seatHolders, showsPost, thinPageCondition, toItemSummary, xView, type ItemRow } from "./items.ts";
 import { evidenceCondition, listedCondition, ownFactEvidenceCondition } from "./scope.ts";
 import { loadStoriesProse } from "./stories.ts";
 import { hasItemPage } from "./rules.ts";
@@ -15,15 +17,23 @@ import { targetLanguageProse } from "./content-source.ts";
 import { localizePublication } from "./content-language.ts";
 import { bodyEditionReady, editionPath, editionReady, EditionUnavailableError, type DistributionLanguage } from "./distribution.ts";
 import { siteUrl } from "./links.ts";
-import { topicLinks, topicMembership } from "./topics.ts";
+import { tagTopics, topicLinks, topicMembership } from "./topics.ts";
+import { firstDaily } from "./reports.ts";
+import { mentionsIn } from "./mentions.ts";
 
 interface DetailRow extends ItemRow {
+  /** A post's long X Article as its page shows it (xArticleHtml); lists leave it out. */
+  x_article_html: string | null;
   body_html: string | null;
   body_text: string | null;
   body_status: string;
+  cover: Cover | null;
   tr_html: string | null;
   tr_complete: boolean | null;
   topics: string[];
+  thin: boolean;
+  /** Its event page stands for it in search (eventPageCondition). */
+  event_page: boolean;
 }
 
 /** The fact card quotes at most one sentence of this length. */
@@ -92,10 +102,27 @@ export function withOutline(html: string): { html: string; outline: OutlineEntry
   return { html: out, outline };
 }
 
-async function loadRow(id: string): Promise<DetailRow | null> {
+/** An article's bodies (a web article, or a post's long X Article): its own text, and the translation when it is not Chinese. */
+function articleBody(original: string, chinese: boolean, translation: string | null, translationComplete: boolean | null): { body: ItemDetail["body"]; outline: OutlineEntry[] } {
+  const own = proxyBodyImages(original);
+  const zh = chinese ? own : translation ? proxyBodyImages(translation) : null;
+  const primary = withOutline(zh ?? own);
+  return {
+    outline: primary.outline,
+    body: {
+      zh: zh ? primary.html : null,
+      original: zh && !chinese ? withOutline(own).html : chinese ? null : primary.html,
+      zhKind: chinese ? "original" : zh ? "translation" : null,
+      complete: chinese ? true : translationComplete ?? false,
+    },
+  };
+}
+
+async function loadRow(id: string, now = new Date()): Promise<DetailRow | null> {
   const [row] = await sql<DetailRow[]>`
-    SELECT ${ITEM_COLUMNS}, a.body_html, a.body_text, a.body_status, tr.body_html AS tr_html, tr.complete AS tr_complete,
-      ${topicMembership()} AS topics
+    SELECT ${ITEM_COLUMNS}, CASE WHEN p.body_mode = 'full' THEN a.x_article->>'html' END AS x_article_html,
+      a.body_html, a.body_text, a.body_status, a.cover, tr.body_html AS tr_html, tr.complete AS tr_complete,
+      ${topicMembership()} AS topics, ${thinPageCondition()} AS thin, ${eventPageCondition(now)} AS event_page
     ${ITEM_FROM}
     WHERE p.article_id = ${id}`;
   return row ?? null;
@@ -107,7 +134,7 @@ async function loadRow(id: string): Promise<DetailRow | null> {
  * `item` carries ("zh": the Chinese text or translation when there is one, "original"); `detail` has both.
  */
 export async function loadItemDetail(id: string, language: "zh" | "original" = "zh", now = new Date()): Promise<DetailResult> {
-  const row = await loadRow(id);
+  const row = await loadRow(id, now);
   if (!row || !hasItemPage({ visibility: row.visibility, sourceMode: row.source_mode })) return { kind: "not_found" };
 
   const summary = toItemSummary(row);
@@ -129,9 +156,13 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
       outline: [],
       relatedStories: [],
       topics: [],
+      tagTopics: {},
+      daily: null,
       indexable: false,
+      googleNoindex: false,
       markdownAvailable: false,
       group: null,
+      mentions: await mentionsIn([summary.summary]),
     };
     return { kind: "found", detail, item: siteItemDetail(detail, language === "original"), row };
   }
@@ -145,27 +176,30 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
   let body: ItemDetail["body"] = null;
   let outline: OutlineEntry[] = [];
   if (showsPost(row)) {
-    const text = post?.text ?? String(row.x_post?.text ?? row.body_text ?? "");
-    if (post?.translation || text.trim()) {
-      body = {
-        zh: post?.translation ? textToHtml(post.translation) : null,
-        original: text.trim() ? textToHtml(text) : null,
-        zhKind: post?.translation ? "translation" : null,
-        complete: true,
-      };
+    if (row.x_article_html) {
+      // A long X Article reads as an article: what the post says besides its link, then the article as
+      // its author laid it out, with pictures and an outline; selected, it is in Chinese as an article is.
+      const html = xArticleBody(String(row.x_post?.text ?? ""), row.x_article_html);
+      ({ body, outline } = articleBody(html, isChineseText(row.x_article?.text ?? "", row.language), row.tr_html, row.tr_complete));
+    } else {
+      const text = post?.text ?? String(row.x_post?.text ?? row.body_text ?? "");
+      // A post's text is sent as written. One written in Chinese is the Chinese text, as an article's own Chinese body is.
+      const own = text.trim() ? textToHtml(text) : null;
+      // Judged on what the author wrote, not on the 【X 长文】 mark joined to it.
+      const written = row.x_article?.text ?? String(row.x_post?.text ?? row.body_text ?? "");
+      const chinese = !post?.translation && !!own && isChineseText(written, row.language);
+      if (post?.translation || own) {
+        body = {
+          zh: post?.translation ? textToHtml(post.translation) : chinese ? own : null,
+          original: chinese ? null : own,
+          zhKind: post?.translation ? "translation" : chinese ? "original" : null,
+          complete: true,
+        };
+      }
     }
   } else if (row.body_mode === "full" && row.body_html) {
-    const isZh = isChineseBody(row);
-    const original = proxyBodyImages(row.body_html);
-    const zh = isZh ? original : row.tr_html ? proxyBodyImages(row.tr_html) : null;
-    const primary = withOutline(zh ?? original);
-    outline = primary.outline;
-    body = {
-      zh: zh ? primary.html : null,
-      original: zh && !isZh ? withOutline(original).html : isZh ? null : primary.html,
-      zhKind: isZh ? "original" : zh ? "translation" : null,
-      complete: isZh ? true : row.tr_complete ?? false,
-    };
+    ({ body, outline } = articleBody(withCover(row.body_html, row.cover, row.body_html), isChineseBody(row),
+      row.tr_html ? withCover(row.tr_html, row.cover, row.body_html) : null, row.tr_complete));
   }
 
   let group: ItemDetail["group"] = null;
@@ -200,9 +234,13 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
     outline,
     relatedStories: related,
     topics: topicLinks(row.topics),
+    tagTopics: tagTopics(summary.tags),
+    daily: await firstDaily(id),
     indexable: row.indexable,
+    googleNoindex: row.indexable && (row.thin || row.event_page),
     markdownAvailable: markdownAvailable(row),
     group,
+    mentions: await mentionsIn([summary.summary]),
   };
   const item = siteItemDetail(detail, language === "original");
   const cover = /<img\b/i.test(item.body?.zh ?? item.body?.original ?? "") ? null : previewView(row, "hero");
@@ -266,8 +304,16 @@ export function siteItemDetail(detail: ItemDetail, original = false): SiteItemDe
   const hasTranslation = !!detail.body?.zh && detail.body.zhKind === "translation" && !!detail.body.original;
   const bodyLanguage = original && detail.body?.original ? "original" : detail.body?.zh ? "zh" : "original";
   const selectedHtml = bodyLanguage === "zh" ? detail.body?.zh : detail.body?.original;
-  const { text: _text, translation: _translation, ...x } = detail.x ?? {} as NonNullable<ItemDetail["x"]>;
-  return { ...detail, x: detail.x ? x : null, hasTranslation, bodyLanguage,
+  const { text: _text, translation: _translation, quoted, ...shown } = detail.x ?? {} as NonNullable<ItemDetail["x"]>;
+  // The quoted post is set as the post's own text is (paragraphs, lists, addresses as short links).
+  const x: SiteItemDetail["x"] = detail.x ? {
+    ...shown,
+    quoted: quoted && {
+      authorName: quoted.authorName, handle: quoted.handle, url: quoted.url,
+      html: textToHtml(quoted.text), translationHtml: quoted.translation ? textToHtml(quoted.translation) : null,
+    },
+  } : null;
+  return { ...detail, x, hasTranslation, bodyLanguage,
     body: detail.body ? { ...detail.body, zh: bodyLanguage === "zh" ? detail.body.zh : null, original: bodyLanguage === "original" ? detail.body.original : null } : null,
     outline: selectedHtml ? withOutline(selectedHtml).outline : [],
   };

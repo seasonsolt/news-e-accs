@@ -2,14 +2,14 @@ import { hasAlternateEdition } from "../lib/edition-meta.server";
 import { contentHtmlLanguage } from "../lib/content-language";
 import { localePath, requestLocale } from "../lib/locale";
 import { localeFromMatches, Text, translate, useTranslate } from "../lib/i18n";
-import { REPORTS, SITE } from "@aihot/site";
+import { REPORTS, SEO_TITLES, SITE } from "@aihot/site";
 import { redirect, useLoaderData, useRouteLoaderData } from "react-router";
 import type { Route } from "./+types/report-latest";
-import type { ReportLatestPage as ReportLatest } from "@aihot/contracts/site";
+import { reportDateLabel, type ReportLatestPage as ReportLatest } from "@aihot/contracts/site";
 import { cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { requestAt, withAt } from "../features/chrono/at";
-import { newsArticleLd, pageMeta } from "../lib/seo";
+import { newsArticleLd, pageMeta, reportDescription } from "../lib/seo";
 import { zonedDate } from "@aihot/contracts/time";
 import { EmptyState } from "../components/ui/Page";
 import { ReportLayout } from "../features/report/ReportLayout";
@@ -19,7 +19,7 @@ import type { loader as rootLoader } from "../root";
 import { Deck } from "../components/shell/Deck";
 import { TimeDial } from "../features/chrono/TimeMachine";
 
-import { KIND_LABEL, feedLink, kindFromPath } from "../features/report/format";
+import { KIND_LABEL, KIND_PATH, feedLink, kindFromPath } from "../features/report/format";
 
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
@@ -38,24 +38,28 @@ export async function loader({ request }: Route.LoaderArgs) {
   return cachedPage(600, { kind, report, index, alternateEdition: report ? await hasAlternateEdition(`/api/site/reports/${kind}/${report.key}`, report, request) : false, today: zonedDate(Date.now(), report?.reportTimeZone ?? "Asia/Shanghai"), at });
 }
 
-export function meta({ matches, loaderData, location }: Route.MetaArgs) {
+export function meta({ matches, loaderData }: Route.MetaArgs) {
   const kind = loaderData?.kind ?? "daily";
   const locale = localeFromMatches(matches ?? []);
-  const description = locale === "en" ? kind === "daily" ? `${SITE.name} daily AI briefing, published at 08:00 (${loaderData?.report?.reportTimeZone ?? "Asia/Shanghai"}).` : kind === "weekly" ? "A weekly review." : "A monthly review." : `${REPORTS.descriptions[kind]}。`;
   const report = loaderData?.report;
+  // What this issue says, so a search result shows its date and news rather than what the page is.
+  const description = (report && !loaderData?.at && reportDescription(report, locale)) || (locale === "en" ? kind === "daily" ? `${SITE.name} daily AI briefing, published at 08:00 (${report?.reportTimeZone ?? "Asia/Shanghai"}).` : kind === "weekly" ? "A weekly review." : "A monthly review." : `${REPORTS.descriptions[kind]}。`);
   const article = !!report && !loaderData?.at;
+  // One address however it was written (/daily/, a different case): the router matches them all.
+  const path = KIND_PATH[kind];
   return [...pageMeta({
     content: report,
     alternates: !!loaderData?.alternateEdition,
-    title: `AI ${KIND_LABEL[kind]}`,
+    // The Chinese edition is searched by the issue's date; the English one keeps the section's name.
+    title: report && locale === "zh" ? SEO_TITLES.latestReport(kind, reportDateLabel(kind, report.key)) : `AI ${KIND_LABEL[kind]}`,
     description,
-    path: location.pathname,
+    path,
     noindex: !!loaderData?.at,
     image: `/og/pages/${kind}.png`,
     type: article ? "article" : "website",
     publishedTime: article ? report.generatedAt : undefined,
     // The latest issue, described at this page's own address (its canonical).
-    jsonLd: report && !loaderData?.at ? newsArticleLd({ path: location.pathname, headline: translate(locale, `AI ${KIND_LABEL[kind]}`), description: report.lead?.leadParagraph ?? description, image: `/og/reports/${kind}/${report.key}.png`, datePublished: report.generatedAt, inLanguage: contentHtmlLanguage(report, locale) }) : undefined,
+    jsonLd: report && !loaderData?.at ? newsArticleLd({ path, headline: translate(locale, `AI ${KIND_LABEL[kind]}`), description, image: `/og/reports/${kind}/${report.key}.png`, datePublished: report.generatedAt, inLanguage: contentHtmlLanguage(report, locale) }) : undefined,
   }, locale), feedLink(kind, locale)];
 }
 

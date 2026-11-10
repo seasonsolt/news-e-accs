@@ -1,7 +1,7 @@
 import { localePath, requestLocale } from "../lib/locale";
 import { Link } from "../lib/navigation";
 import { localeFromMatches, translate, Text, useTranslate } from "../lib/i18n";
-import { REPORTS, SITE } from "@aihot/site";
+import { REPORTS, SEO_TITLES, SITE } from "@aihot/site";
 import { redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/topic";
 import type { TopicPage } from "@aihot/contracts/site";
@@ -72,7 +72,7 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
       ? (en ? `${topic.name} picks · page ${page}` : `${topic.name} 精选 · 第 ${page} 页`)
       : (en
         ? `${topic.name} latest news${parts.length ? ` and ${parts.map((p) => p.name).join(", ")}` : ""}`
-        : `${topic.name} 最新动态${parts.length ? `与${parts.map((p) => p.name).join("、")}` : ""}`),
+        : SEO_TITLES.topic(topic.name, topic.group, topic.latest ? monthDay(beijingDate(topic.latest.at)) : null)),
     description: text,
     path,
     image: `/og/topics/${topic.slug}.png`,

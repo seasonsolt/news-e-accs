@@ -84,7 +84,8 @@ test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era
   assert.equal(document.querySelectorAll('nav[aria-label="时代"] a').length, 3);
   assert.equal(document.querySelector('nav[aria-label="时代"] a[aria-current]')!.textContent, "蒸汽时代");
   assert.match(document.querySelector("main")!.textContent!, /卡尔达肖夫指数/);
-  assert.equal(document.querySelector('meta[name="robots"]'), null);
+  // Indexable: the only robots line lets results show the plate large.
+  assert.equal(document.querySelector('meta[name="robots"]')!.getAttribute("content"), "max-image-preview:large");
   assert.ok(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith("/zh/chronicle"));
 });
 

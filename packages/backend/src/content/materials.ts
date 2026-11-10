@@ -9,6 +9,7 @@ import { groupingReset, reconcileMaterialSource } from "./provenance.ts";
 import { emit } from "../modules.ts";
 import { audit } from "../audit.ts";
 import { rebaseTranslation } from "./presentation.ts";
+import { xArticleBody } from "./posts.ts";
 
 export interface MediaItem {
   kind: "image" | "video";
@@ -201,16 +202,18 @@ export function identityKeyFor(m: MaterialInput): string {
 }
 
 /** Shared URL lookup for collection, external reports and administration. Historical WeChat keys
- * included sn; reuse the earliest stored post without rewriting its public id or access URL. */
-export async function materialIdentityForUrl(url: string, db: Db = sql): Promise<string | null> {
+ * included sn; reuse the earliest stored post without rewriting its public id or access URL.
+ * A browser-verified access URL also joins a short-only import to its confirmed publisher ID. */
+export async function materialIdentityForUrl(url: string, db: Db = sql, verifiedAccessUrl?: string): Promise<string | null> {
   const key = identityKeyForUrl(url), normalized = normalizeUrl(url);
   if (!key || !normalized) return key;
   const u = new URL(normalized);
   if (u.hostname !== "mp.weixin.qq.com" || u.username || u.password || !/^\/s(?:\/[^/]+)?$/.test(u.pathname)) return key;
-  const post = wechatPostUrl(normalized), short = u.pathname.startsWith("/s/") ? u.origin + u.pathname : null;
+  const access = new URL(verifiedAccessUrl ?? normalized);
+  const post = wechatPostUrl(normalized), short = access.pathname.startsWith("/s/") ? access.origin + access.pathname : null;
   const [known] = await db<{ identity_key: string }[]>`SELECT identity_key FROM (
     SELECT identity_key, discovered_at, id FROM articles
-      WHERE identity_key IN (${key}, ${`url:${normalized}`}) OR url IN (${url}, ${normalized})
+      WHERE identity_key IN (${key}, ${`url:${normalized}`}) OR url IN (${url}, ${normalized}, ${verifiedAccessUrl ?? null})
     UNION ALL
     SELECT identity_key, discovered_at, id FROM articles
       WHERE ${post}::text IS NOT NULL AND starts_with(identity_key, 'url:https://mp.weixin.qq.com/s?__biz=')
@@ -219,6 +222,9 @@ export async function materialIdentityForUrl(url: string, db: Db = sql): Promise
     SELECT identity_key, discovered_at, id FROM articles
       WHERE ${short}::text IS NOT NULL AND starts_with(url, 'https://mp.weixin.qq.com/s/')
         AND split_part(split_part(url, '?', 1), '#', 1) = ${short}
+    UNION ALL
+    SELECT identity_key, discovered_at, id FROM articles
+      WHERE starts_with(raw->>'externalId', 'https://mp.weixin.qq.com/s?__biz=') AND raw->>'externalId' = ${post}
   ) candidates ORDER BY discovered_at, id LIMIT 1`;
   return known?.identity_key ?? key;
 }
@@ -376,27 +382,34 @@ async function upsertIn(db: Db, m: MaterialInput): Promise<MaterialResult> {
 }
 
 /** Caller holds the material lock. A presentation update preserves all semantic processing state. */
-export async function updatePresentation(db: Db, articleId: string, next: { html?: string | null; media?: MediaItem[] }): Promise<boolean> {
-  const [a] = await db<{ revision: number; body_html: string | null; media: MediaItem[] }[]>`
-    SELECT revision,body_html,media FROM articles WHERE id=${articleId} FOR UPDATE`;
+export async function updatePresentation(db: Db, articleId: string, next: { html?: string | null; media?: MediaItem[]; xArticleHtml?: string }): Promise<boolean> {
+  const [a] = await db<{ revision: number; body_html: string | null; media: MediaItem[]; x_html: string | null; x_text: string | null }[]>`
+    SELECT revision,body_html,media,x_article->>'html' AS x_html,x_post->>'text' AS x_text FROM articles WHERE id=${articleId} FOR UPDATE`;
   if (!a) return false;
   const html = next.html ?? a.body_html;
   const media = next.media ?? a.media;
-  if (html === a.body_html && stableJson(media) === stableJson(a.media)) return false;
-  if (html !== a.body_html) {
+  const xHtml = next.xArticleHtml ?? a.x_html;
+  if (html === a.body_html && xHtml === a.x_html && stableJson(media) === stableJson(a.media)) return false;
+  if (html !== a.body_html || xHtml !== a.x_html) {
     const [tr] = await db<{ body_html: string; origin: string }[]>`
       SELECT body_html,origin FROM translations WHERE article_id=${articleId} AND lang='zh' AND revision=${a.revision} FOR UPDATE`;
     // A publisher's translation is independently supplied, so only model translations share the source layout.
     if (tr?.origin === "model" && tr.body_html) {
-      const translated = rebaseTranslation(a.body_html ?? "", html ?? "", tr.body_html);
+      const previous = a.x_html ? xArticleBody(a.x_text ?? "", a.x_html) : a.body_html ?? "";
+      const current = xHtml ? xArticleBody(a.x_text ?? "", xHtml) : html ?? "";
+      const translated = rebaseTranslation(previous, current, tr.body_html);
       await db`UPDATE translations SET body_html=${translated} WHERE article_id=${articleId} AND lang='zh'`;
     }
   }
-  await db`UPDATE articles SET body_html=${html},media=${db.json(media as never)},updated_at=now() WHERE id=${articleId}`;
+  await db`UPDATE articles SET body_html=${html},media=${db.json(media as never)},updated_at=now(),
+    x_article=CASE WHEN ${xHtml}::text IS DISTINCT FROM x_article->>'html'
+      THEN jsonb_set(x_article, '{html}', to_jsonb(${xHtml}::text)) ELSE x_article END
+    WHERE id=${articleId}`;
   // Every entrance shares this committed fact, including extraction outside a fetch run. A cover
   // change alone says nothing about an earlier failure to align the original and its translation.
-  if (html !== a.body_html) await audit("system", "content.presentation.updated", `content:${articleId}`, "正文展示更新成功",
-    { revision: a.revision, htmlHash: sha256(a.body_html ?? "") }, { revision: a.revision, htmlHash: sha256(html ?? "") }, { db });
+  if (html !== a.body_html || xHtml !== a.x_html) await audit("system", "content.presentation.updated", `content:${articleId}`, "正文展示更新成功",
+    { revision: a.revision, htmlHash: sha256(a.body_html ?? ""), xHtmlHash: sha256(a.x_html ?? "") },
+    { revision: a.revision, htmlHash: sha256(html ?? ""), xHtmlHash: sha256(xHtml ?? "") }, { db });
   await emit("articleChanged", { id: articleId, kind: "body", reason: "body presentation" }, db);
   return true;
 }

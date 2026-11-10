@@ -6,6 +6,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { PgBoss, WorkOptions } from "pg-boss";
 import type { z } from "zod";
 import type { CostReading } from "@aihot/contracts/chronicle";
+import type { MentionTarget } from "@aihot/contracts/mentions";
 import type { Brand } from "@aihot/contracts/site";
 import type { Db } from "./db.ts";
 import type { QueueOptions } from "./jobs/queue.ts";
@@ -193,6 +194,8 @@ export interface ServerModule {
   name: string;
   /** Sources whose selected articles keep independent cards/seats without changing admission or event identity (publication/rules.ts, scope.ts). */
   independentSelectedSources?: readonly string[];
+  /** Another account of an independent source's author, by source id: its post gives way to the article on the same news (events/cards.ts). */
+  independentSelectedEchoes?: Readonly<Record<string, string>>;
   /** Its HTTP routes, and hooks on the app such as what to flush when it closes, registered before the engine's v1 fallbacks (apps/api/src/app.ts). */
   http?: (app: FastifyInstance) => void;
   agent?: {
@@ -266,6 +269,8 @@ export interface ServerModule {
   /** Additional module purposes for a source; absent uses keep the news pipeline alone. */
   sourceUses?: Record<string, SourceUse>;
   sourceHealth?: (now: number) => Promise<string[]>;
+  /** Its pages that names in the site's own text link to, such as a model's page by the model's name (publication/mentions.ts). */
+  mentions?: () => Promise<MentionTarget[]>;
   /** Job queues of its own (jobs/queue.ts). */
   queues?: ModuleQueue[];
   /** Follow-ups (level later), after the engine's (operations/alerts.ts). */
@@ -278,6 +283,11 @@ export interface ServerModule {
   storyOrigin?: () => string | null;
   /** More keys a feedback sender is known by; a ban under any of them holds (operations/feedback.ts). */
   feedbackKeys?: (ip: string) => string[];
+  /**
+   * Its pages, by path ("/free-tokens"), whose reports it handles itself (operations/feedback.ts): they stay out
+   * of the internal chat, and only their screenshots go to Feishu. It wakes whoever handles them (`alerts`).
+   */
+  feedbackPages?: readonly string[];
 }
 
 export function defineServerModule(module: ServerModule): ServerModule {

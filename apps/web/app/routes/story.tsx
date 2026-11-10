@@ -9,8 +9,11 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode }
 import { IntentLink } from "../components/ui/IntentLink";
 import { useLoaderData, useLocation } from "react-router";
 import type { Route } from "./+types/story";
-import type { NextReads as Reads, StoryDetail, StoryReportView } from "@aihot/contracts/site";
+import { STORY_INDEX_MIN_REPORTS, type NextReads as Reads, type StoryDetail, type StoryReportView } from "@aihot/contracts/site";
 import { SITE } from "@aihot/site";
+import { linkMentions } from "@aihot/contracts/mentions";
+import { addressRuns } from "@aihot/contracts/addresses";
+import { MentionText } from "../components/ui/MentionText";
 import { apiGet, cachedPage, loadOr404 } from "../lib/api.server";
 import { SubscribeCta } from "../features/subscribe/SubscribeCta";
 import { NextReads } from "../components/NextReads";
@@ -25,7 +28,7 @@ import { isReload } from "../lib/restore";
 import { Badge, SelectedBadge } from "../components/ui/Badge";
 import { PillTabs } from "../components/ui/Tabs";
 import { Select } from "../components/ui/Controls";
-import { IconArrowLeft, IconChevronRight, IconClock, IconDoc, IconUsers } from "../components/icons";
+import { IconArrowLeft, IconCalendar, IconChevronRight, IconClock, IconDoc, IconUsers } from "../components/icons";
 import { inNav } from "../components/shell/nav";
 import { Deck } from "../components/shell/Deck";
 import { loadParts } from "../site-modules";
@@ -64,6 +67,8 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
     type: "article",
     publishedTime: times.published,
     modifiedTime: times.modified,
+    // With one report the page only repeats that report's own page, which stands in search instead.
+    noindex: s.reportCount < STORY_INDEX_MIN_REPORTS,
     jsonLd: [
       storyArticleLd(s, language),
       { ...storyLd(s), ...(language ? { inLanguage: language } : {}) },
@@ -209,7 +214,7 @@ function TimelineRow({ r }: { r: StoryReportView }) {
         {r.summary && (
           <>
             <p ref={ref} className={`mt-1 text-[14px] leading-[1.75] text-ink-3 ${open ? "" : "line-clamp-2"}`}>
-              {r.summary}
+              <MentionText runs={addressRuns(r.summary)} />
             </p>
             {(clamped || open) && (
               <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="mt-1 text-[12.5px] text-note transition-colors hover:text-accent">
@@ -286,6 +291,7 @@ export default function StoryPage() {
       : story.excerpt
         ? { label: tx("报道摘要"), text: story.excerpt.text, note: tx("摘自 {0}", story.excerpt.sourceName) }
         : null;
+  const [overviewRuns] = useMemo(() => linkMentions([overview?.text], story.mentions), [overview?.text, story.mentions]);
   const showOfficial = () => {
     setFilter("official");
     goSection("reports");
@@ -312,6 +318,10 @@ export default function StoryPage() {
               <IconDoc size={15} /> <b className="num font-semibold text-[var(--deck-ink)]">{story.reportCount}</b><Text value="篇报道" /></span>
             <span className="inline-flex items-center gap-1.5">
               <IconUsers size={15} /> <b className="num font-semibold text-[var(--deck-ink)]">{story.sourceCount}</b><Text value="个报道来源" /></span>
+            {story.firstReportAt && (
+              <span className="inline-flex items-center gap-1.5">
+                <IconCalendar size={15} /> <b className="num font-semibold text-[var(--deck-ink)]"><time dateTime={story.firstReportAt}>{tx(monthDay(beijingDate(story.firstReportAt)))}</time></b><Text value="首报" /></span>
+            )}
             {story.latestAt && (
               <span className="inline-flex items-center gap-1.5" suppressHydrationWarning>
                 <IconClock size={15} /> {tx("{0}更新", tx(relativeTime(story.latestAt)))}</span>
@@ -342,7 +352,7 @@ export default function StoryPage() {
           <Panel id={SECTIONS.overview} title={tx("先了解这件事")} right={overview?.label} className="order-1">
             {overview ? (
               <>
-                <p lang={contentHtmlLanguage(story, locale) ?? "und"} className="whitespace-pre-line text-[15px] leading-[1.85] text-ink-2">{overview.text}</p>
+                <p lang={contentHtmlLanguage(story, locale) ?? "und"} className="whitespace-pre-line text-[15px] leading-[1.85] text-ink-2"><MentionText runs={overviewRuns} /></p>
                 {overview.note && (
                   <p className="mt-2 text-[12px] text-ink-4" suppressHydrationWarning>
                     {overview.note}

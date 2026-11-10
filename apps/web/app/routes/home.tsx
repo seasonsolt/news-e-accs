@@ -44,7 +44,11 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
   const f = loaderData?.filters;
   // A time-machine slice stands for the live page, which is the one to index.
   const path = listPath("/", loaderData ? filterParams(loaderData.filters) : {});
-  return pageMeta({ path, jsonLd: path === "/" && !f?.at ? [websiteLd(localeFromMatches(matches ?? [])), organizationLd()] : undefined, noindex: !!f?.at || hasFeedFilters(f) }, localeFromMatches(matches ?? []));
+  const live = path === "/" && !f?.at;
+  const tags = pageMeta({ path, jsonLd: live ? [websiteLd(localeFromMatches(matches ?? [])), organizationLd()] : undefined, noindex: !!f?.at || hasFeedFilters(f) }, localeFromMatches(matches ?? []));
+  // Webmaster platforms look for their verification tag on the home page only.
+  if (!live) return tags;
+  return [...tags, ...Object.entries(SITE.siteVerification).map(([name, content]) => ({ name, content }))];
 }
 
 export default function Home() {

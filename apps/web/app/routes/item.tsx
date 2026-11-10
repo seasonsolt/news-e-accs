@@ -5,15 +5,16 @@ import { localePath } from "../lib/locale";
 import { Link, useNavigate } from "../lib/navigation";
 import { ContentLanguage } from "../components/ContentLanguage";
 import { localeFromMatches, translate, Text, useTranslate, useLocale } from "../lib/i18n";
-import { ITEM_COPY, SITE } from "@aihot/site";
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { ITEM_COPY, SITE, withSubject } from "@aihot/site";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useLoaderData } from "react-router";
 import type { Route } from "./+types/item";
-import type { NextReads as Reads, SiteItemDetail } from "@aihot/contracts/site";
+import { REPORT_NAMES, reportDateLabel, type NextReads as Reads, type SiteItemDetail } from "@aihot/contracts/site";
+import { linkMentions } from "@aihot/contracts/mentions";
 import { apiGet, cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { breadcrumbLd, newsArticleLd, pageMeta, siteUrl, titled } from "../lib/seo";
-import { fullDateTime, relativeTime } from "../lib/format";
+import { fullDateTime, timeAgo } from "../lib/format";
 import { markRead } from "../lib/local-state";
 import { outboundLink } from "../lib/engagement";
 import { SameEventBadge, SelectedBadge } from "../components/ui/Badge";
@@ -39,6 +40,7 @@ import { Plate } from "../components/shell/Deck";
 import { CATEGORIES } from "@aihot/industry/taxonomy";
 import { NextReads } from "../components/NextReads";
 import { SubscribeCta } from "../features/subscribe/SubscribeCta";
+import { MentionText } from "../components/ui/MentionText";
 
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
@@ -66,6 +68,7 @@ export function meta({ matches, loaderData, location }: Route.MetaArgs) {
     type: "article",
     publishedTime: item.publishedAt ?? item.discoveredAt,
     noindex: !item.indexable,
+    googleNoindex: item.googleNoindex,
     jsonLd: [
       newsArticleLd({
         path: `/items/${item.id}`,
@@ -99,6 +102,32 @@ function inWeChat(): boolean {
   return typeof navigator !== "undefined" && /MicroMessenger/i.test(navigator.userAgent);
 }
 
+/** The byline, unless the source's name already says it (公众号：卡尔的AI沃茨 by AI沃茨, Claude：YouTube by Claude). */
+function bylineOf(author: string | null, source: string): string | null {
+  const key = (s: string) => s.toLowerCase().replace(/[\s\p{P}]/gu, "");
+  const a = author ? key(author) : "";
+  const s = key(source);
+  return a && !s.includes(a) && !a.includes(s) ? author : null;
+}
+
+/** "11月7日 AI 日报 · 头条": the daily that carries the article, named as the site names its issues. */
+function dailyName(daily: NonNullable<SiteItemDetail["daily"]>, tx: (message: string) => string): string {
+  return `${tx(reportDateLabel("daily", daily.key))} ${tx(withSubject(REPORT_NAMES.daily))}${daily.lead ? ` · ${tx("头条")}` : ""}`;
+}
+
+/**
+ * The tag chips that go beside the article's topic chips (every place showing tags shows all its topics): a
+ * tag that is a topic's own leads to the topic's page, not to a filtered list search engines are kept from,
+ * and beside that topic's chip it is not repeated.
+ */
+function tagChips(item: SiteItemDetail): Array<{ tag: string; to: string }> {
+  const shown = new Set(item.topics.map((t) => t.slug));
+  return item.tags.flatMap((tag) => {
+    const topic = item.tagTopics[tag];
+    if (topic && shown.has(topic)) return [];
+    return [{ tag, to: topic ? `/topics/${topic}` : `/all?tag=${encodeURIComponent(tag)}` }];
+  });
+}
 
 export default function ItemPage() {
   const tx = useTranslate();
@@ -147,6 +176,8 @@ export default function ItemPage() {
         ? locale === "en" ? "Body · Original content (language unverified)" : "正文 · 原文（语言尚未确认）"
         : lang === "zh" && item.body.zhKind === "translation" ? tx("正文 · AI 翻译") : tx("正文");
   const isX = item.channel === "x" && !!item.x;
+  // A post reads under its author; one that publishes a long X Article reads like an article, under its headline.
+  const isPost = isX && !item.x!.article;
   // Without a reliable date from the original, the time shown is when it was collected, labelled as such.
   const publishedIso = item.publishedAt ?? item.discoveredAt;
   const summaryOnly = item.readingMode === "summary-only";
@@ -155,6 +186,8 @@ export default function ItemPage() {
   const originalLabel = fromX ? tx("在 X 查看原推") : tx("打开原文");
 
   const related = item.relatedStories.filter((s) => s.publicId !== item.story?.publicId);
+  const daily = item.daily && { to: `/daily/${item.daily.key}`, name: dailyName(item.daily, tx) };
+  const tags = tagChips(item);
 
   const back = () => {
     if (window.history.state?.idx > 0) navigate(-1);
@@ -201,9 +234,11 @@ export default function ItemPage() {
   const badge = item.selected && (item.sameEvent ? <SameEventBadge /> : <SelectedBadge />);
   const category = item.category ? CATEGORIES.find((c) => c.key === item.category) : null;
   // An X post's source name already ends in "· X"; its author is the account's handle.
-  const byline = isX ? `@${item.x!.handle}` : fromX && item.author ? `@${item.author.replace(/^@/, "")}` : item.author;
+  const byline = isX ? `@${item.x!.handle}` : fromX && item.author ? `@${item.author.replace(/^@/, "")}` : bylineOf(item.author, item.source.name);
   // Post text keeps t.co short links that say nothing on their own: the page names how many the post has.
   const { text: summaryText, links: postLinks } = fromX && item.summary ? withoutShortLinks(item.summary) : { text: item.summary, links: 0 };
+  // The names the summary mentions link to their pages, each once.
+  const [summaryRuns] = useMemo(() => linkMentions([summaryText], item.mentions), [summaryText, item.mentions]);
   const [outlineRef, outlineOverscroll] = useContainedScroll<HTMLElement>();
   const outline = showOutline && (
     <nav ref={outlineRef} aria-label={tx("本文目录")} tabIndex={outlineOverscroll ? 0 : undefined} onKeyDown={(e) => {
@@ -261,7 +296,7 @@ export default function ItemPage() {
             <span>·</span>
             {!item.publishedAt && <span><Text value="收录于" /></span>}
             <time dateTime={publishedIso} className="mono">{fullDateTime(publishedIso)}</time>
-            <span suppressHydrationWarning>· {tx(relativeTime(publishedIso))}</span>
+            <span className="empty:hidden" suppressHydrationWarning>{timeAgo(publishedIso) && `· ${tx(timeAgo(publishedIso)!)}`}</span>
             {badge && <span className="ml-1 lg:hidden">{badge}</span>}
           </div>
 
@@ -304,10 +339,10 @@ export default function ItemPage() {
 
           {item.fact && !summaryOnly && <FactCard fact={item.fact} />}
 
-          {summaryText && (!isX || summaryText.replace(/\s+/g, " ").trim() !== item.title) && (
+          {summaryText && (!isPost || summaryText.replace(/\s+/g, " ").trim() !== item.title) && (
             <section className="mt-8">
               <h2 className="text-[12.5px] font-semibold text-accent">{summaryOnly ? tx("摘要") : tx("发生了什么")}</h2>
-              <p className="mt-2 text-[17px] leading-[1.75] text-ink lg:text-[18px]">{summaryText}</p>
+              <p className="mt-2 text-[17px] leading-[1.75] text-ink lg:text-[18px]"><MentionText runs={summaryRuns} /></p>
               {postLinks > 0 && (
                 <a href={item.links.original} target="_blank" rel="noopener noreferrer" {...outboundLink(item.links.original)} className="mt-2 inline-flex items-center gap-1 text-[13px] text-ink-3 transition-colors hover:text-accent">
                   {tx("原帖含 {0} 个链接", postLinks)} <IconArrowUpRight size={13} />
@@ -367,21 +402,26 @@ export default function ItemPage() {
           )}
 
           {isX && item.x!.media.length > 0 && <MediaGallery media={item.x!.media} postUrl={item.links.original} />}
-          {isX && item.x!.quoted?.text && <QuotedPost quoted={item.x!.quoted} original={lang === "original"} />}
+          {isX && item.x!.quoted?.html && <QuotedPost quoted={item.x!.quoted} original={lang === "original"} />}
 
           {item.story?.digest && <StoryDigest digest={item.story.digest} lang={contentHtmlLanguage(item.story, locale) ?? "und"} />}
           {item.story && <StoryFollowups followups={followups} story={item.story} current={{ id: item.id, title: item.title, timelineAt: item.timelineAt }} />}
 
-          {(item.topics.length > 0 || item.tags.length > 0) && (
+          {(daily || item.topics.length > 0 || tags.length > 0) && (
             <div className="mt-9 flex flex-wrap gap-1.5">
+              {daily && (
+                <Link viewTransition to={daily.to} className="chip">
+                  {tx("收录于 {0}", daily.name)}
+                </Link>
+              )}
               {item.topics.map((t) => (
                 <Link viewTransition key={t.slug} to={`/topics/${t.slug}`} className="chip">
                   {t.name}
                 </Link>
               ))}
-              {item.tags.slice(0, 8).map((t) => (
-                <Link key={t} to={`/all?tag=${encodeURIComponent(t)}`} className="chip">
-                  #{tx(t)}
+              {tags.slice(0, 8).map(({ tag, to }) => (
+                <Link key={tag} to={to} className="chip">
+                  #{tx(tag)}
                 </Link>
               ))}
             </div>

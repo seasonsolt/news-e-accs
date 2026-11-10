@@ -8,7 +8,7 @@ import type { ReportDetail, ReportNavigationResponse, ReportKind } from "@aihot/
 import { requestAt } from "../features/chrono/at";
 import { apiGet, cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
-import { clipText, newsArticleLd, pageMeta, titled } from "../lib/seo";
+import { newsArticleLd, pageMeta, reportDescription, titled } from "../lib/seo";
 import { zonedDate } from "@aihot/contracts/time";
 import { ReportLayout } from "../features/report/ReportLayout";
 import { ReportDeck, ReportPaper } from "../features/report/ReportPaper";
@@ -43,11 +43,13 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
   if (!loaderData) return [{ title: titled(translate(localeFromMatches(matches ?? []), "报告不存在")) }, { name: "robots", content: "noindex" }];
   const r = loaderData.report;
   const locale = localeFromMatches(matches ?? []);
-  // The issue's date and its visible editorial lead (a still-public highlight when it has none).
-  const lead = r.lead?.title.trim() || r.highlights.find((item) => item.available)?.title.trim();
+  // The issue's date and its editorial lead; without one, the first highlight the issue carries as an entry
+  // (the reports a thin daily's highlights were filled with are not its news).
+  const entries = new Set(r.sections.flatMap((s) => s.items.map((i) => i.itemId)));
+  const lead = r.lead?.title.trim() || r.highlights.find((item) => item.available && entries.has(item.itemId))?.title.trim();
   const name = `${translate(locale, withSubject(KIND_LABEL[r.kind]))} ${r.key}`;
   const title = lead ? `${name}${locale === "en" ? ": " : "："}${lead}` : name;
-  const description = r.lead?.leadParagraph ?? (r.overview ? clipText(r.overview) : (locale === "en" ? `${SITE.name} ${translate(locale, KIND_LABEL[r.kind])} for ${r.key}.` : `${SITE.name} ${r.key} 的${withSubject(KIND_LABEL[r.kind])}。`));
+  const description = reportDescription(r, locale) ?? (locale === "en" ? `${SITE.name} ${translate(locale, KIND_LABEL[r.kind])} for ${r.key}.` : `${SITE.name} ${r.key} 的${withSubject(KIND_LABEL[r.kind])}。`);
   const path = `/${r.kind}/${r.key}`;
   const image = `/og/reports/${r.kind}/${r.key}.png`;
   return [...pageMeta({

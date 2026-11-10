@@ -512,7 +512,7 @@ test("built pages keep both language URLs, layout, history and the default share
         const page = await compare.text();
         const compareTitle = prefix ? "Stored model 0 与 Stored model 1 API 价格对比 2026：每次调用成本" : "Stored model 0 vs Stored model 1 API Pricing 2026: Cost per Request Compared";
         assert.ok(page.includes(`<title>${compareTitle}</title>`), prefix);
-        assert.equal(page.includes('name="robots"'), false, `${prefix} a featured pair is indexable`);
+        assert.doesNotMatch(page, /name="robots" content="noindex/, `${prefix} a featured pair is indexable`);
         assert.ok(page.includes(`rel="canonical" href="${web.origin}${prefix}/pricing/compare/${pair}"`), prefix);
         // Chat message, 1K in / 500 out: model 0 at $2/$10 costs $0.007, model 1 at $1/$2 costs $0.002.
         assert.ok(page.includes(prefix ? "Stored model 1 每次 $0.002，Stored model 0 每次 $0.007，前者便宜约 3.5 倍" : "Stored model 1 costs $0.002 per request and Stored model 0 costs $0.007, so Stored model 1 is about 3.5× cheaper"), prefix);

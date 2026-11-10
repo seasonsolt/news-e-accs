@@ -4,7 +4,8 @@
 // - unreleased selections or non-editorial sources leak into search discovery;
 // - more than 10,000 changes at one timestamp are skipped or permanently starve later URLs;
 // - dry runs, HTTP failures or module read failures acknowledge URLs that were never submitted;
-// - the sitemap's display limits are mistaken for a removal from the full discovery inventory.
+// - the sitemap's display limits are mistaken for a removal from the full discovery inventory;
+// - a story of one report, noindex everywhere since 2026-11-09, still spends engines' fetches and Baidu's few daily pushes.
 import './setup.ts';
 import assert from 'node:assert/strict';
 import { after, afterEach, test } from 'node:test';
@@ -52,6 +53,7 @@ async function material(id: string, options: { source?: string; future?: boolean
 
 test('discovery dates follow page content and publication scope', async () => {
   await material('dates-visible');
+  await material('dates-companion');
   await material('dates-future', { future: true });
   await material('dates-signal', { source: 'discovery-signal' });
   await sql`INSERT INTO reports (kind,key,window_start,window_end,content,generated_at,updated_at)
@@ -62,7 +64,8 @@ test('discovery dates follow page content and publication scope', async () => {
   const [story] = await sql<{ id: number }[]>`INSERT INTO stories (public_id,title,created_at,updated_at,digest,digest_updated_at)
     VALUES (${publicId},'事件','2026-10-02','2026-10-08','摘要','2026-10-05T06:00:00Z') RETURNING id`;
   const [fact] = await sql<{ id: number }[]>`INSERT INTO facts (public_id,story_id,title) VALUES (${randomUUID()},${story!.id},'事实') RETURNING id`;
-  await sql`INSERT INTO fact_articles (fact_id,article_id,role) VALUES (${fact!.id},'dates-visible','primary')`;
+  // A story of one report is noindex (STORY_INDEX_MIN_REPORTS): this one gathers two.
+  for (const id of ['dates-visible', 'dates-companion']) await sql`INSERT INTO fact_articles (fact_id,article_id,role) VALUES (${fact!.id},${id},'primary')`;
   const entries = await loadDiscoveryEntries(new Date('2026-10-09'));
   // New pages are dated so search engines can find them; a translation or bookkeeping update is not a date.
   assert.equal(entries.find(e => e.loc === '/items/dates-visible')?.lastmod?.toISOString(), '2026-10-03T00:00:00.000Z');
@@ -85,12 +88,36 @@ test('the Chinese edition is discovered only where the web always offers it as a
   assert.ok(![...locs].some(loc => loc !== '/zh/daily/archive' && /^\/zh\/(items|story|daily|weekly|monthly)\//.test(loc)), 'content pages wait for both editions');
 });
 
+test('stories of several reports are listed and notified; a story of one report is neither', async () => {
+  await material('story-one');
+  await material('story-two-a');
+  await material('story-two-b');
+  const add = async (ids: string[]) => {
+    const publicId = randomUUID();
+    const [story] = await sql<{ id: number }[]>`INSERT INTO stories (public_id,title,latest_at,digest,digest_updated_at,created_at,updated_at)
+      VALUES (${publicId},'事件','2026-10-08T00:00:00Z','综述','2026-10-07T00:00:00Z','2026-10-01','2026-10-05') RETURNING id`;
+    const [fact] = await sql<{ id: number }[]>`INSERT INTO facts (public_id,story_id,title) VALUES (${randomUUID()},${story!.id},'事实') RETURNING id`;
+    for (const id of ids) await sql`INSERT INTO fact_articles (fact_id,article_id,role) VALUES (${fact!.id},${id},'primary')`;
+    return publicId;
+  };
+  const single = await add(['story-one']);
+  const several = await add(['story-two-a', 'story-two-b']);
+  const at = new Date('2026-10-09');
+  const all = await loadDiscoveryEntries(at);
+  assert.ok(!all.some(e => e.loc === `/story/${single}`), 'its page is noindex: no engine is asked to fetch it');
+  assert.ok(all.some(e => e.loc === `/story/${several}`));
+  const listed = await loadDiscoveryEntries(at, { stories: 500, urls: 100 });
+  assert.ok(!listed.some(e => e.loc === `/story/${single}`));
+  assert.ok(listed.some(e => e.loc === `/story/${several}`));
+});
+
 test('dry runs leave changes pending, corrections and disappeared URLs are submitted again', async () => {
   await material('changed-story-item');
+  await material('changed-story-other');
   const publicId = randomUUID();
   const [story] = await sql<{ id: number }[]>`INSERT INTO stories (public_id,title,created_at,updated_at) VALUES (${publicId},'事件','2026-10-01','2026-10-01') RETURNING id`;
   const [fact] = await sql<{ id: number }[]>`INSERT INTO facts (public_id,story_id,title) VALUES (${randomUUID()},${story!.id},'事实') RETURNING id`;
-  await sql`INSERT INTO fact_articles (fact_id,article_id,role) VALUES (${fact!.id},'changed-story-item','primary')`;
+  for (const id of ['changed-story-item', 'changed-story-other']) await sql`INSERT INTO fact_articles (fact_id,article_id,role) VALUES (${fact!.id},${id},'primary')`;
   config.indexNowSubmitEnabled = false;
   globalThis.fetch = async () => { throw new Error('dry run made a network request'); };
   assert.equal((await submitIndexNow()).status, 'disabled');

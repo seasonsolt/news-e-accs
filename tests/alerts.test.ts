@@ -228,6 +228,30 @@ test("backup failures still escalate after fifty hours without a success", async
   }
 });
 
+// Baidu push failures: an hour of "please retry later" is not news; a day of them, or a revoked token that
+// never heals, is a follow-up until one run succeeds again.
+test("a Baidu push failing for a day is a follow-up; one success clears it", async () => {
+  const now = Date.now();
+  const hours = (h: number) => new Date(now - h * 3600_000);
+  const finding = async () => (await collectFindings(now)).find((f) => f.key === "seo.baidu-push");
+  try {
+    await sql`INSERT INTO job_runs (job, started_at, finished_at, status) VALUES ('seo.baidu-push', ${hours(30)}, ${hours(30)}, 'ok')`;
+    await sql`INSERT INTO job_runs (job, started_at, finished_at, status, error)
+      VALUES ('seo.baidu-push', ${hours(20)}, ${hours(20)}, 'failed', 'Error: Baidu push failed: 401 token is not valid')`;
+    assert.equal(await finding(), undefined, "failing for less than a day can be Baidu having a bad hour");
+    await sql`UPDATE job_runs SET started_at = ${hours(26)}, finished_at = ${hours(26)} WHERE job = 'seo.baidu-push' AND status = 'failed'`;
+    await sql`INSERT INTO job_runs (job, started_at, finished_at, status, error)
+      VALUES ('seo.baidu-push', ${hours(1)}, ${hours(1)}, 'failed', 'Error: Baidu push failed: 401 token is not valid')`;
+    const open = await finding();
+    assert.equal(open?.level, "later");
+    assert.match(open?.detail ?? "", /401 token is not valid/);
+    await sql`INSERT INTO job_runs (job, started_at, finished_at, status) VALUES ('seo.baidu-push', ${hours(0.5)}, ${hours(0.5)}, 'ok')`;
+    assert.equal(await finding(), undefined);
+  } finally {
+    await sql`DELETE FROM job_runs WHERE job = 'seo.baidu-push'`;
+  }
+});
+
 // Failure cases: scoring succeeded but identity work failed outside processing_state; a short normal
 // wait creates noise; withdrawn/rejected/completed items stay counted; unknown paid work is called
 // harmless or automatically recoverable after its one automatic release has already been used;
@@ -389,7 +413,10 @@ test("a deliberately dropped delivery closes without claiming successful deliver
 test("provider recovery follows the refused model and current routing", async () => {
   const now = Date.now();
   const before = process.env.PREFILTER_MODEL;
+  const beforeFeedback = process.env.FEEDBACK_MODEL;
   process.env.PREFILTER_MODEL = "qwen3.7-flash";
+  // The other step on this model stays away, so the prefilter's switch below leaves it unused.
+  process.env.FEEDBACK_MODEL = "qwen3.8-flash";
   const [r] = await sql<{ id: number }[]>`INSERT INTO receipts(logical_key,service,model,purpose,status)
     VALUES('refusal-model-scope','dashscope','qwen3.7-flash','prefilter_article','failed') RETURNING id`;
   try {
@@ -414,6 +441,7 @@ test("provider recovery follows the refused model and current routing", async ()
     assert.ok((await checkAlerts(now+2*3600_000+120_000)).sent.includes('provider.refused.dashscope:qwen3.7-flash:recovered'));
   } finally {
     if (before===undefined) delete process.env.PREFILTER_MODEL; else process.env.PREFILTER_MODEL=before;
+    if (beforeFeedback===undefined) delete process.env.FEEDBACK_MODEL; else process.env.FEEDBACK_MODEL=beforeFeedback;
     invalidateModelCache();
     await sql`DELETE FROM receipts WHERE id=${r!.id}`;
   }
@@ -442,8 +470,10 @@ test("provider impact includes the same evaluated fallback as modelRoute", async
 
 test("a refusal first seen after switching models survives the first-hour window", async () => {
   const before = process.env.PREFILTER_MODEL;
+  const beforeFeedback = process.env.FEEDBACK_MODEL;
   const now = Date.now();
   process.env.PREFILTER_MODEL = "qwen3.8-flash";
+  process.env.FEEDBACK_MODEL = "qwen3.8-flash";
   invalidateModelCache();
   const key = "provider.refused.dashscope:qwen3.7-flash";
   const [r] = await sql<{ id: number }[]>`INSERT INTO receipts(logical_key,service,model,purpose,status)
@@ -461,6 +491,7 @@ test("a refusal first seen after switching models survives the first-hour window
     assert.ok(!recovered.sent.includes(`${key}:recovered`), "an incident never announced separately has no unsolicited recovery notice");
   } finally {
     if (before===undefined) delete process.env.PREFILTER_MODEL; else process.env.PREFILTER_MODEL=before;
+    if (beforeFeedback===undefined) delete process.env.FEEDBACK_MODEL; else process.env.FEEDBACK_MODEL=beforeFeedback;
     invalidateModelCache();
     await sql`DELETE FROM receipts WHERE id=${r!.id}`;
   }

@@ -16,6 +16,7 @@ import { hotRankingAt, latestHotRanking, rankingExtras } from "./hot.ts";
 export { loadHotStrip } from "./hot.ts";
 import { storyTexts, type StoryText } from "./story-text.ts";
 import { topicsOfStory } from "./topics.ts";
+import { mentionsIn } from "./mentions.ts";
 import { itemUrl, storyUrl, v1StoryApiUrl, v1StoryUrl } from "./links.ts";
 
 export type StoryLookup = { kind: "found"; storyId: number; publicId: string } | { kind: "merged"; target: string } | { kind: "not_found" };
@@ -248,6 +249,7 @@ export async function loadStoryDetail(storyId: number, now = new Date()): Promis
   const [related, topics] = await Promise.all([relatedStories(storyId, now), topicsOfStory(storyId, now)]);
   const latestAt = latest.at;
   const modules = Object.fromEntries(await Promise.all(serverModules().filter((m) => m.storyPage).map(async (m) => [m.name, await m.storyPage!(storyId)])));
+  const shownExcerpt = excerpt ? { text: excerpt.summary!, sourceName: publicSourceName(excerpt.source_name) } : null;
   return {
     modules,
     editorialLanguage: s.editorial_language,
@@ -262,7 +264,7 @@ export async function loadStoryDetail(storyId: number, now = new Date()): Promis
     digest: text.digest,
     digestUpdatedAt: text.digestUpdatedAt?.toISOString() ?? null,
     summary: text.summary,
-    excerpt: excerpt ? { text: excerpt.summary!, sourceName: publicSourceName(excerpt.source_name) } : null,
+    excerpt: shownExcerpt,
     latest: latest.title,
     latestReport: { id: latest.id },
     whyHot: {
@@ -278,6 +280,7 @@ export async function loadStoryDetail(storyId: number, now = new Date()): Promis
     heat: heat.map((h): HeatPoint => ({ hour: h.hour.toISOString(), heat: Number(h.heat), participants: h.participants })),
     related: related.map((r) => ({ publicId: r.public_id, title: r.title, relation: r.relation })),
     topics,
+    mentions: await mentionsIn([text.digest ?? text.summary ?? shownExcerpt?.text]),
   };
 }
 

@@ -5,9 +5,10 @@ import { ContentLanguage } from "../../components/ContentLanguage";
 import { useLocale, useTranslate, Text } from "../../lib/i18n";
 // One report in a feed. Desktop (≥ 961px): a white card beside the time rail. Phones: a compact row with
 // the time in the source line, the bookmark at hand, the reason in one line and duplicate reports
-// behind one button that opens a sheet. One markup, two presentations.
+// behind one button that opens a sheet. One markup, two presentations. The card is a link as a whole, so
+// addresses in its text read short as plain words.
 import { memo } from "react";
-
+import { shortAddresses } from "@aihot/contracts/addresses";
 import { IntentLink } from "../../components/ui/IntentLink";
 import type { GroupInfo, FeedItemSummary, TimelineFilters } from "@aihot/contracts/site";
 import { CATEGORY_LABELS } from "@aihot/contracts/taxonomy";
@@ -70,20 +71,20 @@ export const FeedItem = memo(function FeedItem({ item, group, filters, read = fa
 
       <ContentLanguage content={item} />
       {isX ? (
-        item.summary ? <p lang={language} className={`mt-1.5 whitespace-pre-line text-[15px] leading-[1.75] line-clamp-5 lg:mt-2 lg:line-clamp-4 ${read ? "text-ink-4" : "text-ink"}`}>
+        item.summary ? <p lang={language} className={`mt-1.5 whitespace-pre-line text-[15px] leading-[1.75] line-clamp-5 lg:mt-2 lg:line-clamp-4 ${readTone(read, "text-ink")}`}>
           <IntentLink viewTransition to={`/items/${item.id}`} onClick={open} className="after:absolute after:inset-0 after:content-['']">
-            {item.summary}
+            {shortAddresses(item.summary)}
           </IntentLink>
         </p> : <IntentLink viewTransition to={`/items/${item.id}`} onClick={open} aria-label={tx("查看 {0} 的帖子", item.x!.authorName)} className="absolute inset-0" />
       ) : (
         <div className="flex gap-3 lg:gap-4">
           <div className="min-w-0 flex-1">
-            <h3 lang={language} className={`mt-1.5 line-clamp-2 text-[17px] font-[650] leading-[1.5] lg:mt-2 lg:line-clamp-none lg:leading-[1.55] ${read ? "text-ink-4" : "text-ink"}`}>
+            <h3 lang={language} className={`mt-1.5 line-clamp-2 text-[17px] font-[650] leading-[1.5] lg:mt-2 lg:line-clamp-none lg:leading-[1.55] ${readTone(read, "text-ink")}`}>
               <IntentLink viewTransition to={`/items/${item.id}`} onClick={open} className="after:absolute after:inset-0 after:content-['']">
                 {item.title}
               </IntentLink>
             </h3>
-            {item.summary && <p lang={language} className="mt-1 line-clamp-2 text-[14.5px] leading-[1.7] text-ink-3 lg:mt-2 lg:line-clamp-3 lg:text-[15px] lg:leading-[1.75]">{item.summary}</p>}
+            {item.summary && <p lang={language} className="mt-1 line-clamp-2 text-[14.5px] leading-[1.7] text-ink-3 lg:mt-2 lg:line-clamp-3 lg:text-[15px] lg:leading-[1.75]">{shortAddresses(item.summary)}</p>}
           </div>
           {/* The original page's share picture; the link over the card opens the report. */}
           {item.cover && (

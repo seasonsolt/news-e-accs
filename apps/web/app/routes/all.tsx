@@ -1,7 +1,7 @@
 import { localePath, publicPath, requestLocale } from "../lib/locale";
 import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, translate, useTranslate } from "../lib/i18n";
-import { SITE, subjectAfter } from "@aihot/site";
+import { SEO_TITLES, SITE, subjectAfter } from "@aihot/site";
 import { redirect, useLoaderData, useNavigation, useSearchParams } from "react-router";
 import type { Route } from "./+types/all";
 import type { PoolResponse } from "@aihot/contracts/site";
@@ -46,9 +46,13 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
   const q = f?.q;
   const page = loaderData?.data.page ?? 1;
   const path = listPath("/all", { ...(f && filterParams(f)), q, tab: q && f?.tab === "relevance" ? "relevance" : null, page: page > 1 ? page : null });
-  const title = `${q ? `搜索：${q}` : ALL_TITLE}${page > 1 ? ` · 第 ${page} 页` : ""}`;
-  const noindex = !!q || hasFeedFilters(f);
+  const filtered = !!q || hasFeedFilters(f);
   const locale = localeFromMatches(matches ?? []);
+  // The Chinese edition's list is searched by what it is; the English one keeps its own name.
+  const title = `${q ? `搜索：${q}` : filtered || locale === "en" ? ALL_TITLE : SEO_TITLES.all}${page > 1 ? ` · 第 ${page} 页` : ""}`;
+  // The first page stands in search for the whole list; later pages only shift its reports along, and
+  // their links stay followed so every report is still reached.
+  const noindex = filtered || page > 1;
   return pageMeta({
     title,
     description: `${SITE.name} 收录的${subjectAfter("全部", "相关动态")}，可按频道、类别与标签筛选，支持中英文搜索。`,

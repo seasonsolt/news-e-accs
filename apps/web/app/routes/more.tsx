@@ -122,6 +122,7 @@ export default function MorePage() {
         {SITE.contactEmail && <a href={`mailto:${SITE.contactEmail}`} className="hover:text-ink-2">{SITE.contactEmail}</a>}
         {SITE.github && <a href={SITE.github} target="_blank" rel="noopener noreferrer" className="hover:text-ink-2">GitHub</a>}
         {SITE.icp && <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" className="hover:text-ink-2">{SITE.icp}</a>}
+        {SITE.poweredBy && <a href={SITE.poweredBy.url} target="_blank" rel="noopener" className="hover:text-ink-2">{tx("由 {0} 驱动", SITE.poweredBy.name)}</a>}
       </div>
     </div>
   );

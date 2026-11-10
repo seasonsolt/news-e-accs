@@ -1,7 +1,8 @@
 import { Link } from "../lib/navigation";
 import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router";
+// The replace below keeps the address as it is, so it is the router's own navigate, not the localizing one.
+import { useLocation, useNavigate, useSearchParams } from "react-router";
 import { SITE } from "@aihot/site";
 import { Presence } from "../components/ui/Presence";
 import { edgeTtl } from "../lib/api.server";
@@ -11,6 +12,8 @@ import { IconCheck, IconClose, IconImage } from "../components/icons";
 import { RingMark } from "@aihot/site/brand/Logo.tsx";
 import { AsideCard, ReadingLayout } from "../components/ui/Page";
 import { Deck } from "../components/shell/Deck";
+import { isHydrated } from "../lib/hydration";
+import type { WebModule } from "../modules";
 import { webModules } from "../site-modules";
 
 export function headers() {
@@ -52,13 +55,27 @@ function writeDraft(d: Draft | null): boolean {
 
 const TIPS = ["出问题的页面或文章链接", "你看到了什么，原本想做什么", "有截图更好，记得先遮盖敏感信息"];
 
-function FeedbackAside() {
+type Guide = NonNullable<WebModule["feedbackGuide"]>;
+
+/** The guide of the module whose button opened this page (WebModule.feedbackGuide), if any. */
+function guideFor(state: unknown): Guide | null {
+  const name = state && typeof state === "object" ? (state as { feedbackFor?: unknown }).feedbackFor : null;
+  return webModules().find((m) => m.name === name)?.feedbackGuide ?? null;
+}
+
+/** What the reader had already typed where the button was (the link's `state.content`), if anything. */
+function carriedText(state: unknown): string | null {
+  const text = state && typeof state === "object" ? (state as { content?: unknown }).content : null;
+  return typeof text === "string" && text.trim() ? text : null;
+}
+
+function FeedbackAside({ tips }: { tips: string[] }) {
   const tx = useTranslate();
   return (
     <>
       <AsideCard title={tx("写清楚这几点，处理更快")}>
         <ol className="space-y-2.5">
-          {TIPS.map((t, i) => (
+          {tips.map((t, i) => (
             <li key={t} className="flex gap-2.5 text-[13px] leading-[1.6] text-ink-3">
               <span className="mono mt-px text-[11px] font-bold text-accent">{String(i + 1).padStart(2, "0")}</span>
               {tx(t)}
@@ -93,6 +110,13 @@ const MAX_TEXT = 2000;
 export default function FeedbackPage() {
   const tx = useTranslate();
   const [params] = useSearchParams();
+  // The guide comes with the button's navigation, which the server never sees: a page the server drew starts with
+  // the site's own words, and turns to the guide once hydrated.
+  const { state: navigation, pathname, search } = useLocation();
+  const navigate = useNavigate();
+  const [hydrated, setHydrated] = useState(isHydrated);
+  useEffect(() => setHydrated(true), []);
+  const guide = hydrated ? guideFor(navigation) : null;
   const [draft, setDraft] = useState<Draft>({ content: "", email: "", pageUrl: params.get("from") ?? "" });
   const [shot, setShot] = useState<{ file: File; url: string } | null>(null);
   const [state, setState] = useState<{ kind: "idle" | "sending" | "done" | "error"; message?: string; id?: number }>({ kind: "idle" });
@@ -105,7 +129,13 @@ export default function FeedbackPage() {
     // a document the browser opened fresh falls back to its referrer.
     const before = params.get("from") ? null : (lastPage() ?? (document.referrer.startsWith(location.origin) ? document.referrer : null));
     const from = before ? new URL(before, location.origin).href : null;
-    if (saved) setDraft((d) => ({ ...saved, pageUrl: d.pageUrl || from || saved.pageUrl }));
+    // What was just typed comes before an older draft; the email kept with that draft stays. It is taken once:
+    // from here it is this page's draft, and a reload brings back what the reader has written since.
+    const carried = carriedText(navigation);
+    if (carried) {
+      setDraft((d) => ({ content: carried, email: saved?.email ?? "", pageUrl: d.pageUrl || from || saved?.pageUrl || "" }));
+      navigate(pathname + search, { replace: true, state: { ...(navigation as object), content: undefined } });
+    } else if (saved) setDraft((d) => ({ ...saved, pageUrl: d.pageUrl || from || saved.pageUrl }));
     else if (from) setDraft((d) => ({ ...d, pageUrl: from }));
   }, []);
   useEffect(() => {
@@ -179,9 +209,9 @@ export default function FeedbackPage() {
   const canSend = draft.content.trim().length >= 2 && state.kind !== "sending";
   return (
     <>
-    <Deck compact label={tx("反馈")} title={tx("说说你的想法")} description={tx(SITE.feedbackLead)} />
+    <Deck compact label={tx("反馈")} title={tx(guide?.title ?? "说说你的想法")} description={tx(guide?.lead ?? SITE.feedbackLead)} />
     <div className="h-6" />
-    <ReadingLayout aside={<FeedbackAside />}>
+    <ReadingLayout aside={<FeedbackAside tips={guide?.tips ?? TIPS} />}>
 
       <form
         onSubmit={submit}
@@ -210,8 +240,8 @@ export default function FeedbackPage() {
                 maxLength={MAX_TEXT}
                 value={draft.content}
                 onChange={(e) => setDraft({ ...draft, content: e.target.value })}
-                placeholder={tx(SITE.feedbackExample)}
-                className={`${field} block resize-y px-4 pb-8 pt-3.5 text-[14.5px] leading-relaxed`}
+                placeholder={tx(guide?.example ?? SITE.feedbackExample)}
+                className={`${field} block resize-y px-4 pb-8 pt-3.5 text-[16px] leading-relaxed sm:text-[14.5px]`}
               />
               <span className="mono pointer-events-none absolute bottom-3 right-4 text-[11px] text-ink-4">
                 {draft.content.length} / {MAX_TEXT}

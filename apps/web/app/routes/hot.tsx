@@ -1,6 +1,6 @@
 import { Picture } from "../components/ui/Picture";
-import { localeFromMatches, Text, useLocale, useTranslate } from "../lib/i18n";
-import { subjectAfter, withSubject } from "@aihot/site";
+import { localeFromMatches, Text, translate, useLocale, useTranslate } from "../lib/i18n";
+import { SEO_TITLES, subjectAfter, withSubject } from "@aihot/site";
 import { useLoaderData, useRouteLoaderData } from "react-router";
 import { IntentLink } from "../components/ui/IntentLink";
 import { FEATURES } from "@aihot/industry/features";
@@ -8,11 +8,13 @@ import type { loader as rootLoader } from "../root";
 import { Deck } from "../components/shell/Deck";
 import { TimeDial } from "../features/chrono/TimeMachine";
 import type { HotEntryView, HotResponse } from "@aihot/contracts/site";
+import { beijingDate } from "@aihot/contracts/time";
+import { shortAddresses } from "@aihot/contracts/addresses";
 import { cachedPage, loadOr404, queryString } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { atLabel, requestAt } from "../features/chrono/at";
-import { pageMeta } from "../lib/seo";
-import { monthDayTime } from "../lib/format";
+import { archiveLd, pageMeta } from "../lib/seo";
+import { monthDay, monthDayTime } from "../lib/format";
 import { Badge } from "../components/ui/Badge";
 import { EmptyState } from "../components/ui/Page";
 import { IconChevronDown, IconInfo } from "../components/icons";
@@ -30,14 +32,28 @@ export async function loader({ request }: { request: Request }) {
   return cachedPage(120, { hot: await loadOr404<HotResponse>(`/api/site/hot${queryString({ at })}`, { request, signal: request.signal }), at });
 }
 
-export function meta({ matches, loaderData }: { loaderData?: { at: string | null }; matches?: Array<{ id: string; data?: unknown }> }) {
+export function meta({ matches, loaderData }: { loaderData?: { hot: HotResponse; at: string | null }; matches?: Array<{ id: string; data?: unknown }> }) {
+  const locale = localeFromMatches(matches ?? []);
+  const hot = loaderData?.hot;
+  const entries = hot?.entries ?? [];
+  const en = locale === "en";
+  // A search result answers "what is hot today" with the three events the page leads with, dated by the ranking.
+  const lead = hot?.computedAt && entries.length
+    ? en
+      ? `${withSubject("trending")} on ${beijingDate(hot.computedAt)}: ${entries.slice(0, 3).map((e) => e.story.title).join("; ")}. `
+      : `${subjectAfter(monthDay(beijingDate(hot.computedAt)), "热点")}：${entries.slice(0, 3).map((e) => e.story.title).join("；")}。`
+    : "";
+  const title = en ? withSubject("热点榜") : SEO_TITLES.hot;
+  const about = `${subjectAfter("过去 48 小时", "圈")}讨论最多的 10 个事件：热度指数、趋势与组成热度的公开来源。`;
   return pageMeta({
-    title: withSubject("热点榜"),
-    description: `${subjectAfter("过去 48 小时", "圈")}讨论最多的 10 个事件：热度指数、趋势与组成热度的公开来源。`,
+    title,
+    // The fixed sentence goes through the dictionary on its own; the lead is already in the page's language.
+    description: `${lead}${translate(locale, about)}`,
     path: "/hot",
     image: "/og/pages/hot.png",
     noindex: !!loaderData?.at,
-  }, localeFromMatches(matches ?? []));
+    jsonLd: entries.length && !loaderData?.at ? archiveLd("/hot", translate(locale, title), entries.map((e) => ({ path: `/story/${e.story.publicId}`, name: e.story.title }))) : undefined,
+  }, locale);
 }
 
 const BADGES: Record<HotEntryView["badges"][number], { label: string; tone: "hot" | "accent" | "amber"; hint: string }> = {
@@ -128,7 +144,7 @@ function Lead({ e }: { e: HotEntryView }) {
           <h2 className="text-[21px] font-bold leading-[1.4] tracking-[-0.01em] text-ink sm:text-[23px] lg:text-[25px] lg:leading-[1.38]">
             <StoryLink e={e} className="group-hover:text-accent" />
           </h2>
-          {e.summary && <p className="mt-3 line-clamp-3 text-[14px] leading-[1.75] text-ink-3">{e.summary}</p>}
+          {e.summary && <p className="mt-3 line-clamp-3 text-[14px] leading-[1.75] text-ink-3">{shortAddresses(e.summary)}</p>}
         </div>
         {e.cover ? (
           <div className="order-first overflow-hidden well rounded-panel xl:order-none">
@@ -178,7 +194,7 @@ function Runner({ e }: { e: HotEntryView }) {
       <h2 className="mt-2.5 line-clamp-2 text-[16px] font-[650] leading-[1.5] text-ink">
         <StoryLink e={e} className="group-hover:text-accent" />
       </h2>
-      {e.summary && <p className="mt-1.5 line-clamp-2 text-[13px] leading-[1.7] text-ink-3 lg:line-clamp-1">{e.summary}</p>}
+      {e.summary && <p className="mt-1.5 line-clamp-2 text-[13px] leading-[1.7] text-ink-3 lg:line-clamp-1">{shortAddresses(e.summary)}</p>}
       <div className="mt-auto flex flex-wrap items-end justify-between gap-x-4 gap-y-2 pt-3">
         <div className="flex min-w-0 flex-col gap-1.5">
           <Faces participants={e.participants} total={e.participantCount} size={20} />
@@ -213,7 +229,7 @@ function Row({ e }: { e: HotEntryView }) {
             </span>
           )}
         </h3>
-        {e.summary && <p className="mt-0.5 line-clamp-2 text-[13px] leading-[1.65] text-ink-4 lg:line-clamp-1">{e.summary}</p>}
+        {e.summary && <p className="mt-0.5 line-clamp-2 text-[13px] leading-[1.65] text-ink-4 lg:line-clamp-1">{shortAddresses(e.summary)}</p>}
         <div className="mt-2 flex items-center gap-2.5 pr-24 lg:hidden">
           <Faces participants={e.participants} total={e.participantCount} size={20} />
           <span className="text-[12px] text-ink-4">

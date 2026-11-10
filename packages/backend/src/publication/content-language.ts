@@ -235,7 +235,8 @@ export async function localizePublication<T>(input: T, lang: string, originalBod
           if (citation.available !== false) citation.contentLanguage={...out.contentLanguage};
         }
       }
-      if(ref.kind==='item' && out.x?.quoted && targetLanguage==='en') out.x.quoted.translation=null;
+      // The English edition drops the quote's Chinese translation: the canonical post's text, or the page's HTML.
+      if(ref.kind==='item' && out.x?.quoted && targetLanguage==='en') out.x.quoted={...out.x.quoted,...('translationHtml' in out.x.quoted ? {translationHtml:null} : {translation:null})};
       if(ref.kind==='item' && o.body){
         const detail=await loadItemDetail(ref.id);
         if(detail.kind!=='found' || !detail.detail.body) { out.body=null; out.outline=[]; return out; }

@@ -40,14 +40,17 @@ test("the sitemap pairs mirrored editions and names only fresh native English st
   await sql`INSERT INTO sources (id,name,kind,tier,participation_mode) VALUES (${source},'Discovery news','rss','T1','editorial')`;
   const story = async (title: string, language: "en" | "zh", created: string) => {
     const publicId = randomUUID();
-    const id = `${source}-${publicId}`;
-    await sql`INSERT INTO articles (id,source_id,identity_key,url,title,timeline_at,discovered_at)
-      VALUES (${id},${source},${id},${`https://example.org/${id}`},${title},now(),now())`;
-    await sql`INSERT INTO publications (article_id,source_id,title,summary,url,timeline_at,discovered_at,sort_at,selected,eligible,visible_after,channel,category)
-      VALUES (${id},${source},${title},'Summary',${`https://example.org/${id}`},now(),now(),now(),true,true,now() - interval '1 minute','news','ai-models')`;
     const [row] = await sql<{ id: number }[]>`INSERT INTO stories (public_id,title,editorial_language,latest_at,created_at) VALUES (${publicId},${title},${language},now(),${created}::timestamptz) RETURNING id`;
     const [fact] = await sql<{ id: number }[]>`INSERT INTO facts (public_id,story_id,title) VALUES (${randomUUID()},${row!.id},${title}) RETURNING id`;
-    await sql`INSERT INTO fact_articles (fact_id,article_id,role) VALUES (${fact!.id},${id},'primary')`;
+    // Two reports: a story with fewer is not indexed.
+    for (const [suffix, role] of [["a", "primary"], ["b", "report"]] as const) {
+      const id = `${source}-${publicId}-${suffix}`;
+      await sql`INSERT INTO articles (id,source_id,identity_key,url,title,timeline_at,discovered_at)
+        VALUES (${id},${source},${id},${`https://example.org/${id}`},${title},now(),now())`;
+      await sql`INSERT INTO publications (article_id,source_id,title,summary,url,timeline_at,discovered_at,sort_at,selected,eligible,visible_after,channel,category)
+        VALUES (${id},${source},${title},'Summary',${`https://example.org/${id}`},now(),now(),now(),true,true,now() - interval '1 minute','news','ai-models')`;
+      await sql`INSERT INTO fact_articles (fact_id,article_id,role) VALUES (${fact!.id},${id},${role})`;
+    }
     return publicId;
   };
   const fresh = await story("Fresh <English> story", "en", new Date(Date.now() - 3_600_000).toISOString());

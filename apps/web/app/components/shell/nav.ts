@@ -31,7 +31,7 @@ export interface NavItem {
  */
 export const TOPNAV: NavItem[] = [
   { to: "/", label: "精选", icon: IconBolt, end: true },
-  { to: "/daily", label: withSubject("日报"), icon: IconDoc },
+  { to: "/daily", label: withSubject("日报"), icon: IconDoc, also: ["/weekly", "/monthly"] },
   // The acceleration (the chronicle) is the site's signature view.
   ...(FEATURES.timeMachine ? [{ to: "/chronicle", label: "加速史", icon: IconHourglass }] : []),
 ];
@@ -96,8 +96,8 @@ export function tabBar(): NavItem[] {
   return [...TOPNAV.map((item) => (item.to === "/daily" ? { ...item, label: "日报" } : item)), ...moduleSections(), MORE_TAB];
 }
 
-/** A page a section of the deck already answers for: under its path, or a weekly or monthly report. */
-const inSection = (path: string) => /^\/(weekly|monthly)(\/|$)/.test(path) || TOPNAV.some((item) => !item.end && (path === item.to || path.startsWith(`${item.to}/`)));
+/** A page a section of the deck already answers for: under its path or a path it also covers. */
+const inSection = (path: string) => TOPNAV.some((item) => !item.end && [item.to, ...(item.also ?? [])].some((p) => path === p || path.startsWith(`${p}/`)));
 
 /** Pages reached from the mobile "更多" tab keep that tab highlighted; hidden engine pages still count. */
 export const MORE_PATHS = ["/more", ...MORE_MENU.flatMap((g) => g.items.map((item) => item.to)), "/chronicle", "/hot", "/topics", "/terms", "/privacy"]
@@ -108,7 +108,6 @@ export function tabIsActive(item: NavItem, pathname: string): boolean {
   const under = (p: string) => pathname === p || pathname.startsWith(`${p}/`);
   if (item.end) return pathname === item.to;
   if (item.to === "/more") return [...MORE_PATHS, ...webModules().flatMap((m) => (m.tools ?? []).map((t) => t.to))].some(under);
-  if (item.to === "/daily") return /^\/(daily|weekly|monthly)(\/|$)/.test(pathname);
   return [item.to, ...(item.also ?? [])].some(under);
 }
 
@@ -122,7 +121,7 @@ export function isNightPage(pathname: string): boolean {
   const path = publicPath(pathname);
   const modules = webModules().flatMap((m) => [...(m.sidebar?.items ?? []), ...(m.tools ?? [])]);
   const sections = [...TOPNAV, ...moduleSections()].flatMap((item) => item.also ?? []);
-  return [...TOPNAV, ...MORE_MENU.flatMap((g) => g.items), MORE_TAB, ...modules].some((item) => item.to === path) || sections.includes(path) || /^\/(weekly|monthly)$/.test(path) || path.startsWith("/story/");
+  return [...TOPNAV, ...MORE_MENU.flatMap((g) => g.items), MORE_TAB, ...modules].some((item) => item.to === path) || sections.includes(path) || path.startsWith("/story/");
 }
 
 /**

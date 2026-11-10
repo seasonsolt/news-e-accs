@@ -20,7 +20,7 @@ const item: FeedItemSummary = {
 const detail: SiteItemDetail = {
   ...item, x: null, originalTitle: null, links: { original: "https://example.org/report" }, discoveredAt: at,
   story: null, readingMode: "full", author: null, body: { zh: "<p>可核实的测试正文。</p>", original: "<p>A verifiable test body.</p>", zhKind: "original", complete: true },
-  outline: [], relatedStories: [], topics: [], indexable: true, markdownAvailable: false, group: null, hasTranslation: false, bodyLanguage: "zh", language: "zh",
+  outline: [], relatedStories: [], topics: [], tagTopics: {}, daily: null, indexable: true, googleNoindex: false, mentions: [], markdownAvailable: false, group: null, hasTranslation: false, bodyLanguage: "zh", language: "zh",
 };
 const citation = (): ReportCitation => ({
   itemId: item.id, title: item.title, summary: item.summary, sourceName: item.source.name, sourceUrl: detail.links.original,
@@ -31,7 +31,7 @@ const report = (kind: ReportKind): ReportDetail => ({
   title: "测试刊物", windowStart: at, windowEnd: at, generatedAt: at,
   lead: { title: "本期已验证的重要变化", leadParagraph: "本期的导读与依据。" }, leadItemId: item.id, overview: null,
   highlights: [citation()], sections: [{ label: "模型", summary: null, items: [citation()] }], flashes: [], cover: null,
-  metrics: {}, readingMinutes: 4, prev: kind === "daily" ? "2026-10-03" : null, next: null,
+  metrics: {}, readingMinutes: 4, prev: kind === "daily" ? "2026-10-03" : null, next: null, mentions: [],
 });
 
 test("every subscribe form posts the page locale", async () => {
@@ -84,7 +84,7 @@ const api = createServer((req, res) => {
     publicId: "subscribe-story", title: "事件标题", status: "active", reportCount: 0, sourceCount: 0,
     firstReportAt: at, latestAt: at, digest: "事件综述", digestUpdatedAt: null, summary: null, excerpt: null, latest: null,
     whyHot: { participants48h: 0, newParticipants6h: 0, recentReports24h: 0, observationComplete: true, rank: null, heat: null },
-    developments: [], officialReports: [], timeline: [], heat: [], related: [], topics: [], latestReport: null,
+    developments: [], officialReports: [], timeline: [], heat: [], related: [], topics: [], latestReport: null, mentions: [],
   });
   if (url.pathname === "/api/site/meta") return send({ changelogVersion: null });
   if (url.pathname === `/api/site/items/${item.id}`) return send(detail);

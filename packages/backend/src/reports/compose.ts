@@ -20,7 +20,7 @@ import { chatJson } from "../providers/llm.ts";
 import { completeReceipt } from "../providers/receipts.ts";
 import { shutdownSignal } from "../jobs/queue.ts";
 import { emit } from "../modules.ts";
-import { arrangeDaily, candidates, dailyEdition, periodEntries, sectionOf, SECTION_ORDER, type Candidate, type EditionEntry, type ReportEntry } from "./edition.ts";
+import { arrangeDaily, candidates, dailyEdition, dailyPicks, periodEntries, sectionOf, SECTION_ORDER, type Candidate, type EditionEntry, type ReportEntry } from "./edition.ts";
 
 export { candidates };
 export type { Candidate, ReportEntry };
@@ -162,11 +162,16 @@ function quietLead(start: Date, end: Date, timeZone: string) {
   return { title: quiet.title, leadParagraph: quiet.paragraph.replace("{start}", windowPoint(start, timeZone)).replace("{end}", windowPoint(end, timeZone)) };
 }
 
+/** The highlights a daily's front page lists after its lead (今日看点). */
+const DAILY_HIGHLIGHTS = 3;
+
 /**
  * Daily report for local date D covers the 24 hours up to the site's edition time on D (EDITION_TIMES) in
  * the report calendar; DST can make the window 23 or 25 hours. Its most important entry leads, in its own
- * words, and the next three are today's highlights. A window the editors judged with nothing new in it
- * still has its issue: no entries, and a lead that says so (REPORTS.quiet).
+ * words, and the next three are today's highlights; a thin issue (a weekend's often carries a single entry)
+ * fills the rest with the window's best reports it left out (`picks`, dailyPicks), which are neither entries
+ * nor counted in its metrics. A window the editors judged with nothing new in it still has its issue: no
+ * entries, no highlights, and a lead that says so (REPORTS.quiet).
  */
 export async function composeDaily(date: string, reason?: string): Promise<{ key: string; entries: number }> {
   const previous = await savedReport("daily", date);
@@ -178,17 +183,21 @@ export async function composeDaily(date: string, reason?: string): Promise<{ key
   const issue = arrangeDaily(edition.entries);
   const cited = [...issue.main, ...issue.flashes].map((e) => e.entry);
   const used = new Set(cited.flatMap((e) => [e.itemId, ...(e.related ?? []).map((r) => r.itemId)]));
-  const missing = [...edition.legacy.values()].filter((e) => used.has(e.itemId));
-  const repair = missing.length ? await repairCitations(date, missing, timeZone) : null;
-  if (repair) applyCitationCopies(cited, repair.copies);
   const [lead, ...rest] = issue.main;
+  const highlights = rest.slice(0, DAILY_HIGHLIGHTS).map((e) => e.entry.itemId);
+  const { picks, legacy } = lead ? await dailyPicks(date, start, end, [...issue.main, ...issue.flashes], DAILY_HIGHLIGHTS - highlights.length) : { picks: [], legacy: [] };
+  // One repair call for the cited reports and the picks without an English copy.
+  const missing = [...[...edition.legacy.values()].filter((e) => used.has(e.itemId)), ...legacy];
+  const repair = missing.length ? await repairCitations(date, missing, timeZone) : null;
+  if (repair) applyCitationCopies([...cited, ...picks], repair.copies);
   const content = {
     date,
     title: `${SITE.name} Daily Briefing · ${date}`,
     reportTimeZone: timeZone,
     lead: lead ? { title: lead.entry.title, leadParagraph: lead.entry.summary } : quietLead(start, end, timeZone),
     leadItemId: lead?.entry.itemId ?? null,
-    highlights: rest.slice(0, 3).map((e) => e.entry.itemId),
+    highlights: [...highlights, ...picks.map((p) => p.itemId)],
+    ...(picks.length ? { picks } : {}),
     sections: SECTION_ORDER
       .map((label) => ({ label, items: issue.main.filter((e) => sectionOf(e.category) === label).map((e) => e.entry) }))
       .filter((s) => s.items.length > 0),

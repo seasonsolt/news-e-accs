@@ -23,13 +23,13 @@ const seoItem = {
   links: { aihot: "/items/seo-sample", original: "https://example.com/report" }, publishedAt: "2026-10-09T01:00:00.000Z",
   discoveredAt: "2026-10-09T01:05:00.000Z", timelineAt: "2026-10-09T01:05:00.000Z", category: null, tags: ["开源"], score: null,
   selected: true, channel: "news", story: null, x: null, readingMode: "summary-only", author: null, language: "zh", body: null,
-  outline: [], relatedStories: [], topics: [], sameEvent: null, indexable: true, markdownAvailable: false, group: null, hasTranslation: false, bodyLanguage: "zh",
+  outline: [], relatedStories: [], topics: [], tagTopics: {}, daily: null, mentions: [], sameEvent: null, indexable: true, googleNoindex: false, markdownAvailable: false, group: null, hasTranslation: false, bodyLanguage: "zh",
 };
 const seoStory = {
   publicId: "seo-story", title: "示例事件", status: "active", reportCount: 2, sourceCount: 2, firstReportAt: "2026-10-08T00:00:00.000Z",
   latestAt: "2026-10-09T00:00:00.000Z", digest: "事件综述", digestUpdatedAt: null, summary: null, excerpt: null, latest: null,
   whyHot: { participants48h: 0, newParticipants6h: 0, recentReports24h: 0, observationComplete: true, rank: null, heat: null },
-  developments: [], officialReports: [], timeline: [], heat: [], related: [], topics: [], latestReport: null,
+  developments: [], officialReports: [], timeline: [], heat: [], related: [], topics: [], latestReport: null, mentions: [],
 };
 
 /** The JSON-LD entries of a rendered page. */
@@ -138,7 +138,7 @@ function apiResponse(req: IncomingMessage, res: ServerResponse) {
     const key = kind === "daily" ? "2026-09-01" : kind === "weekly" ? "2026-W39" : "2026-09";
     const zh = url.searchParams.get("lang") === "zh";
     const entry = { key, title: zh ? "中文报告" : "English briefing" };
-    const detail = { ...entry, kind, reportTimeZone: "America/New_York", windowStart: "2026-09-01T00:00:00Z", windowEnd: "2026-09-02T00:00:00Z", generatedAt: "2026-09-02T00:00:00Z", revision: 1, lead: null, overview: null, highlights: [], sections: [], stories: [], flashes: [], cover: null, metrics: {}, readingMinutes: 1, prev: null, next: null,
+    const detail = { ...entry, kind, reportTimeZone: "America/New_York", windowStart: "2026-09-01T00:00:00Z", windowEnd: "2026-09-02T00:00:00Z", generatedAt: "2026-09-02T00:00:00Z", revision: 1, lead: null, overview: null, highlights: [], sections: [], stories: [], flashes: [], cover: null, metrics: {}, readingMinutes: 1, prev: null, next: null, mentions: [],
       editorialLanguage: "en", contentLanguage: { status: zh ? "translated" : "original", sourceLanguage: "en" } };
     return res.end(JSON.stringify(report[2] === "latest-page" ? { report: detail, index: [entry] } : report[2]!.startsWith("navigation/") ? { items: [entry] } : detail));
   }
