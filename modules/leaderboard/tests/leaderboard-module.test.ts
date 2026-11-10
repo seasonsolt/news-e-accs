@@ -40,7 +40,7 @@ after(async () => {
   await closeDb();
 });
 
-async function storedRun(id: string, at: string, score: number, rate: number, saturated: boolean) {
+async function storedRun(id: string, at: string, score: number, rate: number, saturated: boolean, ranks: Array<[string, number]> = ids.map((model, i) => [model, i + 1])) {
   const input = {
     board: "overall",
     registry: { "livebench-coding": { family: "rolling-objective", weight: 0.012, operator: "livebench", protocol: "stored", direction: "HIGHER", interval_sd: null } },
@@ -60,9 +60,9 @@ async function storedRun(id: string, at: string, score: number, rate: number, sa
   await sql`INSERT INTO lb_runs (id, methodology_version, generated_at, source_snapshot_ids, summary, status, origin)
     VALUES (${id}, ${saturated ? "2026.10-public-consensus-v16" : "stored-pre-v16"}, ${at}, ${[snapshot]}, ${sql.json(summary)}, 'published', 'imported')`;
   for (const board of ["overall", ...categoryKeys]) {
-    for (const [i, model] of ids.entries()) {
+    for (const [model, rank] of ranks) {
       await sql`INSERT INTO lb_rankings (run_id, board, model_id, rank, score, coverage, metric_count, detail)
-        VALUES (${id}, ${board}, ${model}, ${i + 1}, ${score - i}, 0.8, 1, ${sql.json({ sourceCount: 1, stability: { from: i + 1, to: i + 1, fixedFrom: i + 1, fixedTo: i + 1, scenarios: 3, sensitive: false, incomplete: 0, unavailable: 0 } })})`;
+        VALUES (${id}, ${board}, ${model}, ${rank}, ${score - rank + 1}, 0.8, 1, ${sql.json({ sourceCount: 1, stability: { from: rank, to: rank, fixedFrom: rank, fixedTo: rank, scenarios: 3, sensitive: false, incomplete: 0, unavailable: 0 } })})`;
     }
   }
 }
@@ -558,4 +558,29 @@ test("built pages keep both language URLs, layout, history and the default share
     }
     assert.equal(web.logs().includes("TypeError"), false, web.logs());
   } finally { await web.stop(); }
+});
+
+test("a model keeps its page after it leaves the top 30 or the boards", async () => {
+  const newRun = createId();
+  // Model 0 is off every board; model 1 slips to 31st; model 30 rises into the top 30 for the first time.
+  await storedRun(newRun, "1999-01-03T16:00:00.000Z", 90, 8, true, [...ids.slice(2).map((model, i): [string, number] => [model, i + 1]), [ids[1]!, 31]]);
+  invalidateLeaderboard();
+  try {
+    const slipped = (await app.inject(`/api/site/leaderboard/models/${slugs[1]}`)).json();
+    assert.deepEqual([slipped.run.id, slipped.overall.rank, slipped.overall.onBoard, "retired" in slipped], [newRun, 31, false, false]);
+    const retired = await app.inject(`/api/site/leaderboard/models/${slugs[0]}`);
+    assert.equal(retired.statusCode, 200);
+    assert.deepEqual([retired.json().retired, retired.json().run.id, retired.json().overall.rank], [true, liveRun, 1], "the last run that ranked it");
+    assertEnglish((await app.inject(`/api/site/leaderboard/models/${slugs[0]}?lang=en`)).json());
+    const past = (await app.inject(`/api/site/leaderboard/models/${slugs[0]}?at=1999-01-03`)).json();
+    assert.deepEqual([past.run.id, "retired" in past], [liveRun, false], "on the day it was still ranked");
+    assert.equal((await app.inject(`/api/site/leaderboard/models/${slugs[30]}`)).json().overall.rank, 29);
+    const urls = (await loadDiscoveryEntries()).map((e) => e.loc);
+    for (const slug of [slugs[0], slugs[1], slugs[30]]) assert.ok(urls.includes(`/leaderboard/${slug}`), slug);
+  } finally {
+    await sql`DELETE FROM lb_rankings WHERE run_id = ${newRun}`;
+    await sql`DELETE FROM lb_runs WHERE id = ${newRun}`;
+    invalidateLeaderboard();
+  }
+  assert.equal((await app.inject(`/api/site/leaderboard/models/${slugs[30]}`)).statusCode, 404, "a page needs a top-30 run that is still published");
 });

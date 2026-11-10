@@ -115,6 +115,8 @@ interface RunView {
   prices: Map<string, LbPrice>;
   boards: Map<string, BoardView>;
   pageSlugs: Set<string>;
+  /** Models that had a page but are on no public board of this run, with the last run that had them. */
+  retiredPages: Map<string, Date>;
   evidence: Record<string, EvidenceMeta>;
   sourceWeights: Map<string, number>;
   /** Runs before v16 recorded no saturation: absent means not saturated. */
@@ -227,9 +229,20 @@ async function buildRunView(runId: string): Promise<RunView> {
     });
   }
 
+  // A model keeps its page once it has made a public board's top BOARD_LIMIT: search engines indexed the page,
+  // and people still look the model up after it slips (Search Console, 2026-11). Off every public board of
+  // this run, the page shows the last run that ranked it.
+  const everPaged = await sql<{ slug: string; last_at: Date }[]>`
+    SELECT m.slug, max(r.generated_at) AS last_at
+    FROM lb_rankings k JOIN lb_runs r ON r.id = k.run_id JOIN lb_models m ON m.id = k.model_id
+    WHERE r.status = 'published' AND r.generated_at <= ${run.generated_at} AND k.board = ANY(${[...LEADERBOARD_PUBLIC_BOARDS]})
+    GROUP BY m.slug HAVING bool_or(k.rank <= ${BOARD_LIMIT})`;
+  const ranked = new Set(LEADERBOARD_PUBLIC_BOARDS.flatMap((key) => boards.get(key)?.entries.map((e) => e.slug) ?? []));
   const pageSlugs = new Set<string>();
-  for (const key of LEADERBOARD_PUBLIC_BOARDS) {
-    for (const e of boards.get(key)?.entries ?? []) if (e.rank <= BOARD_LIMIT) pageSlugs.add(e.slug);
+  const retiredPages = new Map<string, Date>();
+  for (const { slug, last_at } of everPaged) {
+    if (ranked.has(slug)) pageSlugs.add(slug);
+    else retiredPages.set(slug, last_at);
   }
 
   const priceRows = await sql<{ model_id: string; currency: "CNY" | "USD"; input: number | null; output: number | null; cached_input: number | null; source_url: string | null; verified_on: Date | null }[]>`
@@ -268,6 +281,7 @@ async function buildRunView(runId: string): Promise<RunView> {
     prices,
     boards,
     pageSlugs,
+    retiredPages,
     evidence: consensus.evidence ?? {},
     sourceWeights,
     sourceSaturation,
@@ -351,6 +365,15 @@ interface ScoreDetailRow {
 
 export async function loadModel(slug: string, asOf: Date | null = null, lang: LeaderboardLanguage = "zh"): Promise<LbModelDetail | null> {
   const view = await runView(asOf);
+  const lastRanked = view.retiredPages.get(slug);
+  if (lastRanked) {
+    const last = await modelDetail(await runView(lastRanked), slug, lang);
+    return last && { ...last, retired: true };
+  }
+  return modelDetail(view, slug, lang);
+}
+
+async function modelDetail(view: RunView, slug: string, lang: LeaderboardLanguage): Promise<LbModelDetail | null> {
   if (!view.pageSlugs.has(slug)) return null;
   const m = view.models.get(slug);
   if (!m) return null;
@@ -708,7 +731,7 @@ export async function leaderboardUrls(): Promise<string[]> {
       "/leaderboard/sources",
       "/leaderboard/rules",
       ...SOURCE_GROUPS.flatMap((g) => g.sources.map((s) => `/leaderboard/sources/${s.key}`)),
-      ...[...view.pageSlugs].map((slug) => `/leaderboard/${slug}`),
+      ...[...view.pageSlugs, ...view.retiredPages.keys()].map((slug) => `/leaderboard/${slug}`),
     ];
   } catch {
     return [];

@@ -6,7 +6,7 @@
 
 - `/leaderboard/rules`：排名怎么算（共识方法 v16，加权不完整 Kemeny 排序）。
 - `/leaderboard/sources`、`/leaderboard/sources/:key`：每个评测来源测什么、状态如何、是否参与排名。
-- `/leaderboard/:slug`：公开前 30 名模型的排名、价格、稳定性与原始证据。
+- `/leaderboard/:slug`：模型的排名、价格、稳定性与原始证据。模型在任何一轮公开榜单进过前 30 名就有这页，之后掉出前 30 也保留：还在最新一轮的公开榜单上，显示最新一轮的名次；不在了，显示最后排到它的那一轮，并标明已不在最新榜单。
 - `/frontier`：前沿总览，综合榜前三、价格页入口；站点装了 indices 模块时加上智能成本指数，开着时光机时加上卡尔达肖夫指数。读不到的摘要只留文字，不挡页面。
 - `/pricing`：最新一轮所有有价格的模型的 API 价格表（美元 / 每百万 Token）和成本计算器；`/calculator` 永久跳转到 `/pricing#calculator`，旧 Pages 站的 `/pricing/<slug>` 跳到模型页或价格表。
 - `/pricing/compare/<a>-vs-<b>`：两个模型的价格、各榜排名和三种典型用量下的每次调用成本。两个 slug 按字母顺序排列，反过来写的地址永久跳转过去。综合榜前列、有美元价的前 15 个模型（`COMPARE_TOP`）两两之间的页面可收录并列入 sitemap，价格表页链接其中前 6 个模型的组合，每个对比页链接两边各自的其他组合；其他有价格的组合也能打开，但标 `noindex`。
@@ -75,7 +75,7 @@ modules/leaderboard/
 | `server.ts` 的 `http` | 七个 `/api/site/leaderboard/*` 读取接口；静态 Logo 通过引擎 `sendFile` 返回类型、ETag、缓存头与 404 |
 | `schedules`、`workerStarted` | 四次每日计算与新站首次计算 |
 | `admin.runs`、`alerts` | `leaderboard.fetch` 运行状态、失败来源表与超过 26 小时未成功的告警 |
-| `llms`、`sitemap` | 有公开轮次才列出 llms.txt 链接；固定榜页、全部来源页与公开前 30 名模型页进入 sitemap |
+| `llms`、`sitemap` | 有公开轮次才列出 llms.txt 链接；固定榜页、全部来源页与所有模型页进入 sitemap |
 | `web.tsx` 的 `sidebar`、`admin.runs` | 主导航和手机底栏的“前沿”（`/frontier`，榜页、价格页和 `/index/…` 都算在它下面），按需加载的后台运行部件 |
 | `module.ts` 的 `timePaths` | 时间机器跟随榜页 |
 | `darkMarks` | 复用引擎 BrandMark 的 Kimi 深色底板 |

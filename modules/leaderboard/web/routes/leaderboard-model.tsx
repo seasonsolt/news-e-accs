@@ -15,6 +15,7 @@ import { Deck } from "@aihot/web/components/shell/Deck";
 import { EvidenceBadge } from "../features/Evidence";
 import { boardHref, listPrice, pctFixed, shortStamp, tokensWan, yuan } from "../features/format";
 import { IconArrowLeft, IconArrowRight, IconArrowUpRight, IconChevronDown, IconExternal } from "@aihot/web/components/icons";
+import { beijingDate } from "@aihot/contracts/time";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   const at = requestAt(request);
@@ -309,7 +310,7 @@ export default function LeaderboardModelPage() {
         label={model.name}
         kicker={<Link to={withAt(boardHref(from), d.at)} className="inline-flex items-center gap-1 hover:text-[var(--heat-hi)]"><IconArrowLeft size={14} /><Text value="返回" />{tx(LEADERBOARD_BOARD_LABELS[from as keyof typeof LEADERBOARD_BOARD_LABELS])}<Text value="榜" /></Link>}
         title={<span className="inline-flex items-center gap-4"><BrandMark brand={model.brand} size={48} />{model.name}</span>}
-        description={<span className="num">{model.provider ?? "—"} · {model.releasedAt ? tx("{0} 发布", model.releasedAt) : tx("发布日期待核实")} · {tx(shortStamp(d.run.generatedAt))}<Text value="更新" /></span>}
+        description={<span className="num">{model.provider ?? "—"} · {model.releasedAt ? tx("{0} 发布", model.releasedAt) : tx("发布日期待核实")} · {d.retired ? tx("已不在最新榜单，以下是 {0} 那一轮的成绩", beijingDate(d.run.generatedAt)) : <>{tx(shortStamp(d.run.generatedAt))}<Text value="更新" /></>}</span>}
         aside={
           <span className="flex flex-col items-end">
             <span className="font-mono text-[12px] text-[var(--deck-dim)]"><Text value="综合共识指数 ·" />{overall.rank === null ? tx("未进入综合榜") : overall.onBoard ? tx("综合榜第 {0} 名", overall.rank) : tx("综合榜前 30 名之外")}

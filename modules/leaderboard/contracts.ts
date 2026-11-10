@@ -176,6 +176,8 @@ export interface LbModelDetail {
   evidence: LbEvidenceGroup[];
   unmeasured: Array<{ key: string; name: string }>;
   comparisons: LbComparison[];
+  /** Present when the model is on no public board of the latest run: `run` is then the last run that ranked it. */
+  retired?: true;
 }
 
 export interface LbSourceSummary {

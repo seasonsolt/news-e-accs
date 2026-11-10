@@ -114,6 +114,7 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "未进入综合榜": "Not on the overall board",
   "综合榜第 {0} 名": "Overall rank {0}",
   "综合榜前 30 名之外": "Outside the overall top 30",
+  "已不在最新榜单，以下是 {0} 那一轮的成绩": "No longer on the latest boards · Results from the {0} round",
   "模型概览": "Model overview",
   "分类成绩": "Category results",
   "/ 4 项分类": "/ 4 categories",
