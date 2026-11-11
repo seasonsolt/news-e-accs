@@ -47,7 +47,10 @@ export function translate(locale: Locale, message: string, ...values: Array<unkn
       }
     }
   }
-  return template.replace(/\{(\d+)\}/g, (match, index: string) => String(values[Number(index)] ?? match));
+  // English counts: "{one|many}" picks by the first value ("Reported by {0} other {source|sources}").
+  const one = Number(values[0]) === 1;
+  return template.replace(/\{([^{}|]+)\|([^{}|]+)\}/g, (_match, singular: string, plural: string) => (one ? singular : plural))
+    .replace(/\{(\d+)\}/g, (match, index: string) => String(values[Number(index)] ?? match));
 }
 
 const SPAN = String.raw`(\d+(?:\.\d+)?) ?(亿年|万年|年|个月|天)`;

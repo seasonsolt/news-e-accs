@@ -36,7 +36,7 @@ const nav = (): Array<{ group: string; items: AdminNavEntry[] }> => [
       { to: "/admin/sources", label: "信源", count: "sources", tone: "bad" },
       ...webModules().flatMap((m) => m.admin?.content ?? []),
       { to: "/admin/feedback", label: "反馈", count: "feedback", tone: "accent" },
-      { to: "/admin/newsletter", label: "订阅" },
+      { to: "/admin/newsletter", label: "订阅 · 今日新增", count: "newsletter", tone: "accent" },
       { to: "/admin/wechat", label: "公众号" },
     ],
   },

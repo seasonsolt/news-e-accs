@@ -63,7 +63,7 @@ export interface AdminRerun {
 }
 
 /** Items waiting for the admin, shown on the navigation. */
-export type AdminNavCounts = Partial<Record<"feedback" | "sources" | "runs", number>> & Record<string, number | undefined>;
+export type AdminNavCounts = Partial<Record<"feedback" | "sources" | "runs" | "newsletter", number>> & Record<string, number | undefined>;
 
 /** One manual change (audit_log), as a history list shows it. */
 export interface AdminAuditEntry {

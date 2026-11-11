@@ -60,6 +60,14 @@ test("site copy and labels built in code have English counterparts", () => {
   assert.equal(translate("en", "REST API 的完整定义 · {0}", "4.0.0"), "Complete REST API specification · 4.0.0");
 });
 
+test("English counts agree with one or many", () => {
+  assert.equal(translate("en", "另有 {0} 家信源报道", 1), "Reported by 1 other source");
+  assert.equal(translate("en", "另有 {0} 家信源报道", 4), "Reported by 4 other sources");
+  assert.equal(translate("en", "{0} 件", 1), "1 story");
+  assert.equal(translate("en", "3 件"), "3 stories");
+  assert.equal(translate("zh", "{0} 件", 1), "1 件");
+});
+
 test("report pages announce the feed in their own language", () => {
   assert.deepEqual([feedLink("daily", "en").href, feedLink("daily", "en").title], ["/feed/v2/daily.xml", `${SITE.name} Daily`]);
   assert.equal(feedLink("weekly", "zh").href, "/feed/v2/zh/weekly.xml");

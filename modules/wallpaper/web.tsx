@@ -26,6 +26,6 @@ export const messages = {
   "macOS Shortcuts: Get Contents of URL → Set Desktop Picture. Schedule it daily; confirm the action names on your system version.": "macOS 快捷指令：获取 URL 内容 → 设定桌面图片，设置每日运行；需在你的系统版本上确认动作名称。",
 };
 export default defineWebModule({ name: "wallpaper", messages: { zh: messages }, admin: { content: [
-  { to: "/admin/wallpapers", label: "壁纸 · 领取人数", count: "wallpaperKeys", tone: "accent" },
+  { to: "/admin/wallpapers", label: "壁纸 · 今日领取", count: "wallpaperKeys", tone: "accent" },
   { to: "/admin/wallpapers", label: "壁纸 · 今日下载", count: "wallpaperDownloads", tone: "accent" },
 ] } });
