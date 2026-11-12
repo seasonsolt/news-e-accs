@@ -12,7 +12,7 @@ import { IconChevronRight } from "../../components/icons";
 import { KINDS, KIND_LABEL, KIND_PATH, archiveGroups, archiveMark, chipLabel, reportPath } from "./format";
 
 /** 日报 / 周报 / 月报 as the site's pill switch, spread across the column. */
-function KindSwitch({ kind }: { kind: ReportKind }) {
+export function KindSwitch({ kind }: { kind: ReportKind }) {
   const tx = useTranslate();
   const at = useAt();
   return <PillTabs fill layoutId="report-kind" label={tx("切换日报、周报、月报")} active={kind} items={KINDS.map((k) => ({ key: k, label: tx(KIND_LABEL[k]), to: withAt(KIND_PATH[k], at), prefetch: "intent" as const }))} />;

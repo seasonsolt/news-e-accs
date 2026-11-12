@@ -214,6 +214,11 @@ test('native English and stored Chinese DTOs agree across site, v1, feeds, Markd
     assert.match(letter.text, /A brief/); assert.doesNotMatch(letter.text, /A withdrawn brief/);
     assert.match(letter.html, /K = 0\.731/); assert.match(letter.html, /715×/); assert.match(letter.text, /since March 2023, halving every 3\.8 months/);
     assert.match(letter.html, /RESEND_UNSUBSCRIBE_URL/); assert.match(letter.text, /RESEND_UNSUBSCRIBE_URL/);
+    const indexed = dailyIssueMail({ ...english, leadItemId: citation.itemId, metrics: { sourcesCount: 3, firstPartyEvents: 1 },
+      sections: [{ ...english.sections[0]!, items: [citation, { ...citation, itemId: 'second-item', title: 'A second story' }] }] }, 'en');
+    assert.match(indexed.html, /TODAY IN 2/); assert.match(indexed.html, /3 sources · 1 first-party/);
+    assert.ok(indexed.html.indexOf('TODAY IN 2') < indexed.html.indexOf('Native report citation'), 'the index lists the lead first');
+    assert.match(indexed.html, /\/subscribe\?via=newsletter/); assert.match(indexed.text, /Pass it to a colleague\..*\/subscribe\?via=newsletter/);
     const legacy = (await app.inject(`/api/v1/dailies/${key}`)).json().report;
     assert.equal(legacy.contentLanguage.requested, 'zh'); assert.equal(legacy.contentLanguage.language, 'en');
     assert.equal(legacy.reportTimeZone, 'America/New_York');

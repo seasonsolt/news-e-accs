@@ -33,13 +33,12 @@ import { StoryFollowups } from "../features/item/StoryFollowups";
 import { AuthorRoleMark, FactCard, StoryDigest, XCountsLine } from "../features/item/FactCard";
 import { MediaGallery } from "../features/item/MediaGallery";
 import { QuotedPost } from "../features/item/QuotedPost";
-import { IconArrowLeft, IconArrowUpRight, IconCopy, IconDownload, IconExternal, IconImage, IconMenu, IconShare } from "../components/icons";
+import { IconArrowLeft, IconArrowUpRight, IconChevronRight, IconCopy, IconDownload, IconExternal, IconImage, IconMenu, IconShare } from "../components/icons";
 import { ReadingGear } from "../features/art/ReadingGear";
 import { CATEGORY_ART } from "../features/art/CategoryBanner";
 import { Plate } from "../components/shell/Deck";
 import { CATEGORIES } from "@aihot/industry/taxonomy";
 import { NextReads } from "../components/NextReads";
-import { SubscribeCta } from "../features/subscribe/SubscribeCta";
 import { MentionText } from "../components/ui/MentionText";
 
 export { pageHeaders as headers } from "../lib/api.server";
@@ -407,13 +406,8 @@ export default function ItemPage() {
           {item.story?.digest && <StoryDigest digest={item.story.digest} lang={contentHtmlLanguage(item.story, locale) ?? "und"} />}
           {item.story && <StoryFollowups followups={followups} story={item.story} current={{ id: item.id, title: item.title, timelineAt: item.timelineAt }} />}
 
-          {(daily || item.topics.length > 0 || tags.length > 0) && (
+          {(item.topics.length > 0 || tags.length > 0) && (
             <div className="mt-9 flex flex-wrap gap-1.5">
-              {daily && (
-                <Link viewTransition to={daily.to} className="chip">
-                  {tx("收录于 {0}", daily.name)}
-                </Link>
-              )}
               {item.topics.map((t) => (
                 <Link viewTransition key={t.slug} to={`/topics/${t.slug}`} className="chip">
                   {t.name}
@@ -427,11 +421,15 @@ export default function ItemPage() {
             </div>
           )}
 
-          <SubscribeCta
-            source="item_inline"
-            sample={nextReads?.daily ? { to: `/daily/${nextReads.daily.key}`, date: nextReads.daily.key } : { to: "/daily" }}
-            sticky
-          />
+          {/* The article's way on is the issue that carries it; signing up happens there. */}
+          {daily && (
+            <Link viewTransition to={daily.to} data-item-daily className="group mt-10 block rounded-card border border-accent/30 bg-surface px-5 py-4 transition-colors hover:border-accent">
+              <span className="block text-[12px] font-semibold text-accent">{tx("这条收录于 {0}", daily.name)}</span>
+              <span className="mt-1 flex items-center gap-2 text-[16px] font-semibold leading-relaxed text-ink">
+                <Text value="看这一期日报的全部内容" /><IconChevronRight size={17} className="shrink-0 text-accent" />
+              </span>
+            </Link>
+          )}
         </article>
         {showOutline && (
           <aside className="hidden lg:block">
@@ -442,7 +440,7 @@ export default function ItemPage() {
 
       {posterRequested && (
         <Suspense fallback={null}>
-          <PosterSheet id={item.id} title={item.title} open={posterOpen} onClose={closePoster} />
+          <PosterSheet path={`/og/posters/${item.id}.png`} name={item.id} title={item.title} open={posterOpen} onClose={closePoster} />
         </Suspense>
       )}
       {toast && (

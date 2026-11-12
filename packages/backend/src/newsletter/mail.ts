@@ -154,14 +154,16 @@ function citationUrl(i: ReportCitation, language: DistributionLanguage): string 
 const ISSUE = {
   en: {
     daily: `${SITE.subject} DAILY`, issue: (n: number) => `ISSUE ${n}`, minutes: (n: number) => `${n} MIN`,
-    stats: ["major stories", "sources", "first-party announcements"], briefs: "BRIEFS", more: (n: number) => (n === 1 ? "+1 source" : `+${n} sources`), firstParty: "First-party",
+    index: (n: number) => `TODAY IN ${n}`, figures: [(n: number) => (n === 1 ? "1 source" : `${n} sources`), (n: number) => `${n} first-party`], lead: "Lead", briefs: "BRIEFS",
+    forward: ["Useful? Pass it to a colleague.", "Forward this email as it is. To get it every morning, they can subscribe at"], more: (n: number) => (n === 1 ? "+1 source" : `+${n} sources`), firstParty: "First-party",
     story: "Read the story →", full: "Read the full briefing →", online: "Read online", unsubscribe: "Unsubscribe",
     footer: `You received this email because you subscribed to ${SITE.name} at ${host()}.`,
     reading: "TODAY’S READING · THE AGENT ERA", now: "NOW", span: "BIG BANG → NOW → FORECASTS · LOG TIME", tagline: ["The arrival is not a date.", "It is a curve."], log: "Every day we log how far the curve has reached.", explore: "Explore the Acceleration →",
   },
   zh: {
     daily: `${SITE.subject} 日报`, issue: (n: number) => `第 ${n} 期`, minutes: (n: number) => `约 ${n} 分钟`,
-    stats: ["大事", "家信源", "件一手发布"], briefs: "快讯", more: (n: number) => `另有 ${n} 家信源报道`, firstParty: "一手",
+    index: (n: number) => `今天这 ${n} 件`, figures: [(n: number) => `${n} 家信源`, (n: number) => `${n} 件一手`], lead: "头条", briefs: "快讯",
+    forward: ["有用的话，转给一位同事", "直接转发这封信就行。他们想每天收到，可以在这里订阅："], more: (n: number) => `另有 ${n} 家信源报道`, firstParty: "一手",
     story: "阅读全文 →", full: "在网页上阅读全文 →", online: "网页版", unsubscribe: "退订",
     footer: `你收到这封邮件，是因为在 ${host()} 订阅了 ${SITE.name} 日报。`,
     reading: "今日读数 · 智能体时代", now: "现在", span: "大爆炸 → 现在 → 预测 · 对数时间", tagline: ["降临不是一个日期，", "而是一条曲线。"], log: "我们每天记下这条曲线走到了哪里。", explore: "走进加速史 →",
@@ -174,11 +176,35 @@ function kicker(report: ReportDetail, language: DistributionLanguage): string {
   return [t.daily, report.key, language === "en" ? weekday.toUpperCase() : weekday, ...(report.issueNumber ? [t.issue(report.issueNumber)] : []), ...(report.readingMinutes ? [t.minutes(report.readingMinutes)] : [])].join(" · ");
 }
 
-function statsRow(report: ReportDetail, language: DistributionLanguage): string {
-  const { totalEvents, sourcesCount, firstPartyEvents } = report.metrics;
-  if (!totalEvents) return "";
-  const cells = [totalEvents, sourcesCount ?? 0, firstPartyEvents ?? 0].map((value, i) => `<td width="33%" valign="top" style="font-family:${SANS};"><div style="font-family:${NUMERAL};font-size:40px;font-weight:800;line-height:1;color:${C.brassHi};">${value}</div><div style="margin-top:6px;font-size:13px;color:${C.dim};">${esc(ISSUE[language].stats[i]!)}</div></td>`).join("");
-  return `<tr><td class="pad" style="padding:6px 32px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid ${C.line};border-bottom:1px solid ${C.line};"><tr><td height="18" colspan="3" style="font-size:0;line-height:0;">&nbsp;</td></tr><tr>${cells}</tr><tr><td height="18" colspan="3" style="font-size:0;line-height:0;">&nbsp;</td></tr></table></td></tr>`;
+/**
+ * Under the lead: every event of the issue as one numbered list to scan, the lead first among them, with
+ * the issue's figures beside its heading.
+ */
+function indexRow(report: ReportDetail, language: DistributionLanguage): string {
+  const t = ISSUE[language];
+  const seen = new Set<string>();
+  const items = issueSections(report).flatMap((s) => s.items).filter((i) => {
+    const key = i.itemId ?? i.title;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  if (items.length < 2) return "";
+  const { sourcesCount, firstPartyEvents } = report.metrics;
+  const figures = [sourcesCount ? t.figures[0]!(sourcesCount) : "", firstPartyEvents ? t.figures[1]!(firstPartyEvents) : ""].filter(Boolean).join(" · ");
+  const rows = items.map((i, n) => `<tr><td width="30" valign="top" align="right" style="padding:9px 12px 9px 0;border-bottom:1px solid ${C.line};font-family:${NUMERAL};font-size:18px;font-weight:800;line-height:1.3;color:${C.brass};">${n + 1}</td><td valign="top" style="padding:9px 0;border-bottom:1px solid ${C.line};font-family:${SANS};font-size:14.5px;line-height:1.55;"><a href="${esc(citationUrl(i, language))}" style="color:${C.ink};text-decoration:none;">${esc(i.title)}</a>${i.itemId === report.leadItemId ? `&nbsp;&nbsp;<span style="font-size:12px;color:${C.brass};white-space:nowrap;">${esc(t.lead)}</span>` : ""}</td></tr>`).join("");
+  return `<tr><td class="pad" style="padding:14px 32px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+<tr><td style="padding-bottom:10px;border-bottom:1px solid ${C.rule};font-family:${MONO};font-size:12px;letter-spacing:.1em;color:${C.brass};">${esc(t.index(items.length))}</td><td align="right" style="padding-bottom:10px;border-bottom:1px solid ${C.rule};font-family:${SANS};font-size:12px;color:${C.faint};">${esc(figures)}</td></tr>
+<tr><td colspan="2"><table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}</table></td></tr></table></td></tr>`;
+}
+
+/** Before the reading panel: an invitation to forward the letter, with the address a colleague signs up at. */
+function forwardRow(language: DistributionLanguage): string {
+  const t = ISSUE[language];
+  const page = siteUrl(editionPath("/subscribe", language));
+  return `<tr><td class="pad" style="padding:0 32px 32px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${C.panel}" style="background:${C.panel};border:1px solid ${C.edge};border-radius:10px;"><tr><td style="padding:16px 18px;">
+<div style="${DISPLAY[language]}font-size:19px;line-height:1.45;color:${C.bright};">${esc(t.forward[0]!)}</div>
+<div style="margin-top:6px;font-family:${SANS};font-size:14px;line-height:1.7;color:${C.body};">${esc(t.forward[1]!)} <a href="${esc(distributionUrl(page, "newsletter"))}" style="color:${C.brassHi};text-decoration:none;">${esc(page.replace(/^https?:\/\//, ""))}</a></div></td></tr></table></td></tr>`;
 }
 
 function sectionHead(number: number, label: string): string {
@@ -269,8 +295,8 @@ export function dailyIssueMail(report: ReportDetail, language: DistributionLangu
 <tr><td class="pad" style="padding:6px 32px 8px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="font-family:${MONO};font-size:12px;letter-spacing:.04em;color:${C.faint};">${esc(leadItem?.sourceName ?? "")}</td><td align="right"><a href="${esc(leadItem ? citationUrl(leadItem, language) : web)}" style="display:inline-block;padding:13px 0;font-family:${SANS};font-size:14px;line-height:18px;color:${C.brassHi};text-decoration:none;">${esc(t.story)}</a></td></tr></table></td></tr>` : "";
   const sectionHtml = sections.map((s, i) => `<tr><td class="pad" style="padding:32px 32px 0;">${sectionHead(i + 1, language === "en" ? s.label.toUpperCase() : s.label)}${s.items.map((item) => storyRow(item, language)).join("")}</td></tr>`).join("");
   const briefHtml = briefs.length ? `<tr><td class="pad" style="padding:32px 32px 0;">${sectionHead(sections.length + 1, t.briefs)}${briefs.map((item) => briefRow(item, language)).join("")}</td></tr>` : "";
-  const inner = `${masthead(kicker(report, language), headline, language)}${leadBody}${statsRow(report, language)}${sectionHtml}${briefHtml}
-<tr><td class="pad" align="center" style="padding:32px 32px 36px;">${button(web, t.full)}</td></tr>${reading ? readingPanel(reading, language) : ""}`;
+  const inner = `${masthead(kicker(report, language), headline, language)}${leadBody}${indexRow(report, language)}${sectionHtml}${briefHtml}
+<tr><td class="pad" align="center" style="padding:32px 32px 36px;">${button(web, t.full)}</td></tr>${forwardRow(language)}${reading ? readingPanel(reading, language) : ""}`;
   const footer = `${esc(GMAIL_HINT[language])}<br><br>${esc(t.footer)} <a href="${UNSUBSCRIBE}" style="color:${C.faint};">${esc(t.unsubscribe)}</a>`;
 
   const date = language === "en"
@@ -286,6 +312,7 @@ export function dailyIssueMail(report: ReportDetail, language: DistributionLangu
     ...(briefs.length ? [t.briefs, ...briefs.map((i) => `· ${i.title}  ${i.sourceName} ${citationUrl(i, language)}`), ""] : []),
     ...(cost ? [language === "en" ? `${cost.ratio}× ${cost.line}` : cost.line, ""] : []),
     `${t.online}: ${web}`,
+    `${t.forward[0]} ${t.forward[1]}${language === "en" ? " " : ""}${distributionUrl(siteUrl(editionPath("/subscribe", language)), "newsletter")}`,
     GMAIL_HINT[language],
     `${t.unsubscribe}: ${UNSUBSCRIBE}`,
   ].join("\n");

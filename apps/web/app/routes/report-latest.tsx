@@ -70,7 +70,7 @@ export default function ReportLatestPage() {
   const dial = FEATURES.timeMachine && <TimeDial bounds={root?.timeBounds ?? null} className="w-[300px] max-w-full" />;
   const deck = report ? <ReportDeck report={report} index={index} aside={dial} /> : <Deck art="masthead-press" label={`AI ${tx(KIND_LABEL[kind])}`} title={`AI ${tx(KIND_LABEL[kind])}`} aside={dial} />;
   return (
-    <ReportLayout kind={kind} index={index} current={report?.key ?? null} today={today} deck={deck}>
+    <ReportLayout kind={kind} index={index} current={report?.key ?? null} today={today} archive={!(report && kind === "daily")} deck={deck}>
       {report ? <ReportPaper report={report} index={index} /> : <EmptyState title={tx("还没有发布 AI {0}", KIND_LABEL[kind])}><Text value="第一期发布后会出现在这里。" /></EmptyState>}
     </ReportLayout>
   );

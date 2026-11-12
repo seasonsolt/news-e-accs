@@ -71,7 +71,7 @@ export default function ReportDetailPage() {
   const root = useRouteLoaderData<typeof rootLoader>("root");
   const dial = FEATURES.timeMachine && <TimeDial bounds={root?.timeBounds ?? null} className="w-[300px] max-w-full" />;
   return (
-    <ReportLayout kind={report.kind} index={index} current={report.key} today={today} deck={<ReportDeck report={report} index={index} aside={dial} />}>
+    <ReportLayout kind={report.kind} index={index} current={report.key} today={today} archive={report.kind !== "daily"} deck={<ReportDeck report={report} index={index} aside={dial} />}>
       <ReportPaper report={report} index={index} />
     </ReportLayout>
   );

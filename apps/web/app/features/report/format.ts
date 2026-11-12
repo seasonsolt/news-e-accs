@@ -134,8 +134,8 @@ const METRICS: Array<[key: string, unit: string]> = [
   ["selectedCount", UNITS.selectedCount],
   ["reportsCovered", UNITS.reportsCovered],
 ];
-export function metricItems(metrics: Record<string, number>): Array<{ value: number; unit: string }> {
-  return METRICS.filter(([k]) => typeof metrics[k] === "number" && (k !== "modelsReleased" || metrics[k]! > 0)).map(([k, unit]) => ({ value: metrics[k]!, unit }));
+export function metricItems(metrics: Record<string, number>): Array<{ key: string; value: number; unit: string }> {
+  return METRICS.filter(([k]) => typeof metrics[k] === "number" && (k !== "modelsReleased" || metrics[k]! > 0)).map(([k, unit]) => ({ key: k, value: metrics[k]!, unit }));
 }
 
 /** "前一日 · 9月25日", "上一期 · 第 37 周", "下一期 · 7 月". A day of another year than `now` (Beijing) carries its year. */

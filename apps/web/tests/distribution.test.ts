@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { distributionChannel, distributionUrl } from "@aihot/contracts/distribution";
-import { dailyBriefing } from "@aihot/contracts/report-briefing";
 import type { ReportDetail, ReportCitation } from "@aihot/contracts/site";
 
 test("distribution labels are finite and preserve the destination", () => {
@@ -9,15 +8,6 @@ test("distribution labels are finite and preserve the destination", () => {
   assert.equal(distributionChannel("share"), "share");
   assert.equal(distributionUrl("https://example.test/zh/story/x?at=2026-10-20#sources", "share"), "https://example.test/zh/story/x?at=2026-10-20&via=share#sources");
 });
-test("daily briefing uses public, deduplicated citations and only recorded follow-ups", () => {
-  const cite = (id: string, extra = {}): ReportCitation => ({ itemId: id, title: id, available: true, summary: null, sourceName: "Source", sourceUrl: "https://example.test", sourceIconUrl: null, firstParty: true, publishedAt: null, ...extra });
-  const a = cite("a"), b = cite("b", { followUp: "2026-10-20" }), hidden = cite("hidden", { available: false });
-  const report = { kind: "daily", highlights: [a, hidden], sections: [{ items: [a, b, cite("c"), cite("d")] }], flashes: [] } as unknown as ReportDetail;
-  assert.deepEqual(dailyBriefing(report).changes.map((c) => c.itemId), ["a", "b", "c"]);
-  assert.deepEqual(dailyBriefing(report).followUps, [b]);
-  assert.deepEqual(dailyBriefing({ ...report, kind: "weekly" }), { changes: [], followUps: [] });
-});
-
 test("visible reading pauses in hidden tabs and cleans up on navigation", async () => {
   const saved = new Map(["window", "document", "performance", "fetch", "setTimeout", "clearTimeout"].map((k) => [k, Object.getOwnPropertyDescriptor(globalThis, k)]));
   let time = 0, delay = 0, callback: (() => void) | undefined, listener: (() => void) | undefined;

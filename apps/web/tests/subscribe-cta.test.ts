@@ -1,4 +1,4 @@
-// The inline subscribe form is part of the server HTML, after the digest, in both editions.
+// The daily's subscribe forms are part of the server HTML, in both editions; item pages send readers to the daily.
 // It adds no image and no second copy of the form (the phone bar mounts only after scrolling).
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
@@ -20,7 +20,7 @@ const item: FeedItemSummary = {
 const detail: SiteItemDetail = {
   ...item, x: null, originalTitle: null, links: { original: "https://example.org/report" }, discoveredAt: at,
   story: null, readingMode: "full", author: null, body: { zh: "<p>可核实的测试正文。</p>", original: "<p>A verifiable test body.</p>", zhKind: "original", complete: true },
-  outline: [], relatedStories: [], topics: [], tagTopics: {}, daily: null, indexable: true, googleNoindex: false, mentions: [], markdownAvailable: false, group: null, hasTranslation: false, bodyLanguage: "zh", language: "zh",
+  outline: [], relatedStories: [], topics: [], tagTopics: {}, daily: { key: "2026-10-04", lead: true }, indexable: true, googleNoindex: false, mentions: [], markdownAvailable: false, group: null, hasTranslation: false, bodyLanguage: "zh", language: "zh",
 };
 const citation = (): ReportCitation => ({
   itemId: item.id, title: item.title, summary: item.summary, sourceName: item.source.name, sourceUrl: detail.links.original,
@@ -111,9 +111,9 @@ async function page(path: string) {
   return { html: await response.text(), robots: response.headers.get("x-robots-tag") };
 }
 
-function ctaOf(html: string, source: string) {
+function ctaOf(html: string, source: string, place?: string) {
   const { document } = parseHTML(html);
-  const cta = document.querySelector(`[data-subscribe-cta=${source}]`);
+  const cta = document.querySelector(`[data-subscribe-cta=${source}]${place ? `[data-subscribe-place=${place}]` : ":not([data-subscribe-place])"}`);
   assert.ok(cta, source);
   const input = cta.querySelector("input[type=email]");
   // React prints the DOM property name; browsers lowercase it to autocomplete when parsing HTML.
@@ -124,9 +124,14 @@ function ctaOf(html: string, source: string) {
   return cta;
 }
 
-test("daily and item pages render the subscribe form after the piece, and weekly does not", async () => {
+test("a daily leads with its news and offers the form beside its list and after the issue; items and weekly do not", async () => {
   const daily = await page("/zh/daily");
-  assert.equal(daily.html.indexOf("（本期完）") < daily.html.indexOf('data-subscribe-cta="daily_inline"'), true);
+  const { document } = parseHTML(daily.html);
+  assert.equal(document.querySelector("h1#report-start")?.textContent, "本期已验证的重要变化");
+  assert.match(document.querySelector("#today-title")?.textContent ?? "", /今天这 1 件事/);
+  assert.equal(document.querySelectorAll("[data-subscribe-cta=daily_inline]").length, 2);
+  assert.match(ctaOf(daily.html, "daily_inline", "aside").textContent ?? "", /每天早上，把这样一份日报发到你邮箱/);
+  assert.equal(daily.html.indexOf("（本期完）") < daily.html.lastIndexOf('data-subscribe-cta="daily_inline"'), true);
   const dailyCta = ctaOf(daily.html, "daily_inline");
   assert.match(dailyCta.textContent ?? "", /明早 08:00 把这样一份日报发到你邮箱/);
   assert.equal(dailyCta.querySelector("a")?.getAttribute("href"), "/zh/daily/2026-10-03");
@@ -139,9 +144,10 @@ test("daily and item pages render the subscribe form after the piece, and weekly
   assert.doesNotMatch(english.html, /noindex/);
 
   const story = await page(`/zh/items/${item.id}`);
-  assert.equal(story.html.indexOf("可核实的测试正文") < story.html.indexOf('data-subscribe-cta="item_inline"'), true);
-  const storyCta = ctaOf(story.html, "item_inline");
-  assert.equal(storyCta.querySelector("a")?.getAttribute("href"), "/zh/daily/2026-10-04");
+  assert.doesNotMatch(story.html, /data-subscribe-cta/);
+  const issue = parseHTML(story.html).document.querySelector("[data-item-daily]");
+  assert.equal(issue?.getAttribute("href"), "/zh/daily/2026-10-04");
+  assert.match(issue?.textContent ?? "", /这条收录于/);
 
   const weekly = await page("/weekly");
   assert.doesNotMatch(weekly.html, /data-subscribe-cta/);

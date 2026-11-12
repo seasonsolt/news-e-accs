@@ -66,6 +66,8 @@ test("English counts agree with one or many", () => {
   assert.equal(translate("en", "{0} 件", 1), "1 story");
   assert.equal(translate("en", "3 件"), "3 stories");
   assert.equal(translate("zh", "{0} 件", 1), "1 件");
+  assert.equal(translate("en", "{0} 个新模型", 1), "1 new model");
+  assert.equal(translate("en", "另有 {0} 条快讯", 2), "2 briefs");
 });
 
 test("report pages announce the feed in their own language", () => {

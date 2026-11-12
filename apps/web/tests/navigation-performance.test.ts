@@ -170,7 +170,7 @@ test('SSR all-pages and report kinds return offline with their own content',asyn
     await page.getByRole('link',{name:'Weekly',exact:true}).click();
     await expect(page.locator('#report-start')).toContainText('AI stories of the week');
     await context.setOffline(true);await page.getByRole('link',{name:'Daily',exact:true}).click();
-    await expect(page.locator('#report-start')).toContainText('AI stories of the day',{timeout:1500});
+    await expect(page.locator('#report-start')).toContainText('Fixture daily',{timeout:1500});
   }finally{await context.close();}
 });
 

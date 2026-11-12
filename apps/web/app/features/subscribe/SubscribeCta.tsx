@@ -11,14 +11,16 @@ import { isPhone } from "../../components/shell/screens";
 import { claimSubscribeView, useSubscribeView } from "./useSubscribeView";
 import { recordSubscribe, requestSubscribe } from "./flow";
 
-type InlineSource = Extract<SubscribeSource, "daily_inline" | "item_inline" | "chronicle_inline" | "story_inline">;
+type InlineSource = Extract<SubscribeSource, "daily_inline" | "chronicle_inline" | "story_inline">;
 export type Phase = { kind: "idle" } | { kind: "sending" } | { kind: "sent"; email: string } | { kind: "error"; message: string };
 
 const FIELD = "h-12 w-full rounded-full border border-line bg-bg px-4 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-4 focus:border-accent";
 const BUTTON = "inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-ink px-5 text-[15px] font-semibold text-bg transition-opacity disabled:opacity-60";
 
-export function SubscribeCta({ source, sample, sticky = false }: {
+export function SubscribeCta({ source, sample, sticky = false, place }: {
   source: InlineSource;
+  /** The narrow card in a column beside the piece (the daily's), rather than the block after it. */
+  place?: "aside";
   /** A real past issue (or the daily archive) so the promise is concrete. */
   sample?: { to: string; date?: string };
   /** Phone-only bar after roughly 60% of the page has been scrolled. Dismiss is remembered on this device. */
@@ -29,22 +31,25 @@ export function SubscribeCta({ source, sample, sticky = false }: {
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [email, setEmail] = useState("");
   const submitted = phase.kind === "sent";
+  const aside = place === "aside";
+  // Two forms of one source can share a page (the daily's column and its end), so ids carry the place.
+  const id = aside ? `${source}-aside` : source;
 
   return (
     <>
-      <section aria-labelledby={`subscribe-cta-${source}`} data-subscribe-cta={source} className="mt-10 rounded-card border border-line bg-surface px-4 py-5 sm:px-6">
+      <section aria-labelledby={`subscribe-cta-${id}`} data-subscribe-cta={source} data-subscribe-place={place} className={aside ? "rounded-panel border border-accent/40 bg-surface p-5" : "mt-10 rounded-card border border-line bg-surface px-4 py-5 sm:px-6"}>
         {submitted ? (
           <Sent email={phase.email} />
         ) : (
           <>
-            <h2 id={`subscribe-cta-${source}`} className="font-display text-[26px] italic leading-tight text-ink sm:text-[30px]">
-              <Text value={source === "daily_inline" ? "明早 08:00 把这样一份日报发到你邮箱" : "每天一封，跟上 AI 的重要变化"} />
+            <h2 id={`subscribe-cta-${id}`} className={`font-display italic leading-tight text-ink ${aside ? "text-[24px]" : "text-[26px] sm:text-[30px]"}`}>
+              <Text value={aside ? "每天早上，把这样一份日报发到你邮箱" : source === "daily_inline" ? "明早 08:00 把这样一份日报发到你邮箱" : "每天一封，跟上 AI 的重要变化"} />
             </h2>
-            <p className="mt-2 max-w-[62ch] text-[14.5px] leading-relaxed text-ink-3">
-              <Text value={source === "daily_inline" ? "和上面这份一样：几件值得看的事。免费，点确认信之后才会开始发送，每封信都能一键退订。" : "模型发布、价格变化、算力进展，附原始来源。免费，确认后开始发送，随时一键退订。"} />
+            <p className={`mt-2 max-w-[62ch] leading-relaxed text-ink-3 ${aside ? "text-[13.5px]" : "text-[14.5px]"}`}>
+              <Text value={aside ? "免费。点确认信之后才开始发送，每封都能一键退订。" : source === "daily_inline" ? "和上面这份一样：几件值得看的事。免费，点确认信之后才会开始发送，每封信都能一键退订。" : "模型发布、价格变化、算力进展，附原始来源。免费，确认后开始发送，随时一键退订。"} />
               {sample && <>{" "}<SampleLink sample={sample} /></>}
             </p>
-            <EmailForm id={`subscribe-email-${source}`} source={source} email={email} setEmail={setEmail} phase={phase} formRef={formRef} onPhase={setPhase} className="mt-4" />
+            <EmailForm id={`subscribe-email-${id}`} source={source} email={email} setEmail={setEmail} phase={phase} formRef={formRef} onPhase={setPhase} className="mt-4" />
           </>
         )}
       </section>

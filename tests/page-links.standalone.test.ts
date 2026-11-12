@@ -48,18 +48,18 @@ async function page(path: string) {
   return cheerio.load(await response.text());
 }
 
-// This site's item page has one row of chips for the daily, topics and tags (no separate rail), and Chinese
-// copy is read on the /zh edition, where every site link carries the /zh prefix.
+// This site's item page closes with a card to the daily that carries it, after one row of chips for topics and
+// tags (no separate rail); Chinese copy is read on the /zh edition, where every site link carries the /zh prefix.
 test("an article a daily carries links to that issue, named as the site names its issues", async () => {
   const daily = withSubject("日报");
   for (const [id, name] of [["links-lead", `11月7日 ${daily} · 头条`], ["links-entry", `11月7日 ${daily}`]] as const) {
     const $ = await page(`/zh/items/${id}`);
     const links = $("a[href='/zh/daily/2026-11-07']");
-    assert.deepEqual(links.toArray().map((el) => $(el).text()), [`收录于 ${name}`], id);
+    assert.deepEqual(links.toArray().map((el) => $(el).find("span").first().text()), [`这条收录于 ${name}`], id);
     assert.ok(links.eq(0).closest("article").length, id);
   }
   const en = await page("/items/links-lead");
-  assert.deepEqual(en("a[href='/daily/2026-11-07']").toArray().map((el) => en(el).text()), ["In 11/7 AI Daily · Lead story"]);
+  assert.deepEqual(en("a[href='/daily/2026-11-07']").toArray().map((el) => en(el).find("span").first().text()), ["This story is in 11/7 AI Daily · Lead story"]);
   const $ = await page("/zh/items/links-none");
   assert.equal($("a[href^='/zh/daily/2']").length, 0);
 });

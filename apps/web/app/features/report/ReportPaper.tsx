@@ -1,5 +1,5 @@
 import { Picture } from "../../components/ui/Picture";
-import { DailyBriefing } from "./DailyBriefing";
+import { DailyAside, DailyDeckFoot, TodayList } from "./DailyIssue";
 import { contentHtmlLanguage } from "../../lib/content-language";
 import { Link } from "../../lib/navigation";
 import { ContentLanguage } from "../../components/ContentLanguage";
@@ -44,6 +44,9 @@ export function ReportDeck({ report, index, aside }: { report: ReportDetail; ind
   const count = pagesOf(report, leadStory).reduce((sum, p) => sum + p.items.length, 0) + (leadStory ? 1 : 0);
   // A quiet day has no figures to set and nothing to read through: the deck just closes.
   const quiet = count === 0 && report.flashes.length === 0;
+  // A daily leads with its news: the lead's headline and paragraph, then ways to pass the issue on.
+  const daily = report.kind === "daily";
+  const lead = daily ? (report.lead?.title ?? leadStory?.title ?? null) : null;
   return (
     <Deck
       art="masthead-press"
@@ -53,12 +56,13 @@ export function ReportDeck({ report, index, aside }: { report: ReportDetail; ind
           AI <Text value={KIND_LABEL[report.kind]} /> · {report.reportTimeZone ?? "Asia/Shanghai"} · <span className="num">{tx(dateLine(report.kind, report.key))}</span>
           {issue && <><Text value="· 第" />{issue}<Text value="期" /></>}{!quiet && <><Text value="· 约" />{report.readingMinutes}<Text value="分钟读完" /></>}</>
       }
-      title={tx(headline(report.kind, report.key, count))}
+      title={lead ?? tx(headline(report.kind, report.key, count))}
       titleId="report-start"
-      description={tx(MOTTO[report.kind])}
+      description={daily ? dekOf(report, leadStory) : tx(MOTTO[report.kind])}
       aside={aside}
+      compact={!!lead}
     >
-      {!quiet && (
+      {daily ? <DailyDeckFoot report={report} leadStory={leadStory} /> : !quiet && (
         <div className="flex flex-wrap gap-x-10 gap-y-3 border-t border-[rgb(217_164_65/.45)] pt-5">
           {metricItems(report.metrics).map((m) => (
             <span key={m.unit} className="flex flex-col">
@@ -135,8 +139,11 @@ function Coverage({ c }: { c: ReportCitation }) {
   );
 }
 
-/** One story: source, its picture, headline, at most four lines of summary, and the original at the foot. */
-function Story({ c, slot, dated, className = "" }: { c: ReportCitation; slot: string; dated: boolean; className?: string }) {
+/**
+ * One story: source, its picture, headline, at most four lines of summary, and the original at the foot.
+ * In a daily's single column the picture keeps a column's width rather than the page's.
+ */
+function Story({ c, slot, dated, single = false, className = "" }: { c: ReportCitation; slot: string; dated: boolean; single?: boolean; className?: string }) {
   const tx = useTranslate();
   const [pictureFailed, setPictureFailed] = useState(false);
   const picture = c.available && !pictureFailed ? c.picture : null;
@@ -150,9 +157,9 @@ function Story({ c, slot, dated, className = "" }: { c: ReportCitation; slot: st
       {c.available ? (
         <>
           {picture && (
-            <Picture src={picture.url} srcSet={picture.srcSet} sizes="(min-width: 1040px) 460px, (min-width: 760px) 45vw, calc(100vw - 32px)"
+            <Picture src={picture.url} srcSet={picture.srcSet} sizes={single ? "(min-width: 480px) 440px, calc(100vw - 32px)" : "(min-width: 1040px) 460px, (min-width: 760px) 45vw, calc(100vw - 32px)"}
               alt="" loading="lazy" decoding="async" onError={() => setPictureFailed(true)}
-              className="mt-3 aspect-[16/9] w-full rounded-control border border-line-soft bg-bg-sunk object-cover" />
+              className={`mt-3 aspect-[16/9] w-full rounded-control border border-line-soft bg-bg-sunk object-cover ${single ? "max-w-[440px]" : ""}`} />
           )}
           <h3 className="mt-3 text-[19px] font-bold leading-[1.5] tracking-[-0.01em] text-ink [overflow-wrap:anywhere] [text-wrap:pretty] @[880px]:text-[20px]">
             {c.itemId ? (
@@ -198,6 +205,8 @@ export function Rows<T>({ items, children }: { items: T[]; children: (item: T, c
 
 interface Page {
   id: string;
+  /** The section's place in the issue, counting a section whose only story leads the issue. */
+  no: number;
   label: string;
   summary: string | null;
   items: ReportCitation[];
@@ -237,6 +246,7 @@ function pagesOf(report: ReportDetail, leadStory: ReportCitation | null): Page[]
   return report.sections
     .map((s, i) => ({
       id: `s-${i + 1}`,
+      no: i + 1,
       label: s.label,
       summary: s.summary,
       items: s.items
@@ -284,12 +294,11 @@ function Overview({ text }: { text: string }) {
   );
 }
 
-/** The front page: the lead beside a column of today's highlights and the index of pages. */
+/** A weekly's or monthly's front page: the lead beside a column of the period's highlights and the index of pages. */
 function FrontPage({ report, pages, leadStory, count }: { report: ReportDetail; pages: Page[]; leadStory: ReportCitation | null; count: number }) {
   const tx = useTranslate();
-  const daily = report.kind === "daily";
-  // A weekly or monthly leading with an event: the event's own summary; its overview stands above (Overview).
-  const byEvent = daily || !!leadStory;
+  // Leading with an event: the event's own summary; its overview stands above (Overview).
+  const byEvent = !!leadStory;
   // A picture that fails to load is dropped, and the lead is set as if it had none.
   const [broken, setBroken] = useState<string | null>(null);
   const cover = report.cover && report.cover.url !== broken ? report.cover : null;
@@ -297,9 +306,9 @@ function FrontPage({ report, pages, leadStory, count }: { report: ReportDetail; 
   const wide = !cover?.width || !cover.height || cover.width / cover.height >= 1.25;
   const title = report.lead?.title ?? leadStory?.title ?? tx(headline(report.kind, report.key, count));
   const dek = dekOf(report, leadStory);
-  const highlights = (daily ? [] : report.highlights).filter((h) => !leadStory || keyOf(h) !== keyOf(leadStory)).slice(0, 3);
+  const highlights = report.highlights.filter((h) => !leadStory || keyOf(h) !== keyOf(leadStory)).slice(0, 3);
   const inPage = new Set(pages.flatMap((p) => p.items.map((c) => c.itemId)).filter(Boolean));
-  const period = daily ? tx("今日") : report.kind === "weekly" ? tx("本周") : tx("本月");
+  const period = report.kind === "weekly" ? tx("本周") : tx("本月");
   const index = [...pages.map((p) => ({ id: p.id, label: p.label, n: tx("{0} 件", p.items.length) })), ...(report.flashes.length > 0 ? [{ id: "s-flash", label: tx("快讯"), n: tx("{0} 条", report.flashes.length) }] : [])];
 
   return (
@@ -384,23 +393,6 @@ function FrontPage({ report, pages, leadStory, count }: { report: ReportDetail; 
           </nav>
         )}
       </aside>
-    </section>
-  );
-}
-
-/**
- * The front page of a day with nothing new: the lead alone across the page, in the lead's own type,
- * saying so and naming the hours it covers. No highlights, pages or index follow.
- */
-function QuietFront({ lead }: { lead: NonNullable<ReportDetail["lead"]> }) {
-  const tx = useTranslate();
-  return (
-    <section aria-label={tx("头版")} className="pt-10 @[880px]:pt-16">
-      <Kicker>{tx("头版")}</Kicker>
-      <h2 className="mt-4 text-[32px] font-black leading-[1.28] tracking-[-0.03em] text-ink [text-wrap:balance] @[520px]:text-[40px] @[1040px]:text-[48px] @[1040px]:leading-[1.22]">
-        {lead.title}
-      </h2>
-      {lead.leadParagraph && <p className="mt-6 max-w-[46em] text-[16.5px] leading-[1.9] text-ink-2 @[880px]:mt-7 @[880px]:text-[17.5px]">{lead.leadParagraph}</p>}
     </section>
   );
 }
@@ -498,27 +490,22 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
   // Only a daily comes out with nothing in it: a day the editors judged with nothing new (REPORTS.quiet).
   const quiet = count === 0 && report.flashes.length === 0;
   // Each name links once in the issue, where a reader meets it first: the texts in the order they are drawn.
+  // A daily's lead paragraph is in the deck, set as plain text there.
   const slots: Array<[string, string | null]> = [
     ...(!daily && leadStory ? [["overview", report.overview] as [string, string | null]] : []),
-    ["dek", dekOf(report, leadStory)],
+    ...(!daily ? [["dek", dekOf(report, leadStory)] as [string, string | null]] : []),
     ...pages.flatMap((p) => [[`page:${p.id}`, p.summary] as [string, string | null], ...p.items.map((c) => [`story:${p.id}:${keyOf(c)}`, c.available ? c.summary : null] as [string, string | null])]),
   ];
   const runs = linkMentions(slots.map(([, text]) => text), report.mentions);
   const linked = new Map(slots.map(([slot], i) => [slot, runs[i]]));
+  if (daily) return <DailyPaper report={report} index={index} leadStory={leadStory} pages={pages} quiet={quiet} linked={linked} />;
   return (
     <Linked.Provider value={linked}>
     <article lang={contentHtmlLanguage(report, locale) ?? "und"} className="@container">
       <ContentLanguage content={report} />
       <ReadingGear />
-      {quiet ? (
-        report.lead && <QuietFront lead={report.lead} />
-      ) : (
-        <>
-          {!daily && leadStory && report.overview && <Overview text={report.overview} />}
-          {daily && <DailyBriefing report={report} />}
-          <FrontPage report={report} pages={pages} leadStory={leadStory} count={count} />
-        </>
-      )}
+      {leadStory && report.overview && <Overview text={report.overview} />}
+      <FrontPage report={report} pages={pages} leadStory={leadStory} count={count} />
 
       {pages.map((p, i) => (
         <SectionPage key={p.id} id={p.id} no={i + 1} label={p.label}>
@@ -528,7 +515,7 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
               <Prose slot={`page:${p.id}`} text={p.summary} />
             </p>
           )}
-          <Rows items={p.items}>{(c, cell) => <Story key={`${p.id}-${keyOf(c)}`} c={c} slot={`story:${p.id}:${keyOf(c)}`} dated={!daily} className={cell} />}</Rows>
+          <Rows items={p.items}>{(c, cell) => <Story key={`${p.id}-${keyOf(c)}`} c={c} slot={`story:${p.id}:${keyOf(c)}`} dated className={cell} />}</Rows>
         </SectionPage>
       ))}
 
@@ -561,23 +548,69 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
       )}
 
       <Neighbours report={report} index={index} />
-      {!daily && <History report={report} index={index} />}
+      <History report={report} index={index} />
       <footer className="py-10 text-center">
         <div className="text-[13px] font-semibold tracking-[0.6em] text-ink-4"><Text value="（本期完）" /></div>
         <p className="mt-3 text-[12px] text-ink-4">
-          {SITE.name} <Text value={KIND_LABEL[report.kind]} /><Text value="由编辑系统根据公开来源自动" />{daily ? tx("编辑") : tx("汇总")}<Text value="，每条均附原文 ·" />{" "}
-          <Link to={daily ? "/daily/archive" : "#report-history"} viewTransition={daily} className="font-medium text-ink-3 transition-colors hover:text-accent">
-            {daily ? tx("日报合订本") : tx("往期{0}", tx(KIND_LABEL[report.kind]))}
+          {SITE.name} <Text value={KIND_LABEL[report.kind]} /><Text value="由编辑系统根据公开来源自动" />{tx("汇总")}<Text value="，每条均附原文 ·" />{" "}
+          <Link to="#report-history" className="font-medium text-ink-3 transition-colors hover:text-accent">
+            {tx("往期{0}", tx(KIND_LABEL[report.kind]))}
           </Link>
         </p>
       </footer>
-      {daily && (
-        <SubscribeCta
-          source="daily_inline"
-          sample={{ to: report.prev ? reportPath("daily", report.prev) : "/daily/archive", date: report.prev ?? undefined }}
-          sticky
-        />
-      )}
+    </article>
+    </Linked.Provider>
+  );
+}
+
+/**
+ * A daily: the day's list beside the column to subscribe and share (DailyIssue), then the stories in one
+ * column, the close and a second chance to subscribe. Its lead is told in the deck (ReportDeck), so a quiet
+ * day with nothing new has nothing more to set here.
+ */
+function DailyPaper({ report, index, leadStory, pages, quiet, linked }: {
+  report: ReportDetail;
+  index: ReportNavigationEntry[];
+  leadStory: ReportCitation | null;
+  pages: Page[];
+  quiet: boolean;
+  linked: ReadonlyMap<string, MentionRun[]>;
+}) {
+  const tx = useTranslate();
+  const locale = useLocale();
+  return (
+    <Linked.Provider value={linked}>
+    <article lang={contentHtmlLanguage(report, locale) ?? "und"} className="@container">
+      <ContentLanguage content={report} />
+      <ReadingGear />
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-x-12 xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-x-16">
+        <div className="min-w-0">
+          {!quiet && <TodayList report={report} leadStory={leadStory} leadRelated={leadStory?.related?.length ? <Related items={leadStory.related} className="pb-3 pl-[42px]" /> : undefined} />}
+        </div>
+        <DailyAside report={report} index={index} leadStory={leadStory} className="lg:col-start-2 lg:row-span-2 lg:row-start-1" />
+        <div className="min-w-0 lg:col-start-1">
+          {pages.map((p) => (
+            <SectionPage key={p.id} id={p.id} no={p.no} label={p.label}>
+              {p.summary && (
+                <p className="border-b border-line py-5 text-[15.5px] leading-[1.9] text-ink-2 @[560px]:text-justify">
+                  <span className="mr-2 font-semibold text-accent"><Text value="本版导读" /></span>
+                  <Prose slot={`page:${p.id}`} text={p.summary} />
+                </p>
+              )}
+              {p.items.map((c) => <Story key={`${p.id}-${keyOf(c)}`} c={c} slot={`story:${p.id}:${keyOf(c)}`} dated={false} single className="border-b border-line" />)}
+            </SectionPage>
+          ))}
+          <footer className="pt-14 text-center">
+            <div className="text-[13px] font-semibold tracking-[0.6em] text-ink-4"><Text value="（本期完）" /></div>
+            <p className="mt-3 text-[12px] text-ink-4">
+              {SITE.name} <Text value={KIND_LABEL.daily} /><Text value="由编辑系统根据公开来源自动" />{tx("编辑")}<Text value="，每条均附原文 ·" />{" "}
+              <Link to="/daily/archive" viewTransition className="font-medium text-ink-3 transition-colors hover:text-accent">{tx("日报合订本")}</Link>
+            </p>
+          </footer>
+          <SubscribeCta source="daily_inline" sample={{ to: report.prev ? reportPath("daily", report.prev) : "/daily/archive", date: report.prev ?? undefined }} />
+          <Neighbours report={report} index={index} />
+        </div>
+      </div>
     </article>
     </Linked.Provider>
   );
