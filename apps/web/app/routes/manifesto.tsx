@@ -3,14 +3,15 @@
 // first screen, the nine sections beside their contents, then the closing lines. The address decides the
 // language of the text and the frame, and pageMeta names the editions as each other's hreflang alternates.
 import { useState } from "react";
-import { data } from "react-router";
+import { data, useLoaderData } from "react-router";
 import { FEATURES } from "@aihot/industry/features";
 import { MANIFESTO, MANIFESTO_ART, MANIFESTO_AUTHOR, MANIFESTO_CARD, MANIFESTO_PUBLISHED, type ManifestoBlock } from "@aihot/industry/manifesto";
 import { SITE } from "@aihot/site";
 import { Link } from "../lib/navigation";
-import { localeFromMatches, useLocale } from "../lib/i18n";
+import { localeFromMatches, useLocale, useTranslate } from "../lib/i18n";
 import { localePath, type Locale } from "../lib/locale";
-import { edgeTtl } from "../lib/api.server";
+import { apiGet, edgeTtl } from "../lib/api.server";
+import { webModules } from "../site-modules";
 import { breadcrumbLd, pageMeta, siteUrl } from "../lib/seo";
 import { Plate } from "../components/shell/Deck";
 import { shareOrCopy } from "../features/item/share";
@@ -21,9 +22,16 @@ export function headers() {
   return edgeTtl(300);
 }
 
-export function loader() {
+/** What the closing list reads of the essays module's list (modules/essays/contracts.ts PublicEssayList). */
+interface EssayLink { slug: string; title: string; dek: string }
+
+export async function loader({ request }: { request: Request }) {
   if (!FEATURES.eaccConcepts) throw data({ message: "not_found" }, { status: 404 });
-  return null;
+  // The author's signed essays under the closing lines, when the site runs the essays module; the page stands without them.
+  const essays = webModules().some((m) => m.name === "essays")
+    ? await apiGet<{ essays: EssayLink[] }>("/api/site/essays", { request, signal: request.signal }).then((r) => r.essays.slice(0, 5).map(({ slug, title, dek }) => ({ slug, title, dek }))).catch(() => null)
+    : null;
+  return { essays };
 }
 
 function structuredData(locale: Locale) {
@@ -93,6 +101,7 @@ function Block({ block }: { block: ManifestoBlock }) {
 }
 
 export default function ManifestoPage() {
+  const { essays } = useLoaderData<typeof loader>();
   const locale = useLocale();
   const text = MANIFESTO[locale];
   const other: Locale = locale === "zh" ? "en" : "zh";
@@ -154,6 +163,28 @@ export default function ManifestoPage() {
           <Link to="/what-is-eacc" className="deck-button">{text.more.whatIs}</Link>
         </div>
       </section>
+      {essays && essays.length > 0 && <ManifestoEssays essays={essays} />}
     </div>
+  );
+}
+
+/** The author's essays after the closing lines: where the manifesto's view is argued at length. */
+function ManifestoEssays({ essays }: { essays: EssayLink[] }) {
+  const tx = useTranslate();
+  return (
+    <section className="mx-auto max-w-[720px] px-0 pb-16 pt-4" aria-labelledby="manifesto-essays">
+      <h2 id="manifesto-essays" className="manifesto-label">{tx("长文")}</h2>
+      <ul className="mt-4 divide-y divide-line border-y border-line">
+        {essays.map((e) => (
+          <li key={e.slug}>
+            <Link to={`/essays/${e.slug}`} prefetch="intent" className="group flex flex-col gap-1 py-4">
+              <span className="text-[18px] font-semibold leading-snug text-ink group-hover:text-accent">{e.title}</span>
+              <span className="text-[14.5px] leading-relaxed text-ink-3">{e.dek}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <Link to="/essays" className="mt-4 inline-flex min-h-[44px] items-center text-[14.5px] text-accent">{tx("全部长文")} →</Link>
+    </section>
   );
 }

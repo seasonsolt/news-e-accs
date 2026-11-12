@@ -1,11 +1,12 @@
 import { publicPath } from "../../lib/locale.ts";
 // Site navigation, one place for the desktop sidebar, the mobile tab bar and the mobile "更多" page.
 import { NAV, withSubject } from "@aihot/site";
+import { MODULES } from "@aihot/site/modules";
 import { FEATURES } from "@aihot/industry/features";
 import { webModules } from "../../site-modules";
 import type { ReactNode } from "react";
 import {
-  IconApps, IconBolt, IconBookmark, IconDoc, IconFlame, IconGrid, IconHeart, IconHistory, IconHourglass, IconImage, IconInfo, IconList, IconMail, IconMessage, IconPlug, IconSparkles,
+  IconApps, IconBolt, IconBookmark, IconDoc, IconFlame, IconGrid, IconHeart, IconHistory, IconHourglass, IconImage, IconInfo, IconList, IconMail, IconMessage, IconPen, IconPlug, IconSparkles,
 } from "../icons";
 
 /** Whether an engine page is a way in from the navigation (site.ts NAV.hidden); a hidden page still opens. */
@@ -51,6 +52,9 @@ export const MORE_MENU: Array<{ title: string; items: NavItem[] }> = [
     title: "了解 e/acc",
     items: [
       { to: "/manifesto", label: "降临派宣言", icon: IconInfo, note: "本站的主张：人与 AI 共生演化" },
+      // The essays module's signed essays (modules/essays); its declaration, not its web entry, so this list
+      // can be read when this file loads.
+      ...(MODULES.some((m) => m.name === "essays") ? [{ to: "/essays", label: "长文", icon: IconPen, note: "署名长文：AI 起草，作者审定" }] : []),
       { to: "/what-is-eacc", label: "什么是 e/acc", icon: IconInfo, note: "起源、主张与批评" },
       { to: "/eacc-vs-dacc", label: "e/acc 与 d/acc", icon: IconInfo, note: "先加速，还是先防御" },
       { to: "/eacc-vs-ea", label: "e/acc 与 EA", icon: IconInfo, note: "两者在 AI 上的分歧" },
@@ -107,7 +111,12 @@ export function tabIsActive(item: NavItem, pathname: string): boolean {
   pathname = publicPath(pathname);
   const under = (p: string) => pathname === p || pathname.startsWith(`${p}/`);
   if (item.end) return pathname === item.to;
-  if (item.to === "/more") return [...MORE_PATHS, ...webModules().flatMap((m) => (m.tools ?? []).map((t) => t.to))].some(under);
+  if (item.to === "/more") {
+    // A page a module's section answers for lights that section, even when 更多 also lists it.
+    const sections = moduleSections().flatMap((s) => [s.to, ...(s.also ?? [])]);
+    const owned = (p: string) => sections.some((s) => p === s || p.startsWith(`${s}/`));
+    return [...MORE_PATHS, ...webModules().flatMap((m) => (m.tools ?? []).map((t) => t.to))].filter((p) => !owned(p)).some(under);
+  }
   return [item.to, ...(item.also ?? [])].some(under);
 }
 

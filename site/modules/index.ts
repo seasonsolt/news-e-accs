@@ -7,5 +7,6 @@ import leaderboard from "@aihot/leaderboard";
 import indices from "@aihot/indices";
 import storyDepth from "@aihot/story-depth";
 import scenes from "@aihot/scenes";
+import essays from "@aihot/essays";
 
-export const MODULES: readonly ModuleDeclaration[] = [leaderboard, indices, storyDepth, wallpaper, scenes];
+export const MODULES: readonly ModuleDeclaration[] = [leaderboard, indices, essays, storyDepth, wallpaper, scenes];

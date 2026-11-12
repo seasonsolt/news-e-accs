@@ -8,6 +8,7 @@ import { SITE, EDITION_TIMES } from "@aihot/site";
 import type { ReportCitation, ReportDetail } from "@aihot/contracts/site";
 import { editionPath, editionReady, type DistributionLanguage } from "../publication/distribution.ts";
 import { dailyUrl, siteUrl } from "../publication/links.ts";
+import type { LetterFeature } from "../modules.ts";
 import type { LetterReading } from "./reading.ts";
 
 /** Solid colours: rgba text and fills blend differently from client to client. */
@@ -283,7 +284,15 @@ function letterBriefs(report: ReportDetail, language: DistributionLanguage): Rep
   return report.flashes.filter((i) => i.available && (!("contentLanguage" in i) || editionReady(i, language, true)));
 }
 
-export function dailyIssueMail(report: ReportDetail, language: DistributionLanguage = "en", reading: LetterReading | null = null): Mail {
+/** A module's piece (a new essay), told under the lead. */
+function featureRow(f: LetterFeature): string {
+  return `<tr><td class="pad" style="padding:28px 32px 0;"><div style="padding:20px 22px;border:1px solid ${C.edge};border-radius:8px;font-family:${SANS};">
+<div style="font-family:${MONO};font-size:12px;letter-spacing:.1em;color:${C.brass};">${esc(f.kicker.toUpperCase())}</div>
+<a href="${esc(f.url)}" style="display:block;margin-top:8px;font-size:20px;font-weight:600;line-height:1.35;color:${C.ink};text-decoration:none;">${esc(f.title)}</a>
+<div style="margin-top:8px;font-size:15px;line-height:1.7;color:${C.dim};">${esc(f.dek)}</div></div></td></tr>`;
+}
+
+export function dailyIssueMail(report: ReportDetail, language: DistributionLanguage = "en", reading: LetterReading | null = null, features: LetterFeature[] = []): Mail {
   const t = ISSUE[language];
   const sections = letterSections(report);
   const briefs = letterBriefs(report, language);
@@ -295,7 +304,7 @@ export function dailyIssueMail(report: ReportDetail, language: DistributionLangu
 <tr><td class="pad" style="padding:6px 32px 8px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="font-family:${MONO};font-size:12px;letter-spacing:.04em;color:${C.faint};">${esc(leadItem?.sourceName ?? "")}</td><td align="right"><a href="${esc(leadItem ? citationUrl(leadItem, language) : web)}" style="display:inline-block;padding:13px 0;font-family:${SANS};font-size:14px;line-height:18px;color:${C.brassHi};text-decoration:none;">${esc(t.story)}</a></td></tr></table></td></tr>` : "";
   const sectionHtml = sections.map((s, i) => `<tr><td class="pad" style="padding:32px 32px 0;">${sectionHead(i + 1, language === "en" ? s.label.toUpperCase() : s.label)}${s.items.map((item) => storyRow(item, language)).join("")}</td></tr>`).join("");
   const briefHtml = briefs.length ? `<tr><td class="pad" style="padding:32px 32px 0;">${sectionHead(sections.length + 1, t.briefs)}${briefs.map((item) => briefRow(item, language)).join("")}</td></tr>` : "";
-  const inner = `${masthead(kicker(report, language), headline, language)}${leadBody}${indexRow(report, language)}${sectionHtml}${briefHtml}
+  const inner = `${masthead(kicker(report, language), headline, language)}${leadBody}${features.map(featureRow).join("")}${indexRow(report, language)}${sectionHtml}${briefHtml}
 <tr><td class="pad" align="center" style="padding:32px 32px 36px;">${button(web, t.full)}</td></tr>${forwardRow(language)}${reading ? readingPanel(reading, language) : ""}`;
   const footer = `${esc(GMAIL_HINT[language])}<br><br>${esc(t.footer)} <a href="${UNSUBSCRIBE}" style="color:${C.faint};">${esc(t.unsubscribe)}</a>`;
 
@@ -308,6 +317,7 @@ export function dailyIssueMail(report: ReportDetail, language: DistributionLangu
     `${name} · ${date}`,
     "",
     ...(report.lead ? [report.lead.title, report.lead.leadParagraph, ""] : []),
+    ...features.flatMap((f) => [`${f.kicker}: ${f.title}`, f.dek, f.url, ""]),
     ...sections.flatMap((s) => [language === "en" ? s.label : `【${s.label}】`, ...s.items.flatMap((i) => [`· ${i.title}`, ...(i.summary ? [`  ${i.summary}`] : []), `  ${i.sourceName} ${citationUrl(i, language)}`]), ""]),
     ...(briefs.length ? [t.briefs, ...briefs.map((i) => `· ${i.title}  ${i.sourceName} ${citationUrl(i, language)}`), ""] : []),
     ...(cost ? [language === "en" ? `${cost.ratio}× ${cost.line}` : cost.line, ""] : []),

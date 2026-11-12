@@ -5,5 +5,6 @@ import leaderboard from "@aihot/leaderboard/web";
 import indices from "@aihot/indices/web";
 import storyDepth from "@aihot/story-depth/web";
 import scenes from "@aihot/scenes/web";
+import essays from "@aihot/essays/web";
 
-export const WEB_MODULES: readonly WebModule[] = [leaderboard, indices, storyDepth, wallpaper, scenes];
+export const WEB_MODULES: readonly WebModule[] = [leaderboard, indices, essays, storyDepth, wallpaper, scenes];

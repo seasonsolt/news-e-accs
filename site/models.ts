@@ -10,6 +10,8 @@ export const PRESETS: Record<string, ModelPreset> = {
   // 订阅额度里的 Codex 模型：luna 快、省额度，适合大批量的判断和翻译；sol 用在写作。
   "codex-luna": { transport: "codex", service: "codex-text", model: "gpt-6-luna", reasoningEffort: "low", jsonMode: true },
   "codex-sol": { transport: "codex", service: "codex-text", model: "gpt-6.1-sol", reasoningEffort: "low", jsonMode: true },
+  // Long-form essays (modules/essays): a whole essay in one answer is worth more thought.
+  "codex-sol-write": { transport: "codex", service: "codex-text", model: "gpt-6.1-sol", reasoningEffort: "medium", jsonMode: true },
   // GLM 5.3 Flash always reasons; the lowest effort keeps short structured tasks fast.
   "glm-5.3-flash": {
     service: "zhipu", model: "glm-5.3-flash", baseUrlEnv: "ZHIPU_BASE_URL", apiKeyEnv: "ZHIPU_API_KEY",
@@ -52,4 +54,6 @@ export const PRESETS: Record<string, ModelPreset> = {
  * 每一步默认用的模型（步骤见后台“模型与评测”页），值是上面的名字或 default。没写的步骤用 default。
  * 例：{ score: "glm-5.3-flash-selection", groupReview: "mimo-v2.6-flash" }
  */
-export const DEFAULTS: Record<string, string> = {};
+export const DEFAULTS: Record<string, string> = {
+  essayOutline: "codex-sol", essayDraft: "codex-sol-write", essayRevise: "codex-sol", essayLocalize: "codex-sol-write",
+};

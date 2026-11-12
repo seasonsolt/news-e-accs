@@ -99,6 +99,15 @@ export function defineQueue<T>(queue: ModuleQueue<T>): ModuleQueue<T> {
   return queue;
 }
 
+/** A piece a module asks the daily letter to tell (newsletter/mail.ts). */
+export interface LetterFeature {
+  /** The small line above the title, e.g. "New essay". */
+  kicker: string;
+  title: string;
+  dek: string;
+  url: string;
+}
+
 export interface SitemapEntry {
   loc: string;
   /** Stable public-content identity for update notifications; never rendered into the sitemap. */
@@ -223,6 +232,8 @@ export interface ServerModule {
   newsletter?: {
     /** The cost figure of the daily letter's reading (newsletter/reading.ts). */
     cost?: () => Promise<CostReading | null>;
+    /** Its pieces told after the daily letter's lead: those first published since `since`, the language's last letter (newsletter/reading.ts). */
+    features?: (since: Date, language: "en" | "zh") => Promise<LetterFeature[]>;
   };
   /** Published additions to story detail (publication/stories.ts), keyed by the module name. */
   storyPage?: (storyId: number) => Promise<unknown>;

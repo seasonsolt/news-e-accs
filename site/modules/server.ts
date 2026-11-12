@@ -4,5 +4,6 @@ import type { ServerModule } from "@aihot/backend/modules";
 import leaderboard from "@aihot/leaderboard/server";
 import indices from "@aihot/indices/server";
 import storyDepth from "@aihot/story-depth/server";
+import essays from "@aihot/essays/server";
 
-export const SERVER_MODULES: readonly ServerModule[] = [leaderboard, indices, storyDepth, wallpaper];
+export const SERVER_MODULES: readonly ServerModule[] = [leaderboard, indices, essays, storyDepth, wallpaper];

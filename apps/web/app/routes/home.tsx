@@ -20,6 +20,9 @@ import { CategoryTabs, FeedSwitch, SearchField, SearchIconLink } from "../featur
 import { requestAt, withAt } from "../features/chrono/at";
 
 export { pageHeaders as headers } from "../lib/api.server";
+
+/** What the front page reads of the essays module's list (modules/essays/contracts.ts PublicEssayList). */
+interface EssayCard { slug: string; path: string; title: string; dek: string; cover: { src: string; width: number; height: number; alt: string }; publishedAt: string }
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -30,14 +33,18 @@ export async function loader({ request }: Route.LoaderArgs) {
   const at = requestAt(request);
   const filters = { ...readFilters(url.searchParams), topic: null, at };
   const upstream = new Headers();
-  const [data, chronicle, cost] = await Promise.all([
+  const [data, chronicle, cost, essays] = await Promise.all([
     loadOr404<TimelineResponse>(listPath("/api/site/timeline", { ...filterParams(filters), at }), { responseHeaders: upstream, request, signal: request.signal }),
     // Like the masthead's time machine (root), the chronicle only dresses the deck: without it the deck keeps the day's lead.
     FEATURES.timeMachine ? apiGet<ChronicleResponse>("/api/site/chronicle", { request, signal: request.signal }).catch(() => null) : null,
     // Today's figure, so a past day of the time machine goes without it; like the chronicle, it can fail without the page.
     !at && webModules().some((m) => m.name === "indices") ? apiGet<CostIndex>("/api/site/indices/cost-of-intelligence", { request, signal: request.signal }).then(costReading).catch(() => null) : null,
+    // The latest signed essays, today only (the time machine shows the site as it was); the page stands without them.
+    !at && webModules().some((m) => m.name === "essays")
+      ? apiGet<{ essays: EssayCard[] }>("/api/site/essays", { request, signal: request.signal }).then((r) => r.essays.slice(0, 3).map(({ slug, path, title, dek, cover, publishedAt }) => ({ slug, path, title, dek, cover, publishedAt }))).catch(() => null)
+      : null,
   ]);
-  return cachedPage(60, { data, filters, chronicle: chronicle && chronicleNow(chronicle, at), cost }, upstream);
+  return cachedPage(60, { data, filters, chronicle: chronicle && chronicleNow(chronicle, at), cost, essays }, upstream);
 }
 
 export function meta({ matches, loaderData }: Route.MetaArgs) {
@@ -53,7 +60,7 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
 
 export default function Home() {
   const tx = useTranslate();
-  const { data, filters, chronicle, cost } = useLoaderData<typeof loader>();
+  const { data, filters, chronicle, cost, essays } = useLoaderData<typeof loader>();
   // Old links and the switch from /all can still narrow the picks; those pages keep the full filter row.
   const narrowed = !!filters.tag || !!filters.category || filters.channel !== "all";
   return (
@@ -63,6 +70,8 @@ export default function Home() {
       ) : (
         <HomeHero label={tx("精选")} heading={tx(SITE.homeHeading)} at={filters.at} lead={leadCard(data.cards)} chronicle={chronicle} cost={cost} />
       )}
+
+      {!narrowed && essays && essays.length > 0 && <LatestEssays essays={essays} />}
 
       {narrowed ? (
         <>
@@ -90,5 +99,32 @@ export default function Home() {
       <CategoryBanner category={filters.category} channel={filters.channel} />
       <Timeline initial={data} filters={data.filters} foldReasons />
     </div>
+  );
+}
+
+/** The latest signed essays, one compact card each (the newest only on phones), between the hero and the picks. */
+function LatestEssays({ essays }: { essays: EssayCard[] }) {
+  const tx = useTranslate();
+  return (
+    <section className="mt-6 lg:mt-8" aria-labelledby="home-essays-title">
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 id="home-essays-title" className="font-mono text-[12px] uppercase tracking-[0.14em] text-[color:var(--brass)]">{tx("最新长文")}</h2>
+        <Link to="/essays" prefetch="intent" className="home-browse">{tx("全部长文")} →</Link>
+      </div>
+      <ul className={`mt-2 grid gap-3 ${essays.length > 1 ? "lg:grid-cols-3" : ""}`}>
+        {essays.map((e, i) => (
+          // Phones show the newest only, so the picks stay near the top.
+          <li key={e.slug} className={i > 0 ? "max-lg:hidden" : undefined}>
+            <Link to={`/essays/${e.slug}`} prefetch="intent" className="group flex items-start gap-4 rounded-card border border-line p-3 transition-colors hover:border-line-strong">
+              <img src={e.cover.src} width={e.cover.width} height={e.cover.height} alt={e.cover.alt} loading="lazy" decoding="async" className="aspect-[4/3] w-[96px] shrink-0 rounded-control bg-bg-muted object-cover" />
+              <span className="flex min-w-0 flex-col gap-1">
+                <span className="line-clamp-2 text-[16.5px] font-semibold leading-snug text-ink group-hover:text-accent">{e.title}</span>
+                <span className="line-clamp-2 text-[13.5px] leading-relaxed text-ink-3">{e.dek}</span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

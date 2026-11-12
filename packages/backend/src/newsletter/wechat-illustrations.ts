@@ -139,7 +139,7 @@ async function reportPictures(itemId: string): Promise<{ pictures: Array<{ url: 
 
 /** The page's own preview picture (og:image, twitter:image); null without one or when the page cannot be read. */
 /** The picture at `url` when it is one the column can print (big enough, not a strip or an icon); null otherwise. */
-async function usablePicture(url: string): Promise<Buffer | null> {
+export async function usablePicture(url: string): Promise<Buffer | null> {
   if (isNonArticleImage(url)) return null;
   try {
     const res = await guardedFetch(url, { timeoutMs: 20_000, maxBytes: 16 * 1024 * 1024, headers: { accept: "image/avif,image/webp,image/png,image/jpeg,image/*;q=0.8" } });
@@ -170,7 +170,7 @@ async function firstUsable(candidates: Array<{ url: string; page: string }>, cur
 }
 
 /** Each page's preview picture, in order. */
-async function previews(pages: string[]): Promise<Array<{ url: string; page: string }>> {
+export async function previews(pages: string[]): Promise<Array<{ url: string; page: string }>> {
   const found = await Promise.all(pages.slice(0, TRIES).map(async (page) => ({ url: await previewPicture(page), page })));
   return found.flatMap((f) => (f.url ? [{ url: f.url, page: f.page }] : []));
 }

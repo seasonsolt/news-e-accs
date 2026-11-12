@@ -1,0 +1,17 @@
+# Essays: the signed long-form writing desk
+
+The site owner types scattered fragments at `/admin/essays`; the worker expands them, the owner edits, and both editions are published together as a signed essay at `/essays/<slug>` and `/zh/essays/<slug>`. The plan and the owner's decisions are in `docs/plans/essays.md`.
+
+**Flow.** Fragments (a blank line separates two; optional reference pages) → outline → English draft → Chinese edition → section rewrites → pictures → publish. Each model step is a task the admin queues (`essay_tasks`, queue `essays.task`, no automatic retries); only the worker calls `chatJson`, with receipts and the provider budgets, and only while `MODEL_CALLS_ENABLED` is on. Text tasks need the essay as last saved (optimistic `version`); while a task will write a field (outline, English, Chinese), saving that field is refused. A rewrite is a proposal the owner accepts or discards. Every model output and manual save is a revision (`essay_revisions`); a manual save within ten minutes of the same person's last one of the same part replaces it.
+
+**Styles.** The voice comes from a writing-style skill the owner picks per essay: `industry/essay-styles/<name>/SKILL.md` plus any reference `.md` beside it (see the README there). All four text prompts (`industry/prompts/essay-*.md`) put it in the system prompt; their shared rules (`essay-rules.md`: no invented facts, `[[check: …]]` markers, the body format) are not the style's to override. A revision records the style's name and content hash.
+
+**Models.** Steps `essayOutline`, `essayDraft`, `essayRevise`, `essayLocalize` (env `ESSAY_*_MODEL`, admin's model page); defaults in `site/models.ts`.
+
+**Pictures.** Each slot (`cover`, `figure-1`…) has a description. Search first: the Codex CLI's web search finds pages, their preview pictures are filtered and up to four are offered as candidates with their page as credit (as the 公众号 illustrations do). Or draw with the Codex CLI's image tool (`industry/prompts/essay-art.md`), or upload. Files live in `AIHOT_DATA_DIR/uploads/essays` (backed up). A found picture's page is printed under it; whether it may be reused is the owner's call.
+
+**Publishing.** Allowed only when both editions are complete, no `[[check]]` is left, every placed figure and the cover has a picture with English and Chinese alt text, and the slug is final. Publishing writes an immutable snapshot (`essay_publications`) with the rendered HTML and a 1200×630 link-preview card; readers, feeds, the sitemap, llms.txt and the daily letter read only the live snapshot (`backend/publication.ts`). Republishing keeps the first date and moves `dateModified`; the slug is fixed after the first publication. Withdrawing makes the pages answer 410 and takes the essay out of the sitemap and feeds; its pictures stop being served.
+
+**Public outputs.** `/essays`, `/essays/<slug>` and their `/zh` mirrors (hreflang pairs), `/feed/essays.xml`, `/feed/zh/essays.xml`, sitemap entries (lastmod = the latest publication), llms.txt lines, and a "New essay" box in the first daily letter of each language sent after the first publication (the engine's `newsletter.features` hook).
+
+**Tests.** `tests/essays.test.ts` (backend, local model stub and fake Codex CLI) and `tests/essays-web.test.ts` (pages through the production web build).

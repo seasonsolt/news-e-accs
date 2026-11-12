@@ -72,6 +72,7 @@ export function adminHandler(fn: AdminHandler) {
         return sendProblem(req, reply, { status: 400, code: "invalid_request", detail: String((error as Error).message).slice(0, 300) });
       }
       if ((error as { code?: string }).code === "conflict") return sendProblem(req, reply, { status: 409, code: "conflict", detail: (error as Error).message });
+      if ((error as { statusCode?: number }).statusCode === 404) return sendProblem(req, reply, { status: 404, code: "not_found", detail: String((error as Error).message).slice(0, 300) });
       req.log.error({ err: error, path: req.url.split("?")[0] }, "admin api error");
       return sendProblem(req, reply, { status: 500, code: "internal_error", detail: String((error as Error).message).slice(0, 300) });
     }

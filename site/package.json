@@ -17,6 +17,7 @@
     "@aihot/indices": "*",
     "@aihot/story-depth": "*",
     "@aihot/wallpaper": "*",
-    "@aihot/scenes": "*"
+    "@aihot/scenes": "*",
+    "@aihot/essays": "*"
   }
 }

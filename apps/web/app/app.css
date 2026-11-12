@@ -951,7 +951,9 @@
 .site-nav-brand .text-accent { color: var(--brass); }
 .site-nav-links { display: none; flex: 1; align-items: center; justify-content: center; gap: 2px; }
 @media (min-width: 961px) { .site-nav-links { display: flex; } }
-.site-nav-link { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 999px; font-size: 14px; color: var(--deck-dim); cursor: pointer; transition: color .15s, background-color .15s; list-style: none; }
+.site-nav-link { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 999px; font-size: 14px; white-space: nowrap; color: var(--deck-dim); cursor: pointer; transition: color .15s, background-color .15s; list-style: none; }
+/* Six sections beside the actions on the narrowest desktops: closer, so no label breaks. */
+@media (min-width: 961px) and (max-width: 1099px) { .site-nav-link { padding: 0 10px; } }
 .site-nav-link::-webkit-details-marker { display: none; }
 .site-nav-link:hover { color: var(--deck-ink); }
 .site-nav-link[aria-current="page"] { background: rgb(217 164 65 / .2); color: var(--brass-hi); }

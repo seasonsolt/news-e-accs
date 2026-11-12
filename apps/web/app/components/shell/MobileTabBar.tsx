@@ -12,6 +12,7 @@ export function MobileTabBar({ changelogVersion }: { changelogVersion: string | 
   const dot = useChangelogDot(changelogVersion);
   const at = useAt();
   const tabs = tabBar();
+  // Six tabs leave the longest English label ("Acceleration") a few pixels on a 360px phone; narrower ones get a smaller face.
   return (
     <nav aria-label={tx("底部导航")} className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
       <div className="mx-auto grid h-[54px] max-w-[640px]" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
@@ -24,7 +25,7 @@ export function MobileTabBar({ changelogVersion }: { changelogVersion: string | 
               to={withAt(t.to, at)}
               prefetch="intent"
               aria-current={active ? "page" : undefined}
-              className={`relative flex flex-col items-center justify-center gap-[3px] text-[11px] transition-colors ${active ? "font-semibold text-accent" : "text-ink-3 active:text-ink"}`}
+              className={`relative flex flex-col items-center justify-center gap-[3px] text-[11px] max-[359px]:text-[10px] transition-colors ${active ? "font-semibold text-accent" : "text-ink-3 active:text-ink"}`}
             >
               <Icon size={21} />
               <span>{tx(t.label)}</span>

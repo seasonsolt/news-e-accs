@@ -22,6 +22,7 @@ COPY modules/indices/package.json modules/indices/
 COPY modules/wallpaper/package.json modules/wallpaper/
 COPY modules/story-depth/package.json modules/story-depth/
 COPY modules/scenes/package.json modules/scenes/
+COPY modules/essays/package.json modules/essays/
 RUN npm ci --no-audit --no-fund ${NPM_REGISTRY:+--registry=$NPM_REGISTRY}
 COPY . .
 RUN npm run build -w @aihot/web && npm prune --omit=dev --no-audit --no-fund

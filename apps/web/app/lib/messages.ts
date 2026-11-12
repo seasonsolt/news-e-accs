@@ -95,6 +95,11 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "每周一和每月 1 日的回顾": "Reviews every Monday and on the 1st",
   "起源、主张与批评": "Origin, beliefs, criticism",
   "本站的主张：人与 AI 共生演化": "Our view: humans and AI evolving together",
+  // The essays module's entries on engine pages (nav.ts, home.tsx, manifesto.tsx).
+  "长文": "Essays",
+  "署名长文：AI 起草，作者审定": "Signed essays, drafted with AI, approved by the author",
+  "最新长文": "Latest essays",
+  "全部长文": "All essays",
   "先加速，还是先防御": "Accelerate first, or defend first",
   "两者在 AI 上的分歧": "Where the two split on AI",
   "常用说法一页看全": "The words, on one page",
