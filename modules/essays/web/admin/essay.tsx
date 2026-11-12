@@ -449,7 +449,7 @@ function DeskView({ initial }: { initial: EssayDetail }) {
                 <Field label="文风" hint={style?.description}>
                   <Select value={draft.style} onChange={(e) => edit({ style: e.target.value })}>
                     {!style && <option value={draft.style}>{draft.style}（已不存在）</option>}
-                    {d.styles.map((s) => <option key={s.name} value={s.name}>{s.name}</option>)}
+                    {d.styles.map((s) => <option key={s.name} value={s.name}>{s.name}{s.source === "uploaded" ? " · 上传" : ""}</option>)}
                   </Select>
                 </Field>
               </div>

@@ -10,6 +10,7 @@ import {
   chooseCandidate, createEssay, dismissTask, essayDetail, essayDir, FILE, listEssays, previewEssay, publishEssay, removeImage, requestTask,
   resolveRevision, revisionContent, saveEssay, saveImage, uploadImage, withdrawEssay,
 } from "../backend/store.ts";
+import { essayStyles, publicStyle, removeStyle, uploadStyle } from "../backend/styles.ts";
 import { enqueueEssayTask } from "../backend/tasks.ts";
 
 const Id = z.object({ id: z.coerce.number().int().positive() });
@@ -34,6 +35,19 @@ export function registerEssayAdmin(app: FastifyInstance) {
     const { file } = z.object({ file: z.string() }).parse(req.params);
     if (!FILE.test(file)) return reply.code(404).send("Not found");
     return sendFile(req, reply, path.join(essayDir(), file), { cacheControl: "private, max-age=31536000, immutable" });
+  }));
+  app.get("/api/admin/essays/styles", adminHandler(async () => ({ styles: (await essayStyles()).map(publicStyle) })));
+  app.post("/api/admin/essays/styles", adminHandler(async (req, _reply, admin) => {
+    const body = z.object({
+      name: z.string().max(64).optional(),
+      files: z.array(z.object({ path: z.string().min(1).max(300), content: z.string() })).max(500).optional(),
+      archive: z.string().optional(),
+    }).refine((b) => !!b.files?.length !== !!b.archive, "上传一个压缩包，或一组文件。").parse(req.body);
+    return uploadStyle(body, actorOf(admin));
+  }));
+  app.delete("/api/admin/essays/styles/:name", adminHandler(async (req, _reply, admin) => {
+    const { name } = z.object({ name: z.string() }).parse(req.params);
+    return removeStyle(name, actorOf(admin));
   }));
   app.get("/api/admin/essays/:id", adminHandler(async (req) => essayDetail(Id.parse(req.params).id)));
   app.post("/api/admin/essays/:id", adminHandler(async (req, _reply, admin) => {

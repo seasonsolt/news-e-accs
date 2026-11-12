@@ -102,8 +102,8 @@ async function referenceMaterial(refs: string[]): Promise<Array<{ address: strin
   }));
 }
 
-function styleOf(name: string): LoadedStyle {
-  const style = essayStyle(name);
+async function styleOf(name: string): Promise<LoadedStyle> {
+  const style = await essayStyle(name);
   if (!style) throw new Error(`文风 ${name} 不在了，换一个文风再请求。`);
   return style;
 }
@@ -162,7 +162,7 @@ async function uniqueSlug(db: Db, id: number, title: string): Promise<string | n
 
 async function writeText(task: TaskRow, essayId: number) {
   const row = await essayRow(sql, essayId);
-  const style = styleOf(row.style);
+  const style = await styleOf(row.style);
   const editions = editionsOf(row);
   const kind = task.kind as keyof typeof ESSAY_STEPS;
   const common = { model: await modelFor(ESSAY_STEPS[kind]), purpose: `essay_${kind}`, subject: `essay:${essayId}`, attemptTag: `task:${task.id}`,

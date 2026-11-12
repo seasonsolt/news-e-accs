@@ -46,7 +46,7 @@
 
 都经 `chatJson`，有回执和预算熔断。提示词放 `industry/prompts/essay-outline.md`、`essay-draft.md`、`essay-revise.md`、`essay-localize.md`，只管结构和规则，不管语气。
 
-**文风 skill**：语气和声音由使用者提供的写作风格 skill 决定。每个 skill 一个文件夹 `industry/essay-styles/<名字>/`，里面一份 `SKILL.md`（开头的 `name`、`description`，正文是写作要求），文件夹里其他 `.md` 作为参考材料一并读入。写作台每篇文章选一个文风，提纲、成稿、重写、中文版都把它放进系统提示；每次模型产出记下所用文风的名字和内容指纹，事后能查是哪一版文风写的。先带一个中性的 `plain` 文风，使用者的 skill 到了直接放进文件夹、随发布上线。
+**文风 skill**：语气和声音由使用者提供的写作风格 skill 决定。每个 skill 一个文件夹 `industry/essay-styles/<名字>/`，里面一份 `SKILL.md`（开头的 `name`、`description`，正文是写作要求），文件夹里其他 `.md` 作为参考材料一并读入。写作台每篇文章选一个文风，提纲、成稿、重写、中文版都把它放进系统提示；每次模型产出记下所用文风的名字和内容指纹，事后能查是哪一版文风写的。先带一个中性的 `plain` 文风；使用者的 skill 在后台“文风”卡片里上传（文件夹、`.zip` / `.skill` 包或单份 SKILL.md），存进 `essay_styles` 表，传上去马上能选，同名再传即替换，没有文章在用时可以删除。只读其中的 Markdown 文字，不执行脚本。
 
 画图用 Codex CLI 的画图工具，搜图用 Codex CLI 的网页搜索。
 

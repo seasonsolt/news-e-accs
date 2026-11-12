@@ -14,7 +14,7 @@ import {
   type EssayRevision, type EssaySave, type EssayTask, type EssayTaskKind, type EssayTaskRequest,
 } from "../contracts.ts";
 import { edition, figureSlots, hasCheck, renderBody, sections, SLUG, wordCount, type FigureImage } from "./render.ts";
-import { DEFAULT_STYLE, essayStyle, essayStyles } from "./styles.ts";
+import { DEFAULT_STYLE, essayStyles, publicStyle, styleExists } from "./styles.ts";
 
 /** Under uploads/, so backups keep them. */
 export const essayDir = () => path.join(config.dataDir, "uploads", "essays");
@@ -135,7 +135,7 @@ export async function essayDetail(id: number): Promise<EssayDetail> {
     live: live[0] ? { publishedAt: iso(live[0].first_published_at), modifiedAt: iso(live[0].published_at), path: essayPath(live[0].slug, "en") } : null,
     writingUnavailable: writingUnavailable(),
     picturesUnavailable: picturesUnavailable(),
-    styles: essayStyles().map(({ text: _text, ...s }) => s),
+    styles: (await essayStyles()).map(publicStyle),
     createdAt: iso(row.created_at), updatedAt: iso(row.updated_at),
   };
 }
@@ -153,7 +153,7 @@ export async function listEssays(): Promise<EssayList> {
       id: Number(r.id), slug: r.slug, status: r.status, working: r.working, failed: r.failed, updatedAt: iso(r.updated_at), publishedAt: r.published_at && iso(r.published_at),
       title: edition(r.editions.en).title || edition(r.editions.zh).title || r.fragments.trim().split("\n")[0]!.slice(0, 80) || `#${r.id}`,
     })),
-    styles: essayStyles().map(({ text: _text, ...s }) => s),
+    styles: (await essayStyles()).map(publicStyle),
   };
 }
 
@@ -165,15 +165,16 @@ function cleanRefs(refs: unknown): string[] {
   return out;
 }
 
-function checkStyle(name: string): string {
-  if (!essayStyle(name)) throw bad(`没有这个文风：${name}`);
+/** The style's name if it can be used; inside a transaction it also holds an uploaded style until commit. */
+async function checkStyle(name: string, db: Db = sql): Promise<string> {
+  if (!(await styleExists(name, db))) throw bad(`没有这个文风：${name}`);
   return name;
 }
 
 export async function createEssay(input: { fragments?: unknown; refs?: unknown; style?: unknown }, actor: string): Promise<{ id: number }> {
   const fragments = String(input.fragments ?? "");
   if (fragments.length > 100_000) throw bad("碎片太长了（上限 10 万字）。");
-  const style = checkStyle(String(input.style ?? DEFAULT_STYLE));
+  const style = await checkStyle(String(input.style ?? DEFAULT_STYLE));
   const refs = cleanRefs(input.refs ?? []);
   const slug = `essay-draft-${randomBytes(4).toString("hex")}`;
   const [row] = await sql<{ id: number }[]>`INSERT INTO essays (slug, style, fragments, refs, created_by)
@@ -226,7 +227,7 @@ export async function saveEssay(id: number, save: EssaySave, actor: string): Pro
       if (taken) throw new Conflict("这个网址已经有文章用了。");
       set.slug = save.slug;
     }
-    if (save.style !== undefined) set.style = checkStyle(save.style);
+    if (save.style !== undefined && save.style !== row.style) set.style = await checkStyle(save.style, tx);
     if (save.fragments !== undefined) {
       if (save.fragments.length > 100_000) throw bad("碎片太长了（上限 10 万字）。");
       set.fragments = save.fragments;

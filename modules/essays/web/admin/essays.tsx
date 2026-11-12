@@ -1,10 +1,11 @@
 import { SITE } from "@aihot/site";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link, useLoaderData, useNavigate } from "react-router";
 import { useAdminAction } from "@aihot/web/features/admin/action";
-import { AdminPage, Badge, Button, Card, DataTable, Field, Select, Textarea, Time } from "@aihot/web/features/admin/ui";
+import { toast } from "@aihot/web/features/admin/toast";
+import { AdminPage, Badge, Button, Card, DataTable, Field, Input, Select, Textarea, Time } from "@aihot/web/features/admin/ui";
 import { adminGet } from "@aihot/web/lib/admin.server";
-import type { EssayList, EssayListEntry, EssayStatus, EssayTaskKind } from "../../contracts.ts";
+import type { EssayList, EssayListEntry, EssayStatus, EssayStyle, EssayStyleUpload, EssayTaskKind } from "../../contracts.ts";
 
 export async function loader({ request }: { request: Request }) {
   return adminGet<EssayList>(request, "/api/admin/essays");
@@ -45,11 +46,90 @@ function NewEssay({ styles }: { styles: EssayList["styles"] }) {
         {styles.length > 0 && (
           <Field label="文风" hint={styles.find((s) => s.name === style)?.description}>
             <Select value={style} onChange={(e) => setStyle(e.target.value)}>
-              {styles.map((s) => <option key={s.name} value={s.name}>{s.name}</option>)}
+              {styles.map((s) => <option key={s.name} value={s.name}>{s.name}{s.source === "uploaded" ? " · 上传" : ""}</option>)}
             </Select>
           </Field>
         )}
         <Button tone="primary" busy={pending === "create"} disabled={!fragments.trim()} onClick={create}>创建</Button>
+      </div>
+    </Card>
+  );
+}
+
+const TEXT = /\.(md|markdown|txt)$/i;
+const ARCHIVE = /\.(zip|skill)$/i;
+
+function readDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+/** What the browser picked, as the api takes it: one archive, or the skill's text files under their paths. */
+async function uploadOf(picked: File[]): Promise<EssayStyleUpload | null> {
+  const archive = picked.find((f) => ARCHIVE.test(f.name));
+  if (archive) return { archive: await readDataUrl(archive) };
+  const texts = picked.filter((f) => TEXT.test(f.name));
+  if (!texts.length) return null;
+  const files = await Promise.all(texts.map(async (f) => ({ path: f.webkitRelativePath || f.name, content: await f.text() })));
+  // One loose file is the skill itself, whatever it is called.
+  if (files.length === 1 && !files[0]!.path.includes("/")) files[0]!.path = "SKILL.md";
+  return { files };
+}
+
+function Styles({ styles }: { styles: EssayStyle[] }) {
+  const { run, pending } = useAdminAction();
+  const [name, setName] = useState("");
+  const folder = useRef<HTMLInputElement>(null);
+  const loose = useRef<HTMLInputElement>(null);
+  const upload = async (list: FileList | null) => {
+    const body = await uploadOf([...(list ?? [])]);
+    if (!body) return;
+    const res = await run<EssayStyle>("POST", "/api/admin/essays/styles", { ...body, name: name.trim() || undefined }, { label: "style-upload" });
+    if (res) {
+      setName("");
+      toast(`文风 ${res.name} 可以用了`, "ok");
+    }
+  };
+  return (
+    <Card title="文风" right={`${styles.length} 种`}>
+      <div className="space-y-4">
+        <ul className="divide-y divide-line-soft">
+          {styles.map((s) => (
+            <li key={s.name} className="flex items-start justify-between gap-3 py-2.5 first:pt-0">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-medium text-ink">{s.name}</span>
+                  <Badge tone={s.source === "builtin" ? "muted" : "accent"}>{s.source === "builtin" ? "自带" : "上传"}</Badge>
+                  {s.essays > 0 && <span className="text-[12px] text-ink-3">{s.essays} 篇在用</span>}
+                </div>
+                {s.description && <p className="mt-0.5 text-[12.5px] text-ink-2">{s.description}</p>}
+                <p className="mt-0.5 text-[12px] text-ink-4" title={s.files.join("\n")}>
+                  {s.files.length} 个文件{s.updatedAt && <> · <Time at={s.updatedAt} /></>}
+                </p>
+              </div>
+              {s.source === "uploaded" && (
+                <Button size="sm" tone="ghost" busy={pending === `style-remove-${s.name}`} disabled={s.essays > 0}
+                  title={s.essays > 0 ? "还有文章在用，先给它们换个文风" : undefined}
+                  onClick={() => window.confirm(`删掉文风 ${s.name}？`) && run("DELETE", `/api/admin/essays/styles/${s.name}`, undefined, { label: `style-remove-${s.name}`, success: "已删除" })}>
+                  删除
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+        <Field label="上传 skill" hint="整个 skill 文件夹、它的 .zip / .skill 包，或一份 SKILL.md。只读里面的 .md 文字，脚本不会执行。名字取 SKILL.md 开头的 name；同名的上传会替换旧版，之后的写作马上用新版。">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="名字（可选，留空用 SKILL.md 里的）" />
+        </Field>
+        <div className="flex flex-wrap gap-2">
+          <Button busy={pending === "style-upload"} onClick={() => folder.current?.click()}>选文件夹</Button>
+          <Button busy={pending === "style-upload"} onClick={() => loose.current?.click()}>选压缩包或 .md</Button>
+        </div>
+        <input ref={folder} type="file" className="hidden" {...{ webkitdirectory: "", directory: "" }} onChange={(e) => { void upload(e.target.files); e.target.value = ""; }} />
+        <input ref={loose} type="file" multiple accept=".zip,.skill,.md,.markdown,.txt" className="hidden" onChange={(e) => { void upload(e.target.files); e.target.value = ""; }} />
       </div>
     </Card>
   );
@@ -83,7 +163,10 @@ export default function EssaysAdmin() {
             ]}
           />
         </Card>
-        <NewEssay styles={data.styles} />
+        <div className="space-y-6">
+          <NewEssay styles={data.styles} />
+          <Styles styles={data.styles} />
+        </div>
       </div>
     </AdminPage>
   );

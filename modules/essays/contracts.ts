@@ -58,6 +58,22 @@ export interface EssayStyle {
   description: string;
   /** Content fingerprint: a revision records which wording of the style wrote it. */
   hash: string;
+  /** Shipped with the site (industry/essay-styles), or uploaded at the desk. */
+  source: "builtin" | "uploaded";
+  /** Its files: SKILL.md first, then the reference files. */
+  files: string[];
+  uploadedBy: string | null;
+  updatedAt: string | null;
+  /** Essays that use it: an uploaded style in use cannot be removed. */
+  essays: number;
+}
+
+/** An upload: a skill's files (a folder or loose .md files), or a .zip / .skill archive as a data URL. */
+export interface EssayStyleUpload {
+  /** Overrides SKILL.md's `name`. */
+  name?: string;
+  files?: Array<{ path: string; content: string }>;
+  archive?: string;
 }
 
 export interface EssayRevision {

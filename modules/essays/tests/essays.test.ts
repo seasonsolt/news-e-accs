@@ -5,6 +5,7 @@ import http from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { after, before, test } from "node:test";
+import { strToU8, zipSync } from "fflate";
 import sharp from "sharp";
 import { sql, closeDb } from "@aihot/backend/db";
 import { config } from "@aihot/backend/config";
@@ -18,7 +19,7 @@ import { runEssayTask } from "../backend/tasks.ts";
 import { renderBody, sections } from "../backend/render.ts";
 import { loadDiscoveryEntries } from "@aihot/backend/publication/sitemap";
 import { essayLlmsLines, essaySitemapEntries } from "../backend/publication.ts";
-import type { EssayDetail, EssayEdition, EssayList, PublicEssay, PublicEssayList } from "../contracts.ts";
+import type { EssayDetail, EssayEdition, EssayList, EssayStyle, PublicEssay, PublicEssayList } from "../contracts.ts";
 
 for (const step of ["OUTLINE", "DRAFT", "REVISE", "LOCALIZE"]) process.env[`ESSAY_${step}_MODEL`] = "deepseek-flash";
 installModules([essaysModule]);
@@ -163,6 +164,60 @@ test("the desk is admin-only and only queues model work; the worker writes outli
 
   const sources = (await sql<{ source: string }[]>`SELECT source FROM essay_revisions WHERE essay_id = ${id} ORDER BY id`).map((r) => r.source);
   assert.deepEqual(sources, ["outline", "draft", "localize", "revise"]);
+});
+
+test("a style is uploaded at the desk, as a folder or an archive, and used at once", async () => {
+  config.devAdmin = { displayName: "Essay author" };
+  config.modelCallsEnabled = true;
+  const skill = "---\nname: Wheat Voice\ndescription: Plain words, long views.\n---\nWrite like a farmer who reads history: SHORT-SENTENCES-RULE.";
+  // A folder as the browser sends it: paths under the folder's name; scripts and dotfiles are not instructions.
+  const style = await call<EssayStyle>("POST", "/api/admin/essays/styles", { files: [
+    { path: "wheat-voice/SKILL.md", content: skill },
+    { path: "wheat-voice/references/tone.md", content: "Prefer concrete nouns: TONE-REFERENCE." },
+    { path: "wheat-voice/scripts/run.py", content: "print('never')" },
+    { path: "wheat-voice/.notes.md", content: "private" },
+  ] });
+  assert.equal(style.name, "wheat-voice", "the name comes from SKILL.md");
+  assert.equal(style.source, "uploaded");
+  assert.deepEqual(style.files, ["SKILL.md", "references/tone.md"]);
+  assert.equal(style.description, "Plain words, long views.");
+
+  const list = await call<EssayList>("GET", "/api/admin/essays");
+  assert.ok(list.styles.some((s) => s.name === "plain" && s.source === "builtin"));
+  assert.ok(list.styles.some((s) => s.name === "wheat-voice" && s.hash === style.hash));
+
+  const { id } = await call<{ id: number }>("POST", "/api/admin/essays", { fragments: "Wheat domesticated us.", style: "wheat-voice" });
+  let essay = await call<EssayDetail>("GET", `/api/admin/essays/${id}`);
+  essay = await call<EssayDetail>("POST", `/api/admin/essays/${id}/tasks`, { version: essay.version, kind: "outline" });
+  mode = "outline";
+  const sent = bodies.length;
+  essay = await work(essay);
+  const system = JSON.parse(bodies[sent]!).messages[0].content as string;
+  assert.match(system, /SHORT-SENTENCES-RULE/, "the uploaded instructions reach the model");
+  assert.match(system, /## Reference: references\/tone\.md\n\nPrefer concrete nouns: TONE-REFERENCE\./);
+  assert.doesNotMatch(system, /never|private/);
+  assert.equal(essay.revisions[0]!.style, "wheat-voice", "the revision records the style it was written in");
+
+  // An archive replaces the uploaded style of the same name.
+  const zip = zipSync({ "SKILL.md": strToU8(skill.replace("SHORT-SENTENCES-RULE", "SECOND-VERSION")), "examples/one.md": strToU8("An example.") });
+  const replaced = await call<EssayStyle>("POST", "/api/admin/essays/styles", { archive: `data:application/zip;base64,${Buffer.from(zip).toString("base64")}` });
+  assert.equal(replaced.name, "wheat-voice");
+  assert.notEqual(replaced.hash, style.hash);
+  assert.equal(replaced.essays, 1);
+
+  await call("POST", "/api/admin/essays/styles", { name: "plain", files: [{ path: "SKILL.md", content: skill }] }, 409);
+  await call("POST", "/api/admin/essays/styles", { files: [{ path: "notes.md", content: "no skill" }] }, 400);
+  await call("POST", "/api/admin/essays/styles", { archive: "data:application/zip;base64,bm90IGEgemlw" }, 400);
+  const bomb = zipSync({ "SKILL.md": strToU8(skill), "big.md": new Uint8Array(4_000_000).fill(97) });
+  await call("POST", "/api/admin/essays/styles", { archive: `data:application/zip;base64,${Buffer.from(bomb).toString("base64")}` }, 400);
+
+  await call("DELETE", "/api/admin/essays/styles/wheat-voice", undefined, 409);
+  await call("DELETE", "/api/admin/essays/styles/plain", undefined, 400);
+  essay = await call<EssayDetail>("GET", `/api/admin/essays/${id}`);
+  await call("POST", `/api/admin/essays/${id}`, { version: essay.version, style: "plain" });
+  await call("DELETE", "/api/admin/essays/styles/wheat-voice");
+  assert.ok(!(await call<{ styles: EssayStyle[] }>("GET", "/api/admin/essays/styles")).styles.some((s) => s.name === "wheat-voice"));
+  await call("POST", `/api/admin/essays/${id}`, { version: essay.version + 1, style: "wheat-voice" }, 400);
 });
 
 test("pictures are found on the web first, drawn or uploaded, and only a live essay's pictures are public", async () => {
