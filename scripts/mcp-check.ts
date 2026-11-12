@@ -82,15 +82,18 @@ try {
   await call(T.monthly, { month: "2026-13" }, { error: true, code: "invalid_request" });
   await call(T.story, { public_id: "__mcp_check_missing__", report_limit: 3 }, { error: true, code: "not_found" });
 
-  // SDK/server schema validation must reject values outside the advertised input contract.
-  await call(T.latest, { limit: 99 }, { error: true });
+  // A count outside the advertised range is brought into it; a value of the wrong type is still refused.
+  await call(T.latest, { limit: 99 });
+  await call(T.latest, { limit: "many" }, { error: true });
 
   if (full) {
     for (const name of [T.daily, T.weekly, T.monthly]) await call(name, {});
     const hot = await call(T.hot, { limit: 1 });
-    const storyId = ((hot.structuredContent as { items?: Array<{ links?: { story?: string } }> }).items?.[0]?.links?.story ?? "").split("/").pop();
+    const storyLink = (hot.structuredContent as { items?: Array<{ links?: { story?: string } }> }).items?.[0]?.links?.story ?? "";
+    const storyId = storyLink.split("/").pop();
     if (!storyId) throw new Error("--full needs a populated public story");
     await call(T.story, { public_id: storyId, report_limit: 3 });
+    await call(T.story, { public_id: storyLink, report_limit: 3 });
   }
 
   console.log("MCP contract check passed");

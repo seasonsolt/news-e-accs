@@ -22,8 +22,19 @@ function formatSiteStats(o: Overview, funnel: Funnel): string {
   lines.push("", "most starred (net):", ...(o.engagement.topStarred.length
     ? o.engagement.topStarred.map((s) => `  ${String(s.net).padStart(4)}  ${s.id}  ${s.title ?? ""}`)
     : ["  none"]));
+  lines.push("", ...formatMcpUsage(o.mcp));
   lines.push("", ...formatSubscribeFunnel(funnel));
   return lines.join("\n");
+}
+
+/** Real MCP tool calls: most requests at the edge are uptime checks and directory probes that never call a tool. */
+function formatMcpUsage(m: Overview["mcp"]): string[] {
+  const t = m.totals;
+  const lines = [`MCP tool calls ${t.calls} (${t.successes} succeeded), initialize ${t.initializes}, tools/list ${t.discoveries}, own checks ${t.checks}`];
+  lines.push("  per day: " + m.daily.map((d) => `${d.day.slice(5)} ${d.calls}`).join(", "));
+  for (const tool of m.tools) lines.push(`  ${String(tool.calls).padStart(5)}  ${tool.tool}  ${tool.successes} ok, ${tool.errors} failed`);
+  if (m.errors.length) lines.push("  failures: " + m.errors.map((e) => `${e.outcome} ${e.calls}`).join(", "));
+  return lines;
 }
 
 function formatSubscribeFunnel(funnel: Funnel): string[] {

@@ -1,6 +1,7 @@
 import { sql } from "../db.ts";
 
-export const MCP_OUTCOMES = ["success", "invalid_request", "not_found", "edition_unavailable", "busy", "internal_error", "tool_error", "rejected"] as const;
+/** invalid_arguments: the SDK refused the arguments before the tool ran; unknown_tool: no tool of that name; rejected: HTTP-level refusal. */
+export const MCP_OUTCOMES = ["success", "invalid_request", "not_found", "edition_unavailable", "busy", "internal_error", "tool_error", "invalid_arguments", "unknown_tool", "rejected"] as const;
 export type McpOutcome = typeof MCP_OUTCOMES[number];
 export interface McpUsage {
   operation: "initialize" | "tools/list" | "tools/call";

@@ -16,7 +16,8 @@ import { v1Payload, type V1ItemPayload } from "./publish.ts";
 export interface V1ItemsQuery {
   lang?: DistributionLanguage;
   mode: "selected" | "all";
-  window: "24h" | "7d";
+  /** 30d is offered only to agent search (MCP and /api/v1/agent/search); the items endpoint keeps 24h and 7d. */
+  window: "24h" | "7d" | "30d";
   by: "timeline" | "published";
   category: PublicApiCategoryKey | null;
   q: string | null;
@@ -46,7 +47,7 @@ export const v1Items = sharedSearch(
 );
 
 async function queryItems(query: V1ItemsQuery, now: Date): Promise<V1ItemsResult> {
-  const windowMs = query.window === "24h" ? 86400000 : 7 * 86400000;
+  const windowMs = (query.window === "24h" ? 1 : query.window === "7d" ? 7 : 30) * 86400000;
   const windowStart = new Date(now.getTime() - windowMs);
   const binding = queryBinding({ m: query.mode, w: query.window, b: query.by, c: query.category, q: query.q, ...(query.lang ? { l: query.lang } : {}) });
   // by=timeline is the site's own order: a selected item at its reading-group anchor, anything else at its timeline time.

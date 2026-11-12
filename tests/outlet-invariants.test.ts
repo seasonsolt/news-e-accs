@@ -16,12 +16,12 @@ const key = tag();
 const app = await buildApp();
 after(async () => { await app.close(); await stopBoss(); await closeDb(); });
 
-async function fixture(name: string, mode = "editorial", relevance = "pass") {
+async function fixture(name: string, mode = "editorial", relevance = "pass", ageMs = 60_000) {
   const source = `outlet-${tag()}`;
   await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, next_fetch_at)
     VALUES (${source}, ${name}, 'rss', 'T1', ${mode}, '2100-01-01')`;
   // Found, published and released a minute ago: a rolling window that ends at the reader's clock holds it.
-  const minuteAgo = new Date(Date.now() - 60_000);
+  const minuteAgo = new Date(Date.now() - ageMs);
   const { articleId: id } = await upsertMaterial({ sourceId: source, url: `https://example.org/${source}`,
     title: "Source article", bodyText: "Confirmed material", bodyStatus: "ok", publishedAt: minuteAgo, discoveredAt: minuteAgo, via: "fetch" });
   await sql`INSERT INTO analyses (article_id, input_revision, origin, relevance, title_zh, summary_zh, category, selected, score)
@@ -68,4 +68,15 @@ test("every search matches the source name readers see and excludes its internal
       assert.equal(JSON.stringify(result.structuredContent).includes(id), expected, `MCP ${query}`);
     }
   } finally { await client.close(); }
+});
+
+test("agent search reaches 30 days back on request, while the items endpoint keeps its two windows", async () => {
+  const name = `Older${tag()}`;
+  const id = await fixture(name, "editorial", "pass", 20 * 86_400_000);
+  const search = (window: string) => app.inject(`/api/v1/agent/search?q=${encodeURIComponent(name)}&window=${window}`);
+  assert.ok(!(await search("7d")).body.includes(id), "a 20-day-old item is outside the default week");
+  const month = await search("30d");
+  assert.equal(month.statusCode, 200);
+  assert.ok(month.body.includes(id), month.body);
+  assert.equal((await app.inject(`/api/v1/items?mode=all&window=30d&q=${encodeURIComponent(name)}`)).statusCode, 400);
 });

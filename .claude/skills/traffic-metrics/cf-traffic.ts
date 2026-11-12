@@ -27,9 +27,12 @@ const SESSION_GAP_MS = 30 * 60_000;
 const ROW_LIMIT = 10_000;
 const BOT_WORDS = /bot|crawl|spider|slurp|headless|preview|fetch|scan|monitor|python|curl|wget|go-http|axios|node|java\/|compatible;/i;
 
-// Known machine readers. "user" ones fetch because a person just asked an assistant something.
+// Known machine readers. "user" ones fetch because a person just asked an assistant something. Scanners borrow
+// these names (11-12: 327 of 335 "Claude-User" requests probed /.env), so an assistant's reads count only when
+// Cloudflare verified the request, or, for the names Cloudflare does not verify, when it fetched a real page.
 const AGENTS: Array<[name: string, match: RegExp, user?: true]> = [
   ["ChatGPT-User", /ChatGPT-User/, true], ["OAI-SearchBot", /OAI-SearchBot/], ["GPTBot", /GPTBot/],
+  ["Claude Code", /Claude-User \(claude-code\//, true],
   ["Claude-User", /Claude-User/, true], ["Claude-SearchBot", /Claude-SearchBot/], ["ClaudeBot", /ClaudeBot/],
   ["Perplexity-User", /Perplexity-User/, true], ["PerplexityBot", /PerplexityBot/],
   ["MistralAI-User", /MistralAI-User/, true], ["DuckAssistBot", /DuckAssistBot/],
@@ -37,8 +40,19 @@ const AGENTS: Array<[name: string, match: RegExp, user?: true]> = [
   ["Amazonbot", /Amazonbot/], ["meta-externalagent", /meta-external/], ["Bytespider", /Bytespider/], ["CCBot", /CCBot/],
   ["YandexBot", /YandexBot/], ["Baiduspider", /Baiduspider/], ["DuckDuckBot", /DuckDuckBot/],
 ];
+/** Assistants Cloudflare does not verify (11-12); everything else needs its verified category to count. */
+const UNVERIFIABLE = new Set(["Claude-User", "Claude Code"]);
+const agentOf = (ua: string) => AGENTS.find(([, match]) => match.test(ua));
+
+/** Secret and config files that scanners ask for under any user agent; the site has none of them. */
+const PROBE = `(clientRequestPath LIKE '%.env%' OR clientRequestPath LIKE '%/.git%' OR clientRequestPath LIKE '%/.aws%'
+  OR clientRequestPath LIKE '%credential%' OR clientRequestPath LIKE '%service%account%' OR clientRequestPath LIKE '/proc/%'
+  OR clientRequestPath LIKE '%.pem' OR clientRequestPath LIKE '%.npmrc' OR clientRequestPath LIKE '%.php%'
+  OR clientRequestPath LIKE '%.yaml' OR clientRequestPath LIKE '%.yml' OR clientRequestPath LIKE '%.toml'
+  OR clientRequestPath LIKE '%firebase%')`;
 
 const PATH_CLASS = `CASE
+  WHEN ${PROBE} THEN 'probe'
   WHEN clientRequestPath LIKE '/api/admin%' OR (clientRequestPath LIKE '/admin/%' AND clientRequestPath LIKE '%.data') THEN 'owner'
   WHEN clientRequestPath LIKE '/admin%' THEN 'admin'
   WHEN clientRequestPath = '/api/site/analytics' THEN 'beacon'
@@ -57,6 +71,7 @@ const PAGE_OR_NAV = `(clientRequestPath LIKE '%.data' OR (clientRequestPath NOT 
 
 type Agg = { ua: string; cat: string; cls: string; ok: string; okw: string; n: string };
 type Hit = { ts: string; ua: string; path: string };
+type Read = { ua: string; cat: string; path: string; n: string };
 
 function cf<T>(query: string, since: Date, until: Date): T[] {
   const out = execFileSync("cf", ["sql", "query", `${query} FORMAT JSONEachRow`, "--scope-zone", args.zone,
@@ -106,7 +121,7 @@ const until = args.until ?? addDays(beijingDate(Date.now()), -1);
 const days = Array.from({ length: Number(args.days) }, (_, i) => addDays(until, i - Number(args.days) + 1));
 const host = args.host.replace(/'/g, "");
 
-const perDay: Array<{ day: string; ua: Map<string, UaDay>; sessions: Session[]; rows: Agg[] }> = [];
+const perDay: Array<{ day: string; ua: Map<string, UaDay>; sessions: Session[]; rows: Agg[]; reads: Read[] }> = [];
 for (const day of days) {
   const since = beijingMidnight(day), end = beijingMidnight(addDays(day, 1));
   const rows = cf<Agg>(`SELECT userAgent ua, verifiedBotCategory cat, ${PATH_CLASS} cls,
@@ -151,7 +166,13 @@ for (const day of days) {
       last = e.t;
     }
   }
-  perDay.push({ day, ua, sessions, rows });
+  // What assistants and agents read for a person, page by page: verified ones, plus the names Cloudflare cannot verify.
+  const reads = cf<Read>(`SELECT userAgent ua, verifiedBotCategory cat, clientRequestPath path, count(*) n FROM events.httpRequests
+    WHERE clientRequestHttpHost = '${host}' AND edgeResponseStatus IN ('200', '304') AND NOT ${PROBE}
+      AND (verifiedBotCategory = 'AI Assistant' OR userAgent LIKE '%Claude-User%')
+      AND clientRequestPath NOT LIKE '/assets/%' AND clientRequestPath NOT LIKE '/cdn-cgi/%' AND clientRequestPath NOT LIKE '/media/%'
+    GROUP BY 1, 2, 3 LIMIT ${ROW_LIMIT}`, since, end);
+  perDay.push({ day, ua, sessions, rows, reads });
 }
 
 // Only a signed-in admin gets a 200 from the admin API or an admin page's data; that browser is left out of every day.
@@ -196,8 +217,8 @@ const nextFromArticle = table(articleLandings.filter((s) => s.paths.length > 1),
   .map(([r, list]) => ({ route: r, sessions: list.length }));
 
 // Everything that is not a person, over the whole window.
-const machines = new Map<string, { requests: number; pages: number; agentReads: number; user: boolean }>();
-const outlets = new Map<string, { requests: number; uas: Set<string> }>();
+const machines = new Map<string, { requests: number; verified: number; probes: number; pages: number; agentReads: number; user: boolean }>();
+const outlets = new Map<string, { requests: number; answered: number; uas: Set<string> }>();
 const feedSubscribers = new Map<string, number>();
 let verifiedRequests = 0, allRequests = 0;
 for (const { rows } of perDay) {
@@ -205,17 +226,22 @@ for (const { rows } of perDay) {
     const n = Number(r.n);
     allRequests += n;
     if (r.cat) verifiedRequests += n;
-    const agent = AGENTS.find(([, match]) => match.test(r.ua));
+    const agent = agentOf(r.ua);
     if (agent) {
-      const m = machines.get(agent[0]) ?? { requests: 0, pages: 0, agentReads: 0, user: agent[2] === true };
+      const m = machines.get(agent[0]) ?? { requests: 0, verified: 0, probes: 0, pages: 0, agentReads: 0, user: agent[2] === true };
       m.requests += n;
-      if (r.cls === "page") m.pages += n;
-      if (r.cls === "agent-md" || r.cls === "api" || r.cls === "mcp") m.agentReads += n;
+      if (r.cat) m.verified += n;
+      if (r.cls === "probe") m.probes += n;
+      // Reads are answered requests from the real reader: verified, or a name Cloudflare cannot verify.
+      const genuine = Number(r.ok) * (r.cat || UNVERIFIABLE.has(agent[0]) ? 1 : 0);
+      if (r.cls === "page" || r.cls === "nav") m.pages += genuine;
+      if (r.cls === "agent-md" || r.cls === "api" || r.cls === "mcp") m.agentReads += genuine;
       machines.set(agent[0], m);
     }
     if (["api", "mcp", "feed", "agent-md", "crawl-meta"].includes(r.cls)) {
-      const o = outlets.get(r.cls) ?? { requests: 0, uas: new Set<string>() };
+      const o = outlets.get(r.cls) ?? { requests: 0, answered: 0, uas: new Set<string>() };
       o.requests += n;
+      o.answered += Number(r.ok);
       o.uas.add(r.ua);
       outlets.set(r.cls, o);
     }
@@ -228,6 +254,25 @@ for (const { rows } of perDay) {
   }
 }
 
+// Pages each assistant read for a person; a verified agent without a known name goes by its product token.
+const assistantName = (ua: string) => agentOf(ua)?.[0]
+  ?? (/^Mozilla\//.test(ua) && !/compatible;/.test(ua) ? "signed browser agent" : (/([A-Za-z][\w.-]*(?:-User|Bot|bot|Agent|indexer)[\w.-]*)/.exec(ua) ?? /^([^\s/(;]+)/.exec(ua))?.[1] ?? ua.slice(0, 40));
+const assistants = new Map<string, { reads: number; days: Set<string>; routes: Map<string, number>; pages: Map<string, number> }>();
+for (const { day, reads } of perDay) {
+  for (const r of reads) {
+    const name = assistantName(r.ua);
+    if (!r.cat && !UNVERIFIABLE.has(name)) continue;
+    const a = assistants.get(name) ?? { reads: 0, days: new Set<string>(), routes: new Map<string, number>(), pages: new Map<string, number>() };
+    const n = Number(r.n);
+    a.reads += n;
+    a.days.add(day);
+    a.routes.set(route(r.path), (a.routes.get(route(r.path)) ?? 0) + n);
+    a.pages.set(pagePath(r.path), (a.pages.get(pagePath(r.path)) ?? 0) + n);
+    assistants.set(name, a);
+  }
+}
+const top = (m: Map<string, number>, k: number) => [...m].sort((x, y) => y[1] - x[1]).slice(0, k).map(([key, n]) => ({ key, n }));
+
 const report = {
   window: { from: days[0], to: days.at(-1), host, timeZone: "UTC+8" },
   ownerBrowsersExcluded: owner.size,
@@ -235,7 +280,11 @@ const report = {
   landingRoutes, landingPages,
   articleLandings: { sessions: articleLandings.length, readOn: articleLandings.filter((s) => s.paths.length > 1).length, next: nextFromArticle },
   machines: [...machines].sort((a, b) => b[1].requests - a[1].requests).map(([name, m]) => ({ name, ...m })),
-  outlets: [...outlets].map(([cls, o]) => ({ outlet: cls, requests: o.requests, clients: o.uas.size })),
+  assistants: [...assistants].sort((a, b) => b[1].reads - a[1].reads).map(([name, a]) => ({
+    name, reads: a.reads, user: AGENTS.find(([known]) => known === name)?.[2] === true, activeDays: a.days.size,
+    routes: top(a.routes, 8), pages: top(a.pages, 3),
+  })),
+  outlets: [...outlets].map(([cls, o]) => ({ outlet: cls, requests: o.requests, answered: o.answered, clients: o.uas.size })),
   feedSubscribers: { total: [...feedSubscribers.values()].reduce((a, b) => a + b, 0), readers: [...feedSubscribers].map(([reader, n]) => ({ reader, n })) },
   requests: { all: allRequests, verifiedBots: verifiedRequests },
 };
@@ -252,9 +301,16 @@ if (args.json) {
   out.push("", "## Top landing pages", "", ...landingPages.map((p) => `- ${p.sessions} ${p.path}`));
   const a = report.articleLandings;
   out.push("", "## After landing on a story or item", "", `${a.readOn} of ${a.sessions} sessions (${pct(a.sessions ? a.readOn / a.sessions : 0)}) opened another page. Next page:`, ...a.next.map((n) => `- ${n.sessions} ${n.route}`));
-  out.push("", "## Machine readers", "", "| reader | requests | pages | md/api/mcp | asked by a person |", "|---|---|---|---|---|");
-  for (const m of report.machines) out.push(`| ${m.name} | ${m.requests} | ${m.pages} | ${m.agentReads} | ${m.user ? "yes" : ""} |`);
-  out.push("", "## Machine outlets", "", ...report.outlets.map((o) => `- ${o.outlet}: ${o.requests} requests from ${o.clients} clients`));
+  out.push("", "## Machine readers", "", "Pages and md/api/mcp are answered requests that Cloudflare verified (Claude-User and Claude Code: any non-probe request; Cloudflare does not verify them). Probes ask for /.env and other secrets under the reader's name.", "",
+    "| reader | requests | verified | probes | pages read | md/api/mcp | asked by a person |", "|---|---|---|---|---|---|---|");
+  for (const m of report.machines) out.push(`| ${m.name} | ${m.requests} | ${m.verified} | ${m.probes} | ${m.pages} | ${m.agentReads} | ${m.user ? "yes" : ""} |`);
+  out.push("", "## AI assistants and agents: what they read", "", "Answered requests, without static files and probes. Assistants that fetch when a person asks come first.", "",
+    "| reader | reads | days | routes | most-read pages |", "|---|---|---|---|---|");
+  for (const a of [...report.assistants].sort((x, y) => Number(y.user) - Number(x.user) || y.reads - x.reads)) {
+    out.push(`| ${a.name}${a.user ? " (for a person)" : ""} | ${a.reads} | ${a.activeDays} | ${a.routes.map((r) => `${r.n} ${r.key}`).join(", ")} | ${a.pages.map((p) => `${p.n} ${p.key}`).join(", ")} |`);
+  }
+  out.push("", "## Machine outlets", "", ...report.outlets.map((o) => `- ${o.outlet}: ${o.requests} requests (${o.answered} answered) from ${o.clients} clients`),
+    "", "Most MCP requests are uptime checks and directory probes. Real tool calls, by tool and outcome, come from the server's own counters: `deploy/update.sh --stats 7`.");
   out.push("", `Feed subscribers reported by readers: ${report.feedSubscribers.total}${report.feedSubscribers.readers.length ? ` (${report.feedSubscribers.readers.map((r) => `${r.n} via ${r.reader.slice(0, 40)}`).join("; ")})` : ""}.`);
   out.push(`Requests: ${allRequests}, of which verified bots ${verifiedRequests} (${pct(allRequests ? verifiedRequests / allRequests : 0)}).`);
   console.log(out.join("\n"));

@@ -2734,7 +2734,7 @@
       "get": {
         "operationId": "agentSearch",
         "summary": "Search as an agent answer",
-        "description": "Searches the editorial picks first and, only when they have nothing, every public item, and says which. Defaults to the latest 7 days.",
+        "description": "Searches the editorial picks first and, only when they have nothing, every public item, and says which. Defaults to the latest 7 days; window=30d reaches back 30 days.",
         "parameters": [
           {
             "$ref": "#/components/parameters/ActorUserAgent"
@@ -2759,7 +2759,8 @@
               "type": "string",
               "enum": [
                 "24h",
-                "7d"
+                "7d",
+                "30d"
               ],
               "default": "7d"
             }

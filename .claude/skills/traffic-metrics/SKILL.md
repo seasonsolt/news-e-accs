@@ -43,7 +43,7 @@ Search Console 链接（`breakdown` 可换 `page`、`query`、`date`，`num_of_d
 | 获客 Acquisition | 搜索曝光、点击、CTR、平均排名；按页面和查询拆 | Search Console |
 | | 新访客数（UV − 回访） | cf-traffic |
 | | 落地页分布：哪些路由、哪些具体页面带来会话 | cf-traffic「Landing routes / Top landing pages」 |
-| | AI 助手代人取页（ChatGPT-User、Claude-User、Perplexity-User、MistralAI-User）：有人正在问 AI 时去读了我们 | cf-traffic「Machine readers」里“asked by a person”为 yes 的行 |
+| | AI 助手代人取页（ChatGPT-User、Claude-User、Claude Code、Perplexity-User、MistralAI-User）：有人正在问 AI 时去读了我们 | cf-traffic「AI assistants and agents: what they read」里标 for a person 的行；「Machine readers」的 pages read 列 |
 | | 搜索与 AI 索引覆盖：Googlebot、bingbot、OAI-SearchBot、Claude-SearchBot、PerplexityBot 等的抓取量 | 同上 |
 | 激活 Activation | 跳出率、每会话页数、PV/UV | cf-traffic 日表 |
 | | 从文章页落地后继续读的比例，以及下一页去了哪里（衡量文末「继续阅读」） | cf-traffic「After landing on a story or item」 |
@@ -53,7 +53,7 @@ Search Console 链接（`breakdown` 可换 `page`、`query`、`date`，`num_of_d
 | | 工坊开始与完成（workshop_start / workshop_finish，2026-10-29 起，按工坊页面路径）：进了工坊的人有多少亲手操作、玩完 | 后台“增长”的转化页「工坊」表；工坊页面浏览看内容页的 `/chronicle/*` 路由 |
 | | 加速史互动（chronicle_move 移动过时间轴、chronicle_deep 看到第 6 张，2026-11-06 起）：`/chronicle` 的跳出率不算时间轴操作，看这里和 `page_leave` 停留 | `deploy/update.sh --stats` |
 | 推荐 Referral | 分享点击（share_click） | `deploy/update.sh --stats` |
-| 分发 Distribution | 公开 API、MCP、Agent Markdown（llms.txt、`.md`）被多少个客户端调用 | cf-traffic「Machine outlets」 |
+| 分发 Distribution | 公开 API、MCP、Agent Markdown（llms.txt、`.md`）被多少个客户端调用 | cf-traffic「Machine outlets」；MCP 的真实工具调用和成功率只看 `deploy/update.sh --stats 7` 的 MCP 段 |
 | 变现 Revenue | 目前没有 | — |
 
 可以当北极星指标的是**周活跃读者**：一周内至少读了两页的访客数。它同时反映搜索获客和文末导流，又不会被只看一眼就走的流量抬高。
@@ -65,6 +65,20 @@ Search Console 链接（`breakdown` 可换 `page`、`query`、`date`，`num_of_d
 3. 打开 Search Console 读 7 天和 28 天的日期、页面、查询三张表。搜索点击是最干净的“人”信号。
 4. 报告先给结论：读者有没有增长、从哪来、留住了多少，再列数字。每个数都要写清来源和口径（下限/上限/抽样）。增长只有在 Search Console 点击和 cf-traffic PV 方向一致时才下结论。
 5. 评估某次改动（标题、文末导流、新页面）时，用改动前后相同天数对比，并在 memory 里记下基线和复查日期。
+
+## AI 读者周报
+
+每周三看一次上一周（周三到周二）：
+
+1. `cf-traffic.ts --days 7` 的「AI assistants and agents: what they read」：每个助手读了多少、读哪类页面、读得最多的页。标 for a person 的是有人在问 AI 时来读的，其余是 agent 和监控，量常集中在一两天、一两页。
+2. `deploy/update.sh --stats 7` 的 MCP 段：每个工具的调用和成功数、失败原因。`invalid_arguments` 是参数没过校验，`unknown_tool` 是调了不存在的工具。
+3. 和上一周对比（`--until <上周最后一天>`），记进 memory。2026-11-05 到 11-12 的基线：ChatGPT-User 281 次（一半是首页）、Claude 网页版 12 页、Claude Code 25 页；MCP 真实调用 113 次，`search` 12 次里失败 8 次，`get_story` 6 次全失败（都是参数被拒）。
+
+口径：
+
+- 助手的名字常被扫描器冒用：11-12 带 `claude-user@anthropic.com` UA 的 335 次请求里 327 次在探测 `/.env`。只认 Cloudflare 验证过的请求（`verifiedBotCategory = 'AI Assistant'`）；Cloudflare 不验证 Claude-User 和 Claude Code，这两个只认非探测路径。「Machine readers」的 requests 列是按名字的原始数，probes 列是其中的探测。
+- MCP 在边缘每周上万次请求，大半是 SentinelOracle、mcpbeat 这类探活和目录站，不能当使用量。
+- 手工用 `cf sql query` 查多天时会悄悄丢行，按路径拆分要一天一查（脚本本身是一天一查）。
 
 ## 已知的干扰源
 

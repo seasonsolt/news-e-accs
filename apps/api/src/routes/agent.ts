@@ -21,7 +21,6 @@ function markdown(req: FastifyRequest, reply: FastifyReply, text: string, etagPr
 
 function listParams(q: Record<string, string>) {
   return {
-    window: enumParam(q.window, "window", ["24h", "7d"] as const, "24h"),
     category: q.category === undefined ? null : enumParam<PublicApiCategoryKey>(q.category, "category", PUBLIC_API_CATEGORY_KEYS, PUBLIC_API_CATEGORY_KEYS[0]),
     limit: intParam(q.limit, "limit", 1, 30, 10),
   };
@@ -36,7 +35,7 @@ export function registerAgent(app: FastifyInstance) {
 
   app.get("/api/v1/agent/latest", publicHandler(async (req, reply) => {
     const q = strictQuery(req, ["window", "mode", "category", "limit"]);
-    const p = { ...listParams(q), mode: enumParam(q.mode, "mode", ["selected", "all"] as const, "selected") };
+    const p = { ...listParams(q), window: enumParam(q.window, "window", ["24h", "7d"] as const, "24h"), mode: enumParam(q.mode, "mode", ["selected", "all"] as const, "selected") };
     const res = await v1Items({ ...p, by: "timeline", q: null, cursor: null });
     return markdown(req, reply, latestAnswer(res, p), "agent-latest", V1_OPERATIONS.items.cacheControl);
   }));
@@ -45,7 +44,7 @@ export function registerAgent(app: FastifyInstance) {
     const q = strictQuery(req, ["q", "window", "category", "limit"]);
     const text = (q.q ?? "").trim();
     if ([...text].length < 2 || [...text].length > 200) throw new QueryError("q must contain 2 to 200 characters.");
-    const p = { ...listParams(q), window: enumParam(q.window, "window", ["24h", "7d"] as const, "7d") };
+    const p = { ...listParams(q), window: enumParam(q.window, "window", ["24h", "7d", "30d"] as const, "7d") };
     const found = await searchItems(text, p.window, p.category, p.limit);
     return markdown(req, reply, searchAnswer(found, { q: text, window: p.window, category: p.category }), "agent-search", V1_OPERATIONS.items.cacheControl);
   }));

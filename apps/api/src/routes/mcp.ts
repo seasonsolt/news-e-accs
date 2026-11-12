@@ -94,38 +94,55 @@ const lang = z.enum(["en", "zh"]).default("en").describe("Stored edition languag
 
 const category = z.enum(PUBLIC_API_CATEGORY_KEYS).optional().describe(`Optional category: ${PUBLIC_API_CATEGORY_KEYS.join(", ")}.`);
 
-// Tool inputs are built once; each request's server instance registers the same schemas.
-const LATEST_INPUT = z.strictObject({
+/**
+ * A count the tool caps anyway: a larger or smaller number is brought into range instead of failing the call.
+ * The schema agents read still states the range and the default.
+ */
+const count = (max: number, fallback: number, description: string) =>
+  z.preprocess((v) => (typeof v === "number" && Number.isFinite(v) ? Math.min(max, Math.max(1, Math.trunc(v))) : v),
+    z.number().int().min(1).max(max).default(fallback)).describe(description);
+
+/** A story's public ID, or the story link that the hot-topic and search answers print (its last path segment). */
+const storyId = (v: unknown) => {
+  if (typeof v !== "string") return v;
+  const id = /\/story\/([^/?#\s]+)\/?(?:[?#].*)?$/.exec(v.trim())?.[1];
+  return id ?? v.trim();
+};
+
+// Tool inputs are built once; each request's server instance registers the same schemas. Arguments a tool does
+// not know are ignored rather than rejected: in the week to 2026-11-12, 14 of 18 search and story calls failed on
+// their arguments alone.
+const LATEST_INPUT = z.object({
   lang,
   window: z.enum(["24h", "7d"]).default("24h").describe("Time window. Use 24h for a current briefing and 7d for a weekly view."),
   mode: z.enum(["selected", "all"]).default("selected").describe("selected returns editorial picks; all returns every public item."),
   category,
-  limit: z.number().int().min(1).max(30).default(10).describe("Maximum number of results, from 1 to 30."),
+  limit: count(30, 10, "Maximum number of results, from 1 to 30."),
 });
-const SEARCH_INPUT = z.strictObject({
+const SEARCH_INPUT = z.object({
   lang,
   q: z.string().min(2).max(200).describe("Search query, 2 to 200 characters."),
-  window: z.enum(["24h", "7d"]).default("7d").describe("Search window. Defaults to the latest 7 days."),
+  window: z.enum(["24h", "7d", "30d"]).default("7d").describe("Search window: the latest 24 hours, 7 days (default) or 30 days."),
   category,
-  limit: z.number().int().min(1).max(30).default(10).describe("Maximum number of results, from 1 to 30."),
+  limit: count(30, 10, "Maximum number of results, from 1 to 30."),
 });
-const HOT_INPUT = z.strictObject({
+const HOT_INPUT = z.object({
   lang,
-  limit: z.number().int().min(1).max(10).default(10).describe("Maximum number of current topics, from 1 to 10."),
+  limit: count(10, 10, "Maximum number of current topics, from 1 to 10."),
 });
-const STORY_INPUT = z.strictObject({
+const STORY_INPUT = z.object({
   lang,
-  public_id: z.string().min(1).max(128).describe(`Opaque story public ID. Obtain it from the final path segment of ${T.hot} links.story; never guess it.`),
-  report_limit: z.number().int().min(1).max(50).default(20).describe("Maximum number of timeline reports, from 1 to 50."),
+  public_id: z.preprocess(storyId, z.string().min(1).max(128)).describe(`Story public ID or story link, from ${T.hot} (Story public_id or links.story); never guess it.`),
+  report_limit: count(50, 20, "Maximum number of timeline reports, from 1 to 50."),
 });
-const DAILY_INPUT = z.strictObject({
+const DAILY_INPUT = z.object({
   lang,
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Optional real calendar date in YYYY-MM-DD. Omit for the latest daily report."),
 });
-const WEEKLY_INPUT = z.strictObject({
+const WEEKLY_INPUT = z.object({
   week: z.string().regex(/^\d{4}-W\d{2}$/).optional().describe("Optional real ISO week such as 2026-W39. Omit for the latest weekly report."),
 });
-const MONTHLY_INPUT = z.strictObject({
+const MONTHLY_INPUT = z.object({
   month: z.string().regex(/^\d{4}-\d{2}$/).optional().describe("Optional real month in YYYY-MM such as 2026-09. Omit for the latest monthly report."),
 });
 
@@ -188,7 +205,7 @@ function registerTools(server: McpServer, say: typeof ok) {
   server.registerTool(
     T.search,
     {
-      description: `Search ${SITE.name}'s latest 7 days by a 2–200 character topic, company, model, product, or person. It searches editorial picks first and automatically expands to all public items only when picks have no result.`,
+      description: `Search ${SITE.name} by a 2–200 character topic, company, model, product, or person, over the latest 7 days by default or 30 days with window=30d. It searches editorial picks first and automatically expands to all public items only when picks have no result.`,
       inputSchema: SEARCH_INPUT,
       annotations: ANNOTATIONS,
     },
@@ -231,7 +248,7 @@ function registerTools(server: McpServer, say: typeof ok) {
   server.registerTool(
     T.story,
     {
-      description: `Get the evolving timeline, latest development, AI digest, and related events for one public story. Only pass a public_id obtained from ${T.hot} links.story; never invent or infer IDs.`,
+      description: `Get the evolving timeline, latest development, AI digest, and related events for one public story. Pass the Story public_id or story link that ${T.hot} returned; never invent or infer IDs.`,
       inputSchema: STORY_INPUT,
       annotations: ANNOTATIONS,
     },
@@ -240,7 +257,7 @@ function registerTools(server: McpServer, say: typeof ok) {
       if (found.kind === "merged") found = await resolveStory(found.target);
       const source = found.kind === "found" ? await v1Story(found.storyId) : null;
       const body = source ? await localizePublication(source, args.lang) : null;
-      if (!body) return fail("not_found", `No public story exists; use a public_id returned by ${T.hot}.`);
+      if (!body) return fail("not_found", `No public story exists for this ID. Use a public_id returned by ${T.hot}, or find the event with ${T.search}.`);
       requireEditions(body, args.lang);
       const story = { ...body.story, reports: body.story.reports.slice(0, args.report_limit) };
       const lines = [`${SITE.name} Story: ${story.title}`, `Status: ${story.status === "active" ? "Active" : "Historical"} | ${story.reportCount} reports | ${story.sourceCount} sources`, `Latest: ${story.latest}`];
@@ -397,7 +414,9 @@ export function registerMcp(app: FastifyInstance, recordUsage?: (event: McpUsage
     const observation = observations.get(req);
     if (!recordUsage || !observation) return;
     // onResponse runs after the JSON or SSE body has been sent. Counting never copies/buffers the answer.
-    const outcome = reply.statusCode >= 400 ? "rejected" : observation.outcome ?? (observation.event.operation === "tools/call" ? "rejected" : "success");
+    // A call the tool never ran: the SDK refused its arguments, or the tool does not exist.
+    const unrun = observation.event.tool === "__unknown__" ? "unknown_tool" : "invalid_arguments";
+    const outcome = reply.statusCode >= 400 ? "rejected" : observation.outcome ?? (observation.event.operation === "tools/call" ? unrun : "success");
     try {
       await recordUsage({ ...observation.event, outcome, durationMs: Math.max(0, reply.elapsedTime) });
     } catch (err) {

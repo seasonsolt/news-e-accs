@@ -72,7 +72,7 @@ test("JSON and legacy SSE distinguish domain failures, schema rejection and unkn
   assert.match(badDate.body, /invalid_request/);
   const missing = await rpc("tools/call", { name: T.story, arguments: { public_id: "private-story-that-does-not-exist" } });
   assert.match(missing.body, /not_found/);
-  const invalid = await rpc("tools/call", { name: T.latest, arguments: { limit: 99 } });
+  const invalid = await rpc("tools/call", { name: T.latest, arguments: { limit: "many" } });
   assert.match(invalid.body, /isError/);
   await rpc("tools/call", { name: "arbitrary-user-controlled-private-name", arguments: {} });
   const sse = await rpc("tools/call", { name: T.latest, arguments: { lang: "zh" } }, { "mcp-protocol-version": "2025-03-26" });
@@ -84,10 +84,29 @@ test("JSON and legacy SSE distinguish domain failures, schema rejection and unkn
   const summary = await settled(6);
   assert.equal(summary.totals.successes, 2);
   assert.equal(summary.totals.errors, 4);
-  assert.deepEqual(summary.errors.map((r) => [r.outcome, r.calls]), [["rejected", 2], ["invalid_request", 1], ["not_found", 1]]);
+  assert.deepEqual(summary.errors.map((r) => [r.outcome, r.calls]), [["invalid_arguments", 1], ["invalid_request", 1], ["not_found", 1], ["unknown_tool", 1]]);
   assert.ok(summary.tools.some((r) => r.tool === "__unknown__" && r.calls === 1));
   const stored = JSON.stringify(await sql`SELECT * FROM mcp_usage_daily`);
   assert.doesNotMatch(stored, /private-story|arbitrary-user-controlled/);
+});
+
+test("arguments agents commonly get wrong still reach the tool", async () => {
+  const call = async (method: string, params: unknown = {}) => {
+    const body = (await rpc(method, params)).body;
+    return JSON.parse(body.startsWith("{") ? body : body.split("\n").find((line) => line.startsWith("data:"))!.slice(5)).result;
+  };
+  const tooMany = await call("tools/call", { name: T.latest, arguments: { lang: "zh", limit: 500, days: 3 } });
+  assert.equal(tooMany.isError, undefined, "an out-of-range limit and an unknown argument do not fail the call");
+  assert.ok(tooMany.structuredContent.items.length <= 30);
+  const month = await call("tools/call", { name: T.search, arguments: { lang: "zh", q: "model", window: "30d", max_results: 5 } });
+  assert.equal(month.isError, undefined);
+  assert.equal(month.structuredContent.query.window, "30d");
+  const link = await call("tools/call", { name: T.story, arguments: { lang: "zh", public_id: "https://e-acc.ai/zh/story/no-such-story?ref=x" } });
+  assert.equal(link.structuredContent.error.code, "not_found", "a story link is read as its public ID and looked up");
+  const latest = (await call("tools/list")).tools.find((t: { name: string }) => t.name === T.latest).inputSchema;
+  assert.deepEqual([latest.properties.limit.default, latest.properties.limit.maximum, latest.required ?? []], [10, 30, []], "the advertised schema still states the range and default");
+  const summary = await settled(3);
+  assert.deepEqual(summary.errors.map((r) => r.outcome), ["not_found"]);
 });
 
 test("preflight, notifications and host/origin rejections are not tool usage", async () => {
