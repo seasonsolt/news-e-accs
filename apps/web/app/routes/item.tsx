@@ -36,7 +36,7 @@ import { QuotedPost } from "../features/item/QuotedPost";
 import { IconArrowLeft, IconArrowUpRight, IconChevronRight, IconCopy, IconDownload, IconExternal, IconImage, IconMenu, IconShare } from "../components/icons";
 import { ReadingGear } from "../features/art/ReadingGear";
 import { CATEGORY_ART } from "../features/art/CategoryBanner";
-import { Plate } from "../components/shell/Deck";
+import { Deck } from "../components/shell/Deck";
 import { CATEGORIES } from "@aihot/industry/taxonomy";
 import { NextReads } from "../components/NextReads";
 import { MentionText } from "../components/ui/MentionText";
@@ -263,9 +263,44 @@ export default function ItemPage() {
   return (
     <div className="pb-8">
       {item.body && <ReadingGear />}
-      {/* The category's plate as a thin band: the page keeps the site's deck without giving it the first screen. */}
-      <div className="item-band" aria-hidden="true">
-        {item.category && <Plate key={item.category} src={`/media/art/${CATEGORY_ART[item.category]}`} className="deck-plate" />}
+      {/* The detail pages' compact deck, as on a report: the category's plate, the title, where it comes from and
+          what to do with it. The reader's theme starts under it. */}
+      <div className="item-deck">
+        <Deck
+          compact
+          art={item.category ? CATEGORY_ART[item.category] : undefined}
+          label={item.title}
+          kicker={category && (
+            <Link viewTransition to={`/all?category=${category.key}`} className="transition-colors hover:text-[var(--heat-hi)]">{tx(category.label)}</Link>
+          )}
+          title={<span lang={contentHtmlLanguage(item, locale) ?? "und"}>{item.title}</span>}
+          description={<>
+            <span className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-[var(--deck-dim)]">
+              <span className="font-semibold text-[var(--deck-ink)]">{isX ? `${item.x!.authorName} · X` : item.source.name}</span>
+              <AuthorRoleMark role={item.authorRole} />
+              {byline && <span>· {byline}</span>}
+              <span>·</span>
+              {!item.publishedAt && <span><Text value="收录于" /></span>}
+              <time dateTime={publishedIso} className="mono">{fullDateTime(publishedIso)}</time>
+              <span className="empty:hidden" suppressHydrationWarning>{timeAgo(publishedIso) && `· ${tx(timeAgo(publishedIso)!)}`}</span>
+              {badge && <span className="ml-1">{badge}</span>}
+            </span>
+            {!fromX && item.originalTitle && item.originalTitle !== item.title && (
+              <span className="mt-2 block text-[14px] leading-relaxed text-[var(--deck-dim)]">{item.originalTitle}</span>
+            )}
+            {item.xCounts && <span className="block text-[var(--deck-dim)] [&_p]:text-inherit"><XCountsLine counts={item.xCounts} /></span>}
+          </>}
+        >
+          <div className="flex flex-wrap items-center gap-2.5">
+            <a href={item.links.original} target="_blank" rel="noopener noreferrer" {...outboundLink(item.links.original)} className="deck-button is-primary min-h-10 gap-2 px-4 text-[14px]">
+              {originalLabel} <IconExternal size={14} />
+            </a>
+            <StarPill item={item} deck />
+            <button type="button" onClick={share} className="deck-button min-h-10 gap-2 px-4 text-[14px]">
+              <IconShare size={15} /><Text value="分享" /></button>
+            {moreMenu}
+          </div>
+        </Deck>
       </div>
 
       {/* Phones: a sticky bar with back, 收藏, the original and more (share is in more). */}
@@ -283,47 +318,6 @@ export default function ItemPage() {
         <article lang={contentHtmlLanguage(item, locale)} className="min-w-0 pb-6 pt-5 lg:pt-6">
           <div className="sticky top-2 z-20 mb-3 hidden w-fit rounded-full bg-bg/90 pl-1.5 pr-2 backdrop-blur lg:block">{backButton}</div>
           <ContentLanguage content={item} />
-          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-ink-3">
-            {category && (
-              <Link viewTransition to={`/all?category=${category.key}`} className="mr-1 rounded-full bg-accent-soft px-2 py-0.5 text-[12px] font-medium text-accent transition-colors hover:text-accent-ink">
-                {tx(category.label)}
-              </Link>
-            )}
-            <span className="font-semibold text-ink-2">{isX ? `${item.x!.authorName} · X` : item.source.name}</span>
-            <AuthorRoleMark role={item.authorRole} />
-            {byline && <span>· {byline}</span>}
-            <span>·</span>
-            {!item.publishedAt && <span><Text value="收录于" /></span>}
-            <time dateTime={publishedIso} className="mono">{fullDateTime(publishedIso)}</time>
-            <span className="empty:hidden" suppressHydrationWarning>{timeAgo(publishedIso) && `· ${tx(timeAgo(publishedIso)!)}`}</span>
-            {badge && <span className="ml-1 lg:hidden">{badge}</span>}
-          </div>
-
-          {item.xCounts && <XCountsLine counts={item.xCounts} />}
-
-          <h1 lang={contentHtmlLanguage(item, locale) ?? "und"} className="mt-3 text-balance text-[26px] font-[750] leading-[1.25] tracking-[-0.01em] text-ink lg:text-[34px] lg:leading-[1.2]">
-            {item.title}
-          </h1>
-          {!fromX && item.originalTitle && item.originalTitle !== item.title && (
-            <p className="mt-2 text-[14px] leading-relaxed text-ink-4">{item.originalTitle}</p>
-          )}
-
-          <div className="mt-5 hidden items-center gap-2 lg:flex">
-            <a
-              href={item.links.original}
-              target="_blank"
-              rel="noopener noreferrer"
-              {...outboundLink(item.links.original)}
-              className="inline-flex h-8 items-center gap-1.5 rounded-full bg-ink px-4 text-[13px] font-medium text-bg transition-opacity hover:opacity-90"
-            >
-              {originalLabel} <IconExternal size={13} />
-            </a>
-            <StarPill item={item} />
-            <button type="button" onClick={share} className="inline-flex h-8 items-center gap-1.5 rounded-full border border-line-strong bg-surface px-3 text-[13px] text-ink-2 transition-colors hover:border-ink-4 hover:text-ink">
-              <IconShare size={14} /><Text value="分享" /></button>
-            {moreMenu}
-            {badge && <span className="ml-auto">{badge}</span>}
-          </div>
 
           {/* The original page's own share picture, credited and linked to it like a link preview. */}
           {item.cover && (
