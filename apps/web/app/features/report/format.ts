@@ -1,7 +1,7 @@
 import { publicPath, type Locale } from "../../lib/locale.ts";
 import { translate } from "../../lib/translate.ts";
 // Names, dates and grouping for daily, weekly and monthly reports.
-import type { ReportNavigationEntry, ReportKind } from "@aihot/contracts/site";
+import type { ReportDetail, ReportNavigationEntry, ReportKind } from "@aihot/contracts/site";
 import { beijingDate, beijingWeekday, isoWeekLabel, isoWeekRange, monthDay as engineMonthDay } from "@aihot/contracts/time";
 import { EDITION_WHEN, REPORTS, SITE, subjectAfter } from "@aihot/site";
 import { RELEASE } from "@aihot/industry/taxonomy";
@@ -134,6 +134,11 @@ const METRICS: Array<[key: string, unit: string]> = [
   ["selectedCount", UNITS.selectedCount],
   ["reportsCovered", UNITS.reportsCovered],
 ];
+/** How many events a daily lists ("今天这 N 件事"): its sections' entries, a story cited twice counted once. */
+export function dailyEventCount(report: ReportDetail): number {
+  return new Set(report.sections.flatMap((s) => s.items.map((c) => c.itemId ?? c.title))).size;
+}
+
 export function metricItems(metrics: Record<string, number>): Array<{ key: string; value: number; unit: string }> {
   return METRICS.filter(([k]) => typeof metrics[k] === "number" && (k !== "modelsReleased" || metrics[k]! > 0)).map(([k, unit]) => ({ key: k, value: metrics[k]!, unit }));
 }

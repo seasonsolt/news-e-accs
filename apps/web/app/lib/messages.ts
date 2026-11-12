@@ -137,6 +137,8 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "我们每天记下这条曲线走到了哪里。": "Every day we log how far the curve has reached.",
   "搜索和分类": "Search and categories",
   "今日头条": "Today's lead",
+  "今日日报": "Today's AI Daily",
+  "{0} 件事": "{0} {story|stories}",
   "当天头条": "The day's lead",
   "{0} 家信源": "{0} sources",
   "读这件事": "Read the story",

@@ -4,7 +4,9 @@ import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { SITE } from "@aihot/site";
 import { redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/home";
-import type { TimelineResponse } from "@aihot/contracts/site";
+import type { ReportDetail, ReportIndexResponse, TimelineResponse } from "@aihot/contracts/site";
+import { beijingDate } from "@aihot/contracts/time";
+import { dailyEventCount } from "../features/report/format";
 import type { ChronicleResponse } from "@aihot/contracts/chronicle";
 import { FEATURES } from "@aihot/industry/features";
 import { apiGet, cachedPage, loadOr404 } from "../lib/api.server";
@@ -14,7 +16,7 @@ import { filterParams, hasFeedFilters, listPath, organizationLd, pageMeta, readF
 import { Deck } from "../components/shell/Deck";
 import { CategoryBanner } from "../features/art/CategoryBanner";
 import { Timeline } from "../features/feed/Timeline";
-import { HomeHero, leadCard, TodayLabel } from "../features/feed/HomeHero";
+import { HomeHero, leadCard, TodayLabel, type HomeDaily } from "../features/feed/HomeHero";
 import { chronicleNow, costReading, type CostIndex } from "@aihot/contracts/chronicle";
 import { CategoryTabs, FeedSwitch, SearchField, SearchIconLink } from "../features/feed/Filters";
 import { requestAt, withAt } from "../features/chrono/at";
@@ -33,7 +35,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   const at = requestAt(request);
   const filters = { ...readFilters(url.searchParams), topic: null, at };
   const upstream = new Headers();
-  const [data, chronicle, cost, essays] = await Promise.all([
+  const [data, chronicle, cost, essays, daily] = await Promise.all([
     loadOr404<TimelineResponse>(listPath("/api/site/timeline", { ...filterParams(filters), at }), { responseHeaders: upstream, request, signal: request.signal }),
     // Like the masthead's time machine (root), the chronicle only dresses the deck: without it the deck keeps the day's lead.
     FEATURES.timeMachine ? apiGet<ChronicleResponse>("/api/site/chronicle", { request, signal: request.signal }).catch(() => null) : null,
@@ -43,8 +45,24 @@ export async function loader({ request }: Route.LoaderArgs) {
     !at && webModules().some((m) => m.name === "essays")
       ? apiGet<{ essays: EssayCard[] }>("/api/site/essays", { request, signal: request.signal }).then((r) => r.essays.slice(0, 3).map(({ slug, path, title, dek, cover, publishedAt }) => ({ slug, path, title, dek, cover, publishedAt }))).catch(() => null)
       : null,
+    // The deck's lead is the daily's, so the front page and the issue agree on it; without one it falls back to the picks.
+    // A narrowed page has the compact deck, with no lead.
+    hasFeedFilters(filters) ? null : latestDaily(request, at).catch(() => null),
   ]);
-  return cachedPage(60, { data, filters, chronicle: chronicle && chronicleNow(chronicle, at), cost, essays }, upstream);
+  return cachedPage(60, { data, filters, chronicle: chronicle && chronicleNow(chronicle, at), cost, essays, daily }, upstream);
+}
+
+/** The issue a reader had on the page's day (the time machine's, else the latest), as the deck names it. */
+async function latestDaily(request: Request, at: string | null): Promise<HomeDaily | null> {
+  const init = { request, signal: request.signal };
+  const key = at
+    ? (await apiGet<{ key: string | null }>(`/api/site/reports/daily/at/${at}`, init)).key
+    : (await apiGet<ReportIndexResponse>("/api/site/reports/daily", init)).items[0]?.key ?? null;
+  if (!key) return null;
+  const report = await apiGet<ReportDetail>(`/api/site/reports/daily/${key}`, init);
+  // An issue without a lead (a quiet day) has no headline to put there.
+  if (!report.lead) return null;
+  return { key, title: report.lead.title, count: dailyEventCount(report), today: key === (at ?? beijingDate(Date.now())) };
 }
 
 export function meta({ matches, loaderData }: Route.MetaArgs) {
@@ -60,7 +78,7 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
 
 export default function Home() {
   const tx = useTranslate();
-  const { data, filters, chronicle, cost, essays } = useLoaderData<typeof loader>();
+  const { data, filters, chronicle, cost, essays, daily } = useLoaderData<typeof loader>();
   // Old links and the switch from /all can still narrow the picks; those pages keep the full filter row.
   const narrowed = !!filters.tag || !!filters.category || filters.channel !== "all";
   return (
@@ -68,7 +86,7 @@ export default function Home() {
       {narrowed ? (
         <Deck compact art="home-intelligence" label={tx("精选")} kicker={<TodayLabel at={filters.at} />} title={filters.tag ? `#${filters.tag}` : tx("精选")} />
       ) : (
-        <HomeHero label={tx("精选")} heading={tx(SITE.homeHeading)} at={filters.at} lead={leadCard(data.cards)} chronicle={chronicle} cost={cost} />
+        <HomeHero label={tx("精选")} heading={tx(SITE.homeHeading)} at={filters.at} lead={leadCard(data.cards)} daily={daily} chronicle={chronicle} cost={cost} />
       )}
 
       {!narrowed && essays && essays.length > 0 && <LatestEssays essays={essays} />}

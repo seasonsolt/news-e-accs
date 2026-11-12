@@ -1,7 +1,8 @@
 import { FEATURES } from "@aihot/industry/features";
+import { withSubject } from "@aihot/site";
 import { Link } from "../../lib/navigation";
 import { Text, useTranslate } from "../../lib/i18n";
-import type { TimelineCard } from "@aihot/contracts/site";
+import { REPORT_NAMES, reportDateLabel, type TimelineCard } from "@aihot/contracts/site";
 import { beijingDate, beijingTime } from "@aihot/contracts/time";
 import { Plate } from "../../components/shell/Deck";
 import { chronicleHref } from "../chrono/TimeMachine";
@@ -47,12 +48,35 @@ function LeadStory({ card, past }: { card: TimelineCard; past: boolean }) {
   );
 }
 
+/** The daily issue the deck leads with: its lead's headline, how many events it lists, and whether it is the day's own. */
+export interface HomeDaily {
+  key: string;
+  title: string;
+  count: number;
+  today: boolean;
+}
+
+/** The issue's lead in the deck: the headline opens the issue, the product the front page hands readers to. */
+function DailyLead({ daily }: { daily: HomeDaily }) {
+  const tx = useTranslate();
+  return (
+    <Link viewTransition to={`/daily/${daily.key}`} className="home-lead" data-home-daily>
+      <span className="home-lead-kicker">
+        {daily.today ? <Text value="今日日报" /> : `${tx(reportDateLabel("daily", daily.key))} ${tx(withSubject(REPORT_NAMES.daily))}`}
+        <span>{tx("{0} 件事", daily.count)}</span>
+      </span>
+      <span className="home-lead-title">{daily.title}</span>
+      <span className="home-lead-go"><Text value="阅读这期日报" /> →</span>
+    </Link>
+  );
+}
+
 /**
- * The front page's first screen: the plate, the line and what it means, the day's lead, and at the foot
+ * The front page's first screen: the plate, the line and what it means, the day's lead (the daily's, else the picks'), and at the foot
  * the axis with one reading of how fast the curve is moving. Anything narrower than the plain front page
  * (a tag, a category) gets a compact deck instead.
  */
-export function HomeHero({ label, heading, at, lead, chronicle, cost }: { label: string; heading: string; at?: string | null; lead: TimelineCard | null; chronicle: ChronicleNow | null; cost: CostReading | null }) {
+export function HomeHero({ label, heading, at, lead, daily, chronicle, cost }: { label: string; heading: string; at?: string | null; lead: TimelineCard | null; daily: HomeDaily | null; chronicle: ChronicleNow | null; cost: CostReading | null }) {
   const tx = useTranslate();
   return (
     <section className="deck home-hero" aria-label={label}>
@@ -70,7 +94,7 @@ export function HomeHero({ label, heading, at, lead, chronicle, cost }: { label:
             {FEATURES.eaccConcepts && <Link to="/manifesto" className="home-hero-manifesto"><Text value="读《降临派宣言》→" /></Link>}
           </div>
         </div>
-        {lead && <LeadStory card={lead} past={!!at} />}
+        {daily ? <DailyLead daily={daily} /> : lead && <LeadStory card={lead} past={!!at} />}
         {chronicle && <NowInstruments now={chronicle} at={at ?? null} cost={cost} />}
       </div>
     </section>

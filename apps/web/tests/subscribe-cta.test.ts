@@ -1,4 +1,4 @@
-// The daily's subscribe forms are part of the server HTML, in both editions; item pages send readers to the daily.
+// The daily's subscribe forms are part of the server HTML, in both editions; the front page and item pages send readers to the daily.
 // It adds no image and no second copy of the form (the phone bar mounts only after scrolling).
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
@@ -76,6 +76,7 @@ test("a subscribe view is counted once per page view, and a failure reason stays
 
 let web: WebServer;
 let latestFails = false;
+let dailyMissing = false;
 const api = createServer((req, res) => {
   const url = new URL(req.url ?? "/", "http://local");
   res.setHeader("Content-Type", "application/json");
@@ -89,6 +90,8 @@ const api = createServer((req, res) => {
   if (url.pathname === "/api/site/meta") return send({ changelogVersion: null });
   if (url.pathname === `/api/site/items/${item.id}`) return send(detail);
   if (url.pathname === "/api/site/next-reads") return send({ daily: { key: "2026-10-04", issueNumber: 12, title: "测试刊物", count: 2 }, hot: [] });
+  if (url.pathname === "/api/site/timeline") return send({ filters: { channel: "all", category: null, tag: null }, cards: [{ key: item.id, anchorAt: at, item, group: null }], nextCursor: null, dayCounts: { "2026-10-04": 1 } });
+  if (url.pathname === "/api/site/reports/daily") return send({ kind: "daily", items: dailyMissing ? [] : [{ key: "2026-10-04", issueNumber: 12, title: "测试刊物", count: 2 }] });
   const match = /^\/api\/site\/reports\/(daily|weekly|monthly)\/(.+)$/.exec(url.pathname);
   if (match) {
     const r = report(match[1] as ReportKind);
@@ -153,6 +156,22 @@ test("a daily leads with its news and offers the form beside its list and after 
   assert.doesNotMatch(weekly.html, /data-subscribe-cta/);
 });
 
+
+test("the front page leads with the latest daily's headline and opens the issue, else the day's top pick", async () => {
+  const { document } = parseHTML((await page("/zh")).html);
+  const lead = document.querySelector("[data-home-daily]");
+  assert.equal(lead?.getAttribute("href"), "/zh/daily/2026-10-04");
+  assert.match(lead?.textContent ?? "", /10月4日 AI 日报/);
+  assert.match(lead?.textContent ?? "", /本期已验证的重要变化/);
+  assert.match(lead?.textContent ?? "", /1 件事/);
+
+  dailyMissing = true;
+  try {
+    const fallback = parseHTML((await page("/zh")).html).document;
+    assert.equal(fallback.querySelector("[data-home-daily]"), null);
+    assert.ok(fallback.querySelector(`a.home-lead[href="/zh/items/${item.id}"]`));
+  } finally { dailyMissing = false; }
+});
 
 test("confirmation only reports the backend's first transition with its source and language", async () => {
   const original = globalThis.fetch;
