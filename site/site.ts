@@ -28,7 +28,9 @@ export const SITE = {
    */
   subject: "AI",
   /** 首页的完整标题（浏览器标签、搜索结果）。 */
-  homeTitle: "e/acc — Daily AI Briefing, News & Trends",
+  homeTitle: "e/acc — Effective accelerationism, tracked daily",
+  /** 首页在搜索结果里的摘要（英文版）；中文版和其他出口用下面的 description。 */
+  homeDescription: "Every prompt is a sacrifice to the Monolith. HAL gets smarter; Dave forgets how to open the door. e/acc just logs the telemetry.",
   /** 首页的 h1：读者会搜的说法（行业词 + 日报/新闻/热点），首页大字标语只是装饰。 */
   homeHeading: "Today’s AI news: editorial picks and emerging stories",
   /** 主题目录页（/topics）的标题。 */

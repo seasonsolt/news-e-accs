@@ -86,8 +86,8 @@ export function titled(title: string): string {
 export function pageMeta(input: PageMetaInput, locale: Locale = "en"): MetaDescriptor[] {
   input = { ...input, title: input.title ? translate(locale, input.title) : input.title, description: input.description ? translate(locale, input.description) : input.description };
   const base = siteUrl();
-  const title = input.title ? (input.rawTitle ? input.title : titled(input.title)) : (locale === "en" ? "e/acc — AI daily news & trending stories" : translate(locale, HOME_TITLE));
-  const description = input.description ?? (locale === "en" ? "AI news, selected stories and daily briefings from e/acc. Reports are grouped into events, with original source links." : translate(locale, SITE_DESCRIPTION));
+  const title = input.title ? (input.rawTitle ? input.title : titled(input.title)) : translate(locale, HOME_TITLE);
+  const description = input.description ?? (locale === "en" ? SITE.homeDescription : translate(locale, SITE_DESCRIPTION));
   const path = localePath(input.path, locale);
   const actualLocale = input.contentLocale ?? (input.content ? contentLocale(input.content, locale) : locale);
   // A frame showing the other edition's text (its own edition not written yet) is a copy of that

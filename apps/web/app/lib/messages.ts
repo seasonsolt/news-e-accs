@@ -1295,7 +1295,7 @@ export const ENGLISH: Readonly<Record<string, string>> = {
 
 // Native English site identity has explicit Chinese UI counterparts.
 export const CHINESE: Record<string, string> = {
-  "e/acc — Daily AI Briefing, News & Trends": "e/acc — AI 日报、新闻与热点",
+  "e/acc — Effective accelerationism, tracked daily": "e/acc — AI 日报、新闻与热点",
   "Today’s AI news: editorial picks and emerging stories": "今日 AI 新闻：精选与新兴事件",
   "e/acc follows AI news across hundreds of sources, selects the stories that matter, groups related coverage, and delivers a daily briefing.": "e/acc 跟踪数百个信源，精选值得看的 AI 新闻、归组相关报道，并提供每日简报。",
   "AI news at the pace of progress": "追踪 AI 进展的新闻日报",
