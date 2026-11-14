@@ -36,6 +36,9 @@ export const links: Route.LinksFunction = () => [
   { rel: "icon", type: "image/png", href: "/icon.png" },
   { rel: "apple-touch-icon", href: "/apple-icon.png" },
   { rel: "manifest", href: "/manifest.webmanifest" },
+  // The display face (app.css) sets the hero and deck titles on nearly every page; found only through the stylesheet it
+  // arrived after first paint, and the swap re-wrapped the phone deck's lead. Font preloads need crossorigin even same-origin.
+  { rel: "preload", href: "/media/fonts/InstrumentSerif-Italic.woff2", as: "font", type: "font/woff2", crossOrigin: "anonymous" },
 ];
 
 interface SiteMeta {

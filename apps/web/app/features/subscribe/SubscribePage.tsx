@@ -70,7 +70,7 @@ export function SubscribePage({ report, source }: { report: ReportDetail | null;
                   <span className="block truncate text-[var(--deck-dim)]">{report.lead?.title ?? report.title}</span>
                 </span>
               </div>
-              <img src="/media/art/mail-daily.jpg" alt="" width={1200} height={560} loading="lazy" decoding="async" className="block h-auto w-full" />
+              <img src="/media/art/mail-daily.jpg" alt="" width={1200} height={560} decoding="async" className="block h-auto w-full" />
               <div className="px-5 pb-6 pt-5 sm:px-7">
                 <h3 className="font-display text-[24px] leading-snug text-[var(--deck-ink)]">{report.lead?.title ?? report.title}</h3>
                 {entries.length > 0 && <>
