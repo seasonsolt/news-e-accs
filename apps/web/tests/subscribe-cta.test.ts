@@ -173,6 +173,15 @@ test("the front page leads with the latest daily's headline and opens the issue,
   } finally { dailyMissing = false; }
 });
 
+test("the front page tells its idea a different way on alternate days", async () => {
+  const [one, next, third] = await Promise.all(["2026-10-03", "2026-10-04", "2026-10-05"].map(async (day) => (await page(`/zh?at=${day}`)).html));
+  assert.match(one, /每一次提问都在喂养机器/);
+  assert.doesNotMatch(one, /就像人和小麦/);
+  assert.match(next, /就像人和小麦/);
+  assert.doesNotMatch(next, /每一次提问都在喂养机器/);
+  assert.match(third, /每一次提问都在喂养机器/);
+});
+
 test("confirmation only reports the backend's first transition with its source and language", async () => {
   const original = globalThis.fetch;
   const oldWindow = Object.getOwnPropertyDescriptor(globalThis, "window");

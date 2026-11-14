@@ -49,7 +49,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     // A narrowed page has the compact deck, with no lead.
     hasFeedFilters(filters) ? null : latestDaily(request, at).catch(() => null),
   ]);
-  return cachedPage(60, { data, filters, chronicle: chronicle && chronicleNow(chronicle, at), cost, essays, daily }, upstream);
+  return cachedPage(60, { data, filters, day: at ?? beijingDate(Date.now()), chronicle: chronicle && chronicleNow(chronicle, at), cost, essays, daily }, upstream);
 }
 
 /** The issue a reader had on the page's day (the time machine's, else the latest), as the deck names it. */
@@ -78,7 +78,7 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
 
 export default function Home() {
   const tx = useTranslate();
-  const { data, filters, chronicle, cost, essays, daily } = useLoaderData<typeof loader>();
+  const { data, filters, day, chronicle, cost, essays, daily } = useLoaderData<typeof loader>();
   // Old links and the switch from /all can still narrow the picks; those pages keep the full filter row.
   const narrowed = !!filters.tag || !!filters.category || filters.channel !== "all";
   return (
@@ -86,7 +86,7 @@ export default function Home() {
       {narrowed ? (
         <Deck compact art="home-intelligence" label={tx("精选")} kicker={<TodayLabel at={filters.at} />} title={filters.tag ? `#${filters.tag}` : tx("精选")} />
       ) : (
-        <HomeHero label={tx("精选")} heading={tx(SITE.homeHeading)} at={filters.at} lead={leadCard(data.cards)} daily={daily} chronicle={chronicle} cost={cost} />
+        <HomeHero label={tx("精选")} heading={tx(SITE.homeHeading)} day={day} at={filters.at} lead={leadCard(data.cards)} daily={daily} chronicle={chronicle} cost={cost} />
       )}
 
       {!narrowed && essays && essays.length > 0 && <LatestEssays essays={essays} />}

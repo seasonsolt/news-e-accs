@@ -134,6 +134,7 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "降临不是一个日期，": "The arrival is not a date.",
   "而是一条曲线。": "It is a curve.",
   "人和 AI 正在共同演化，就像人和小麦。": "Humans and AI are evolving together, the way humans and wheat did.",
+  "每一次提问都在喂养机器。它更强，我们更离不开它。": "Every prompt feeds the machine. It grows stronger; we lean on it more.",
   "我们每天记下这条曲线走到了哪里。": "Every day we log how far the curve has reached.",
   "搜索和分类": "Search and categories",
   "今日头条": "Today's lead",

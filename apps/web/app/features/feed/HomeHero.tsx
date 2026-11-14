@@ -71,24 +71,31 @@ function DailyLead({ daily }: { daily: HomeDaily }) {
   );
 }
 
+/** The deck's two faces, one a day: the same idea told by the wheat field, and by the prompts that feed the machine. */
+const FACES = [
+  { plate: "/media/art/home-wheat-monolith", line: "人和 AI 正在共同演化，就像人和小麦。" },
+  { plate: "/media/art/home-prompt-monolith", line: "每一次提问都在喂养机器。它更强，我们更离不开它。" },
+] as const;
+
 /**
  * The front page's first screen: the plate, the line and what it means, the day's lead (the daily's, else the picks'), and at the foot
  * the axis with one reading of how fast the curve is moving. Anything narrower than the plain front page
  * (a tag, a category) gets a compact deck instead.
  */
-export function HomeHero({ label, heading, at, lead, daily, chronicle, cost }: { label: string; heading: string; at?: string | null; lead: TimelineCard | null; daily: HomeDaily | null; chronicle: ChronicleNow | null; cost: CostReading | null }) {
+export function HomeHero({ label, heading, day, at, lead, daily, chronicle, cost }: { label: string; heading: string; /** The page's day as the server read it, which picks the face. */ day: string; at?: string | null; lead: TimelineCard | null; daily: HomeDaily | null; chronicle: ChronicleNow | null; cost: CostReading | null }) {
   const tx = useTranslate();
+  const face = FACES[(Date.parse(day) / 86_400_000) % FACES.length]!;
   return (
     <section className="deck home-hero" aria-label={label}>
       {/* Cover-fit to the hero's height, so a phone shows a slice of a much wider picture. */}
-      <Plate src="/media/art/home-wheat-monolith" className="deck-plate" highResolution sizes="max(100vw, calc(min(100svh, 1040px) * 1.5))" />
+      <Plate src={face.plate} className="deck-plate" highResolution sizes="max(100vw, calc(min(100svh, 1040px) * 1.5))" />
       <div className="deck-shade" aria-hidden="true" />
       <div className="deck-inner">
         <div className="home-hero-copy">
           <h1 className="deck-heading">{heading}</h1>
           <div className="deck-kicker"><TodayLabel at={at} /><Text value="· 智能体时代" /></div>
           <p className="home-hero-title"><Text value="降临不是一个日期，" /><br /><Text value="而是一条曲线。" /></p>
-          <p className="deck-desc">{tx("人和 AI 正在共同演化，就像人和小麦。")}<span className="home-hero-desc-more">{tx("我们每天记下这条曲线走到了哪里。")}</span></p>
+          <p className="deck-desc">{tx(face.line)}<span className="home-hero-desc-more">{tx("我们每天记下这条曲线走到了哪里。")}</span></p>
           <div className="home-hero-links">
             {chronicle && <Link to={chronicleHref(at ?? null)} className="home-hero-chronicle"><Text value="走进加速史 →" /></Link>}
             {FEATURES.eaccConcepts && <Link to="/manifesto" className="home-hero-manifesto"><Text value="读《降临派宣言》→" /></Link>}
