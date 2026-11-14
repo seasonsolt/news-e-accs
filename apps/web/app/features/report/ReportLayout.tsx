@@ -16,7 +16,7 @@ export function ReportLayout({ kind, index, current, today, deck, archive = true
         {archive && <ReportArchive kind={kind} index={index} current={current} />}
         <div className="min-w-0 flex-1">
           <ReportPhoneNav kind={kind} index={index} current={current} today={today} />
-          <div className="w-full lg:max-w-[1160px]">{children}</div>
+          <div className="w-full">{children}</div>
         </div>
       </div>
     </div>

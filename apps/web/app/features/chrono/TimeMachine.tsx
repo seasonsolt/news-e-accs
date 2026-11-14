@@ -1,8 +1,8 @@
 import { publicPath } from "../../lib/locale";
 import { Link, useNavigate } from "../../lib/navigation";
 import { Text, useTranslate } from "../../lib/i18n";
-// The time machine's two controls: the brass dial at the foot of the desktop sidebar (always there),
-// and the bar over every page while the site is on a past day (phones reach the dial from 更多).
+// The time machine's two controls: the brass dial in a page's deck while the site is on today, and the
+// bar over every page while it is on a past day (phones also reach the dial from 更多).
 import type { TimeMachineBounds } from "@aihot/contracts/chronicle";
 import { dateToYear } from "@aihot/contracts/chronicle";
 import { useEffect, useRef, useState } from "react";
@@ -100,10 +100,16 @@ export function TimeDial({ bounds, className = "" }: { bounds: TimeMachineBounds
   );
 }
 
-/** Over a page showing a past day: which day, a step either way (none before the records begin), and the way back. */
+/** The dial in a page's deck, while the site is on today; on a past day the bar over the page does its work. */
+export function DeckDial({ bounds }: { bounds: TimeMachineBounds | null }) {
+  return useAt() ? null : <TimeDial bounds={bounds} className="w-[300px] max-w-full" />;
+}
+
+/** Over a page showing a past day: which day (pick another on it), a step either way (none before the records begin), and the way back. */
 export function TimeBar({ bounds }: { bounds: TimeMachineBounds | null }) {
   const tx = useTranslate();
   const at = useAt();
+  const travel = useTravel();
   const { pathname, search, hash } = useLocation();
   if (!at) return null;
   const today = bounds?.today ?? beijingDate(Date.now());
@@ -114,12 +120,23 @@ export function TimeBar({ bounds }: { bounds: TimeMachineBounds | null }) {
   const atStart = !!bounds?.earliest && at <= bounds.earliest;
   const note = beforeRecord ? tx("本站那时还没有记录") : null;
   return (
-    <div role="region" aria-label={tx("时光机")} className="time-bar sticky top-0 z-30 -mx-4 mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 lg:top-3 lg:mx-0 lg:px-3">
+    <div role="region" aria-label={tx("时光机")} className="time-bar sticky top-0 z-30 -mx-4 mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5 lg:mx-0 lg:px-3">
       <span className="flex min-w-0 items-center gap-2.5">
         <span className="time-bar-badge" aria-hidden="true"><IconHourglass size={14} /></span>
         <span className="flex min-w-0 flex-col leading-tight">
           <span className="time-bar-label"><Text value="时光机停在" />{note && <span className="time-bar-note"> · {note}</span>}</span>
-          <strong className="time-bar-date">{atLabel(at)}</strong>
+          <label className="time-bar-pick relative cursor-pointer">
+            <strong className="time-bar-date">{atLabel(at)}</strong>
+            <input
+              type="date"
+              aria-label={tx("选择日期")}
+              className="absolute inset-0 cursor-pointer opacity-0"
+              min={bounds?.earliest ?? undefined}
+              max={addDays(today, -1)}
+              value={at}
+              onChange={(e) => e.target.value && travel(e.target.value)}
+            />
+          </label>
         </span>
       </span>
       <span className="ml-auto flex flex-wrap items-center gap-1.5">

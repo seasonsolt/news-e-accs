@@ -6,7 +6,7 @@ import { IntentLink } from "../components/ui/IntentLink";
 import { FEATURES } from "@aihot/industry/features";
 import type { loader as rootLoader } from "../root";
 import { Deck } from "../components/shell/Deck";
-import { TimeDial } from "../features/chrono/TimeMachine";
+import { DeckDial } from "../features/chrono/TimeMachine";
 import type { HotEntryView, HotResponse } from "@aihot/contracts/site";
 import { beijingDate } from "@aihot/contracts/time";
 import { shortAddresses } from "@aihot/contracts/addresses";
@@ -268,7 +268,7 @@ export default function HotPage() {
         }
         title={tx("此刻温度最高")}
         description={tx("{0} 小时内每个独立来源只算一次，热度每 24 小时减半。排在前面的，是真正有很多人在说的 {1} 件事。", hot.windowHours, hot.entries.length || 10)}
-        aside={FEATURES.timeMachine && <TimeDial bounds={root?.timeBounds ?? null} className="w-[300px] max-w-full" />}
+        aside={FEATURES.timeMachine && <DeckDial bounds={root?.timeBounds ?? null} />}
       />
       <div className="h-6" />
 

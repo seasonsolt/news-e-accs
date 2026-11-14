@@ -55,7 +55,7 @@ export function DailyDeckFoot({ report, leadStory }: { report: ReportDetail; lea
   }, [copied]);
   // Built on click: the page's own origin is only known in the browser.
   const url = () => `${siteUrl()}${localePath(reportPath("daily", report.key), locale)}`;
-  const button = "deck-button min-h-10 gap-2 px-4 text-[14px]";
+  const button = "deck-button is-compact gap-2";
   return (
     <div className="flex flex-col gap-5">
       {leadStory && (
@@ -83,9 +83,12 @@ export function DailyDeckFoot({ report, leadStory }: { report: ReportDetail; lea
         >
           <span aria-hidden="true" className="font-bold">𝕏</span><Text value="发到 X" />
         </button>
-        <button type="button" className={button} onClick={card.show}>
-          <IconImage size={15} /><Text value="分享图" />
-        </button>
+        {/* On desktop the card itself waits in the column beside the list (DailyAside). */}
+        <span className="lg:hidden">
+          <button type="button" className={button} onClick={card.show}>
+            <IconImage size={15} /><Text value="分享图" />
+          </button>
+        </span>
         <span role="status" className="text-[13px] text-[var(--brass-hi)]">{copied ? tx("链接已复制") : ""}</span>
       </div>
       {card.sheet}
@@ -115,7 +118,7 @@ export function TodayList({ report, leadStory, leadRelated }: { report: ReportDe
   if (report.flashes.length > 0) figures.push(tx("另有 {0} 条快讯", report.flashes.length));
   const lead = leadStory ? keyOf(leadStory) : null;
   return (
-    <section id="today" aria-labelledby="today-title" className="scroll-mt-[calc(var(--bar-h)+1.5rem)] pt-7 lg:pt-10">
+    <section id="today" aria-labelledby="today-title" className="scroll-mt-[calc(var(--bar-h)+1.5rem)] pt-7 lg:pt-4">
       <header className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-line-strong pb-3">
         <h2 id="today-title" className="text-[24px] font-black tracking-[-0.02em] text-ink @[880px]:text-[28px]">{tx("今天这 {0} 件事", n)}</h2>
         {figures.length > 0 && <p className="num text-[12.5px] text-ink-4">{figures.join(" · ")}</p>}
@@ -180,8 +183,9 @@ function Entry({ c, no, lead }: { c: ReportCitation; no: number; lead: boolean }
 }
 
 /**
- * Beside the issue on desktop: subscribe, the share card and the other issues, following the reader.
- * On a phone it sits between the list and the stories, and only the subscribe card shows.
+ * Beside the issue on desktop: the kind switch, then subscribe, the share card and the other issues,
+ * which follow the reader when the window is tall enough to show them whole. On a phone it sits
+ * between the list and the stories, and only the subscribe card shows.
  */
 export function DailyAside({ report, index, leadStory, className = "" }: { report: ReportDetail; index: ReportNavigationEntry[]; leadStory: ReportCitation | null; className?: string }) {
   const tx = useTranslate();
@@ -190,9 +194,9 @@ export function DailyAside({ report, index, leadStory, className = "" }: { repor
   const card = useShareCard(report, dailyHeadline(report, leadStory));
   const others = index.filter((e) => e.key !== report.key).slice(0, 5);
   return (
-    <aside aria-label={tx("订阅与往期")} className={`min-w-0 pt-7 lg:pt-10 ${className}`}>
-      <div className="flex flex-col gap-7 lg:sticky lg:top-[calc(var(--bar-h)+1.5rem)]">
-        <div className="hidden lg:block"><KindSwitch kind="daily" /></div>
+    <aside aria-label={tx("订阅与往期")} className={`min-w-0 pt-7 lg:pt-4 ${className}`}>
+      <div className="mb-7 hidden lg:block"><KindSwitch kind="daily" /></div>
+      <div className="flex flex-col gap-7 lg:[@media(min-height:1010px)]:sticky lg:[@media(min-height:1010px)]:top-[calc(var(--bar-h)+1.5rem)]">
         <SubscribeCta source="daily_inline" place="aside" />
         <section aria-labelledby="share-card" className="hidden lg:block">
           <h2 id="share-card" className="text-[13px] font-semibold text-ink-2"><Text value="分享图" /></h2>

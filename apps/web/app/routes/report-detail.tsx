@@ -14,7 +14,7 @@ import { ReportLayout } from "../features/report/ReportLayout";
 import { ReportDeck, ReportPaper } from "../features/report/ReportPaper";
 import { FEATURES } from "@aihot/industry/features";
 import type { loader as rootLoader } from "../root";
-import { TimeDial } from "../features/chrono/TimeMachine";
+import { DeckDial } from "../features/chrono/TimeMachine";
 
 import { KIND_LABEL, feedLink, kindFromPath } from "../features/report/format";
 
@@ -69,7 +69,7 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
 export default function ReportDetailPage() {
   const { report, index, today } = useLoaderData<typeof loader>();
   const root = useRouteLoaderData<typeof rootLoader>("root");
-  const dial = FEATURES.timeMachine && <TimeDial bounds={root?.timeBounds ?? null} className="w-[300px] max-w-full" />;
+  const dial = FEATURES.timeMachine && <DeckDial bounds={root?.timeBounds ?? null} />;
   return (
     <ReportLayout kind={report.kind} index={index} current={report.key} today={today} archive={report.kind !== "daily"} deck={<ReportDeck report={report} index={index} aside={dial} />}>
       <ReportPaper report={report} index={index} />

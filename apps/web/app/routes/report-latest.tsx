@@ -17,7 +17,7 @@ import { ReportDeck, ReportPaper } from "../features/report/ReportPaper";
 import { FEATURES } from "@aihot/industry/features";
 import type { loader as rootLoader } from "../root";
 import { Deck } from "../components/shell/Deck";
-import { TimeDial } from "../features/chrono/TimeMachine";
+import { DeckDial } from "../features/chrono/TimeMachine";
 
 import { KIND_LABEL, KIND_PATH, feedLink, kindFromPath } from "../features/report/format";
 
@@ -67,7 +67,7 @@ export default function ReportLatestPage() {
   const tx = useTranslate();
   const { kind, report, index, today } = useLoaderData<typeof loader>();
   const root = useRouteLoaderData<typeof rootLoader>("root");
-  const dial = FEATURES.timeMachine && <TimeDial bounds={root?.timeBounds ?? null} className="w-[300px] max-w-full" />;
+  const dial = FEATURES.timeMachine && <DeckDial bounds={root?.timeBounds ?? null} />;
   const deck = report ? <ReportDeck report={report} index={index} aside={dial} /> : <Deck art="masthead-press" label={`AI ${tx(KIND_LABEL[kind])}`} title={`AI ${tx(KIND_LABEL[kind])}`} aside={dial} />;
   return (
     <ReportLayout kind={kind} index={index} current={report?.key ?? null} today={today} archive={!(report && kind === "daily")} deck={deck}>

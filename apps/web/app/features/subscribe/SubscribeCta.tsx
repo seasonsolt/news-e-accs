@@ -42,10 +42,10 @@ export function SubscribeCta({ source, sample, sticky = false, place }: {
           <Sent email={phase.email} />
         ) : (
           <>
-            <h2 id={`subscribe-cta-${id}`} className={`font-display italic leading-tight text-ink ${aside ? "text-[24px]" : "text-[26px] sm:text-[30px]"}`}>
+            <h2 id={`subscribe-cta-${id}`} className={`font-display italic leading-tight text-ink [font-synthesis-style:none] ${aside ? "text-[24px]" : "text-[26px] sm:text-[30px]"}`}>
               <Text value={aside ? "每天早上，把这样一份日报发到你邮箱" : source === "daily_inline" ? "明早 08:00 把这样一份日报发到你邮箱" : "每天一封，跟上 AI 的重要变化"} />
             </h2>
-            <p className={`mt-2 max-w-[62ch] leading-relaxed text-ink-3 ${aside ? "text-[13.5px]" : "text-[14.5px]"}`}>
+            <p className={`mt-2 max-w-[62ch] leading-relaxed text-ink-3 [text-wrap:pretty] ${aside ? "text-[13.5px]" : "text-[14.5px]"}`}>
               <Text value={aside ? "免费。点确认信之后才开始发送，每封都能一键退订。" : source === "daily_inline" ? "和上面这份一样：几件值得看的事。免费，点确认信之后才会开始发送，每封信都能一键退订。" : "模型发布、价格变化、算力进展，附原始来源。免费，确认后开始发送，随时一键退订。"} />
               {sample && <>{" "}<SampleLink sample={sample} /></>}
             </p>
@@ -71,7 +71,7 @@ export function Sent({ email }: { email: string }) {
   const tx = useTranslate();
   return (
     <div role="status">
-      <h2 className="font-display text-[26px] italic leading-tight text-ink"><Text value="去邮箱点一下确认" /></h2>
+      <h2 className="font-display text-[26px] italic leading-tight text-ink [font-synthesis-style:none]"><Text value="去邮箱点一下确认" /></h2>
       <p className="mt-2 max-w-[62ch] text-[14.5px] leading-relaxed text-ink-3">{tx("确认邮件已经发到 {0}。点信里的「确认订阅」，就能在所选语言的日报就绪后收到邮件。没收到的话，看看「推广」和「垃圾邮件」。", email)}</p>
     </div>
   );

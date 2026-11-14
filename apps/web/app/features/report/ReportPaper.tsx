@@ -170,7 +170,7 @@ function Story({ c, slot, dated, single = false, className = "" }: { c: ReportCi
               c.title
             )}
           </h3>
-          {c.summary && <p className="mt-2 line-clamp-4 text-[15px] leading-[1.85] text-ink-2 [overflow-wrap:anywhere] @[560px]:text-justify"><Prose slot={slot} text={c.summary} /></p>}
+          {c.summary && <p className="mt-2 line-clamp-4 max-w-[46em] text-[15px] leading-[1.85] text-ink-2 [overflow-wrap:anywhere] @[560px]:text-justify"><Prose slot={slot} text={c.summary} /></p>}
           {!!c.related?.length && <Related items={c.related} className="mt-3" />}
           <div className="mt-auto pt-3">
             <Original c={c} />
@@ -328,7 +328,7 @@ function FrontPage({ report, pages, leadStory, count }: { report: ReportDetail; 
         </h2>
         {dek && (
           <div className={cover && !wide ? "order-3 mt-6 grid gap-6 @[640px]:grid-cols-[minmax(0,1fr)_minmax(0,38%)] @[880px]:mt-7" : "order-3"}>
-            <p className={`text-[16.5px] leading-[1.9] text-ink-2 @[880px]:text-[17.5px] ${cover && !wide ? "" : "mt-6 @[560px]:text-justify @[880px]:mt-7"}`}><Prose slot="dek" text={dek} /></p>
+            <p className={`max-w-[46em] text-[16.5px] leading-[1.9] text-ink-2 @[880px]:text-[17.5px] ${cover && !wide ? "" : "mt-6 @[560px]:text-justify @[880px]:mt-7"}`}><Prose slot="dek" text={dek} /></p>
             {cover && !wide && <LeadPicture cover={cover} onError={() => setBroken(cover.url)} />}
           </div>
         )}
@@ -510,7 +510,7 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
       {pages.map((p, i) => (
         <SectionPage key={p.id} id={p.id} no={i + 1} label={p.label}>
           {p.summary && (
-            <p className="border-b border-line py-5 text-[15.5px] leading-[1.9] text-ink-2 @[560px]:text-justify">
+            <p className="border-b border-line py-5 pr-[max(0px,calc(100%-46em))] text-[15.5px] leading-[1.9] text-ink-2 @[560px]:text-justify">
               <span className="mr-2 font-semibold text-accent"><Text value="本版导读" /></span>
               <Prose slot={`page:${p.id}`} text={p.summary} />
             </p>
@@ -592,7 +592,7 @@ function DailyPaper({ report, index, leadStory, pages, quiet, linked }: {
           {pages.map((p) => (
             <SectionPage key={p.id} id={p.id} no={p.no} label={p.label}>
               {p.summary && (
-                <p className="border-b border-line py-5 text-[15.5px] leading-[1.9] text-ink-2 @[560px]:text-justify">
+                <p className="border-b border-line py-5 pr-[max(0px,calc(100%-46em))] text-[15.5px] leading-[1.9] text-ink-2 @[560px]:text-justify">
                   <span className="mr-2 font-semibold text-accent"><Text value="本版导读" /></span>
                   <Prose slot={`page:${p.id}`} text={p.summary} />
                 </p>
