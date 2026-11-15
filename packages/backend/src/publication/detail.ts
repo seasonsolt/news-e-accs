@@ -77,7 +77,7 @@ async function loadContext(row: DetailRow, now: Date): Promise<Pick<ItemDetail, 
     : null;
   const raw = r.raw ?? {};
   const xCounts = row.channel === "x" && [raw.views, raw.favorite, raw.retweet, raw.reply].some((v) => count(v) !== null)
-    ? { views: count(raw.views), favorite: count(raw.favorite), retweet: count(raw.retweet), reply: count(raw.reply), collectedAt: row.discovered_at.toISOString() }
+    ? { views: count(raw.views), favorite: count(raw.favorite), retweet: count(raw.retweet), reply: count(raw.reply), collectedAt: typeof raw.countsAt === "string" ? raw.countsAt : row.discovered_at.toISOString() }
     : null;
   const digest = r.story_id === null ? null : (await loadStoriesProse([Number(r.story_id)], now)).get(Number(r.story_id))?.digest ?? null;
   return { fact, authorRole: r.author_role === "principal" || r.author_role === "relayer" ? r.author_role : null, xCounts, digest };

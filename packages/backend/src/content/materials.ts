@@ -234,6 +234,20 @@ export async function materialIdentityForUrl(url: string, db: Db = sql, verified
  * its source; new entries still use URL identity, so another discovery of the same URL converges.
  * Existing duplicate rows remain untouched. Only collectors declaring an external ID call this.
  */
+/** Engagement counts a post's push carries (ingest/x-post.ts); they keep moving after the first push. */
+const ENGAGEMENT = ["views", "favorite", "retweet", "reply"] as const;
+
+/** A later push of a stored post replaces its engagement counts with the newer reading and records when it was taken. */
+async function refreshEngagement(db: Db, articleId: string, raw: unknown): Promise<void> {
+  if (!raw || typeof raw !== "object") return;
+  const counts = Object.fromEntries(ENGAGEMENT.flatMap((k) => {
+    const v = (raw as Record<string, unknown>)[k];
+    return typeof v === "number" && Number.isFinite(v) ? [[k, v]] : [];
+  }));
+  if (Object.keys(counts).length === 0) return;
+  await db`UPDATE articles SET raw = coalesce(raw, '{}'::jsonb) || ${db.json({ ...counts, countsAt: new Date().toISOString() } as never)} WHERE id = ${articleId}`;
+}
+
 export async function reuseExternalMaterialIdentities<C extends Pick<MaterialInput, "identityKey" | "raw">>(sourceId: string, candidates: C[], db: Db = sql): Promise<C[]> {
   const externalId = (raw: unknown): string | null => {
     const value = raw && typeof raw === "object" ? (raw as Record<string, unknown>).externalId : null;
@@ -329,6 +343,7 @@ async function upsertIn(db: Db, m: MaterialInput): Promise<MaterialResult> {
   if (existing!.source_id !== m.sourceId) {
     return unchanged;
   }
+  await refreshEngagement(db, existing!.id, m.raw);
   // Recover source precision only when the new reading describes the stored instant. No guessed
   // midnight heuristic and no paid reanalysis for an unchanged article.
   if (m.publicationTime && m.publishedAt && existing!.published_at?.getTime() === m.publishedAt.getTime()

@@ -127,6 +127,16 @@ test("a pushed post matches the collector candidate and keeps the account's sour
   const again = await ingestItems({ items: [post(id, handle.toLowerCase(), text)] });
   assert.equal(again.created, 0);
   assert.equal((await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM articles WHERE identity_key = ${`x:${id}`}`)[0]!.n, 1);
+
+  const [before] = await sql<{ revision: number }[]>`SELECT revision FROM articles WHERE id = ${article!.id}`;
+  // A later push of the same post brings newer engagement: the counts follow it, the post is not revised or judged again.
+  await ingestItems({ items: [post(id, handle.toLowerCase(), text, { counts: { like: 950, retweet: 120, views: 40_000 } })] });
+  const [later] = await sql<{ raw: Record<string, unknown>; revision: number }[]>`SELECT raw, revision FROM articles WHERE id = ${article!.id}`;
+  const { countsAt, ...counts } = later!.raw;
+  assert.deepEqual(counts, { favorite: 950, retweet: 120, reply: 2, views: 40_000 }, "a count the later push lacks keeps its earlier reading");
+  assert.ok(typeof countsAt === "string" && !Number.isNaN(Date.parse(countsAt)));
+  assert.equal(later!.revision, before!.revision);
+  assert.deepEqual((await sql<{ name: string }[]>`SELECT name FROM pgboss.job WHERE data->>'articleId' = ${article!.id}`).map((j) => j.name), [QUEUES.analyze]);
 });
 
 test("the same identity dedups a post the collector already stored", async () => {
