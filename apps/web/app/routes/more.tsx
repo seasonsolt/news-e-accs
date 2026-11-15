@@ -11,11 +11,10 @@ import { webModules } from "../site-modules";
 import { pageMeta } from "../lib/seo";
 import { setFontPreference, useFontPreference } from "../lib/local-state";
 import { Select } from "../components/ui/Controls";
-import { ThemeSwitch } from "../components/shell/ThemeSwitch";
 import { MotionSwitch } from "../features/motion/MotionSwitch";
 import { MORE_MENU } from "../components/shell/nav";
 import { recordEngagement } from "../lib/engagement";
-import { IconBolt, IconChevronRight, IconMoon } from "../components/icons";
+import { IconBolt, IconChevronRight } from "../components/icons";
 import { TimeDial } from "../features/chrono/TimeMachine";
 import { useAt, withAt } from "../features/chrono/at";
 import { Deck } from "../components/shell/Deck";
@@ -83,13 +82,6 @@ export default function MorePage() {
             ))}
             {g.title === "偏好" && (
               <>
-                <li className="flex h-[58px] items-center gap-3 px-4 text-[15px] font-medium text-ink">
-                  <span className="text-ink-3">
-                    <IconMoon size={18} />
-                  </span>
-                  <span className="flex-1"><Text value="外观" /></span>
-                  <ThemeSwitch className="w-[124px]" />
-                </li>
                 <li className="flex h-[58px] items-center gap-3 px-4 text-[15px] font-medium text-ink">
                   <span className="text-ink-3">
                     <IconBolt size={18} />

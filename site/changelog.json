@@ -1,6 +1,23 @@
 {
-  "latestVersion": "2026-11-15T10:30",
+  "latestVersion": "2026-11-15T22:30",
   "releases": [
+    {
+      "date": "2026-11-15",
+      "time": "22:30",
+      "kind": "优化",
+      "title": "外观开关只在能换色的页面出现",
+      "body": [
+        "首页、日报、编年史等夜间页面无论选哪种外观都保持深色，页脚不再显示在这些页面上不起作用的深浅色开关；在条目、报告和话题页面仍可切换。“更多”里的外观选项随之移除。",
+        "英文版“关于”页的信源统计不再夹杂中文：网页、公众号等类型显示为英文。"
+      ],
+      "en": {
+        "title": "The theme switch shows only where it works",
+        "body": [
+          "Night pages such as the front page, the daily and the chronicle stay dark in either theme, so their footer no longer shows a light/dark switch that changed nothing there; items, reports and topics still offer it. The appearance row in More goes with it.",
+          "The English About page lists its source kinds in English, with no Chinese labels left in the counts."
+        ]
+      }
+    },
     {
       "date": "2026-11-15",
       "time": "10:30",

@@ -81,7 +81,9 @@ interface Stage {
 }
 
 function stagesOf(stats: SiteStats | null): Stage[] {
-  const kinds = stats ? KIND_ORDER.filter(([k]) => stats.sourceKinds[k]).map(([k, label]) => `${label} ${stats.sourceKinds[k]}`).join(" · ") : null;
+  const kinds = stats
+    ? KIND_ORDER.filter(([k]) => stats.sourceKinds[k]).map(([k, label], i) => <Fragment key={k}>{i > 0 && " · "}<Text value={label} /> {stats.sourceKinds[k]}</Fragment>)
+    : null;
   return [
     {
       no: "01",

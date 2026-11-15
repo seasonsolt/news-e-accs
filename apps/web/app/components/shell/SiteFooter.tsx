@@ -4,13 +4,17 @@ import { Text, useLocale, useTranslate } from "../../lib/i18n";
 // The foot of every page: preferences (appearance, motion), the rules and feeds, the contact address and the ICP number.
 // These lived at the foot of the sidebar before the deck's top bar replaced it.
 import { SITE } from "@aihot/site";
+import { useLocation } from "react-router";
 
 import { ThemeSwitch } from "./ThemeSwitch";
+import { isNightPage } from "./nav";
 import { MotionSwitch } from "../../features/motion/MotionSwitch";
 
 export function SiteFooter() {
   const tx = useTranslate();
   const locale = useLocale();
+  // A night page stays dark in either theme, so a theme choice there would change nothing on the page.
+  const night = isNightPage(useLocation().pathname);
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
@@ -30,7 +34,7 @@ export function SiteFooter() {
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
           <LanguageSwitch />
-          <ThemeSwitch className="w-[124px]" />
+          {!night && <ThemeSwitch className="w-[124px]" />}
           <MotionSwitch />
         </div>
       </div>
