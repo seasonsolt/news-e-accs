@@ -99,12 +99,10 @@
 }
 
 :root {
-  /* Page widths follow the screen's shape. Lists fill the screen up to 21:9
-     and centre beyond it (32:9); reading pages fill a 16:9 screen and centre on wider ones. A browser
-     window is shorter than its screen (tabs, address bar), so a 16:9 screen gives a window of about 2:1
-     and a 21:9 screen one of about 2.7:1. 64px is the main area's padding. */
-  --page-max-wide: max(1200px, calc(270dvh - 64px));
-  --page-max-reading: max(1100px, calc(200dvh - 64px));
+  /* One centred column on every page, the home page's: 1200px of content, plus the main area's 32px
+     padding on each side (lg:px-8). Decks and bands still bleed to the window's edges behind it. */
+  --page-max-wide: 1264px;
+  --page-max-reading: 1200px;
   /* Below lg upstream's shell has a sticky top bar of this height; this site has none (the deck scrolls
      with the page, the tab bar sits at the bottom), so pages that offset by it get zero. Gutters keep
      bands clear of the notch in landscape. */
@@ -997,7 +995,6 @@ html { scrollbar-gutter: stable; }
 /* 精选 and 全部动态 (the homepage layout) keep a full-bleed photograph around a bounded reading column. */
 .home-page { max-width: 1200px; margin-inline: auto; }
 .home-page > .deck { padding: 28px 0; }
-.home-page .deck-inner { max-width: 1264px; }
 .home-page .deck-plate { object-position: 65% 62%; }
 .home-page .deck-shade { background: linear-gradient(90deg, rgb(10 8 6 / .88), rgb(10 8 6 / .25) 70%), linear-gradient(0deg, rgb(10 8 6 / .85), transparent 65%); }
 .home-page .deck-desc { max-width: 32rem; font-size: 16px; line-height: 1.75; }

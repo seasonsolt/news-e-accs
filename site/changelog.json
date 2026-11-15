@@ -1,6 +1,27 @@
 {
-  "latestVersion": "2026-11-07T12:00",
+  "latestVersion": "2026-11-15T10:30",
   "releases": [
+    {
+      "date": "2026-11-15",
+      "time": "10:30",
+      "kind": "优化",
+      "title": "头条更可靠，页面宽度统一",
+      "body": [
+        "日报头条只选新闻：只要当期有新闻，教程和观点就不当头条；同样重要的几件事，先排一手发布，再看报道的信源多少和谁先发，不再由随机顺序决定。",
+        "新增 Anthropic 官方新闻和 Claude 博客两个一手信源，官方原文会先于媒体转述收录。",
+        "移除 The Decoder，它的文章已从全站下架；雷锋网和几位发帖多、入选少的 X 作者改为只计入热度，不再进精选。",
+        "所有页面统一成和首页一样的居中版面，宽屏上不再铺满整个窗口。"
+      ],
+      "en": {
+        "title": "More reliable leads, one page width",
+        "body": [
+          "The daily's lead is always news: a how-to or an opinion leads only when the issue has no news, and equally important stories rank first-hand first, then by how many sources carried them and who reported first, never by chance.",
+          "Two first-party sources join, Anthropic News and the Claude blog, so official posts arrive before the coverage that repeats them.",
+          "The Decoder is removed and its articles are withdrawn; Leiphone and a few prolific X authors whose posts were rarely selected now count only toward heat.",
+          "Every page now uses the home page's centred column instead of stretching across wide screens."
+        ]
+      }
+    },
     {
       "date": "2026-11-07",
       "time": "12:00",
