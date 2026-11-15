@@ -1,13 +1,15 @@
 import { editionAt, tag } from "./setup.ts";
 // A quiet window's daily lowers the selection bar step by step until it has six events; it takes only
-// reports that missed on their score, and a busy window takes none.
+// reports that missed on their score, and a busy window takes none. Its lead is news, not a how-to or an
+// opinion, and equally important events never rank by their random ids (2026-11-15: three fill-ins tied
+// and a media repost of a three-day-old how-to led on its id).
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { closeDb, sql } from "@aihot/backend/db";
 import { upsertMaterial } from "@aihot/backend/content/materials";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { publishArticle } from "@aihot/backend/publication/publish";
-import { dailyEdition } from "@aihot/backend/reports/edition";
+import { arrangeDaily, dailyEdition } from "@aihot/backend/reports/edition";
 
 const T = tag();
 const SOURCE = { T1: `test-relaxed-t1-${T}`, T2: `test-relaxed-t2-${T}`, EXCLUDE_MP: `test-relaxed-mp-${T}` };
@@ -23,14 +25,14 @@ after(async () => {
   await closeDb();
 });
 
-async function report(date: string, label: string, tier: keyof typeof SOURCE, score: number, opts: { selected?: boolean; addsValue?: boolean } = {}): Promise<string> {
-  const at = editionAt("daily", date, -120);
+async function report(date: string, label: string, tier: keyof typeof SOURCE, score: number, opts: { selected?: boolean; addsValue?: boolean; category?: string; secondsBefore?: number } = {}): Promise<string> {
+  const at = editionAt("daily", date, -(opts.secondsBefore ?? 120));
   const { articleId } = await upsertMaterial({
     sourceId: SOURCE[tier], url: `https://example.com/relaxed-${T}-${date}-${label}`, title: `Relaxed ${label}`,
     bodyText: `Relaxed ${label} body`, bodyStatus: "ok", publishedAt: at, discoveredAt: at, via: "fetch",
   });
   await sql`INSERT INTO analyses (article_id, input_revision, origin, relevance, category, title, summary, editorial_language, score, selected)
-            VALUES (${articleId}, 1, 'rule', 'pass', 'industry', ${`Headline ${label}`}, ${`Summary ${label}`}, 'en', ${score}, ${opts.selected ?? false})`;
+            VALUES (${articleId}, 1, 'rule', 'pass', ${opts.category ?? "industry"}, ${`Headline ${label}`}, ${`Summary ${label}`}, 'en', ${score}, ${opts.selected ?? false})`;
   await sql`UPDATE articles SET grouping_status = 'complete', grouped_at = ${at}, selection_adds_value = ${opts.addsValue ?? true} WHERE id = ${articleId}`;
   await publishArticle(articleId, { now: at, releasedAt: at });
   return articleId;
@@ -70,4 +72,18 @@ test("a daily with six events keeps the bar where it is", async () => {
   assert.equal(edition.entries.some((e) => e.entry.itemId === near), false);
   assert.equal(edition.stats.relaxedBy, 0);
   assert.equal(edition.stats.fillIns, 0);
+});
+
+test("a quiet daily leads with news before a better scored how-to, and ties go to the earlier report", async () => {
+  const date = "2019-06-16";
+  const howTo = await report(date, "how-to", "T2", 74, { category: "tip", secondsBefore: 300 });
+  const later = await report(date, "later-news", "T2", 71, { secondsBefore: 600 });
+  const earlier = await report(date, "earlier-news", "T2", 71, { category: "paper", secondsBefore: 3600 });
+
+  const edition = await dailyEdition(date, ...window(date));
+  assert.deepEqual(edition.entries.map((e) => e.entry.itemId), [howTo, earlier, later]);
+  const { main, flashes } = arrangeDaily(edition.entries);
+  assert.deepEqual(main.map((e) => e.entry.itemId), [earlier, howTo], "the first news leads; the how-to keeps its place after it");
+  assert.deepEqual(flashes.map((e) => e.entry.itemId), [later], "two entries per source at most");
+  assert.deepEqual(arrangeDaily(edition.entries.filter((e) => e.entry.itemId === howTo)).main.map((e) => e.entry.itemId), [howTo], "an issue of commentary alone still has a lead");
 });

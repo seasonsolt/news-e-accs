@@ -5,9 +5,9 @@
 // with a new fact; an event with an official post and three or more independent participants is
 // carried even when none of its reports was selected; a window with fewer events than MIN_EVENTS lowers
 // the selection bar step by step until it has them; entries rank by importance (score, the day's
-// independent participants, first-hand), and the first one leads. Sections are the industry pack's
-// (industry/taxonomy.ts CATEGORIES). A thin issue's highlights are filled from the window's best reports it
-// left out (dailyPicks).
+// independent participants, first-hand), and the first one that is news, not commentary, leads. Sections
+// are the industry pack's (industry/taxonomy.ts CATEGORIES). A thin issue's highlights are filled from the
+// window's best reports it left out (dailyPicks).
 import { addDays } from "@aihot/contracts/time";
 import { SELECTION } from "@aihot/industry/selection";
 import { CATEGORIES } from "@aihot/industry/taxonomy";
@@ -495,7 +495,10 @@ export async function dailyEdition(date: string, start: Date, end: Date): Promis
       }),
     };
   });
-  entries.sort((a, b) => b.importance - a.importance || a.entry.itemId.localeCompare(b.entry.itemId));
+  // Equally important events: the first-hand one, then news before commentary, the more reported, the earlier.
+  entries.sort((a, b) => b.importance - a.importance || a.authority - b.authority
+    || Number(COMMENTARY.has(a.category ?? "")) - Number(COMMENTARY.has(b.category ?? ""))
+    || b.entry.sources - a.entry.sources || a.entry.publishedAt.localeCompare(b.entry.publishedAt) || a.entry.itemId.localeCompare(b.entry.itemId));
   // Reports the English edition has no copy of: whichever of them an issue ends up citing, the writer repairs.
   const legacy = new Map(kept.flatMap((f) => f.rows.filter((r) => r.needsEnglishCopy).map((r): [string, ReportEntry] => [r.id, reportEntry(r)])));
   return {
@@ -510,7 +513,8 @@ export async function dailyEdition(date: string, start: Date, end: Date): Promis
  * under the most important of them; a follow-up of a covered event takes a full entry only when the
  * party itself acted (not as commentary) or four or more sources carry its new facts, else it is a flash;
  * then the most important entries in full, at most two per source, and the next ones as flashes. The
- * first entry leads the issue and the next three are its highlights.
+ * first entry leads the issue and the next three are its highlights; a how-to or an opinion (the pack's
+ * commentary) leads only an issue that has no news in full.
  */
 export function arrangeDaily(entries: EditionEntry[]): { main: EditionEntry[]; flashes: EditionEntry[]; stats: Record<string, number> } {
   const byStory = new Map(entries.filter((e) => e.storyId !== null).map((e) => [e.storyId!, e]));
@@ -542,6 +546,8 @@ export function arrangeDaily(entries: EditionEntry[]): { main: EditionEntry[]; f
       perSource.set(e.entry.sourceId, n + 1);
     } else rest.push(e);
   }
+  const news = main.findIndex((e) => !COMMENTARY.has(e.category ?? ""));
+  if (news > 0) main.unshift(...main.splice(news, 1));
   const flashes = rest.slice(0, FLASH_ENTRIES);
   return { main, flashes, stats: { roundupsFolded: folded.size, followUpsAsFlashes: live.filter((e) => !full(e)).length, left: rest.length - flashes.length } };
 }
