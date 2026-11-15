@@ -13,11 +13,18 @@ import { arrangeDaily, dailyEdition } from "@aihot/backend/reports/edition";
 
 const T = tag();
 const SOURCE = { T1: `test-relaxed-t1-${T}`, T2: `test-relaxed-t2-${T}`, EXCLUDE_MP: `test-relaxed-mp-${T}` };
+/** A company's X account usually liked 100 times, and one usually liked 10 times. */
+const X_LIKED = `test-relaxed-x-liked-${T}`;
+const X_QUIET = `test-relaxed-x-quiet-${T}`;
 
 before(async () => {
   for (const [tier, id] of Object.entries(SOURCE)) {
     await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, next_fetch_at)
               VALUES (${id}, ${`Relaxed bar ${tier}`}, 'rss', ${tier}, 'editorial', '2100-01-01')`;
+  }
+  for (const id of [X_LIKED, X_QUIET]) {
+    await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, owner_entity_id, next_fetch_at)
+              VALUES (${id}, ${`Relaxed ${id}`}, 'x_search', 'T1_5', 'editorial', 'openai', '2100-01-01')`;
   }
 });
 after(async () => {
@@ -25,11 +32,12 @@ after(async () => {
   await closeDb();
 });
 
-async function report(date: string, label: string, tier: keyof typeof SOURCE, score: number, opts: { selected?: boolean; addsValue?: boolean; category?: string; secondsBefore?: number } = {}): Promise<string> {
+async function report(date: string, label: string, tier: keyof typeof SOURCE, score: number, opts: { selected?: boolean; addsValue?: boolean; category?: string; secondsBefore?: number; sourceId?: string; likes?: number } = {}): Promise<string> {
   const at = editionAt("daily", date, -(opts.secondsBefore ?? 120));
   const { articleId } = await upsertMaterial({
-    sourceId: SOURCE[tier], url: `https://example.com/relaxed-${T}-${date}-${label}`, title: `Relaxed ${label}`,
+    sourceId: opts.sourceId ?? SOURCE[tier], url: `https://example.com/relaxed-${T}-${date}-${label}`, title: `Relaxed ${label}`,
     bodyText: `Relaxed ${label} body`, bodyStatus: "ok", publishedAt: at, discoveredAt: at, via: "fetch",
+    ...(opts.likes === undefined ? {} : { raw: { favorite: opts.likes, retweet: 0, views: 0 } }),
   });
   await sql`INSERT INTO analyses (article_id, input_revision, origin, relevance, category, title, summary, editorial_language, score, selected)
             VALUES (${articleId}, 1, 'rule', 'pass', ${opts.category ?? "industry"}, ${`Headline ${label}`}, ${`Summary ${label}`}, 'en', ${score}, ${opts.selected ?? false})`;
@@ -86,4 +94,23 @@ test("a quiet daily leads with news before a better scored how-to, and ties go t
   assert.deepEqual(main.map((e) => e.entry.itemId), [earlier, howTo], "the first news leads; the how-to keeps its place after it");
   assert.deepEqual(flashes.map((e) => e.entry.itemId), [later], "two entries per source at most");
   assert.deepEqual(arrangeDaily(edition.entries.filter((e) => e.entry.itemId === howTo)).main.map((e) => e.entry.itemId), [howTo], "an issue of commentary alone still has a lead");
+});
+
+test("a company's X post liked far above its usual count raises its event; an account with few likes does not", async () => {
+  const date = "2019-06-23";
+  const day = 86400;
+  for (let i = 1; i <= 5; i++) {
+    await report(date, `liked-usual-${i}`, "T2", 40, { sourceId: X_LIKED, likes: 100, secondsBefore: (i + 1) * day });
+    await report(date, `quiet-usual-${i}`, "T2", 40, { sourceId: X_QUIET, likes: 10, secondsBefore: (i + 1) * day });
+  }
+  // 8× its usual likes: +9, past a better scored report. Ten times a usual 10 likes earns nothing.
+  const surge = await report(date, "surge", "T2", 70, { sourceId: X_LIKED, likes: 800, selected: true, secondsBefore: 600 });
+  const media = await report(date, "media", "T2", 75, { selected: true, secondsBefore: 900 });
+  const quiet = await report(date, "quiet-surge", "T2", 72, { sourceId: X_QUIET, likes: 100, selected: true, secondsBefore: 300 });
+
+  const edition = await dailyEdition(date, ...window(date));
+  assert.deepEqual(edition.entries.map((e) => e.entry.itemId).filter((id) => [surge, media, quiet].includes(id)), [surge, media, quiet]);
+  const by = new Map(edition.entries.map((e) => [e.entry.itemId, e.importance]));
+  assert.equal(by.get(surge)! - by.get(media)!, 70 + 9 - 75);
+  assert.equal(by.get(quiet)! - by.get(media)!, 72 - 75);
 });

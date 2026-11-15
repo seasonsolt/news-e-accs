@@ -5,7 +5,8 @@
 // with a new fact; an event with an official post and three or more independent participants is
 // carried even when none of its reports was selected; a window with fewer events than MIN_EVENTS lowers
 // the selection bar step by step until it has them; entries rank by importance (score, the day's
-// independent participants, first-hand), and the first one that is news, not commentary, leads. Sections
+// independent participants, first-hand, a company's X post liked well above its usual), and the first one
+// that is news, not commentary, leads. Sections
 // are the industry pack's (industry/taxonomy.ts CATEGORIES). A thin issue's highlights are filled from the
 // window's best reports it left out (dailyPicks).
 import { addDays } from "@aihot/contracts/time";
@@ -46,6 +47,16 @@ const MIN_EVENTS = 6;
 const RELAX_STEP = 5;
 /** Earlier issues a daily remembers. */
 const MEMORY_DAYS = 7;
+/**
+ * X engagement as heat: a company account's post liked well above its own usual counts. The usual count
+ * is the median of the account's previous 30 days (at least BASELINE_POSTS posts); accounts usually liked
+ * fewer than BASELINE_LIKES times are left out, since a handful of likes would read as a surge there.
+ * The bonus is ENGAGEMENT_STEP per doubling over the usual count, at most ENGAGEMENT_CAP.
+ */
+const BASELINE_POSTS = 5;
+const BASELINE_LIKES = 20;
+const ENGAGEMENT_STEP = 3;
+const ENGAGEMENT_CAP = 9;
 
 export interface ReportEntry {
   itemId: string;
@@ -407,11 +418,37 @@ async function judgedReports(start: Date, end: Date): Promise<number> {
 /**
  * How much an event matters to a reader of the day: the best score among its selected reports, its
  * heat as the independent participants who discussed it within the issue's window (as the hot list
- * counts them: 1 → 5, 3 → 10, 7 → 15, 15 → 20), a first-hand post, and less for an event an earlier
- * issue already covered.
+ * counts them: 1 → 5, 3 → 10, 7 → 15, 15 → 20), a first-hand post, a company's X post liked well above
+ * its usual (2× → 3, 4× → 6, 8× and more → 9), and less for an event an earlier issue already covered.
  */
-function importance(e: { score: number | null; participants: number; official: boolean; followUp: boolean }): number {
-  return (e.score ?? 50) + 5 * Math.log2(1 + e.participants) + (e.official ? 5 : 0) - (e.followUp ? 6 : 0);
+function importance(e: { score: number | null; participants: number; official: boolean; followUp: boolean; engagement: number }): number {
+  const surge = e.engagement > 1 ? Math.min(ENGAGEMENT_CAP, ENGAGEMENT_STEP * Math.log2(e.engagement)) : 0;
+  return (e.score ?? 50) + 5 * Math.log2(1 + e.participants) + (e.official ? 5 : 0) - (e.followUp ? 6 : 0) + surge;
+}
+
+/**
+ * The window's X news posts from company accounts, each with its likes over the account's usual count
+ * (BASELINE_POSTS, BASELINE_LIKES); commentary and posts without counts are left out.
+ */
+async function engagementOf(storyIds: number[], articleIds: string[], start: Date, end: Date): Promise<Array<{ article_id: string; story_id: number | null; ratio: number }>> {
+  if (storyIds.length === 0 && articleIds.length === 0) return [];
+  return sql<Array<{ article_id: string; story_id: number | null; ratio: number }>>`
+    WITH x AS (
+      SELECT p.article_id, p.story_id, p.source_id, p.timeline_at, (a.raw->>'favorite')::float8 AS likes
+      FROM publications p JOIN articles a ON a.id = p.article_id JOIN sources s ON s.id = p.source_id
+      WHERE s.kind = 'x_search' AND s.owner_entity_id IS NOT NULL AND s.participation_mode = 'editorial'
+        AND p.visibility = 'public' AND p.eligible AND NOT p.backfill AND NOT (coalesce(p.category, '') = ANY(${[...COMMENTARY]}::text[]))
+        AND p.timeline_at >= ${start} AND p.timeline_at < ${end} AND jsonb_typeof(a.raw->'favorite') = 'number'
+        AND (p.story_id = ANY(${storyIds}::bigint[]) OR p.article_id = ANY(${articleIds}::text[]))
+    )
+    SELECT x.article_id, x.story_id, x.likes / b.usual AS ratio
+    FROM x CROSS JOIN LATERAL (
+      SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY (a.raw->>'favorite')::float8) AS usual, count(*) AS posts
+      FROM publications p JOIN articles a ON a.id = p.article_id
+      WHERE p.source_id = x.source_id AND NOT p.backfill AND jsonb_typeof(a.raw->'favorite') = 'number'
+        AND p.timeline_at < x.timeline_at AND p.timeline_at >= x.timeline_at - interval '30 days'
+    ) b
+    WHERE b.posts >= ${BASELINE_POSTS} AND b.usual >= ${BASELINE_LIKES}`;
 }
 
 interface Fact { key: string; rows: ReportRow[]; selected: boolean; sources: string[]; at: number }
@@ -452,7 +489,8 @@ export async function dailyEdition(date: string, start: Date, end: Date): Promis
   const events = [...groupBy(facts, eventKeyOf).values()];
   const storyIds = [...new Set(events.map((fs) => fs[0]!.rows[0]!.story_id).filter((id): id is number => id !== null))];
   const loose = events.filter((fs) => fs[0]!.rows[0]!.story_id === null).flatMap((fs) => fs.flatMap((f) => f.rows.map((r) => r.id)));
-  const [talk, named] = await Promise.all([
+  const eventIds = events.flatMap((fs) => fs.flatMap((f) => f.rows.map((r) => r.id)));
+  const [talk, named, engaged] = await Promise.all([
     storyIds.length
       ? sql<{ story_id: number; participants: number }[]>`
         SELECT cs.story_id, count(DISTINCT cs.participant_key)::int AS participants FROM ${currentSignals()} cs
@@ -465,6 +503,7 @@ export async function dailyEdition(date: string, start: Date, end: Date): Promis
         SELECT DISTINCT fa.article_id, f.story_id FROM fact_articles fa JOIN facts f ON f.id = fa.fact_id
         WHERE fa.article_id = ANY(${loose}::text[]) AND f.story_id IS NOT NULL`
       : [],
+    engagementOf(storyIds, eventIds, start, end),
   ]);
   const participants = new Map(talk.map((t) => [t.story_id, t.participants]));
 
@@ -492,6 +531,7 @@ export async function dailyEdition(date: string, start: Date, end: Date): Promis
         participants: storyId === null ? sourceIds.size : participants.get(storyId) ?? sourceIds.size,
         official: fs.some((f) => f.rows.some((r) => representativePriority(r) < 3)),
         followUp: !!previous,
+        engagement: Math.max(0, ...engaged.filter((x) => (storyId !== null && x.story_id === storyId) || ids.has(x.article_id)).map((x) => x.ratio)),
       }),
     };
   });
