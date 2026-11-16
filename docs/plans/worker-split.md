@@ -112,6 +112,19 @@ DMIT（1 vCPU、1.9 GB）只负责对外响应：api、web、Postgres、cloudfla
 - 先只开 `models` 角色，观察一周：任务耗时、失败率、`paidRequest` 锁等待、DMIT 负载。
 - 兜底：家里断网超过一定时间，在 DMIT 上临时以 `all` 角色启动 worker。
 
+### 阶段 3 进展（2026-11-16 晚）
+
+- [x] 发布 b0e2777（agy 接入、`codex-terra`/`agy-hydrogen` 预设、中文综述评测）。
+- [x] DMIT Postgres 对 mini 开放：`conf.d/eacc-tailscale.conf` 监听 `localhost, 100.93.38.119`；`/etc/sysctl.d/60-eacc-pg.conf` 设 `net.ipv4.ip_nonlocal_bind = 1`（开机时 Tailscale 地址可能还没出现）；`pg_hba.conf` 只放行 `100.90.216.39/32` 的 `eacc`；nftables input 链只放行 `tailscale0` 上来自 mini 的 5432。公网 5432 仍不通。原文件备份在 DMIT 的 `/root/backup-20261116-pg-tailscale/`。
+- [x] 远程实测：每条查询 141 ms；一次 `paidRequest` 申领（持锁）约 1.1 s、记录回答约 0.7 s、完成约 0.15 s，每次模型调用多约 2 s。
+- [x] mini 上的 `models` worker：LaunchAgent `ai.e-acc.models-worker`（`caffeinate -is` 防睡眠，崩溃自动拉起，停止等 210 s），运行 `~/eacc-worker/current`，配置在 `~/.config/eacc-models/env`（DMIT `.env` 去掉 `CODEX_HOME` 等，换成 Tailscale 上的库、`WORKER_ROLE=models`、mini 的 `agy` 和 Codex）。DMIT 的 worker 设为 `WORKER_ROLE=core`（`.env` 备份 `.env.bak-20261116-worker-role`）。
+- [x] 第一次接手：`content.localize` 在 mini 上跑完（71 s，翻译 2 条），core 的任务照常在 DMIT。
+- [x] 使用者盲评后认定 `agy-hydrogen` 胜出；综述（`digest`）已切到 `agy-hydrogen`（审计 `models.switch`，操作者 `claude-code`）。
+- [ ] 确认综述在 mini 上用 agy 正常生成后，再切翻译、公众号等写作步骤。只有归 `models` 的步骤能用 agy：日报和周报月报（`reports.compose`）在 core，DMIT 上没有 agy。
+- [ ] 每次 `deploy/update.sh` 之后在 mini 上运行 `~/eacc-worker/bin/update`（私有脚本，不在仓库里），让 mini 换到同一版本；以后再并进发布脚本。
+- [ ] mini 的 `~/eacc-worker/logs/worker.log` 还没有轮转。
+- 风险：mini 重启后要有图形登录，LaunchAgent 才会启动（现在一直登录着）；`agy` 会在后台自动更新，更新后要再确认工具限制还在。
+
 ### 阶段 4：再看
 
 - 按阶段 3 的数据决定 `content.analyze`、`events.group` 要不要搬，以及要不要先缩短 `paidRequest` 申领事务里的往返次数。
