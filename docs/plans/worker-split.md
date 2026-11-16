@@ -1,0 +1,91 @@
+# 计划：内容生产搬到 mini，DMIT 只做对外服务
+
+> 2026-11-16 起草。只属于我们自己的生产站（e-acc.ai），不是模板的通用说明。
+
+## 1. 目标与已定的决定
+
+DMIT（1 vCPU、1.9 GB）只负责对外响应：api、web、Postgres、cloudflared。耗资源的内容生产，先从调模型的任务开始，搬到家里的 mini（10 核、在线时间不如机房），mini 成为“产生内容的后端”。长期方向是逐步过渡到 Cloudflare 原生全栈。
+
+使用者 2026-11-16 定下：
+
+1. **数据库留在 DMIT**，mini 上的 worker 远程连（方案 A）。家里断网时网站照常，只是暂停出新内容。不把主库搬到 mini：api 也要写库，主库在家里会让网站的写操作依赖家里的线路。
+2. **worker 产出的文件改放 R2**，不在两台机器之间同步目录。这和 Cloudflare 原生的方向一致。
+3. **分步走**：先量，再打通网络，先只把调模型的任务搬到 mini，稳定后再看其余任务。
+4. 写作模型想从 Codex 换成 antigravity-cli（`agy`）。`agy -p` 是官方客户端一问一答，不是反代；但 Google FAQ 写着把 `agy` 包进应用“not supported under consumer plans”，属于灰色地带。先在 mini 上手动对比写作质量，再决定是否接进生产。`agy` 只装在 mini 上。
+
+## 2. 代码现状里的卡点（2026-11-16 只读排查）
+
+**worker 不能分角色运行**
+
+- `apps/worker/src/schedules.ts:110-113` 启动时删掉所有不在本进程清单里的 `cron.*` 队列（连同排好的任务和定时）。第二个 worker 只跑一部分定时，启动时就会删掉另一台的定时。
+- `apps/worker/src/main.ts:24-31` 无条件注册全部队列；现有开关（`COLLECT_ENABLED`、`MODEL_CALLS_ENABLED` 等）都不能按机器分配队列。`MODEL_CALLS_ENABLED=false` 只会让调用报错重试，不会把任务让给另一台。
+- 心跳键固定是 `heartbeat.worker`（`operations/watch.ts:28`），两个进程会互相覆盖，api 的看门狗分不出哪台停了。
+
+**远程连库的延迟**
+
+- 每次模型调用都经过 `paidRequest`（`providers/receipts.ts:256`）：申领事务在 `pg_advisory_xact_lock('budget:'+service)` 里顺序执行 8–10 条语句，回写再 5 条左右。150–200 ms 往返下，每次调用持锁约 1.5–2 s，**同一 service 的所有调用（两台机器都算）都要排队等这把锁**。
+- `events.group`（并发 1，带行锁的约 7 个事务）和 `content.analyze`（模型调用后接 `publishArticle`，约 28 条查询）是数据库最重的两个队列，第一步不搬。
+
+**worker 和 api 共用磁盘**
+
+模型任务产出、由 api 对外发的文件：
+
+| 文件 | 写入 | 读取 / 对外 |
+|---|---|---|
+| `uploads/essays/` | `essays.task`（画图、搜图）、api 上传和发布时的卡片 | `modules/essays/api/public.ts:29-33`、`admin.ts:34-37` |
+| `uploads/wechat-illustrations/` | `wechat.illustrate`、api 上传 | `admin/wechat.ts:332,442`、`routes/wechat-video.ts:19-25` |
+
+其余共用目录（`imgcache/`、`ogcache/`、`feedback-screenshots/`、`uploads/` 二维码和壁纸预览、`backups/`、`sitemap-last.json`）属于不调模型的任务，第一阶段跟着 DMIT 上的 worker 不动。另外：
+
+- api 用 `codexConfigured()` 判断能不能画图（`wechat-illustrations.ts:63`、`modules/essays/backend/store.ts:106`）。Codex 只装在 mini 时，后台会显示“不能画”，要改成看有没有能跑模型任务的 worker。
+- `ops.backup` 只打包本机 `uploads/`；文件进 R2 后，这部分备份要重新设计（R2 本身就是持久存储）。
+
+**现有 R2 能力**
+
+- `packages/backend/src/lib/s3.ts` 有自己写的 SigV4 签名和预签名，已有测试。
+- 壁纸模块的 `modules/wallpaper/src/store.ts` 只有 `put` 和 5 分钟预签名 GET，配置在 `WALLPAPER_STORE_*`。
+- 入口 Worker（`deploy/edge/`）绑定了 R2 桶 `e-acc`（`MEDIA`），目前只直接发 `scenes/`。
+
+## 3. 分阶段
+
+### 阶段 0：量（等使用者）
+
+- [ ] 在 Mac 上跑 DMIT 测量脚本：各服务 CPU 和内存、近 7 天各任务耗时、模型调用次数、10 分钟采样。
+- [ ] DMIT 和 mini 装 Tailscale（`--accept-dns=false`），确认 `tailscale ping` 是直连还是 DERP 中转。
+- [ ] 从 mini 测到 DMIT 的往返延迟，并在 mini 上用一条远程连接实测一次 `paidRequest` 的持锁时间。
+
+看完数据再定：如果 worker 平时不重，只是 Codex 进程占资源，第一阶段只搬写作类队列。
+
+### 阶段 1：模型产出的文件进 R2（2026-11-16 代码完成，未发布）
+
+- [x] 公共对象存储 `packages/backend/src/lib/objects.ts`（put、get、签名链接），配置 `OBJECT_STORE_*`；壁纸改用它，删掉 `modules/wallpaper/src/store.ts` 和 `WALLPAPER_STORE_*`。
+- [x] `essays/`、`wechat-illustrations/` 改为经对象存储读写；api 用 `sendObject` 发。没配桶时仍是 `uploads/` 下原来的目录，路径不变。
+- [x] 一次性复制脚本 `deploy/releases/2026-11-16-object-store.ts`（默认只读，`--apply` 上传并读回比对）。
+- [ ] 发布：先在 DMIT 的 `.env` 加 `OBJECT_STORE_*`（桶 `e-acc`），发布后立即跑复制脚本，再删 `WALLPAPER_STORE_*`。
+- 以后：公开的长文配图由入口 Worker 直接从 R2 发，不经过 DMIT。
+
+### 阶段 2：worker 按角色分队列
+
+- 新增 `WORKER_ROLE`（`all`，默认：行为不变；`core`；`models`）。每个队列和定时属于一个角色，模块队列也一样。
+- `schedules.ts` 只删除“所有角色都不认识”的 `cron.*` 队列，不再删另一个角色的。
+- 心跳改成按角色记录，看门狗分别检查。
+- 第一批归 `models` 的：`essays.task`、`story-depth.draft`、`wechat.illustrate`、`wechat.video`、`wechat.comment`、`wechat.topics`、`content.translate`、`content.localize*`、`events.digest`、周报月报。`content.analyze`、`events.group` 留在 `core`，等阶段 3 的数据。
+- api 判断“能不能画图、能不能写”改成看 `models` 角色的心跳，不看本机有没有 `CODEX_BIN`。
+
+### 阶段 3：mini 上线 `models` worker
+
+- mini 上建运行用户、`.env`（只放 `models` 角色用到的密钥）、launchd 服务；Codex、`agy` 登录在这个用户下。
+- `deploy/update.sh` 发布时同一个提交也发到 mini：迁移只在 DMIT 跑，mini 只换代码和重启。
+- 先只开 `models` 角色，观察一周：任务耗时、失败率、`paidRequest` 锁等待、DMIT 负载。
+- 兜底：家里断网超过一定时间，在 DMIT 上临时以 `all` 角色启动 worker。
+
+### 阶段 4：再看
+
+- 按阶段 3 的数据决定 `content.analyze`、`events.group` 要不要搬，以及要不要先缩短 `paidRequest` 申领事务里的往返次数。
+- `imgcache/`、`ogcache/` 进 R2、由入口 Worker 直接发，是向 Cloudflare 原生再走一步，和这次的拆分相互独立。
+
+## 4. 风险
+
+- 家里线路和 mini 的在线时间：mini 停了，新内容就停。网站本身不受影响。
+- 远程连库被家里路由器的透明代理打断：pg-boss 依赖长连接，要观察断线重连。
+- 生产 Postgres 第一次对外开放：只监听 Tailscale 地址，`pg_hba` 只放行 mini，Tailscale 访问规则只放行 mini → dmit:5432。
