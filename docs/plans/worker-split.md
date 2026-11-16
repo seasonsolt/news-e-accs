@@ -127,6 +127,10 @@ DMIT（1 vCPU、1.9 GB）只负责对外响应：api、web、Postgres、cloudfla
 - [ ] mini 的 `~/eacc-worker/logs/worker.log` 还没有轮转。
 - 风险：mini 重启后要有图形登录，LaunchAgent 才会启动（现在一直登录着）；`agy` 会在后台自动更新，更新后要再确认工具限制还在。
 
+### 数据库备份进 R2（2026-11-16）
+
+查到生产库一直没有异地备份（`DB_BACKUP_STORE_*` 没配，`ops.backup` 从没注册）。已在 DMIT 的 `.env` 配上 R2：桶 `e-acc`，前缀 `db-backups/`，复用对象存储那组凭据（`.env` 备份 `.env.bak-20261116-db-backup`）。手动跑了一次：34 s，数据库 131 MB、文件包 50 MB；从 R2 下载回 mini，sha256 一致，`pg_restore` 到空库 0 警告，关键表行数与生产完全一致。之后每天 04:10 自动跑（core）。R2 生命周期：`db-backups/daily/` 14 天、`weekly/` 63 天、`monthly/` 400 天，原有的未完成分片 7 天清理保留。
+
 ### 阶段 4：再看
 
 - 按阶段 3 的数据决定 `content.analyze`、`events.group` 要不要搬，以及要不要先缩短 `paidRequest` 申领事务里的往返次数。
