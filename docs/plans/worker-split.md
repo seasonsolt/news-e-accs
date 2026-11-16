@@ -112,6 +112,21 @@ DMIT（1 vCPU、1.9 GB）只负责对外响应：api、web、Postgres、cloudfla
 - 先只开 `models` 角色，观察一周：任务耗时、失败率、`paidRequest` 锁等待、DMIT 负载。
 - 兜底：家里断网超过一定时间，在 DMIT 上临时以 `all` 角色启动 worker。
 
+### 阶段 3 进展（2026-11-16 晚）
+
+- [x] 发布 b0e2777（agy 接入、`codex-terra`/`agy-hydrogen` 预设、中文综述评测）。
+- [x] DMIT Postgres 对 mini 开放：`conf.d/eacc-tailscale.conf` 监听 `localhost, 100.93.38.119`；`/etc/sysctl.d/60-eacc-pg.conf` 设 `net.ipv4.ip_nonlocal_bind = 1`（开机时 Tailscale 地址可能还没出现）；`pg_hba.conf` 只放行 `100.90.216.39/32` 的 `eacc`；nftables input 链只放行 `tailscale0` 上来自 mini 的 5432。公网 5432 仍不通。原文件备份在 DMIT 的 `/root/backup-20261116-pg-tailscale/`。
+- [x] 远程实测：每条查询 141 ms；一次 `paidRequest` 申领（持锁）约 1.1 s、记录回答约 0.7 s、完成约 0.15 s，每次模型调用多约 2 s。
+- [x] mini 上的 `models` worker：LaunchAgent `ai.e-acc.models-worker`（`caffeinate -is` 防睡眠，崩溃自动拉起，停止等 210 s），运行 `~/eacc-worker/current`，配置在 `~/.config/eacc-models/env`（DMIT `.env` 去掉 `CODEX_HOME` 等，换成 Tailscale 上的库、`WORKER_ROLE=models`、mini 的 `agy` 和 Codex）。DMIT 的 worker 设为 `WORKER_ROLE=core`（`.env` 备份 `.env.bak-20261116-worker-role`）。
+- [x] 第一次接手：`content.localize` 在 mini 上跑完（71 s，翻译 2 条），core 的任务照常在 DMIT。
+- [x] 使用者盲评后认定 `agy-hydrogen` 胜出；综述（`digest`）已切到 `agy-hydrogen`（审计 `models.switch`，操作者 `claude-code`）。
+- [x] 20:36 第一条 agy 综述（回执 56374，16 s，事件 4d0bc577）写回生产；20:40 第一条 agy 翻译（13.8 s）。之后把翻译（`translate`：英文版本地化和正文翻译）和公众号（`wechat`：点评、话题、视频号脚本）也切到 `agy-hydrogen`。这几步只在归 `models` 的任务里调用，已核对代码。日报和周报月报（`reports.compose`，步骤 `report`）在 core，DMIT 上没有 agy，仍用 `codex-luna`；精选、归组等也仍是 `codex-luna`。
+- [x] 日报周报月报的生成（`reports.compose`）也划给 `models`：它查库不多，周报月报要调写作模型。之后步骤 `report` 也用 `agy-hydrogen`。`models` 那台停了的话，日报到点不会生成，订阅邮件跟着推迟。
+- [ ] 盯 `agy-text` 预算（每分钟 10、每小时 100、每天 500）和 Google 账号的额度：按上周的量，综述约 90 次/天、翻译约 175 次/天，凌晨 04:40 的全站翻译补跑可能触到每分钟上限（触到就等下一轮）。
+- [ ] 每次 `deploy/update.sh` 之后在 mini 上运行 `~/eacc-worker/bin/update`（私有脚本，不在仓库里），让 mini 换到同一版本；以后再并进发布脚本。
+- [ ] mini 的 `~/eacc-worker/logs/worker.log` 还没有轮转。
+- 风险：mini 重启后要有图形登录，LaunchAgent 才会启动（现在一直登录着）；`agy` 会在后台自动更新，更新后要再确认工具限制还在。
+
 ### 阶段 4：再看
 
 - 按阶段 3 的数据决定 `content.analyze`、`events.group` 要不要搬，以及要不要先缩短 `paidRequest` 申领事务里的往返次数。

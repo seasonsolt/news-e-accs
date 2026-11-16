@@ -53,7 +53,8 @@ export const ENGINE_SCHEDULES: EngineScheduled[] = [
   { name: "stories.links", cron: "12 * * * *", run: linkRelatedStories },
   // Every issue that is due and not written yet, each from its edition time (site/site.ts EDITION_TIMES,
   // read as wall time on the report calendar) at the next half hour; a missed or failed one at the next run.
-  { name: "reports.compose", timeZone: config.reportTimeZone, cron: "0,30 * * * *", missed: "once", run: () => composeDueReports() },
+  // Few queries and the writing model of weekly and monthly issues: with the work split it runs where the writing models are.
+  { name: "reports.compose", timeZone: config.reportTimeZone, cron: "0,30 * * * *", missed: "once", run: () => composeDueReports(), runsOn: "models" },
   // Mails today's daily report as soon as it exists (claimed once per day; off unless NEWSLETTER_ENABLED).
   { name: "newsletter.daily", timeZone: config.reportTimeZone, cron: `*/10 ${dailyHour}-${Math.min(23, dailyHour + 4)} * * *`, run: () => sendDailyIssues() },
   // Unsubscribes made through an issue's link, read back from Resend (only with NEWSLETTER_ENABLED).
