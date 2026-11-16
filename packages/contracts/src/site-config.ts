@@ -1,5 +1,5 @@
 // Configuration fields the engine reads from each edition's own site package.
-export type ModelPreset = HttpPreset | CodexPreset;
+export type ModelPreset = HttpPreset | CodexPreset | AgyPreset;
 
 export interface HttpPreset {
   transport?: "http";
@@ -24,6 +24,18 @@ export interface CodexPreset {
   service: string;
   model: string;
   reasoningEffort?: string;
+  jsonMode: boolean;
+  vision?: false;
+  fallbackFor?: Record<string, string>;
+  scoreCall?: { temperature: number; maxTokens: number; timeoutMs: number };
+}
+
+/** A model of the Antigravity CLI (agy) signed in on the worker's machine (providers/agy.ts); the slug names its effort. */
+export interface AgyPreset {
+  transport: "agy";
+  service: string;
+  /** A slug `agy models` lists, e.g. claude-opus-5-5-high. */
+  model: string;
   jsonMode: boolean;
   vision?: false;
   fallbackFor?: Record<string, string>;

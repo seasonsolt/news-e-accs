@@ -66,6 +66,8 @@ export const config = {
   wechatDraftEnabled: bool("WECHAT_DRAFT_ENABLED", false),
   /** The Codex CLI the worker draws the column's illustrations with (absolute path); none means no drawing. */
   codexBin: env.CODEX_BIN || null,
+  /** The Antigravity CLI (agy, absolute path) that answers the text steps of agy model presets; none means they are unavailable. */
+  agyBin: env.AGY_BIN || null,
   /** Opt-in report calendar; existing operations keep their Asia/Shanghai period definitions. */
   reportTimeZone: assertTimeZone(str("REPORT_TIME_ZONE", "Asia/Shanghai")),
   /** IndexNow key (32 hex characters); without one nothing is submitted and no key file is served. */

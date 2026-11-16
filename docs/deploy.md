@@ -62,6 +62,10 @@ MCP 默认接受 `SITE_URL` 的主机以及 `localhost`、`127.0.0.1`、`[::1]`�
 
 ### 更新
 
+### 文字步骤可以用 agy 模型（2026 年 11 月 16 日）
+
+没有迁移。`site/models.ts` 的模型预设多了一种 `transport: "agy"`：worker 调用所在机器上登录了 Google 账号的 Antigravity CLI（`agy`）来回答，用账号的额度，不需要 API 密钥（见下方 [文字步骤用 agy 模型](#文字步骤用-agy-模型)）。示例站加了 `agy-opus`（Claude Opus 5.5 High）和 `agy-gemini`（Gemini 4 Hydrogen High）两个预设，默认哪一步都不用。种子数据会给后台预算加一行 `agy-text`（每分钟 10、每小时 100、每天 500 次），已有的不覆盖。启动 Codex CLI 的代码移到了 `providers/cli.ts`，两种 CLI 共用，Codex 的行为不变。
+
 ### worker 可以分到两台机器（2026 年 11 月 16 日）
 
 没有数据库迁移。新的可选环境变量 `WORKER_ROLE`（`all`、`core`、`models`，默认 `all`）：不设时一个 worker 照旧做全部的活，行为不变。
@@ -133,6 +137,15 @@ docker compose build
 docker compose stop api worker web
 docker compose run --rm setup && docker compose up -d
 ```
+
+### 文字步骤用 agy 模型
+
+在 worker 所在的机器上装好 Antigravity CLI，用运行 worker 的系统用户交互运行一次 `agy` 登录 Google 账号，然后在 `.env` 里设 `AGY_BIN=<agy 的绝对路径>`，重启 worker。`site/models.ts` 里 `transport: "agy"` 的预设就能在后台“模型与评测”页选给文字步骤；`model` 写 `agy models` 列出的名字，名字里带着推理强度（例如 `claude-opus-5-5-high`）。还要 `MODEL_CALLS_ENABLED=true`。
+
+- 这不是 API 网关：每次调用跑一次官方的 `agy`，提示从标准输入传入，在空的临时目录里运行，不留下可续接的对话。但 Google 的常见问题写着，把 `agy` 包进别的应用“在个人订阅下不受支持”，这种用法有没有问题由你自己判断，风险在你的 Google 账号上。
+- 文件、网页、命令和 MCP 操作全部拒绝（只对这一次运行生效的设置，不写进 `agy` 的配置文件）。`agy` 的网页搜索不受权限规则管，所以用过任何工具的回答一律当作失败，这一步等下一轮再试。读的是不可信的文章原文，有文件或命令工具时就能读到这台机器上的文件（包括 `.env`）。
+- 每次另带约一万 token 的 `agy` 自身提示，一次十秒左右，比接口慢。`agy` 会在后台自动更新，更新后要留意上面这些限制还在不在。
+- 每次都记回执，受后台预算里预设的 `service` 那一行限制（示例是 `agy-text`），填 0 就停。
 
 ### 文字步骤用 Codex 模型
 

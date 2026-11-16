@@ -1,10 +1,11 @@
-// Model calls, always through receipts: OpenAI-compatible chat APIs, or the Codex CLI signed in with
-// ChatGPT (providers/codex.ts) for a site's Codex presets. One model is enough: `default` is whatever the
+// Model calls, always through receipts: OpenAI-compatible chat APIs, or an official CLI signed in on the
+// worker's machine for a site's CLI presets: Codex with ChatGPT (providers/codex.ts), agy with Google
+// (providers/agy.ts). One model is enough: `default` is whatever the
 // deployment names in LLM_BASE_URL / LLM_API_KEY / LLM_MODEL, and every capability uses it unless the
 // site, an environment variable or the admin's model page picks one of the site's named presets
 // (site/models.ts).
 import type { z } from "zod";
-import type { ModelPreset, CodexPreset } from "@aihot/contracts/site-config";
+import type { AgyPreset, ModelPreset, CodexPreset } from "@aihot/contracts/site-config";
 import { PRESETS } from "@aihot/site/models";
 import { config, credential } from "../config.ts";
 import { sha256 } from "../lib/ids.ts";
@@ -18,6 +19,7 @@ export type ModelSpec = ModelPreset & { key: string };
 
 export { ModelOutputError } from "./receipts.ts";
 import { codexText } from "./codex.ts";
+import { agyText } from "./agy.ts";
 
 function extraFromEnv(value: string | undefined): Record<string, unknown> | undefined {
   if (!value) return undefined;
@@ -140,11 +142,11 @@ function isConnectFailure(error: unknown): boolean {
 
 function requestFor<S extends z.ZodType>(opts: ChatJsonOptions<S>, spec: ModelSpec) {
   const temperature = opts.temperature ?? 0.2;
-  const maxTokens = Math.max(opts.maxTokens ?? 1500, 512) + (spec.transport === "codex" ? 0 : spec.reasoningTokens ?? 0);
+  const maxTokens = Math.max(opts.maxTokens ?? 1500, 512) + (spec.transport === "codex" || spec.transport === "agy" ? 0 : spec.reasoningTokens ?? 0);
   const userText = typeof opts.user === "string" ? opts.user : JSON.stringify(opts.user);
   const request: ReceiptRequest = {
     service: spec.service, model: spec.model, purpose: opts.purpose, subject: opts.subject,
-    identity: { model: spec.model, promptVersion: opts.promptVersion, system: sha256(opts.system), user: sha256(userText), temperature, maxTokens, extra: spec.transport === "codex" ? { reasoningEffort: spec.reasoningEffort ?? null } : spec.extra ?? null },
+    identity: { model: spec.model, promptVersion: opts.promptVersion, system: sha256(opts.system), user: sha256(userText), temperature, maxTokens, extra: spec.transport === "codex" ? { reasoningEffort: spec.reasoningEffort ?? null } : spec.transport === "agy" ? null : spec.extra ?? null },
     requestSummary: { promptVersion: opts.promptVersion, systemHash: sha256(opts.system), userHash: sha256(userText), userChars: userText.length, temperature, maxTokens },
     attemptTag: opts.attemptTag,
   };
@@ -188,13 +190,17 @@ async function chatOnce<S extends z.ZodType>(opts: ChatJsonOptions<S>, circuit =
   if (!spec) throw new Error(`Unknown model ${opts.model}`);
   if (!config.modelCallsEnabled) throw new ModelUnavailableError("Model calls are disabled (MODEL_CALLS_ENABLED=false)");
   const { request, temperature, maxTokens, userText } = requestFor(opts, spec);
-  const timeoutMs = opts.timeoutMs ?? (spec.transport === "codex" ? 180_000 : circuit ? FAILOVER_TIMEOUT_MS : TIMEOUT_MS);
-  if (spec.transport === "codex") {
-    if (!config.codexBin) throw new ModelUnavailableError(`Model ${opts.model} is not configured (CODEX_BIN)`);
+  const cli = spec.transport === "codex" || spec.transport === "agy";
+  const timeoutMs = opts.timeoutMs ?? (cli ? 180_000 : circuit ? FAILOVER_TIMEOUT_MS : TIMEOUT_MS);
+  if (cli) {
+    if (spec.transport === "codex" && !config.codexBin) throw new ModelUnavailableError(`Model ${opts.model} is not configured (CODEX_BIN)`);
+    if (spec.transport === "agy" && !config.agyBin) throw new ModelUnavailableError(`Model ${opts.model} is not configured (AGY_BIN)`);
     if (Array.isArray(opts.user) && opts.user.some(part => part.type !== "text")) throw new Error(`Model ${opts.model} reads no images`);
   }
   let permit: CircuitPermit;
-  const call = spec.transport === "codex" ? codexCall(spec, { ...opts, timeoutMs }) : httpCall(spec, { ...opts, timeoutMs }, temperature, maxTokens, userText);
+  const call = spec.transport === "codex" ? codexCall(spec, { ...opts, timeoutMs })
+    : spec.transport === "agy" ? agyCall(spec, { ...opts, timeoutMs })
+    : httpCall(spec, { ...opts, timeoutMs }, temperature, maxTokens, userText);
   const receipt = await paidRequest(
     { ...request, fallbackFor },
     async () => {
@@ -227,7 +233,7 @@ async function chatOnce<S extends z.ZodType>(opts: ChatJsonOptions<S>, circuit =
   return { data: parsed, receiptId: receipt.receiptId, reused: receipt.reused, model: spec.key, usage: response.usage ?? null };
 }
 
-function httpCall<S extends z.ZodType>(spec: Exclude<ModelPreset, CodexPreset> & { key: string }, opts: ChatJsonOptions<S>, temperature: number, maxTokens: number, userText: string): () => Promise<CallOutcome> {
+function httpCall<S extends z.ZodType>(spec: Exclude<ModelPreset, CodexPreset | AgyPreset> & { key: string }, opts: ChatJsonOptions<S>, temperature: number, maxTokens: number, userText: string): () => Promise<CallOutcome> {
   const baseUrl = credential("models", spec.baseUrlEnv);
   const apiKey = credential("models", spec.apiKeyEnv);
   if (!baseUrl || !apiKey || !spec.model) throw new ModelUnavailableError(`Model ${opts.model} is not configured (${spec.baseUrlEnv}, ${spec.apiKeyEnv}${spec.key === "default" ? ", LLM_MODEL" : ""})`);
@@ -282,13 +288,18 @@ function httpCall<S extends z.ZodType>(spec: Exclude<ModelPreset, CodexPreset> &
  * The Codex CLI answers one prompt: the system text first, then the input. Its answer is kept in the
  * chat API's shape, and its usage under the same names, so parsing and the admin statistics are shared.
  */
-function codexCall<S extends z.ZodType>(spec: CodexPreset & { key: string }, opts: ChatJsonOptions<S>): () => Promise<CallOutcome> {
+/** A CLI takes one prompt: the system text, the user's, and the JSON reminder. */
+function cliPrompt<S extends z.ZodType>(spec: CodexPreset | AgyPreset, opts: ChatJsonOptions<S>): string {
   const input = typeof opts.user === "string" ? opts.user : opts.user.map((part) => (part.type === "text" ? part.text : "")).join("\n\n");
-  const prompt = [
+  return [
     opts.system,
     input,
     spec.jsonMode && opts.json !== false ? "Reply with the JSON object only, nothing before or after it." : "",
   ].filter(Boolean).join("\n\n");
+}
+
+function codexCall<S extends z.ZodType>(spec: CodexPreset & { key: string }, opts: ChatJsonOptions<S>): () => Promise<CallOutcome> {
+  const prompt = cliPrompt(spec, opts);
   return async () => {
     const started = Date.now();
     const answer = await codexText({ model: spec.model, reasoningEffort: spec.reasoningEffort, prompt, timeoutMs: opts.timeoutMs ?? 180_000 });
@@ -302,6 +313,27 @@ function codexCall<S extends z.ZodType>(spec: CodexPreset & { key: string }, opt
     return {
       response: { choices: [{ message: { content: answer.text }, finish_reason: "stop" }], usage, threadId: answer.threadId, _latencyMs: Date.now() - started },
       requestId: answer.threadId,
+      usage,
+      cost: null,
+    };
+  };
+}
+
+function agyCall<S extends z.ZodType>(spec: AgyPreset & { key: string }, opts: ChatJsonOptions<S>): () => Promise<CallOutcome> {
+  const prompt = cliPrompt(spec, opts);
+  return async () => {
+    const started = Date.now();
+    const answer = await agyText({ model: spec.model, prompt, timeoutMs: opts.timeoutMs ?? 180_000 });
+    const raw = answer.usage ?? {};
+    const usage = {
+      ...raw,
+      prompt_tokens: raw.input_tokens ?? null,
+      completion_tokens: raw.output_tokens ?? null,
+      prompt_tokens_details: { cached_tokens: raw.cache_read_tokens ?? null },
+    };
+    return {
+      response: { choices: [{ message: { content: answer.text }, finish_reason: "stop" }], usage, conversationId: answer.conversationId, _latencyMs: Date.now() - started },
+      requestId: answer.conversationId,
       usage,
       cost: null,
     };

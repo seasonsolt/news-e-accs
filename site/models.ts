@@ -3,7 +3,7 @@
 // 部署时还可以用环境变量（PREFILTER_MODEL、SCORE_MODEL……）或后台的“模型与评测”页逐步改选。
 
 import type { ModelPreset } from "@aihot/contracts/site-config";
-export type { ModelPreset, HttpPreset, CodexPreset } from "@aihot/contracts/site-config";
+export type { ModelPreset, HttpPreset, CodexPreset, AgyPreset } from "@aihot/contracts/site-config";
 
 /** 具名的模型示例（每个要配自己的密钥）。用不上可以删掉。 */
 export const PRESETS: Record<string, ModelPreset> = {
@@ -12,6 +12,10 @@ export const PRESETS: Record<string, ModelPreset> = {
   "codex-sol": { transport: "codex", service: "codex-text", model: "gpt-6.1-sol", reasoningEffort: "low", jsonMode: true },
   // Long-form essays (modules/essays): a whole essay in one answer is worth more thought.
   "codex-sol-write": { transport: "codex", service: "codex-text", model: "gpt-6.1-sol", reasoningEffort: "medium", jsonMode: true },
+  // Through the Antigravity CLI (agy) signed in on the worker's machine with the owner's Google account; the
+  // slug names the effort. Being compared for the writing steps (docs/plans/worker-split.md).
+  "agy-opus": { transport: "agy", service: "agy-text", model: "claude-opus-5-5-high", jsonMode: true },
+  "agy-gemini": { transport: "agy", service: "agy-text", model: "gemini-4-hydrogen-high", jsonMode: true },
   // GLM 5.3 Flash always reasons; the lowest effort keeps short structured tasks fast.
   "glm-5.3-flash": {
     service: "zhipu", model: "glm-5.3-flash", baseUrlEnv: "ZHIPU_BASE_URL", apiKeyEnv: "ZHIPU_API_KEY",
