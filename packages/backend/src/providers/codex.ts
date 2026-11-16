@@ -5,10 +5,11 @@
 // receipts and a budget: "codex" for drawings, the model preset's own service for text.
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { config } from "../config.ts";
+import { putObject } from "../lib/objects.ts";
 import { shutdownSignal } from "../lib/shutdown.ts";
 import { paidRequest, ProviderRejectedError } from "./receipts.ts";
 
@@ -64,24 +65,23 @@ async function newestImage(dir: string): Promise<string | null> {
   return best?.file ?? null;
 }
 
-/** A picture as the article prints it: at most WIDTH wide, JPEG, saved under `dir` by its content. */
-export async function saveJpeg(image: Buffer, dir: string): Promise<{ file: string; width: number; height: number; bytes: number }> {
+/** A picture as the article prints it: at most WIDTH wide, JPEG, stored as `<folder>/<name>` (lib/objects.ts) named by its content. */
+export async function saveJpeg(image: Buffer, folder: string): Promise<{ file: string; width: number; height: number; bytes: number }> {
   const { default: sharp } = await import("sharp");
   const { data, info } = await sharp(image, { limitInputPixels: 64_000_000 })
     .rotate().resize({ width: WIDTH, withoutEnlargement: true }).flatten({ background: "#ffffff" })
     .jpeg({ quality: 82, mozjpeg: true }).toBuffer({ resolveWithObject: true });
   const file = `${createHash("sha256").update(data).digest("hex").slice(0, 32)}.jpg`;
-  await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, file), data);
+  await putObject(`${folder}/${file}`, data, "image/jpeg");
   return { file, width: info.width, height: info.height, bytes: data.length };
 }
 
 /**
  * Draws one picture from `instruction` (which tells the CLI to save it in its working directory) and
- * saves it under `dir`. `attemptTag` makes a new request of the same instruction draw again; a recovered
+ * stores it in `folder` (saveJpeg). `attemptTag` makes a new request of the same instruction draw again; a recovered
  * request reuses the saved picture.
  */
-export async function codexImage(opts: { instruction: string; dir: string; purpose: string; subject: string; attemptTag: string }): Promise<{ file: string; receiptId: number }> {
+export async function codexImage(opts: { instruction: string; folder: string; purpose: string; subject: string; attemptTag: string }): Promise<{ file: string; receiptId: number }> {
   const bin = config.codexBin;
   if (!bin) throw new Error("CODEX_BIN is not configured");
   const receipt = await paidRequest(
@@ -92,7 +92,7 @@ export async function codexImage(opts: { instruction: string; dir: string; purpo
         await run(bin, ["exec", "--skip-git-repo-check", "--sandbox", "workspace-write", "--cd", work, opts.instruction], work, { timeoutMs: DRAW_TIMEOUT_MS });
         const drawn = await newestImage(work);
         if (!drawn) throw new ProviderRejectedError("codex 跑完了，但没有在工作目录里留下图片", null, false);
-        return { response: await saveJpeg(await readFile(drawn), opts.dir) };
+        return { response: await saveJpeg(await readFile(drawn), opts.folder) };
       } finally {
         await rm(work, { recursive: true, force: true });
       }

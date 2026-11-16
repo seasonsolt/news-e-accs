@@ -1,4 +1,4 @@
-// AWS Signature V4 for S3-compatible object stores (Tencent COS for backups, Cloudflare R2 for wallpapers).
+// AWS Signature V4 for S3-compatible object stores (Tencent COS for backups, Cloudflare R2 for the object store in lib/objects.ts).
 import { createHash, createHmac } from "node:crypto";
 
 const hex = (b: Buffer | string) => createHash("sha256").update(b).digest("hex");

@@ -8,7 +8,7 @@
 2. `tools/make-wallpaper.sh SRC.png OUT_DIR`：生成桌面 JPEG（3840×2160）、手机 JPEG（2160×3840）、预览 WebP（宽 1600）。需要本机 Real-ESRGAN、ffmpeg、cwebp。默认在裁切后、颗粒前加入 e-acc.ai 水印，预览继承桌面水印；`WATERMARK=0` 仅供自查，生产保持开启。
 3. 登录 `/admin/wallpapers`，填写北京上线日期、中英文标题，上传三个文件。可提前上传未来日期；到日后自动进入列表，today 选择不晚于今天的最新一张。
 
-同一天重复上传覆盖内容，保留 ID 和已付款记录。仅能删除未来且没有付费下载的记录。预览保存在 `dataDir/uploads/wallpapers/`，包含在 uploads 备份范围内，带 `s-maxage` 由边缘缓存。配置了 `WALLPAPER_STORE_*` 时，4K 原图上传到私有的 S3 兼容存储桶（生产用 Cloudflare R2，下载流量不计费），下载验 key、扣积分后跳转到 5 分钟有效的签名链接；没配置时原图也在本机目录里。内容哈希文件名允许预览长期缓存；替换时保留旧文件，避免破坏已经缓存的预览 URL。
+同一天重复上传覆盖内容，保留 ID 和已付款记录。仅能删除未来且没有付费下载的记录。预览保存在 `dataDir/uploads/wallpapers/`，包含在 uploads 备份范围内，带 `s-maxage` 由边缘缓存。配置了对象存储 `OBJECT_STORE_*`（`packages/backend/src/lib/objects.ts`）时，4K 原图上传到私有的 S3 兼容存储桶的 `wallpapers/` 下（生产用 Cloudflare R2，下载流量不计费），下载验 key、扣积分后跳转到 5 分钟有效的签名链接；没配置时原图也在本机目录里。内容哈希文件名允许预览长期缓存；替换时保留旧文件，避免破坏已经缓存的预览 URL。
 
 ## 额度与安全
 

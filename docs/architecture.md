@@ -39,6 +39,8 @@ flowchart LR
 
 公开图片、分享图、手机海报和公众号封面的冷计算通过 `media.image` / `media.render` 交给 worker，API 只校验公开范围/签名或管理员权限、提交有界任务并读共享缓存；不允许在公开媒体请求失败时回到 API 渲染。缓存身份/读取在 `media/cards.ts`、`media/cache.ts`，API 请求协调在 `media/request.ts`，实际处理在 `jobs/media.ts`。跨进程任务保留原始 JSON 文本，确保既有内容指纹不受 JSONB 字段排序影响。启动和媒体请求（包括后台封面）的图像库隔离由真实独立进程测试检查。反馈截图等低频写入校验另行迁移。
 
+api 和 worker 都要读写的文件（长文配图、公众号配图、壁纸原图）通过 `lib/objects.ts` 按键存取：配置了 `OBJECT_STORE_*` 时在 S3 兼容存储桶（生产用 Cloudflare R2）里，否则在 `dataDir/uploads/<键>`。新增这类文件也走它，不直接读写数据目录，这样 api 和 worker 可以不在同一台机器上。图片缓存、分享图缓存和反馈截图仍在本机数据目录。
+
 ## 目录
 
 | 位置 | 内容 |

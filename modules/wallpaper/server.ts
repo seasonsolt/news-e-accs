@@ -13,10 +13,12 @@ import { sendJsonWithEtag, sendProblem } from "../../apps/api/src/http/respond.t
 import { charge, keyOwner } from "./src/keys.ts";
 import { claimEmail, claimToken } from "./src/claim.ts";
 import { wallpapers, downloadWallpaper } from "./src/publication.ts";
-import { directory, upload, remove, adminList } from "./src/admin.ts";
-import { link, remote } from "./src/store.ts";
+import { directory, ORIGINALS, upload, remove, adminList } from "./src/admin.ts";
+import { objectLink, objectStoreRemote } from "@aihot/backend/lib/objects";
 import type { FastifyReply, FastifyRequest } from "fastify";
 const privateCache = "private, no-store";
+/** How long a download link to an original in the bucket works. */
+const LINK_SECONDS = 300;
 const fail = (req: FastifyRequest, reply: FastifyReply, error: unknown) => {
   if (error instanceof NewsletterRejected) return sendProblem(req, reply, { status: error.status, code: error.code, detail: error.message, retryAfter: error.retryAfter, cacheControl: privateCache });
   return sendProblem(req, reply, { status: 503, code: "temporarily_unavailable", detail: "Please try again later.", cacheControl: privateCache });
@@ -59,9 +61,9 @@ export default defineServerModule({
         const cut = kind === "desktop.jpg" ? "desktop" : "phone";
         const name = wallpaper[`${cut}_file`];
         const filename = `e-acc-wallpaper-${wallpaper.day}-${cut}.jpg`;
-        if (remote()) {
+        if (objectStoreRemote()) {
           await charge(owner.subscriber_id, wallpaper.id);
-          return reply.redirect(link(name, filename), 302);
+          return reply.redirect(objectLink(`${ORIGINALS}/${name}`, filename, LINK_SECONDS), 302);
         }
         const file = path.join(directory(), name);
         try { await access(file); } catch { return reply.code(404).send(); }

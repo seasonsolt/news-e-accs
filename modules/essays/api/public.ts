@@ -1,12 +1,11 @@
 // The essays' public routes: the pages' data (/api/site/essays…), their pictures and their feeds. All read
 // live publications through backend/publication.ts.
-import path from "node:path";
 import type { FastifyInstance } from "fastify";
 import { sendJsonWithEtag, sendProblem, sendTextWithEtag, applyPublicHeaders, looseQuery } from "@aihot/api/http/respond";
-import { sendFile } from "@aihot/api/routes/static";
+import { sendObject } from "@aihot/api/routes/static";
 import { siteHandler } from "@aihot/api/routes/site";
 import { ESSAY_MEDIA, essayFeedPath, type EssayLanguage } from "../contracts.ts";
-import { essayDir, FILE } from "../backend/store.ts";
+import { FILE, PICTURES } from "../backend/store.ts";
 import { essayBySlug, essayFeed, essayFileIsPublic, essayList } from "../backend/publication.ts";
 import { SLUG } from "../backend/render.ts";
 
@@ -29,7 +28,7 @@ export function registerEssayPublic(app: FastifyInstance) {
   app.get(`${ESSAY_MEDIA}/:file`, async (req, reply) => {
     const { file } = req.params as { file: string };
     if (!FILE.test(file) || !(await essayFileIsPublic(file))) return reply.code(404).type("text/plain; charset=utf-8").send("Not found");
-    return sendFile(req, reply, path.join(essayDir(), file), { cacheControl: "public, max-age=31536000, immutable" });
+    return sendObject(req, reply, `${PICTURES}/${file}`, { cacheControl: "public, max-age=31536000, immutable" });
   });
 
   for (const lang of ["en", "zh"] as const) {

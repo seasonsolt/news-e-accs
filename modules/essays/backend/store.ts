@@ -3,11 +3,10 @@
 // (backend/tasks.ts). Text fields carry an optimistic version: a save against an older view is refused.
 // Picture words (prompt, alt) save on their own, and the worker only ever writes a picture's file.
 import { createHash, randomBytes } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { sql, type Db } from "@aihot/backend/db";
 import { config } from "@aihot/backend/config";
 import { audit, Conflict } from "@aihot/backend/audit";
+import { getObject, ObjectStoreError, putObject } from "@aihot/backend/lib/objects";
 import { codexConfigured, saveJpeg } from "@aihot/backend/providers/codex";
 import {
   ESSAY_LANGUAGES, essayPath, type EssayDetail, type EssayEdition, type EssayImage, type EssayImageSave, type EssayLanguage, type EssayList,
@@ -16,8 +15,15 @@ import {
 import { edition, figureSlots, hasCheck, renderBody, sections, SLUG, wordCount, type FigureImage } from "./render.ts";
 import { DEFAULT_STYLE, essayStyles, publicStyle, styleExists } from "./styles.ts";
 
-/** Under uploads/, so backups keep them. */
-export const essayDir = () => path.join(config.dataDir, "uploads", "essays");
+/** The pictures' folder in the object store (lib/objects.ts). */
+export const PICTURES = "essays";
+
+/** A stored picture's bytes; a file the database names but the store lacks is an error. */
+export async function pictureBytes(file: string): Promise<Buffer> {
+  const bytes = await getObject(`${PICTURES}/${file}`);
+  if (!bytes) throw new Error(`essay picture ${file} is missing from the object store`);
+  return bytes;
+}
 export const FILE = /^[0-9a-f]{32}\.jpg$/;
 export const SLOT = /^(cover|figure-[1-9])$/;
 export const ADMIN_MEDIA = "/api/admin/essays/media";
@@ -282,7 +288,7 @@ export async function removeImage(id: number, slot: string, actor: string): Prom
 
 async function pictureSize(file: string): Promise<{ width: number; height: number }> {
   const { default: sharp } = await import("sharp");
-  const meta = await sharp(path.join(essayDir(), file)).metadata();
+  const meta = await sharp(await pictureBytes(file)).metadata();
   return { width: meta.width ?? 0, height: meta.height ?? 0 };
 }
 
@@ -303,8 +309,9 @@ export async function uploadImage(id: number, slot: string, image: Buffer, actor
   await essayRow(sql, id);
   let saved;
   try {
-    saved = await saveJpeg(image, essayDir());
-  } catch {
+    saved = await saveJpeg(image, PICTURES);
+  } catch (error) {
+    if (error instanceof ObjectStoreError) throw error;
     throw bad("读不出这张图，换 PNG、JPEG 或 WebP。");
   }
   await sql`INSERT INTO essay_images (essay_id, slot, file, width, height, origin) VALUES (${id}, ${slot}, ${saved.file}, ${saved.width}, ${saved.height}, 'uploaded')
@@ -410,14 +417,13 @@ export async function dismissTask(id: number, taskId: number, actor: string): Pr
 const CARD_WIDTH = 1200;
 const CARD_HEIGHT = 630;
 
-/** The cover cut to a link preview, saved under the essays folder by its content. */
+/** The cover cut to a link preview, stored in the pictures' folder by its content. */
 async function cardFrom(file: string): Promise<string> {
   const { default: sharp } = await import("sharp");
-  const data = await sharp(await readFile(path.join(essayDir(), file))).resize(CARD_WIDTH, CARD_HEIGHT, { fit: "cover", position: "attention" })
+  const data = await sharp(await pictureBytes(file)).resize(CARD_WIDTH, CARD_HEIGHT, { fit: "cover", position: "attention" })
     .jpeg({ quality: 82, mozjpeg: true }).toBuffer();
   const name = `${createHash("sha256").update(data).digest("hex").slice(0, 32)}.jpg`;
-  await mkdir(essayDir(), { recursive: true });
-  await writeFile(path.join(essayDir(), name), data);
+  await putObject(`${PICTURES}/${name}`, data, "image/jpeg");
   return name;
 }
 

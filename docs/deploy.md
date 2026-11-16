@@ -62,6 +62,15 @@ MCP 默认接受 `SITE_URL` 的主机以及 `localhost`、`127.0.0.1`、`[::1]`�
 
 ### 更新
 
+### 配图和壁纸原图放进对象存储（2026 年 11 月 16 日）
+
+没有数据库迁移。长文配图、公众号配图和壁纸 4K 原图改由一个公共的对象存储读写（`packages/backend/src/lib/objects.ts`），这样 api 和 worker 不必共用一块磁盘。环境变量 `WALLPAPER_STORE_*` 改名为 `OBJECT_STORE_*`（见 `.env.example`），桶里按前缀分开：`essays/`、`wechat-illustrations/`、`wallpapers/`。
+
+- **没配过 `WALLPAPER_STORE_*` 的站**：什么都不用做。不配 `OBJECT_STORE_*` 时文件仍在 `dataDir/uploads/` 下原来的目录里，路径不变，照旧在 uploads 备份里。
+- **配过 `WALLPAPER_STORE_*` 的站**：升级前把四项改名为 `OBJECT_STORE_*`。原来 `WALLPAPER_STORE_BUCKET` 填的是“桶名/前缀”（例如 `e-acc/wallpapers`）的，`OBJECT_STORE_BUCKET` 只填桶名（`e-acc`），壁纸原图仍在 `wallpapers/` 下，不用搬；原来只填桶名的，桶里已有的原图要挪到 `wallpapers/` 前缀下。不改名的话，升级后壁纸下载找不到原图。
+- **启用对象存储后**，本机 `uploads/essays/` 和 `uploads/wechat-illustrations/` 里已有的图要复制进桶：升级后立即在后端环境运行 `node --env-file=.env deploy/releases/2026-11-16-object-store.ts` 预览，再加 `--apply` 上传并逐个读回比对（只读本机文件、只写桶，重复运行无害）。复制完成前，已发布长文的配图和公众号配图会 404。本机文件不删，确认无误后可以自己删。
+- 桶里的文件不在本机的 uploads 备份里，由存储桶保存。回滚到旧版本时，启用对象存储后新存的配图在本机没有，旧版本读不到。
+
 ### 每日请求预算排除明确未计费的失败
 
 每日预算和后台“近 24 小时预算”不再计入供应商明确拒绝、未计费的失败；分钟、小时仍按全部尝试限速。已返回但不可用的答案、处理中和结果未知的请求继续占预算。自动或人工放行未知回执不代表未计费，旧尝试仍计入；只有人工确认未计费才释放。无需数据库迁移，不删除回执。
@@ -78,7 +87,7 @@ MCP 默认接受 `SITE_URL` 的主机以及 `localhost`、`127.0.0.1`、`[::1]`�
 
 ### 每日 4K 壁纸模块
 
-迁移 0130–0135 新增 `wallpapers`、`wallpaper_keys`、`wallpaper_downloads`，并先添加、验证订阅来源约束 v2 后删除旧约束，允许 `wallpaper` 来源；不会删除已有订阅数据。配置了 `WALLPAPER_STORE_*`（见 `.env.example`）时，桌面和手机原图上传到那个私有存储桶，下载在验 key、扣积分后 302 跳转到 5 分钟有效的签名链接，原图流量不经过服务器；这些原图不在本机 uploads 备份里，由存储桶保存。没配置时原图和预览都在 `dataDir/uploads/wallpapers/`，已在 uploads 备份范围内。预览始终在本机，响应带 `s-maxage`，由入口 Worker 缓存。配置存储桶前已经上传到本机的原图不会自动搬走，需要重新上传那几天。
+迁移 0130–0135 新增 `wallpapers`、`wallpaper_keys`、`wallpaper_downloads`，并先添加、验证订阅来源约束 v2 后删除旧约束，允许 `wallpaper` 来源；不会删除已有订阅数据。配置了对象存储 `OBJECT_STORE_*`（2026-11-16 前叫 `WALLPAPER_STORE_*`，见 `.env.example`）时，桌面和手机原图上传到那个私有存储桶的 `wallpapers/` 下，下载在验 key、扣积分后 302 跳转到 5 分钟有效的签名链接，原图流量不经过服务器；这些原图不在本机 uploads 备份里，由存储桶保存。没配置时原图和预览都在 `dataDir/uploads/wallpapers/`，已在 uploads 备份范围内。预览始终在本机，响应带 `s-maxage`，由入口 Worker 缓存。配置存储桶前已经上传到本机的原图不会自动搬走，需要重新上传那几天。
 
 凭 key 的响应返回 `private, no-store`，前面的代理或 CDN 不要缓存它们。发布后在 `/admin/wallpapers` 上传第一张生产壁纸的桌面、手机和预览文件；服务器不调用模型或放大图片。回滚旧程序不会删除这三张表或上传文件。
 
@@ -374,7 +383,7 @@ MCP 的 `subscriptions/listen` 现在立即返回 HTTP 404 和 JSON-RPC `-32601 
 
 在 `.env` 里配置 `DB_BACKUP_STORE_*`（任何 S3 兼容的对象存储），每天 04:10 自动备份到那里。`DB_BACKUP_STORE_SECRET_ID`、`DB_BACKUP_STORE_SECRET_KEY`、`DB_BACKUP_STORE_BUCKET`、`DB_BACKUP_STORE_REGION` 四项都要填；不填 `DB_BACKUP_STORE_DOMAIN` 时按腾讯云 COS 拼地址（`<桶名>.cos.<地域>.myqcloud.com`），用其他 S3 兼容存储时，把这个存储桶的访问域名（含桶名，例如 AWS S3 的 `<桶名>.s3.<地域>.amazonaws.com`）填进 `DB_BACKUP_STORE_DOMAIN`。
 
-一次完整备份包含同一时间戳的数据库 `.dump` 和文件包 `.tar.gz`，文件名取自数据库名：Docker 里数据库叫 `aihot`，所以是 `aihot-<时间>.dump` 和 `aihot-files-<时间>.tar.gz`。文件包保留 `uploads/` 以及仍存本地的 `feedback-screenshots/`，不包含图片缓存或本地备份目录；这些目录里没有文件时只有 `.dump`。已经转发到飞书的图片只保留数据库中的外部引用，文件包不保存飞书上的图片。
+一次完整备份包含同一时间戳的数据库 `.dump` 和文件包 `.tar.gz`，文件名取自数据库名：Docker 里数据库叫 `aihot`，所以是 `aihot-<时间>.dump` 和 `aihot-files-<时间>.tar.gz`。文件包保留 `uploads/` 以及仍存本地的 `feedback-screenshots/`，不包含图片缓存或本地备份目录；配置了对象存储 `OBJECT_STORE_*` 时，长文配图、公众号配图和壁纸原图在存储桶里，不在文件包中；这些目录里没有文件时只有 `.dump`。已经转发到飞书的图片只保留数据库中的外部引用，文件包不保存飞书上的图片。
 
 每个文件只上传一次，放在一个前缀下：每月 1 日放 `monthly/`，周日放 `weekly/`，其他日子放 `daily/`。可以在对象存储里按前缀设不同的过期时间。
 
