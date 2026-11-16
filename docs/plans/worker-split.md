@@ -73,6 +73,21 @@ DMIT（1 vCPU、1.9 GB）只负责对外响应：api、web、Postgres、cloudfla
 
 看完数据再定：如果 worker 平时不重，只是 Codex 进程占资源，第一阶段只搬写作类队列。
 
+### 写作对比（2026-11-16）
+
+先查到：线上所有文字步骤（综述、翻译、日报、公众号……）用的都是 `codex-luna`（Codex 里快而省额度的小模型，推理强度 low），写作差很可能主要出在这里。
+
+用 `scripts/eval-story-digests.ts` 拿 6 个最近的事件（4–19 篇报道）并排跑事件综述，提示和输入与线上相同；Codex 在 DMIT 上跑，agy 在 mini 上跑（`transport: "agy"`，提交 90f1444）。24 次调用全部成功，没有一次因用工具被拒。
+
+| 模型 | 平均耗时 | 平均长度 | 读感 |
+|---|---|---|---|
+| `codex-luna`（线上） | 6.5 s | 约 130 词 | 短，漏价格等要点，偶尔评论报道本身 |
+| `codex-sol` | 8.9 s | 约 170 词 | 完整、清楚，比 luna 好一大截 |
+| `agy-opus`（Claude Opus 5.5 High） | 18.6 s | 约 250 词 | 最好读、结构最好；偏长，偶尔点出信源名 |
+| `agy-gemini`（Gemini 4 Hydrogen High） | 33.2 s | 约 210 词 | 句子长而挤，数字堆砌，输出 token 多出几倍 |
+
+初步结论：最大的提升来自把写作步骤从 luna 换成更强的模型；`codex-sol` 不用新机器、没有条款问题，`agy-opus` 读起来再好一些。由使用者看并排结果后决定。
+
 ### 阶段 1：模型产出的文件进 R2（2026-11-16 代码完成，未发布）
 
 - [x] 公共对象存储 `packages/backend/src/lib/objects.ts`（put、get、签名链接），配置 `OBJECT_STORE_*`；壁纸改用它，删掉 `modules/wallpaper/src/store.ts` 和 `WALLPAPER_STORE_*`。
