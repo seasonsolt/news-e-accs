@@ -48,13 +48,45 @@ DMIT（1 vCPU、1.9 GB）只负责对外响应：api、web、Postgres、cloudfla
 
 ## 3. 分阶段
 
-### 阶段 0：量（等使用者）
+### 阶段 0：量
+
+2026-11-16 晚上（北京时间 18:43–18:53）在 DMIT 上测了一次，worker 18:39 刚随发布重启：
+
+- 整机：1 vCPU，负载 1.01 / 0.62 / 0.34；内存 1973 MB，已用 979 MB，还能用 994 MB；swap 用了 73 MB。
+- 10 分钟、每 5 秒采样一次：worker 平均 CPU 1.6%，最高 17.7%；api 0.7%；web 0.7%；sing-box 平均 1.6%，最高 18.4%。worker 内存从 336 MB 涨到 550 MB。Postgres 自启动以来平均 6.5%。采样期间每 5 秒的那一刻都没有正在跑的 codex 进程，最近一小时只有 8 次 codex 文字调用，每次平均 7.5 s。
+- 近 7 天花时间最多的定时任务：`content.localize`（2057 次，共 121 分钟，平均 3.5 s，最长 129 s，失败 63 次）、`seo.search-console`（一次 29 分钟）、`sources.x-renames`（28 分钟）、`content.localize-sweep`（25 分钟，失败 6 次）。精选和归组是队列任务，不记在这张表里。
+- 近 7 天 codex 文字调用约 8000 次：精选和归组那一侧（打分、预筛、结构、理解、摘要、归组）约 6100 次，占 76%；`models` 角色那一侧（翻译 1223、事件简报 640、公众号、长文）约 1900 次，占 24%。
+- mini 到 DMIT：ping 平均 133 ms（131–136，20 个包不丢），TCP 建连 135–140 ms，是直连，不经过家里路由器的代理。
+
+结论：DMIT 平时不吃紧，压力是阵发的。只搬 `models` 角色，只能带走约四分之一的 codex 调用；要明显减轻 DMIT，得把精选（`content.analyze`）也搬过去，而它最依赖数据库往返。所以这次拆分的主要收益是：写作类模型能换成只装在 mini 上的 `agy`，以及给以后增长留出余量，不是为了解决眼下的负载。
+
+- [x] DMIT 资源测量（见上）。
+- [x] DMIT 装 Tailscale 1.104.7（`--accept-dns=false --ssh=false`）；sing-box 是服务端模式，没有 tun 网卡，不冲突。等使用者登录。
+- [ ] mini 装 Tailscale：已经 `brew install`，等使用者 `sudo brew services start tailscale` 和 `sudo tailscale up`。
+- [ ] 在 mini 上用一条远程连接实测一次 `paidRequest` 的持锁时间。
+
+#### 原来的测量计划
 
 - [ ] 在 Mac 上跑 DMIT 测量脚本：各服务 CPU 和内存、近 7 天各任务耗时、模型调用次数、10 分钟采样。
 - [ ] DMIT 和 mini 装 Tailscale（`--accept-dns=false`），确认 `tailscale ping` 是直连还是 DERP 中转。
 - [ ] 从 mini 测到 DMIT 的往返延迟，并在 mini 上用一条远程连接实测一次 `paidRequest` 的持锁时间。
 
 看完数据再定：如果 worker 平时不重，只是 Codex 进程占资源，第一阶段只搬写作类队列。
+
+### 写作对比（2026-11-16）
+
+先查到：线上所有文字步骤（综述、翻译、日报、公众号……）用的都是 `codex-luna`（Codex 里快而省额度的小模型，推理强度 low），写作差很可能主要出在这里。
+
+用 `scripts/eval-story-digests.ts` 拿 6 个最近的事件（4–19 篇报道）并排跑事件综述，提示和输入与线上相同；Codex 在 DMIT 上跑，agy 在 mini 上跑（`transport: "agy"`，提交 90f1444）。24 次调用全部成功，没有一次因用工具被拒。
+
+| 模型 | 平均耗时 | 平均长度 | 读感 |
+|---|---|---|---|
+| `codex-luna`（线上） | 6.5 s | 约 130 词 | 短，漏价格等要点，偶尔评论报道本身 |
+| `codex-sol` | 8.9 s | 约 170 词 | 完整、清楚，比 luna 好一大截 |
+| `agy-opus`（Claude Opus 5.5 High） | 18.6 s | 约 250 词 | 最好读、结构最好；偏长，偶尔点出信源名 |
+| `agy-gemini`（Gemini 4 Hydrogen High） | 33.2 s | 约 210 词 | 句子长而挤，数字堆砌，输出 token 多出几倍 |
+
+初步结论：最大的提升来自把写作步骤从 luna 换成更强的模型；`codex-sol` 不用新机器、没有条款问题，`agy-opus` 读起来再好一些。由使用者看并排结果后决定。
 
 ### 阶段 1：模型产出的文件进 R2（2026-11-16 代码完成，未发布）
 
