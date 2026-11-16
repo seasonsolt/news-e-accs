@@ -121,6 +121,7 @@ DMIT（1 vCPU、1.9 GB）只负责对外响应：api、web、Postgres、cloudfla
 - [x] 第一次接手：`content.localize` 在 mini 上跑完（71 s，翻译 2 条），core 的任务照常在 DMIT。
 - [x] 使用者盲评后认定 `agy-hydrogen` 胜出；综述（`digest`）已切到 `agy-hydrogen`（审计 `models.switch`，操作者 `claude-code`）。
 - [x] 20:36 第一条 agy 综述（回执 56374，16 s，事件 4d0bc577）写回生产；20:40 第一条 agy 翻译（13.8 s）。之后把翻译（`translate`：英文版本地化和正文翻译）和公众号（`wechat`：点评、话题、视频号脚本）也切到 `agy-hydrogen`。这几步只在归 `models` 的任务里调用，已核对代码。日报和周报月报（`reports.compose`，步骤 `report`）在 core，DMIT 上没有 agy，仍用 `codex-luna`；精选、归组等也仍是 `codex-luna`。
+- [x] 日报周报月报的生成（`reports.compose`）也划给 `models`：它查库不多，周报月报要调写作模型。之后步骤 `report` 也用 `agy-hydrogen`。`models` 那台停了的话，日报到点不会生成，订阅邮件跟着推迟。
 - [ ] 盯 `agy-text` 预算（每分钟 10、每小时 100、每天 500）和 Google 账号的额度：按上周的量，综述约 90 次/天、翻译约 175 次/天，凌晨 04:40 的全站翻译补跑可能触到每分钟上限（触到就等下一轮）。
 - [ ] 每次 `deploy/update.sh` 之后在 mini 上运行 `~/eacc-worker/bin/update`（私有脚本，不在仓库里），让 mini 换到同一版本；以后再并进发布脚本。
 - [ ] mini 的 `~/eacc-worker/logs/worker.log` 还没有轮转。
