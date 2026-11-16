@@ -5,7 +5,8 @@
 //     node --env-file=.env scripts/eval-story-digests.ts --stories <publicId,...> --out <file.jsonl>
 //   Run the cases:
 //     node --env-file=.env scripts/eval-story-digests.ts [--cases .data/story-digest-cases.jsonl] [--system <candidate.md>]
-//       [--models default,deepseek-flash] [--max-calls 18] [--concurrency 4] [--out-dir .data/eval]
+//       [--language en|zh] [--models default,deepseek-flash] [--max-calls 18] [--concurrency 4] [--out-dir .data/eval]
+// --language zh writes the Chinese digest a hand-made Chinese story gets (story-digest-zh), from the same input.
 // The number of calls (cases × models × prompts) is printed first; above --max-calls nothing is sent.
 // Receipts make an identical re-run free. The comparison is written to --out-dir as JSON and Markdown.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -13,8 +14,8 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 import { REPO_ROOT } from "@aihot/backend/config";
 import { closeDb, sql } from "@aihot/backend/db";
-import { promptFromText } from "@aihot/backend/editorial/prompts";
-import { DIGEST_PROMPT_VERSION, DIGEST_SAMPLING, DIGEST_SYSTEM, DigestSchema, buildStoryDigestInput } from "@aihot/backend/events/digest";
+import { promptFromText, promptText, promptVersion } from "@aihot/backend/editorial/prompts";
+import { DIGEST_SAMPLING, DigestSchema, buildStoryDigestInput, digestPromptName, digestSchemaFor } from "@aihot/backend/events/digest";
 import { sha256 } from "@aihot/backend/lib/ids";
 import { chatJson } from "@aihot/backend/providers/llm";
 import { completeReceipt, failedReceiptId } from "@aihot/backend/providers/receipts";
@@ -37,6 +38,7 @@ const { values } = parseArgs({
     out: { type: "string" },
     cases: { type: "string", default: ".data/story-digest-cases.jsonl" },
     system: { type: "string" },
+    language: { type: "string", default: "en" },
     models: { type: "string" },
     "max-calls": { type: "string", default: "18" },
     concurrency: { type: "string", default: "4" },
@@ -87,10 +89,15 @@ async function evaluate() {
   const rows = parseDigestEvalJsonl(readFileSync(path.resolve(REPO_ROOT, values.cases!), "utf8"));
   if (!rows.length) throw new Error("no digest evaluation cases");
 
-  const prompts: Prompt[] = [{ key: "live", version: DIGEST_PROMPT_VERSION, system: DIGEST_SYSTEM }];
+  const language = values.language;
+  if (language !== "en" && language !== "zh") throw new Error(`--language is en or zh (got ${language})`);
+  const live = { version: promptVersion(digestPromptName(language)), system: promptText(digestPromptName(language)) };
+  // English keeps the schema it has always had here; Chinese must answer in Chinese, as on the site.
+  const schema = language === "en" ? DigestSchema : digestSchemaFor("zh", "manual");
+  const prompts: Prompt[] = [{ key: "live", ...live }];
   if (values.system) {
     const system = promptFromText(values.system, readFileSync(path.resolve(REPO_ROOT, values.system), "utf8"));
-    if (system === DIGEST_SYSTEM) throw new Error(`${values.system} renders the same as the site's prompt: nothing to compare`);
+    if (system === live.system) throw new Error(`${values.system} renders the same as the site's prompt: nothing to compare`);
     prompts.push({ key: "candidate", version: `candidate@${sha256(system).slice(0, 10)}`, system });
   }
   const models = await evalModels(values.models, "digest");
@@ -104,7 +111,7 @@ async function evaluate() {
       cases: values.cases!,
       calls,
       prompts: {
-        live: { version: DIGEST_PROMPT_VERSION },
+        live: { version: live.version },
         ...(values.system ? { candidate: { file: values.system, version: prompts[1]!.version } } : {}),
       },
     },
@@ -128,7 +135,7 @@ async function evaluate() {
           promptVersion: prompt.version,
           system: prompt.system,
           user,
-          schema: DigestSchema,
+          schema,
           ...DIGEST_SAMPLING,
         });
         await completeReceipt(sql, res.receiptId);

@@ -27,7 +27,7 @@ export const DigestSchema = z.object({
 });
 
 /** The model's answer must be in the story's language (the title of a hand-made story is not rewritten). */
-function digestSchemaFor(language: "en" | "zh", origin: string) {
+export function digestSchemaFor(language: "en" | "zh", origin: string) {
   return DigestSchema.superRefine((data, ctx) => {
     const invalid = language === "en"
       ? (origin !== "manual" && !looksEnglish(data.title)) || !looksEnglish(data.digest)

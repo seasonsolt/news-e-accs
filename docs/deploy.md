@@ -64,7 +64,7 @@ MCP 默认接受 `SITE_URL` 的主机以及 `localhost`、`127.0.0.1`、`[::1]`�
 
 ### 文字步骤可以用 agy 模型（2026 年 11 月 16 日）
 
-没有迁移。`site/models.ts` 的模型预设多了一种 `transport: "agy"`：worker 调用所在机器上登录了 Google 账号的 Antigravity CLI（`agy`）来回答，用账号的额度，不需要 API 密钥（见下方 [文字步骤用 agy 模型](#文字步骤用-agy-模型)）。示例站加了 `agy-opus`（Claude Opus 5.5 High）和 `agy-gemini`（Gemini 4 Hydrogen High）两个预设，默认哪一步都不用。种子数据会给后台预算加一行 `agy-text`（每分钟 10、每小时 100、每天 500 次），已有的不覆盖。启动 Codex CLI 的代码移到了 `providers/cli.ts`，两种 CLI 共用，Codex 的行为不变。
+没有迁移。`site/models.ts` 的模型预设多了一种 `transport: "agy"`：worker 调用所在机器上登录了 Google 账号的 Antigravity CLI（`agy`）来回答，用账号的额度，不需要 API 密钥（见下方 [文字步骤用 agy 模型](#文字步骤用-agy-模型)）。示例站加了 `agy-opus`（Claude Opus 5.5 High）和 `agy-hydrogen`（Gemini 4 Hydrogen Low）两个预设，默认哪一步都不用。种子数据会给后台预算加一行 `agy-text`（每分钟 10、每小时 100、每天 500 次），已有的不覆盖。启动 Codex CLI 的代码移到了 `providers/cli.ts`，两种 CLI 共用，Codex 的行为不变。
 
 ### worker 可以分到两台机器（2026 年 11 月 16 日）
 
