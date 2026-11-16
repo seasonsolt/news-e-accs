@@ -1,6 +1,21 @@
 {
-  "latestVersion": "2026-11-15T22:30",
+  "latestVersion": "2026-11-16T08:45",
   "releases": [
+    {
+      "date": "2026-11-16",
+      "time": "08:45",
+      "kind": "优化",
+      "title": "推荐理由写这件事改变了什么",
+      "body": [
+        "精选条目的推荐理由不再复述原文讲了什么，改为说明这件事改变了什么、对谁有影响：门槛和价格的变化、与前代或竞品的比较、哪些工作交给了模型，或者研究结果验证到了哪一步。新入选的条目开始使用新写法，已有条目保持不变。"
+      ],
+      "en": {
+        "title": "Why it matters says what changed",
+        "body": [
+          "The Why it matters line on picked stories no longer retells what the source covers. It now says what changed and for whom: a lower price or barrier, a comparison with the previous version or a rival, work handed to a model, or how far a research result has been verified. Newly picked stories use it; earlier ones stay as they are."
+        ]
+      }
+    },
     {
       "date": "2026-11-15",
       "time": "22:30",

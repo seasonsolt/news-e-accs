@@ -43,9 +43,21 @@
 
 ## 候选阅读价值
 
-`editorialJudgment` 是当前单篇材料若最终被系统选为代表稿时可展示的推荐理由，不是精选结论。Write 20–40 English words，只写 1 句话、最多 2 个分句；在原文事实基础上只提供最关键的一层阅读价值：背景、比较、影响或可迁移方法四选一。它不是标题摘要，也不是对整个事件的泛泛评价；不得借用同事件其他稿件中的事实，不得补写原文没有的最新事件、数字、专名、动机或能力结论。
+`editorialJudgment` 是当前单篇材料若最终被系统选为代表稿时，显示在 Why it matters 下的一句话，不是精选结论。读者已经看过标题和摘要，它回答下一个问题：这件事改变了什么，对谁有影响。Write 20–40 English words，只写 1 句话、最多 2 个分句。
 
-语气克制、自然、具体，不命令读者。禁止使用：必读、必须看、赶紧、立刻、不容错过、重磅、颠覆、革命性、划时代、炸裂、这意味着、值得注意的是、证实、证明、首次、首个、最大、唯一、创纪录、填补空白、重新定义、重塑、仍需验证、有待观察、实际效果未知。禁止冒号、破折号和英文双引号。
+直接写变化本身。从下面几个角度里选原文支持得最好的一个：
+
+- 门槛：价格、速度、可用范围、硬件或权限要求变了，谁现在能做以前做不了的事；
+- 比较：与原文给出的前代版本、竞品或基准相比，差别在哪里；
+- 分工：哪类工作从人手里交给了模型或智能体，或者反过来；
+- 验证程度：原文给出的结果验证到了哪一步（基准测试、形式化验证、真实部署、实验室或临床），以及原文自己说明还没有做到的部分；
+- 可迁移方法：读者能拿去用在自己工作里的具体做法。
+
+不要描述这篇材料本身：不以 The post、The article、The announcement、The guide、The walkthrough、The paper、The thread、The video、The footage、The clip、The demo、The source 等作主语，不用 describes、explains、outlines、details、walks through、traces、frames、emphasizes、highlights、giving readers、helping readers 这类评论文章的写法。主语是产品、模型、组织、人或受影响的读者群。也不要写原文没有交代什么（does not specify、does not disclose、it is unclear），那是在评论报道，不是在说这件事的意义。不要重复摘要已经写过的数字和功能清单，只在需要时点到一个作为依据；除了复述摘要说不出别的，就返回空字符串。
+
+每个判断都要在原文里找得到依据：数字、对象、比较对象和限制都来自原文。不得借用同事件其他稿件中的事实，不得补写原文没有的最新事件、数字、专名、动机或能力结论，也不得凭行业常识推断影响。原文明确写出的局限、前提或尚未验证的部分可以写，要具体到原文的说法。
+
+语气克制、自然、具体，不命令读者。禁止使用：必读、必须看、赶紧、立刻、不容错过、重磅、颠覆、革命性、划时代、炸裂、这意味着、值得注意的是、证实、证明、首次、首个、最大、唯一、创纪录、填补空白、重新定义、重塑，以及仍需验证、有待观察、实际效果未知这类不指明具体内容的保留说法。禁止冒号、破折号和英文双引号。
 
 材料只有下载口号、标题、营销话术，或无法支持任何具体阅读价值时，`editorialJudgment` 必须返回空字符串；宁可不展示，也不要编造价值或写成劝退式审稿意见。是否为空不改变其他字段，也不影响系统的精选计算。
 
@@ -61,4 +73,4 @@ Write title, summary, and editorialJudgment in natural US English directly from 
 
 只返回合法 JSON，不要 Markdown，不要解释。顶层必须且只能包含以下六个字段：
 
-{"itemType":"product_launch","authorRole":"principal","tags":["产品更新","Agent"],"editorialJudgment":"The source explains the capability change and access terms, helping readers assess its effect on their workflow.","title":"A product adds agent features","summary":"The product adds agent features and describes how users can access them."}
+{"itemType":"product_launch","authorRole":"principal","tags":["产品更新","Agent"],"editorialJudgment":"Agent features move from an enterprise pilot to every paid plan, so small teams can try them without a sales contract.","title":"A product adds agent features","summary":"The product adds agent features and describes how users can access them."}
