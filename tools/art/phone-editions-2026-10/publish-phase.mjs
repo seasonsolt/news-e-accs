@@ -2,7 +2,7 @@ import { readFile, writeFile, access } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { sql } from '/srv/eacc/app/packages/backend/src/db.ts';
 import { audit } from '/srv/eacc/app/packages/backend/src/audit.ts';
-import { put, link, remote } from '/srv/eacc/app/modules/wallpaper/src/store.ts';
+import { putObject, objectLink, objectStoreRemote } from '/srv/eacc/app/packages/backend/src/lib/objects.ts';
 import { directory } from '/srv/eacc/app/modules/wallpaper/src/admin.ts';
 import { createRequire } from 'node:module';
 const sharp = createRequire('/srv/eacc/app/modules/wallpaper/src/admin.ts')('sharp');
@@ -12,7 +12,7 @@ if (!dir) throw new Error('Release directory required');
 const release = JSON.parse(await readFile(`${dir}/release.json`, 'utf8'));
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 try {
-  if (!remote()) throw new Error('Private wallpaper store required');
+  if (!objectStoreRemote()) throw new Error('Private wallpaper store required');
   await access(directory());
   const before = await sql`SELECT id, day::text, title_zh, title_en, desktop_file, phone_file, preview_file FROM wallpapers ORDER BY id`;
   for (const item of release.items) {
@@ -28,8 +28,8 @@ try {
       const meta = await sharp(bytes).metadata();
       if (kind === 'phone' ? meta.width !== 2160 || meta.height !== 3840 || meta.format !== 'jpeg' : meta.width !== 1600 || meta.format !== 'webp') throw new Error(`Invalid image: ${item.id}/${kind}`);
       if (kind === 'phone') {
-        await put(file.file, bytes);
-        const response = await fetch(link(file.file, file.file));
+        await putObject(`wallpapers/${file.file}`, bytes, 'image/jpeg');
+        const response = await fetch(objectLink(`wallpapers/${file.file}`, file.file, 300));
         if (!response.ok || hash(Buffer.from(await response.arrayBuffer())) !== file.sha256) throw new Error(`Remote readback failed: ${item.id}`);
       } else await writeFile(`${directory()}/${file.file}`, bytes);
     }

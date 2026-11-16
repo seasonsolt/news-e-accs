@@ -1,13 +1,12 @@
 // The writing desk's admin routes (/api/admin/essays…). Model work is only queued here; see backend/tasks.ts.
-import path from "node:path";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { adminHandler } from "@aihot/api/routes/admin-auth";
-import { sendFile } from "@aihot/api/routes/static";
+import { sendObject } from "@aihot/api/routes/static";
 import { actorOf } from "@aihot/backend/admin/auth";
 import { ESSAY_LANGUAGES } from "../contracts.ts";
 import {
-  chooseCandidate, createEssay, dismissTask, essayDetail, essayDir, FILE, listEssays, previewEssay, publishEssay, removeImage, requestTask,
+  chooseCandidate, createEssay, dismissTask, essayDetail, FILE, listEssays, PICTURES, previewEssay, publishEssay, removeImage, requestTask,
   resolveRevision, revisionContent, saveEssay, saveImage, uploadImage, withdrawEssay,
 } from "../backend/store.ts";
 import { essayStyles, publicStyle, removeStyle, uploadStyle } from "../backend/styles.ts";
@@ -34,7 +33,7 @@ export function registerEssayAdmin(app: FastifyInstance) {
   app.get("/api/admin/essays/media/:file", adminHandler(async (req, reply) => {
     const { file } = z.object({ file: z.string() }).parse(req.params);
     if (!FILE.test(file)) return reply.code(404).send("Not found");
-    return sendFile(req, reply, path.join(essayDir(), file), { cacheControl: "private, max-age=31536000, immutable" });
+    return sendObject(req, reply, `${PICTURES}/${file}`, { cacheControl: "private, max-age=31536000, immutable" });
   }));
   app.get("/api/admin/essays/styles", adminHandler(async () => ({ styles: (await essayStyles()).map(publicStyle) })));
   app.post("/api/admin/essays/styles", adminHandler(async (req, _reply, admin) => {

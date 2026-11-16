@@ -1,9 +1,10 @@
 // Retirement failures: old schedules keep producing work, already-unscheduled queues keep old jobs,
 // cleanup removes a live/business queue or its durable run history, or retired failures stay in the
-// admin's current schedules. Use pg-boss and PostgreSQL.
+// admin's current schedules; a worker of a split removes the other role's timers. Use pg-boss and PostgreSQL.
 import "./setup.ts";
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
+import { config } from "@aihot/backend/config";
 import { closeDb, sql } from "@aihot/backend/db";
 import { getBoss, stopBoss } from "@aihot/backend/jobs/queue";
 import { installModules } from "@aihot/backend/modules";
@@ -70,5 +71,31 @@ test("retired schedules leave the current overview and execution queues while li
     const job = name.slice("cron.".length);
     assert.equal((await sql`SELECT id FROM job_runs WHERE job = ${job}`).length, 1);
     assert.ok(overview.timeline.some((r) => r.job === job && r.status === "failed"));
+  }
+});
+
+test("a split worker removes only its own role's disabled timers, and retired ones only where core work runs", async () => {
+  const boss = await getBoss();
+  const names = ["cron.split.core", "cron.split.core-off", "cron.split.models", "cron.split.models-off", "cron.split.gone"];
+  for (const name of names) await boss.createQueue(name);
+  installModules([{ name: "split", schedules: [
+    { name: "split.core", cron: "0 0 1 1 *", run: async () => ({}) },
+    { name: "split.core-off", cron: "0 0 1 1 *", when: () => false, run: async () => ({}) },
+    { name: "split.models", cron: "0 0 1 1 *", runsOn: "models", run: async () => ({}) },
+    { name: "split.models-off", cron: "0 0 1 1 *", runsOn: "models", when: () => false, run: async () => ({}) },
+  ] }]);
+  const present = async () => (await Promise.all(names.map(async (n) => ((await boss.getQueue(n)) ? n : null)))).filter(Boolean);
+  try {
+    config.workerRole = "models";
+    await registerSchedules(boss);
+    assert.deepEqual(await present(), ["cron.split.core", "cron.split.core-off", "cron.split.models", "cron.split.gone"]);
+    assert.ok((await boss.getSchedules()).some((s) => s.name === "cron.split.models"));
+    config.workerRole = "core";
+    await registerSchedules(boss);
+    assert.deepEqual(await present(), ["cron.split.core", "cron.split.models"]);
+    assert.ok((await boss.getSchedules()).some((s) => s.name === "cron.split.models"), "the core worker keeps the models worker's timer");
+  } finally {
+    config.workerRole = "all";
+    installModules([]);
   }
 });

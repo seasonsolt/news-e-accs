@@ -5,6 +5,7 @@ import type { PgBoss } from "pg-boss";
 import { EDITION_TIMES } from "@aihot/site";
 import { config } from "@aihot/backend/config";
 import { ensureQueue, recordRun } from "@aihot/backend/jobs/queue";
+import { runsHere } from "@aihot/backend/jobs/roles";
 import { serverModules, type Scheduled } from "@aihot/backend/modules";
 import { sweepUnprocessed } from "@aihot/backend/jobs/content";
 import { translateContentPending } from "@aihot/backend/editorial/content-translate";
@@ -44,9 +45,9 @@ export const ENGINE_SCHEDULES: EngineScheduled[] = [
   { name: "content.sweep", cron: "*/5 * * * *", run: sweepUnprocessed },
   // The other language's edition of what readers see now (hot strip, ranking, first feed page, newest daily);
   // once a day the whole site, for edits to older entries (model calls; off with MODEL_CALLS_ENABLED=false).
-  { name: "content.localize", cron: "*/5 * * * *", run: () => translateContentPending() },
-  { name: "content.localize-sweep", cron: "40 4 * * *", missed: "once", run: () => translateContentPending(50, true) },
-  { name: "content.translate", cron: "*/5 * * * *", run: () => translatePending() },
+  { name: "content.localize", cron: "*/5 * * * *", run: () => translateContentPending(), runsOn: "models" },
+  { name: "content.localize-sweep", cron: "40 4 * * *", missed: "once", run: () => translateContentPending(50, true), runsOn: "models" },
+  { name: "content.translate", cron: "*/5 * * * *", run: () => translatePending(), runsOn: "models" },
   { name: "hot.rank", cron: "*/5 * * * *", run: () => computeHotRanking() },
   { name: "hot.snapshot", cron: "2 * * * *", run: () => snapshotHeat() },
   { name: "stories.links", cron: "12 * * * *", run: linkRelatedStories },
@@ -58,9 +59,9 @@ export const ENGINE_SCHEDULES: EngineScheduled[] = [
   // Unsubscribes made through an issue's link, read back from Resend (only with NEWSLETTER_ENABLED).
   { name: "newsletter.unsubscribes", cron: "20 5 * * *", missed: "once", run: () => syncUnsubscribes(), when: () => config.newsletterEnabled },
   // The site's comment on each entry of today's 公众号 column, once its Chinese edition is ready (model calls).
-  { name: "wechat.comment", timeZone: config.reportTimeZone, cron: `5-55/10 ${dailyHour}-${Math.min(23, dailyHour + 4)} * * *`, run: () => commentWechatColumn() },
+  { name: "wechat.comment", timeZone: config.reportTimeZone, cron: `5-55/10 ${dailyHour}-${Math.min(23, dailyHour + 4)} * * *`, run: () => commentWechatColumn(), runsOn: "models" },
   // The column's topics and follow-up lines, once a day as soon as its Chinese edition is ready (model calls).
-  { name: "wechat.topics", timeZone: config.reportTimeZone, cron: `5-55/10 ${dailyHour}-${Math.min(23, dailyHour + 4)} * * *`, run: () => topicWechatColumn() },
+  { name: "wechat.topics", timeZone: config.reportTimeZone, cron: `5-55/10 ${dailyHour}-${Math.min(23, dailyHour + 4)} * * *`, run: () => topicWechatColumn(), runsOn: "models" },
   // The deletions the privacy notice promises, once their retention periods are over.
   { name: "ops.retention", cron: "30 3 * * *", missed: "once", run: () => dailyRetention() },
   // IndexNow for added, changed and removed discovery URLs (off unless INDEXNOW_SUBMIT_ENABLED).
@@ -96,7 +97,8 @@ export const ENGINE_SCHEDULES: EngineScheduled[] = [
 ];
 
 export async function registerSchedules(boss: PgBoss) {
-  const schedules: EngineScheduled[] = [...ENGINE_SCHEDULES, ...serverModules().flatMap((m) => m.schedules ?? [])].filter((s) => s.when?.() ?? true);
+  const known: EngineScheduled[] = [...ENGINE_SCHEDULES, ...serverModules().flatMap((m) => m.schedules ?? [])];
+  const schedules = known.filter((s) => runsHere(s.runsOn) && (s.when?.() ?? true));
   for (const s of schedules) {
     const queue = `cron.${s.name}`;
     await ensureQueue(queue, { policy: "singleton", retryLimit: 1, expireInSeconds: 3600 });
@@ -107,8 +109,12 @@ export async function registerSchedules(boss: PgBoss) {
   // Retired or disabled timers must leave no queued work behind, including queues an earlier release
   // already unscheduled (reports.daily, reports.weekly, reports.monthly, reports.catch-up and stories.status
   // are retired this way). pg-boss deletes the queue's jobs and schedules; job_runs retains its audit.
+  // With the work split (jobs/roles.ts) a worker removes only its own role's disabled timers, and retired
+  // ones only where core work runs, so neither removes the other's.
   const current = new Set(schedules.map((s) => `cron.${s.name}`));
+  const roleOf = new Map(known.map((s) => [`cron.${s.name}`, s.runsOn]));
   for (const old of await boss.getQueues()) {
-    if (old.name.startsWith("cron.") && !current.has(old.name)) await boss.deleteQueue(old.name);
+    if (!old.name.startsWith("cron.") || current.has(old.name)) continue;
+    if (roleOf.has(old.name) ? runsHere(roleOf.get(old.name)) : runsHere("core")) await boss.deleteQueue(old.name);
   }
 }

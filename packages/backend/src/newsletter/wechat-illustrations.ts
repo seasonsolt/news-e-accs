@@ -3,24 +3,23 @@
 // Finding takes the first sizeable picture of the entry's own report or of another report of its event,
 // then the preview picture (og:image) of those reports' pages, then that of pages a web search by the
 // Codex CLI turns up; a found picture keeps its page as its credit. Drawing uses the Codex CLI's image
-// tool (providers/codex.ts). Files are kept under AIHOT_DATA_DIR/uploads/wechat-illustrations. Each ask or
+// tool (providers/codex.ts). Files are objects under wechat-illustrations/ (lib/objects.ts). Each ask or
 // upload is a new `request`: work that finishes after a newer ask is not shown, and the picture already
 // there stays until the new one is ready.
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { z } from "zod";
 import { config } from "../config.ts";
 import { sql } from "../db.ts";
 import { promptText } from "../editorial/prompts.ts";
 import { guardedFetch } from "../lib/http-fetch.ts";
 import { isNonArticleImage } from "../lib/image-url.ts";
+import { getObject } from "../lib/objects.ts";
 import { previewPicture } from "../media/previews.ts";
 import { logError } from "../lib/log-error.ts";
 import { codexConfigured, codexImage, codexText, saveJpeg } from "../providers/codex.ts";
 import { BudgetExceededError, completeReceipt, paidRequest, ReceiptBusyError, ReceiptUnknownError } from "../providers/receipts.ts";
 
-/** Under uploads/, so backups keep them; the public /contact/ route reads only files at the top of uploads/. */
-export const illustrationDir = () => path.join(config.dataDir, "uploads", "wechat-illustrations");
+/** The pictures' folder in the object store (lib/objects.ts). */
+export const ILLUSTRATIONS = "wechat-illustrations";
 
 export interface IllustrationRow {
   entryKey: string;
@@ -53,9 +52,9 @@ export async function wechatIllustrations(key: string): Promise<Map<string, Illu
 /** The entry's picture as JPEG bytes; null without one. */
 export async function illustrationJpeg(key: string, entry: string): Promise<Buffer | null> {
   const [row] = await sql<{ file: string | null }[]>`SELECT file FROM wechat_illustrations WHERE report_key = ${key} AND entry_key = ${entry}`;
-  // Names are written here as <hash>.jpg; anything else is not read from disk.
+  // Names are written here as <hash>.jpg; anything else is not read.
   if (!row?.file || !/^[0-9a-f]{32}\.jpg$/.test(row.file)) return null;
-  return readFile(path.join(illustrationDir(), row.file)).catch(() => null);
+  return getObject(`${ILLUSTRATIONS}/${row.file}`);
 }
 
 /** Why the worker cannot draw (or search the web) here, or null when it can. */
@@ -95,7 +94,7 @@ export async function drawWechatIllustration(job: Job): Promise<{ status: string
   if (!claimed.length) return { status: "superseded" };
   try {
     const drawn = await codexImage({
-      instruction: promptText("wechat-illustration", { subject: job.subject }), dir: illustrationDir(),
+      instruction: promptText("wechat-illustration", { subject: job.subject }), folder: ILLUSTRATIONS,
       purpose: "wechat_illustration", subject: `wechat:${job.date}:${job.entry}`.slice(0, 200), attemptTag: job.request,
     });
     const kept = await sql.begin(async (tx) => {
@@ -163,7 +162,7 @@ async function firstUsable(candidates: Array<{ url: string; page: string }>, cur
     seen.add(c.url);
     const picture = await usablePicture(c.url);
     if (!picture) continue;
-    const saved = await saveJpeg(picture, illustrationDir());
+    const saved = await saveJpeg(picture, ILLUSTRATIONS);
     if (saved.file !== current) return { file: saved.file, page: c.page };
   }
   return null;

@@ -8,7 +8,7 @@ import { checkWorkerHeartbeat } from "@aihot/backend/operations/watch";
 import { sendAlert } from "@aihot/backend/notify/feishu";
 
 const T = tag();
-const keys = ["heartbeat.worker", "watchdog.worker"];
+const keys = ["heartbeat.worker", "watchdog.worker", "heartbeat.worker-models", "watchdog.worker-models"];
 const envNames = ["FEISHU_APP_ID", "FEISHU_APP_SECRET", "FEISHU_ALERT_CHAT_ID", "FEISHU_ALERT_WEBHOOK_URL", "FEISHU_INTERNAL_CHAT_ID", "FEISHU_INTERNAL_ENABLED"];
 const savedEnv = new Map(envNames.map((name) => [name, process.env[name]]));
 const attempts: string[] = [];
@@ -46,9 +46,9 @@ globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) =>
   return realFetch(`${provider.url}${url.pathname}${url.search}`, init);
 }) as typeof fetch;
 
-async function heartbeat(stale: boolean) {
+async function heartbeat(stale: boolean, role = "worker") {
   const at = new Date(Date.now() - (stale ? 61 * 60_000 : 0));
-  await sql`INSERT INTO settings(key,value,updated_by,updated_at) VALUES('heartbeat.worker','{}','test',${at})
+  await sql`INSERT INTO settings(key,value,updated_by,updated_at) VALUES(${`heartbeat.${role}`},'{}','test',${at})
     ON CONFLICT(key) DO UPDATE SET updated_at=EXCLUDED.updated_at`;
 }
 
@@ -87,6 +87,21 @@ test("one alert when the worker stops, none while it stays stopped, one recovery
   assert.match(attempts[0]!, /后台处理服务停了/);
   await heartbeat(false);
   await checkWorkerHeartbeat();
+  await checkWorkerHeartbeat();
+  assert.equal(attempts.length, 2);
+  assert.match(attempts[1]!, /已恢复/);
+});
+
+test("the models worker of a split is watched on its own heartbeat, once it has one", async () => {
+  await heartbeat(false);
+  await heartbeat(false, "worker-models");
+  await checkWorkerHeartbeat();
+  await heartbeat(true, "worker-models");
+  await checkWorkerHeartbeat();
+  await checkWorkerHeartbeat();
+  assert.equal(attempts.length, 1);
+  assert.match(attempts[0]!, /模型处理服务停了/);
+  await heartbeat(false, "worker-models");
   await checkWorkerHeartbeat();
   assert.equal(attempts.length, 2);
   assert.match(attempts[1]!, /已恢复/);

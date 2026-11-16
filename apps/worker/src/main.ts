@@ -1,8 +1,9 @@
 // Worker process: queues and schedules for collection, processing, events, reports and ops, and the site's
-// modules (site/modules/server.ts).
-import { assertProductionSecrets } from "@aihot/backend/config";
+// modules (site/modules/server.ts); with WORKER_ROLE, only its role's share of them (jobs/roles.ts).
+import { assertProductionSecrets, config } from "@aihot/backend/config";
 import { closeDb } from "@aihot/backend/db";
 import { getBoss, stopBoss, workModuleQueues } from "@aihot/backend/jobs/queue";
+import { heartbeatRole, runsHere } from "@aihot/backend/jobs/roles";
 import { installModules, serverModules } from "@aihot/backend/modules";
 import { SERVER_MODULES } from "@aihot/site/modules/server";
 import { registerContentJobs } from "@aihot/backend/jobs/content";
@@ -30,9 +31,9 @@ await registerPublicationJobs(boss);
 await registerWechatJobs(boss);
 await workModuleQueues(boss);
 await registerSchedules(boss);
-for (const m of serverModules()) await m.workerStarted?.(boss);
-const heartbeat = startHeartbeat("worker");
-console.log(JSON.stringify({ level: "info", msg: "worker started", pid: process.pid }));
+if (runsHere("core")) for (const m of serverModules()) await m.workerStarted?.(boss);
+const heartbeat = startHeartbeat(heartbeatRole());
+console.log(JSON.stringify({ level: "info", msg: "worker started", pid: process.pid, role: config.workerRole }));
 
 let stopping = false;
 const shutdown = async () => {

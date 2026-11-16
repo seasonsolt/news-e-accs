@@ -8,6 +8,7 @@ import { EDITION_TIMES, SITE } from "@aihot/site";
 import { CONTACT_ALIASES, PUBLIC_INTERFACE_VERSION } from "@aihot/contracts/http-policy";
 import { PUBLIC_API_CATEGORY_KEYS } from "@aihot/contracts/taxonomy";
 import { REPO_ROOT, config } from "@aihot/backend/config";
+import { getObject } from "@aihot/backend/lib/objects";
 import { applyPublicHeaders, sendTextWithEtag } from "../http/respond.ts";
 import { loadSitemap } from "@aihot/backend/publication/sitemap";
 import { llmsFullTxt } from "@aihot/backend/publication/llms-full";
@@ -105,6 +106,13 @@ export async function sendFile(req: FastifyRequest, reply: FastifyReply, file: s
     return reply.code(404).type("text/plain; charset=utf-8").send("Not found");
   }
   return sendEntry(req, reply, entry, { type: opts.type ?? TYPES[path.extname(file)] ?? "application/octet-stream", cacheControl: opts.cacheControl, publicApi: opts.publicApi });
+}
+
+/** An object's bytes (lib/objects.ts) with an ETag (304 when it matches), its type from the extension; a missing one is a 404. */
+export async function sendObject(req: FastifyRequest, reply: FastifyReply, key: string, opts: { cacheControl: string }) {
+  const body = await getObject(key);
+  if (!body) return reply.code(404).type("text/plain; charset=utf-8").send("Not found");
+  return sendEntry(req, reply, { body, etag: etagOf(body) }, { type: TYPES[path.extname(key)] ?? "application/octet-stream", cacheControl: opts.cacheControl });
 }
 
 export function registerStatic(app: FastifyInstance) {

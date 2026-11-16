@@ -14,9 +14,10 @@ import { requestWechatCover } from "../media/request.ts";
 import { WECHAT_MIN_ENTRIES, wechatColumn } from "../newsletter/wechat-column.ts";
 import { wechatComments } from "../newsletter/wechat-comments.ts";
 import { wechatTopics } from "../newsletter/wechat-topics.ts";
-import { drawingUnavailable, illustrationDir, illustrationJpeg, illustrationSubject, wechatIllustrations, type IllustrationRow } from "../newsletter/wechat-illustrations.ts";
+import { drawingUnavailable, ILLUSTRATIONS, illustrationJpeg, illustrationSubject, wechatIllustrations, type IllustrationRow } from "../newsletter/wechat-illustrations.ts";
 import { scriptingUnavailable, VIDEO_CAPTION_MAX, VIDEO_ENTRIES, VIDEO_LINE_MAX, VIDEO_POINT_MAX, VIDEO_POINTS, wechatVideo, type WechatVideoRow, type WechatVideoScript } from "../newsletter/wechat-video.ts";
 import { saveJpeg } from "../providers/codex.ts";
+import { ObjectStoreError } from "../lib/objects.ts";
 import { addWechatDraft, updateWechatDraft, uploadWechatArticleImage, uploadWechatImage, WechatApiError, wechatConfigured, type WechatDraftArticle } from "../providers/wechat-mp.ts";
 import { SITE } from "@aihot/site";
 import { isWechatTheme, wechatArticle, WECHAT_DIGEST_MAX, WECHAT_THEMES, WECHAT_TITLE_MAX, type WechatArticle, type WechatEdits } from "../newsletter/wechat.ts";
@@ -300,8 +301,9 @@ export async function uploadWechatIllustration(date: string, input: { entry?: un
   const { entry } = await columnEntry(key, input.entry);
   let saved;
   try {
-    saved = await saveJpeg(input.image, illustrationDir());
-  } catch {
+    saved = await saveJpeg(input.image, ILLUSTRATIONS);
+  } catch (error) {
+    if (error instanceof ObjectStoreError) throw error;
     throw bad("这张图片读不出来，换一张 PNG、JPEG 或 WebP。");
   }
   await sql.begin(async (tx) => {

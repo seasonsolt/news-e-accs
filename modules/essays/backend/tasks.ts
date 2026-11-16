@@ -19,7 +19,7 @@ import { loadStoryProse, resolveStory } from "@aihot/backend/publication/stories
 import { SITE } from "@aihot/site";
 import type { EssayEdition, EssayLanguage, EssayTask, EssayTaskKind } from "../contracts.ts";
 import { figureSlots, sections, slugify } from "./render.ts";
-import { editionsOf, essayDir, essayRow, imageRows, recordRevision, SLOT } from "./store.ts";
+import { editionsOf, essayRow, imageRows, PICTURES, pictureBytes, recordRevision, SLOT } from "./store.ts";
 import { essayStyle, type LoadedStyle } from "./styles.ts";
 
 export const essayQueue = defineQueue<{ taskId: number }>({
@@ -28,6 +28,7 @@ export const essayQueue = defineQueue<{ taskId: number }>({
   options: { retryLimit: 0, expireInSeconds: 1200 },
   worker: { batchSize: 1 },
   run: async (jobs) => { for (const job of jobs) await recordRun("essays.task", () => runEssayTask(job.taskId)); },
+  runsOn: "models",
 });
 
 /** The model step of each text task (server.ts registers them; site/models.ts gives the defaults). */
@@ -269,7 +270,7 @@ async function searchPictures(task: TaskRow, essayId: number) {
     if (found.length >= CANDIDATES) break;
     const picture = await usablePicture(candidate.url);
     if (!picture) continue;
-    const saved = await saveJpeg(picture, essayDir());
+    const saved = await saveJpeg(picture, PICTURES);
     if (!found.some((f) => f.file === saved.file)) found.push({ file: saved.file, page: candidate.page });
   }
   await land(task, receipt.receiptId, async (tx) => {
@@ -280,10 +281,10 @@ async function searchPictures(task: TaskRow, essayId: number) {
 
 async function drawPicture(task: TaskRow, essayId: number) {
   const slot = task.input.slot!;
-  const drawn = await codexImage({ instruction: promptText("essay-art", { subject: await slotPrompt(essayId, slot) }), dir: essayDir(),
+  const drawn = await codexImage({ instruction: promptText("essay-art", { subject: await slotPrompt(essayId, slot) }), folder: PICTURES,
     purpose: "essay_image", subject: `essay:${essayId}:${slot}`, attemptTag: `task:${task.id}` });
   const { default: sharp } = await import("sharp");
-  const meta = await sharp(`${essayDir()}/${drawn.file}`).metadata();
+  const meta = await sharp(await pictureBytes(drawn.file)).metadata();
   await land(task, drawn.receiptId, async (tx) => {
     await tx`UPDATE essay_images SET file = ${drawn.file}, width = ${meta.width ?? 0}, height = ${meta.height ?? 0}, origin = 'drawn', credit = NULL, updated_at = now()
       WHERE essay_id = ${essayId} AND slot = ${slot}`;

@@ -8,6 +8,7 @@ import { sql, type Db } from "../db.ts";
 import { shutdownSignal } from "../lib/shutdown.ts";
 import { logError } from "../lib/log-error.ts";
 import { serverModules, type ModuleQueue } from "../modules.ts";
+import { runsHere } from "./roles.ts";
 export { shutdownSignal } from "../lib/shutdown.ts";
 
 let boss: PgBoss | null = null;
@@ -47,6 +48,9 @@ export const QUEUES = {
   illustrate: "wechat.illustrate",
   videoScript: "wechat.video",
 } as const satisfies Record<string, QueueName>;
+
+/** Engine queues the models worker runs when the work is split (jobs/roles.ts); the rest are core. */
+const MODEL_QUEUES: ReadonlySet<QueueName> = new Set([QUEUES.digest, QUEUES.illustrate, QUEUES.videoScript]);
 
 export type QueueOptions = NonNullable<Parameters<PgBoss["createQueue"]>[1]>;
 
@@ -176,15 +180,16 @@ export async function retryReleasedReceiptJobs(): Promise<number> {
   });
 }
 
-/** The worker's handler for one queue (jobs/*.ts), called with each job's data. */
+/** The worker's handler for one queue (jobs/*.ts), called with each job's data; only on the worker whose role runs it. */
 export async function work<Q extends QueueName>(boss: PgBoss, name: Q, options: WorkOptions, handler: (data: JobData[Q]) => Promise<unknown>): Promise<void> {
+  if (!runsHere(MODEL_QUEUES.has(name) ? "models" : "core")) return;
   await ensureQueue(name);
   await boss.work<JobData[Q]>(name, options, async ([job]) => (job ? handler(job.data) : undefined));
 }
 
-/** The worker's handlers for the site's modules' queues. */
+/** The worker's handlers for the site's modules' queues that its role runs. */
 export async function workModuleQueues(boss: PgBoss): Promise<void> {
-  for (const queue of serverModules().flatMap((m) => m.queues ?? [])) {
+  for (const queue of serverModules().flatMap((m) => m.queues ?? []).filter((q) => runsHere(q.runsOn))) {
     await ensureQueue(queue.name, queue.options);
     await boss.work(queue.name, { ...queue.worker, perJobResults: true }, async (jobs) => {
       const output = await queue.run(jobs.map(job => job.data) as never[]);

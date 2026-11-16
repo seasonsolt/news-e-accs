@@ -6,8 +6,11 @@ import { config } from "@aihot/backend/config";
 import { sql } from "@aihot/backend/db";
 import { audit } from "@aihot/backend/audit";
 import { beijingDate } from "@aihot/contracts/time";
-import { put, remote } from "./store.ts";
-export const directory = () => path.join(config.dataDir, "uploads", "wallpapers");
+import { putObject } from "@aihot/backend/lib/objects";
+/** The 4K originals' folder in the object store (lib/objects.ts): a private bucket in production, where R2 serves
+ * downloads without egress charges. Without one it is this same directory, where previews always stay. */
+export const ORIGINALS = "wallpapers";
+export const directory = () => path.join(config.dataDir, "uploads", ORIGINALS);
 const invalid = (message: string) => Object.assign(new Error(message), { statusCode: 400 });
 export async function upload(body: unknown, actor: string) {
   const input = z.object({ day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), titleZh: z.string().trim().min(1).max(200), titleEn: z.string().trim().min(1).max(200), desktop: z.string(), phone: z.string(), preview: z.string() }).parse(body);
@@ -26,8 +29,8 @@ export async function upload(body: unknown, actor: string) {
   }
   await mkdir(directory(), { recursive: true });
   for (const [kind, file] of Object.entries(files)) {
-    if (kind !== "preview" && remote()) await put(file.name, file.bytes);
-    else await writeFile(path.join(directory(), file.name), file.bytes);
+    if (kind === "preview") await writeFile(path.join(directory(), file.name), file.bytes);
+    else await putObject(`${ORIGINALS}/${file.name}`, file.bytes, "image/jpeg");
   }
   const [row] = await sql`INSERT INTO wallpapers (day, title_zh, title_en, desktop_file, phone_file, preview_file)
     VALUES (${input.day}, ${input.titleZh}, ${input.titleEn}, ${files.desktop!.name}, ${files.phone!.name}, ${files.preview!.name})
