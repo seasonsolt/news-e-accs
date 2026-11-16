@@ -10,6 +10,7 @@ import type { MentionTarget } from "@aihot/contracts/mentions";
 import type { Brand } from "@aihot/contracts/site";
 import type { Db } from "./db.ts";
 import type { QueueOptions } from "./jobs/queue.ts";
+import type { WorkKind } from "./jobs/roles.ts";
 import type { Finding } from "./notify/feishu.ts";
 import type { Topic, TopicMember } from "./publication/topics.ts";
 
@@ -21,6 +22,8 @@ export interface Scheduled {
   missed?: "skip" | "once";
   /** Read when the worker starts, after the modules are installed: false removes the schedule and its execution queue; run history remains. */
   when?: () => boolean;
+  /** "models": model work that needs little of the database, run by the models worker when the work is split (jobs/roles.ts). */
+  runsOn?: WorkKind;
 }
 
 /** A model step (editorial/models.ts); its default model comes from site/models.ts, else `default`. */
@@ -93,6 +96,8 @@ export interface ModuleQueue<T = never> {
   worker: WorkOptions;
   /** All jobs taken together (batchSize); a failure retries the whole batch. */
   run: (data: T[]) => Promise<unknown>;
+  /** "models": run by the models worker when the work is split (jobs/roles.ts). */
+  runsOn?: WorkKind;
 }
 
 export function defineQueue<T>(queue: ModuleQueue<T>): ModuleQueue<T> {
@@ -240,7 +245,7 @@ export interface ServerModule {
   models?: Record<string, ModelStep>;
   /** Cron schedules (the worker). */
   schedules?: Scheduled[];
-  /** After the worker installs queues and schedules, before its heartbeat starts (apps/worker/src/main.ts). */
+  /** After the worker installs queues and schedules, before its heartbeat starts (apps/worker/src/main.ts); only on a worker that runs core work. */
   workerStarted?: (boss: PgBoss) => Promise<void>;
   /** What is wrong now, for the owner's alerts (operations/alerts.ts), after the engine's problems. */
   alerts?: (now: number) => Promise<Finding[]>;

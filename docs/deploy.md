@@ -62,6 +62,16 @@ MCP 默认接受 `SITE_URL` 的主机以及 `localhost`、`127.0.0.1`、`[::1]`�
 
 ### 更新
 
+### worker 可以分到两台机器（2026 年 11 月 16 日）
+
+没有数据库迁移。新的可选环境变量 `WORKER_ROLE`（`all`、`core`、`models`，默认 `all`）：不设时一个 worker 照旧做全部的活，行为不变。
+
+想把耗资源的模型活挪到另一台机器时，那台机器跑一个 `WORKER_ROLE=models` 的 worker，原来的改成 `WORKER_ROLE=core`。两台连同一个数据库，都要配对象存储 `OBJECT_STORE_*`（配图要在两台之间共用），并且运行同一个版本。`models` 负责数据库用得不多的模型活：英文版翻译（`content.translate`、`content.localize`、`content.localize-sweep`）、公众号点评和话题（`wechat.comment`、`wechat.topics`）、事件简报（`events.digest`）、公众号配图和视频号脚本（`wechat.illustrate`、`wechat.video`）、长文（`essays.task`）和事件深度稿（`story-depth.draft`）；精选、归组、采集、日报和运维都留在 `core`。模块的队列和定时用 `runsOn: "models"` 声明归属，不写的算 `core`。
+
+- 每个 worker 只删自己角色里停用的定时；已经下线的定时由 `core`（或 `all`）删。两台的 `.env` 里控制定时的开关（如 `CONTENT_TRANSLATION_ENABLED`）按各自负责的活来配。
+- `models` worker 写自己的心跳 `heartbeat.worker-models`，后台“运行”页单独显示一行；api 的看门狗在它出现过以后单独盯，停了半小时会告警“模型处理服务停了”。以后不再分开跑时，在 `settings` 里删掉 `heartbeat.worker-models` 和 `watchdog.worker-models` 两行，否则会一直告警。
+- `models` 那台停了，网站和精选照常，翻译、点评、配图等排着队等它恢复；也可以临时把 `core` 改回 `all` 顶上。
+
 ### 配图和壁纸原图放进对象存储（2026 年 11 月 16 日）
 
 没有数据库迁移。长文配图、公众号配图和壁纸 4K 原图改由一个公共的对象存储读写（`packages/backend/src/lib/objects.ts`），这样 api 和 worker 不必共用一块磁盘。环境变量 `WALLPAPER_STORE_*` 改名为 `OBJECT_STORE_*`（见 `.env.example`），桶里按前缀分开：`essays/`、`wechat-illustrations/`、`wallpapers/`。

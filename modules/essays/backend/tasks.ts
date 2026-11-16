@@ -28,6 +28,7 @@ export const essayQueue = defineQueue<{ taskId: number }>({
   options: { retryLimit: 0, expireInSeconds: 1200 },
   worker: { batchSize: 1 },
   run: async (jobs) => { for (const job of jobs) await recordRun("essays.task", () => runEssayTask(job.taskId)); },
+  runsOn: "models",
 });
 
 /** The model step of each text task (server.ts registers them; site/models.ts gives the defaults). */

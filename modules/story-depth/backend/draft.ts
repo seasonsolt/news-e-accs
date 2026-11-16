@@ -14,6 +14,7 @@ export const depthQueue = defineQueue<{ reviewId: number }>({
   options: { retryLimit: 0, expireInSeconds: 600 },
   worker: { batchSize: 1 },
   run: async (jobs) => { for (const job of jobs) await recordRun("story-depth.draft", () => draftDepth(job.reviewId)); },
+  runsOn: "models",
 });
 
 export async function draftDepth(reviewId: number) {

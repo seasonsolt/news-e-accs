@@ -32,6 +32,13 @@ function bool(name: string, fallback: boolean): boolean {
   return value === "true";
 }
 
+/** WORKER_ROLE (jobs/roles.ts); anything else is a typo that would leave work unrun, so it stops the process. */
+function workerRole(): "all" | "core" | "models" {
+  const value = env.WORKER_ROLE || "all";
+  if (value !== "all" && value !== "core" && value !== "models") throw new Error(`WORKER_ROLE must be all, core or models (got "${value}")`);
+  return value;
+}
+
 export const isProduction = env.NODE_ENV === "production";
 
 /** AIHOT_CREDENTIALS_DIR, else the site's own default (relative to the repository). */
@@ -74,6 +81,8 @@ export const config = {
   // External-action valve: off unless the environment turns it on, like COLLECT_ENABLED (read by the
   // worker).
   modelCallsEnabled: bool("MODEL_CALLS_ENABLED", false),
+  /** Which of the site's workers this is (jobs/roles.ts): all the work, or its share of a worker split over two machines. */
+  workerRole: workerRole(),
   devAdmin: env.DEV_AUTH_ROLE === "admin" ? { displayName: env.DEV_AUTH_DISPLAY_NAME || "Dev Admin" } : null,
   /** The admin password (at least 12 characters). Feishu and Cloudflare Access sign-in below are optional. */
   adminPassword: env.ADMIN_PASSWORD || null,

@@ -64,13 +64,14 @@ DMIT（1 vCPU、1.9 GB）只负责对外响应：api、web、Postgres、cloudfla
 - [ ] 发布：先在 DMIT 的 `.env` 加 `OBJECT_STORE_*`（桶 `e-acc`），发布后立即跑复制脚本，再删 `WALLPAPER_STORE_*`。
 - 以后：公开的长文配图由入口 Worker 直接从 R2 发，不经过 DMIT。
 
-### 阶段 2：worker 按角色分队列
+### 阶段 2：worker 按角色分队列（2026-11-16 代码完成，未发布）
 
-- 新增 `WORKER_ROLE`（`all`，默认：行为不变；`core`；`models`）。每个队列和定时属于一个角色，模块队列也一样。
-- `schedules.ts` 只删除“所有角色都不认识”的 `cron.*` 队列，不再删另一个角色的。
-- 心跳改成按角色记录，看门狗分别检查。
-- 第一批归 `models` 的：`essays.task`、`story-depth.draft`、`wechat.illustrate`、`wechat.video`、`wechat.comment`、`wechat.topics`、`content.translate`、`content.localize*`、`events.digest`、周报月报。`content.analyze`、`events.group` 留在 `core`，等阶段 3 的数据。
-- api 判断“能不能画图、能不能写”改成看 `models` 角色的心跳，不看本机有没有 `CODEX_BIN`。
+- [x] `WORKER_ROLE`（`all` 默认，行为不变；`core`；`models`），`jobs/roles.ts`。引擎的模型队列在 `jobs/queue.ts` 的 `MODEL_QUEUES`，模块的队列和定时用 `runsOn: "models"`。
+- [x] `schedules.ts` 只删本角色停用的定时，已下线的只由 core 删；有测试。
+- [x] 心跳按角色：`heartbeat.worker-models`；看门狗分别盯，models 出现过以后才盯；有测试。
+- [x] 第一批归 `models` 的：`essays.task`、`story-depth.draft`、`wechat.illustrate`、`wechat.video`、`wechat.comment`、`wechat.topics`、`content.translate`、`content.localize*`、`events.digest`。
+- 没动：`reports.compose`（日报和周报月报在同一个定时里，日报只在修引文时调模型）留在 core；`content.analyze`、`events.group` 等阶段 3 的数据。
+- 待办：api 判断“能不能画图、能不能写”仍看本机 `CODEX_BIN`。DMIT 的精选打分还在用 Codex，所以现在不受影响；Codex 从 DMIT 拿掉之前要改成看 models 的心跳。
 
 ### 阶段 3：mini 上线 `models` worker
 
