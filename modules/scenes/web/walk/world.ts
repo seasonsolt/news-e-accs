@@ -12,9 +12,8 @@ import { buildLitter, soil } from "./groundcover.ts";
 import { buildProps } from "./props.ts";
 import { startSound, type Sound } from "./sound.ts";
 import { buildVerge } from "./verge.ts";
-import { CANAL, CLEARINGS, END_S, FIELD_S, FIRE_S, LAND, LINES, MONO_S, SOW_S, chapterAt, clamp, cleared, fbm, ground, mix, roadX, sequence, sheet, smooth, yearReading, yearsAgo } from "./land.ts";
+import { CANAL, CLEARINGS, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONO_S, REACH_S, SOW_S, chapterAt, clamp, cleared, fbm, ground, mix, roadX, sequence, sheet, smooth, yearReading, yearsAgo } from "./land.ts";
 
-const PATH = "/chronicle/walk";
 // The hour at points along the road: [s, zenith, horizon, fog, sun colour, sun strength, sky light, stars, sun height, fog density].
 const HOURS = ([
   [0, "#050a1e", "#1b3358", "#0f1c30", "#a9c1f2", .62, .5, 1, -.25, .0098],
@@ -212,20 +211,30 @@ export async function start(root: HTMLElement, { tx, locale }: { tx: (text: stri
     if (ended) return null;
     if (fed < 3 && Math.hypot(me.x - fireX, me.s - FIRE_S) < 7.5) return ["feed", "添柴"];
     if (sownAt === null && Math.hypot(me.x - basketX, me.s - SOW_S) < 7) return ["sow", "播种"];
-    if (touched === null && me.s > MONO_S - 16) return ["touch", "触碰巨石"];
+    if (touched === null && me.s > REACH_S) return ["touch", "触碰巨石"];
     return null;
+  }
+  // Anonymous counts of how the walk goes (docs/analytics.md): each name and place at most once per page open.
+  const counted = new Set<string>(), count = (event: string, target = "") => { const key = `${event}:${target}`; if (!counted.has(key)) { counted.add(key); recordEngagement(event, target); } };
+  let passed = MILESTONES.filter(([, at]) => at <= me.s).length, startedAt = 0, left = false; // a walk opened further along (#s300) does not count the places behind it
+  /** Once, the first time the page is hidden or closed after the walk began: the furthest place passed and roughly how long it lasted. */
+  function leave() {
+    if (!begun || left) return; left = true;
+    const minutes = (performance.now() - startedAt) / 60000;
+    recordEngagement("walk_leave", passed ? MILESTONES[passed - 1]![0] : "start");
+    recordEngagement("walk_time", minutes < 1 ? "0-1m" : minutes < 2 ? "1-2m" : minutes < 4 ? "2-4m" : "4m+");
   }
   function sow(byHand: boolean) { if (sownAt !== null) return; sownAt = clock; speak("sown", byHand ? "种子落进土里。田，自己向前铺开。" : "在你之前，已经有人播下了种子。", 8); }
   function act() {
     const what = nearby(); if (!what) return;
-    if (what[0] === "feed") { sound?.cue("feed"); fed++; feedGlow = 2.2; showLogs(fed); if (fed === 3) speak("fed", "火光把夜晚推远了一点。一天，变长了。", 8); }
-    else if (what[0] === "sow") { sound?.cue("sow"); sow(true); }
-    else { sound?.cue("touch"); touched = clock; auto = false; autoButton.setAttribute("aria-pressed", "false"); speak("touch", "石头是凉的。天，暗了下来。", 6); recordEngagement("workshop_finish", PATH); }
+    if (what[0] === "feed") { sound?.cue("feed"); count("walk_act", "feed"); fed++; feedGlow = 2.2; showLogs(fed); if (fed === 3) speak("fed", "火光把夜晚推远了一点。一天，变长了。", 8); }
+    else if (what[0] === "sow") { sound?.cue("sow"); count("walk_act", "sow"); sow(true); }
+    else { sound?.cue("touch"); touched = clock; auto = false; autoButton.setAttribute("aria-pressed", "false"); speak("touch", "石头是凉的。天，暗了下来。", 6); count("walk_finish"); }
   }
   function begin() {
-    if (ended) { ended = false; touched = null; fed = 0; sownAt = null; said.clear(); me.x = roadX(4) - 1.5; me.s = 4; me.yaw = .12; me.pitch = 0; fieldUniforms.front.value = -1e4; showLogs(0); }
+    if (ended) { count("walk_act", "replay"); ended = false; touched = null; fed = 0; sownAt = null; said.clear(); me.x = roadX(4) - 1.5; me.s = 4; me.yaw = .12; me.pitch = 0; fieldUniforms.front.value = -1e4; showLogs(0); }
     started = true; cover.classList.add("is-gone"); canvas.focus(); sound ??= startSound(!soundOn); // audio may only start from a click
-    if (!begun) { begun = true; recordEngagement("workshop_start", PATH); }
+    if (!begun) { begun = true; startedAt = performance.now(); count("walk_start"); }
   }
   showLogs(0);
   use.addEventListener("click", act, listen); startButton.addEventListener("click", begin, listen);
@@ -240,7 +249,9 @@ export async function start(root: HTMLElement, { tx, locale }: { tx: (text: stri
   for (const type of ["pointerup", "pointercancel"] as const) { canvas.addEventListener(type, () => { drag = null; }, listen); go.addEventListener(type, () => { holdGo = false; }, listen); }
   canvas.addEventListener("wheel", e => { e.preventDefault(); wheelPush = clamp(wheelPush - e.deltaY * .012, -6, 14); }, { passive: false, signal: stop.signal });
   go.addEventListener("pointerdown", e => { holdGo = true; go.setPointerCapture(e.pointerId); }, listen);
-  autoButton.addEventListener("click", () => { auto = !auto; autoButton.setAttribute("aria-pressed", String(auto)); }, listen);
+  autoButton.addEventListener("click", () => { auto = !auto; autoButton.setAttribute("aria-pressed", String(auto)); if (auto) count("walk_act", "auto"); }, listen);
+  part("exit").addEventListener("click", () => count("walk_act", "exit"), listen);
+  addEventListener("pagehide", leave, listen); document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") leave(); }, listen);
   const soundButton = part("sound"); soundButton.setAttribute("aria-pressed", String(soundOn));
   soundButton.addEventListener("click", () => { soundOn = !soundOn; soundButton.setAttribute("aria-pressed", String(soundOn)); sound?.setMuted(!soundOn); try { localStorage.setItem("walk-sound", soundOn ? "on" : "off"); } catch { /* storage may be blocked */ } }, listen);
 
@@ -278,7 +289,10 @@ export async function start(root: HTMLElement, { tx, locale }: { tx: (text: stri
     raf = requestAnimationFrame(frame);
     const dt = Math.min(.05, (now - last) / 1000); last = now; clock += dt;
     if (dt > .03 && ratio > 1) { if (++slow > 50) { ratio = Math.max(1, ratio - .25); slow = 0; resize(); } } else slow = Math.max(0, slow - 1);
-    if (started) { walk(dt); for (const [at, text] of LINES) if (me.s >= at && me.s < at + 40) speak(`line-${at}`, text); }
+    if (started) {
+      walk(dt); for (const [at, text] of LINES) if (me.s >= at && me.s < at + 40) speak(`line-${at}`, text);
+      while (passed < MILESTONES.length && me.s >= MILESTONES[passed]![1]) count("walk_reach", MILESTONES[passed++]![0]);
+    }
     else if (!ended) me.yaw = .12 + (still ? 0 : Math.sin(clock * .12) * .05);
     if (sownAt === null && me.s > FIELD_S + 6) sow(false);
     if (sownAt !== null) fieldUniforms.front.value = SOW_S + (clock - sownAt) * 34;
@@ -324,7 +338,7 @@ export async function start(root: HTMLElement, { tx, locale }: { tx: (text: stri
     const what = started ? nearby() : null; use.hidden = !what; if (what) useLabel.textContent = tx(what[1]);
     if (touched !== null && !ended && clock - touched > 9) {
       ended = true; started = false; part("cover-title").textContent = tx("这一段到此为止"); part("cover-text").textContent = tx("下一段从这块石头出发，走向推测的未来。火、田和碑会留在身后，回头还看得见。");
-      part("cover-keys").hidden = true; startButton.textContent = tx("再走一遍"); cover.classList.remove("is-gone"); startButton.focus();
+      part("cover-keys").hidden = true; part("exit").hidden = false; startButton.textContent = tx("再走一遍"); cover.classList.remove("is-gone"); startButton.focus();
     }
     composer.render();
   }
@@ -334,6 +348,7 @@ export async function start(root: HTMLElement, { tx, locale }: { tx: (text: stri
   raf = requestAnimationFrame(frame);
 
   return () => {
+    leave(); // leaving within the site, as by the way back to the chronicle, hides no page
     cancelAnimationFrame(raf); stop.abort(); observer.disconnect(); sound?.close();
     release();
   };

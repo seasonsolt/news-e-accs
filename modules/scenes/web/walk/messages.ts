@@ -30,5 +30,7 @@ export const messages = { en: {
   "石头是凉的。天，暗了下来。": "The stone is cold. The sky goes dark.",
   "这一段到此为止": "This stretch ends here",
   "下一段从这块石头出发，走向推测的未来。火、田和碑会留在身后，回头还看得见。": "The next stretch starts from this stone and heads into a conjectured future. The fire, the field and the monolith stay behind you, still in sight when you turn around.",
-  "走完整条路": "Walk the whole road", "这个世界没有打开": "This world did not open", "返回加速史": "Back to the chronicle",
+  "这个世界没有打开": "This world did not open", "返回加速史": "Back to the chronicle",
+  // The way in on the chronicle (apps/web/app/routes/chronicle.tsx).
+  "走进去": "Step inside", "第一人称，从火堆走到巨石 · 约两分钟": "First person, from the fire to the monolith · about two minutes",
 } };

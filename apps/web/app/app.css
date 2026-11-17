@@ -1324,6 +1324,12 @@ html { scrollbar-gutter: stable; }
 .observatory-time-unit { margin-inline: .06em; font-size: clamp(26px, 4vw, 44px); color: rgb(244 236 220 / .82); }
 .observatory-era { margin-top: 14px; font-size: 21px; font-weight: 600; color: var(--deck-ink); }
 .observatory-summary { margin-top: 6px; max-width: 36rem; font-size: 14.5px; line-height: 1.75; color: rgb(244 236 220 / .8); text-wrap: pretty; }
+/* The way into the walk (modules/scenes): the deck's one call to action, where the reading of the moment ends. */
+.chronicle-walk { display: inline-flex; flex-direction: column; gap: 4px; margin-top: 18px; padding: 12px 22px 13px; border: 1px solid var(--brass); border-radius: var(--radius-card); background: rgb(21 17 13 / .6); backdrop-filter: blur(8px); box-shadow: 0 0 24px -8px rgb(217 164 65 / .55); color: var(--deck-ink); transition: background 200ms var(--ease-out-quart), border-color 200ms var(--ease-out-quart); }
+.chronicle-walk:hover { border-color: var(--brass-hi); background: rgb(217 164 65 / .18); color: var(--deck-ink); }
+.chronicle-walk:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 3px; }
+.chronicle-walk-label { font-size: 17px; font-weight: 600; letter-spacing: .04em; color: var(--brass-hi); }
+.chronicle-walk-note { font: 12px/1.5 var(--font-mono); letter-spacing: .02em; color: var(--deck-dim); }
 
 /* The tunnel (DepthTunnel.tsx) over the plate once its first picture is drawn. */
 .observatory-tunnel { position: absolute; inset: 0; z-index: -2; display: block; width: 100%; height: 100%; opacity: 0; outline: none; transition: opacity 400ms var(--ease-out-quart); }
@@ -1451,19 +1457,14 @@ html { scrollbar-gutter: stable; }
 .chronicle-zoom { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 .chronicle-zoom > span { font: 11px var(--font-mono); color: var(--deck-faint); }
 .chronometer-controls { grid-area: controls; position: relative; display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 32px; margin-top: 6px; }
-.chronometer-controls :is(button, .chronicle-walk), .chronicle-zoom button { flex: none; height: 30px; padding: 0 12px; border: 1px solid rgb(244 236 220 / .18); border-radius: 999px; font-size: 12.5px; color: var(--deck-dim); transition: border-color .15s, color .15s; }
-.chronometer-controls :is(button, .chronicle-walk):hover, .chronicle-zoom button:hover { border-color: var(--brass); color: var(--deck-ink); }
-/* The way to the walk (modules/scenes), a link among the chronometer's buttons. */
-.chronometer-controls .chronicle-walk { display: inline-flex; align-items: center; }
-.chronicle-walk-short { display: none; }
+.chronometer-controls button, .chronicle-zoom button { flex: none; height: 30px; padding: 0 12px; border: 1px solid rgb(244 236 220 / .18); border-radius: 999px; font-size: 12.5px; color: var(--deck-dim); transition: border-color .15s, color .15s; }
+.chronometer-controls button:hover, .chronicle-zoom button:hover { border-color: var(--brass); color: var(--deck-ink); }
 @media (min-width: 641px) { .chronometer-now { position: absolute; right: 0; } }
 @media (max-width: 640px) {
   .chronometer { grid-template-areas: "axis axis axis" "previous controls next"; row-gap: 8px; }
   .chronometer-step { align-self: center; margin-top: 0; }
   .chronometer-controls { margin-top: 0; }
-  .chronicle-walk-long { display: none; }
-  .chronicle-walk-short { display: inline; }
-  .chronometer-controls :is(button, .chronicle-walk), .chronicle-zoom button { padding: 0 10px; font-size: 12px; }
+  .chronometer-controls button, .chronicle-zoom button { padding: 0 10px; font-size: 12px; }
 }
 
 

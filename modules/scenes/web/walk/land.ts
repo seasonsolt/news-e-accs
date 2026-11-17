@@ -2,6 +2,8 @@
 // `s` is the distance walked along the road; the world runs toward -z, so a point on the road is (roadX(s), -s).
 
 export const FIRE_S = 46, SOW_S = 250, FIELD_S = 258, MONO_S = 640, END_S = 629;
+/** Where the first village's yard begins, where the first machine (the windmill's tower) starts to rise, and where the stone comes within reach. */
+export const VILLAGE_S = 316, MACHINES_S = 438, REACH_S = MONO_S - 16;
 
 export const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 export const mix = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -29,6 +31,8 @@ export function ground(x: number, z: number) {
 export const CLEARINGS = { pond: [361, -9.5, 6.4], reaped: [425, -13.5, 8.5], calendar: [452, 10, 5.5], mill: [486, 34, 6] } as const;
 /** The canal: it leaves the pond, runs beside the road on the left from `from` to `to`, and lets channels into the wheat: [s where one leaves, s where it ends, offset where it ends]. */
 export const CANAL = { from: 368, to: 444, offset: -5.2, channels: [[381, 385, -19], [402, 406.5, -23], [439, 443, -21]] } as const;
+/** The places the walk's anonymous counts name, in order along the road (docs/analytics.md); the server accepts only these names. */
+export const MILESTONES = [["fire", FIRE_S], ["sow", SOW_S], ["village", VILLAGE_S], ["fields", CANAL.from], ["machines", MACHINES_S], ["stone", REACH_S]] as const;
 const toSegment = (x: number, s: number, ax: number, as: number, bx: number, bs: number) => {
   const dx = bx - ax, ds = bs - as, t = clamp(((x - ax) * dx + (s - as) * ds) / (dx * dx + ds * ds), 0, 1);
   return Math.hypot(x - ax - dx * t, s - as - ds * t);

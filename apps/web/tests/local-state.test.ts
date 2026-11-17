@@ -203,12 +203,12 @@ test("the owner's own interactions are marked so the server leaves them out", as
   const calls: Array<{ url: string; init: RequestInit }> = [];
   const { state, values } = await reader();
   listen(calls);
-  recordEngagement("workshop_start", "/chronicle/walk");
+  recordEngagement("walk_reach", "fire");
   values.set(state.KEYS.owner, "1");
-  recordEngagement("workshop_finish", "/chronicle/walk");
+  recordEngagement("walk_finish");
   assert.deepEqual(bodies(calls), [
-    JSON.stringify({ event: "workshop_start", target: "/chronicle/walk" }),
-    JSON.stringify({ event: "workshop_finish", target: "/chronicle/walk", own: true }),
+    JSON.stringify({ event: "walk_reach", target: "fire" }),
+    JSON.stringify({ event: "walk_finish", target: "", own: true }),
   ]);
 });
 

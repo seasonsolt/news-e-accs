@@ -1,6 +1,21 @@
 {
-  "latestVersion": "2026-11-16T22:28",
+  "latestVersion": "2026-11-17T21:38",
   "releases": [
+    {
+      "date": "2026-11-17",
+      "time": "21:38",
+      "kind": "优化",
+      "title": "从加速史走进那条路更容易了",
+      "body": [
+        "加速史的大画面里，此刻的读数下方多了「走进去」，点它就从火堆出发，走到麦田中央的巨石；时间轴下方原来的小链接去掉了。走完以后，除了「再走一遍」，还可以直接「返回加速史」；左上角的返回也更醒目，在开场和结束的画面上也能点。"
+      ],
+      "en": {
+        "title": "An easier way into the Chronicle's road",
+        "body": [
+          "The Chronicle's main view now has Step inside under the moment it reads out, which starts the walk from the fire to the monolith in the wheat; the small link under the timeline is gone. At the end of the road you can Walk again or go straight Back to the chronicle, and the back link at the top left is easier to see and works on the opening and closing screens too."
+        ]
+      }
+    },
     {
       "date": "2026-11-16",
       "time": "22:28",

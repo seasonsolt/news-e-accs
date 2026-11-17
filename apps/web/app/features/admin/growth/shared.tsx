@@ -19,7 +19,8 @@ export const EVENT_LABELS: Record<string, string> = {
   subscribe_submit: "提交订阅", subscribe_success: "订阅被接受", subscribe_error: "订阅失败", subscribe_confirmed: "确认订阅",
   subscribe_dismiss: "跳过或关掉订阅", outbound_click: "打开原文", share_click: "分享（完成）", starred_export: "导出收藏",
   starred_import: "导入收藏", distribution_visit: "分发访问", distribution_read: "分发阅读 ≥15 秒",
-  workshop_start: "开始行走", workshop_finish: "走到巨石", chronicle_move: "移动加速史时间轴", chronicle_deep: "加速史看到第 6 张",
+  walk_start: "开始行走", walk_finish: "触碰巨石", walk_reach: "行走走到某处", walk_act: "行走中的操作", walk_leave: "离开行走",
+  walk_time: "行走时长", chronicle_move: "移动加速史时间轴", chronicle_deep: "加速史看到第 6 张",
 };
 export const FILTER_LABELS: Record<string, string> = {
   agent: "自报爬虫或无 UA", reloads: "大量整页加载、不站内跳转", automation: "自动化浏览器（webdriver）", owner: "站长本人",

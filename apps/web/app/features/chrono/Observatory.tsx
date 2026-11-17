@@ -17,7 +17,7 @@ function splitLabel(label: string): [string, string, string] {
   return m ? [m[1]!, m[2]!, m[3]!] : ["", label, ""];
 }
 
-export function Observatory({ era, focus, nearby, label, distance, flat, tools }: {
+export function Observatory({ era, focus, nearby, label, distance, flat, tools, action }: {
   era: ChronicleEra;
   focus: ChronicleMilestone | null;
   nearby: string[];
@@ -27,6 +27,8 @@ export function Observatory({ era, focus, nearby, label, distance, flat, tools }
   flat: boolean;
   /** Buttons in the deck's top corner, before the featured product's. */
   tools?: ReactNode;
+  /** The deck's call to action, under the moment it reads out. */
+  action?: ReactNode;
 }) {
   const tx = useTranslate();
   const [lead, figure, tail] = splitLabel(label);
@@ -55,6 +57,7 @@ export function Observatory({ era, focus, nearby, label, distance, flat, tools }
         </h1>
         <h2 className="observatory-era">{moment ? moment.title : era.title}</h2>
         <p className="observatory-summary">{moment ? moment.detail : era.summary}</p>
+        {action}
       </header>
     </section>
   );

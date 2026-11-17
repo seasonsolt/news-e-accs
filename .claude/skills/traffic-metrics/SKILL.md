@@ -50,7 +50,7 @@ Search Console 链接（`breakdown` 可换 `page`、`query`、`date`，`num_of_d
 | 留存 Retention | 回访访客占比 | cf-traffic `returning` / `UV` |
 | | RSS 订阅：读者在 UA 里报告的订阅数；订阅源被多少个客户端拉取 | cf-traffic「Feed subscribers」「Machine outlets: feed」 |
 | | 收藏过内容的设备累计数（first_star）、订阅点击与提交 | `deploy/update.sh --stats` |
-| | 行走开始与完成（workshop_start / workshop_finish，名字沿用已下线的工坊；行走上线前的记录是各工坊路径）：打开 `/chronicle/walk` 的人有多少开始行走、走到巨石 | 后台“增长”的转化页「行走」表；页面浏览看内容页的 `/chronicle/walk` 路由 |
+| | 行走（walk_start / walk_finish / walk_reach / walk_act / walk_leave / walk_time；改名前的 `workshop_*` 目标 `/chronicle/walk` 算进新名字）：打开 `/chronicle/walk` 的人有多少开始、走到哪里、在哪里离开、走了多久、做了什么 | 后台“增长”的转化页「行走」；页面浏览看内容页的 `/chronicle/walk` 路由 |
 | | 加速史互动（chronicle_move 移动过时间轴、chronicle_deep 看到第 6 张，2026-11-06 起）：`/chronicle` 的跳出率不算时间轴操作，看这里和 `page_leave` 停留 | `deploy/update.sh --stats` |
 | 推荐 Referral | 分享点击（share_click） | `deploy/update.sh --stats` |
 | 分发 Distribution | 公开 API、MCP、Agent Markdown（llms.txt、`.md`）被多少个客户端调用 | cf-traffic「Machine outlets」；MCP 的真实工具调用和成功率只看 `deploy/update.sh --stats 7` 的 MCP 段 |

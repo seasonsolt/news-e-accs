@@ -2,7 +2,7 @@
 
 `/chronicle/walk`（中文 `/zh/chronicle/walk`，代码在 `web/walk/`）是一条可以从头走到尾的路：约一百万年前的火堆 → 一万两千年前的第一把种子 → 村落 → 麦田 → 麦田中央的石头，全在同一片地形里，天色和年份读数随走过的距离变化。
 
-页面在 `module.ts` 登记，`server.ts` 把它放进站点地图；入口在加速史时间轴下方（`apps/web/app/routes/chronicle.tsx`）和“更多”的创作一栏（`apps/web/app/components/shell/nav.ts`），站点没有这个模块时两处入口都不显示。`/chronicle/workshops` 和原来各工坊的地址由 `module.ts` 的 `redirects` 301 到这里。页面自己画全部界面（路由 `handle` 的 `bare`），不带站点导航；three.js 只在页面打开后按需加载，服务端不渲染画布。读者点「开始行走」和触碰巨石时分别报 `workshop_start`、`workshop_finish`，目标是 `/chronicle/walk`（`docs/analytics.md`）。
+页面在 `module.ts` 登记，`server.ts` 把它放进站点地图；入口在加速史观测舱的读数下方（「走进去」，`apps/web/app/routes/chronicle.tsx`）和“更多”的创作一栏（`apps/web/app/components/shell/nav.ts`），站点没有这个模块时两处入口都不显示。`/chronicle/workshops` 和原来各工坊的地址由 `module.ts` 的 `redirects` 301 到这里。页面自己画全部界面（路由 `handle` 的 `bare`），不带站点导航；three.js 只在页面打开后按需加载，服务端不渲染画布。走完后的封面有「再走一遍」和「返回加速史」两个按钮，左上角的返回在封面上也能点。页面报匿名的计数：开始、触碰巨石、第一次走过路上各处（`land.ts` 的 `MILESTONES`）、添柴等操作，以及离开时走到的最远处和大致时长，每次打开页面每项最多一次（`docs/analytics.md`）；新的地名或操作要同时加进 `packages/backend/src/site/analytics.ts` 的 `WALK_*`，否则服务器会丢掉。
 
 开发运行见仓库 `docs/deploy.md`；`npm run dev:web` 连接本地 API。
 

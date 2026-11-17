@@ -5,7 +5,8 @@ import test, { after } from "node:test";
 import { closeDb } from "@aihot/backend/db";
 import { installModules } from "@aihot/backend/modules";
 import { loadDiscoveryEntries } from "@aihot/backend/publication/sitemap";
-import { END_S, FIELD_S, FIRE_S, LINES, MONO_S, SOW_S, chapterAt, ground, roadX, yearReading, yearsAgo } from "../web/walk/land.ts";
+import { normalizeSiteEvent, WALK_ACTS, WALK_PLACES, WALK_TIMES } from "@aihot/backend/site/analytics";
+import { END_S, FIELD_S, FIRE_S, LINES, MILESTONES, MONO_S, SOW_S, chapterAt, ground, roadX, yearReading, yearsAgo } from "../web/walk/land.ts";
 import { messages as walk } from "../web/walk/messages.ts";
 import scenes from "../server.ts";
 
@@ -43,6 +44,17 @@ test("everything the walk says has an English edition", () => {
   assert.ok(said.length > 20);
   for (const text of said) if (/[㐀-鿿]/.test(text)) assert.ok(en[text] && !/[㐀-鿿]/.test(en[text]), text);
   for (let i = 1; i < LINES.length; i++) assert.ok(LINES[i]![0] > LINES[i - 1]![0]);
+});
+
+test("the walk reports only places, acts and times the server accepts, its places in order along the road", () => {
+  assert.deepEqual(MILESTONES.map(([place]) => place), [...WALK_PLACES]);
+  for (let i = 1; i < MILESTONES.length; i++) assert.ok(MILESTONES[i]![1] > MILESTONES[i - 1]![1], MILESTONES[i]![0]);
+  assert.ok(MILESTONES.at(-1)![1] < END_S, "the last place can be reached");
+  const source = readFileSync(new URL("../web/walk/world.ts", import.meta.url), "utf8");
+  const acts = [...source.matchAll(/count\("walk_act", "([^"]+)"\)/g)].map((m) => m[1]!), times = [...source.matchAll(/"(\d+(?:-\d+)?m\+?)"/g)].map((m) => m[1]!);
+  assert.deepEqual(new Set(acts), new Set(WALK_ACTS));
+  assert.deepEqual(times, [...WALK_TIMES]);
+  for (const act of acts) assert.ok(normalizeSiteEvent({ event: "walk_act", target: act }), act);
 });
 
 test("the walk is listed for discovery in both editions, and the retired workshops' addresses lead to it in their own language", async () => {

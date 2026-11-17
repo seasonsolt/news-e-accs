@@ -114,7 +114,7 @@ export function WeeklyTab({ d }: { d: WeeklyData }) {
 }
 
 const EVENT_COLORS = ["var(--accent)", "var(--hot)", "var(--ok)", "var(--amber)", "#3d6b8a", "#6b5b95", "#2f6f6a", "#8a5a44", "#5f7a3a", "#7a4a6b", "#4a5f8a"];
-const CHART_EVENTS = new Set(["star_add", "star_remove", "first_star", "subscribe_click", "subscribe_submit", "outbound_click", "share_click", "starred_export", "starred_import", "workshop_start", "workshop_finish"]);
+const CHART_EVENTS = new Set(["star_add", "star_remove", "first_star", "subscribe_click", "subscribe_submit", "outbound_click", "share_click", "starred_export", "starred_import", "walk_start", "walk_finish"]);
 
 export function OutletsTab({ d }: { d: EngagementData }) {
   const m = d.mcp;

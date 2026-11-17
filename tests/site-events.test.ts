@@ -20,7 +20,8 @@ after(async () => {
   await app.close();
   // Rows with an empty target are shared counters, so this file owns those event names in the test database.
   await sql`DELETE FROM site_events_daily WHERE target IN (${id}, ${domain}, ${missing}) OR target LIKE ${`%.${id}.example`}
-    OR (target = '' AND event IN ('share_click', 'first_star')) OR event IN ('workshop_start', 'workshop_finish')`;
+    OR (target = '' AND event IN ('share_click', 'first_star')) OR event LIKE 'walk%' OR event LIKE 'workshop%'`;
+  await sql`DELETE FROM site_pageviews_daily WHERE path = '/zh/chronicle/walk'`;
   await sql`DELETE FROM publications WHERE article_id = ${id}`;
   await sql`DELETE FROM articles WHERE id = ${id}`;
   await sql`DELETE FROM sources WHERE id = ${source}`;
@@ -51,15 +52,22 @@ test("interaction targets are reduced to an allowlisted event and a safe value",
   assert.equal(subscribeErrorReason(0), "network");
   assert.equal(subscribeEventTarget("subscribe_error", { source: "daily_inline", locale: "zh", reason: "" }), null);
   assert.equal(normalizeSiteEvent({ event: "not_an_event" }), null);
-  // The walk is named by its English page path; anything that is not a page of the site is dropped.
-  assert.deepEqual(normalizeSiteEvent({ event: "workshop_start", target: "/chronicle/walk" }), { event: "workshop_start", target: "/chronicle/walk" });
-  assert.deepEqual(normalizeSiteEvent({ event: "workshop_finish", target: "/chronicle/walk" }), { event: "workshop_finish", target: "/chronicle/walk" });
-  assert.equal(normalizeSiteEvent({ event: "workshop_start", target: "/zh/chronicle/walk" }), null);
-  assert.equal(normalizeSiteEvent({ event: "workshop_start", target: "/chronicle/walk?x=1" }), null);
-  assert.equal(normalizeSiteEvent({ event: "workshop_start", target: "/items/:id" }), null);
-  assert.equal(normalizeSiteEvent({ event: "workshop_start", target: `/items/${id}` }), null);
-  assert.equal(normalizeSiteEvent({ event: "workshop_finish", target: "/no-such-page" }), null);
-  assert.equal(normalizeSiteEvent({ event: "workshop_finish", target: "" }), null);
+  // The walk's start and finish carry nothing; its places, acts, leaving and time are a few fixed names each.
+  assert.deepEqual(normalizeSiteEvent({ event: "walk_start" }), { event: "walk_start", target: "" });
+  assert.deepEqual(normalizeSiteEvent({ event: "walk_finish", target: "" }), { event: "walk_finish", target: "" });
+  assert.equal(normalizeSiteEvent({ event: "walk_start", target: "/chronicle/walk" }), null);
+  assert.equal(normalizeSiteEvent({ event: "workshop_start", target: "/chronicle/walk" }), null);
+  assert.deepEqual(normalizeSiteEvent({ event: "walk_reach", target: "machines" }), { event: "walk_reach", target: "machines" });
+  assert.deepEqual(normalizeSiteEvent({ event: "walk_act", target: "exit" }), { event: "walk_act", target: "exit" });
+  assert.deepEqual(normalizeSiteEvent({ event: "walk_leave", target: "start" }), { event: "walk_leave", target: "start" });
+  assert.deepEqual(normalizeSiteEvent({ event: "walk_time", target: "4m+" }), { event: "walk_time", target: "4m+" });
+  assert.equal(normalizeSiteEvent({ event: "walk_reach", target: "start" }), null);
+  assert.equal(normalizeSiteEvent({ event: "walk_reach", target: "" }), null);
+  assert.equal(normalizeSiteEvent({ event: "walk_reach", target: "s300" }), null);
+  assert.equal(normalizeSiteEvent({ event: "walk_act", target: "touch" }), null);
+  assert.equal(normalizeSiteEvent({ event: "walk_leave", target: "512" }), null);
+  assert.equal(normalizeSiteEvent({ event: "walk_time", target: "93s" }), null);
+  assert.equal(normalizeSiteEvent({ event: "walk_time", target: "example.com" }), null);
   assert.equal(normalizeSiteEvent({ event: "share_click", target: "x".repeat(301) }), null);
   assert.equal(normalizeSiteEvent(null), null);
   assert.equal(normalizeSourceDomain(`https://user:secret@www.${domain}/path?token=1`), null);
@@ -71,7 +79,8 @@ test("interaction targets are reduced to an allowlisted event and a safe value",
 });
 
 test("daily interaction counts are anonymous, uncached, and visible only in the admin summary", async () => {
-  await sql`DELETE FROM site_events_daily WHERE target IN (${id}, ${domain}) OR event IN ('share_click', 'first_star', 'workshop_start', 'workshop_finish')`;
+  await sql`DELETE FROM site_events_daily WHERE target IN (${id}, ${domain}) OR event IN ('share_click', 'first_star') OR event LIKE 'walk%' OR event LIKE 'workshop%'`;
+  await sql`DELETE FROM site_pageviews_daily WHERE path = '/zh/chronicle/walk'`;
   await sql`INSERT INTO sources (id, name, kind, tier) VALUES (${source}, ${source}, 'rss', 'T1')`;
   await sql`INSERT INTO articles (id, source_id, identity_key, url, title, discovered_at, timeline_at)
     VALUES (${id}, ${source}, ${id}, ${`https://${domain}/${id}`}, '互动示例', ${at}, ${at})`;
@@ -96,12 +105,22 @@ test("daily interaction counts are anonymous, uncached, and visible only in the 
   const removed = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "star_remove", target: id } });
   const unknown = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "page_view", target: "/secret" } });
   const address = await app.inject({ method: "POST", url: "/api/site/events", payload: { event: "outbound_click", target: "http://10.1.2.3/a" } });
-  const workshop = (event: string, own = false) =>
-    app.inject({ method: "POST", url: "/api/site/events", payload: { event, target: "/chronicle/walk", ...(own && { own }) } });
-  const workshops = [await workshop("workshop_start"), await workshop("workshop_start"), await workshop("workshop_finish"), await workshop("workshop_finish", true)];
+  const walk = (event: string, target = "", own = false) =>
+    app.inject({ method: "POST", url: "/api/site/events", payload: { event, target, ...(own && { own }) } });
+  const walks = [
+    await walk("walk_start"), await walk("walk_start"), await walk("walk_reach", "fire"), await walk("walk_reach", "fire"), await walk("walk_reach", "sow"),
+    await walk("walk_act", "feed"), await walk("walk_act", "exit"), await walk("walk_leave", "sow"), await walk("walk_leave", "start"), await walk("walk_time", "1-2m"),
+    await walk("walk_finish"), await walk("walk_finish", "", true), await walk("walk_reach", "nowhere"),
+  ];
+  // The walk's first day was counted under the workshops' names, with its page as the target; the workshops' own rows are not the walk's.
+  await sql`INSERT INTO site_events_daily (day, event, target, count) VALUES
+    ((now() AT TIME ZONE 'Asia/Taipei')::date, 'workshop_start', '/chronicle/walk', 3),
+    ((now() AT TIME ZONE 'Asia/Taipei')::date, 'workshop_finish', '/chronicle/walk', 1),
+    ((now() AT TIME ZONE 'Asia/Taipei')::date - 1, 'workshop_start', '/chronicle/steam', 5)`;
+  await sql`INSERT INTO site_pageviews_daily (day, path, views) VALUES ((now() AT TIME ZONE 'Asia/Taipei')::date, '/zh/chronicle/walk', 9)`;
   const admin = await app.inject({ method: "GET", url: "/api/admin/analytics?days=7" });
 
-  for (const res of [added, again, shared, outbound, unpublished, removed, unknown, address, ...workshops]) {
+  for (const res of [added, again, shared, outbound, unpublished, removed, unknown, address, ...walks]) {
     assert.equal(res.statusCode, 204);
     assert.equal(res.headers["cache-control"], "private, no-store");
     assert.equal(res.headers["cdn-cache-control"], "no-store");
@@ -133,8 +152,17 @@ test("daily interaction counts are anonymous, uncached, and visible only in the 
   assert.equal(summary.engagement.firstStarDevices, 3);
   assert.equal(top?.net, 1);
   assert.equal(top?.title, "互动示例");
-  // The owner's own finish is left out.
-  assert.deepEqual(summary.engagement.workshops.map((row) => ({ ...row })), [{ path: "/chronicle/walk", starts: 2, finishes: 1 }]);
+  assert.equal(summary.engagement.totals.find((row) => row.event === "walk_start")?.count, 5);
+  assert.equal(today?.counts.walk_finish, 2);
+  // The owner's own finish is left out, and every name and place the walk did not report reads as zero.
+  const { walk: walked } = summary.engagement;
+  assert.deepEqual({ ...walked, reached: walked.reached.map((r) => ({ ...r })), acts: walked.acts.map((r) => ({ ...r })), left: walked.left.map((r) => ({ ...r })), times: walked.times.map((r) => ({ ...r })) }, {
+    views: 9, starts: 5, finishes: 2,
+    reached: [{ place: "fire", count: 2 }, { place: "sow", count: 1 }, { place: "village", count: 0 }, { place: "fields", count: 0 }, { place: "machines", count: 0 }, { place: "stone", count: 0 }],
+    acts: [{ act: "feed", count: 1 }, { act: "sow", count: 0 }, { act: "auto", count: 0 }, { act: "replay", count: 0 }, { act: "exit", count: 1 }],
+    left: [{ place: "start", count: 1 }, { place: "fire", count: 0 }, { place: "sow", count: 1 }, { place: "village", count: 0 }, { place: "fields", count: 0 }, { place: "machines", count: 0 }, { place: "stone", count: 0 }],
+    times: [{ time: "0-1m", count: 0 }, { time: "1-2m", count: 1 }, { time: "2-4m", count: 0 }, { time: "4m+", count: 0 }],
+  });
 });
 
 test("made-up source domains cannot add more than a day's quota of rows", async () => {

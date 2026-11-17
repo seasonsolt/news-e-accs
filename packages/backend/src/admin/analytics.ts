@@ -1,11 +1,15 @@
 import { parseSubscribeTarget, SUBSCRIBE_ERROR_REASONS, SUBSCRIBE_FUNNEL_EVENTS, SUBSCRIBE_SOURCES } from "@aihot/contracts/subscribe";
 import { sql } from "../db.ts";
-import { SITE_EVENTS } from "../site/analytics.ts";
+import { SITE_EVENTS, WALK_ACTS, WALK_LEFT, WALK_PLACES, WALK_TIMES } from "../site/analytics.ts";
+
+// Until the rename the walk reported its start and finish under the retired workshops' names, with its page as
+// the target; those rows are read under the new names rather than rewritten.
+const EVENT = sql`CASE WHEN target = '/chronicle/walk' AND event IN ('workshop_start', 'workshop_finish') THEN replace(event, 'workshop_', 'walk_') ELSE event END`;
 
 async function eventFirstDays(events: readonly string[]): Promise<Record<string, string | null>> {
   const rows = await sql<{ event: string; day: string }[]>`
-    SELECT event, to_char(min(day), 'YYYY-MM-DD') AS day FROM site_events_daily
-    WHERE event = ANY(${[...events]}::text[]) GROUP BY event`;
+    SELECT ${EVENT} AS event, to_char(min(day), 'YYYY-MM-DD') AS day FROM site_events_daily
+    WHERE ${EVENT} = ANY(${[...events]}::text[]) GROUP BY 1`;
   return Object.fromEntries(events.map((event) => [event, rows.find((r) => r.event === event)?.day ?? null]));
 }
 
@@ -41,12 +45,12 @@ export async function siteAnalyticsOverview(days = 30) {
     ORDER BY views DESC, path
     LIMIT 50`;
   const eventRows = await sql<{ day: string; event: string; count: number }[]>`
-    SELECT to_char(day, 'YYYY-MM-DD') AS day, event, sum(count)::bigint AS count
+    SELECT to_char(day, 'YYYY-MM-DD') AS day, ${EVENT} AS event, sum(count)::bigint AS count
     FROM site_events_daily
     WHERE day >= (now() AT TIME ZONE 'Asia/Taipei')::date - ${windowDays - 1}::int
       AND day <= (now() AT TIME ZONE 'Asia/Taipei')::date
-      AND event = ANY(${[...SITE_EVENTS]}::text[])
-    GROUP BY day, event`;
+      AND ${EVENT} = ANY(${[...SITE_EVENTS]}::text[])
+    GROUP BY 1, 2`;
   const countsByDay = new Map<string, Map<string, number>>();
   for (const row of eventRows) {
     let slot = countsByDay.get(row.day);
@@ -77,16 +81,20 @@ export async function siteAnalyticsOverview(days = 30) {
          - coalesce(sum(e.count) FILTER (WHERE e.event = 'star_remove'), 0) > 0
     ORDER BY net DESC, e.target
     LIMIT 20`;
-  const workshops = await sql<{ path: string; starts: number; finishes: number }[]>`
-    SELECT target AS path,
-           coalesce(sum(count) FILTER (WHERE event = 'workshop_start'), 0)::bigint AS starts,
-           coalesce(sum(count) FILTER (WHERE event = 'workshop_finish'), 0)::bigint AS finishes
+  const walkRows = await sql<{ event: string; target: string; count: number }[]>`
+    SELECT ${EVENT} AS event, CASE WHEN event LIKE 'workshop%' THEN '' ELSE target END AS target, sum(count)::bigint AS count
     FROM site_events_daily
     WHERE day >= (now() AT TIME ZONE 'Asia/Taipei')::date - ${windowDays - 1}::int
       AND day <= (now() AT TIME ZONE 'Asia/Taipei')::date
-      AND event IN ('workshop_start', 'workshop_finish')
-    GROUP BY target
-    ORDER BY starts DESC, finishes DESC, target`;
+      AND ${EVENT} LIKE 'walk!_%' ESCAPE '!'
+    GROUP BY 1, 2`;
+  const [walkViews] = await sql<{ views: number }[]>`
+    SELECT coalesce(sum(views), 0)::bigint AS views
+    FROM site_pageviews_daily
+    WHERE day >= (now() AT TIME ZONE 'Asia/Taipei')::date - ${windowDays - 1}::int
+      AND day <= (now() AT TIME ZONE 'Asia/Taipei')::date
+      AND path IN ('/chronicle/walk', '/zh/chronicle/walk')`;
+  const walkCount = (event: string, target = "") => walkRows.find((r) => r.event === event && r.target === target)?.count ?? 0;
   return {
     days: windowDays,
     totals: totals!,
@@ -102,7 +110,15 @@ export async function siteAnalyticsOverview(days = 30) {
       daily: engagementDaily,
       firstStarDevices: firstStar?.devices ?? 0,
       topStarred,
-      workshops,
+      walk: {
+        views: walkViews?.views ?? 0,
+        starts: walkCount("walk_start"),
+        finishes: walkCount("walk_finish"),
+        reached: WALK_PLACES.map((place) => ({ place, count: walkCount("walk_reach", place) })),
+        acts: WALK_ACTS.map((act) => ({ act, count: walkCount("walk_act", act) })),
+        left: WALK_LEFT.map((place) => ({ place, count: walkCount("walk_leave", place) })),
+        times: WALK_TIMES.map((time) => ({ time, count: walkCount("walk_time", time) })),
+      },
     },
   };
 }

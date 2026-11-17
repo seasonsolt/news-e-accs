@@ -113,17 +113,26 @@ export const SITE_EVENTS = [
   ...SUBSCRIBE_FUNNEL_EVENTS,
   "distribution_visit", "distribution_read",
   "outbound_click", "share_click", "starred_export", "starred_import",
-  "workshop_start", "workshop_finish",
+  "walk_start", "walk_finish", "walk_reach", "walk_act", "walk_leave", "walk_time",
   "chronicle_move", "chronicle_deep",
 ] as const;
 export type SiteEvent = (typeof SITE_EVENTS)[number];
 
 const SITE_EVENT_SET = new Set<string>(SITE_EVENTS);
 const ITEM_TARGET = new Set<SiteEvent>(["star_add", "star_remove"]);
-const EMPTY_TARGET = new Set<SiteEvent>(["first_star", "subscribe_click", "share_click", "starred_export", "starred_import", "chronicle_move", "chronicle_deep"]);
+const EMPTY_TARGET = new Set<SiteEvent>(["first_star", "subscribe_click", "share_click", "starred_export", "starred_import", "chronicle_move", "chronicle_deep", "walk_start", "walk_finish"]);
 const FUNNEL_EVENT = new Set<string>(SUBSCRIBE_FUNNEL_EVENTS);
-/** Events about one page, the chronicle's walk (modules/scenes): the target is that page's English path. */
-const PAGE_TARGET = new Set<SiteEvent>(["workshop_start", "workshop_finish"]);
+/** The chronicle's walk (modules/scenes, its land.ts MILESTONES): the places along the road, in order. */
+export const WALK_PLACES = ["fire", "sow", "village", "fields", "machines", "stone"] as const;
+/** What a walker did there: fed the fire, sowed by hand, turned on auto-walk, walked again, went back from the end. */
+export const WALK_ACTS = ["feed", "sow", "auto", "replay", "exit"] as const;
+/** Where a walker left, `start` being short of the fire, and roughly how long after starting. */
+export const WALK_LEFT = ["start", ...WALK_PLACES] as const;
+export const WALK_TIMES = ["0-1m", "1-2m", "2-4m", "4m+"] as const;
+/** Events whose target is one of a few fixed names. */
+const NAMED_TARGET: Partial<Record<SiteEvent, ReadonlySet<string>>> = {
+  walk_reach: new Set(WALK_PLACES), walk_act: new Set(WALK_ACTS), walk_leave: new Set(WALK_LEFT), walk_time: new Set(WALK_TIMES),
+};
 const ITEM_ID = /^[a-zA-Z0-9_-]{1,80}$/;
 const HOSTNAME = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 const IPV4 = /^(?:\d{1,3}\.){3}\d{1,3}$/;
@@ -180,8 +189,8 @@ export function normalizeSiteEvent(body: unknown): { event: SiteEvent; target: s
     return stored ? { event: name, target: stored } : null;
   }
   if (ITEM_TARGET.has(name)) return ITEM_ID.test(target) ? { event: name, target } : null;
-  // Only a page the site has and without a parameter, so the targets stay a short, fixed list.
-  if (PAGE_TARGET.has(name)) return target !== "/zh" && !target.startsWith("/zh/") && !target.includes(":") && normalizePagePath(target) === target ? { event: name, target } : null;
+  const named = NAMED_TARGET[name];
+  if (named) return named.has(target) ? { event: name, target } : null;
   const domain = normalizeSourceDomain(target);
   return domain === null ? null : { event: "outbound_click", target: domain };
 }

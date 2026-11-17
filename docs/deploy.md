@@ -62,6 +62,13 @@ MCP 默认接受 `SITE_URL` 的主机以及 `localhost`、`127.0.0.1`、`[::1]`�
 
 ### 更新
 
+### 行走的入口和统计（2026 年 11 月 17 日）
+
+没有数据库迁移，没有新的环境变量。加速史的观测舱读数下方多了进入行走的按钮，时间轴下方原来的小链接去掉；行走走完后的封面多了「返回加速史」。
+
+- 行走的统计操作改名并细分为 `walk_start`、`walk_finish`、`walk_reach`、`walk_act`、`walk_leave`、`walk_time`（见 [读者统计](analytics.md)），服务器不再接受 `workshop_start` / `workshop_finish`。已经记下的 `workshop_*`（目标 `/chronicle/walk`）不改写，后台算进 `walk_start` / `walk_finish`。
+- `site_events_daily` 里各座工坊路径的旧记录保留在表里，但后台“转化”页不再列出它们，要看就直接查表。
+
 ### 加速史的工坊下线，换成一条可以走的路（2026 年 11 月 17 日）
 
 没有数据库迁移，没有新的环境变量。`modules/scenes` 只剩连续世界 `/chronicle/walk`（全部由代码生成，不需要贴图）；十五座时代工坊、工坊目录 `/chronicle/workshops` 和观测舱里「走进工坊」的交接一起删掉，这些地址（中英文）都 301 到 `/chronicle/walk` 或 `/zh/chronicle/walk`。加速史时间轴下方和“更多”的创作一栏改为进入这条路，站点地图收录它的中英文两页。

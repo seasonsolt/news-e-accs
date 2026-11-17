@@ -62,7 +62,11 @@ function Walk() {
       <p className="walk-kicker">{tx("加速史 · 一条走得通的路")}</p>
       <h1 id="walk-title" data-walk="cover-title">{tx(title)}</h1>
       <p className="walk-lede" data-walk="cover-text">{tx(description)}</p>
-      <button type="button" className="walk-start" data-walk="start" disabled>{tx("正在打开世界")}</button>
+      <div className="walk-actions">
+        <button type="button" className="walk-start" data-walk="start" disabled>{tx("正在打开世界")}</button>
+        {/* Shown at the end of the road, beside 再走一遍. */}
+        <Link className="walk-exit" data-walk="exit" to={localePath("/chronicle", locale)} hidden>{tx("返回加速史")}</Link>
+      </div>
       <p className="walk-error" data-walk="error" role="alert" hidden />
       <p className="walk-keys" data-walk="cover-keys" />
     </section>

@@ -1,5 +1,5 @@
-// 转化 and 留存: a funnel over the steps a session takes, the subscribe funnel by entry point, net stars, walks
-// started and finished, and weekly cohorts of first-time readers.
+// 转化 and 留存: a funnel over the steps a session takes, the subscribe funnel by entry point, net stars, how far
+// walks go, and weekly cohorts of first-time readers.
 import { SUBSCRIBE_FUNNEL_EVENTS, SUBSCRIBE_SOURCES, type SubscribeFunnelEvent, type SubscribeSource } from "@aihot/contracts/subscribe";
 import { Form, useSearchParams } from "react-router";
 import { num, pct } from "../format";
@@ -11,6 +11,12 @@ const SOURCE_LABELS: Record<SubscribeSource, string> = {
   home_overlay: "首页引导", home_button: "首页按钮", subscribe_page: "订阅页", daily_inline: "日报页", item_inline: "单条页",
   chronicle_inline: "加速史", sticky_mobile: "手机底部条", story_inline: "事件页", concept: "概念页", wallpaper: "壁纸产品页",
 };
+
+const PLACE_LABELS: Record<string, string> = {
+  start: "没走到火堆", fire: "火堆", sow: "播种处", village: "村落", fields: "水渠与麦田", machines: "风车升起处", stone: "巨石跟前",
+};
+const ACT_LABELS: Record<string, string> = { feed: "添柴", sow: "亲手播种", auto: "开自动前行", replay: "再走一遍", exit: "终点返回加速史" };
+const TIME_LABELS: Record<string, string> = { "0-1m": "不到 1 分钟", "1-2m": "1–2 分钟", "2-4m": "2–4 分钟", "4m+": "4 分钟以上" };
 
 const stepValue = (s: { kind: string; value: string }) => `${s.kind}:${s.value}`;
 const stepLabel = (s: { kind: string; value: string }) => (s.kind === "event" ? EVENT_LABELS[s.value] ?? s.value : s.value === "*" ? "任意页面" : `看 ${s.value}`);
@@ -82,17 +88,63 @@ export function ConversionTab({ funnel, subscribe, engagement }: { funnel: Funne
           ]} />
         </Card>
       </Section>
-      <Section title={`近 ${engagement.days} 天行走`} note="开始是读者点「开始行走」（每次打开页面最多算一次），完成是走到路的尽头触碰巨石。中英文页面合并计数。其他路径是已下线的工坊留下的记录。">
-        <Card pad={false}>
-          <DataTable rows={engagement.engagement.workshops} rowKey={(x) => x.path} empty="所选时间范围内没有人开始行走" columns={[
-            { key: "path", label: "页面", render: (x) => <a href={x.path} className="font-mono text-[12.5px] text-ink hover:text-accent">{x.path}</a> },
-            { key: "starts", label: "开始", align: "right", render: (x) => num(x.starts) },
-            { key: "finishes", label: "完成", align: "right", render: (x) => num(x.finishes) },
-            { key: "rate", label: "完成率", align: "right", render: (x) => pct(rate(x.finishes, x.starts)) },
-          ]} />
-        </Card>
-      </Section>
+      <WalkCard days={engagement.days} walk={engagement.engagement.walk} />
     </>
+  );
+}
+
+/** The chronicle's walk as a funnel from the start: each place along the road, then the stone touched; below it, what walkers did, where they left and how long they stayed. */
+function WalkCard({ days, walk }: { days: number; walk: EngagementData["engagement"]["walk"] }) {
+  const steps = [
+    { label: "开始行走", count: walk.starts },
+    ...walk.reached.map((r) => ({ label: `走到${PLACE_LABELS[r.place] ?? r.place}`, count: r.count })),
+    { label: "触碰巨石", count: walk.finishes },
+  ];
+  const leaves = walk.left.reduce((n, r) => n + r.count, 0);
+  const timed = walk.times.reduce((n, r) => n + r.count, 0);
+  return (
+    <Section title={`近 ${days} 天行走`} note="每次打开行走页，每一项最多算一次；中英文页面合并。离开是这次打开后页面第一次被切走或关掉时走到的最远处，时长从开始行走算起；切走后回来接着走的不再计入。">
+      <Card pad={false}>
+        <p className="border-b border-line px-4 py-3 text-[13px] text-ink-2">
+          打开 <span className="num">{num(walk.views)}</span> 次 · 开始 <span className="num">{num(walk.starts)}</span> 次
+          <span className="text-ink-4"> · 打开后开始 {pct(rate(walk.starts, walk.views))}</span>
+        </p>
+        <ol className="space-y-3 p-4">
+          {steps.map((s, i) => (
+            <li key={i}>
+              <div className="flex items-baseline justify-between gap-3 text-[13px]">
+                <span className="text-ink-2"><span className="num mr-2 text-ink-4">{i + 1}</span>{s.label}</span>
+                <span className="num text-ink-3">{num(s.count)} · 占开始 {pct(rate(s.count, walk.starts))}</span>
+              </div>
+              <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-bg-sunk">
+                <div className="h-full rounded-full bg-accent" style={{ width: `${walk.starts ? Math.max(s.count ? 1 : 0, Math.min(100, (s.count / walk.starts) * 100)) : 0}%` }} />
+              </div>
+            </li>
+          ))}
+        </ol>
+      </Card>
+      <Card className="mt-5" title="路上的操作" pad={false}>
+        <DataTable rows={walk.acts} rowKey={(x) => x.act} columns={[
+          { key: "act", label: "操作", render: (x) => ACT_LABELS[x.act] ?? x.act },
+          { key: "count", label: "次数", align: "right", render: (x) => num(x.count) },
+          { key: "rate", label: "占开始", align: "right", render: (x) => pct(rate(x.count, walk.starts)) },
+        ]} />
+      </Card>
+      <Card className="mt-5" title="离开时走到" pad={false}>
+        <DataTable rows={walk.left} rowKey={(x) => x.place} columns={[
+          { key: "place", label: "最远处", render: (x) => PLACE_LABELS[x.place] ?? x.place },
+          { key: "count", label: "次数", align: "right", render: (x) => num(x.count) },
+          { key: "rate", label: "占离开", align: "right", render: (x) => pct(rate(x.count, leaves)) },
+        ]} />
+      </Card>
+      <Card className="mt-5" title="行走时长" pad={false}>
+        <DataTable rows={walk.times} rowKey={(x) => x.time} columns={[
+          { key: "time", label: "开始后", render: (x) => TIME_LABELS[x.time] ?? x.time },
+          { key: "count", label: "次数", align: "right", render: (x) => num(x.count) },
+          { key: "rate", label: "占离开", align: "right", render: (x) => pct(rate(x.count, timed)) },
+        ]} />
+      </Card>
+    </Section>
   );
 }
 

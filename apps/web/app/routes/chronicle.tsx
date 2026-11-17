@@ -189,6 +189,12 @@ export default function ChroniclePage() {
           label={focus ? tx(timeLabel(focus.t, now, focus.precision, focus.date)) : tx(timeLabel(t, now))}
           distance={tx(distanceLabel(t, now))}
           flat={running}
+          action={WALK && (
+            <Link to="/chronicle/walk" className="chronicle-walk">
+              <span className="chronicle-walk-label">{tx("走进去")}<span aria-hidden="true"> →</span></span>
+              <span className="chronicle-walk-note">{tx("第一人称，从火堆走到巨石 · 约两分钟")}</span>
+            </Link>
+          )}
           tools={(
             <div className="observatory-layers" role="toolbar" aria-label={tx("更多内容")}>
               {PANELS.map(([key, label]) => (
@@ -210,13 +216,6 @@ export default function ChroniclePage() {
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m6 3 5 5-5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
           <div className="chronometer-controls">
-            {WALK && (
-              <Link to="/chronicle/walk" className="chronicle-walk">
-                <span className="chronicle-walk-long">{tx("走完整条路")} · {tx("从火堆到巨石")}</span>
-                <span className="chronicle-walk-short">{tx("走完整条路")}</span>
-                <span aria-hidden="true">&nbsp;→</span>
-              </Link>
-            )}
             <button type="button" className="chronometer-now" onClick={() => commit(now)}><Text value="回到现在" /></button>
           </div>
         </section>

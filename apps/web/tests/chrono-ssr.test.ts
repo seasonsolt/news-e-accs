@@ -87,12 +87,14 @@ test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era
   assert.ok(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith("/zh/chronicle"));
 });
 
-test("the chronicle leads to the walk in the reader's language, and the retired workshops' addresses lead there too", async () => {
+test("the chronicle invites the reader into the walk under the moment it reads out, in the reader's language, and the retired workshops' addresses lead there too", async () => {
   for (const prefix of ["/zh", ""]) {
     const document = parseHTML(await (await fetch(`${fixture.origin}${prefix}/chronicle?t=1822`)).text()).document;
-    const walk = [...document.querySelectorAll(".chronometer a.chronicle-walk")];
-    assert.deepEqual(walk.map((a) => a.getAttribute("href")), [`${prefix}/chronicle/walk`]);
-    assert.match(walk[0]!.textContent!, prefix ? /走完整条路/ : /Walk the whole road/);
+    // The site menu lists it too; the page itself has one way in, not two competing links.
+    const walk = [...document.querySelectorAll(`a[href="${prefix}/chronicle/walk"]`)].filter((a) => !a.closest("nav"));
+    assert.equal(walk.length, 1);
+    assert.ok(walk[0]!.closest("#observatory header")?.querySelector("h1"), "it sits under the moment the deck reads out, not among the axis controls");
+    assert.match(walk[0]!.textContent!, prefix ? /走进去.*从火堆走到巨石/ : /Step inside.*from the fire to the monolith/);
     assert.equal(document.querySelector('[role="slider"] button, [role="slider"] a'), null);
     assert.equal(document.querySelector(".observatory-enter"), null);
     for (const retired of ["/chronicle/workshops", "/chronicle/steam", "/chronicle/difference-engine"]) {

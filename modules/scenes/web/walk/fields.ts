@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { Kit } from "./camp.ts";
-import { CANAL, CLEARINGS, MONO_S, clamp, fromCanal, mix, noise, roadX, smooth } from "./land.ts";
+import { CANAL, CLEARINGS, MACHINES_S, MONO_S, clamp, fromCanal, mix, noise, roadX, smooth } from "./land.ts";
 import { POSES, person } from "./people.ts";
 import { blob, faceted, flat, limb, lit, merged, of, rock, triangles, turned, type Paint } from "./shapes.ts";
 import type { Plant } from "./trees.ts";
@@ -239,7 +239,7 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
       triangles(quad(-.5, .5, -.3, 2), flat("#3b2a1d", rand, .1)), triangles([...quad(-.2, .2, 4.1, 4.7), ...quad(.25, .6, 6.4, 6.9)], dark),
       limb(V(0, 9.3, 1.2), V(0, 9.3, 2.55), .14, .12, wood, { sides: 6, capped: true }),
     ]), x, s, turn, -.2);
-    const tower = era(list, base, 438, 452); blocks.push([x, s, r * .48]);
+    const tower = era(list, base, MACHINES_S, 452); blocks.push([x, s, r * .48]);
     const lattice = of(2, lit("#6b5a46", "#b7a283", rand)), arms: THREE.BufferGeometry[] = [];
     for (let k = 0; k < 4; k++) {
       const a = k * Math.PI / 2 + .3, d = V(Math.cos(a), Math.sin(a), 0), q = V(-Math.sin(a), Math.cos(a), 0), along = (n: number, wide: number) => d.clone().multiplyScalar(n).addScaledVector(q, wide);

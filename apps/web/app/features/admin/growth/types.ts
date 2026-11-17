@@ -62,7 +62,16 @@ export interface EngagementData {
     firstDays: Record<string, string | null>;
     firstStarDevices: number;
     topStarred: Array<{ id: string; title: string | null; net: number }>;
-    workshops: Array<{ path: string; starts: number; finishes: number }>;
+    /** The chronicle's walk: opened (page views of both editions), started, places reached, acts, where and when it was left, finished. */
+    walk: {
+      views: number;
+      starts: number;
+      finishes: number;
+      reached: Array<{ place: string; count: number }>;
+      acts: Array<{ act: string; count: number }>;
+      left: Array<{ place: string; count: number }>;
+      times: Array<{ time: string; count: number }>;
+    };
   };
 }
 
