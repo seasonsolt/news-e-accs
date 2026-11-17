@@ -21,6 +21,7 @@ import { editionReady, EditionUnavailableError, type DistributionLanguage } from
 import { distributionDaily, distributionHot, v1Items } from "@aihot/backend/publication/v1";
 import { SearchBusyError } from "@aihot/backend/publication/pool";
 import { resolveStory, v1HotTopics, v1Story } from "@aihot/backend/publication/stories";
+import { itemAvailability } from "@aihot/backend/publication/availability";
 import { isPeriodKey, v1Period } from "@aihot/backend/publication/reports";
 import { requestNotice, serverModules, type McpNotice } from "@aihot/backend/modules";
 
@@ -29,7 +30,7 @@ const USES = [
   `${T.latest} for briefings`,
   `${T.search} for a named subject`,
   `${T.hot} for the current ranked events`,
-  `${T.story} only with a public ID returned by hot topics`,
+  `${T.story} only with a story ID returned by hot topics or an item link returned by latest or search`,
   `${T.daily} for an edited daily overview`,
   `${T.weekly} and ${T.monthly} for the edited weekly and monthly reports`,
 ];
@@ -90,7 +91,9 @@ function safe<A>(tool: string, run: (args: A) => Promise<ReturnType<typeof ok> |
   };
 }
 
-const lang = z.enum(["en", "zh"]).default("en").describe("Stored edition language. Defaults to English. Missing editions return edition_unavailable; no live model calls.");
+/** A language tag read by its language ("zh-CN", "EN-us"); anything else still fails the call. */
+const lang = z.preprocess((v) => (typeof v === "string" ? /^(en|zh)(?:[-_].*)?$/i.exec(v.trim())?.[1]?.toLowerCase() ?? v : v),
+  z.enum(["en", "zh"]).default("en")).describe("Stored edition language. Defaults to English. Missing editions return edition_unavailable; no live model calls.");
 
 const category = z.enum(PUBLIC_API_CATEGORY_KEYS).optional().describe(`Optional category: ${PUBLIC_API_CATEGORY_KEYS.join(", ")}.`);
 
@@ -102,10 +105,13 @@ const count = (max: number, fallback: number, description: string) =>
   z.preprocess((v) => (typeof v === "number" && Number.isFinite(v) ? Math.min(max, Math.max(1, Math.trunc(v))) : v),
     z.number().int().min(1).max(max).default(fallback)).describe(description);
 
-/** A story's public ID, or the story link that the hot-topic and search answers print (its last path segment). */
+/**
+ * A story's or item's ID, from the ID itself or from a link the answers print: the story page, an item page
+ * (latest and search list items, so agents pass those), their Markdown pages, or the v1 story address.
+ */
 const storyId = (v: unknown) => {
   if (typeof v !== "string") return v;
-  const id = /\/story\/([^/?#\s]+)\/?(?:[?#].*)?$/.exec(v.trim())?.[1];
+  const id = /\/(?:story|items|api\/v1\/stories)\/([^/?#\s]+?)(?:\.md)?\/?(?:[?#].*)?$/.exec(v.trim())?.[1];
   return id ?? v.trim();
 };
 
@@ -132,7 +138,7 @@ const HOT_INPUT = z.object({
 });
 const STORY_INPUT = z.object({
   lang,
-  public_id: z.preprocess(storyId, z.string().min(1).max(128)).describe(`Story public ID or story link, from ${T.hot} (Story public_id or links.story); never guess it.`),
+  public_id: z.preprocess(storyId, z.string().min(1).max(128)).describe(`Story public ID or story link from ${T.hot}, or an item link from ${T.latest} or ${T.search} (its event is returned); never guess it.`),
   report_limit: count(50, 20, "Maximum number of timeline reports, from 1 to 50."),
 });
 const DAILY_INPUT = z.object({
@@ -248,16 +254,22 @@ function registerTools(server: McpServer, say: typeof ok) {
   server.registerTool(
     T.story,
     {
-      description: `Get the evolving timeline, latest development, AI digest, and related events for one public story. Pass the Story public_id or story link that ${T.hot} returned; never invent or infer IDs.`,
+      description: `Get the evolving timeline, latest development, AI digest, and related events for one public story. Pass the Story public_id or story link that ${T.hot} returned, or an item link that ${T.latest} or ${T.search} returned to get the event it belongs to; never invent or infer IDs.`,
       inputSchema: STORY_INPUT,
       annotations: ANNOTATIONS,
     },
     safe(T.story, async (args) => {
-      let found = await resolveStory(args.public_id.trim());
+      const id = args.public_id.trim();
+      let found = await resolveStory(id);
+      // Not a story: an item's ID stands for the event it belongs to.
+      if (found.kind === "not_found") {
+        const story = (await itemAvailability([id]))[id]?.story?.id;
+        if (story) found = await resolveStory(story);
+      }
       if (found.kind === "merged") found = await resolveStory(found.target);
       const source = found.kind === "found" ? await v1Story(found.storyId) : null;
       const body = source ? await localizePublication(source, args.lang) : null;
-      if (!body) return fail("not_found", `No public story exists for this ID. Use a public_id returned by ${T.hot}, or find the event with ${T.search}.`);
+      if (!body) return fail("not_found", `No public story exists for this ID. Use a public_id returned by ${T.hot}, or an item link returned by ${T.latest} or ${T.search}.`);
       requireEditions(body, args.lang);
       const story = { ...body.story, reports: body.story.reports.slice(0, args.report_limit) };
       const lines = [`${SITE.name} Story: ${story.title}`, `Status: ${story.status === "active" ? "Active" : "Historical"} | ${story.reportCount} reports | ${story.sourceCount} sources`, `Latest: ${story.latest}`];

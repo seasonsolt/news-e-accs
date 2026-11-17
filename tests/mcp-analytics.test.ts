@@ -1,5 +1,6 @@
 import "./setup.ts";
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { after, beforeEach, test } from "node:test";
 import { setTimeout } from "node:timers/promises";
 import Fastify from "fastify";
@@ -105,8 +106,39 @@ test("arguments agents commonly get wrong still reach the tool", async () => {
   assert.equal(link.structuredContent.error.code, "not_found", "a story link is read as its public ID and looked up");
   const latest = (await call("tools/list")).tools.find((t: { name: string }) => t.name === T.latest).inputSchema;
   assert.deepEqual([latest.properties.limit.default, latest.properties.limit.maximum, latest.required ?? []], [10, 30, []], "the advertised schema still states the range and default");
-  const summary = await settled(3);
+  const region = await call("tools/call", { name: T.search, arguments: { lang: "zh-CN", q: "model" } });
+  assert.equal(region.isError, undefined, "a language tag with a region is read by its language");
+  const summary = await settled(4);
   assert.deepEqual(summary.errors.map((r) => r.outcome), ["not_found"]);
+});
+
+test("an item link from latest or search opens the event the item belongs to", async () => {
+  // Six weeks old: outside every latest and search window, so the other tools here never meet it.
+  const day = new Date(Date.now() - 42 * 86_400_000);
+  const id = `mcp-item-${randomUUID()}`;
+  await sql`INSERT INTO sources (id,name,kind,tier,participation_mode,next_fetch_at) VALUES (${id},'来源','rss','T1','editorial','2100-01-01')`;
+  const [s] = await sql`INSERT INTO stories (public_id,title,first_report_at,latest_at,latest) VALUES (${randomUUID()},'事件',${day},${day},'进展') RETURNING id, public_id`;
+  const [f] = await sql`INSERT INTO facts (public_id,story_id,title) VALUES (${`f-${randomUUID()}`},${s!.id},'事件') RETURNING id`;
+  await sql`INSERT INTO articles (id,source_id,identity_key,url,title,timeline_at,discovered_at,published_at)
+    VALUES (${id},${id},${id},${`https://example.org/${id}`},'报道',${day},${day},${day})`;
+  await sql`INSERT INTO publications (article_id,source_id,title,summary,url,channel,timeline_at,discovered_at,published_at,sort_at,story_id,fact_id,selected,eligible,visible_after,body_mode,score)
+    VALUES (${id},${id},'报道','报道',${`https://example.org/${id}`},'news',${day},${day},${day},${day},${s!.id},${f!.id},true,true,${day},'full',70)`;
+  await sql`INSERT INTO fact_articles (fact_id,article_id,role,evidence) VALUES (${f!.id},${id},'report','报道')`;
+  const code = async (publicId: string) => {
+    const body = (await rpc("tools/call", { name: T.story, arguments: { lang: "zh", public_id: publicId } })).body;
+    return JSON.parse(body.startsWith("{") ? body : body.split("\n").find((line) => line.startsWith("data:"))!.slice(5)).result.structuredContent.error?.code;
+  };
+  // The fixture stores no edition, so a found event answers edition_unavailable; an ID that is nothing answers not_found.
+  for (const link of [`https://e-acc.ai/items/${id}`, `https://e-acc.ai/zh/items/${id}.md`, id, `https://e-acc.ai/story/${s!.public_id}.md`]) {
+    assert.equal(await code(link), "edition_unavailable", link);
+  }
+  assert.equal(await code(`https://e-acc.ai/items/${id}-gone`), "not_found");
+  await sql`DELETE FROM fact_articles WHERE article_id=${id}`;
+  await sql`DELETE FROM publications WHERE article_id=${id}`;
+  await sql`DELETE FROM articles WHERE id=${id}`;
+  await sql`DELETE FROM facts WHERE story_id=${s!.id}`;
+  await sql`DELETE FROM stories WHERE id=${s!.id}`;
+  await sql`DELETE FROM sources WHERE id=${id}`;
 });
 
 test("preflight, notifications and host/origin rejections are not tool usage", async () => {
