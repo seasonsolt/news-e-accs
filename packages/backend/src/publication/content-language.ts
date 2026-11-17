@@ -130,17 +130,24 @@ export async function exportContentBatch(cursor = '', limit = 50, targetLanguage
 export async function priorityContentEntries(targetLanguage: EditionLanguage = 'en') {
   const [hot, ranking, pool, [daily]] = await Promise.all([
     loadHotStrip(), loadHot(), loadPool({ channel: 'all', category: null, tag: null, page: 1 }),
-    sql<{ key: string }[]>`SELECT key FROM reports WHERE kind='daily' ORDER BY key DESC LIMIT 1`,
+    sql<{ key: string; item_ids: string[] }[]>`SELECT key, ARRAY(SELECT jsonb_path_query(content, '$.sections[*].items[*].itemId') #>> '{}') AS item_ids
+      FROM reports WHERE kind='daily' ORDER BY key DESC LIMIT 1`,
   ]);
   const refs = new Map<string, { kind: ContentKind; id: string }>();
   const add = (kind: ContentKind, id: string | null | undefined) => {
     if (id) refs.set(`${kind}:${id}`, { kind, id });
   };
   // The newest daily is mailed and exported in both languages that morning; the historical sweep
-  // reaches reports only after every item, so a backlog would hold it back for hours.
-  if (daily) add('report', `daily:${daily.key}`);
+  // reaches reports only after every item, so a backlog would hold it back for hours. The mail links
+  // its items, and the headlines' items are a click from home: their bodies are read in both
+  // languages too. Ingest gives articles a Chinese body but not X posts, so without this a post the
+  // daily leads with is read in English for a day or more.
+  if (daily) {
+    add('report', `daily:${daily.key}`);
+    for (const id of daily.item_ids) { add('item', id); add('body', id); }
+  }
   for (const headline of hot ?? []) {
-    add('story', headline.storyPublicId); add('item', headline.itemId);
+    add('story', headline.storyPublicId); add('item', headline.itemId); add('body', headline.itemId);
   }
   // The strip shows five; /hot shows the whole ranking, whose titles readers see too.
   for (const entry of ranking.entries) add('story', entry.story.publicId);
