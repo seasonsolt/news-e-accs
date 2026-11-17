@@ -202,6 +202,8 @@ test('echoed English cannot become a ready Chinese item/report/body edition, inc
     assert.equal(targetLanguageProse('我刚发现，现在在 claude dot ai 上，Opus 5.5 只需一个提示词就能用 Blender 制作黏土动画','zh'),true);
     assert.equal(targetLanguageProse('.@Cloudflare 的决策模型现已登陆 Ollama！\n\nClef (27B)：\nollama pull clef\n\nClef Flash (9B)：\nollama pull clef-flash','zh'),true);
     assert.equal(targetLanguageProse('datasette 1.0a41','zh'),true);
+    // 2026-11-17: Qwen's post listed "API: qwencloud.com/…"; its faithful translation has no Han.
+    assert.equal(targetLanguageProse('API：<a id="L0">qwencloud.com/models/qwen4-max</a>','zh'),true);
     assert.equal(targetLanguageProse('the model is out','zh'),false);
     assert.equal(targetLanguageProse('发布了新模型。','en'),false);
     assert.equal(targetLanguageProse('The source says “发布模型”.','en'),true);
