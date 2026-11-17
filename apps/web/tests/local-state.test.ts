@@ -203,12 +203,12 @@ test("the owner's own interactions are marked so the server leaves them out", as
   const calls: Array<{ url: string; init: RequestInit }> = [];
   const { state, values } = await reader();
   listen(calls);
-  recordEngagement("workshop_start", "/chronicle/iron");
+  recordEngagement("workshop_start", "/chronicle/walk");
   values.set(state.KEYS.owner, "1");
-  recordEngagement("workshop_finish", "/chronicle/iron");
+  recordEngagement("workshop_finish", "/chronicle/walk");
   assert.deepEqual(bodies(calls), [
-    JSON.stringify({ event: "workshop_start", target: "/chronicle/iron" }),
-    JSON.stringify({ event: "workshop_finish", target: "/chronicle/iron", own: true }),
+    JSON.stringify({ event: "workshop_start", target: "/chronicle/walk" }),
+    JSON.stringify({ event: "workshop_finish", target: "/chronicle/walk", own: true }),
   ]);
 });
 
@@ -223,31 +223,4 @@ test("the storage keys readers already have data under keep their names", async 
   for (const [role, key] of Object.entries(kept)) {
     assert.equal(state.KEYS[role as keyof typeof kept], key, `readers' ${role} data is stored under ${key}; renaming the key loses it`);
   }
-});
-
-test("workshop progress keeps each best result on its own, ignores unreadable data, and survives blocked storage", async () => {
-  const { state, values } = await reader();
-  assert.deepEqual(state.getWorkshopProgress(), {});
-  assert.deepEqual(state.recordWorkshop("/chronicle/agents"), { best: {}, record: false });
-  assert.deepEqual(state.recordWorkshop("/chronicle/writing", { ms: 60_400, steps: 12 }), { best: { ms: 60_400, steps: 12 }, record: false });
-  // Faster but with more operations: each measure keeps its own best.
-  assert.deepEqual(state.recordWorkshop("/chronicle/writing", { ms: 41_000, steps: 15 }), { best: { ms: 41_000, steps: 12 }, record: true });
-  assert.deepEqual(state.recordWorkshop("/chronicle/writing", { ms: 90_000, steps: 20 }), { best: { ms: 41_000, steps: 12 }, record: false });
-  assert.deepEqual(Object.keys(state.getWorkshopProgress()).sort(), ["/chronicle/agents", "/chronicle/writing"]);
-  assert.equal(state.workshopTime(125_000), "2:05");
-  // A scored finish after a demonstration-only one is the first score, not a record.
-  assert.deepEqual(state.recordWorkshop("/chronicle/agents", { ms: 5000, steps: 3 }).record, false);
-
-  const stored = await reader();
-  stored.values.set(stored.state.KEYS.workshops, JSON.stringify({ "/chronicle/steam": { ms: 1000, steps: 4 }, "no-slash": {}, "/chronicle/iron": "x", "/chronicle/flight": { ms: -1, steps: "9" } }));
-  assert.deepEqual(stored.state.getWorkshopProgress(), { "/chronicle/steam": { ms: 1000, steps: 4 }, "/chronicle/flight": {} });
-  const damaged = await reader();
-  damaged.values.set(damaged.state.KEYS.workshops, "not json");
-  assert.deepEqual(damaged.state.getWorkshopProgress(), {});
-
-  const blocked = { getItem() { throw new Error("blocked"); }, setItem() { throw new Error("blocked"); }, removeItem() { throw new Error("blocked"); } };
-  Object.defineProperty(globalThis, "window", { configurable: true, value: { localStorage: blocked } });
-  const unavailable: typeof import("../app/lib/local-state.ts") = await import(`../app/lib/local-state.ts?test=${instance++}`);
-  assert.deepEqual(unavailable.getWorkshopProgress(), {});
-  assert.doesNotThrow(() => unavailable.recordWorkshop("/chronicle/iron", { ms: 1, steps: 1 }));
 });

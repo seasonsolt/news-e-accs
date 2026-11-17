@@ -1319,25 +1319,17 @@ html { scrollbar-gutter: stable; }
 .observatory-wallpaper:hover, .observatory-layers button:hover { background: rgb(217 164 65 / .16); }
 .observatory-layers button[aria-expanded="true"] { background: rgb(217 164 65 / .28); color: #fff3d6; }
 .observatory-layers { display: none; padding: 2px; }
-/* The way into a milestone's scene (WebModule.chronicle). Everywhere it opens the scene's page; a desktop with a mouse hands over from the tunnel instead. */
-.observatory-enter { display: flex; width: fit-content; margin-top: 18px; align-items: center; gap: 10px; min-height: 44px; padding: 0 20px; border-radius: 999px; background: linear-gradient(var(--brass-hi), var(--brass)); font-size: 14px; font-weight: 600; color: #2a1f16; transition: filter 200ms var(--ease-out-quart), opacity 300ms; }
-.observatory-enter:hover { filter: brightness(1.06); color: #2a1f16; }
-.observatory-enter[aria-disabled="true"] { opacity: .6; cursor: wait; }
 .observatory-time { margin-top: 10px; font-family: var(--font-display); font-weight: 400; line-height: .9; color: var(--deck-ink); text-shadow: 0 2px 30px rgb(0 0 0 / .45); }
 .observatory-time-figure { font-size: clamp(68px, 12vw, 136px); letter-spacing: -.02em; }
 .observatory-time-unit { margin-inline: .06em; font-size: clamp(26px, 4vw, 44px); color: rgb(244 236 220 / .82); }
 .observatory-era { margin-top: 14px; font-size: 21px; font-weight: 600; color: var(--deck-ink); }
 .observatory-summary { margin-top: 6px; max-width: 36rem; font-size: 14.5px; line-height: 1.75; color: rgb(244 236 220 / .8); text-wrap: pretty; }
 
-/* The tunnel (DepthTunnel.tsx) over the plate once its first picture is drawn, and the scene it hands over to. */
+/* The tunnel (DepthTunnel.tsx) over the plate once its first picture is drawn. */
 .observatory-tunnel { position: absolute; inset: 0; z-index: -2; display: block; width: 100%; height: 100%; opacity: 0; outline: none; transition: opacity 400ms var(--ease-out-quart); }
 .observatory-tunnel.is-ready { opacity: 1; }
 /* Once the tunnel draws the plate, the <img> (later in the stage, at the same z-index) would cover it. */
 .chronicle-stage.has-tunnel .observatory-plate { visibility: hidden; }
-.observatory-scene { position: absolute; inset: 0; z-index: 5; width: 100%; height: 100%; border: 0; background: transparent; opacity: 0; pointer-events: none; transition: opacity 800ms ease; }
-.observatory-scene.is-open { opacity: 1; pointer-events: auto; }
-.chronicle-stage :is(.observatory-readout, .chronicle-readouts, .chronometer, .observatory-tools, .observatory-shade) { transition: opacity 500ms; }
-.chronicle-stage:is(.is-entering, .is-inside) :is(.observatory-readout, .chronicle-readouts, .chronometer, .observatory-tools, .observatory-shade) { opacity: 0; pointer-events: none; }
 
 /* The page. On a phone the deck, the chronometer and every panel follow one another down the page. On a
    desktop the deck, its three readouts and the chronometer fill the first screen, and the panels open one
@@ -1387,8 +1379,7 @@ html { scrollbar-gutter: stable; }
   .chronicle-layer:not([data-panel]) .chronicle-panel:not([data-panel="gauges"]),
   .chronicle-layer[data-panel="gauges"] .chronicle-panel:not([data-panel="gauges"]),
   .chronicle-layer[data-panel="nearby"] .chronicle-panel:not([data-panel="nearby"]),
-  .chronicle-layer[data-panel="eras"] .chronicle-panel:not([data-panel="eras"]),
-  .chronicle-layer[data-panel="workshops"] .chronicle-panel:not([data-panel="workshops"]) { display: none; }
+  .chronicle-layer[data-panel="eras"] .chronicle-panel:not([data-panel="eras"]) { display: none; }
   .chronicle-layer .chronicle-gauge-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .chronicle-layer .chronicle-section-head h2 { font-size: 22px; }
   .chronicle-below { grid-column: 1 / -1; margin-top: 24px; }
@@ -1412,7 +1403,6 @@ html { scrollbar-gutter: stable; }
 @media (min-width: 961px) { .chronometer { margin-inline: 0; padding: 26px 20px 12px; border-radius: 0 0 var(--radius-panel) var(--radius-panel); } }
 .chronicle-track { position: relative; height: 66px; cursor: ew-resize; touch-action: pan-y; border-radius: 6px; overflow: visible; }
 .chronicle-track:focus-visible { outline: 2px solid var(--brass); outline-offset: 4px; }
-/* Playable workshops: small brass diamonds along the foot of the axis, under the milestone ticks. */
 .chronometer > .chronicle-axis { grid-area: axis; min-width: 0; }
 .chronometer-step { display: grid; place-items: center; align-self: start; width: 44px; height: 44px; margin-top: 11px; border: 1px solid rgb(244 236 220 / .2); border-radius: 50%; background: rgb(18 14 10 / .5); color: var(--deck-ink); transition: border-color .15s; }
 .chronometer-step.is-previous { grid-area: previous; }
@@ -1421,30 +1411,6 @@ html { scrollbar-gutter: stable; }
 .chronometer-step:disabled { opacity: .3; pointer-events: none; }
 .chronicle-epoch { position: absolute; top: 5px; padding-left: 6px; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-left: 1px solid rgb(244 236 220 / .2); font-size: 10.5px; line-height: 13px; color: var(--deck-faint); pointer-events: none; }
 .chronicle-epoch.is-current { color: var(--brass-hi); }
-.chronicle-workshop-mark, .chronicle-workshop-key { width: 7px; height: 7px; background: var(--brass-hi); border: 1px solid var(--deck); rotate: 45deg; }
-.chronicle-workshop-mark { position: absolute; bottom: 2px; z-index: 1; translate: -50% 0; box-shadow: 0 0 0 1px rgb(240 210 138 / .3); }
-.chronicle-workshop-mark.is-current { width: 9px; height: 9px; bottom: 1px; background: #fff3d6; box-shadow: 0 0 0 1px var(--brass-hi), 0 0 8px rgb(240 210 138 / .8); }
-.chronicle-workshop-key { flex: none; width: 6px; height: 6px; border: 0; }
-.chronometer-controls .chronicle-workshop-menu { display: flex; align-items: center; gap: 8px; }
-.chronometer-controls .chronicle-workshop-menu[aria-expanded="true"] { border-color: var(--brass); color: var(--deck-ink); }
-#chronicle-workshops { outline: none; scroll-margin-top: 210px; }
-.chronicle-workshop-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
-.chronicle-workshop-tally { font: 12px var(--font-mono); font-variant-numeric: tabular-nums; color: var(--accent-ink); }
-.chronicle-workshop-all { font-size: 12px; color: var(--accent); }
-.chronicle-workshop-all:hover { text-decoration: underline; }
-.chronicle-workshop-check { margin-left: 6px; font-size: 11px; color: var(--ok); }
-.chronicle-workshop-help { margin: -4px 0 16px; font-size: 12px; line-height: 1.7; color: var(--ink-3); }
-.chronicle-workshop-list { display: grid; gap: 10px; }
-.chronicle-workshop-list li { display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--line); border-radius: var(--radius-tile); background: var(--surface); }
-.chronicle-workshop-list li.is-current { border-color: var(--accent); background: var(--bg-muted); }
-.chronicle-workshop-locate { display: flex; flex: 1; align-items: center; gap: 10px; min-width: 0; min-height: 54px; }
-.chronicle-workshop-locate img { flex: none; width: 64px; height: 46px; object-fit: cover; border-radius: var(--radius-mark); }
-.chronicle-workshop-locate > span { display: grid; gap: 5px; min-width: 0; }
-.chronicle-workshop-date { font: 10px var(--font-mono); color: var(--ink-3); }
-.chronicle-workshop-locate strong { font-size: 12px; font-weight: 600; line-height: 1.5; }
-.chronicle-workshop-locate:hover strong { color: var(--accent); }
-.chronicle-workshop-enter { display: grid; flex: none; align-content: center; gap: 3px; min-width: 48px; min-height: 44px; padding: 6px; border-left: 1px solid var(--line); text-align: center; font-size: 10px; color: var(--accent); }
-.chronicle-workshop-enter:hover { background: var(--bg-muted); }
 .chronicle-band { position: absolute; top: 0; bottom: 0; background: rgb(244 236 220 / .03); border-right: 1px solid rgb(244 236 220 / .05); }
 .chronicle-band.is-odd { background: rgb(244 236 220 / .06); }
 .chronicle-band.is-forecast { background: repeating-linear-gradient(45deg, rgb(217 164 65 / .1) 0 3px, transparent 3px 7px); }
@@ -1485,17 +1451,19 @@ html { scrollbar-gutter: stable; }
 .chronicle-zoom { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 .chronicle-zoom > span { font: 11px var(--font-mono); color: var(--deck-faint); }
 .chronometer-controls { grid-area: controls; position: relative; display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 32px; margin-top: 6px; }
-.chronometer-controls button, .chronicle-zoom button { flex: none; height: 30px; padding: 0 12px; border: 1px solid rgb(244 236 220 / .18); border-radius: 999px; font-size: 12.5px; color: var(--deck-dim); transition: border-color .15s, color .15s; }
-.chronometer-controls button:hover, .chronicle-zoom button:hover { border-color: var(--brass); color: var(--deck-ink); }
-.chronicle-workshop-short { display: none; }
+.chronometer-controls :is(button, .chronicle-walk), .chronicle-zoom button { flex: none; height: 30px; padding: 0 12px; border: 1px solid rgb(244 236 220 / .18); border-radius: 999px; font-size: 12.5px; color: var(--deck-dim); transition: border-color .15s, color .15s; }
+.chronometer-controls :is(button, .chronicle-walk):hover, .chronicle-zoom button:hover { border-color: var(--brass); color: var(--deck-ink); }
+/* The way to the walk (modules/scenes), a link among the chronometer's buttons. */
+.chronometer-controls .chronicle-walk { display: inline-flex; align-items: center; }
+.chronicle-walk-short { display: none; }
 @media (min-width: 641px) { .chronometer-now { position: absolute; right: 0; } }
 @media (max-width: 640px) {
   .chronometer { grid-template-areas: "axis axis axis" "previous controls next"; row-gap: 8px; }
   .chronometer-step { align-self: center; margin-top: 0; }
   .chronometer-controls { margin-top: 0; }
-  .chronicle-workshop-long { display: none; }
-  .chronicle-workshop-short { display: inline; }
-  .chronometer-controls button, .chronicle-zoom button { padding: 0 10px; font-size: 12px; }
+  .chronicle-walk-long { display: none; }
+  .chronicle-walk-short { display: inline; }
+  .chronometer-controls :is(button, .chronicle-walk), .chronicle-zoom button { padding: 0 10px; font-size: 12px; }
 }
 
 

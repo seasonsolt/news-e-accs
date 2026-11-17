@@ -2,11 +2,8 @@
 // picture on the axis (era openings and milestone plates, in time order) is a relief on the Z axis, and the
 // camera's place follows the axis position. Resting on a picture shows it exactly as the <img> under the
 // canvas does; between two, the camera is in flight. Each plate is displaced by its offline depth map
-// (<slug>-depth.webp, white = near), so near and far part as the pointer moves. A picture that opens onto a
-// scene (WebModule.chronicle) loads that scene paused in a frame of the same size, and walking in hands
-// over to it (scene-handoff.ts).
+// (<slug>-depth.webp, white = near), so near and far part as the pointer moves.
 import * as THREE from "three";
-import { TO_SCENE, embedPath, readSceneEvent, type SceneCommand } from "./scene-handoff.ts";
 import { artUrl, artWidth, loadArtImage } from "./art.ts";
 
 const PLANE_W = 16;
@@ -27,9 +24,6 @@ const AHEAD = 3;
 const DECK = 0x120e0a;
 const DUST = 1500;
 const DUST_SPAN = 140;
-/** How long the camera takes to settle on the resting spot before the scene takes over, and the crossfades. */
-const SETTLE_MS = 700;
-const CROSS_MS = 800;
 
 const VERTEX = /* glsl */`
   uniform sampler2D uDepth; uniform float uRelief; uniform vec3 uEye;
@@ -60,19 +54,11 @@ const FRAGMENT = /* glsl */`
 export interface TunnelPicture {
   /** The plate's path without the width suffix, as <Plate> takes it. */
   src: string;
-  /** The scene page it opens onto, if any. */
-  scene?: string;
 }
-
-export type TunnelMode = "stage" | "entering" | "inside" | "leaving";
 
 export interface Tunnel {
   /** Where the axis is, in pictures: an integer rests on that picture, a fraction is in flight between two. */
   setProgress(progress: number, alt: string): void;
-  /** True while the camera rests on a picture whose scene has loaded. */
-  canEnter(): boolean;
-  enter(): void;
-  readonly mode: TunnelMode;
   /** The canvas shows the plate the axis rests on (until then the <img> underneath is in view). */
   readonly ready: boolean;
   dispose(): void;
@@ -89,11 +75,8 @@ interface Plate {
   fade: number;
 }
 
-/**
- * Draws into a canvas prepended to `stage`. Returns null without WebGL. `onChange` is told when the mode
- * changes, when the first plate is drawn and when a scene becomes ready to enter.
- */
-export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], options: { sceneTitle: string; onChange: () => void }): Tunnel | null {
+/** Draws into a canvas prepended to `stage`. Returns null without WebGL. `onChange` is told when the first plate is drawn or lost. */
+export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], onChange: () => void): Tunnel | null {
   let renderer: THREE.WebGLRenderer;
   try {
     renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -101,7 +84,6 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
     return null;
   }
   if (renderer.capabilities.maxTextureSize < 800) { renderer.dispose(); return null; }
-  const { onChange } = options;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(DECK);
   const canvas = renderer.domElement;
@@ -119,7 +101,7 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
   const restOf = (i: number) => zOf(i) + restDistance;
   const N = pictures.length;
 
-  // The resting spot frames the plate like object-fit: cover, the same crop a scene's plate camera uses.
+  // The resting spot frames the plate like object-fit: cover.
   function layout() {
     const w = stage.clientWidth, h = stage.clientHeight;
     if (!w || !h) return;
@@ -226,7 +208,7 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
   // Progress runs from 0 to N-1. Nothing is drawn until the page says where on the axis it is.
   let target: number | null = null, progress: number | null = null, velocity = 0;
   function upgradeCurrent() {
-    if (target === null || progress === null || mode !== "stage" || Math.abs(target - progress) >= 1e-4) return;
+    if (target === null || progress === null || Math.abs(target - progress) >= 1e-4) return;
     const i = Math.round(target), entry = live.get(i);
     if (!entry || entry.loaded < 2 || entry.fade < 1) return;
     const image = entry.color.image as HTMLImageElement;
@@ -237,7 +219,7 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
     highAttempted = i;
     highRequest = { index: i, controller };
     void loadArtImage(`${pictures[i]!.src}-3840.webp`, controller.signal).then((decoded) => {
-      if (controller.signal.aborted || target !== requestedTarget || mode !== "stage" || live.get(i) !== entry) { decoded.removeAttribute("src"); return; }
+      if (controller.signal.aborted || target !== requestedTarget || live.get(i) !== entry) { decoded.removeAttribute("src"); return; }
       const texture = new THREE.Texture(decoded);
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
@@ -254,49 +236,8 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
     return THREE.MathUtils.lerp(restOf(i), restOf(i + 1), e);
   }
 
-  // Walking in: stage → entering (the camera settles on the resting spot) → inside (the scene on top, the
-  // tunnel idle) → leaving → stage.
-  let mode: TunnelMode = "stage", settleStarted = 0;
-  const timers = new Set<number>();
-  const later = (ms: number, run: () => void) => { const id = window.setTimeout(() => { timers.delete(id); run(); }, ms); timers.add(id); };
-  const frame: { el: HTMLIFrameElement | null; src: string; ready: boolean } = { el: null, src: "", ready: false };
-  const setMode = (next: TunnelMode) => {
-    mode = next;
-    stage.classList.toggle("is-entering", next === "entering");
-    stage.classList.toggle("is-inside", next === "inside");
-    onChange();
-  };
-  function prepareScene(src: string) {
-    if (frame.src === src) return;
-    frame.el?.remove();
-    const iframe = document.createElement("iframe");
-    iframe.className = "observatory-scene";
-    iframe.title = options.sceneTitle;
-    iframe.src = embedPath(src);
-    stage.append(iframe);
-    Object.assign(frame, { el: iframe, src, ready: false });
-  }
-  const tellScene = (type: SceneCommand) => frame.el?.contentWindow?.postMessage({ source: TO_SCENE, type }, location.origin);
-  const onMessage = (event: MessageEvent) => {
-    const type = readSceneEvent(event, frame.el?.contentWindow ?? null, location.origin);
-    if (type === "ready") { frame.ready = true; onChange(); }
-    if (type === "entered") {
-      frame.el?.classList.add("is-open");
-      later(CROSS_MS, () => { if (mode === "entering") { setMode("inside"); frame.el?.focus(); } });
-    }
-    if (type === "exit") {
-      // Take the keyboard back from the frame, or the arrow keys keep going to the scene.
-      setMode("leaving");
-      frame.el?.classList.remove("is-open");
-      canvas.focus({ preventScroll: true });
-      later(CROSS_MS, () => { if (mode === "leaving") setMode("stage"); });
-    }
-  };
-  window.addEventListener("message", onMessage);
-
   // The plate parts into its layers as the pointer moves.
-  const mouse = new THREE.Vector2(), mouseSmooth = new THREE.Vector2(), CENTER = new THREE.Vector2();
-  let swayAmount = 1;
+  const mouse = new THREE.Vector2(), mouseSmooth = new THREE.Vector2();
   const onMove = (e: PointerEvent) => {
     const r = stage.getBoundingClientRect();
     mouse.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height * 2 - 1));
@@ -309,28 +250,17 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
   let raf = 0, visible = true;
   function draw(dt: number) {
     if (target === null || progress === null) return;
-    const now = performance.now();
     if (Math.abs(target - progress) > MAX_FLIGHT) progress = target - Math.sign(target - progress) * MAX_FLIGHT;
     const previous = progress;
     progress += (target - progress) * Math.min(1, dt * FOLLOW);
     if (Math.abs(target - progress) < 1e-4) progress = target;
     velocity = THREE.MathUtils.lerp(velocity, Math.abs(progress - previous) / Math.max(dt, 1e-3), 0.15);
 
-    // Entering: let go of the pointer and the sway until the camera sits exactly on the resting spot.
-    const still = mode !== "stage";
-    mouseSmooth.lerp(still ? CENTER : mouse, Math.min(1, dt * (still ? 6 : 4)));
-    swayAmount = THREE.MathUtils.lerp(swayAmount, still ? 0 : 1, Math.min(1, dt * 6));
+    mouseSmooth.lerp(mouse, Math.min(1, dt * 4));
     const t = clock.elapsedTime, camZ = cameraZ(progress);
-    camera.position.set(mouseSmooth.x * 1.6 + Math.sin(t * 0.3) * 0.15 * swayAmount, mouseSmooth.y * 0.9 + Math.cos(t * 0.23) * 0.1 * swayAmount, camZ);
+    camera.position.set(mouseSmooth.x * 1.6 + Math.sin(t * 0.3) * 0.15, mouseSmooth.y * 0.9 + Math.cos(t * 0.23) * 0.1, camZ);
     const ahead = clamp(Math.floor((0.5 - camZ) / GAP) + 1, 0, N - 1);   // the first plate still in front
     camera.lookAt(-mouseSmooth.x * 0.6, -mouseSmooth.y * 0.4, zOf(ahead));
-    // A flight still under way (the slow follow) finishes before the snap, or the snap would cut it short.
-    if (mode === "entering" && settleStarted && now - settleStarted > SETTLE_MS && Math.abs(target - progress) < 0.01) {
-      // Snap the last few percent so this frame is the plate exactly as the scene's plate camera frames it.
-      progress = target; settleStarted = 0; mouseSmooth.set(0, 0); swayAmount = 0;
-      camera.position.set(0, 0, restOf(target)); camera.lookAt(0, 0, zOf(target));
-      tellScene("enter");
-    }
 
     const lo = Math.max(0, Math.floor(Math.min(progress, target)) - 1), hi = Math.min(N - 1, Math.ceil(Math.max(progress, target)) + AHEAD);
     for (const i of [...live.keys()]) if (i < lo || i > hi) drop(i);
@@ -355,8 +285,7 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
   function loop() {
     raf = requestAnimationFrame(loop);
     const dt = Math.min(clock.getDelta(), 0.05);
-    // The scene is on top; the tunnel holds still underneath.
-    if (mode === "inside" || !visible || !stage.clientWidth) return;
+    if (!visible || !stage.clientWidth) return;
     draw(dt);
   }
   const sizes = new ResizeObserver(layout);
@@ -368,45 +297,24 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
   layout();
   loop();
 
-  const canEnter = () => {
-    if (target === null) return false;
-    const i = Math.round(target);
-    return mode === "stage" && Math.abs(target - i) < 0.02 && !!pictures[i]?.scene && pictures[i]!.scene === frame.src && frame.ready;
-  };
   return {
     setProgress(p, alt) {
-      const could = canEnter();
       const next = clamp(p, 0, N - 1);
       if (target !== next) clearHigh();
       target = next;
       // The first frame opens on the picture itself rather than flying in from the start of the axis.
       if (progress === null) progress = target;
       canvas.setAttribute("aria-label", alt);
-      const near = pictures[Math.round(target)];
-      if (near?.scene && Math.abs(target - Math.round(target)) < 0.02) prepareScene(near.scene);
-      if (canEnter() !== could) onChange();
     },
-    canEnter,
-    enter() {
-      if (!canEnter()) return;
-      clearHigh();
-      target = Math.round(target!);
-      settleStarted = performance.now();
-      setMode("entering");
-    },
-    get mode() { return mode; },
     get ready() { return drawn; },
     dispose() {
       cancelAnimationFrame(raf);
       clearHigh();
-      for (const id of timers) clearTimeout(id);
       sizes.disconnect();
       view.disconnect();
-      window.removeEventListener("message", onMessage);
       stage.removeEventListener("pointermove", onMove);
       stage.removeEventListener("pointerleave", onLeave);
       canvas.removeEventListener("webglcontextlost", onLost);
-      stage.classList.remove("is-entering", "is-inside");
       for (const i of [...live.keys()]) drop(i);
       geometry.dispose();
       flatDepth.dispose();
@@ -415,7 +323,6 @@ export function createTunnel(stage: HTMLElement, pictures: TunnelPicture[], opti
       renderer.dispose();
       renderer.forceContextLoss();
       canvas.remove();
-      frame.el?.remove();
     },
   };
 }

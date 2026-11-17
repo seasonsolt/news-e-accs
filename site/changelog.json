@@ -1,6 +1,23 @@
 {
-  "latestVersion": "2026-11-16T08:45",
+  "latestVersion": "2026-11-16T22:28",
   "releases": [
+    {
+      "date": "2026-11-16",
+      "time": "22:28",
+      "kind": "更新",
+      "title": "加速史多了一条可以走的路：从火堆到巨石",
+      "body": [
+        "加速史新增一个连续的三维世界，取代原来一间一间的工坊。从一百万年前夜里的火堆出发，走过第一把种子、清晨的村落和下午的麦田，走到麦田中央那块石头为止；天色和年份跟着脚步变。路上可以给火添柴、播下种子、触碰巨石。键盘、鼠标和手机都能走，也可以开自动前行。沿途有围火的人、清晨的村落、水渠和收割的人，后世的风车和电塔随脚步从麦田里升起；声音是现场合成的，可以关掉。入口在加速史时间轴下方的「走完整条路」和“更多”的创作一栏，地址是 /chronicle/walk。",
+        "十五座时代工坊和工坊目录同时下线，原来的地址都转到这条路；浏览器里存的工坊完成记录不再读取。"
+      ],
+      "en": {
+        "title": "The Chronicle gains a road you can walk: From Fire to Monolith",
+        "body": [
+          "The Chronicle now has one continuous 3D world in place of its separate workshops. Start at a hearth a million years ago and walk past the first handful of seed, a village at dawn and the afternoon wheat, as far as the stone standing in the middle of the field; the hour and the year change with your steps. Along the way you can feed the fire, sow the seed and touch the monolith. It works with keyboard, mouse and phone, and there is an auto-walk. People sit around the fire, a village wakes at dawn, a canal runs beside reapers, and later windmills and pylons rise out of the wheat as you walk; the sound is synthesized live and can be switched off. Enter from Walk the whole road under the Chronicle's timeline, from Make under More, or at /chronicle/walk.",
+          "The fifteen era workshops and their directory are retired, and their addresses now lead to the walk; workshop progress saved in your browser is no longer read."
+        ]
+      }
+    },
     {
       "date": "2026-11-16",
       "time": "08:45",

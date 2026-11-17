@@ -7,19 +7,17 @@ import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } fr
 import { axisTicks, fromAxis, timeLabel, toAxis, type ChronicleEra, type ChronicleMilestone } from "@aihot/contracts/chronicle";
 
 import { useMotionAllowed } from "../motion/preferences";
-import { calendarTicks, compactTick, keepAxisInView, panAxisWindow, projectAxis, stepEra, stepPicture, zoomAxisWindow, type AxisWindow, type WorkshopStop } from "./format";
+import { calendarTicks, compactTick, keepAxisInView, panAxisWindow, projectAxis, stepEra, stepPicture, zoomAxisWindow, type AxisWindow } from "./format";
 
 const SNAP_PX = 8;
 
-export function ChronicleAxis({ eras, milestones, now, t, picture, workshops = [], activeWorkshop, onMove, onCommit }: {
+export function ChronicleAxis({ eras, milestones, now, t, picture, onMove, onCommit }: {
   eras: ChronicleEra[];
   milestones: ChronicleMilestone[];
   now: number;
   t: number;
   /** The picture in view (restingPicture): the arrow keys step on from it. */
   picture: number;
-  workshops?: WorkshopStop[];
-  activeWorkshop?: string;
   /** While dragging: the needle follows. */
   onMove: (t: number) => void;
   /** On release (or a key, a click): the moment is settled and goes into the address. */
@@ -97,14 +95,7 @@ export function ChronicleAxis({ eras, milestones, now, t, picture, workshops = [
     if (!moved) {
       // A click means "this one": the nearest milestone within a few pixels.
       let best: { t: number; d: number } | null = null;
-      // The narrow door marks remain easy to select even among dense ordinary ticks.
-      for (const m of workshops) {
-        const mu = toAxis(m.t, now);
-        if (mu < view.lo || mu > view.hi) continue;
-        const d = Math.abs(mu - pos.u) / span * pos.width;
-        if (d <= SNAP_PX && (!best || d < best.d)) best = { t: m.t, d };
-      }
-      for (const m of best ? [] : milestones) {
+      for (const m of milestones) {
         const mu = toAxis(m.t, now);
         if (mu < view.lo || mu > view.hi) continue;
         const d = Math.abs(mu - pos.u) / span * pos.width;
@@ -177,13 +168,6 @@ export function ChronicleAxis({ eras, milestones, now, t, picture, workshops = [
               className={`chronicle-tick cat-${m.category} ${m.forecast ? "is-forecast" : ""} ${Math.abs(mu - u) / span < 0.012 ? "is-near" : ""}`}
               style={{ left: `${projectAxis(mu, view) * 100}%` }}
             />
-          );
-        })}
-        {workshops.map((stop) => {
-          const position = toAxis(stop.t, now);
-          if (position < view.lo || position > view.hi) return null;
-          return (
-            <span key={stop.path} className={`chronicle-workshop-mark ${activeWorkshop === stop.path ? "is-current" : ""}`} style={{ left: `${projectAxis(position, view) * 100}%` }} title={`${tx(timeLabel(stop.t, now))} · ${tx(stop.label)}`} aria-hidden="true" />
           );
         })}
         {nowU >= view.lo && nowU <= view.hi && (

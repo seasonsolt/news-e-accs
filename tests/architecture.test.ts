@@ -254,7 +254,6 @@ const SITE_RADII: Record<string, readonly string[]> = {
   "modules/wallpaper/web/admin.tsx": ["rounded"],
   "modules/wallpaper/web/page.tsx": ["rounded-xl", "rounded"],
   "modules/leaderboard/web/features/Lineage.tsx": ["rounded-xl"],
-  "modules/scenes/web/difference-engine-1822/workshop.css": ["999px", "50%"],
 };
 
 test("corners use the radius scale", () => {

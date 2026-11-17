@@ -1,0 +1,82 @@
+// The shape of the walk, without three.js: where the road runs, how the ground rises, and what year each step stands for.
+// `s` is the distance walked along the road; the world runs toward -z, so a point on the road is (roadX(s), -s).
+
+export const FIRE_S = 46, SOW_S = 250, FIELD_S = 258, MONO_S = 640, END_S = 629;
+
+export const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+export const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+export const smooth = (a: number, b: number, v: number) => { const t = clamp((v - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+export const hash = (x: number, y: number) => { const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return n - Math.floor(n); };
+export function noise(x: number, y: number) {
+  const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy, ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
+  return mix(mix(hash(ix, iy), hash(ix + 1, iy), ux), mix(hash(ix, iy + 1), hash(ix + 1, iy + 1), ux), uy);
+}
+export const fbm = (x: number, y: number) => noise(x, y) * .55 + noise(x * 2.1, y * 2.1) * .3 + noise(x * 4.3, y * 4.3) * .15;
+/** A fixed sequence in [0, 1): the same land for every visitor. */
+export function sequence(seed: number) { return () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; }; }
+
+export const roadX = (s: number) => 13 * Math.sin(s * .0115) + 5 * Math.sin(s * .031 + 1.3);
+/** Ground height. The road itself stays gentle; ridges rise beside it in the night country, and the last field lies almost flat around the stone. */
+export function ground(x: number, z: number) {
+  const s = -z, d = Math.abs(x - roadX(s)), wild = 1 - smooth(150, 240, s), field = smooth(380, 480, s);
+  const roll = (fbm(x * .018 + 9, z * .018) - .5) * 9 * smooth(5, 42, d) * (1 - field * .72);
+  const ridge = Math.pow(fbm(x * .035, z * .035 + 4), 2) * 34 * smooth(20, 70, d) * wild;
+  const near = (noise(x * .21, z * .21) - .5) * .5 * (1 - field * .6);
+  return (roll + ridge + near) * mix(.12, 1, smooth(8, 46, Math.hypot(x - roadX(MONO_S), s - MONO_S)));
+}
+
+/** Where the wheat gives way to something else: [s, offset from the road, radius]. The pond's radius takes in its bank and the shaduf. */
+export const CLEARINGS = { pond: [361, -9.5, 6.4], reaped: [425, -13.5, 8.5], calendar: [452, 10, 5.5], mill: [486, 34, 6] } as const;
+/** The canal: it leaves the pond, runs beside the road on the left from `from` to `to`, and lets channels into the wheat: [s where one leaves, s where it ends, offset where it ends]. */
+export const CANAL = { from: 368, to: 444, offset: -5.2, channels: [[381, 385, -19], [402, 406.5, -23], [439, 443, -21]] } as const;
+const toSegment = (x: number, s: number, ax: number, as: number, bx: number, bs: number) => {
+  const dx = bx - ax, ds = bs - as, t = clamp(((x - ax) * dx + (s - as) * ds) / (dx * dx + ds * ds), 0, 1);
+  return Math.hypot(x - ax - dx * t, s - as - ds * t);
+};
+/** How far a point lies from the canal's centre line, from the middle of the pond to its end. */
+export function fromCanal(x: number, s: number) {
+  const [ps, off] = CLEARINGS.pond, outlet = toSegment(x, s, roadX(ps) + off, ps, roadX(CANAL.from) + CANAL.offset, CANAL.from);
+  return s >= CANAL.from && s <= CANAL.to ? Math.min(outlet, Math.abs(x - roadX(s) - CANAL.offset)) : outlet;
+}
+/** Whether a point is bare of wheat: inside a clearing, beside the canal or along one of its channels. */
+export const cleared = (x: number, s: number) =>
+  Object.values(CLEARINGS).some(([cs, off, r]) => Math.hypot(x - roadX(cs) - off, s - cs) < r) || fromCanal(x, s) < 1.5
+  || CANAL.channels.some(([a, b, end]) => toSegment(x, s, roadX(a) + CANAL.offset, a, roadX(b) + end, b) < .8);
+
+/** The sheet of ground as it is drawn: `across` by `along` cells over 300 m by 800 m, reaching from 50 m behind the start to 750 m ahead. */
+export const LAND = { width: 300, depth: 800, behind: 50 };
+/** Height of the drawn ground, which is flat within each triangle of the sheet; things stand on this, not on the smooth `ground`. */
+export function sheet(across: number, along: number) {
+  const dx = LAND.width / across, dz = LAND.depth / along, x0 = -LAND.width / 2, z0 = LAND.behind - LAND.depth;
+  return (x: number, z: number) => {
+    const ix = clamp(Math.floor((x - x0) / dx), 0, across - 1), iz = clamp(Math.floor((z - z0) / dz), 0, along - 1), u = (x - x0) / dx - ix, v = (z - z0) / dz - iz;
+    const h = (i: number, k: number) => ground(x0 + (ix + i) * dx, z0 + (iz + k) * dz);
+    return u + v <= 1 ? h(0, 0) + u * (h(1, 0) - h(0, 0)) + v * (h(0, 1) - h(0, 0)) : h(1, 1) + (1 - u) * (h(0, 1) - h(1, 1)) + (1 - v) * (h(1, 0) - h(1, 1));
+  };
+}
+
+/** Years before 2026 at a point on the road: a log scale between the hearth, the first sowing and the stone. */
+export function yearsAgo(s: number) {
+  const marks: ReadonlyArray<readonly [number, number]> = [[0, 1e6], [60, 1e6], [SOW_S, 12000], [470, 300], [600, 1]];
+  if (s >= 600) return 0;
+  let i = 0; while (i < marks.length - 2 && s > marks[i + 1]![0]) i++;
+  const [s0, y0] = marks[i]!, [s1, y1] = marks[i + 1]!;
+  return Math.pow(10, mix(Math.log10(y0), Math.log10(y1), clamp((s - s0) / (s1 - s0), 0, 1)));
+}
+/** The year as the instrument shows it: a figure and its unit, rounded more coarsely the further back it is. */
+export function yearReading(s: number, locale: "zh" | "en"): [figure: string, unit: string] {
+  const ago = yearsAgo(s), year = 2026 - ago;
+  if (ago >= 10000) {
+    const digits = Math.pow(10, Math.floor(Math.log10(ago)) - 1), nearest = Math.round(ago / digits) * digits;
+    return locale === "zh" ? [String(Number((nearest / 10000).toFixed(1))), "万年前"] : [nearest.toLocaleString("en-US"), "years ago"];
+  }
+  if (year < 0) { const n = String(Math.round(-year / 100) * 100); return locale === "zh" ? [`前 ${n}`, "年"] : [n, "BCE"]; }
+  return [String(year < 1900 ? Math.round(year / 10) * 10 : Math.round(year)), locale === "zh" ? "年" : "CE"];
+}
+export const chapterAt = (s: number) => s < 200 ? "Ⅰ · 火" : s < 470 ? "Ⅱ · 田" : "Ⅲ · 碑";
+/** What the walk says, and where along the road it says it. */
+export const LINES: ReadonlyArray<readonly [number, string]> = [
+  [2, "约一百万年前。天黑以后，火没有熄灭。"], [112, "带着火往前走。天还没有亮。"], [206, "一万两千年前。有人没有吃掉最后一把种子。"],
+  [322, "人为了麦子停下脚步，盖起屋子，守着粮仓。"], [404, "一万年里，麦子改造了人的脊背、河流和历法。"], [486, "是谁驯化了谁？"],
+  [556, "今天。麦田中央立着一块石头。"], [612, "1 : 4 : 9 · TMA-0 · RAISED BY US"],
+];

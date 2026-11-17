@@ -10,8 +10,6 @@ dist/
 # Web production build
 apps/web/build/
 apps/web/.react-router/
-# Scene textures: built by modules/scenes/scripts/assets.ts, served from R2 in production
-apps/web/public/media/scenes/
 
 # Font package unpacked to regenerate the report nameplates (docs/customize.md)
 package/

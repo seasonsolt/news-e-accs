@@ -1,10 +1,9 @@
 import { Link, useNavigate } from "../lib/navigation";
-import { localeFromMatches, Text, useLocale, useTranslate } from "../lib/i18n";
-import { localePath, publicPath } from "../lib/locale";
-import { useWorkshopProgress } from "../lib/local-state";
+import { localeFromMatches, Text, useTranslate } from "../lib/i18n";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { data, useLoaderData, useLocation, useRouteLoaderData, type ShouldRevalidateFunction } from "react-router";
 import { FEATURES } from "@aihot/industry/features";
+import { MODULES } from "@aihot/site/modules";
 import { AXIS_FUTURE_YEARS, BIG_BANG, decimalYear, eraAt, timeLabel, yearToDate, type ChronicleResponse } from "@aihot/contracts/chronicle";
 import type { Route } from "./+types/chronicle";
 import type { loader as rootLoader } from "../root";
@@ -20,12 +19,9 @@ import { MomentList } from "../features/chrono/MomentList";
 import { Observatory } from "../features/chrono/Observatory";
 import { StageReadouts } from "../features/chrono/StageReadouts";
 import { useDepthTunnel, useTunnelAllowed } from "../features/chrono/DepthTunnel";
-import { artUrl } from "../features/chrono/art";
-import { distanceLabel, focusAt, nearbyPlates, plateOf, restingPicture, stepPicture, timeParam, tunnelPictures, workshopStops } from "../features/chrono/format";
-import { scrollToAnchor } from "../lib/motion";
+import { distanceLabel, focusAt, nearbyPlates, plateOf, restingPicture, stepPicture, timeParam, tunnelPictures } from "../features/chrono/format";
 import { atLabel, withAt } from "../features/chrono/at";
 import { SubscribeCta } from "../features/subscribe/SubscribeCta";
-import { webModules } from "../site-modules";
 
 function moment(search: string, now: number) {
   const raw = new URLSearchParams(search).get("t");
@@ -51,14 +47,11 @@ export function headers() {
   return { "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate=600" };
 }
 
-type Panel = "gauges" | "nearby" | "eras" | "workshops";
-const PANELS: Array<[Panel, string]> = [["gauges", "全部读数"], ["nearby", "此刻附近"], ["eras", "时代画卷"], ["workshops", "工坊"]];
+type Panel = "gauges" | "nearby" | "eras";
+const PANELS: Array<[Panel, string]> = [["gauges", "全部读数"], ["nearby", "此刻附近"], ["eras", "时代画卷"]];
 
-/** Keyed like plateOf: era and milestone IDs can be the same. */
-const SCENES = new Map(webModules().flatMap((m) => m.chronicle?.scenes ?? []).flatMap((scene) => [
-  ...(scene.era ? [[`e-${scene.era}`, scene] as const] : []),
-  ...(scene.milestone ? [[`m-${scene.milestone}`, scene] as const] : []),
-]));
+/** The scenes module's walk, one continuous world from a hearth to the monolith (modules/scenes). */
+const WALK = MODULES.some((m) => m.name === "scenes");
 
 export default function ChroniclePage() {
   const tx = useTranslate();
@@ -69,14 +62,7 @@ export default function ChroniclePage() {
   const bounds = useRouteLoaderData<typeof rootLoader>("root")?.timeBounds;
   useEffect(() => { setT(moment(location.search, now)); }, [location.search, now]);
   const stage = useRef<HTMLDivElement>(null);
-  const locale = useLocale();
-  // The tunnel opens the scene in a frame of its own, which links do not localize: the frame needs the locale's path.
-  const pictures = useMemo(() => tunnelPictures(chronicle.eras, chronicle.milestones, new Map([...SCENES].map(([id, scene]) => [id, localePath(scene.path, locale)]))), [chronicle, locale]);
-  const workshops = useMemo(() => workshopStops(pictures, new Map([...SCENES.values()].map((scene) => [localePath(scene.path, locale), scene.label]))), [pictures, locale]);
-  // This reader's finished workshops are in their browser only: the server renders none, and they appear after hydration.
-  const finished = useWorkshopProgress();
-  const isFinished = (stopPath: string) => !!finished[publicPath(stopPath)];
-  const finishedCount = workshops.filter((stop) => isFinished(stop.path)).length;
+  const pictures = useMemo(() => tunnelPictures(chronicle.eras, chronicle.milestones), [chronicle]);
   // Between two pictures the deck and the tunnel show the nearer one, its plate and its text; the needle and
   // the readouts stay at t. The arrow keys, the wheel and ‹ › step on from the picture in view.
   const resting = restingPicture(pictures, t, now);
@@ -84,15 +70,12 @@ export default function ChroniclePage() {
   const era = eraAt(chronicle.eras, at);
   // An era's opening picture shows the era, not a milestone that happens to stand close by.
   const focus = resting < 0 ? focusAt(chronicle.milestones, t, now) : pictures[resting]!.milestone ?? null;
-  const plate = era ? plateOf(era, focus) : null;
-  const scene = plate ? SCENES.get(plate.key as `e-${string}` | `m-${string}`) : undefined;
   const allowed = useTunnelAllowed();
   const tunnel = useDepthTunnel(stage, {
     allowed,
     pictures,
     progress: Math.max(0, resting),
     alt: era ? plateOf(era, focus).alt : "",
-    sceneTitle: scene ? tx(scene.label) : "",
   });
   // Moving along the axis stays within one page view, so the page reports it itself: once on leaving the first
   // picture, once on reaching the sixth. Only moments the reader stopped on count, not those a drag passes over.
@@ -104,14 +87,12 @@ export default function ChroniclePage() {
     if (seen.current.size === 2) recordEngagement("chronicle_move");
     if (seen.current.size === 6) recordEngagement("chronicle_deep");
   }, [stoppedAt]);
-  const busy = tunnel.mode !== "stage";
   const commit = (next: number) => {
-    if (busy) return;
     const clamped = Math.min(now + AXIS_FUTURE_YEARS, Math.max(BIG_BANG, next));
     setT(clamped);
     navigate(`?t=${timeParam(clamped, now)}`, { replace: true, preventScrollReset: true });
   };
-  const move = (next: number) => { if (!busy) setT(next); };
+  const move = (next: number) => setT(next);
 
   // The layer beside the deck on a desktop; on a phone its panels simply follow the deck.
   const [panel, setPanel] = useState<Panel | null>(null);
@@ -132,15 +113,7 @@ export default function ChroniclePage() {
     if (!panel) return;
     const body = layer.current?.querySelector<HTMLElement>(".chronicle-layer-body");
     if (body) body.scrollTop = 0;
-    if (opener.current && !layer.current?.contains(document.activeElement)) {
-      const target = panel === "workshops" ? layer.current?.querySelector<HTMLElement>("#chronicle-workshops") : layer.current;
-      target?.focus({ preventScroll: true });
-      if (panel === "workshops" && window.innerWidth < 961) {
-        const chronometer = stage.current?.querySelector<HTMLElement>(".chronometer");
-        if (target && chronometer) target.style.scrollMarginTop = `${chronometer.getBoundingClientRect().height + 16}px`;
-        scrollToAnchor("chronicle-workshops");
-      }
-    }
+    if (opener.current && !layer.current?.contains(document.activeElement)) layer.current?.focus({ preventScroll: true });
     const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") close(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -205,34 +178,10 @@ export default function ChroniclePage() {
       </div>
     ),
     eras: <EraStrip milestones={chronicle.milestones} eras={chronicle.eras} current={era.id} now={now} />,
-    workshops: (
-      <section id="chronicle-workshops" tabIndex={-1} aria-labelledby="chronicle-workshops-title">
-        <div className="chronicle-section-head">
-          <div className="chronicle-workshop-heading">
-            <h2 id="chronicle-workshops-title"><Text value="可进入工坊" /></h2>
-            <span className="chronicle-workshop-tally">{tx("已完成 {0} / {1}", finishedCount, workshops.length)}</span>
-            <Link to="/chronicle/workshops" onClick={close} className="chronicle-workshop-all">{tx("全部工坊")} →</Link>
-          </div>
-          <p>{tx("{0} 个历史时刻，可以亲手探索。", workshops.length)}</p>
-        </div>
-        <p className="chronicle-workshop-help"><Text value="时间轴上的菱形标记对应可进入的场景。选择年代定位，或直接走进工坊。" /></p>
-        <ul className="chronicle-workshop-list">
-          {workshops.map((stop) => (
-            <li key={stop.path} className={[scene && localePath(scene.path, locale) === stop.path && "is-current", isFinished(stop.path) && "is-done"].filter(Boolean).join(" ") || undefined}>
-              <Link to={`?t=${timeParam(stop.t, now)}#observatory`} onClick={close} preventScrollReset className="chronicle-workshop-locate" aria-label={tx("定位到 {0}：{1}", tx(timeLabel(stop.t, now)), tx(stop.label))}>
-                <img src={artUrl(stop.src, 800)} alt="" loading="lazy" decoding="async" width={80} height={54} />
-                <span><span className="chronicle-workshop-date">{tx(timeLabel(stop.t, now))}{isFinished(stop.path) && <span className="chronicle-workshop-check" role="img" aria-label={tx("已完成")}>✓</span>}</span><strong>{tx(stop.label)}</strong></span>
-              </Link>
-              <Link to={stop.path} className="chronicle-workshop-enter" aria-label={tx(stop.label)}><Text value="进入 3D" /><span aria-hidden="true">↗</span></Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-    ),
   };
   return (
     <div className={`chronicle-page pb-8 ${panel ? "has-layer" : ""}`}>
-      <div ref={stage} className={`chronicle-stage is-${tunnel.mode} ${tunnel.ready ? "has-tunnel" : ""}`}>
+      <div ref={stage} className={`chronicle-stage ${tunnel.ready ? "has-tunnel" : ""}`}>
         <Observatory
           era={era}
           focus={focus}
@@ -240,7 +189,6 @@ export default function ChroniclePage() {
           label={focus ? tx(timeLabel(focus.t, now, focus.precision, focus.date)) : tx(timeLabel(t, now))}
           distance={tx(distanceLabel(t, now))}
           flat={running}
-          scene={scene ? { path: scene.path, label: tx(scene.label), enter: running ? tunnel.enter : null, loading: running && !tunnel.canEnter } : null}
           tools={(
             <div className="observatory-layers" role="toolbar" aria-label={tx("更多内容")}>
               {PANELS.map(([key, label]) => (
@@ -257,18 +205,17 @@ export default function ChroniclePage() {
           <button type="button" className="chronometer-step is-previous" disabled={previous === at} onClick={() => commit(previous)} title={stopTitle(previous)} aria-label={tx("上一个里程碑")}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3 5 8l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
-          <ChronicleAxis eras={chronicle.eras} milestones={chronicle.milestones} now={now} t={t} picture={at} workshops={workshops} activeWorkshop={scene ? localePath(scene.path, locale) : undefined} onMove={move} onCommit={commit} />
+          <ChronicleAxis eras={chronicle.eras} milestones={chronicle.milestones} now={now} t={t} picture={at} onMove={move} onCommit={commit} />
           <button type="button" className="chronometer-step is-next" disabled={following === at} onClick={() => commit(following)} title={stopTitle(following)} aria-label={tx("下一个里程碑")}>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m6 3 5 5-5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </button>
           <div className="chronometer-controls">
-            {/* Also the legend of the diamonds on the axis. */}
-            {!!workshops.length && (
-              <button type="button" className="chronicle-workshop-menu" aria-expanded={panel === "workshops"} aria-controls="chronicle-workshops" onClick={(event) => toggle("workshops", event.currentTarget)}>
-                <span className="chronicle-workshop-key" aria-hidden="true" />
-                <span className="chronicle-workshop-long">{tx("{0} 个可进入的工坊", workshops.length)}</span>
-                <span className="chronicle-workshop-short">{tx("{0} 个工坊", workshops.length)}</span>
-              </button>
+            {WALK && (
+              <Link to="/chronicle/walk" className="chronicle-walk">
+                <span className="chronicle-walk-long">{tx("走完整条路")} · {tx("从火堆到巨石")}</span>
+                <span className="chronicle-walk-short">{tx("走完整条路")}</span>
+                <span aria-hidden="true">&nbsp;→</span>
+              </Link>
             )}
             <button type="button" className="chronometer-now" onClick={() => commit(now)}><Text value="回到现在" /></button>
           </div>

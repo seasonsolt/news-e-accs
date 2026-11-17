@@ -1,5 +1,5 @@
 // Anonymous interaction counts. The browser reports an allowlisted name and, where needed, an item id,
-// a source domain or a workshop's page path. Nothing here identifies a reader, and a failed send never
+// a source domain or the walk's page path. Nothing here identifies a reader, and a failed send never
 // affects the page.
 import { isOwner } from "./local-state.ts";
 

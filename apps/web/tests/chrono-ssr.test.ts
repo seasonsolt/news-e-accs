@@ -70,9 +70,7 @@ test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era
   assert.equal(document.querySelector(".observatory-depth, .observatory-tunnel, canvas, iframe"), null);
   // The deck's three readouts, and every panel of the layer, closed or not, are in the page.
   assert.deepEqual([...document.querySelectorAll(".chronicle-readout-label")].map((el) => el.textContent), ["世界人口", "一次能源功率"]);
-  // The registered era plate opens the representative steam workshop.
-  assert.equal(document.querySelector("a.observatory-enter")!.getAttribute("href"), "/zh/chronicle/steam");
-  assert.deepEqual([...document.querySelectorAll("#chronicle-layer .chronicle-panel")].map((el) => el.getAttribute("data-panel")), ["gauges", "nearby", "eras", "workshops"]);
+  assert.deepEqual([...document.querySelectorAll("#chronicle-layer .chronicle-panel")].map((el) => el.getAttribute("data-panel")), ["gauges", "nearby", "eras"]);
   assert.equal(document.querySelector("#chronicle-layer")!.hasAttribute("data-panel"), false);
   assert.ok(document.querySelector('#chronicle-layer [data-panel="nearby"] .chronicle-rail-item'));
   const slider = document.querySelector('[role="slider"]')!;
@@ -89,79 +87,27 @@ test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era
   assert.ok(document.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith("/zh/chronicle"));
 });
 
-test("the timeline exposes unique workshop stops and localized direct entrances outside its slider", async () => {
+test("the chronicle leads to the walk in the reader's language, and the retired workshops' addresses lead there too", async () => {
   for (const prefix of ["/zh", ""]) {
-    const response = await fetch(`${fixture.origin}${prefix}/chronicle?t=1822`);
-    const document = parseHTML(await response.text()).document;
-    const menu = document.querySelector('button[aria-controls="chronicle-workshops"]')!;
-    assert.match(menu.textContent!, prefix ? /2 个可进入的工坊/ : /2 playable workshops/);
+    const document = parseHTML(await (await fetch(`${fixture.origin}${prefix}/chronicle?t=1822`)).text()).document;
+    const walk = [...document.querySelectorAll(".chronometer a.chronicle-walk")];
+    assert.deepEqual(walk.map((a) => a.getAttribute("href")), [`${prefix}/chronicle/walk`]);
+    assert.match(walk[0]!.textContent!, prefix ? /走完整条路/ : /Walk the whole road/);
     assert.equal(document.querySelector('[role="slider"] button, [role="slider"] a'), null);
-    const entries = [...document.querySelectorAll("#chronicle-workshops .chronicle-workshop-enter")];
-    assert.deepEqual(entries.map(a => a.getAttribute("href")), [`${prefix}/chronicle/steam`, `${prefix}/chronicle/difference-engine`]);
-    const stops = [...document.querySelectorAll("#chronicle-workshops .chronicle-workshop-locate")];
-    assert.deepEqual(stops.map(a => a.getAttribute("href")), [`${prefix}/chronicle?t=1769.000000001#observatory`, `${prefix}/chronicle?t=1822#observatory`]);
-    assert.equal(document.querySelector("#chronicle-workshops .chronicle-workshop-tally")!.textContent, prefix ? "已完成 0 / 2" : "Completed 0 / 2");
-    assert.equal(document.querySelector("#chronicle-workshops .chronicle-workshop-all")!.getAttribute("href"), `${prefix}/chronicle/workshops`);
-    assert.equal(document.querySelector("#chronicle-workshops .chronicle-workshop-check"), null);
-    if (!prefix) assert.doesNotMatch(document.querySelector("#chronicle-workshops")!.textContent!, /[\u3400-\u9fff]/u);
-  }
-});
-
-test("the workshop directory lists all fifteen workshops, with no reader progress, without loading a canvas in SSR", async () => {
-  for (const prefix of ["/zh", ""]) {
-    const response = await fetch(`${fixture.origin}${prefix}/chronicle/workshops`);
-    assert.equal(response.status, 200);
-    const document = parseHTML(await response.text()).document;
-    assert.equal(document.querySelectorAll("main").length, 1);
-    assert.equal(document.querySelectorAll(".workshop-gallery-card").length, 15);
-    const links = [...document.querySelectorAll<HTMLAnchorElement>(".workshop-gallery-start")];
-    assert.equal(new Set(links.map(a => a.getAttribute("href"))).size, 15);
-    assert.ok(links.some(a => a.getAttribute("href") === `${prefix}/chronicle/difference-engine`));
-    // Progress is this browser's: the server sends none and fills in nothing after the fact.
-    assert.equal(document.querySelector(".workshop-gallery-progress")!.textContent, prefix ? "已完成 0 / 15" : "Completed 0 / 15");
-    assert.equal(document.querySelector(".workshop-gallery-done, .is-done"), null);
-    for (const link of links) assert.ok(link.getAttribute("href")!.startsWith(`${prefix}/chronicle/`));
-    assert.equal(document.querySelector("canvas,iframe"), null);
-    const card = document.querySelector(".workshop-gallery-image img")!;
-    assert.match(card.getAttribute("srcSet")!, /-3840\.webp 3840w/);
-    assert.equal(card.getAttribute("loading"), "lazy");
-    if (!prefix) assert.doesNotMatch(document.querySelector("main")!.textContent!, /[\u3400-\u9fff]/u);
-  }
-});
-
-test("a milestone with a scene links to the scene's page in the reader's language, which draws no site chrome", async () => {
-  const document = await page("/chronicle?t=1822");
-  assert.equal(document.querySelector(".observatory-era")!.textContent, "差分机");
-  assert.equal(document.querySelector("a.observatory-enter")!.getAttribute("href"), "/zh/chronicle/difference-engine");
-  const scene = await page("/chronicle/difference-engine");
-  assert.equal(scene.querySelector('nav[aria-label="主导航"]'), null);
-  assert.equal(scene.querySelector("canvas"), null);
-  assert.match(scene.querySelector("#reference-dialog img")!.getAttribute("src")!, /-hd-1600\.webp$/);
-  assert.match(scene.querySelector(".workshop-plate")!.getAttribute("src")!, /-hd-1600\.webp$/);
-});
-
-test("all workshops have localized bare pages and embedded pages stay out of the index", async () => {
-  const cases = [["agents", "智能体工坊", "The Agent Studio"], ["stone-tools", "石器工坊", "The Stone Workshop"], ["fire", "火的工坊", "The Hearth"], ["agriculture", "农业工坊", "The First Farm"]];
-  const { WORLDS } = await import("../../../modules/scenes/web/shared/worlds.ts");
-  const { messages } = await import("../../../modules/scenes/web/shared/messages.ts");
-  for (const world of Object.values(WORLDS).filter(w => w.challenge)) cases.push([world.path.split("/").at(-1)!, world.title, messages.en[world.title as keyof typeof messages.en]!]);
-  for (const [path, zh, en] of cases) {
-    const document = await page(`/chronicle/${path}`);
-    assert.match(document.querySelector("h2")!.textContent!, new RegExp(zh!));
-    assert.equal(document.querySelector('nav[aria-label="主导航"]'), null);
-    assert.equal(document.querySelector("canvas"), null);
-    assert.match(document.querySelector("#reference-dialog img")!.getAttribute("src")!, /-hd-1600\.webp$/);
-    assert.match(document.querySelector(".workshop-plate")!.getAttribute("src")!, /-hd-1600\.webp$/);
-    assert.equal(document.querySelectorAll("[data-phase]").length, 4);
-    if (document.querySelector("#game-controls")) assert.equal(document.querySelectorAll("[data-phase]:disabled").length, 4, "challenge stages cannot bypass the game rules");
-    assert.ok(document.querySelector('.brand')!.getAttribute("href")!.startsWith("/zh/chronicle?t="));
-    const embedded = await page(`/chronicle/${path}?embed`);
-    assert.match(embedded.querySelector('meta[name="robots"]')!.getAttribute("content")!, /noindex/);
-    const response = await fetch(`${fixture.origin}/chronicle/${path}`);
-    assert.equal(response.status, 200);
-    const english = parseHTML(await response.text()).document;
-    assert.equal(english.querySelector(".intro h2")!.textContent, en);
-    assert.doesNotMatch(english.querySelector("main")!.textContent!, /[\u3400-\u9fff]/);
+    assert.equal(document.querySelector(".observatory-enter"), null);
+    for (const retired of ["/chronicle/workshops", "/chronicle/steam", "/chronicle/difference-engine"]) {
+      const response = await fetch(`${fixture.origin}${prefix}${retired}`, { redirect: "manual" });
+      assert.equal(response.status, 301, `${prefix}${retired}`);
+      assert.equal(response.headers.get("location"), `${prefix}/chronicle/walk`);
+    }
+    const page = await fetch(`${fixture.origin}${prefix}/chronicle/walk`);
+    assert.equal(page.status, 200);
+    const scene = parseHTML(await page.text()).document;
+    // The walk draws its own chrome; its canvas is the browser's.
+    assert.equal(scene.querySelector('nav[aria-label="主导航"], nav[aria-label="Main navigation"]'), null);
+    assert.equal(scene.querySelector("canvas"), null);
+    assert.ok(scene.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith(`${prefix}/chronicle/walk`));
+    assert.doesNotMatch(scene.querySelector('meta[name="robots"]')?.getAttribute("content") ?? "", /noindex/);
   }
 });
 

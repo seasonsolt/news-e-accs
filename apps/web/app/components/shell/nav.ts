@@ -64,8 +64,8 @@ export const MORE_MENU: Array<{ title: string; items: NavItem[] }> = [
   {
     title: "创作",
     items: [
-      // The workshops are the scenes module's gallery of the chronicle's playable eras.
-      ...(FEATURES.timeMachine ? [{ to: "/chronicle/workshops", label: "工坊", icon: IconSparkles, note: "走进加速史里的各个时代" }] : []),
+      // The scenes module's walk through the chronicle, from a hearth to the monolith.
+      ...(FEATURES.timeMachine && MODULES.some((m) => m.name === "scenes") ? [{ to: "/chronicle/walk", label: "从火堆到巨石", icon: IconSparkles, note: "一百万年，一条走得通的路" }] : []),
       { to: "/products/wallpaper", label: "壁纸", icon: IconImage, note: "每天一张 4K 壁纸" },
       { to: "/products", label: "产品目录", icon: IconApps, note: "已上线和即将推出的产品" },
     ],

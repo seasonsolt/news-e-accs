@@ -126,12 +126,6 @@ export interface WebModule {
   tabs?: Tab[];
   /** The 我的 page: rows ahead of the engine's tools. */
   tools?: Array<{ to: string; label: string; icon: ReactNode }>;
-  /**
-   * The chronicle (routes/chronicle.tsx): scenes entered from an era's or milestone's plate. On a
-   * desktop the observatory opens `path` in a frame over the plate and hands over by the messages of
-   * features/chrono/scene-handoff.ts; the page itself stays reachable at its address. `label` is the way in (走进工坊).
-   */
-  chronicle?: { scenes?: Array<{ milestone?: string; era?: string; path: string; label: string }> };
   admin?: {
     /** Navigation groups of its own, ahead of the engine's. */
     groups?: Array<{ group: string; items: AdminNavEntry[] }>;

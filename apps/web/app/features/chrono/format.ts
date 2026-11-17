@@ -194,30 +194,12 @@ export function calendarTicks(from: number, to: number): Array<[number, string]>
  * stepPicture. An era that opens on an illustrated milestone is that milestone's plate on the deck, and
  * stepPicture stops there once: a second picture at the same moment would make that step fly two.
  */
-export function tunnelPictures(eras: ChronicleEra[], milestones: ChronicleMilestone[], scenes: ReadonlyMap<string, string>): Array<{ t: number; src: string; milestone?: ChronicleMilestone; scene?: string }> {
+export function tunnelPictures(eras: ChronicleEra[], milestones: ChronicleMilestone[]): Array<{ t: number; src: string; milestone?: ChronicleMilestone }> {
   const illustrated = milestones.filter((m) => m.art);
   return [
-    ...eras.filter((era) => !illustrated.some((m) => Math.abs(m.t - era.from) < 1e-6)).map((era) => ({ t: era.from + 1e-9, src: `/media/art/epochs/${era.art}`, scene: scenes.get(`e-${era.id}`) })),
-    ...illustrated.map((m) => ({ t: m.t, src: `/media/art/moments/${m.art}`, milestone: m, scene: scenes.get(`m-${m.id}`) })),
+    ...eras.filter((era) => !illustrated.some((m) => Math.abs(m.t - era.from) < 1e-6)).map((era) => ({ t: era.from + 1e-9, src: `/media/art/epochs/${era.art}` })),
+    ...illustrated.map((m) => ({ t: m.t, src: `/media/art/moments/${m.art}`, milestone: m })),
   ].sort((a, b) => a.t - b.t);
-}
-
-export interface WorkshopStop {
-  t: number;
-  path: string;
-  label: string;
-  src: string;
-}
-
-/** One reachable picture per workshop: its own illustrated milestone, or its era's opening. */
-export function workshopStops(pictures: Array<{ t: number; src: string; scene?: string; milestone?: ChronicleMilestone }>, labels: ReadonlyMap<string, string>): WorkshopStop[] {
-  const selected = new Map<string, (typeof pictures)[number]>();
-  for (const picture of pictures) {
-    if (!picture.scene || !labels.get(picture.scene)) continue;
-    const previous = selected.get(picture.scene);
-    if (!previous || (picture.milestone && !previous.milestone)) selected.set(picture.scene, picture);
-  }
-  return [...selected].map(([path, picture]) => ({ t: picture.t, path, label: labels.get(path)!, src: picture.src })).sort((a, b) => a.t - b.t);
 }
 
 /** The picture the deck and the tunnel rest on at t: the nearest on the axis, so the view never hangs between two. -1 without pictures. */

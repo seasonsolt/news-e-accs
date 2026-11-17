@@ -62,6 +62,14 @@ MCP 默认接受 `SITE_URL` 的主机以及 `localhost`、`127.0.0.1`、`[::1]`�
 
 ### 更新
 
+### 加速史的工坊下线，换成一条可以走的路（2026 年 11 月 17 日）
+
+没有数据库迁移，没有新的环境变量。`modules/scenes` 只剩连续世界 `/chronicle/walk`（全部由代码生成，不需要贴图）；十五座时代工坊、工坊目录 `/chronicle/workshops` 和观测舱里「走进工坊」的交接一起删掉，这些地址（中英文）都 301 到 `/chronicle/walk` 或 `/zh/chronicle/walk`。加速史时间轴下方和“更多”的创作一栏改为进入这条路，站点地图收录它的中英文两页。
+
+- 读者浏览器里存的工坊完成记录（`localStorage` 的 `eacc-workshops`）不再读取，也不会被删除，留在读者自己的浏览器里。
+- 行走沿用 `workshop_start` / `workshop_finish` 两个统计操作，目标是 `/chronicle/walk`；`site_events_daily` 里各工坊路径的旧记录保留，后台“转化”页的「行走」表在所选天数里仍会列出它们。
+- 工坊的贴图不再使用：自己部署时放在 `/media/scenes/` 下（例如 `apps/web/public/media/scenes/`）的构建结果可以删掉。我们的生产站里，R2 桶 `e-acc` 的 `scenes/` 前缀和入口 Worker 的 `/media/scenes/` 路由已经没有页面引用，暂时保留，删除另行决定。
+
 ### 文字步骤可以用 agy 模型（2026 年 11 月 16 日）
 
 没有迁移。`site/models.ts` 的模型预设多了一种 `transport: "agy"`：worker 调用所在机器上登录了 Google 账号的 Antigravity CLI（`agy`）来回答，用账号的额度，不需要 API 密钥（见下方 [文字步骤用 agy 模型](#文字步骤用-agy-模型)）。示例站加了 `agy-opus`（Claude Opus 5.5 High）和 `agy-hydrogen`（Gemini 4 Hydrogen Low）两个预设，默认哪一步都不用。种子数据会给后台预算加一行 `agy-text`（每分钟 10、每小时 100、每天 500 次），已有的不覆盖。启动 Codex CLI 的代码移到了 `providers/cli.ts`，两种 CLI 共用，Codex 的行为不变。

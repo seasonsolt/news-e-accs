@@ -1,4 +1,4 @@
-// 转化 and 留存: a funnel over the steps a session takes, the subscribe funnel by entry point, net stars, workshops
+// 转化 and 留存: a funnel over the steps a session takes, the subscribe funnel by entry point, net stars, walks
 // started and finished, and weekly cohorts of first-time readers.
 import { SUBSCRIBE_FUNNEL_EVENTS, SUBSCRIBE_SOURCES, type SubscribeFunnelEvent, type SubscribeSource } from "@aihot/contracts/subscribe";
 import { Form, useSearchParams } from "react-router";
@@ -82,10 +82,10 @@ export function ConversionTab({ funnel, subscribe, engagement }: { funnel: Funne
           ]} />
         </Card>
       </Section>
-      <Section title={`近 ${engagement.days} 天工坊`} note="开始是一局里读者第一次亲手操作，完成是这一局走到最后；挑战由自动演示代为完成的局不算完成。中英文页面合并计数。">
+      <Section title={`近 ${engagement.days} 天行走`} note="开始是读者点「开始行走」（每次打开页面最多算一次），完成是走到路的尽头触碰巨石。中英文页面合并计数。其他路径是已下线的工坊留下的记录。">
         <Card pad={false}>
-          <DataTable rows={engagement.engagement.workshops} rowKey={(x) => x.path} empty="所选时间范围内没有人操作工坊" columns={[
-            { key: "path", label: "工坊", render: (x) => <a href={x.path} className="font-mono text-[12.5px] text-ink hover:text-accent">{x.path}</a> },
+          <DataTable rows={engagement.engagement.workshops} rowKey={(x) => x.path} empty="所选时间范围内没有人开始行走" columns={[
+            { key: "path", label: "页面", render: (x) => <a href={x.path} className="font-mono text-[12.5px] text-ink hover:text-accent">{x.path}</a> },
             { key: "starts", label: "开始", align: "right", render: (x) => num(x.starts) },
             { key: "finishes", label: "完成", align: "right", render: (x) => num(x.finishes) },
             { key: "rate", label: "完成率", align: "right", render: (x) => pct(rate(x.finishes, x.starts)) },

@@ -29,12 +29,13 @@ test("the deck has picks, daily, acceleration, the frontier and the essays; ever
   for (const path of ["/zh/all", "/hot", "/products/wallpaper", "/eacc-vs-ea", "/subscribe"]) assert.equal(tabIsActive(more, path), true, path);
   // 更多 lists the essays too, but their own section is the one lit.
   assert.ok(MORE_MENU.flatMap((group) => group.items).some((item) => item.to === "/essays"));
-  for (const path of ["/chronicle/workshops", "/zh/weekly", "/pricing", "/essays", "/zh/essays/machines-that-learn"]) assert.equal(tabIsActive(more, path), false, path);
+  for (const path of ["/chronicle/walk", "/zh/weekly", "/pricing", "/essays", "/zh/essays/machines-that-learn"]) assert.equal(tabIsActive(more, path), false, path);
   assert.equal(MORE_PATHS.includes("/chronicle"), false);
   assert.deepEqual(MORE_MENU.map((group) => group.title), ["阅读", "了解 e/acc", "创作", "我的", "本站"]);
   assert.ok(MORE_MENU.every((group) => group.items.every((item) => item.note)), "each More entry says what it holds");
   const paths = MORE_MENU.flatMap((group) => group.items.map((item) => item.to));
   assert.equal(new Set(paths).size, paths.length, "no page is listed twice");
+  assert.ok(paths.includes("/chronicle/walk"), "the chronicle's walk has a way in");
 });
 
 test("hidden trending and a disabled time machine drop their entries and keep More highlighting their pages", async () => {

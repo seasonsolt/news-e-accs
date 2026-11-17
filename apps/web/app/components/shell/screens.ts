@@ -15,7 +15,7 @@ export interface Screen {
   name?: string;
   /** The page draws its own bottom toolbar instead of the tab bar (articles). */
   toolbar?: boolean;
-  /** The page fills the window and draws its own chrome: no navigation, footer or module parts (a chronicle scene). */
+  /** The page fills the window and draws its own chrome: no navigation, footer or module parts (the chronicle's walk). */
   bare?: boolean;
 }
 

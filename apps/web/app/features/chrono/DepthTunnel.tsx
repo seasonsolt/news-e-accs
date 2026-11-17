@@ -3,7 +3,7 @@
 // plate and DepthLayer. Nothing is drawn on the server; the <img> stays underneath until the first plate is in.
 import { useEffect, useRef, useState, useSyncExternalStore, type RefObject } from "react";
 import { useMotionAllowed } from "../motion/preferences";
-import type { Tunnel, TunnelMode, TunnelPicture } from "./depth-tunnel.ts";
+import type { Tunnel, TunnelPicture } from "./depth-tunnel.ts";
 
 const DESKTOP = "(min-width: 961px) and (hover: hover) and (pointer: fine)";
 
@@ -24,17 +24,13 @@ export interface TunnelState {
   running: boolean;
   /** The canvas is drawing the plate the axis rests on. */
   ready: boolean;
-  mode: TunnelMode;
-  /** The axis rests on a picture whose scene has loaded behind it. */
-  canEnter: boolean;
-  enter: () => void;
 }
 
 /**
  * Runs the tunnel in `stage` while `allowed`. `pictures` must keep its identity while its content does
  * (the tunnel is rebuilt when it changes); `progress` and `alt` follow the axis.
  */
-export function useDepthTunnel(stage: RefObject<HTMLElement | null>, { allowed, pictures, progress, alt, sceneTitle }: { allowed: boolean; pictures: TunnelPicture[]; progress: number; alt: string; sceneTitle: string }): TunnelState {
+export function useDepthTunnel(stage: RefObject<HTMLElement | null>, { allowed, pictures, progress, alt }: { allowed: boolean; pictures: TunnelPicture[]; progress: number; alt: string }): TunnelState {
   const tunnel = useRef<Tunnel | null>(null);
   const [, refresh] = useState(0);
   const [failed, setFailed] = useState(false);
@@ -47,10 +43,7 @@ export function useDepthTunnel(stage: RefObject<HTMLElement | null>, { allowed, 
     let cancelled = false;
     void import("./depth-tunnel.ts").then(({ createTunnel }) => {
       if (cancelled) return;
-      const created = createTunnel(element, pictures, {
-        sceneTitle,
-        onChange: () => refresh((n) => n + 1),
-      });
+      const created = createTunnel(element, pictures, () => refresh((n) => n + 1));
       if (!created) { setFailed(true); return; }
       tunnel.current = created;
       created.setProgress(position.current.progress, position.current.alt);
@@ -61,7 +54,7 @@ export function useDepthTunnel(stage: RefObject<HTMLElement | null>, { allowed, 
       tunnel.current?.dispose();
       tunnel.current = null;
     };
-  }, [allowed, failed, pictures, sceneTitle, stage]);
+  }, [allowed, failed, pictures, stage]);
 
   useEffect(() => { tunnel.current?.setProgress(progress, alt); }, [progress, alt]);
 
@@ -69,8 +62,5 @@ export function useDepthTunnel(stage: RefObject<HTMLElement | null>, { allowed, 
   return {
     running: allowed && !failed,
     ready: !!current?.ready,
-    mode: current?.mode ?? "stage",
-    canEnter: !!current?.canEnter(),
-    enter: () => current?.enter(),
   };
 }

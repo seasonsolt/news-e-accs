@@ -122,7 +122,7 @@ const SITE_EVENT_SET = new Set<string>(SITE_EVENTS);
 const ITEM_TARGET = new Set<SiteEvent>(["star_add", "star_remove"]);
 const EMPTY_TARGET = new Set<SiteEvent>(["first_star", "subscribe_click", "share_click", "starred_export", "starred_import", "chronicle_move", "chronicle_deep"]);
 const FUNNEL_EVENT = new Set<string>(SUBSCRIBE_FUNNEL_EVENTS);
-/** Events about one page, such as a workshop (modules/scenes): the target is that page's English path. */
+/** Events about one page, the chronicle's walk (modules/scenes): the target is that page's English path. */
 const PAGE_TARGET = new Set<SiteEvent>(["workshop_start", "workshop_finish"]);
 const ITEM_ID = /^[a-zA-Z0-9_-]{1,80}$/;
 const HOSTNAME = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
