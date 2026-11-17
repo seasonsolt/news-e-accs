@@ -8,6 +8,7 @@ import { loadItemDetail, withOutline } from './detail.ts';
 import { loadStoryProse, loadStoriesProse, resolveStory, loadHotStrip, loadHot } from './stories.ts';
 import { loadReport } from './reports.ts';
 import { loadPool } from './pool.ts';
+import { seatedCondition } from './scope.ts';
 import { contentSource, applyTranslations, validateTranslation, editionMatches, targetLanguageProse, type ContentKind, type TranslationEntry } from './content-source.ts';
 
 export function bodySource(id: string, html: string, sourceLanguage = "zh", targetLanguage: "en" | "zh" = "en"): { entry: TranslationEntry; render: (translations: Record<string,string>) => string } {
@@ -128,10 +129,20 @@ export async function exportContentBatch(cursor = '', limit = 50, targetLanguage
 /** Current visible headlines get a small priority lane; eligibility and fingerprints are still
  * checked through the same canonical public projection as the historical sweep. */
 export async function priorityContentEntries(targetLanguage: EditionLanguage = 'en') {
-  const [hot, ranking, pool, [daily]] = await Promise.all([
+  const now = new Date();
+  const [hot, ranking, pool, [daily], week] = await Promise.all([
     loadHotStrip(), loadHot(), loadPool({ channel: 'all', category: null, tag: null, page: 1 }),
     sql<{ key: string; item_ids: string[] }[]>`SELECT key, ARRAY(SELECT jsonb_path_query(content, '$.sections[*].items[*].itemId') #>> '{}') AS item_ids
       FROM reports WHERE kind='daily' ORDER BY key DESC LIMIT 1`,
+    // The 7-day selected list (v1, feeds, MCP) answers in one language only when every item has it. An item
+    // released days after the time it sorts by never reaches the pool's first page, and the historical
+    // sweep can take days to arrive: on 2026-11-17, 12 of 89 such items had no current Chinese edition. Only
+    // items never translated, or edited since, are checked; the edition comparison below decides.
+    sql<{ id: string }[]>`SELECT p.article_id AS id FROM publications p
+      WHERE ${seatedCondition(now)} AND p.sort_at >= ${new Date(now.getTime() - 7 * 86_400_000)}
+        AND p.editorial_language IS DISTINCT FROM ${targetLanguage}
+        AND NOT EXISTS (SELECT 1 FROM content_translations ct WHERE ct.kind = 'item' AND ct.content_id = p.article_id
+          AND ct.lang = ${targetLanguage} AND ct.translated_at >= p.updated_at)`,
   ]);
   const refs = new Map<string, { kind: ContentKind; id: string }>();
   const add = (kind: ContentKind, id: string | null | undefined) => {
@@ -152,6 +163,7 @@ export async function priorityContentEntries(targetLanguage: EditionLanguage = '
   // The strip shows five; /hot shows the whole ranking, whose titles readers see too.
   for (const entry of ranking.entries) add('story', entry.story.publicId);
   for (const item of pool.items) add('item', item.id);
+  for (const item of week) add('item', item.id);
   const entries: TranslationEntry[] = [];
   for (const ref of refs.values()) {
     const entry = await currentContent(ref.kind, ref.id,targetLanguage);

@@ -131,6 +131,31 @@ test('the real public priority projection finds new and edited headlines but exc
   assert.ok(!(await priorityContentEntries()).some(e => e.id === ids[1]));
 });
 
+test('a selected item released days after the time it sorts by is still translated first', async () => {
+  const T = tag(), source = `test-late-${T}`;
+  await sql`INSERT INTO sources(id,name,kind,tier,participation_mode,site_fulltext,next_fetch_at) VALUES(${source},'Late fixture','rss','T1','editorial',false,'2100-01-01')`;
+  const material = await upsertMaterial({ sourceId: source, url: `https://example.com/late-${T}`, title: 'A blog post released late', language: 'en', bodyText: 'Summary only.', bodyStatus: 'none', via: 'fetch' });
+  const id = material.articleId;
+  await sql`INSERT INTO analyses(article_id,input_revision,origin,relevance,category,editorial_language,title_zh,summary_zh,reason_zh,score,selected)
+    VALUES(${id},1,'rule','pass','ai-products','en','A blog post released late','An English summary',null,65,true)`;
+  await publishArticle(id, { releasedAt: new Date(Date.now() - 60_000) });
+  const days = (n: number) => new Date(Date.now() - n * 86_400_000);
+  await sql`UPDATE publications SET selected=true,seat=true,visible_after=now()-interval '1 minute',editorial_language='en',sort_at=${days(3)},timeline_at=${days(3)} WHERE article_id=${id}`;
+  // A full first page of newer reports pushes it off the pool's first page.
+  for (let index = 0; index < 41; index++) {
+    const newer = `late-newer-${T}-${index}`;
+    await sql`INSERT INTO articles(id,source_id,identity_key,url,title,timeline_at,discovered_at) VALUES(${newer},${source},${newer},${`https://example.com/${newer}`},'更新的报道',now(),now())`;
+    await sql`INSERT INTO publications(article_id,source_id,title,summary,url,timeline_at,discovered_at,sort_at,selected,eligible,visible_after,channel,category,editorial_language)
+      VALUES(${newer},${source},'更新的报道','摘要',${`https://example.com/${newer}`},now(),now(),now(),false,true,now()-interval '1 minute','news','ai-products','zh')`;
+  }
+  assert.ok((await priorityContentEntries('zh')).some(e => e.kind === 'item' && e.id === id));
+  const entry = await currentContent('item', id, 'zh'); assert.ok(entry);
+  await saveTranslation({ ...entry, translations: Object.fromEntries(entry.segments.map(s => [s.key, '已翻译'])) }, 'offline-agent', 'test-fixture', [], true);
+  assert.ok(!(await priorityContentEntries('zh')).some(e => e.kind === 'item' && e.id === id), 'a current edition is not translated again');
+  await sql`DELETE FROM publications WHERE source_id=${source}`;
+  await sql`DELETE FROM articles WHERE source_id=${source}`;
+});
+
 test('provider editions complete receipts atomically; stale sources, dry runs and rollbacks leave answers received', async () => {
   const T = tag(), sourceId = `test-receipt-save-${T}`;
   const provider = await stub(() => ({ translations: { title: 'The public headline', summary: 'The public summary' } }));
