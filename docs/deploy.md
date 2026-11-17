@@ -72,6 +72,7 @@ MCP 默认接受 `SITE_URL` 的主机以及 `localhost`、`127.0.0.1`、`[::1]`�
 
 想把耗资源的模型活挪到另一台机器时，那台机器跑一个 `WORKER_ROLE=models` 的 worker，原来的改成 `WORKER_ROLE=core`。两台连同一个数据库，都要配对象存储 `OBJECT_STORE_*`（配图要在两台之间共用），并且运行同一个版本。`models` 负责数据库用得不多的模型活：英文版翻译（`content.translate`、`content.localize`、`content.localize-sweep`）、公众号点评和话题（`wechat.comment`、`wechat.topics`）、事件简报（`events.digest`）、公众号配图和视频号脚本（`wechat.illustrate`、`wechat.video`）、长文（`essays.task`）、事件深度稿（`story-depth.draft`）和日报周报月报的生成（`reports.compose`）；精选、归组、采集、订阅邮件和运维都留在 `core`。`models` 那台停了的话，日报到点不会生成，订阅邮件也就等它恢复后再发。模块的队列和定时用 `runsOn: "models"` 声明归属，不写的算 `core`。
 
+- 两台要跑同一个版本：生产站发布和回滚时用 `MODELS_UPDATE=<换 models worker 的命令> deploy/update.sh`，见 `deploy/README.md`。
 - 每个 worker 只删自己角色里停用的定时；已经下线的定时由 `core`（或 `all`）删。两台的 `.env` 里控制定时的开关（如 `CONTENT_TRANSLATION_ENABLED`）按各自负责的活来配。
 - `models` worker 写自己的心跳 `heartbeat.worker-models`，后台“运行”页单独显示一行；api 的看门狗在它出现过以后单独盯，停了半小时会告警“模型处理服务停了”。以后不再分开跑时，在 `settings` 里删掉 `heartbeat.worker-models` 和 `watchdog.worker-models` 两行，否则会一直告警。
 - `models` 那台停了，网站和精选照常，翻译、点评、配图等排着队等它恢复；也可以临时把 `core` 改回 `all` 顶上。

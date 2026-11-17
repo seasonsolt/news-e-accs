@@ -123,7 +123,7 @@ DMIT（1 vCPU、1.9 GB）只负责对外响应：api、web、Postgres、cloudfla
 - [x] 20:36 第一条 agy 综述（回执 56374，16 s，事件 4d0bc577）写回生产；20:40 第一条 agy 翻译（13.8 s）。之后把翻译（`translate`：英文版本地化和正文翻译）和公众号（`wechat`：点评、话题、视频号脚本）也切到 `agy-hydrogen`。这几步只在归 `models` 的任务里调用，已核对代码。日报和周报月报（`reports.compose`，步骤 `report`）在 core，DMIT 上没有 agy，仍用 `codex-luna`；精选、归组等也仍是 `codex-luna`。
 - [x] 日报周报月报的生成（`reports.compose`）也划给 `models`：它查库不多，周报月报要调写作模型。之后步骤 `report` 也用 `agy-hydrogen`。`models` 那台停了的话，日报到点不会生成，订阅邮件跟着推迟。
 - [ ] 盯 `agy-text` 预算（每分钟 10、每小时 100、每天 500）和 Google 账号的额度：按上周的量，综述约 90 次/天、翻译约 175 次/天，凌晨 04:40 的全站翻译补跑可能触到每分钟上限（触到就等下一轮）。
-- [ ] 每次 `deploy/update.sh` 之后在 mini 上运行 `~/eacc-worker/bin/update`（私有脚本，不在仓库里），让 mini 换到同一版本；以后再并进发布脚本。
+- [x] 每次发布后换 models worker 的版本已并进发布脚本（2026-11-17）：服务器是 `WORKER_ROLE=core` 时，`deploy/update.sh` 和 `--rollback` 要求设 `MODELS_UPDATE`，服务器切换成功后用新 sha 调它。11-17 有一次发布后漏了这一步，翻译在旧代码上又跑了 20 多分钟。换版本会重启 models worker：它先等手上的任务做完再退出；同一天有一次被打断，留下的那轮翻译停在“进行中”，后面每轮都排在它后面，要等它 1 小时超时才放行，那次是手动标成失败的。所以版本没变时私有脚本不重启。
 - [ ] mini 的 `~/eacc-worker/logs/worker.log` 还没有轮转。
 - 风险：mini 重启后要有图形登录，LaunchAgent 才会启动（现在一直登录着）；`agy` 会在后台自动更新，更新后要再确认工具限制还在。
 

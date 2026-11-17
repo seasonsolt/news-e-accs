@@ -155,6 +155,8 @@ rollback() {
 
 status() {
   say "live: $(live_sha)"
+  # core: the model work runs in a separate worker that must run this build too (docs/deploy.md, WORKER_ROLE).
+  say "worker role: $(sed -n 's/^WORKER_ROLE=//p' "$ROOT/.env" 2>/dev/null | tail -n 1 | tr -d '\r"' | grep . || echo all)"
   systemctl is-active eacc-api eacc-worker eacc-web cloudflared-news | paste -sd ' ' - | sed 's/^/    api worker web tunnel: /' || true
   say "builds (newest first)"
   ls -1t "$BUILDS" 2>/dev/null | grep -E '^[0-9a-f]{40}$' | sed 's/^/    /' || true

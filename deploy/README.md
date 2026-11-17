@@ -48,10 +48,13 @@ git push origin HEAD:main     # 低风险改动本地验证后直接推送 main
 deploy/update.sh              # 部署 origin/main
 deploy/update.sh <提交>        # 部署指定提交
 VERIFY_RUNNER=<命令> deploy/update.sh  # 用别的命令做发布验证，参数和 deploy/verify.sh 相同
+MODELS_UPDATE=<命令> deploy/update.sh  # 服务器的 worker 是 WORKER_ROLE=core 时必填：把另一台的 models worker 换到同一提交
 deploy/update.sh --status     # 当前版本、服务状态、最近几次部署
 deploy/update.sh --stats [7|30|90]  # 首方页面访问和互动次数（与后台统计页同一份汇总，只读，默认 30 天）
 deploy/update.sh --rollback   # 切回上一个版本；--rollback <提交> 切到指定版本
 ```
+
+模型活拆到另一台机器上跑时（`docs/deploy.md` 的 `WORKER_ROLE`），两台必须跑同一个版本。服务器 `.env` 里是 `WORKER_ROLE=core` 的话，`--status` 会显示 `worker role: core`，发布和回滚都要求设 `MODELS_UPDATE`，没设就在验证前停下。服务器检查通过、切到新版本以后，脚本用新版本的 sha 调这个命令；回滚也一样，用回滚到的 sha。这个命令失败时，服务器已经是新版本，脚本以非零状态退出，并打印重跑的命令。
 
 `update.sh` 在本机运行：确认提交在 origin/main 上，读取当前生产版本作为迁移检查基线，
 调用 `deploy/verify.sh <目标提交> <当前生产提交>` 验证。全部通过后，才通过 ssh
