@@ -316,7 +316,8 @@ export default function ItemPage() {
       <div className={`mx-auto ${showOutline ? "max-w-[var(--page-max-reading)] lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,720px)_minmax(0,1fr)] lg:gap-x-8 2xl:gap-x-12" : "max-w-[720px]"}`}>
         {showOutline && <div className="hidden lg:block" />}
         <article lang={contentHtmlLanguage(item, locale)} className="min-w-0 pb-6 pt-5 lg:pt-6">
-          <div className="sticky top-2 z-20 mb-3 hidden w-fit rounded-full bg-bg/90 pl-1.5 pr-2 backdrop-blur lg:block">{backButton}</div>
+          {/* A full-width strip, so the text scrolls under it rather than showing around a floating pill. */}
+          <div className="sticky top-0 z-20 -mx-2 mb-3 hidden bg-bg/95 px-2 py-1.5 backdrop-blur lg:block">{backButton}</div>
           <ContentLanguage content={item} />
 
           {/* The original page's own share picture, credited and linked to it like a link preview. */}
@@ -330,7 +331,8 @@ export default function ItemPage() {
             </figure>
           )}
 
-          {item.fact && !summaryOnly && <FactCard fact={item.fact} />}
+          {/* A post's own lines are its quote, and the line under the title already says who posted it when. */}
+          {item.fact && !summaryOnly && !isPost && <FactCard fact={item.fact} />}
 
           {summaryText && (!isPost || summaryText.replace(/\s+/g, " ").trim() !== item.title) && (
             <section className="mt-8">
@@ -345,9 +347,9 @@ export default function ItemPage() {
           )}
 
           {item.reason && !summaryOnly && (
-            <section className="mt-6 rounded-tile bg-accent-soft px-4 py-3.5 lg:px-5 lg:py-4">
-              <h2 className="text-[12.5px] font-semibold text-accent"><Text value={ITEM_COPY.reasonLabel} /></h2>
-              <p className="mt-1.5 text-[15px] leading-[1.8] text-ink-2">{item.reason}</p>
+            <section className="mt-6 border-t border-line pt-4">
+              <h2 className="text-[12.5px] font-semibold text-ink-3"><Text value={ITEM_COPY.reasonLabel} /></h2>
+              <p className="mt-1 text-[15px] leading-[1.75] text-ink-2">{item.reason}</p>
             </section>
           )}
 
@@ -361,13 +363,6 @@ export default function ItemPage() {
           )}
 
           {summaryOnly && <p className="mt-6 rounded-control bg-bg-sunk px-4 py-3 text-[13.5px] leading-relaxed text-ink-3"><Text value="应来源方要求，这里只提供摘要与原文入口。完整内容请阅读原文。" /></p>}
-
-          <NextReads reads={nextReads} related={[
-            ...(item.story ? [{ to: `/story/${item.story.publicId}`, title: item.story.title, label: "查看这件事的完整进展" }] : []),
-            ...related.map((s) => ({ to: `/story/${s.publicId}`, title: s.title, label: "相关事件" })),
-          ]} />
-
-          {item.group && item.group.reportCount > 1 && <ItemSources group={item.group} parentId={item.id} />}
 
           {item.body && bodyHtml && (
             <section className="mt-10 border-t border-line pt-4">
@@ -397,8 +392,16 @@ export default function ItemPage() {
           {isX && item.x!.media.length > 0 && <MediaGallery media={item.x!.media} postUrl={item.links.original} />}
           {isX && item.x!.quoted?.html && <QuotedPost quoted={item.x!.quoted} original={lang === "original"} />}
 
+          {/* What the reader came for comes first: the other reports, the event and where to go next follow the text. */}
+          {item.group && item.group.reportCount > 1 && <ItemSources group={item.group} parentId={item.id} />}
+
           {item.story?.digest && <StoryDigest digest={item.story.digest} lang={contentHtmlLanguage(item.story, locale) ?? "und"} />}
           {item.story && <StoryFollowups followups={followups} story={item.story} current={{ id: item.id, title: item.title, timelineAt: item.timelineAt }} />}
+
+          <NextReads reads={nextReads} className="mt-10" related={[
+            ...(item.story ? [{ to: `/story/${item.story.publicId}`, title: item.story.title, label: "查看这件事的完整进展" }] : []),
+            ...related.map((s) => ({ to: `/story/${s.publicId}`, title: s.title, label: "相关事件" })),
+          ]} />
 
           {(item.topics.length > 0 || tags.length > 0) && (
             <div className="mt-9 flex flex-wrap gap-1.5">
