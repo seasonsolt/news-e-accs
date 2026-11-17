@@ -58,8 +58,9 @@ export function targetLanguageProse(text: string, target: "en" | "zh"): boolean 
     return !/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Cyrillic}]/u.test(prose) && (run < 5 || han >= english * 10);
   }
   // Preserve short names/acronyms/version labels such as OpenAI, GPT-5, Model 2.5 or datasette 1.0a41, and
-  // a label before a bare link ("API：qwencloud.com/…"), whose colon is not part of the name.
-  const words = prose.split(/\s+/).map(word => word.replace(/[:：]$/, '')).filter(Boolean);
+  // a label before a bare link ("API：qwencloud.com/…"), whose colon is not part of the name, nor the
+  // ellipsis X puts on a link it shortens.
+  const words = prose.split(/\s+/).map(word => word.replace(/[:：…]$/, '')).filter(Boolean);
   return words.length <= 4 && words.filter(word => /^[A-Z][a-z]+$/.test(word)).length <= 2 && words.filter(word => /^[a-z]/.test(word)).length <= 1
     && words.every(word => /^(?:[A-Za-z][A-Za-z0-9.+/#_-]*|[0-9][0-9A-Za-z.,%+-]*)$/.test(word));
 }

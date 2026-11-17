@@ -204,6 +204,7 @@ test('echoed English cannot become a ready Chinese item/report/body edition, inc
     assert.equal(targetLanguageProse('datasette 1.0a41','zh'),true);
     // 2026-11-17: Qwen's post listed "API: qwencloud.com/…"; its faithful translation has no Han.
     assert.equal(targetLanguageProse('API：<a id="L0">qwencloud.com/models/qwen4-max</a>','zh'),true);
+    assert.equal(targetLanguageProse('Token Plan：<a id="L0">qwencloud.com/pricing/token-p…</a>','zh'),true);
     assert.equal(targetLanguageProse('the model is out','zh'),false);
     assert.equal(targetLanguageProse('发布了新模型。','en'),false);
     assert.equal(targetLanguageProse('The source says “发布模型”.','en'),true);
