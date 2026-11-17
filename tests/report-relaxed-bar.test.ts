@@ -32,7 +32,7 @@ after(async () => {
   await closeDb();
 });
 
-async function report(date: string, label: string, tier: keyof typeof SOURCE, score: number, opts: { selected?: boolean; addsValue?: boolean; category?: string; secondsBefore?: number; sourceId?: string; likes?: number } = {}): Promise<string> {
+async function report(date: string, label: string, tier: keyof typeof SOURCE, score: number, opts: { selected?: boolean; addsValue?: boolean; category?: string; secondsBefore?: number; sourceId?: string; likes?: number; factId?: number } = {}): Promise<string> {
   const at = editionAt("daily", date, -(opts.secondsBefore ?? 120));
   const { articleId } = await upsertMaterial({
     sourceId: opts.sourceId ?? SOURCE[tier], url: `https://example.com/relaxed-${T}-${date}-${label}`, title: `Relaxed ${label}`,
@@ -42,6 +42,7 @@ async function report(date: string, label: string, tier: keyof typeof SOURCE, sc
   await sql`INSERT INTO analyses (article_id, input_revision, origin, relevance, category, title, summary, editorial_language, score, selected)
             VALUES (${articleId}, 1, 'rule', 'pass', ${opts.category ?? "industry"}, ${`Headline ${label}`}, ${`Summary ${label}`}, 'en', ${score}, ${opts.selected ?? false})`;
   await sql`UPDATE articles SET grouping_status = 'complete', grouped_at = ${at}, selection_adds_value = ${opts.addsValue ?? true} WHERE id = ${articleId}`;
+  if (opts.factId !== undefined) await sql`INSERT INTO fact_articles (fact_id, article_id, role) VALUES (${opts.factId}, ${articleId}, 'report')`;
   await publishArticle(articleId, { now: at, releasedAt: at });
   return articleId;
 }
@@ -94,6 +95,24 @@ test("a quiet daily leads with news before a better scored how-to, and ties go t
   assert.deepEqual(main.map((e) => e.entry.itemId), [earlier, howTo], "the first news leads; the how-to keeps its place after it");
   assert.deepEqual(flashes.map((e) => e.entry.itemId), [later], "two entries per source at most");
   assert.deepEqual(arrangeDaily(edition.entries.filter((e) => e.entry.itemId === howTo)).main.map((e) => e.entry.itemId), [howTo], "an issue of commentary alone still has a lead");
+});
+
+test("a lead whose event a post leads cites the event's article instead, and lists the post under it", async () => {
+  const date = "2019-06-30";
+  const [story] = await sql<{ id: number }[]>`INSERT INTO stories (public_id, title, summary) VALUES (gen_random_uuid(), 'Lead launch', 'Lead launch') RETURNING id`;
+  const [fact] = await sql<{ id: number }[]>`INSERT INTO facts (public_id, story_id, title) VALUES (gen_random_uuid(), ${story!.id}, 'Lead launch') RETURNING id`;
+  const post = await report(date, "lead-post", "T2", 90, { selected: true, sourceId: X_QUIET, factId: fact!.id });
+  const article = await report(date, "lead-article", "T2", 82, { selected: true, factId: fact!.id, secondsBefore: 60 });
+  const second = await report(date, "second-post", "T2", 85, { selected: true, sourceId: X_LIKED });
+
+  const edition = await dailyEdition(date, ...window(date));
+  const launch = edition.entries.find((e) => e.storyId === story!.id)!;
+  assert.equal(launch.entry.itemId, post, "the post still represents its event while the issue is ranked");
+  const { main } = arrangeDaily(edition.entries);
+  assert.equal(main[0]!.entry.itemId, article, "the lead cites the article");
+  assert.equal(main[0]!.entry.title, "Headline lead-article");
+  assert.deepEqual(main[0]!.entry.related?.map((r) => r.itemId), [post]);
+  assert.equal(main.find((e) => e.entry.itemId === second)?.entry.itemId, second, "a post that does not lead keeps its place");
 });
 
 test("a company's X post liked far above its usual count raises its event; an account with few likes does not", async () => {

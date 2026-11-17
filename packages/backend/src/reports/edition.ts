@@ -108,6 +108,8 @@ export interface EditionEntry {
   importance: number;
   /** The earlier issue's entry for this event, when there was one. */
   previous: { key: string; title: string } | null;
+  /** When the entry cites a post: the event's best article, which the issue cites instead if the entry leads. */
+  article?: ReportEntry;
 }
 
 type ReportRow = RepresentativeIdentity & {
@@ -523,8 +525,15 @@ export async function dailyEdition(date: string, start: Date, end: Date): Promis
       ...(fs.every((f) => !f.selected) ? { fillIn: true as const } : {}),
     };
     const ids = new Set(fs.flatMap((f) => f.rows.map((r) => r.id)));
+    // A post leads only an event no article reported: the lead is read in full, a post is a few lines.
+    // The post's own fact first, then the event's other developments; then one in full text.
+    const articlesOf = (rows: ReportRow[]) => rep.source_kind === "x_search" ? rows.filter((r) => r.source_kind !== "x_search") : [];
+    const own = articlesOf(ordered[0]!.rows);
+    const articles = own.length ? own : articlesOf(fs.flatMap((f) => f.rows));
+    const full = articles.filter((r) => r.body_mode === "full");
+    const article = articles.length ? reportEntry(pickRepresentative(full.length ? full : articles)) : undefined;
     return {
-      entry, category: rep.category, tags: rep.tags, storyId, sourceIds, authority: representativePriority(rep), previous,
+      entry, category: rep.category, tags: rep.tags, storyId, sourceIds, authority: representativePriority(rep), previous, article,
       mentions: new Set(storyId === null ? named.filter((n) => ids.has(n.article_id)).map((n) => n.story_id) : []),
       importance: importance({
         score,
@@ -554,7 +563,8 @@ export async function dailyEdition(date: string, start: Date, end: Date): Promis
  * party itself acted (not as commentary) or four or more sources carry its new facts, else it is a flash;
  * then the most important entries in full, at most two per source, and the next ones as flashes. The
  * first entry leads the issue and the next three are its highlights; a how-to or an opinion (the pack's
- * commentary) leads only an issue that has no news in full.
+ * commentary) leads only an issue that has no news in full, and a lead that cites a post cites its
+ * event's best article instead (one in full text first), with the post among its related reports.
  */
 export function arrangeDaily(entries: EditionEntry[]): { main: EditionEntry[]; flashes: EditionEntry[]; stats: Record<string, number> } {
   const byStory = new Map(entries.filter((e) => e.storyId !== null).map((e) => [e.storyId!, e]));
@@ -588,6 +598,12 @@ export function arrangeDaily(entries: EditionEntry[]): { main: EditionEntry[]; f
   }
   const news = main.findIndex((e) => !COMMENTARY.has(e.category ?? ""));
   if (news > 0) main.unshift(...main.splice(news, 1));
+  const lead = main[0];
+  if (lead?.article) {
+    const { article } = lead;
+    main[0] = { ...lead, entry: { ...lead.entry, ...article,
+      related: [asRelated(lead.entry), ...(lead.entry.related ?? []).filter((r) => r.itemId !== article.itemId)] } };
+  }
   const flashes = rest.slice(0, FLASH_ENTRIES);
   return { main, flashes, stats: { roundupsFolded: folded.size, followUpsAsFlashes: live.filter((e) => !full(e)).length, left: rest.length - flashes.length } };
 }
