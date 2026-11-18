@@ -1,6 +1,23 @@
 {
-  "latestVersion": "2026-11-17T21:38",
+  "latestVersion": "2026-11-18T12:02",
   "releases": [
+    {
+      "date": "2026-11-18",
+      "time": "12:02",
+      "kind": "优化",
+      "title": "「从火堆到巨石」补上夜路岩画、黎明播种与当代算力地景",
+      "body": [
+        "加速史行走页（/chronicle/walk）在黑夜荒原中段加上随身火种微光与红土手印岩画石檐，播种处增加蹲守的先民与撒种反馈，风力发电机与巨石之间新增缓缓巡天的射电望远镜天线和低矮算力机房。",
+        "水塘与水渠现在会挡住脚步，跨渠需走木板桥；走近巨石仰视时铭文渐显，走完后可直接阅读《降临派宣言》或分享链接，宣言页末尾也加上了走进这条路的入口。同时优化了打开页面时的分段加载与远景绘制开销。"
+      ],
+      "en": {
+        "title": "From Fire to Monolith gains ochre rock art, a sower at dawn and modern compute landmarks",
+        "body": [
+          "The Chronicle's walk (/chronicle/walk) now carries a faint ember forward through the night past an ochre hand-stencil rock shelter, places an early sower by the seed basket at daybreak, and raises a tracking radio telescope and a low dark compute hall in the wheat before the monolith.",
+          "The pond and canal now hold you to their banks except across the plank bridge; the monolith's inscription emerges as you step up under it, and the closing screen links to The Adventist Manifesto and a share button, with a matching link back from the Manifesto. World loading and distant rendering are faster and lighter."
+        ]
+      }
+    },
     {
       "date": "2026-11-17",
       "time": "21:38",

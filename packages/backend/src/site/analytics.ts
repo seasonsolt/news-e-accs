@@ -123,9 +123,9 @@ const ITEM_TARGET = new Set<SiteEvent>(["star_add", "star_remove"]);
 const EMPTY_TARGET = new Set<SiteEvent>(["first_star", "subscribe_click", "share_click", "starred_export", "starred_import", "chronicle_move", "chronicle_deep", "walk_start", "walk_finish"]);
 const FUNNEL_EVENT = new Set<string>(SUBSCRIBE_FUNNEL_EVENTS);
 /** The chronicle's walk (modules/scenes, its land.ts MILESTONES): the places along the road, in order. */
-export const WALK_PLACES = ["fire", "sow", "village", "fields", "machines", "stone"] as const;
-/** What a walker did there: fed the fire, sowed by hand, turned on auto-walk, walked again, went back from the end. */
-export const WALK_ACTS = ["feed", "sow", "auto", "replay", "exit"] as const;
+export const WALK_PLACES = ["fire", "cave", "sow", "village", "fields", "machines", "compute", "stone"] as const;
+/** What a walker did there: fed the fire, sowed by hand, turned on auto-walk, walked again, went back, opened the manifesto or shared from the end. */
+export const WALK_ACTS = ["feed", "sow", "auto", "replay", "exit", "manifesto", "share"] as const;
 /** Where a walker left, `start` being short of the fire, and roughly how long after starting. */
 export const WALK_LEFT = ["start", ...WALK_PLACES] as const;
 export const WALK_TIMES = ["0-1m", "1-2m", "2-4m", "4m+"] as const;

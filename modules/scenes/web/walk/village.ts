@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { soft, type Kit } from "./camp.ts";
-import { clamp, noise, roadX, smooth } from "./land.ts";
+import { VILLAGE, clamp, noise, roadX, smooth } from "./land.ts";
 import { POSES, goat, person, type Pose } from "./people.ts";
 import { blob, faceted, flat, limb, lit, merged, of, rock, scorch, triangles, turned, type Paint } from "./shapes.ts";
 import type { Plant } from "./trees.ts";
@@ -318,7 +318,11 @@ export function buildVillage({ scene, own, rand, small, still, floor, matte, sta
   const puffs = vents.flatMap(() => Array.from({ length: PUFFS }, () => { const puff = new THREE.Sprite(own(new THREE.SpriteMaterial({ map: puffMap, color: "#cfc8bd", depthWrite: false, transparent: true, opacity: 0 }))); scene.add(puff); return puff; }));
   const [goatTurn, childTurn] = [loose.rotation.y, child.rotation.y];
   /** One frame of the village: thin smoke rising, the woman at the quern, the loose goat, the child. When the page asks for stillness, everything holds where it is at the start. Allocates nothing. */
-  function frame(clock: number) {
+  function frame(clock: number, walkerS: number = VILLAGE.yardS) {
+    const near = Math.abs(walkerS - VILLAGE.yardS) < 110;
+    villageLight.visible = villageFlame.visible = near;
+    for (const puff of puffs) puff.visible = near;
+    if (!near) return;
     if (still) clock = 0;
     puffs.forEach((puff, i) => {
       const [x, y, z] = vents[Math.floor(i / PUFFS)]!, t = (clock * .05 + (i % PUFFS) / PUFFS) % 1;

@@ -6,7 +6,7 @@ import { closeDb } from "@aihot/backend/db";
 import { installModules } from "@aihot/backend/modules";
 import { loadDiscoveryEntries } from "@aihot/backend/publication/sitemap";
 import { normalizeSiteEvent, WALK_ACTS, WALK_PLACES, WALK_TIMES } from "@aihot/backend/site/analytics";
-import { END_S, FIELD_S, FIRE_S, LINES, MILESTONES, MONO_S, SOW_S, chapterAt, ground, roadX, yearReading, yearsAgo } from "../web/walk/land.ts";
+import { BRIDGE, CANAL, CAVE_S, CLEARINGS, COMPUTE_S, END_S, FIELD_S, FIRE_S, LINES, MILESTONES, MONO_S, SOW_S, bridgeLift, chapterAt, cleared, ground, keepDry, roadX, yearReading, yearsAgo } from "../web/walk/land.ts";
 import { messages as walk } from "../web/walk/messages.ts";
 import scenes from "../server.ts";
 
@@ -15,12 +15,25 @@ after(closeDb);
 import { resolveRedirect } from "@aihot/contracts/http-policy";
 
 test("the road runs in order from the hearth to the stone and stays walkable", () => {
-  assert.ok(0 < FIRE_S && FIRE_S < SOW_S && SOW_S < FIELD_S && FIELD_S < END_S && END_S < MONO_S);
+  assert.ok(0 < FIRE_S && FIRE_S < CAVE_S && CAVE_S < SOW_S && SOW_S < FIELD_S && FIELD_S < COMPUTE_S && COMPUTE_S < END_S && END_S < MONO_S);
+  assert.ok(MONO_S - END_S < 5 && MONO_S - END_S > 2, "the walk ends right under the stone without clipping into it");
   for (let s = 0; s < MONO_S; s += 2) {
-    // A stride along the road never climbs a wall, and the road never leaves the land that was laid.
+    // A stride along the road never climbs a wall, never gets pushed by water, and never leaves the land that was laid.
     assert.ok(Math.abs(ground(roadX(s + 2), -(s + 2)) - ground(roadX(s), -s)) < 1.2, `step at ${s}`);
     assert.ok(Math.abs(roadX(s)) + 48 < 150, `road at ${s}`);
+    if (s <= END_S) assert.deepEqual(keepDry(roadX(s), s), [roadX(s), s], `road stays dry at ${s}`);
   }
+  // Pond and canal push walkers back onto the bank, except across the plank bridge at s = 424; clearings stay bare of wheat.
+  const [pondS, pondOff] = CLEARINGS.pond, pondCenter = roadX(pondS) + pondOff;
+  const [outX, outS] = keepDry(pondCenter + .2, pondS);
+  assert.ok(Math.hypot(outX - pondCenter, outS - pondS) >= 4.34, "cannot stand in the pond");
+  const canalMid = roadX(400) + CANAL.offset;
+  assert.ok(Math.abs(keepDry(canalMid + .1, 400)[0] - canalMid) >= BRIDGE.bank - 1e-6, "cannot wade into the canal");
+  const bridgeMid = roadX(BRIDGE.s) + CANAL.offset;
+  assert.deepEqual(keepDry(bridgeMid, BRIDGE.s), [bridgeMid, BRIDGE.s], "can cross the plank bridge");
+  assert.ok(bridgeLift(bridgeMid, BRIDGE.s) > .25 && bridgeLift(roadX(BRIDGE.s), BRIDGE.s) === 0);
+  assert.equal(keepDry(bridgeMid, BRIDGE.s + BRIDGE.halfS + .15)[1], BRIDGE.s + BRIDGE.halfS, "cannot step off the side of the plank bridge into the canal");
+  for (const [cs, off] of Object.values(CLEARINGS)) assert.equal(cleared(roadX(cs) + off, cs), true);
 });
 
 test("time only runs forward along the road, from a million years ago to this year", () => {

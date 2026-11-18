@@ -1,7 +1,9 @@
 import * as THREE from "three";
 import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { Kit } from "./camp.ts";
-import { FIRE_S, noise, roadX } from "./land.ts";
+import { FIRE_S, ROAD, noise, roadX } from "./land.ts";
+
+const ROAD_GLSL = (s: string) => `(${ROAD.a1.toFixed(1)} * sin((${s}) * ${ROAD.f1}) + ${ROAD.a2.toFixed(1)} * sin((${s}) * ${ROAD.f2} + ${ROAD.p2}))`;
 
 // The bare ground up close: sandy soil in large and small patches, a fine grain, dried pans with hairline cracks, ash round the hearth, furrows where it is tilled and damp soil by water,
 // all drawn in the fragment shader; and the twigs, leaves and small stones that lie about the camp, under trees and along the road.
@@ -32,7 +34,7 @@ const COLOR = `float relief = 0.;
     float sand = (soilNoise(q * 140.) - .5) * fine + (soilNoise(q * 47.) - .5) * grain * .7, speck = soilHash(floor(q * 60.));
     c *= (1. + sand * .3 * close) * (1. + fine * (step(.975, speck) * .22 - step(speck, .02) * .28)); relief += sand * .0012 * close;
     // the road: a trodden footpath, then two cart ruts with a dusty crown from the village on; dusty and damp stretches, scuffs, and small stones bedded mostly at its edges
-    { float s = -q.y, off = q.x - 13. * sin(s * .0115) - 5. * sin(s * .031 + 1.3), wide = mix(mix(.85, 1.2, smoothstep(455., 485., s)), 1.25, smoothstep(545., 575., s)) * (.92 + .18 * soilNoise(vec2(s * .7, 3.)));
+    { float s = -q.y, off = q.x - ${ROAD_GLSL("s")}, wide = mix(mix(.85, 1.2, smoothstep(455., 485., s)), 1.25, smoothstep(545., 575., s)) * (.92 + .18 * soilNoise(vec2(s * .7, 3.)));
       float u = off / wide, onRoad = 1. - smoothstep(.75, 1.25, abs(u) + (soilNoise(q * 2.3) - .5) * .35);
       if (onRoad > .01) { float cart = smoothstep(315., 345., s), lane = smoothstep(545., 575., s);
         float trod = (1. - smoothstep(.15, .45, abs(u))) * (1. - cart), rut = (1. - smoothstep(.06, .16, abs(abs(u) - .5))) * cart * (1. - lane * .5), crown = (1. - smoothstep(.2, .38, abs(u))) * cart;
@@ -60,7 +62,7 @@ const COLOR = `float relief = 0.;
       c *= 1. - crack * .45; relief -= crack * .002; }
     #endif
     // tilled ground: darker, furrowed along the sown rows 0.92 m apart, with clods
-    if (till > .01) { float road = 13. * sin(-q.y * .0115) + 5. * sin(-q.y * .031 + 1.3), ridge = cos((q.x - road) * 6.8295), clod = soilNoise(q * vec2(9., 5.));
+    if (till > .01) { float road = ${ROAD_GLSL("-q.y")}, ridge = cos((q.x - road) * 6.8295), clod = soilNoise(q * vec2(9., 5.));
       c *= mix(1., .7 + .12 * ridge + .14 * clod, till); relief += till * (ridge * .02 + clod * .008) * (1. - smoothstep(.04, .2, px)); }
     // the hearth: trodden ash fading out over four metres, flecked with charcoal
     if (fromHearth < 5.) { float ash = 1. - smoothstep(1.2, 4.2, fromHearth + (soilNoise(q * 1.3) - .5) * .9);

@@ -4,17 +4,19 @@ import { LINES } from "./land.ts";
 const lines: Record<string, string> = {
   "约一百万年前。天黑以后，火没有熄灭。": "About a million years ago. After dark, the fire stayed lit.",
   "带着火往前走。天还没有亮。": "Carry the fire forward. It is not yet dawn.",
+  "有人把红土按在石壁上，留下了手印和名字。": "Someone pressed red earth to the rock, and left a handprint and a name.",
   "一万两千年前。有人没有吃掉最后一把种子。": "Twelve thousand years ago. Someone did not eat the last handful of seed.",
   "人为了麦子停下脚步，盖起屋子，守着粮仓。": "For wheat, people stopped walking, built houses and guarded a granary.",
   "一万年里，麦子改造了人的脊背、河流和历法。": "In ten thousand years, wheat reshaped human backs, rivers and calendars.",
   "是谁驯化了谁？": "Who domesticated whom?",
+  "后来，人类把闪电、算式和全部记忆，喂给了沙子。": "Later, humans fed lightning, equations and all their memory into sand.",
   "今天。麦田中央立着一块石头。": "Today. A stone stands in the middle of the wheat.",
 };
 for (const [, line] of LINES) if (/[㐀-鿿]/.test(line) && !lines[line]) throw new Error(`No English edition for the line: ${line}`);
 
 export const messages = { en: {
   ...lines,
-  "从火堆到巨石": "From Fire to Monolith",
+  "从火堆到巨石": "From Fire to Monolith", "加速史": "Chronicle",
   "一百万年，一条路。夜里的火，清晨的田，下午的麦子，和麦田中央那块石头，都在同一个世界里。": "A million years, one road. The fire at night, the field at dawn, the wheat in the afternoon and the stone in the middle of it all stand in one world.",
   "加速史 · 一条走得通的路": "Chronicle · one road you can walk",
   "可行走的三维世界：从火堆穿过麦田走到巨石": "A walkable 3D world: from a hearth, through the wheat, to the monolith",
@@ -31,6 +33,8 @@ export const messages = { en: {
   "这一段到此为止": "This stretch ends here",
   "下一段从这块石头出发，走向推测的未来。火、田和碑会留在身后，回头还看得见。": "The next stretch starts from this stone and heads into a conjectured future. The fire, the field and the monolith stay behind you, still in sight when you turn around.",
   "这个世界没有打开": "This world did not open", "返回加速史": "Back to the chronicle",
-  // The way in on the chronicle (apps/web/app/routes/chronicle.tsx).
+  "分享这条路": "Share this road", "链接已复制": "Link copied", "读《降临派宣言》": "Read the Manifesto",
+  // The way in on the chronicle and the manifesto (apps/web/app/routes/chronicle.tsx, manifesto.tsx).
   "走进去": "Step inside", "第一人称，从火堆走到巨石 · 约两分钟": "First person, from the fire to the monolith · about two minutes",
+  "走一遍这条路 →": "Walk the road →",
 } };

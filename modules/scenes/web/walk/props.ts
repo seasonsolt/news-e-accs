@@ -2,7 +2,8 @@ import * as THREE from "three";
 import { buildCamp, type Kit } from "./camp.ts";
 import { buildFields } from "./fields.ts";
 import { FIRE_S, MONO_S, SOW_S, roadX } from "./land.ts";
-import { blob, lit, merged, of, rock, scree, turned, type Paint } from "./shapes.ts";
+import { POSES, person } from "./people.ts";
+import { blob, limb, lit, merged, of, rock, scree, turned, type Paint } from "./shapes.ts";
 import { createMatte } from "./surface.ts";
 import { buildForest, type Wind } from "./trees.ts";
 import { buildVillage } from "./village.ts";
@@ -45,20 +46,37 @@ export function buildProps(setting: Setting) {
     forest.plant(i % 5 === 4 ? "deadbush" : "bush", x, s, r);
   }
 
-  // ---------- the seed basket and the first village ----------
-  const basketX = roadX(SOW_S) + 2.2;
+  // ---------- the seed basket, the first sower and the first village ----------
+  const basketX = roadX(SOW_S) + 2.2, bark = of(2, lit("#3d3026", "#6b5644", rand));
   { const wicker: Paint = (center) => tone.set((Math.floor(center.y * 14) + Math.floor(Math.atan2(center.z, center.x) * 5)) % 2 ? "#8a6a3c" : "#5f4827");
-    stand(merged([turned([[0, 0], [.36, 0], [.47, .2], [.55, .45], [.58, .6], [.61, .62]], 14, wicker), blob(rand, [.54, .16, .54], lit("#b98d35", "#e2b955", rand, .3), 1, .2, 0).translate(0, .5, 0)]), basketX, SOW_S, 0, -.02); }
+    const clayLamp: Paint = () => tone.set("#9e5e38").multiplyScalar(.9 + rand() * .2);
+    stand(merged([
+      turned([[0, 0], [.36, 0], [.47, .2], [.55, .45], [.58, .6], [.61, .62]], 14, wicker),
+      blob(rand, [.54, .16, .54], lit("#b98d35", "#e2b955", rand, .3), 1, .2, 0).translate(0, .5, 0),
+      rock(rand, 1, stone).scale(.42, .32, .38).translate(-.82, -.05, -.28),
+      limb(new THREE.Vector3(-.72, -.04, -.08), new THREE.Vector3(-.92, 1.18, -.32), .024, .016, bark, { sides: 5, capped: true }), // a digging stick leaned against a marker stone
+      turned([[0, 0], [.12, 0], [.18, .08], [.16, .13]], 10, clayLamp).translate(-.48, .24, -.26),
+    ]), basketX, SOW_S, 0, -.02);
+    blocks.push([basketX, SOW_S, .68]);
+    // Someone kneeling beside the basket at daybreak, Scratching the first furrow ahead of the seed.
+    const sowerX = basketX + 1.15, sowerS = SOW_S + .55;
+    stand(person(rand, POSES.kneel, { skin: "#84583c", cloth: "#bfa67a", small }), sowerX, sowerS, Math.atan2(roadX(SOW_S + 8) - sowerX, -8), -.01);
+    blocks.push([sowerX, sowerS, .45]);
+  }
+  const sowLight = new THREE.PointLight(0xff9c4a, 5.5, 13, 2); sowLight.position.set(basketX - .48, floor(basketX, -SOW_S) + .55, -SOW_S + .26); scene.add(sowLight);
 
   const village = buildVillage(kit, camp.flame, forest.plant), fields = buildFields(kit, forest.plant); forest.finish();
 
   // ---------- the stone: 1 : 4 : 9, facing the walker, the sun behind it ----------
   const monolith = new THREE.Mesh(own(new THREE.BoxGeometry(8.8, 19.8, 2.2)), own(new THREE.MeshStandardMaterial({ color: "#050608", roughness: .22, metalness: .2 })));
   monolith.position.set(stoneX, floor(stoneX, -MONO_S) + 9.6, -MONO_S); monolith.castShadow = true; scene.add(monolith);
-  { const c = document.createElement("canvas"); c.width = 1024; c.height = 64; const g = c.getContext("2d")!; g.fillStyle = "rgba(214,168,92,.82)"; g.font = "30px ui-monospace, Menlo, monospace"; g.textAlign = "center"; g.fillText("1 : 4 : 9  ·  TMA-0  ·  RAISED BY US", 512, 42);
+  blocks.push([stoneX, MONO_S, 4.8]);
+  let monolithLabel: THREE.MeshBasicMaterial;
+  { const c = document.createElement("canvas"); c.width = 1024; c.height = 64; const g = c.getContext("2d")!; g.fillStyle = "rgba(214,168,92,.88)"; g.font = "30px ui-monospace, Menlo, monospace"; g.textAlign = "center"; g.fillText("1 : 4 : 9  ·  TMA-0  ·  RAISED BY US", 512, 42);
     const map = own(new THREE.CanvasTexture(c)); map.colorSpace = THREE.SRGBColorSpace;
-    const label = new THREE.Mesh(own(new THREE.PlaneGeometry(6.4, .4)), own(new THREE.MeshBasicMaterial({ map, transparent: true, fog: false }))); label.position.set(0, -8.2, 1.11); monolith.add(label); }
+    monolithLabel = own(new THREE.MeshBasicMaterial({ map, transparent: true, opacity: 0, depthWrite: false }));
+    const label = new THREE.Mesh(own(new THREE.PlaneGeometry(6.4, .4)), monolithLabel); label.position.set(0, -8.2, 1.11); monolith.add(label); }
 
   for (const shapes of stretches.values()) { const mesh = new THREE.Mesh(own(merged(shapes)), matte); mesh.castShadow = mesh.receiveShadow = true; scene.add(mesh); }
-  return { ...camp, village, basketX, blocks, fields };
+  return { ...camp, village, basketX, sowLight, monolithLabel, blocks, fields };
 }

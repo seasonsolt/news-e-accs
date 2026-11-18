@@ -41,13 +41,17 @@ export function plantGrass({ floor, blocks, fireX, small }: Setting, verge: Read
     return 1 - green * .7;
   };
   for (const [step, under] of [[small ? .85 : .62, false], [small ? .7 : .5, true]] as const) // the clumps, then a short sparse stubble between them
-    for (let row = -25; row < (under ? END_S : FIELD_S); row += step) for (let off = -62; off < 62; off += step) {
-      const s = row + (rand() - .5) * step, x = roadX(s) + off + (rand() - .5) * step, here = cover(x, s);
-      if (here <= 0 || rand() > (under ? .25 + here * .5 : (small ? here * .62 : here * .8))) continue;
-      const grazed = .65 + .35 * smooth(8, 26, Math.hypot(x - fireX, s - FIRE_S)), dry = paint(s, x);
-      if (under) { add(x, s, [.05 + rand() * .07, .16 + rand() * .14, .2 + rand() * .1, 0], dry); continue; }
-      const h = .15 * Math.pow(1.1 / .15, Math.pow(rand(), 1.9 - here * .9)) * grazed; // 0.15 to 1.1 m, mostly short, taller where it grows thick
-      add(x, s, [h, .04 + h * .12, .35 + .65 * smooth(.15, .8, h), h > .5 ? .12 + rand() * .2 : 0], dry);
+    for (let row = -25; row < (under ? END_S : FIELD_S); row += step) {
+      // Past the night country grassCover only allows stubble along the road's shoulders (1 < d < 2), so skip the wide field.
+      const span = under && row > FIELD_S + 2 ? 2.6 : 62;
+      for (let off = -span; off < span; off += step) {
+        const s = row + (rand() - .5) * step, x = roadX(s) + off + (rand() - .5) * step, here = cover(x, s);
+        if (here <= 0 || rand() > (under ? .25 + here * .5 : (small ? here * .62 : here * .8))) continue;
+        const grazed = .65 + .35 * smooth(8, 26, Math.hypot(x - fireX, s - FIRE_S)), dry = paint(s, x);
+        if (under) { add(x, s, [.05 + rand() * .07, .16 + rand() * .14, .2 + rand() * .1, 0], dry); continue; }
+        const h = .15 * Math.pow(1.1 / .15, Math.pow(rand(), 1.9 - here * .9)) * grazed; // 0.15 to 1.1 m, mostly short, taller where it grows thick
+        add(x, s, [h, .04 + h * .12, .35 + .65 * smooth(.15, .8, h), h > .5 ? .12 + rand() * .2 : 0], dry);
+      }
     }
   for (const [x, s, size] of verge) { // tall verge grass: pale, seeding, of mixed heights
     c.set(rand() < .5 ? "#8f7c4c" : "#7b7f4a").multiplyScalar(.85 + rand() * .25); // dry straw and green-gold, in the wheat's range

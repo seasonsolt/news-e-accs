@@ -16,8 +16,8 @@
 加速史的行走（`modules/scenes`，`/chronicle/walk`）报下面几个操作，每次打开页面，同一个名字和目标最多报一次；中英文页面报的一样（语言看会话）。目标只能是列出的这几个名字（`site/analytics.ts` 的 `WALK_*`），其他的服务器丢掉：
 
 - `walk_start`：点「开始行走」；`walk_finish`：走到路的尽头触碰巨石。目标为空。
-- `walk_reach`：第一次走过路上的某处：`fire`（火堆）、`sow`（播种处）、`village`（村落）、`fields`（水渠和麦田）、`machines`（风车开始升起）、`stone`（巨石跟前，能触碰的地方）。位置在 `modules/scenes/web/walk/land.ts` 的 `MILESTONES`。
-- `walk_act`：`feed`（添柴）、`sow`（亲手播种；走过去由别人播下的不算）、`auto`（打开自动前行）、`replay`（走完后再走一遍）、`exit`（走完后点「返回加速史」）。
+- `walk_reach`：第一次走过路上的某处：`fire`（火堆）、`cave`（岩画石檐）、`sow`（播种处）、`village`（村落）、`fields`（水渠和麦田）、`machines`（风车开始升起）、`compute`（射电天线与算力机房）、`stone`（巨石跟前，能触碰的地方）。位置在 `modules/scenes/web/walk/land.ts` 的 `MILESTONES`。
+- `walk_act`：`feed`（添柴）、`sow`（亲手播种；走过去由别人播下的不算）、`auto`（打开自动前行）、`replay`（走完后再走一遍）、`exit`（走完后点「返回加速史」）、`manifesto`（走完后点「读《降临派宣言》」）、`share`（走完后点「分享这条路」）。
 - `walk_leave` 和 `walk_time`：开始以后，页面第一次被切走、关掉或从站内离开时各报一次：走到的最远处（上面的地名，没走到火堆是 `start`），和从开始算起的时长档 `0-1m`、`1-2m`、`2-4m`、`4m+`（一直走到底约两分钟）。切走后回来接着走的部分不再报。
 
 打开了行走页却没有开始的，用这个页面的浏览数（`/chronicle/walk` 和 `/zh/chronicle/walk`）对比开始数，后台转化页的「行走」直接算好。改名之前，行走的开始和完成用的是已下线工坊的名字 `workshop_start` / `workshop_finish`，目标 `/chronicle/walk`，后台把这些行算进新名字；2026-10-29 起各座工坊路径下的旧记录留在表里，后台不再显示。

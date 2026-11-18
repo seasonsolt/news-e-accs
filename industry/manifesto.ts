@@ -48,7 +48,7 @@ export interface Manifesto {
   explainer: { text: string; label: string; href: string };
   sections: ManifestoSection[];
   closing: { god: [string, string]; arrival: string; dream: string; signature: string; note: string };
-  more: { share: string; copied: string; other: string; whatIs: string };
+  more: { share: string; copied: string; other: string; whatIs: string; walk: string };
   imageAlt: string;
 }
 
@@ -198,7 +198,7 @@ const EN: Manifesto = {
     signature: "— seasonsolt",
     note: "Drafted with AI, reviewed and approved by the author.",
   },
-  more: { share: "Share the manifesto", copied: "Link copied", other: "阅读中文版", whatIs: "What is e/acc?" },
+  more: { share: "Share the manifesto", copied: "Link copied", other: "阅读中文版", whatIs: "What is e/acc?", walk: "Walk the road →" },
   imageAlt: "A black slab standing in a wheat field at dusk, the sun setting directly behind it",
 };
 
@@ -340,7 +340,7 @@ const ZH: Manifesto = {
     signature: "—— seasonsolt",
     note: "本文由 AI 起草，作者审定。",
   },
-  more: { share: "分享宣言", copied: "链接已复制", other: "Read in English", whatIs: "什么是 e/acc？" },
+  more: { share: "分享宣言", copied: "链接已复制", other: "Read in English", whatIs: "什么是 e/acc？", walk: "走一遍这条路 →" },
   imageAlt: "黄昏的麦田里立着一块黑色石碑，太阳正落在它身后",
 };
 

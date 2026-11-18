@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import { FIRE_S } from "./land.ts";
+import { CAVE_S, FIRE_S, noise, roadX } from "./land.ts";
 import { POSES, person as figure, type Point, type Pose } from "./people.ts";
-import { blob, flat, limb, lit, merged, of, rock, scorch, scree, triangles } from "./shapes.ts";
+import { blob, faceted, flat, limb, lit, merged, of, rock, scorch, scree, triangles } from "./shapes.ts";
 
 export interface Kit {
   scene: THREE.Scene; own: <T extends { dispose(): void }>(item: T) => T; rand: () => number; small: boolean; still: boolean;
@@ -85,7 +85,7 @@ export function buildCamp({ scene, own, rand, small, still, out, floor, matte, s
     const log = new THREE.Mesh(own(limb(foot, head, .085 + rand() * .03, .065, i < 2 ? charred : bark, { sides: 6, capped: true })), matte); log.receiveShadow = true; hearth.add(log); logs.push(log);
   }
   const showLogs = (fed: number) => logs.forEach((log, i) => { log.visible = i < 2 + fed * 2; });
-  const coalGlow = own(new THREE.MeshBasicMaterial({ color: 0xffffff })), coals: THREE.BufferGeometry[] = [];
+  const coalGlow = own(new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, .5, .08) })), coals: THREE.BufferGeometry[] = [];
   for (let i = 0; i < 16; i++) { const a = rand() * 6.3, r = Math.sqrt(rand()) * .62; coals.push(rock(rand, 0, flat("#ffffff", rand, .7)).scale(.1 + rand() * .07, .07, .1 + rand() * .07).translate(Math.cos(a) * r, .02, Math.sin(a) * r)); }
   coalGlow.vertexColors = true; hearth.add(new THREE.Mesh(own(merged(coals)), coalGlow));
 
@@ -128,9 +128,66 @@ export function buildCamp({ scene, own, rand, small, still, out, floor, matte, s
   const eyeMaterial = own(new THREE.PointsMaterial({ color: new THREE.Color(1.6, 1.9, .8), size: .07, transparent: true, depthWrite: false, fog: false }));
   const eyes = new THREE.Points(own(new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(watchers, 3))), eyeMaterial); eyes.frustumCulled = false; scene.add(eyes);
 
+  // ---------- the ochre rock shelter halfway through the night (s = 154): hand stencils and leaping game ----------
+  const caveX = roadX(CAVE_S) - 5.0, caveTurn = Math.atan2(roadX(CAVE_S - 7) - caveX, 7);
+  {
+    const wall = new THREE.BoxGeometry(4.4, 3.1, 1.5, 12, 9, 4), wp = wall.attributes.position!;
+    for (let i = 0; i < wp.count; i++) {
+      const x = wp.getX(i), y = wp.getY(i), z = wp.getZ(i), front = z > .45 ? .28 : 1, arch = Math.max(0, (y + 1.55) / 3.1);
+      const narrow = 1 - .24 * arch * arch - .08 * Math.sin(y * 2.7 + 1), crest = y > 1.1 ? -Math.abs(x) * .16 - Math.pow(Math.max(0, Math.abs(x) - 1.1), 2) * .28 : 0;
+      wp.setXYZ(i, x * narrow + (noise(y * 1.6, z * 1.6) - .5) * .32, y + crest + (noise(x * 1.4, z * 1.4) - .5) * .22, z + (noise(x * 1.8 + 4, y * 1.8) - .5) * .22 * front + (y > .4 ? (y - .4) * .16 : 0));
+    }
+    stand(faceted(wall.translate(0, 1.35, 0), strata, 1), caveX, CAVE_S, caveTurn);
+    stand(rock(rand, 2, strata).scale(2.6, 2.5, 2.2), caveX - 2.3, CAVE_S + 1.8, caveTurn + .7, -.3);
+    stand(rock(rand, 1, strata).scale(1.8, 1.5, 1.7), caveX + 1.4, CAVE_S + 2.4, caveTurn - .5, -.2);
+    stand(scree(rand, 5.4, stone, of(3, lit("#5e4d3a", "#9a8466", rand)), caveTurn), caveX, CAVE_S);
+    blocks.push([caveX, CAVE_S, 2.5], [caveX - 2.3, CAVE_S + 1.8, 2.1], [caveX + 1.4, CAVE_S + 2.4, 1.5]);
+    // Pigment blown and brushed onto the sheltered rock face: three ochre hand stencils, two leaping ibex, and a row of tally marks.
+    const art = document.createElement("canvas"); art.width = 512; art.height = 320; const g = art.getContext("2d")!;
+    const hand = (cx: number, cy: number, tilt: number, scale: number) => {
+      g.save(); g.translate(cx, cy); g.rotate(tilt); g.scale(scale, scale);
+      const spray = g.createRadialGradient(0, -6, 12, 0, -6, 56);
+      spray.addColorStop(0, "rgba(172, 62, 32, .72)"); spray.addColorStop(.58, "rgba(154, 52, 26, .42)"); spray.addColorStop(1, "rgba(154, 52, 26, 0)");
+      g.fillStyle = spray; g.beginPath(); g.arc(0, -6, 56, 0, Math.PI * 2); g.fill();
+      g.globalCompositeOperation = "destination-out"; g.fillStyle = "rgba(0,0,0,.86)";
+      g.beginPath(); g.ellipse(0, 8, 13, 16, 0, 0, Math.PI * 2); g.fill();
+      for (const [a, len, w, ox, oy] of [[-.68, 24, 3.5, -11, 2], [-.32, 32, 3.6, -7, -6], [-.04, 35, 3.7, -1, -8], [.24, 31, 3.5, 6, -6], [.54, 24, 3.2, 11, -2]] as const) {
+        g.save(); g.translate(ox, oy); g.rotate(a); g.beginPath(); g.roundRect(-w, -len, w * 2, len + 4, w); g.fill(); g.restore();
+      }
+      g.restore();
+    };
+    hand(118, 148, -.16, .95); hand(192, 118, .12, 1.02); hand(154, 206, -.05, .74); // two adults and a smaller hand
+    const beast = (cx: number, cy: number, scale: number, color: string) => {
+      g.save(); g.translate(cx, cy); g.scale(scale, scale); g.strokeStyle = color; g.lineCap = "round"; g.lineJoin = "round";
+      g.lineWidth = 5.5; g.beginPath(); g.moveTo(-28, 4); g.quadraticCurveTo(-4, -10, 24, -2); g.quadraticCurveTo(34, -4, 40, -16); g.stroke(); // back and neck
+      g.lineWidth = 3.2; g.beginPath(); g.moveTo(39, -16); g.quadraticCurveTo(22, -42, -2, -36); g.moveTo(41, -15); g.quadraticCurveTo(28, -36, 8, -32); g.stroke(); // swept horns
+      g.lineWidth = 3; g.beginPath(); g.moveTo(-24, 5); g.lineTo(-42, 26); g.moveTo(-18, 6); g.lineTo(-28, 28); g.moveTo(20, 0); g.lineTo(36, 22); g.moveTo(25, -1); g.lineTo(46, 16); g.stroke();
+      g.restore();
+    };
+    beast(336, 152, 1.05, "rgba(164, 56, 28, .78)"); beast(418, 198, .78, "rgba(38, 28, 22, .72)");
+    g.fillStyle = "rgba(214, 192, 152, .58)"; for (let i = 0; i < 7; i++) { g.beginPath(); g.arc(285 + i * 14, 248 + (i % 2) * 2, 2.6, 0, Math.PI * 2); g.fill(); }
+    const map = own(new THREE.CanvasTexture(art)); map.colorSpace = THREE.SRGBColorSpace;
+    const panel = new THREE.Mesh(own(new THREE.PlaneGeometry(2.9, 1.8)), own(new THREE.MeshStandardMaterial({ map, transparent: true, roughness: .95, metalness: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 })));
+    const offset = new THREE.Vector3(0, 1.52, .72).applyAxisAngle(new THREE.Vector3(0, 1, 0), caveTurn);
+    panel.position.set(caveX + offset.x, floor(caveX, -CAVE_S) + offset.y, -CAVE_S + offset.z); panel.rotation.set(-.08, caveTurn, 0, "YXZ"); scene.add(panel);
+    // A small ring of stones, dying embers and an ochre grinding bowl at the foot of the wall.
+    const emberSpot = new THREE.Vector3(.4, 0, 1.55).applyAxisAngle(new THREE.Vector3(0, 1, 0), caveTurn), ex = caveX + emberSpot.x, es = CAVE_S - emberSpot.z;
+    const ring: THREE.BufferGeometry[] = [blob(rand, [.16, .06, .14], of(1, flat("#8f3820", rand, .15)), 0, .2).translate(-.42, .03, .1)];
+    for (let i = 0; i < 7; i++) { const a = i * .9; ring.push(scorch(rock(rand, 0, stone).scale(.13, .11, .13).translate(Math.cos(a) * .36, -.03, Math.sin(a) * .36), new THREE.Vector3(0, .15, 0), .8)); }
+    stand(merged(ring), ex, es, caveTurn);
+    const emberGlow = new THREE.Mesh(own(merged([0, 1, 2, 3, 4].map((k) => rock(rand, 0, flat("#ff7830", rand, .3)).scale(.07, .05, .07).translate(Math.cos(k * 1.25) * .14, floor(ex, -es) + .02, Math.sin(k * 1.25) * .14)))), coalGlow);
+    emberGlow.position.set(ex, 0, -es); scene.add(emberGlow);
+  }
+  const caveSpot = new THREE.Vector3(.4, .45, 1.55).applyAxisAngle(new THREE.Vector3(0, 1, 0), caveTurn);
+  const caveLight = new THREE.PointLight(0xff8438, 12, 19, 2); caveLight.position.set(caveX + caveSpot.x, floor(caveX, -CAVE_S) + caveSpot.y, -CAVE_S + caveSpot.z); scene.add(caveLight);
+
   /** One frame of the fire and everyone near it. Returns how brightly the fire burns, for whatever else it lights. */
-  function frame(clock: number, dt: number, fed: number, feedGlow: number) {
+  function frame(clock: number, dt: number, fed: number, feedGlow: number, walkerS: number = FIRE_S) {
     const flicker = still ? .9 : .82 + .18 * Math.sin(clock * 11) * Math.sin(clock * 6.3) + .06 * Math.sin(clock * 23), level = [.5, .95, 1.5, 2.1][fed]! * feedGlow;
+    const nearCave = Math.abs(walkerS - CAVE_S) < 95; caveLight.visible = nearCave; if (nearCave) caveLight.intensity = 13 * (.88 + .12 * flicker);
+    const nearCamp = Math.abs(walkerS - FIRE_S) < 115;
+    fireLight.visible = hearth.visible = nearCamp; eyes.visible = nearCamp && fed < 3;
+    if (!nearCamp) return { glow: 0, flicker };
     fireLight.intensity = level * 190 * flicker; if (!still) fireLight.position.x = fireX + Math.sin(clock * 7.3) * .04;
     halo.scale.setScalar((5 + fed * 2.5) * flicker * Math.min(1.3, feedGlow)); coalGlow.color.setRGB(2.8, .62, .1).multiplyScalar((.55 + fed * .2) * (.8 + .2 * Math.sin(clock * 3.1)));
     for (const uniforms of flameUniforms) uniforms.time.value = clock;

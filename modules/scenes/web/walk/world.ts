@@ -4,15 +4,17 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
-import { reducedMotion } from "@aihot/web/lib/motion";
+import { shareOrCopy } from "@aihot/web/features/item/share";
 import { recordEngagement } from "@aihot/web/lib/engagement";
+import { localePath } from "@aihot/web/lib/locale";
+import { reducedMotion } from "@aihot/web/lib/motion";
 import { buildClouds } from "./clouds.ts";
 import { buildGrass } from "./grass.ts";
 import { buildLitter, soil } from "./groundcover.ts";
 import { buildProps } from "./props.ts";
 import { startSound, type Sound } from "./sound.ts";
 import { buildVerge } from "./verge.ts";
-import { CANAL, CLEARINGS, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONO_S, REACH_S, SOW_S, chapterAt, clamp, cleared, fbm, ground, mix, roadX, sequence, sheet, smooth, yearReading, yearsAgo } from "./land.ts";
+import { CANAL, CLEARINGS, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONO_S, REACH_S, SOW_S, VILLAGE, bridgeLift, chapterAt, clamp, cleared, fbm, ground, keepDry, mix, roadX, sequence, sheet, smooth, yearReading, yearsAgo } from "./land.ts";
 
 // The hour at points along the road: [s, zenith, horizon, fog, sun colour, sun strength, sky light, stars, sun height, fog density].
 const HOURS = ([
@@ -26,11 +28,14 @@ const HOURS = ([
 ] as const).map(([s, top, horizon, fog, sun, power, sky, stars, height, density]) => ({ s, top: new THREE.Color(top), horizon: new THREE.Color(horizon), fog: new THREE.Color(fog), sun: new THREE.Color(sun), power, sky, stars, height, density }));
 const OUT = "\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n"; // an #include has to start its own line
 
-export async function start(root: HTMLElement, { tx, locale }: { tx: (text: string) => string; locale: "zh" | "en" }): Promise<() => void> {
+export async function start(root: HTMLElement, { tx, locale, signal }: { tx: (text: string) => string; locale: "zh" | "en"; signal?: AbortSignal }): Promise<() => void> {
+  if (signal?.aborted) return () => {};
   const part = <T extends HTMLElement = HTMLElement>(name: string) => root.querySelector<T>(`[data-walk="${name}"]`)!;
   const small = matchMedia("(max-width: 640px), (pointer: coarse)").matches, still = reducedMotion(), density = small ? .42 : 1;
   const query = new URLSearchParams(location.search), useAO = !small && query.get("ao") !== "0", useSky = !small && query.get("env") !== "0"; // ?ao=0 and ?env=0 turn off the occlusion and the sky's light, to compare
   const stop = new AbortController(), listen = { signal: stop.signal }, rand = sequence(7);
+  signal?.addEventListener("abort", () => stop.abort(), { once: true });
+  const pause = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
   const owned: Array<{ dispose(): void }> = [];
   const own = <T extends { dispose(): void }>(item: T) => { owned.push(item); return item; };
 
@@ -42,17 +47,15 @@ export async function start(root: HTMLElement, { tx, locale }: { tx: (text: stri
   scene.fog = fog;
   const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: small ? 0 : 4 })), bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), .34, .6, 1);
   composer.addPass(new RenderPass(scene, camera));
+  const aoSkip: THREE.Object3D[] = [];
   if (useAO) { // contact shadows at half resolution, over the opaque lit scenery only
     const ao = own(new GTAOPass(scene, camera)), render = ao.render.bind(ao), size = ao.setSize.bind(ao), hidden: THREE.Object3D[] = [];
     ao.updateGtaoMaterial({ radius: .6, distanceFallOff: 1, thickness: 1, samples: 12 }); ao.updatePdMaterial({ samples: 8, radius: 6 }); ao.blendIntensity = .85;
     ao.setSize = (w, h) => size(Math.ceil(w / 2), Math.ceil(h / 2));
-    ao.render = (...args) => { // its depth and normals come from drawing the scene again with one plain material, which cannot follow a custom shader, a sprite or a see-through surface
-      scene.traverseVisible((o) => {
-        const mesh = o as THREE.Mesh, m = mesh.material as THREE.Material | undefined;
-        if ((o as THREE.Sprite).isSprite || (mesh.isMesh && (!m || Array.isArray(m) || m.transparent || m.alphaTest > 0 || (m as THREE.ShaderMaterial).isShaderMaterial || ((mesh.geometry as THREE.InstancedBufferGeometry).isInstancedBufferGeometry && !(o as THREE.InstancedMesh).isInstancedMesh)))) { o.visible = false; hidden.push(o); }
-      });
+    ao.render = (...args) => { // its depth and normals come from drawing the scene again with one plain material, skipping cached sprites, transparents and custom shaders
+      for (let i = 0; i < aoSkip.length; i++) { const o = aoSkip[i]!; if (o.visible) { o.visible = false; hidden.push(o); } }
       renderer.shadowMap.autoUpdate = false; render(...args); renderer.shadowMap.autoUpdate = true; // the shadow maps were drawn for this frame already
-      for (const o of hidden) o.visible = true; hidden.length = 0;
+      for (let i = 0; i < hidden.length; i++) hidden[i]!.visible = true; hidden.length = 0;
     };
     composer.addPass(ao);
   }
@@ -90,6 +93,7 @@ export async function start(root: HTMLElement, { tx, locale }: { tx: (text: stri
     land.setAttribute("color", new THREE.BufferAttribute(colors, 3)); land.setAttribute("soil", new THREE.BufferAttribute(soils, 4)); land.computeVertexNormals();
   }
   const earth = new THREE.Mesh(land, own(soil(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .95, metalness: 0 }), small, new THREE.Vector2(fireX, -FIRE_S)))); earth.receiveShadow = true; scene.add(earth); // smooth-shaded: the drawn height is unchanged, `floor` still holds
+  await pause(); if (stop.signal.aborted) { release(); return () => {}; }
 
   // ---------- sky, sun and the hour ----------
   const hour = { top: new THREE.Color(), horizon: new THREE.Color(), fog: new THREE.Color(), sun: new THREE.Color(), power: 0, sky: 0, stars: 0, height: 0, density: 0 };
@@ -132,12 +136,15 @@ export async function start(root: HTMLElement, { tx, locale }: { tx: (text: stri
   const skySeen = [new THREE.Color(), new THREE.Color(), new THREE.Color(), new THREE.Vector3()] as const; let skyTarget: THREE.WebGLRenderTarget | null = null, skyAt = -1;
   own({ dispose: () => skyTarget?.dispose() });
 
-  // ---------- grass and wheat: one instanced field for the whole walk ----------
-  const blades: number[] = [], tint = new THREE.Color();
+  // ---------- grass and wheat: chunked instanced fields so unseen stretches stay culled ----------
+  const STRIDE = 11, buckets: [number[], number[], number[], number[]] = [[], [], [], []], tint = new THREE.Color();
   const young = new THREE.Color("#7c9a3e"), ripe = new THREE.Color("#d9aa45"), pale = new THREE.Color("#ecc766");
-  const blade = (x: number, s: number, height: number, width: number, head: number, sown: number) => { blades.push(x, ground(x, -s), -s, height, width, rand() * 6.283, head, tint.r, tint.g, tint.b, sown); };
+  const blade = (x: number, s: number, height: number, width: number, head: number, sown: number) => {
+    const bucket = s < 355 ? buckets[0] : s < 478 ? buckets[1] : s < 585 ? buckets[2] : buckets[3];
+    bucket.push(x, ground(x, -s), -s, height, width, rand() * 6.283, head, tint.r, tint.g, tint.b, sown);
+  };
   for (let s = FIELD_S; s < 478; s += (s < 380 ? .34 : .62) / density) for (let row = -34; row <= 34; row++) { // sown rows, greening then ripening; the young crop stands close in its rows
-    if (Math.abs(row) < 2 || (s > 316 && s < 352 && row > 8 && row < 30)) continue;
+    if (Math.abs(row) < 2 || (s > VILLAGE.from && s < VILLAGE.to && row > 8 && row < 30)) continue;
     const ripeness = smooth(330, 470, s), x = roadX(s) + row * .92 + (rand() - .5) * .22, at = s + (rand() - .5) * .4;
     if (cleared(x, at)) continue;
     tint.copy(young).lerp(ripe, ripeness).multiplyScalar(.8 + rand() * .35);
@@ -149,17 +156,12 @@ export async function start(root: HTMLElement, { tx, locale }: { tx: (text: stri
     tint.copy(ripe).lerp(pale, rand()).multiplyScalar(.82 + rand() * .3);
     blade(x, s, 1.05 + rand() * .4, .8, 1, s);
   }
-  const STRIDE = 11, bladeData = new THREE.InstancedInterleavedBuffer(new Float32Array(blades), STRIDE);
-  const card = own(new THREE.PlaneGeometry(1, 1, 1, 4).translate(0, .5, 0)), fieldGeometry = own(new THREE.InstancedBufferGeometry());
-  fieldGeometry.index = card.index; fieldGeometry.setAttribute("position", card.attributes.position!); fieldGeometry.setAttribute("uv", card.attributes.uv!);
-  fieldGeometry.setAttribute("at", new THREE.InterleavedBufferAttribute(bladeData, 3, 0)); fieldGeometry.setAttribute("shape", new THREE.InterleavedBufferAttribute(bladeData, 4, 3));
-  fieldGeometry.setAttribute("tint", new THREE.InterleavedBufferAttribute(bladeData, 3, 7)); fieldGeometry.setAttribute("sown", new THREE.InterleavedBufferAttribute(bladeData, 1, 10));
-  fieldGeometry.instanceCount = blades.length / STRIDE;
+  const card = own(new THREE.PlaneGeometry(1, 1, 1, 4).translate(0, .5, 0));
   const fieldUniforms = {
     time: { value: 0 }, front: { value: -1e4 }, wind: { value: still ? .25 : 1 }, sky: { value: new THREE.Color() }, sun: { value: new THREE.Color() }, fogColor: { value: new THREE.Color() }, fogDensity: { value: .01 },
     fire: { value: new THREE.Vector4(fireX, 0, -FIRE_S, 0) }, shadow: { value: new THREE.Vector4(stoneX, -MONO_S, 4.6, 70) }, backlit: { value: 0 },
   };
-  const field = new THREE.Mesh(fieldGeometry, own(new THREE.ShaderMaterial({
+  const fieldMaterial = own(new THREE.ShaderMaterial({
     side: THREE.DoubleSide, uniforms: fieldUniforms,
     vertexShader: `attribute vec3 at; attribute vec4 shape; attribute vec3 tint; attribute float sown;
       uniform float time, front, wind; varying vec2 vUv; varying vec3 vTint, vWorld; varying float vHead, vFog;
@@ -185,55 +187,112 @@ export async function start(root: HTMLElement, { tx, locale }: { tx: (text: stri
         lit *= 1. - .5 * inShade * backlit;
         float d = distance(vWorld, fire.xyz); lit += c * vec3(1.5, .5, .12) * fire.w / (1. + d * d * .035);
         float f = 1. - exp(-fogDensity * fogDensity * vFog * vFog); gl_FragColor = vec4(mix(lit, fogColor, f), 1.); ${OUT} }`,
-  })));
-  field.frustumCulled = false; scene.add(field);
+  }));
+  const fieldChunks = buckets.map((blades) => {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity, minS = Infinity;
+    for (let o = 0; o < blades.length; o += STRIDE) {
+      const x = blades[o]!, y = blades[o + 1]!, z = blades[o + 2]!, s = blades[o + 10]!;
+      minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y + 1.6); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z); minS = Math.min(minS, s);
+    }
+    const bladeData = new THREE.InstancedInterleavedBuffer(new Float32Array(blades), STRIDE), g = own(new THREE.InstancedBufferGeometry());
+    g.index = card.index; g.setAttribute("position", card.attributes.position!); g.setAttribute("uv", card.attributes.uv!);
+    g.setAttribute("at", new THREE.InterleavedBufferAttribute(bladeData, 3, 0)); g.setAttribute("shape", new THREE.InterleavedBufferAttribute(bladeData, 4, 3));
+    g.setAttribute("tint", new THREE.InterleavedBufferAttribute(bladeData, 3, 7)); g.setAttribute("sown", new THREE.InterleavedBufferAttribute(bladeData, 1, 10));
+    g.instanceCount = blades.length / STRIDE;
+    const center = new THREE.Vector3((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2);
+    g.boundingSphere = new THREE.Sphere(center, Math.hypot(maxX - minX, maxY - minY, maxZ - minZ) / 2 + 2.5);
+    const mesh = new THREE.Mesh(g, fieldMaterial); mesh.visible = false; scene.add(mesh);
+    return { mesh, minS };
+  });
+  await pause(); if (stop.signal.aborted) { release(); return () => {}; }
 
   // ---------- things along the way ----------
-  const { fireY, showLogs, frame: tendFire, village, basketX, blocks, fields } = buildProps({ scene, own, rand, small, still, out: OUT, floor, fireX, stoneX, wind: fieldUniforms });
+  const { fireY, showLogs, frame: tendFire, village, basketX, sowLight, monolithLabel, blocks, fields } = buildProps({ scene, own, rand, small, still, out: OUT, floor, fireX, stoneX, wind: fieldUniforms });
+  await pause(); if (stop.signal.aborted) { release(); return () => {}; }
   const { tallGrass } = buildVerge({ scene, own, rand, small, floor, blocks }, fieldUniforms);
   const clouds = buildClouds({ scene, own, rand, small, out: OUT }), cloudSun = new THREE.Color(), cloudSky = new THREE.Color();
 
   // ---------- wild grass and what lies on the ground ----------
   const grass = buildGrass({ scene, own, still, small, floor, blocks, fireX }, tallGrass);
   { const p = land.attributes.position!, soils = land.attributes.soil!; // the soil darkens where grass grows thick and under trees and stones
-    for (let i = 0; i < p.count; i++) { const cover = grass.cover(p.getX(i), -p.getZ(i)); soils.setW(i, cover < 0 ? 1 : cover); } }
+    for (let i = 0; i < p.count; i++) { const cover = grass.cover(p.getX(i), -p.getZ(i)); soils.setW(i, cover < 0 ? 1 : cover); }
+    soils.needsUpdate = true; }
   buildLitter({ scene, own, rand, small, floor, blocks, fireX });
+  await pause(); if (stop.signal.aborted) { release(); return () => {}; }
+
+  // A carried ember that lights the road ahead through the night country, and a handful of golden seed scattered when sowing by hand.
+  const emberLight = new THREE.PointLight(0xff8e42, 0, 15, 2); emberLight.visible = false; scene.add(emberLight);
+  const SEEDS = 48, seedAt = new Float32Array(SEEDS * 3), seedVel = new Float32Array(SEEDS * 3), seedGeometry = own(new THREE.BufferGeometry());
+  seedGeometry.setAttribute("position", new THREE.BufferAttribute(seedAt, 3));
+  const seedMaterial = own(new THREE.PointsMaterial({ color: "#e8c060", size: .038, transparent: true, opacity: 0, depthWrite: false }));
+  const seedBurst = new THREE.Points(seedGeometry, seedMaterial); seedBurst.visible = false; seedBurst.frustumCulled = false; scene.add(seedBurst);
+  let seedT = -1;
+
+  if (useAO) scene.traverse((o) => {
+    const mesh = o as THREE.Mesh, m = mesh.material as THREE.Material | undefined;
+    if ((o as THREE.Sprite).isSprite || (o as THREE.Points).isPoints || (mesh.isMesh && (!m || Array.isArray(m) || m.transparent || m.alphaTest > 0 || (m as THREE.ShaderMaterial).isShaderMaterial || ((mesh.geometry as THREE.InstancedBufferGeometry).isInstancedBufferGeometry && !(o as THREE.InstancedMesh).isInstancedMesh)))) aoSkip.push(o);
+  });
 
   // ---------- walking ----------
   const me = { x: roadX(4) - 1.5, s: 4, yaw: .12, pitch: -.02, bob: 0 }, keys = new Set<string>();
-  { const jump = /^#s(\d+)$/.exec(location.hash); if (jump) { me.s = Math.min(END_S, Number(jump[1])); me.x = roadX(me.s) - 1; me.yaw = 0; } } // #s300 opens further along the road
+  const jump = /^#s(\d+)$/.exec(location.hash), jumped = Boolean(jump);
+  if (jump) { me.s = Math.min(END_S, Number(jump[1])); me.x = roadX(me.s) - 1; me.yaw = 0; } // #s300 opens further along the road without counting in analytics
   let clock = 0, started = false, begun = false, auto = false, drag: { x: number; y: number } | null = null, holdGo = false, wheelPush = 0, fed = 0, feedGlow = 1, ended = false, pace = 0;
   let sound: Sound | null = null, soundOn = true; try { soundOn = localStorage.getItem("walk-sound") !== "off"; } catch { /* storage may be blocked */ }
   let sownAt: number | null = me.s > FIELD_S ? -100 : null, touched: number | null = null, sayUntil = 0;
   const say = part("say"), use = part<HTMLButtonElement>("use"), cover = part("cover"), startButton = part<HTMLButtonElement>("start"), autoButton = part("auto"), go = part("go"), said = new Set<string>();
+  const exitLink = part<HTMLAnchorElement>("exit"), shareButton = part<HTMLButtonElement>("share"), manifestoLink = root.querySelector<HTMLAnchorElement>('[data-walk="manifesto"]');
+  const backLink = root.querySelector<HTMLAnchorElement>(".walk-back")!, chronicleBase = localePath("/chronicle", locale);
   function speak(id: string, text: string, seconds = 7) { if (said.has(id)) return; said.add(id); say.textContent = tx(text); say.classList.add("is-on"); sayUntil = clock + seconds; }
   function nearby(): ["feed" | "sow" | "touch", string] | null {
     if (ended) return null;
     if (fed < 3 && Math.hypot(me.x - fireX, me.s - FIRE_S) < 7.5) return ["feed", "添柴"];
-    if (sownAt === null && Math.hypot(me.x - basketX, me.s - SOW_S) < 7) return ["sow", "播种"];
+    if (sownAt === null && Math.hypot(me.x - basketX, me.s - SOW_S) < 9.5) return ["sow", "播种"];
     if (touched === null && me.s > REACH_S) return ["touch", "触碰巨石"];
     return null;
   }
-  // Anonymous counts of how the walk goes (docs/analytics.md): each name and place at most once per page open.
-  const counted = new Set<string>(), count = (event: string, target = "") => { const key = `${event}:${target}`; if (!counted.has(key)) { counted.add(key); recordEngagement(event, target); } };
-  let passed = MILESTONES.filter(([, at]) => at <= me.s).length, startedAt = 0, left = false; // a walk opened further along (#s300) does not count the places behind it
+  // Anonymous counts of how the walk goes (docs/analytics.md): each name and place at most once per page open; debug #s jumps are skipped.
+  const counted = new Set<string>(), count = (event: string, target = "") => { if (jumped) return; const key = `${event}:${target}`; if (!counted.has(key)) { counted.add(key); recordEngagement(event, target); } };
+  let passed = MILESTONES.filter(([, at]) => at <= me.s).length, startedAt = 0, left = false;
   /** Once, the first time the page is hidden or closed after the walk began: the furthest place passed and roughly how long it lasted. */
   function leave() {
-    if (!begun || left) return; left = true;
+    if (jumped || !begun || left) return; left = true;
     const minutes = (performance.now() - startedAt) / 60000;
     recordEngagement("walk_leave", passed ? MILESTONES[passed - 1]![0] : "start");
     recordEngagement("walk_time", minutes < 1 ? "0-1m" : minutes < 2 ? "1-2m" : minutes < 4 ? "2-4m" : "4m+");
   }
-  function sow(byHand: boolean) { if (sownAt !== null) return; sownAt = clock; speak("sown", byHand ? "种子落进土里。田，自己向前铺开。" : "在你之前，已经有人播下了种子。", 8); }
+  function scatterSeeds() {
+    const fwdX = -Math.sin(me.yaw), fwdZ = -Math.cos(me.yaw), rightX = Math.cos(me.yaw), rightZ = -Math.sin(me.yaw);
+    const handY = ground(me.x, -me.s) + 1.18;
+    for (let i = 0; i < SEEDS; i++) {
+      const spread = (rand() - .5) * 1.1, throwSpeed = 1.8 + rand() * 2.4;
+      seedAt[i * 3] = me.x + rightX * .22 + fwdX * .35; seedAt[i * 3 + 1] = handY; seedAt[i * 3 + 2] = -me.s + rightZ * .22 + fwdZ * .35;
+      seedVel[i * 3] = (fwdX + rightX * spread) * throwSpeed; seedVel[i * 3 + 1] = .9 + rand() * 1.1; seedVel[i * 3 + 2] = (fwdZ + rightZ * spread) * throwSpeed;
+    }
+    seedT = 0; seedBurst.visible = true; seedMaterial.opacity = .95; seedGeometry.attributes.position!.needsUpdate = true;
+  }
+  function sow(byHand: boolean) {
+    if (sownAt !== null) return; sownAt = clock;
+    if (byHand && !still) scatterSeeds();
+    speak("sown", byHand ? "种子落进土里。田，自己向前铺开。" : "在你之前，已经有人播下了种子。", 8);
+  }
   function act() {
     const what = nearby(); if (!what) return;
     if (what[0] === "feed") { sound?.cue("feed"); count("walk_act", "feed"); fed++; feedGlow = 2.2; showLogs(fed); if (fed === 3) speak("fed", "火光把夜晚推远了一点。一天，变长了。", 8); }
     else if (what[0] === "sow") { sound?.cue("sow"); count("walk_act", "sow"); sow(true); }
     else { sound?.cue("touch"); touched = clock; auto = false; autoButton.setAttribute("aria-pressed", "false"); speak("touch", "石头是凉的。天，暗了下来。", 6); count("walk_finish"); }
   }
+  let shown = "";
   function begin() {
-    if (ended) { count("walk_act", "replay"); ended = false; touched = null; fed = 0; sownAt = null; said.clear(); me.x = roadX(4) - 1.5; me.s = 4; me.yaw = .12; me.pitch = 0; fieldUniforms.front.value = -1e4; showLogs(0); }
-    started = true; cover.classList.add("is-gone"); canvas.focus(); sound ??= startSound(!soundOn); // audio may only start from a click
+    if (ended) {
+      count("walk_act", "replay"); ended = false; touched = null; fed = 0; feedGlow = 1; sownAt = null; seedT = -1; seedBurst.visible = false;
+      wheelPush = 0; holdGo = false; keys.clear(); sayUntil = 0; say.classList.remove("is-on"); said.clear(); shown = "";
+      me.x = roadX(4) - 1.5; me.s = 4; me.yaw = .12; me.pitch = -.02; fieldUniforms.front.value = -1e4;
+      for (const chunk of fieldChunks) chunk.mesh.visible = false;
+      showLogs(0); sound?.cue("replay");
+      exitLink.hidden = true; shareButton.hidden = true; if (manifestoLink) manifestoLink.hidden = true; part("cover-keys").hidden = false;
+    }
+    started = true; cover.classList.add("is-gone"); canvas.focus(); sound ??= startSound(!soundOn); sound.wake(); // audio may only start from a click
     if (!begun) { begun = true; startedAt = performance.now(); count("walk_start"); }
   }
   showLogs(0);
@@ -241,19 +300,29 @@ export async function start(root: HTMLElement, { tx, locale }: { tx: (text: stri
   addEventListener("keydown", e => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     const k = e.key.toLowerCase(); if (!started) return;
+    sound?.wake();
     if (k === "e") act(); keys.add(k); if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(k)) e.preventDefault();
   }, listen);
   addEventListener("keyup", e => keys.delete(e.key.toLowerCase()), listen); addEventListener("blur", () => keys.clear(), listen);
-  canvas.addEventListener("pointerdown", e => { drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); }, listen);
+  canvas.addEventListener("pointerdown", e => { sound?.wake(); drag = { x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId); }, listen);
   canvas.addEventListener("pointermove", e => { if (!drag) return; me.yaw -= (e.clientX - drag.x) * .0042; me.pitch = clamp(me.pitch - (e.clientY - drag.y) * .003, -.7, .7); drag = { x: e.clientX, y: e.clientY }; }, listen);
   for (const type of ["pointerup", "pointercancel"] as const) { canvas.addEventListener(type, () => { drag = null; }, listen); go.addEventListener(type, () => { holdGo = false; }, listen); }
   canvas.addEventListener("wheel", e => { e.preventDefault(); wheelPush = clamp(wheelPush - e.deltaY * .012, -6, 14); }, { passive: false, signal: stop.signal });
-  go.addEventListener("pointerdown", e => { holdGo = true; go.setPointerCapture(e.pointerId); }, listen);
-  autoButton.addEventListener("click", () => { auto = !auto; autoButton.setAttribute("aria-pressed", String(auto)); if (auto) count("walk_act", "auto"); }, listen);
-  part("exit").addEventListener("click", () => count("walk_act", "exit"), listen);
+  go.addEventListener("pointerdown", e => { sound?.wake(); holdGo = true; go.setPointerCapture(e.pointerId); }, listen);
+  autoButton.addEventListener("click", () => { sound?.wake(); auto = !auto; autoButton.setAttribute("aria-pressed", String(auto)); if (auto) count("walk_act", "auto"); }, listen);
+  exitLink.addEventListener("click", () => count("walk_act", "exit"), listen);
+  manifestoLink?.addEventListener("click", () => count("walk_act", "manifesto"), listen);
+  shareButton.addEventListener("click", () => {
+    count("walk_act", "share");
+    void shareOrCopy(tx("从火堆到巨石"), `${location.origin}${localePath("/chronicle/walk", locale)}`).then((result) => {
+      if (result !== "copied" || stop.signal.aborted) return;
+      shareButton.textContent = tx("链接已复制");
+      setTimeout(() => { if (!stop.signal.aborted) shareButton.textContent = tx("分享这条路"); }, 2000);
+    });
+  }, listen);
   addEventListener("pagehide", leave, listen); document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") leave(); }, listen);
   const soundButton = part("sound"); soundButton.setAttribute("aria-pressed", String(soundOn));
-  soundButton.addEventListener("click", () => { soundOn = !soundOn; soundButton.setAttribute("aria-pressed", String(soundOn)); sound?.setMuted(!soundOn); try { localStorage.setItem("walk-sound", soundOn ? "on" : "off"); } catch { /* storage may be blocked */ } }, listen);
+  soundButton.addEventListener("click", () => { soundOn = !soundOn; soundButton.setAttribute("aria-pressed", String(soundOn)); sound?.setMuted(!soundOn); if (soundOn) sound?.wake(); try { localStorage.setItem("walk-sound", soundOn ? "on" : "off"); } catch { /* storage may be blocked */ } }, listen);
 
   function walk(dt: number) {
     let forward = 0, strafe = 0; const fast = keys.has("shift") ? 2.3 : 1;
@@ -264,38 +333,67 @@ export async function start(root: HTMLElement, { tx, locale }: { tx: (text: stri
     if (auto && touched === null) {
       const want = Math.atan2(-(roadX(me.s + 6) - me.x), 6);
       if (!drag) { me.yaw += Math.atan2(Math.sin(want - me.yaw), Math.cos(want - me.yaw)) * Math.min(1, dt * 1.4); me.pitch -= me.pitch * Math.min(1, dt); }
-      if (!forward && me.s < END_S - 1) forward = .85;
+      const nearSow = sownAt === null && Math.abs(me.s - SOW_S) < 8.5;
+      if (!forward && me.s < END_S - .8) forward = nearSow ? .52 : .85; // ease past the seed basket so auto-walkers have time to sow
     }
     const speed = 7.2 * fast, sin = Math.sin(me.yaw), cos = Math.cos(me.yaw);
     me.x += (-sin * forward + cos * strafe) * speed * dt; me.s += (cos * forward + sin * strafe) * speed * dt;
     me.s = clamp(me.s, -12, END_S); me.x = clamp(me.x, roadX(me.s) - 48, roadX(me.s) + 48);
-    for (const [x, s, r] of blocks) { const gap = Math.hypot(me.x - x, me.s - s), room = r + .35; if (gap < room && gap > 0) { me.x = x + (me.x - x) / gap * room; me.s = s + (me.s - s) / gap * room; } }
+    for (let pass = 0; pass < 2; pass++) {
+      for (let i = 0; i < blocks.length; i++) {
+        const [x, s, r] = blocks[i]!; if (Math.abs(s - me.s) > r + 6) continue;
+        const gap = Math.hypot(me.x - x, me.s - s), room = r + .35;
+        if (gap < room && gap > 0) { me.x = x + (me.x - x) / gap * room; me.s = s + (me.s - s) / gap * room; }
+      }
+      [me.x, me.s] = keepDry(me.x, me.s);
+    }
     if (forward || strafe) me.bob += dt * speed * 1.25;
     pace = Math.min(1, Math.hypot(forward, strafe)) * fast;
   }
 
   // ---------- frame ----------
   const yearFigure = part("year"), yearUnit = part("unit"), yearLabel = part("year-label"), chapter = part("chapter"), dot = part("dot"), useLabel = part("use-label");
-  let shown = "", last = performance.now(), slow = 0, raf = 0;
+  let last = performance.now(), slow = 0, raf = 0, idleTick = 0, dirty = true;
   let pixel = .001; // the height of one pixel one metre from the eye
   function resize() {
     const w = Math.max(1, root.clientWidth), h = Math.max(1, root.clientHeight);
     renderer.setPixelRatio(ratio); renderer.setSize(w, h, false); composer.setPixelRatio(ratio); composer.setSize(w, h);
     camera.aspect = w / h; camera.fov = w < h ? 74 : 62; camera.updateProjectionMatrix();
     pixel = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) / (h * ratio);
+    dirty = true;
   }
   const observer = new ResizeObserver(resize); observer.observe(root);
   function frame(now: number) {
     raf = requestAnimationFrame(frame);
-    const dt = Math.min(.05, (now - last) / 1000); last = now; clock += dt;
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    if (document.hidden) return;
+    // Once the end cover has settled opaque over the world, throttle GPU rendering until the walker replays or resizes.
+    if (ended && touched !== null && clock - touched > 11 && !dirty && ++idleTick % 15 !== 0) return;
+    dirty = false; clock += dt;
     if (dt > .03 && ratio > 1) { if (++slow > 50) { ratio = Math.max(1, ratio - .25); slow = 0; resize(); } } else slow = Math.max(0, slow - 1);
     if (started) {
-      walk(dt); for (const [at, text] of LINES) if (me.s >= at && me.s < at + 40) speak(`line-${at}`, text);
+      walk(dt); for (const [at, text] of LINES) if (me.s >= at && me.s < at + 36) speak(`line-${at}`, text);
       while (passed < MILESTONES.length && me.s >= MILESTONES[passed]![1]) count("walk_reach", MILESTONES[passed++]![0]);
     }
     else if (!ended) me.yaw = .12 + (still ? 0 : Math.sin(clock * .12) * .05);
-    if (sownAt === null && me.s > FIELD_S + 6) sow(false);
-    if (sownAt !== null) fieldUniforms.front.value = SOW_S + (clock - sownAt) * 34;
+    if (sownAt === null && me.s > FIELD_S + 12) sow(false);
+    if (sownAt !== null) {
+      const front = SOW_S + (clock - sownAt) * 34; fieldUniforms.front.value = front;
+      for (const chunk of fieldChunks) chunk.mesh.visible = front > chunk.minS - 4;
+    }
+    if (seedT >= 0) {
+      seedT += dt;
+      if (seedT > 1.35) { seedT = -1; seedBurst.visible = false; }
+      else {
+        for (let i = 0; i < SEEDS; i++) {
+          seedVel[i * 3 + 1] = seedVel[i * 3 + 1]! - 5.4 * dt;
+          seedAt[i * 3] = seedAt[i * 3]! + seedVel[i * 3]! * dt;
+          seedAt[i * 3 + 2] = seedAt[i * 3 + 2]! + seedVel[i * 3 + 2]! * dt;
+          seedAt[i * 3 + 1] = Math.max(ground(seedAt[i * 3]!, seedAt[i * 3 + 2]!) + .02, seedAt[i * 3 + 1]! + seedVel[i * 3 + 1]! * dt);
+        }
+        seedMaterial.opacity = 1 - smooth(.75, 1.35, seedT); seedGeometry.attributes.position!.needsUpdate = true;
+      }
+    }
     if (clock > sayUntil) say.classList.remove("is-on");
 
     setHour(me.s);
@@ -324,21 +422,36 @@ export async function start(root: HTMLElement, { tx, locale }: { tx: (text: stri
     fieldUniforms.fogColor.value.copy(hour.fog); fieldUniforms.fogDensity.value = hour.density; fieldUniforms.backlit.value = smooth(430, 600, me.s) * (1 - dusk * .5);
 
     feedGlow += (1 - feedGlow) * Math.min(1, dt * 1.5);
-    const fire = tendFire(clock, dt, fed, feedGlow);
-    fieldUniforms.fire.value.set(fireX, fireY + .8, -FIRE_S, fire.glow * .5); village.villageLight.intensity = 14 * fire.flicker; village.frame(clock);
+    const fire = tendFire(clock, dt, fed, feedGlow, me.s);
+    fieldUniforms.fire.value.set(fireX, fireY + .8, -FIRE_S, fire.glow * .5);
+    village.villageLight.intensity = 14 * fire.flicker; village.frame(clock, me.s);
+    sowLight.visible = Math.abs(me.s - SOW_S) < 85 && me.s < 335; if (sowLight.visible) sowLight.intensity = 5.5 * (.9 + .1 * fire.flicker);
+    monolithLabel.opacity = smooth(575, 616, me.s) * .88;
     fields.frame(clock, dt, me.s); fields.water.color.copy(hour.top).lerp(hour.horizon, .18).multiplyScalar(.55 + power * .35); fields.waterSun.copy(sunDir); // open water shows the sky overhead, darker than the sky at the horizon
 
-    camera.position.set(me.x, ground(me.x, -me.s) + 1.66 + (still ? 0 : Math.sin(me.bob) * .035), -me.s);
-    camera.rotation.set(me.pitch + dusk * .32 * (1 - Math.abs(me.pitch)), me.yaw, 0, "YXZ"); sky.position.copy(camera.position);
+    const eyeY = ground(me.x, -me.s) + bridgeLift(me.x, me.s) + 1.66 + (still ? 0 : Math.sin(me.bob) * .035);
+    camera.position.set(me.x, eyeY, -me.s);
+    camera.rotation.set(me.pitch + dusk * .36 * (1 - Math.abs(me.pitch)), me.yaw, 0, "YXZ"); sky.position.copy(camera.position);
+    const carry = started && dusk === 0 ? smooth(FIRE_S + 3, FIRE_S + 14, me.s) * (1 - smooth(205, 248, me.s)) * (.72 + fed * .22) : 0;
+    emberLight.visible = carry > .01;
+    if (emberLight.visible) {
+      emberLight.position.set(me.x + Math.cos(me.yaw) * .28 - Math.sin(me.yaw) * .55, eyeY - .24, -me.s - Math.cos(me.yaw) * .55 - Math.sin(me.yaw) * .28);
+      emberLight.intensity = carry * 5.2 * fire.flicker;
+    }
     grass.frame(clock, camera.position, hour.density, pixel);
     clouds.frame(camera.position, still ? 0 : clock, me.s, sunDir, cloudSun.copy(hour.sun).multiplyScalar(power), cloudSky.copy(skyLight.color).multiplyScalar(skyPower), dusk);
-    const [figure, unit] = yearReading(me.s, locale), about = yearsAgo(me.s) > 126, reading = `${figure}|${unit}|${chapterAt(me.s)}`;
-    if (reading !== shown) { shown = reading; yearFigure.textContent = figure; yearUnit.textContent = unit; yearLabel.textContent = tx(about ? "此刻走到 · 约" : "此刻走到"); chapter.textContent = tx(chapterAt(me.s)); }
-    dot.style.top = `${clamp(me.s / MONO_S, 0, 1) * 100}%`;
+    const [figure, unit] = yearReading(me.s, locale), ago = yearsAgo(me.s), about = ago > 126, reading = `${figure}|${unit}|${chapterAt(me.s)}`;
+    if (reading !== shown) {
+      shown = reading; yearFigure.textContent = figure; yearUnit.textContent = unit; yearLabel.textContent = tx(about ? "此刻走到 · 约" : "此刻走到"); chapter.textContent = tx(chapterAt(me.s));
+      backLink.href = started && me.s > 24 && ago > 2 ? `${chronicleBase}?t=${Math.round(2026 - ago)}` : chronicleBase;
+    }
+    dot.style.top = `${clamp((me.s - 4) / (END_S - 4), 0, 1) * 100}%`;
     const what = started ? nearby() : null; use.hidden = !what; if (what) useLabel.textContent = tx(what[1]);
     if (touched !== null && !ended && clock - touched > 9) {
-      ended = true; started = false; part("cover-title").textContent = tx("这一段到此为止"); part("cover-text").textContent = tx("下一段从这块石头出发，走向推测的未来。火、田和碑会留在身后，回头还看得见。");
-      part("cover-keys").hidden = true; part("exit").hidden = false; startButton.textContent = tx("再走一遍"); cover.classList.remove("is-gone"); startButton.focus();
+      ended = true; started = false; backLink.href = chronicleBase;
+      part("cover-title").textContent = tx("这一段到此为止"); part("cover-text").textContent = tx("下一段从这块石头出发，走向推测的未来。火、田和碑会留在身后，回头还看得见。");
+      part("cover-keys").hidden = true; exitLink.hidden = false; shareButton.hidden = false; if (manifestoLink) manifestoLink.hidden = false;
+      startButton.textContent = tx("再走一遍"); cover.classList.remove("is-gone"); startButton.focus();
     }
     composer.render();
   }

@@ -128,7 +128,7 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
   glide(0);
 
   // ---------- the shaduf on the far shore, side-on to the road: an upright, a rocking beam with a stone lashed on, a pot on a rope ----------
-  let beam: THREE.Mesh, bucket: THREE.Mesh;
+  let beam: THREE.Mesh, bucket: THREE.Mesh, puller: THREE.Mesh, pullerY = 0;
   const LONG = 3.3;
   { const x = pondX, s = pondS + shore(Math.PI / 2) - .45 + LONG, turn = facing(x, s, pondX, pondS), wl = pondLevel - floor(x, -s), rope = 1.33 - wl;
     stand(merged([limb(V(0, -.3, 0), V(0, 2.25, 0), .1, .085, wood, { sides: 6 }), ...[-1, 1].map((side) => limb(V(0, 2.12, 0), V(side * .17, 2.66, 0), .055, .045, wood, { sides: 5, capped: true })),
@@ -138,11 +138,17 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
       ...[-1.38, -1.62].map((z) => faceted(new THREE.TorusGeometry(.27, .016, 3, 8), lash).translate(0, -.2, z))])), matte);
     bucket = new THREE.Mesh(own(merged([limb(V(0, 0, 0), V(0, -rope, 0), .013, .013, lash, { sides: 3 }), pot().scale(.55, .55, .55).translate(0, -rope - .42, 0)])), matte);
     beam.castShadow = bucket.castShadow = true; pivot.add(beam, bucket); blocks.push([x, s, .35]);
-    const spot = world(V(-.3, 0, LONG - .42), x, s, turn), ps = -spot.z; // the one working it stands on the shore beside the rope
-    stand(person(rand, POSES.pull, { cloth: linen[0], skin: skins[0], dress: "tunic", small }).rotateY(.3), spot.x, ps, turn, Math.max(0, pondLevel + .04 - floor(spot.x, spot.z))); blocks.push([spot.x, ps, .4]);
+    const spot = world(V(-.3, 0, LONG - .42), x, s, turn), ps = -spot.z, lift = Math.max(0, pondLevel + .04 - floor(spot.x, spot.z)); // the one working it stands on the shore beside the rope
+    pullerY = floor(spot.x, spot.z) + lift - .01;
+    puller = new THREE.Mesh(own(person(rand, POSES.pull, { cloth: linen[0], skin: skins[0], dress: "tunic", small }).rotateY(.3)), matte);
+    puller.position.set(spot.x, pullerY, spot.z); puller.rotation.set(0, turn, 0, "YXZ"); puller.castShadow = puller.receiveShadow = true; scene.add(puller);
+    blocks.push([spot.x, ps, .4]);
   }
-  /** The beam tilted by `angle` (long arm down), the rope hanging straight from its tip. */
-  const swing = (angle: number) => { beam.rotation.x = angle; bucket.position.set(0, -LONG * Math.sin(angle), LONG * Math.cos(angle)); };
+  /** The beam tilted by `angle` (long arm down), the rope hanging straight from its tip, and the worker hauling in time with it. */
+  const swing = (angle: number) => {
+    beam.rotation.x = angle; bucket.position.set(0, -LONG * Math.sin(angle), LONG * Math.cos(angle));
+    puller.rotation.x = (angle - .1) * .78; puller.position.y = pullerY - Math.max(0, angle) * .22;
+  };
   swing(-.02);
   { // a plank bridge over the canal into the harvest, someone crossing it toward the road with a sheaf
     const i = first + Math.round((424 - CANAL.from) / .9), [x, s] = stream[i]!, plank = of(2, lit("#6a5640", "#a88f6c", rand)), parts = [-.36, .36].map((z) => limb(V(-1.75, .2, z), V(1.75, .22, z), .07, .065, wood, { capped: true }));
@@ -302,6 +308,53 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
     const hub = new THREE.Group(); hub.position.copy(world(V(0, 36.6, 2.3), x, s, turn, -.3)).y -= base; hub.rotation.y = turn; mast.add(hub);
     rotor = new THREE.Mesh(own(merged(blades)), matte); rotor.castShadow = true; hub.add(rotor);
   }
+  let dishHead: THREE.Group, telemetry: THREE.MeshBasicMaterial;
+  { // a parabolic radio telescope listening to the sky (late 20th century)
+    const [s, off] = CLEARINGS.dish, x = at(off, s), turn = facing(x, s, roadX(545), 545) - .25, base = floor(x, -s) - .2;
+    const concrete = of(1, lit("#77746d", "#b5b0a6", rand, .08)), dishWhite = lit("#9da3a8", "#e8ecee", rand, .04), strut = lit("#5d6369", "#9aa1a7", rand, .06);
+    const pier: THREE.BufferGeometry[] = [];
+    put(pier, merged([
+      turned([[2.7, 0], [2.6, .5], [1.8, .7], [1.35, 6.2], [1.6, 6.8], [0, 6.8]], small ? 10 : 16, concrete),
+      faceted(new THREE.BoxGeometry(2.3, 1.5, 2.0), strut).translate(0, 7.45, 0),
+    ]), x, s, turn, -.2);
+    const mount = era(pier, base, 512, 532); blocks.push([x, s, 2.9]);
+    dishHead = new THREE.Group(); dishHead.position.copy(world(V(0, 8.2, 0), x, s, turn, -.2)).y -= base; dishHead.rotation.y = turn; mount.add(dishHead);
+    const profile: Array<[number, number]> = Array.from({ length: 8 }, (_, i) => { const r = i / 7 * 6.8; return [r, r * r / 17]; });
+    const reflector: THREE.BufferGeometry[] = [
+      turned(profile, small ? 14 : 24, dishWhite),
+      turned([[.6, -.65], [.7, .05], [0, .05]], 10, strut),
+      turned([[.3, 4.3], [.35, 4.9], [.22, 5.1], [0, 5.1]], 10, strut), // prime-focus receiver
+    ];
+    for (let k = 0; k < 4; k++) {
+      const a = k * Math.PI / 2 + Math.PI / 4, r = 5.4, y = r * r / 17;
+      reflector.push(limb(V(Math.cos(a) * r, y, Math.sin(a) * r), V(0, 4.6, 0), .06, .045, strut, { sides: 4 }));
+    }
+    for (let k = 0; k < 8; k++) {
+      const a = k * Math.PI / 4, r = 6.4, y = r * r / 17;
+      reflector.push(limb(V(Math.cos(a) * .65, -.35, Math.sin(a) * .65), V(Math.cos(a) * r, y - .12, Math.sin(a) * r), .075, .05, strut, { sides: 4 }));
+    }
+    const bowl = new THREE.Mesh(own(merged(reflector).rotateX(.96)), matte); bowl.castShadow = bowl.receiveShadow = true; dishHead.add(bowl);
+  }
+  { // a low dark compute hall in the wheat: slate walls, cooling louvers, dry-cooler shrouds and a narrow telemetry slit
+    const [s, off] = CLEARINGS.compute, x = at(off, s), turn = facing(x, s, roadX(578), 578), base = floor(x, -s) - .25;
+    const pad = of(1, lit("#605e58", "#949088", rand, .06)), slate = lit("#171b22", "#2b323d", rand, .05), trim = flat("#101318", rand, .04), alloy = lit("#4c535b", "#8a929a", rand, .06);
+    const hall: THREE.BufferGeometry[] = [
+      faceted(new THREE.BoxGeometry(14.2, .45, 8.6), pad).translate(0, .1, 0),
+      faceted(new THREE.BoxGeometry(12.8, 5.4, 7.0), slate).translate(0, 3.0, 0),
+      faceted(new THREE.BoxGeometry(13.4, .32, 7.5), trim).translate(0, 5.82, 0),
+      faceted(new THREE.BoxGeometry(10.2, .22, .18), trim).translate(0, 3.9, 3.52), // recessed telemetry channel
+    ];
+    for (let i = -5; i <= 5; i++) if (Math.abs(i) > 1) hall.push(faceted(new THREE.BoxGeometry(.12, 3.8, .28), trim).translate(i * 1.0, 2.45, 3.56)); // cooling intake louvers
+    for (let i = -1; i <= 1; i++) { // three dry-cooler fan stacks on the side pad
+      hall.push(faceted(new THREE.BoxGeometry(1.6, 1.6, 1.6), alloy).translate(7.4, 1.1, i * 2.0));
+      hall.push(turned([[.66, 0], [.66, .32], [.58, .36], [0, .28]], small ? 8 : 12, trim).translate(7.4, 1.9, i * 2.0));
+    }
+    const list: THREE.BufferGeometry[] = []; put(list, merged(hall), x, s, turn, -.25);
+    const building = era(list, base, 538, 558); blocks.push([x, s, 7.5]);
+    telemetry = own(new THREE.MeshBasicMaterial({ color: new THREE.Color("#dfa855"), side: THREE.DoubleSide }));
+    const strip = new THREE.Mesh(own(merged([-4.1, -2.6, -1.2, .4, 2.0, 3.6].map((u, i) => new THREE.PlaneGeometry(i % 2 ? .6 : 1.05, .07).translate(u, 0, 0)))), telemetry);
+    const slit = world(V(0, 3.9, 3.63), x, s, turn, -.25); strip.position.set(slit.x, slit.y - base, slit.z); strip.rotation.y = turn; building.add(strip);
+  }
 
   // ---------- life: trees along the field margins, poplars by the mill, lone trees out in the open field ----------
   for (let i = 0; i < (small ? 8 : 14); i++) { const s = 270 + rand() * 200; plant("fig", at((rand() < .5 ? -1 : 1) * (37 + rand() * 12), s), s, 6 + rand() * 3, .45); }
@@ -347,13 +400,17 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
   }
   fly(0);
 
-  /** One frame out here: the machines rise as the walker `s` reaches their years; sails, rotor, shaduf, birds and water move. Allocates nothing. */
+  /** One frame out here: the machines rise as the walker `s` reaches their years; sails, rotor, dish, shaduf, birds and water move. Allocates nothing. */
+  const dishBaseTurn = dishHead.rotation.y;
   function frame(clock: number, _dt: number, s: number) {
     for (let i = 0; i < eras.length; i++) { const { mesh, from, to } = eras[i]!, k = smooth(from, to, s); mesh.visible = k > 0; mesh.scale.y = Math.max(k, .001); }
     const turning = smooth(452, 458, s); sails.visible = turning > 0; sails.scale.setScalar(Math.max(turning, .001)); // the sails go up only once the tower stands
+    const nearCanal = s > 315 && s < 495; shine.visible = nearCanal;
     if (still) return;
     sails.rotation.z = -clock * .45; rotor.rotation.z = -clock * .8; swing(.12 - .14 * Math.cos(clock * 1.047)); // the pot dips every six seconds
-    fly(clock); glide(clock); ripple(clock); waterTime.value = clock;
+    dishHead.rotation.y = dishBaseTurn + Math.sin(clock * .09) * .22;
+    const pulse = .72 + .28 * Math.sin(clock * 2.1) * Math.cos(clock * .7); telemetry.color.setRGB(.92 * pulse, .68 * pulse, .34 * pulse);
+    fly(clock); if (nearCanal) glide(clock); if (Math.abs(s - pondS) < 90) ripple(clock); waterTime.value = clock;
   }
   return { water, waterSun, frame };
 }

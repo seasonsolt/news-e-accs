@@ -13,9 +13,9 @@ const SOURCE_LABELS: Record<SubscribeSource, string> = {
 };
 
 const PLACE_LABELS: Record<string, string> = {
-  start: "没走到火堆", fire: "火堆", sow: "播种处", village: "村落", fields: "水渠与麦田", machines: "风车升起处", stone: "巨石跟前",
+  start: "没走到火堆", fire: "火堆", cave: "岩画石檐", sow: "播种处", village: "村落", fields: "水渠与麦田", machines: "风车升起处", compute: "天线与算力机房", stone: "巨石跟前",
 };
-const ACT_LABELS: Record<string, string> = { feed: "添柴", sow: "亲手播种", auto: "开自动前行", replay: "再走一遍", exit: "终点返回加速史" };
+const ACT_LABELS: Record<string, string> = { feed: "添柴", sow: "亲手播种", auto: "开自动前行", replay: "再走一遍", exit: "终点返回加速史", manifesto: "终点读宣言", share: "终点分享" };
 const TIME_LABELS: Record<string, string> = { "0-1m": "不到 1 分钟", "1-2m": "1–2 分钟", "2-4m": "2–4 分钟", "4m+": "4 分钟以上" };
 
 const stepValue = (s: { kind: string; value: string }) => `${s.kind}:${s.value}`;

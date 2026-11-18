@@ -158,6 +158,7 @@ export default function ManifestoPage() {
         <p className="manifesto-signature">{text.closing.signature}</p>
         <p className="manifesto-note">{text.closing.note}</p>
         <div className="manifesto-more">
+          {FEATURES.timeMachine && webModules().some((m) => m.name === "scenes") && <Link to="/chronicle/walk" className="deck-button is-primary">{text.more.walk}</Link>}
           <button type="button" className="deck-button" onClick={share}>{shared ? text.more.copied : text.more.share}</button>
           <a href={localePath(PATH, other)} hrefLang={other === "zh" ? "zh-CN" : "en"} lang={other === "zh" ? "zh-CN" : "en"} className="deck-button">{text.more.other}</a>
           <Link to="/what-is-eacc" className="deck-button">{text.more.whatIs}</Link>

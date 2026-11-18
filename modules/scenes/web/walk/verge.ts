@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { Kit } from "./camp.ts";
-import { CANAL, CLEARINGS, FIELD_S, MONO_S, END_S, cleared, mix, noise, roadX, smooth } from "./land.ts";
+import { CANAL, CLEARINGS, END_S, FIELD_S, MONO_S, VILLAGE, cleared, mix, noise, roadX, smooth } from "./land.ts";
 import { soil } from "./groundcover.ts";
 import { blob, flat, limb, merged, rock, triangles } from "./shapes.ts";
 
@@ -61,7 +61,7 @@ export function buildVerge({ scene, own, rand, small, floor, blocks }: Pick<Kit,
     { shape: null, size: [.65, 1.05] }, // tall grass, grown by grass.ts
   ];
   const spots: Array<Array<[number, number, number]>> = kinds.map(() => []), budget = small ? 2500 : 6000;
-  const free = (x: number, s: number) => s > 262 && Math.hypot(x - stoneX, s - MONO_S) > 25 && Math.abs(x - roadX(s)) > roadHalf(s) + .1 && !(s > 316 && s < 352 && x - roadX(s) > 7 && x - roadX(s) < 31)
+  const free = (x: number, s: number) => s > 262 && Math.hypot(x - stoneX, s - MONO_S) > 25 && Math.abs(x - roadX(s)) > roadHalf(s) + .1 && !(s > VILLAGE.from && s < VILLAGE.to && x - roadX(s) > 7 && x - roadX(s) < 31)
     && !Object.values(CLEARINGS).some(([cs, off, r]) => Math.hypot(x - roadX(cs) - off, s - cs) < r + .5) && blocks.every(([bx, bs, r]) => Math.hypot(x - bx, s - bs) > r + .2);
   let placed = 0;
   for (let drift = 0; drift < 4000 && placed < budget; drift++) { // drifts: one kind mostly, grown around a spot by the road, a little way into the wheat, or on a canal bank

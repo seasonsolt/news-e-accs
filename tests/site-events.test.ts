@@ -158,9 +158,9 @@ test("daily interaction counts are anonymous, uncached, and visible only in the 
   const { walk: walked } = summary.engagement;
   assert.deepEqual({ ...walked, reached: walked.reached.map((r) => ({ ...r })), acts: walked.acts.map((r) => ({ ...r })), left: walked.left.map((r) => ({ ...r })), times: walked.times.map((r) => ({ ...r })) }, {
     views: 9, starts: 5, finishes: 2,
-    reached: [{ place: "fire", count: 2 }, { place: "sow", count: 1 }, { place: "village", count: 0 }, { place: "fields", count: 0 }, { place: "machines", count: 0 }, { place: "stone", count: 0 }],
-    acts: [{ act: "feed", count: 1 }, { act: "sow", count: 0 }, { act: "auto", count: 0 }, { act: "replay", count: 0 }, { act: "exit", count: 1 }],
-    left: [{ place: "start", count: 1 }, { place: "fire", count: 0 }, { place: "sow", count: 1 }, { place: "village", count: 0 }, { place: "fields", count: 0 }, { place: "machines", count: 0 }, { place: "stone", count: 0 }],
+    reached: [{ place: "fire", count: 2 }, { place: "cave", count: 0 }, { place: "sow", count: 1 }, { place: "village", count: 0 }, { place: "fields", count: 0 }, { place: "machines", count: 0 }, { place: "compute", count: 0 }, { place: "stone", count: 0 }],
+    acts: [{ act: "feed", count: 1 }, { act: "sow", count: 0 }, { act: "auto", count: 0 }, { act: "replay", count: 0 }, { act: "exit", count: 1 }, { act: "manifesto", count: 0 }, { act: "share", count: 0 }],
+    left: [{ place: "start", count: 1 }, { place: "fire", count: 0 }, { place: "cave", count: 0 }, { place: "sow", count: 1 }, { place: "village", count: 0 }, { place: "fields", count: 0 }, { place: "machines", count: 0 }, { place: "compute", count: 0 }, { place: "stone", count: 0 }],
     times: [{ time: "0-1m", count: 0 }, { time: "1-2m", count: 1 }, { time: "2-4m", count: 0 }, { time: "4m+", count: 0 }],
   });
 });

@@ -104,12 +104,29 @@ test("the chronicle invites the reader into the walk under the moment it reads o
     }
     const page = await fetch(`${fixture.origin}${prefix}/chronicle/walk`);
     assert.equal(page.status, 200);
-    const scene = parseHTML(await page.text()).document;
+    assert.match(page.headers.get("cache-control") ?? "", /s-maxage=3600/);
+    const html = await page.text();
+    const scene = parseHTML(html).document;
     // The walk draws its own chrome; its canvas is the browser's.
     assert.equal(scene.querySelector('nav[aria-label="主导航"], nav[aria-label="Main navigation"]'), null);
     assert.equal(scene.querySelector("canvas"), null);
     assert.ok(scene.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith(`${prefix}/chronicle/walk`));
+    assert.match(scene.querySelector('meta[property="og:image"]')!.getAttribute("content")!, /\/media\/art\/manifesto-monolith-og\.jpg$/);
     assert.doesNotMatch(scene.querySelector('meta[name="robots"]')?.getAttribute("content") ?? "", /noindex/);
+    const ld = [...html.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].flatMap(([, raw]) => {
+      const parsed = JSON.parse(raw!) as Record<string, unknown> | Array<Record<string, unknown>>;
+      return Array.isArray(parsed) ? parsed : [parsed];
+    });
+    const app = ld.find((entry) => entry["@type"] === "WebApplication")!;
+    assert.ok(app, `${prefix}/chronicle/walk WebApplication`);
+    for (const key of ["name", "description", "url", "inLanguage", "image", "applicationCategory", "operatingSystem"]) assert.ok(typeof app[key] === "string" && app[key].length > 0, `${key}`);
+    const offers = app.offers as Record<string, string>, author = app.author as Record<string, string>;
+    assert.equal(offers["@type"], "Offer"); assert.ok(offers.price && offers.priceCurrency);
+    assert.equal(author["@type"], "Organization"); assert.ok(author.name && author.url);
+    const crumbs = ld.find((entry) => entry["@type"] === "BreadcrumbList")!;
+    assert.ok(Array.isArray(crumbs.itemListElement) && crumbs.itemListElement.length === 3);
+    const manifesto = parseHTML(await (await fetch(`${fixture.origin}${prefix}/manifesto`)).text()).document;
+    assert.ok(manifesto.querySelector(`.manifesto-more a[href="${prefix}/chronicle/walk"]`), `${prefix}/manifesto links to the walk`);
   }
 });
 
