@@ -119,6 +119,11 @@ test("mentions cannot choose a timeline origin, anchor, representative, or a lat
   assert.equal(detail.latest, "Dots 后续更新");
   assert.equal(detail.officialReports.length, 1, "only tier T1 has the first-party label");
   assert.equal(detail.developments[0]!.representative.source.firstParty, false);
+  assert.ok(!detail.timeline.some((r) => r.id === earlyMention || r.id === lateMention), "a roundup is not one of the event's reports");
+  assert.deepEqual(detail.roundups.map((r) => r.id), [lateMention, earlyMention], "roundups that list the event are shown apart, newest first");
+  assert.equal(detail.reportCount, detail.timeline.length);
+  assert.equal(detail.sourceCount, 3, "organization, media and the unselected t1 report; the roundups add no source");
+  assert.equal((await v1Story(g.storyId))!.story.reportCount, detail.reportCount);
   const edition = await candidates(at(100), now);
   assert.equal(edition.find((c) => c.factId === g.factPublicId)?.itemId, official, "report editions use the same authority within their own time window");
   assert.equal(edition.find((c) => c.itemId === official)?.firstParty, false);

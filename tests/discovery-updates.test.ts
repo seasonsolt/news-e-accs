@@ -95,22 +95,26 @@ test('a story with a digest and reports from three sources is listed and notifie
   await material('story-one-b');
   await material('story-one-c');
   for (const [id, source] of [['story-wide-a', 'discovery-editorial'], ['story-wide-b', 'discovery-editorial-b'], ['story-wide-c', 'discovery-editorial-c'],
-    ['story-bare-a', 'discovery-editorial'], ['story-bare-b', 'discovery-editorial-b'], ['story-bare-c', 'discovery-editorial-c']]) await material(id!, { source });
-  const add = async (ids: string[], digest: string | null) => {
+    ['story-bare-a', 'discovery-editorial'], ['story-bare-b', 'discovery-editorial-b'], ['story-bare-c', 'discovery-editorial-c'],
+    ['story-listed-a', 'discovery-editorial'], ['story-listed-b', 'discovery-editorial-b'], ['story-listed-c', 'discovery-editorial-c']]) await material(id!, { source });
+  const add = async (ids: string[], digest: string | null, mentions: string[] = []) => {
     const publicId = randomUUID();
     const [story] = await sql<{ id: number }[]>`INSERT INTO stories (public_id,title,latest_at,digest,digest_updated_at,created_at,updated_at)
       VALUES (${publicId},'事件','2026-10-08T00:00:00Z',${digest},${digest ? '2026-10-07T00:00:00Z' : null},'2026-10-01','2026-10-05') RETURNING id`;
     const [fact] = await sql<{ id: number }[]>`INSERT INTO facts (public_id,story_id,title) VALUES (${randomUUID()},${story!.id},'事实') RETURNING id`;
     for (const id of ids) await sql`INSERT INTO fact_articles (fact_id,article_id,role) VALUES (${fact!.id},${id},'primary')`;
+    for (const id of mentions) await sql`INSERT INTO fact_articles (fact_id,article_id,role) VALUES (${fact!.id},${id},'mention')`;
     return publicId;
   };
   const oneSource = await add(['story-one-a', 'story-one-b', 'story-one-c'], '综述');
   const noDigest = await add(['story-bare-a', 'story-bare-b', 'story-bare-c'], null);
   const standing = await add(['story-wide-a', 'story-wide-b', 'story-wide-c'], '综述');
+  const listedOnly = await add(['story-listed-a', 'story-listed-b'], '综述', ['story-listed-c']);
   const at = new Date('2026-10-09');
   for (const listed of [await loadDiscoveryEntries(at), await loadDiscoveryEntries(at, { stories: 500, urls: 100 })]) {
     assert.ok(!listed.some(e => e.loc === `/story/${oneSource}`), 'three reports from one outlet: its page is noindex, no engine is asked to fetch it');
     assert.ok(!listed.some(e => e.loc === `/story/${noDigest}`), 'no digest: the page only lists reports');
+    assert.ok(!listed.some(e => e.loc === `/story/${listedOnly}`), 'a third outlet that only lists the event in a roundup does not report it');
     assert.ok(listed.some(e => e.loc === `/story/${standing}`));
   }
   // The event page's robots tag reads the same rule.
@@ -118,7 +122,7 @@ test('a story with a digest and reports from three sources is listed and notifie
     const [row] = await sql<{ id: number }[]>`SELECT id FROM stories WHERE public_id = ${publicId}`;
     return (await loadStoryDetail(Number(row!.id), at))!.indexable;
   };
-  assert.deepEqual([await indexable(oneSource), await indexable(noDigest), await indexable(standing)], [false, false, true]);
+  assert.deepEqual([await indexable(oneSource), await indexable(noDigest), await indexable(listedOnly), await indexable(standing)], [false, false, false, true]);
 });
 
 test('dry runs leave changes pending, corrections and disappeared URLs are submitted again', async () => {

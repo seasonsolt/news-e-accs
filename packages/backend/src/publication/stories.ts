@@ -102,6 +102,9 @@ function reportView(r: ReportRow): StoryReportView {
 }
 
 /** The story's reports newest first, its developments, and its latest and first non-mention reports. */
+/** Roundups that list an event, newest first, shown apart from its reports. */
+const ROUNDUPS_SHOWN = 20;
+
 async function storyContent(storyId: number, now: Date) {
   return (await storyContents([storyId], now)).get(storyId) ?? null;
 }
@@ -184,7 +187,9 @@ function contentOf(
     reports.find((r) => r.id === latest.id)?.header_source_language ?? "unknown",
   ]);
   const sourceLanguage = languages.size === 1 ? s.editorial_language : "unknown";
-  return { s, reports, primaryReports, developments, latestReport, firstReportAt, text, latest, excerpt, sourceLanguage };
+  // A roundup that only lists this event is not one of its reports: it stays out of the timeline and the counts.
+  const roundups = reports.filter((r) => r.role === "mention");
+  return { s, reports: primaryReports, roundups, developments, latestReport, firstReportAt, text, latest, excerpt, sourceLanguage };
 }
 
 /** Only the prose that identifies an edition; uses the same reports, facts and evidence as story detail. */
@@ -228,7 +233,7 @@ async function relatedStories(storyId: number, now: Date) {
 export async function loadStoryDetail(storyId: number, now = new Date()): Promise<StoryDetail | null> {
   const content = await storyContent(storyId, now);
   if (!content) return null;
-  const { s, reports, developments, firstReportAt, text, latest, excerpt, sourceLanguage } = content;
+  const { s, reports, roundups, developments, firstReportAt, text, latest, excerpt, sourceLanguage } = content;
   const [why] = await sql<{ p48: number; p6: number; r24: number }[]>`
     WITH cs AS (SELECT * FROM ${currentSignals()} c WHERE story_id = ${storyId} AND observed_at <= ${now})
     SELECT count(DISTINCT participant_key) FILTER (WHERE observed_at > ${now}::timestamptz - interval '48 hours') AS p48,
@@ -277,8 +282,9 @@ export async function loadStoryDetail(storyId: number, now = new Date()): Promis
       rank: entry?.rank ?? null,
     },
     developments: developments.map((d) => ({ ...d, representative: reportView(d.representative) })),
-    officialReports: reports.filter((r) => r.role !== "mention" && r.first_party).slice(0, 12).map(reportView),
+    officialReports: reports.filter((r) => r.first_party).slice(0, 12).map(reportView),
     timeline: reports.slice(0, 100).map(reportView),
+    roundups: roundups.slice(0, ROUNDUPS_SHOWN).map(reportView),
     heat: heat.map((h): HeatPoint => ({ hour: h.hour.toISOString(), heat: Number(h.heat), participants: h.participants })),
     related: related.map((r) => ({ publicId: r.public_id, title: r.title, relation: r.relation })),
     topics,

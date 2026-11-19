@@ -85,7 +85,7 @@ const api = createServer((req, res) => {
     publicId: "subscribe-story", title: "事件标题", status: "active", reportCount: 0, sourceCount: 0,
     firstReportAt: at, latestAt: at, digest: "事件综述", digestUpdatedAt: null, summary: null, excerpt: null, latest: null,
     whyHot: { participants48h: 0, newParticipants6h: 0, recentReports24h: 0, observationComplete: true, rank: null, heat: null },
-    developments: [], officialReports: [], timeline: [], heat: [], related: [], topics: [], latestReport: null, mentions: [],
+    developments: [], officialReports: [], timeline: [], roundups: [], heat: [], related: [], topics: [], latestReport: null, mentions: [],
   });
   if (url.pathname === "/api/site/meta") return send({ changelogVersion: null });
   if (url.pathname === `/api/site/items/${item.id}`) return send(detail);

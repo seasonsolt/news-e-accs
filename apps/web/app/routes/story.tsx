@@ -28,7 +28,7 @@ import { isReload } from "../lib/restore";
 import { Badge, SelectedBadge } from "../components/ui/Badge";
 import { PillTabs } from "../components/ui/Tabs";
 import { Select } from "../components/ui/Controls";
-import { IconArrowLeft, IconCalendar, IconChevronRight, IconClock, IconDoc, IconUsers } from "../components/icons";
+import { IconArrowLeft, IconCalendar, IconChevronDown, IconChevronRight, IconClock, IconDoc, IconUsers } from "../components/icons";
 import { inNav } from "../components/shell/nav";
 import { Deck } from "../components/shell/Deck";
 import { loadParts } from "../site-modules";
@@ -459,6 +459,19 @@ export default function StoryPage() {
               <p className="pt-3 text-center text-[12px] text-ink-4">
                 <Text value="显示最近" /> {story.timeline.length} <Text value="篇，共" /> {story.reportCount} <Text value="篇报道。" />
               </p>
+            )}
+            {story.roundups.length > 0 && (
+              <details className="disclosure group mt-4 border-t border-line">
+                <summary className="flex items-center justify-between gap-3 py-3 text-[13px] text-ink-4 transition-colors hover:text-ink-2">
+                  {tx("另有 {0} 篇汇总提到这件事", story.roundups.length)}
+                  <IconChevronDown size={14} className="shrink-0 transition-transform duration-200 group-open:rotate-180" />
+                </summary>
+                <ol>
+                  {story.roundups.map((r) => (
+                    <TimelineRow key={r.id} r={r} />
+                  ))}
+                </ol>
+              </details>
             )}
           </Panel>
 

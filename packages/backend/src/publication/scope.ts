@@ -41,14 +41,15 @@ export function storyReportCondition(now: Date) {
 
 /**
  * Event `story` (a `stories` row alias) stands in search (STORY_INDEX_MIN_SOURCES): it has a written digest
- * and its public reports, counted as the event page counts them, come from enough sources. The event page's
- * robots tag, the sitemap and the articles it stands for all read this one rule.
+ * and its public reports, counted as the event page counts them (evidence, not roundups that list it), come
+ * from enough sources. The event page's robots tag, the sitemap and the articles it stands for all read
+ * this one rule.
  */
 export function storyIndexCondition(story: ReturnType<typeof sql>, now: Date) {
   return sql`(${story}.digest IS NOT NULL AND (
     SELECT count(DISTINCT p.source_id) FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id
     JOIN publications p ON p.article_id = fa.article_id JOIN sources s ON s.id = p.source_id
-    WHERE f.story_id = ${story}.id AND ${storyReportCondition(now)}) >= ${STORY_INDEX_MIN_SOURCES})`;
+    WHERE f.story_id = ${story}.id AND ${storyReportCondition(now)} AND ${evidenceCondition()}) >= ${STORY_INDEX_MIN_SOURCES})`;
 }
 
 /** Selected set as the website shows it (home timeline, reading groups, topics): every selected report. */

@@ -29,7 +29,7 @@ const seoStory = {
   publicId: "seo-story", title: "示例事件", status: "active", reportCount: 2, sourceCount: 2, firstReportAt: "2026-10-08T00:00:00.000Z",
   latestAt: "2026-10-09T00:00:00.000Z", digest: "事件综述", digestUpdatedAt: null, summary: null, excerpt: null, latest: null,
   whyHot: { participants48h: 0, newParticipants6h: 0, recentReports24h: 0, observationComplete: true, rank: null, heat: null },
-  developments: [], officialReports: [], timeline: [], heat: [], related: [], topics: [], latestReport: null, mentions: [],
+  developments: [], officialReports: [], timeline: [], roundups: [], heat: [], related: [], topics: [], latestReport: null, mentions: [],
 };
 
 /** The JSON-LD entries of a rendered page. */

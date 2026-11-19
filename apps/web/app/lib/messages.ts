@@ -863,6 +863,7 @@ export const ENGLISH: Readonly<Record<string, string>> = {
   "显示最近": "Showing the latest ",
   "篇，共": " of ",
   "篇报道。": " reports.",
+  "另有 {0} 篇汇总提到这件事": "Also mentioned in {0} {roundup|roundups}",
   "本事件热度走势": "Event heat trend",
   "关联事件": "Related events",
   "同一故事线": "Same story line",

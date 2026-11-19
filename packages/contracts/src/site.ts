@@ -362,6 +362,8 @@ export interface StoryDetail {
   developments: StoryFactView[];
   officialReports: StoryReportView[];
   timeline: StoryReportView[];
+  /** Roundups and digests that list this event among others, newest first; not counted as its reports. */
+  roundups: StoryReportView[];
   heat: HeatPoint[];
   related: Array<StoryRef & { relation: "storyline" | "related" }>;
   /** The topics its reports belong to, most reports first. */
