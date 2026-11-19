@@ -42,9 +42,9 @@ const citation = (available: boolean): ReportCitation => ({ itemId: available ? 
 const leadless = (): ReportDetail => ({ ...report("daily"), key: "2026-10-05", lead: null, leadItemId: null,
   sections: [{ label: "模型", summary: null, items: [citation(false)] }], highlights: [{ ...citation(true), itemId: "metadata-pick", title: "同一时段值得一看的报道" }] });
 const report = (kind: ReportKind): ReportDetail => ({ kind, key: kind === "daily" ? "2026-10-04" : kind === "weekly" ? "2026-W40" : "2026-10", issueNumber: 1, title: `${SITE.name} 测试刊物`, windowStart: at, windowEnd: at, generatedAt: at, lead: { title: "本期已验证的重要变化", leadParagraph: "本期的导读与依据。" }, leadItemId: item.id, overview: null, highlights: [citation(true)], sections: [], flashes: [], cover: null, metrics: {}, readingMinutes: 1, prev: null, next: null, mentions: [] });
-const story: StoryDetail = { publicId: "metadata-story", title: "测试事件的最新进展", status: "settled", reportCount: 1, sourceCount: 1, firstReportAt: at, latestAt: at, digest: "当前可核实的事件综述。", digestUpdatedAt: "2026-10-04T09:00:00.000Z", summary: null, excerpt: null, latest: null, latestReport: null, whyHot: { participants48h: 0, newParticipants6h: 0, recentReports24h: 0, observationComplete: true, rank: null }, developments: [], officialReports: [], timeline: [{ id: item.id, title: item.title, summary: item.summary, source: { name: item.source.name, firstParty: true }, originalUrl: detail.links.original, publishedAt: at, selected: true }], heat: [], related: [], topics: [], mentions: [] };
-/** The same event once a second report joined it. */
-const severalReports: StoryDetail = { ...story, publicId: "metadata-story-several", reportCount: 2, sourceCount: 2 };
+const story: StoryDetail = { publicId: "metadata-story", title: "测试事件的最新进展", status: "settled", reportCount: 1, sourceCount: 1, indexable: false, firstReportAt: at, latestAt: at, digest: "当前可核实的事件综述。", digestUpdatedAt: "2026-10-04T09:00:00.000Z", summary: null, excerpt: null, latest: null, latestReport: null, whyHot: { participants48h: 0, newParticipants6h: 0, recentReports24h: 0, observationComplete: true, rank: null }, developments: [], officialReports: [], timeline: [{ id: item.id, title: item.title, summary: item.summary, source: { name: item.source.name, firstParty: true }, originalUrl: detail.links.original, publishedAt: at, selected: true }], heat: [], related: [], topics: [], mentions: [] };
+/** The same event once enough sources reported it (STORY_INDEX_MIN_SOURCES). */
+const severalReports: StoryDetail = { ...story, publicId: "metadata-story-several", reportCount: 3, sourceCount: 3, indexable: true };
 const clippedDigest = "Google has launched Gemini 4 Argon globally for developers, businesses and eligible subscribers, with access also available in Cursor and llm-gemini 0.35. Pro and Ultra subscribers can use it in the Gemini app and Search.";
 const clippedStory: StoryDetail = { ...story, publicId: "metadata-clip", title: "Gemini support lands in Cursor and llm-gemini", digest: clippedDigest, timeline: story.timeline.map((report) => ({ ...report, originalUrl: "https://example.org/gemini" })) };
 let web: WebServer;
@@ -115,9 +115,9 @@ test("全部动态's later pages leave search to its first page and keep their l
   assert.ok($("main").text().includes(item.title), "the page itself is unchanged");
 });
 
-test("an event page stands in search once it gathers more than one report", async () => {
+test("an event page stands in search only when the backend says it may", async () => {
   const single = await page(`/story/${story.publicId}`);
-  assert.equal(single("meta[name=robots]").attr("content"), "noindex, follow", "one report: its own article page stands for it");
+  assert.equal(single("meta[name=robots]").attr("content"), "noindex, follow", "a thin event stays out of search");
   const several = await page(`/story/${severalReports.publicId}`);
   assert.equal(several("meta[name=robots]").attr("content"), "max-image-preview:large");
   assert.equal(several("meta[name=googlebot]").length, 0);

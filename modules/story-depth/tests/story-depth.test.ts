@@ -35,7 +35,7 @@ after(async () => { await app.close(); await stopBoss(); await provider.close();
 
 async function fixture() {
   const publicId = randomUUID();
-  const [story] = await sql<{ id: number }[]>`INSERT INTO stories (public_id, title, editorial_language) VALUES (${publicId}, 'Acme makes inference cheaper', 'en') RETURNING id`;
+  const [story] = await sql<{ id: number }[]>`INSERT INTO stories (public_id, title, editorial_language, digest) VALUES (${publicId}, 'Acme makes inference cheaper', 'en', 'Acme tested cheaper inference.') RETURNING id`;
   const storyId = Number(story!.id);
   const [fact] = await sql<{ id: number }[]>`INSERT INTO facts (public_id, story_id, title) VALUES (${randomUUID()}, ${storyId}, 'Acme releases Atlas') RETURNING id`;
   const reportId = `report-${randomUUID()}`;
@@ -48,16 +48,21 @@ async function fixture() {
     VALUES (${reportId}, ${source}, ${text}, ${text}, 'https://example.org/report', 'news', true, now() - interval '1 hour', now() - interval '1 hour', now() - interval '1 hour', now() - interval '1 hour',
       ${storyId}, ${fact!.id}, true, true, now() - interval '1 hour', '{}', 'summary', 80, 'public', 'en')`;
   await sql`INSERT INTO fact_articles (fact_id, article_id, role, evidence) VALUES (${fact!.id}, ${reportId}, 'report', ${text})`;
-  // A second report: an event page stands in search only from two reports (STORY_INDEX_MIN_REPORTS).
-  const secondId = `report-${randomUUID()}`;
-  const second = "Acme's limited inference test is covered by a second outlet.";
-  await sql`INSERT INTO articles (id, source_id, identity_key, url, title, discovered_at, published_at, timeline_at) VALUES
-    (${secondId}, ${source}, ${secondId}, 'https://example.org/report-2', ${second}, now() - interval '50 minutes', now() - interval '50 minutes', now() - interval '50 minutes')`;
-  await sql`INSERT INTO publications (article_id, source_id, title, summary, url, channel, first_party, published_at, timeline_at, discovered_at, sort_at,
-    story_id, fact_id, selected, eligible, visible_after, tags, body_mode, score, visibility, editorial_language)
-    VALUES (${secondId}, ${source}, ${second}, ${second}, 'https://example.org/report-2', 'news', true, now() - interval '50 minutes', now() - interval '50 minutes', now() - interval '50 minutes', now() - interval '50 minutes',
-      ${storyId}, ${fact!.id}, false, true, now() - interval '50 minutes', '{}', 'summary', 70, 'public', 'en')`;
-  await sql`INSERT INTO fact_articles (fact_id, article_id, role, evidence) VALUES (${fact!.id}, ${secondId}, 'report', ${second})`;
+  // Two more outlets: an event page stands in search only with a digest and three sources (STORY_INDEX_MIN_SOURCES).
+  for (const [n, minutes] of [[2, 50], [3, 40]] as const) {
+    const outlet = `${source}-${n}`;
+    const otherId = `report-${randomUUID()}`;
+    const other = `Acme's limited inference test is covered by outlet ${n}.`;
+    const at = sql`now() - make_interval(mins => ${minutes})`;
+    await sql`INSERT INTO sources (id, name, kind, tier, config) VALUES (${outlet}, ${`Outlet ${n}`}, 'rss', 'T1', '{}') ON CONFLICT DO NOTHING`;
+    await sql`INSERT INTO articles (id, source_id, identity_key, url, title, discovered_at, published_at, timeline_at) VALUES
+      (${otherId}, ${outlet}, ${otherId}, ${`https://example.org/report-${n}`}, ${other}, ${at}, ${at}, ${at})`;
+    await sql`INSERT INTO publications (article_id, source_id, title, summary, url, channel, first_party, published_at, timeline_at, discovered_at, sort_at,
+      story_id, fact_id, selected, eligible, visible_after, tags, body_mode, score, visibility, editorial_language)
+      VALUES (${otherId}, ${outlet}, ${other}, ${other}, ${`https://example.org/report-${n}`}, 'news', true, ${at}, ${at}, ${at}, ${at},
+        ${storyId}, ${fact!.id}, false, true, ${at}, '{}', 'summary', 70, 'public', 'en')`;
+    await sql`INSERT INTO fact_articles (fact_id, article_id, role, evidence) VALUES (${fact!.id}, ${otherId}, 'report', ${other})`;
+  }
   const content: StoryDepth = {
     background: "Acme tested a lower-cost inference method with a limited group of customers.",
     numbers: [{ value: "50%", context: "Acme's reported cost reduction in its limited test.", reportId, quote: "Acme reports a 50% cost reduction in its limited test." }],
@@ -102,7 +107,7 @@ test("admin-only review, worker drafting, substantive editing, publication and r
   assert.equal(await publishedDepth(f.storyId), null, "pending draft is private");
   const pending = await entry(id);
   assert.equal(pending.status, "pending");
-  assert.equal((await app.inject("/api/admin/review")).json<ReviewQueue>().entries.find((e) => e.id === id)!.evidence.length, 2);
+  assert.equal((await app.inject("/api/admin/review")).json<ReviewQueue>().entries.find((e) => e.id === id)!.evidence.length, 3);
   const edited = { ...f.content, accelerates: "This could make repeated experiments affordable; independent testing is still needed." };
   assert.equal((await command(id, pending.version, "save", edited)).statusCode, 200);
   assert.equal((await command(id, pending.version, "publish", edited)).statusCode, 409, "stale editor cannot overwrite saved edits");

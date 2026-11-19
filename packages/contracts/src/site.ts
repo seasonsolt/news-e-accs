@@ -322,11 +322,12 @@ export interface StoryFactView {
 }
 
 /**
- * An event page stands for its reports in search once it gathers this many public reports (reportCount):
- * with fewer it only repeats its one report's page, so it is noindex and neither the sitemap nor change
- * notifications list it; with as many, its reports' own pages leave Google to it (2026-11-09).
+ * An event page stands in search once its public reports come from this many sources and it has a written
+ * digest (StoryDetail.indexable, publication/scope.ts storyIndexCondition): otherwise it mostly repeats one
+ * outlet's post, so it is noindex and neither the sitemap nor change notifications list it. An event that
+ * stands also leaves Google its reports' own pages (2026-11-19; from 2026-11-09 two reports were enough).
  */
-export const STORY_INDEX_MIN_REPORTS = 2;
+export const STORY_INDEX_MIN_SOURCES = 3;
 
 export interface StoryDetail {
   /** Approved public additions supplied by the site's modules. */
@@ -338,6 +339,8 @@ export interface StoryDetail {
   status: "active" | "watching" | "settled";
   reportCount: number;
   sourceCount: number;
+  /** Search engines may index the page (STORY_INDEX_MIN_SOURCES); the same rule the sitemap follows. */
+  indexable: boolean;
   firstReportAt: string | null;
   latestAt: string | null;
   digest: string | null;

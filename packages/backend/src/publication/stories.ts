@@ -10,7 +10,7 @@ import { proxiedImage, proxiedImageSet } from "../media/imgproxy.ts";
 import { behindSources, currentSignals, heatSeries, sourceClocks, type HotRanking } from "../events/hot.ts";
 import { relatedEvidence, RELATED_MIN_REPORTS } from "../events/related.ts";
 import { pickRepresentative, REPRESENTATIVE_COLUMNS, type RepresentativeIdentity } from "./representative.ts";
-import { compositeCondition, evidenceCondition, listedCondition, storyReportCondition } from "./scope.ts";
+import { compositeCondition, evidenceCondition, listedCondition, storyIndexCondition, storyReportCondition } from "./scope.ts";
 import { publicSourceName } from "./rules.ts";
 import { hotRankingAt, latestHotRanking, rankingExtras } from "./hot.ts";
 export { loadHotStrip } from "./hot.ts";
@@ -246,7 +246,8 @@ export async function loadStoryDetail(storyId: number, now = new Date()): Promis
     ? await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM ${currentSignals()} cs WHERE story_id = ${storyId} AND source_id = ANY(${behind}::text[])
                                   AND observed_at > ${now}::timestamptz - interval '48 hours' AND observed_at <= ${now}`
     : [{ n: 0 }];
-  const [related, topics] = await Promise.all([relatedStories(storyId, now), topicsOfStory(storyId, now)]);
+  const [related, topics, [index]] = await Promise.all([relatedStories(storyId, now), topicsOfStory(storyId, now),
+    sql<{ indexable: boolean }[]>`SELECT ${storyIndexCondition(sql`st`, now)} AS indexable FROM stories st WHERE st.id = ${storyId}`]);
   const latestAt = latest.at;
   const modules = Object.fromEntries(await Promise.all(serverModules().filter((m) => m.storyPage).map(async (m) => [m.name, await m.storyPage!(storyId)])));
   const shownExcerpt = excerpt ? { text: excerpt.summary!, sourceName: publicSourceName(excerpt.source_name) } : null;
@@ -259,6 +260,7 @@ export async function loadStoryDetail(storyId: number, now = new Date()): Promis
     status: storyStatusFor(latestAt, now.getTime()),
     reportCount: reports.length,
     sourceCount: new Set(reports.map((r) => r.source_id)).size,
+    indexable: index?.indexable === true,
     firstReportAt: firstReportAt.toISOString(),
     latestAt: latestAt.toISOString(),
     digest: text.digest,

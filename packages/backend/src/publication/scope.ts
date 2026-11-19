@@ -3,6 +3,7 @@
 // evidence, `fact_articles fa`); no other module spells visibility, the release time or the composite
 // rule in SQL, and grouping takes the composite rule from here too. What a publication holds is
 // derived once, at publish time, by publish.ts and rules.ts.
+import { STORY_INDEX_MIN_SOURCES } from "@aihot/contracts/site";
 import { SELECTION } from "@aihot/industry/selection";
 import { sql } from "../db.ts";
 import { independentSelectedSources } from './rules.ts';
@@ -36,6 +37,18 @@ export function browsedCondition(now: Date) {
 /** Story reports include older editorial material outside the pool, but never withdrawn or not yet released content. */
 export function storyReportCondition(now: Date) {
   return sql`p.visibility = 'public' AND s.participation_mode = 'editorial' AND ${releasedCondition(now)}`;
+}
+
+/**
+ * Event `story` (a `stories` row alias) stands in search (STORY_INDEX_MIN_SOURCES): it has a written digest
+ * and its public reports, counted as the event page counts them, come from enough sources. The event page's
+ * robots tag, the sitemap and the articles it stands for all read this one rule.
+ */
+export function storyIndexCondition(story: ReturnType<typeof sql>, now: Date) {
+  return sql`(${story}.digest IS NOT NULL AND (
+    SELECT count(DISTINCT p.source_id) FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id
+    JOIN publications p ON p.article_id = fa.article_id JOIN sources s ON s.id = p.source_id
+    WHERE f.story_id = ${story}.id AND ${storyReportCondition(now)}) >= ${STORY_INDEX_MIN_SOURCES})`;
 }
 
 /** Selected set as the website shows it (home timeline, reading groups, topics): every selected report. */

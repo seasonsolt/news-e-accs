@@ -3,7 +3,6 @@
 import { mkdir, readFile, stat, utimes, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { FEATURES } from "@aihot/industry/features";
-import { STORY_INDEX_MIN_REPORTS } from "@aihot/contracts/site";
 import { ABOUT, ACCESS, AGENT, POLICY, SITE } from "@aihot/site";
 import { MODULES } from "@aihot/site/modules";
 import { config, REPO_ROOT } from "../config.ts";
@@ -15,7 +14,7 @@ import { sql } from "../db.ts";
 import { shared } from "../lib/cache.ts";
 import { escapeXml } from "../lib/text.ts";
 import { siteUrl } from "./links.ts";
-import { evidenceCondition, listedCondition, selectedCondition, storyReportCondition } from "./scope.ts";
+import { evidenceCondition, listedCondition, selectedCondition, storyIndexCondition, storyReportCondition } from "./scope.ts";
 import { topicDiscovery } from "./topics.ts";
 import { serverModules, type SitemapEntry } from "../modules.ts";
 
@@ -100,8 +99,8 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
   // Later topic pages stay indexable and linked from the first one; discovery lists only that first
   // page, so the inventory does not grow with every twenty reports.
   for (const t of topics) if (t.indexable) entries.push({ loc: `/topics/${t.slug}`, revision: t.revision, changefreq: "daily", priority: 0.6 });
-  // A story needs listed evidence of its own, and STORY_INDEX_MIN_REPORTS reports: with fewer its page is
-  // noindex everywhere, so neither the sitemap nor notifications list it. Its identity follows current
+  // A story needs listed evidence of its own and must stand in search (storyIndexCondition): otherwise its
+  // page is noindex everywhere, so neither the sitemap nor notifications list it. Its identity follows current
   // readable reports as well as the digest, so a correction or regrouping is visible even when latest_at
   // does not advance. Dated by creation or the last digest rewrite: a new report that leaves the digest alone goes
   // undated, so lastmod can lag a change but never claims one that did not happen.
@@ -110,7 +109,7 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
       st.version::text, members.revision)) AS revision, st.title, st.editorial_language, st.created_at
     FROM stories st JOIN LATERAL (
       SELECT md5(string_agg(concat_ws(':', p.article_id, p.revision::text, fa.role, f.updated_at::text, s.name),
-        ',' ORDER BY p.article_id, f.id)) AS revision, count(DISTINCT p.article_id) AS reports
+        ',' ORDER BY p.article_id, f.id)) AS revision
       FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id JOIN publications p ON p.article_id = fa.article_id
       JOIN sources s ON s.id = p.source_id
       WHERE f.story_id = st.id AND ${storyReportCondition(at)}
@@ -118,7 +117,7 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
     WHERE st.merged_into IS NULL AND EXISTS (
       SELECT 1 FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id JOIN publications p ON p.article_id = fa.article_id
       WHERE f.story_id = st.id AND ${evidenceCondition()} AND ${listedCondition(at)})
-      AND members.reports >= ${STORY_INDEX_MIN_REPORTS}
+      AND ${storyIndexCondition(sql`st`, at)}
     ORDER BY st.latest_at DESC NULLS LAST, st.id DESC ${limits ? sql`LIMIT ${limits.stories}` : sql``}`;
   let news = 0;
   for (const s of stories) {
