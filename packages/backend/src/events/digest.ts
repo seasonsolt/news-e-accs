@@ -7,7 +7,6 @@ import { sql } from "../db.ts";
 import { chatJson } from "../providers/llm.ts";
 import { completeReceipt } from "../providers/receipts.ts";
 import { digestFactEvidence, digestInputsHash, digestReports, type DigestReport } from "../publication/story-evidence.ts";
-import { sha256, stableJson } from "../lib/ids.ts";
 import { promptText, promptVersion } from "../editorial/prompts.ts";
 
 export const DIGEST_PROMPT_VERSION = promptVersion("story-digest");
@@ -57,8 +56,9 @@ export function buildStoryDigestInput(story: { title: string; digest: string | n
 /**
  * A story's digest from its current reports. `rewrite` (rewriteStoryDigest) writes it again from the reports
  * as they are now with the current prompt, as after a correction: a new wording otherwise reaches a story
- * only when its reports change. A story whose saved digest predates recorded (or the current) inputs keeps
- * it until its reports really change, so a language or prompt change alone never costs a rewrite.
+ * only when its reports change, so a language or prompt change alone never costs a rewrite. A saved digest
+ * without the current inputs fingerprint (written before the evidence was part of it) is written again:
+ * readers cannot verify it and never show it (publication/story-text.ts).
  */
 export async function composeStoryDigest(storyId: number, opts: { rewrite?: boolean } = {}): Promise<{ updated: boolean; version?: number }> {
   const [story] = await sql<{ id: number; title: string; digest: string | null; version: number; origin: string; editorial_language: "en" | "zh" }[]>`
@@ -76,12 +76,10 @@ export async function composeStoryDigest(storyId: number, opts: { rewrite?: bool
   const ids = reports.map((r) => r.id).sort();
   // What this version is written from: the reports and what they currently say (corrections included).
   const inputsHash = digestInputsHash(reports);
-  // Versions written before the evidence was part of the inputs hashed only each report's id, title and summary.
-  const legacyInputsHash = sha256(stableJson([...reports].sort((a, b) => a.id.localeCompare(b.id)).map((r) => [r.id, r.title, r.summary ?? ""])));
   const [last] = await sql<{ article_ids: string[]; inputs_hash: string | null; digest: string; receipt_id: number | null }[]>`
     SELECT article_ids, inputs_hash, digest, receipt_id FROM story_digests WHERE story_id = ${storyId} ORDER BY version DESC LIMIT 1`;
   const sameReports = !!last && JSON.stringify([...last.article_ids].sort()) === JSON.stringify(ids);
-  if (!opts.rewrite && sameReports && story.digest !== null && (last!.inputs_hash === inputsHash || last!.inputs_hash === legacyInputsHash || last!.inputs_hash === null)) return { updated: false };
+  if (!opts.rewrite && sameReports && story.digest !== null && last!.inputs_hash === inputsHash) return { updated: false };
   // Same reports, different content: an editor corrected one. A report gone from the story (withdrawn,
   // or regrouped elsewhere) likewise. Rewrite from the reports as they are now, without the previous
   // digest, so a corrected or withdrawn fact does not survive as "earlier reports said".

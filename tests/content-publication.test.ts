@@ -17,7 +17,8 @@ import { chatJson } from "@aihot/backend/providers/llm";
 import { computeHotRanking } from "@aihot/backend/events/hot";
 import { detachFromFact, moveToFact, rewriteStoryDigest } from "@aihot/backend/events/corrections";
 import { overrideFields, setVisibility } from "@aihot/backend/admin/content";
-import { stopBoss } from "@aihot/backend/jobs/queue";
+import { getBoss, QUEUES, stopBoss } from "@aihot/backend/jobs/queue";
+import { republishSource } from "@aihot/backend/publication/publish";
 import { latestHotRanking } from "@aihot/backend/publication/hot";
 import { storyTexts } from "@aihot/backend/publication/story-text";
 
@@ -319,6 +320,31 @@ test("a cleared digest recovers from matching saved evidence without another mod
   assert.equal((await composeStoryDigest(g.storyId)).updated, true);
   assert.equal(provider.hits(), calls + 1, "changed evidence must generate a corrected digest");
   assert.ok(digestPrompt.includes("已经更正的资料"));
+});
+
+// Isolating a source re-derives its reports in the worker (republishSource), outside any editor path
+// that queues digests. The events those reports supported must be written again, or their digests stay
+// hidden as unsupported for good.
+test("a source republish that takes a report off its event queues that event's digest", async () => {
+  const leaving = await source("digest-republish-leaving", "T2");
+  const staying = await source("digest-republish-staying", "T1");
+  const g = await story();
+  await report(leaving, g, { title: "将被隔离信源的报道", hours: 2, selected: false });
+  await report(staying, g, { title: "仍然公开的报道", hours: 1, selected: false });
+  assert.equal((await composeStoryDigest(g.storyId)).updated, true);
+  assert.ok((await storyTexts([g.storyId], now)).get(g.storyId)!.digest);
+  await getBoss();
+  const queued = () => sql`SELECT 1 FROM pgboss.job WHERE name = ${QUEUES.digest} AND singleton_key = ${`story:${g.storyId}`} AND state = 'created'`;
+  assert.equal((await queued()).length, 0);
+
+  await sql`UPDATE sources SET participation_mode = 'isolated' WHERE id = ${leaving}`;
+  await republishSource(leaving);
+  assert.equal((await storyTexts([g.storyId], now)).get(g.storyId)!.digest, null, "the saved digest cites a withdrawn report");
+  assert.equal((await queued()).length, 1, "the event's digest is queued");
+
+  assert.equal((await composeStoryDigest(g.storyId)).updated, true); // what the queued job runs
+  assert.ok((await storyTexts([g.storyId], now)).get(g.storyId)!.digest, "the rewritten digest stands on the remaining report");
+  assert.ok(!digestPrompt.includes("将被隔离信源的报道"));
 });
 
 // A digest can outlive its evidence without losing an article id: titles, summaries, source identity,

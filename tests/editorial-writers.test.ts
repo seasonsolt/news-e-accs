@@ -97,9 +97,11 @@ test('English analysis commits neutral prose, keeps original evidence, and updat
     const legacyInputs = await sql`SELECT p.article_id,p.title,p.summary FROM facts f JOIN fact_articles fa ON fa.fact_id=f.id JOIN publications p ON p.article_id=fa.article_id WHERE f.story_id=${legacy!.id} ORDER BY coalesce(p.published_at,p.discovered_at) DESC LIMIT 20`;
     const hash = sha256(stableJson([...legacyInputs].sort((a,b)=>a.article_id.localeCompare(b.article_id)).map(entry=>[entry.article_id,entry.title,entry.summary ?? ""])));
     await sql`INSERT INTO story_digests(story_id,version,digest,article_ids,inputs_hash) VALUES(${legacy!.id},1,'历史中文综述',${[ids[0]!,ids[1]!].sort()},${hash})`;
+    // Readers never show a digest whose fingerprint predates the evidence: keeping it would hide the event's digest for good.
     const beforeRefresh = calls.length;
-    assert.equal((await composeStoryDigest(Number(legacy!.id))).updated, false);
-    assert.equal(calls.length, beforeRefresh, 'unchanged old evidence does not pay for a language-only rewrite');
+    assert.equal((await composeStoryDigest(Number(legacy!.id))).updated, true);
+    assert.equal(calls.length, beforeRefresh + 1, 'an old fingerprint is written again once');
+    assert.equal((await composeStoryDigest(Number(legacy!.id))).updated, false, 'and then stands until its reports change');
     await sql`UPDATE publications SET summary='A lab releases Model 2.5 for USD 10 and adds public release notes.' WHERE article_id=${ids[0]!}`;
     assert.equal((await composeStoryDigest(Number(legacy!.id))).updated, true);
     const [converted] = await sql`SELECT editorial_language,title FROM stories WHERE id=${legacy!.id}`;

@@ -94,6 +94,14 @@ interface PublicationRow {
   seo_excluded_at: Date | null;
 }
 
+/**
+ * Projection fields a story digest is written from or listed by (story-evidence.ts digestReports). Selection
+ * is left out: it changes as grouping completes, whose own digest job waits for the event's other reports.
+ */
+const DIGEST_INPUT_FIELDS: ReadonlySet<string> = new Set([
+  "visibility", "eligible", "title", "summary", "source_id", "first_party", "published_at", "discovered_at", "fact_id",
+]);
+
 export interface V1ItemPayload {
   id: string;
   title: string;
@@ -427,6 +435,14 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
   let ledger = await settleSeats(tx, membership?.fact_id ?? null, articleId, now);
   if (previous?.fact_id && previous.fact_id !== membership?.fact_id) await settleSeats(tx, previous.fact_id, null, now);
   ledger = (await syncLedger(tx, articleId, now)) ?? ledger;
+
+  // A report that stays in its event but changes what the event's digest is written from (withdrawn, out of
+  // the pool, corrected copy) leaves the saved digest unsupported, and the event page hides it until it is
+  // written again. Every path that re-derives a report gets here, a whole-source republish included;
+  // grouping, merges and moves enqueue the digests of the events they change themselves.
+  if (previous?.story_id != null && previous.story_id === next.story_id && changedFields.some((key) => DIGEST_INPUT_FIELDS.has(key))) {
+    await enqueue(QUEUES.digest, { storyId: Number(previous.story_id) }, { singletonKey: `story:${previous.story_id}` }, tx);
+  }
 
   const wasPublic = !!previous && previous.visibility !== "withdrawn" && previous.eligible;
   const reduced =
