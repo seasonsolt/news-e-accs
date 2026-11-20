@@ -15,6 +15,7 @@
 //   Discover from showing their picture large (2026-11-08);
 // - the latest daily's search snippet repeats its lead article's, so two pages read alike; its heading never
 //   says what readers search it by; or /daily/ stands as a page of its own (2026-11-08);
+// - dated dailies, lists of a day's headlines, are shown in search and never clicked (2026-11-20);
 // - 全部动态's later pages and an event page of a single report compete in search with the pages that stand
 //   for them, the first page and that report's own page, while their links stop being followed (2026-11-09);
 // - a daily whose lead was withdrawn is headed in search by a report its highlights were only filled with (2026-11-09).
@@ -138,10 +139,13 @@ for (const [kind, label] of [["daily", "AI Daily"], ["weekly", "AI Weekly"], ["m
     assert.equal($("meta[property='og:type']").attr("content"), "article");
     assert.equal($("meta[property='article:published_time']").attr("content"), at);
     assert.equal($("meta[property='article:modified_time']").length, 0);
+    // A dated daily is the day's headlines, left to /daily and its archive; reviews stand in search.
+    assert.equal($("meta[name=robots]").attr("content"), kind === "daily" ? "noindex, follow" : "max-image-preview:large");
     const latest = await page(`/${kind}`);
     assert.equal(latest("title").text(), `${label} · ${SITE.name}`);
     assert.equal(latest("meta[property='og:type']").attr("content"), "article");
     assert.equal(latest("meta[property='article:published_time']").attr("content"), at);
+    assert.equal(latest("meta[name=robots]").attr("content"), "max-image-preview:large", "the latest issue stands in search");
   });
 }
 

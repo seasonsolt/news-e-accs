@@ -95,7 +95,9 @@ export async function loadDiscoveryEntries(at = new Date(), limits?: { stories: 
   );
   if (FEATURES.timeMachine) entries.push({ loc: "/chronicle", changefreq: "weekly", priority: 0.5 });
   if (FEATURES.eaccConcepts) for (const loc of ["/what-is-eacc", "/eacc-vs-dacc", "/eacc-vs-ea", "/eacc-manifesto", "/eacc-token", "/eacc-glossary", "/manifesto"]) entries.push({ loc, changefreq: "monthly", priority: 0.7 });
-  for (const r of reports) entries.push({ loc: `/${r.kind}/${r.key}`, lastmod: r.t, newsAt: r.changed, revision: r.revision, changefreq: "monthly", priority: 0.6 });
+  // A dated daily is a day's list of headlines, a page search shows and nobody clicks; it is noindex
+  // (report-detail), found through /daily and its archive. Weekly and monthly reviews stay listed.
+  for (const r of reports) if (r.kind !== "daily") entries.push({ loc: `/${r.kind}/${r.key}`, lastmod: r.t, newsAt: r.changed, revision: r.revision, changefreq: "monthly", priority: 0.6 });
   // Later topic pages stay indexable and linked from the first one; discovery lists only that first
   // page, so the inventory does not grow with every twenty reports.
   for (const t of topics) if (t.indexable) entries.push({ loc: `/topics/${t.slug}`, revision: t.revision, changefreq: "daily", priority: 0.6 });

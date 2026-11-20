@@ -61,7 +61,9 @@ export function meta({ matches, loaderData }: Route.MetaArgs) {
     image,
     type: "article",
     publishedTime: r.generatedAt,
-    noindex: !!loaderData.at,
+    // A dated daily is a list of the day's headlines: readers come through /daily and its archive, not search
+    // (it is left out of discovery as well, publication/sitemap.ts).
+    noindex: !!loaderData.at || r.kind === "daily",
     jsonLd: loaderData.at ? undefined : newsArticleLd({ path, headline: title, description, image, datePublished: r.generatedAt, inLanguage: contentHtmlLanguage(r, locale) }),
   }, locale), feedLink(r.kind, locale)];
 }

@@ -59,7 +59,8 @@ test('discovery dates follow page content and publication scope', async () => {
   await material('dates-future', { future: true });
   await material('dates-signal', { source: 'discovery-signal' });
   await sql`INSERT INTO reports (kind,key,window_start,window_end,content,generated_at,updated_at)
-    VALUES ('daily','2026-10-01','2026-09-30','2026-10-01','{}','2026-10-01T00:00:00Z','2026-10-04T00:00:00Z')`;
+    VALUES ('daily','2026-10-01','2026-09-30','2026-10-01','{}','2026-10-01T00:00:00Z','2026-10-04T00:00:00Z'),
+           ('weekly','2026-W40','2026-09-28','2026-10-04','{}','2026-10-04T00:00:00Z','2026-10-06T00:00:00Z')`;
   await sql`UPDATE publications SET visible_after='2026-10-02T03:00:00Z',seo_indexed_at='2026-10-03T00:00:00Z' WHERE article_id='dates-visible'`;
   await sql`INSERT INTO translations (article_id,revision,body_text,created_at) VALUES ('dates-visible',1,'译文','2026-10-08')`;
   const publicId = randomUUID();
@@ -75,7 +76,10 @@ test('discovery dates follow page content and publication scope', async () => {
   for (const loc of ['/', '/all', '/hot', '/agent', '/changelog']) {
     assert.equal(entries.find(e => e.loc === loc)?.lastmod, undefined, `${loc} must not borrow the news clock`);
   }
-  assert.equal(entries.find(e => e.loc === '/daily/2026-10-01')?.lastmod?.toISOString(), '2026-10-04T00:00:00.000Z');
+  assert.equal(entries.find(e => e.loc === '/weekly/2026-W40')?.lastmod?.toISOString(), '2026-10-06T00:00:00.000Z');
+  // A dated daily is a day's headlines and noindex: only /daily and its archive are discovered.
+  assert.ok(!entries.some(e => /^\/daily\/\d/.test(e.loc)), 'dated dailies are not discovered');
+  assert.ok(entries.some(e => e.loc === '/daily') && entries.some(e => e.loc === '/daily/archive'));
   assert.ok(entries.some(e => e.loc === '/items/dates-visible'));
   assert.ok(!entries.some(e => e.loc === '/items/dates-future'));
   assert.ok(!entries.some(e => e.loc === '/items/dates-signal'));
@@ -142,12 +146,12 @@ test('dry runs leave changes pending, corrections and disappeared URLs are submi
   assert.ok(batches[0]!.some(url => url.endsWith(`/story/${publicId}`)));
   assert.equal((await submitIndexNow()).status, 'empty');
   await sql`UPDATE stories SET digest='已核实的新进展',digest_updated_at=now(),updated_at=now() WHERE id=${story!.id}`;
-  await sql`UPDATE reports SET content='{"headline":"更正"}',revision=revision+1,updated_at=now() WHERE key='2026-10-01'`;
+  await sql`UPDATE reports SET content='{"headline":"更正"}',revision=revision+1,updated_at=now() WHERE key='2026-W40'`;
   await sql`INSERT INTO translations (article_id,revision,body_text,created_at) VALUES ('changed-story-item',1,'新的译文',now())`;
   await submitIndexNow();
   assert.ok(batches[1]!.some(url => url.endsWith(`/story/${publicId}`)), 'an existing story is updated');
   assert.ok(batches[1]!.some(url => url.endsWith('/items/changed-story-item')), 'a translation changes the public article');
-  assert.ok(batches[1]!.some(url => url.endsWith('/daily/2026-10-01')), 'a corrected report is resubmitted');
+  assert.ok(batches[1]!.some(url => url.endsWith('/weekly/2026-W40')), 'a corrected report is resubmitted');
   const [target] = await sql<{ id: number }[]>`INSERT INTO stories (public_id,title) VALUES (${randomUUID()},'存续事件') RETURNING id`;
   await sql`UPDATE stories SET merged_into=${target!.id},updated_at=now() WHERE id=${story!.id}`;
   await sql`UPDATE publications SET visibility='withdrawn',indexable=false,updated_at=now() WHERE article_id='changed-story-item'`;

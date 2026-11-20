@@ -192,11 +192,11 @@ test('the report goes first, then pages that answer lasting searches, then stori
   await story(olderStory, ['baidu-older', 'baidu-older-also', 'baidu-older-third'], '2026-10-09T02:10:00Z');
   await story(publicId, ['baidu-newer', 'baidu-newer-also', 'baidu-newer-third'], '2026-10-09T02:20:00Z');
   await sql`INSERT INTO reports (kind,key,window_start,window_end,content,generated_at,updated_at)
-    VALUES ('daily','2026-10-09','2026-10-08','2026-10-09','{}','2026-10-09T02:30:00Z','2026-10-09T02:30:00Z')`;
+    VALUES ('weekly','2026-W41','2026-10-05','2026-10-11','{}','2026-10-09T02:30:00Z','2026-10-09T02:30:00Z')`;
   await submitBaiduPush(DAY1_LATER);
   const sent = requests.flat().map(url => new URL(url).pathname);
   const at = (path: string) => sent.indexOf(path);
-  assert.equal(sent[0], '/daily/2026-10-09', 'the one URL that learns the quota is the most valuable one');
+  assert.equal(sent[0], '/weekly/2026-W41', 'the one URL that learns the quota is the most valuable one');
   assert.ok(at('/leaderboard/prices') > 0 && at('/leaderboard/prices') < at('/topics/baidu-topic'));
   assert.ok(at('/topics/baidu-topic') < at(`/story/${publicId}`), 'pages for lasting searches before the day\'s news');
   assert.ok(at(`/story/${publicId}`) > 0);
