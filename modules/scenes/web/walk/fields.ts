@@ -279,7 +279,7 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
     }
     era(list, floor(poles[1]![0], -poles[1]![1]), 502, 513);
   }
-  { const steel = lit("#5c6166", "#a9afb3", rand, .08), glass = flat("#7e8a86", rand, .1), wide = (y: number) => mix(3.2, .9, clamp((y + .6) / 20.6, 0, 1));
+  { const steel = of(13, lit("#5c6166", "#a9afb3", rand, .08)), glass = flat("#7e8a86", rand, .1), wide = (y: number) => mix(3.2, .9, clamp((y + .6) / 20.6, 0, 1));
     const corner = (y: number, i: number) => V(i & 1 ? wide(y) : -wide(y), y, i & 2 ? wide(y) : -wide(y)), levels = [-.6, 3.5, 7.5, 11, 14, 17, 20], around = [0, 1, 3, 2];
     const parts: THREE.BufferGeometry[] = [], bar = (a: THREE.Vector3, b: THREE.Vector3, r: number) => parts.push(limb(a, b, r, r, steel, { sides: 3 }));
     for (let k = 0; k < levels.length - 1; k++) for (let f = 0; f < 4; f++) { // four legs braced crosswise on every face
@@ -319,7 +319,7 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
   let dishHead: THREE.Group, telemetry: THREE.MeshBasicMaterial;
   { // a parabolic radio telescope listening to the sky (late 20th century)
     const [s, off] = CLEARINGS.dish, x = at(off, s), turn = facing(x, s, roadX(545), 545) - .25, base = floor(x, -s) - .2;
-    const concrete = of(1, lit("#77746d", "#b5b0a6", rand, .08)), dishWhite = lit("#9da3a8", "#e8ecee", rand, .04), strut = lit("#5d6369", "#9aa1a7", rand, .06);
+    const concrete = of(9, lit("#77746d", "#b5b0a6", rand, .08)), dishWhite = of(12, lit("#9da3a8", "#e8ecee", rand, .04)), strut = of(13, lit("#5d6369", "#9aa1a7", rand, .06));
     const pier: THREE.BufferGeometry[] = [];
     put(pier, merged([
       turned([[2.7, 0], [2.6, .5], [1.8, .7], [1.35, 6.2], [1.6, 6.8], [0, 6.8]], small ? 10 : 16, concrete),
@@ -345,7 +345,7 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
   }
   { // A service yard leads off the paved road to the compute hall's coolers.
     const [s, off] = CLEARINGS.compute, x = at(off, s), turn = facing(x, s, roadX(578), 578), base = floor(x, -s) - .25;
-    const pad = of(1, lit("#605e58", "#949088", rand, .06)), slate = lit("#171b22", "#2b323d", rand, .05), trim = flat("#101318", rand, .04), alloy = lit("#4c535b", "#8a929a", rand, .06);
+    const pad = of(9, lit("#605e58", "#949088", rand, .06)), slate = of(12, lit("#171b22", "#2b323d", rand, .05)), trim = of(12, flat("#101318", rand, .04)), alloy = of(13, lit("#4c535b", "#8a929a", rand, .06));
     const hall: THREE.BufferGeometry[] = [
       faceted(new THREE.BoxGeometry(14.2, .45, 8.6), pad).translate(0, .1, 0),
       faceted(new THREE.BoxGeometry(12.8, 5.4, 7.0), slate).translate(0, 3.0, 0),

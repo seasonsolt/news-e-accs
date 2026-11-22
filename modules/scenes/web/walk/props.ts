@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import type { ReliefScan } from "./relief.ts";
 import { buildCamp, type Kit } from "./camp.ts";
 import { buildFields } from "./fields.ts";
 import { FIRE_S, MONOLITH, MONO_S, SOW_S, ROADSIDE, roadX, smooth } from "./land.ts";
@@ -9,17 +8,17 @@ import { buildEarlyStops } from "./roadside-early.ts";
 import { buildWorkshops } from "./roadside-workshops.ts";
 import { buildNetworkStop } from "./roadside-network.ts";
 import { blob, limb, lit, merged, of, rock, scree, turned, type Paint } from "./shapes.ts";
-import { createMatte } from "./surface.ts";
+import { createMatte, type SurfaceScans } from "./surface.ts";
 import { buildForest, type Wind } from "./trees.ts";
 import { buildVillage } from "./village.ts";
 
 /** `wind` is the grass's wind, so the leaves move with it. */
-type Setting = Pick<Kit, "scene" | "own" | "rand" | "small" | "still" | "out" | "floor" | "fireX"> & { stoneX: number; stoneScan: ReliefScan; wind?: Wind };
+type Setting = Pick<Kit, "scene" | "own" | "rand" | "small" | "still" | "out" | "floor" | "fireX"> & { stoneX: number; scans: SurfaceScans; wind?: Wind };
 
 /** Everything that stands on the land: the camp, rocks, trees, the seed basket, the first village and the stone. */
 export function buildProps(setting: Setting) {
   const { scene, own, rand, small, floor, fireX, stoneX } = setting;
-  const matte = own(createMatte(setting.stoneScan, !small));
+  const matte = own(createMatte(setting.scans, !small));
   // Scenery that never moves is gathered by stretch of road and drawn as one mesh per stretch.
   const stretches = new Map<number, THREE.BufferGeometry[]>(), blocks: Kit["blocks"] = [];
   const keep = (shape: THREE.BufferGeometry, s: number) => {
@@ -56,7 +55,7 @@ export function buildProps(setting: Setting) {
     eras[index]!.parts.push(shape.rotateY(turn).translate(x, floor(x, -s) + lift, -s));
   };
   buildWorkshops({ ...kit, stand: (shape, x, s, turn, lift) => timedStand(s < ROADSIDE.loom[0] - 10 ? 0 : 1)(shape, x, s, turn, lift) });
-  buildNetworkStop({ ...kit, stand: timedStand(2) });
+  const labWindows = buildNetworkStop({ ...kit, stand: timedStand(2) });
 
   // ---------- loose stone ----------
   const clear = (x: number, s: number, room: number) => blocks.every(([bx, bs, r]) => Math.hypot(x - bx, s - bs) > r + room) && Math.hypot(x - fireX, s - FIRE_S) > 2.6 + room;
@@ -123,6 +122,9 @@ export function buildProps(setting: Setting) {
       const k = smooth(era.from, era.to, s); era.coverage.value = k;
       for (const mesh of era.meshes) { mesh.visible = k > 0; mesh.castShadow = k >= .99; }
     }
+    const lab = eras[2]!.coverage.value;
+    labWindows.visible = lab > 0;
+    labWindows.material.opacity = .20 * lab;
   }
   return { ...camp, village, basketX, sowLight, blocks, fields, propsFrame };
 }

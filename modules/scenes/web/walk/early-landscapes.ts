@@ -59,9 +59,9 @@ export function buildEarlyLandscapes({ floor, stand, blocks, small }: Kit) {
 
   {
     const rand = sequence(352511), s = ROADSIDE.ledger[0], x = roadX(s), base = floor(x, -s), parts: THREE.BufferGeometry[] = [];
-    const mud = of(0, lit("#8c7052", "#c3aa81", rand, .055)), exposed = of(0, lit("#967553", "#b89870", rand, .10));
+    const mud = of(8, lit("#8c7052", "#c3aa81", rand, .055)), exposed = of(8, lit("#967553", "#b89870", rand, .10));
     const timber = of(2, lit("#5f4c33", "#a08a5e", rand, .08)), straw = of(3, lit("#83734b", "#c8b27b", rand, .09));
-    const fired = of(0, lit("#825e42", "#be9167", rand, .08));
+    const fired = of(8, lit("#825e42", "#be9167", rand, .08));
     function place(g: THREE.BufferGeometry, off: number, ds: number, lift = 0, turn = 0) {
       const xx = x + off;
       parts.push(g.rotateY(turn).translate(off, floor(xx, -(s + ds)) - base + lift, -ds));
@@ -72,7 +72,7 @@ export function buildEarlyLandscapes({ floor, stand, blocks, small }: Kit) {
       const g = new THREE.BoxGeometry(length, height, thick, Math.ceil(length), 3, 1), p = g.attributes.position;
       for (let i = 0; i < p.count; i++) {
         const xx = p.getX(i), yy = p.getY(i), zz = p.getZ(i), t = (yy + height / 2) / height;
-        p.setXYZ(i, xx + Math.sin(xx * 3.1 + yy * 2) * .013, yy + (t > .95 ? noise(xx * 3, 2) * .06 : 0), zz * (1.12 - t * .20));
+        p.setXYZ(i, xx + Math.sin(xx * 3.1 + yy * 2) * .013, yy + (t > .95 ? noise(xx * 3, 2) * .06 : 0), zz * (1.12 - t * .20) + (t < .35 ? noise(xx * 4.7, 6) * .026 * (1 - t / .35) : 0));
       }
       const body = faceted(g, mud).translate(0, height / 2 - .07, 0), layers: THREE.BufferGeometry[] = [body];
       const rows = Math.floor(height / .17), cols = Math.ceil(length / .47);

@@ -6,11 +6,13 @@ export type ReliefScan = THREE.Uniform<THREE.Texture>;
 /** R = photographic value centred on .5, G = measured surface height, B = roughness.
  * The same repeatable field drives colour and relief. The neutral texel lets the first
  * frame render while the scan is in flight, including on an interrupted connection. */
-export function loadRelief(name: "stone" | "track", anisotropy: number, signal: AbortSignal, own: Kit["own"]): ReliefScan {
+export function loadRelief(name: "stone" | "track" | "oak" | "plaster", anisotropy: number, signal: AbortSignal, own: Kit["own"], after?: Promise<unknown>): ReliefScan {
   const neutral = own(new THREE.DataTexture(new Uint8Array([128, 128, 214, 255]), 1, 1));
   neutral.needsUpdate = true;
   const sampler = new THREE.Uniform<THREE.Texture>(neutral);
   async function read() {
+    if (after) await after;
+    if (signal.aborted) return;
     const response = await fetch(`/media/walk/${name}-relief.webp`, { signal });
     if (!response.ok) return;
     const bitmap = await createImageBitmap(await response.blob());

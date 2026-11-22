@@ -9,20 +9,27 @@ type Opening = readonly [left: number, bottom: number, width: number, height: nu
  * follow the actual wall runs, leaving the broad workshop doors open. */
 export function buildWorkshopBuildings({ stand, blocks, small }: Kit) {
   const rand = sequence(1440180417), V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
-  const oak = of(2, lit("#3b2d25", "#806849", rand, .1));
-  const boards = of(2, lit("#75654d", "#aa9777", rand, .12));
-  const plaster = of(3, lit("#a6987d", "#d2c5a6", rand, .07));
-  const lime = of(3, lit("#a8a89a", "#d8d4bd", rand, .06));
+  const oak = of(10, lit("#3b2d25", "#806849", rand, .1));
+  const boards = of(10, lit("#75654d", "#aa9777", rand, .12));
+  const plaster = of(9, lit("#a6987d", "#d2c5a6", rand, .07));
+  const lime = of(9, lit("#a8a89a", "#d8d4bd", rand, .06));
   const stone = of(1, lit("#787568", "#aaa492", rand, .09));
   const brick = of(1, lit("#705847", "#a38b70", rand, .1));
   const dressedStone = flat("#aaa591", rand, .04);
-  const paper = flat("#d1c6a8", rand, .05), ink = flat("#555146", rand, .04);
+  const paper = of(11, flat("#d1c6a8", rand, .05)), ink = flat("#555146", rand, .04);
+  // Horizontal rails use the same timber colour without mutating the upright paint.
+  const horizontal = new Map<Paint, Paint>();
+  const grain = (paint: Paint, upright: boolean) => {
+    if (paint.surface !== 10 || upright) return paint;
+    if (!horizontal.has(paint)) horizontal.set(paint, of(15, (p, n, f) => paint(p, n, f)));
+    return horizontal.get(paint)!;
+  };
   const box = (w: number, h: number, d: number, x: number, y: number, z: number, paint: Paint) =>
-    faceted(new THREE.BoxGeometry(w, h, d).translate(x, y, z), paint);
+    faceted(new THREE.BoxGeometry(w, h, d).translate(x, y, z), grain(paint, h >= Math.max(w, d)));
   const beam = (a: THREE.Vector3, b: THREE.Vector3, w: number, d: number, paint = oak) => {
     const delta = b.clone().sub(a), center = a.clone().add(b).multiplyScalar(.5);
     const rotation = new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), delta.clone().normalize());
-    return faceted(new THREE.BoxGeometry(w, delta.length(), d).applyQuaternion(rotation).translate(center.x, center.y, center.z), paint);
+    return faceted(new THREE.BoxGeometry(w, delta.length(), d).applyQuaternion(rotation).translate(center.x, center.y, center.z), grain(paint, Math.abs(delta.y) >= Math.hypot(delta.x, delta.z)));
   };
   /** Rectangular wall panels around true openings, including doors that reach the floor. */
   function wall(width: number, height: number, depth: number, openings: readonly Opening[], paint: Paint) {

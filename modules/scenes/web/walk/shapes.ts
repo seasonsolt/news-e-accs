@@ -4,12 +4,12 @@ import { noise } from "./land.ts";
 
 // The walk's one way of drawing things: shapes made in code, no image files. Faces are painted one by one, then smoothed: normals and colours are shared
 // across welded corners except over a crease, so stone is round where it is worn and sharp where it broke. Every shape here comes back with `position`,
-// `normal`, `color` and `surface` (what it is made of: 0 plain, 1 stone, 2 bark and wood, 3 earth and thatch, 4 leaf, 5 skin, 6 cloth, 7 hair and fur), so any of them merge into one mesh
+// `normal`, `color` and `surface` (the material tag used in surface.ts), so any of them merge into one mesh
 // drawn by the shared material in surface.ts, which adds the grain.
 
 /** The colour of a face, from where it is and which way it looks. The returned colour is read at once, so a paint may reuse one. `surface` is what it paints. */
 export interface Paint { (center: THREE.Vector3, normal: THREE.Vector3, face: number): THREE.Color; surface?: number }
-/** Tags a paint with what it paints (see the list above). */
+/** Tags a paint with what it paints for the shared surface shader. */
 export const of = (surface: number, paint: Paint): Paint => Object.assign(paint, { surface });
 
 const first = new THREE.Color();

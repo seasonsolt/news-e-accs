@@ -1,12 +1,11 @@
 import * as THREE from "three";
 import { stoneProjection, type ReliefScan } from "./relief.ts";
 
-// The one material every painted shape shares. The shapes carry their colour; this adds what they are made of (grain, mottling, cracks, furrows), computed in
-// the shader. Rocks share a scanned relief map with the monument. The `surface` attribute says which: 0 plain, 1 stone, 2 bark and wood, 3 earth and thatch, 4 leaf, 5 skin, 6 cloth, 7 hair and fur. Noise is taken in the
-// mesh's own space, which for the static scenery is world space and on the sails, logs and people that move keeps the grain from sliding.
-
+// Geometry batches carry a surface tag alongside their vertex colours. The material
+// applies the grain in metres so walking up to an object reveals finer features.
 const DETAIL = /* glsl */ `
 varying vec3 vSpot; varying float vSurface;
+uniform sampler2D oakRelief, plasterRelief;
 float sHash(vec3 p){ p = fract(p * .1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
 float sNoise(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); vec2 o = vec2(1., 0.);
   return mix(mix(mix(sHash(i), sHash(i + o.xyy), f.x), mix(sHash(i + o.yxy), sHash(i + o.xxy), f.x), f.y),
@@ -14,7 +13,7 @@ float sNoise(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f)
 
 // Each kind multiplies the painted colour by a tint and leaves a height (in metres) for the bump, a roughness and how much specular it keeps. An octave fades out once a pixel covers about a third of its wavelength, so nothing shimmers far off.
 const SURFACE = /* glsl */ `
-float px = length(fwidth(vSpot)), sHeight = 0., sRough = .8, sSpec = 1., sWarm = 0., sCap = 0., sKnee = 0.; vec3 sTint = vec3(1.), sSheen = vec3(1.), p = vSpot;
+float px = length(fwidth(vSpot)), sHeight = 0., sRough = .8, sMetal = 0., sSpec = 1., sWarm = 0., sCap = 0., sKnee = 0.; vec3 sTint = vec3(1.), sSheen = vec3(1.), p = vSpot;
 #define FADE(f) (1. - smoothstep(.25, .6, px * (f)))
 int kind = int(vSurface + .5);
 if (kind == 1) { // stone
@@ -43,15 +42,66 @@ if (kind == 1) { // stone
   sTint = mix(vec3(1.), vec3(1.05, .96, .94), smoothstep(.45, .85, blot)) * (1. + (mottle - .5) * .07 * fm) * (1. - pore * .07 * fp);
   sHeight = mottle * .00025 * fm - pore * .00012 * fp; sRough = .66 + .1 * blot + .06 * pore * fp; sSpec = .3; sWarm = 1.; sCap = .3; sKnee = .6;
 } else if (kind == 6) { // cloth: homespun yarn, uneven along its length, in a plain weave
-  float slub = sNoise(p * vec3(140., 9., 140.)) * .6 + sNoise(p * vec3(9., 140., 9.)) * .4, fs = FADE(140.), fw = FADE(700.);
-  float weave = sin(6.2832 * fract(p.y * 700.)) * sin(6.2832 * fract((p.x + p.z) * 700.));
-  sTint = vec3((1. + (slub - .5) * .2 * fs) * (1. + weave * .05 * fw) * (.94 + .12 * sNoise(p * 5.)));
-  sHeight = slub * .0004 * fs + weave * .00015 * fw; sRough = .9 + .06 * slub; sSpec = .35;
+  // The alternating over-under crossing appears only close enough to resolve individual yarns.
+  vec2 yarn = vec2(p.x + p.z, p.y + .13 * p.z);
+  float slub = sNoise(vec3(yarn * vec2(52., 5.), 2.)), nap = sNoise(vec3(yarn * vec2(9., 103.), 6.));
+  vec2 crossing = yarn * vec2(290., 235.);
+  vec2 threads = .5 + .5 * cos(6.28318 * crossing);
+  float weave = mix(threads.x, threads.y, mod(floor(crossing.x) + floor(crossing.y), 2.)) - .5;
+  sTint = vec3((.91 + .18 * sNoise(p * 3.)) * (1. + (slub - .5) * .29 * FADE(52.) + weave * .24 * FADE(290.)));
+  sHeight = .00065 * slub * FADE(52.) + .00042 * weave * FADE(290.);
+  sRough = .85 + .10 * nap; sSpec = .52;
 } else if (kind == 7) { // hair and fur: locks hanging down, darker between them, a weak sheen in the hair's own colour broken along the strands
   float lock = sNoise(p * vec3(60., 7., 60.)), strand = sNoise(p * vec3(520., 30., 520.)), fl = FADE(60.), fs = FADE(520.);
   sTint = vec3((.74 + .44 * mix(.5, lock, fl)) * (1. + (strand - .5) * .32 * fs));
   sHeight = lock * .003 * fl + strand * .0005 * fs; sRough = .78 + .14 * (1. - lock); sSpec = .5 * mix(1., smoothstep(.35, .75, strand), fs) * (.5 + .5 * lock);
   sSheen = diffuseColor.rgb / max(max(diffuseColor.r, max(diffuseColor.g, diffuseColor.b)), 1e-3); sCap = .15; sKnee = .25;
+} else if (kind >= 8 && kind <= 15) {
+  // In the static batches vSpot is in world metres. The face tangent gives vertical
+  // walls continuous grain; on tops, the wood and tool marks lie along the board.
+  vec3 face = abs(inverseTransformDirection(normalize(vNormal), viewMatrix));
+  vec2 wall = face.x > face.z ? p.zy : p.xy;
+  vec2 plane = face.y > max(face.x, face.z) ? p.xz : wall;
+  if (kind == 8 || kind == 9) {
+    bool clay = kind == 8;
+    vec3 layer = texture2D(plasterRelief, plane * (clay ? .63 : .81)).rgb;
+    float mottling = sNoise(p * 1.1);
+    float tooth = layer.r - .5, pit = layer.g - .5;
+    // Earth keeps deep finger and straw marks. Limewash fills the hollows and
+    // takes more light on the crowns left by the float.
+    sTint = mix(vec3(.85,.81,.71), vec3(1.10,1.06,1.02), mottling);
+    sTint *= exp2(tooth * (clay ? 1.05 : .65) + pit * (clay ? .26 : .12));
+    sHeight = pit * (clay ? .011 : .004) + (mottling - .5) * .002;
+    sRough = clamp(layer.b - (clay ? .02 : .12), .66, .99); sSpec = clay ? .55 : .8;
+  } else if (kind == 10 || kind == 15) {
+    vec2 board = kind == 15 ? plane.yx : plane;
+    vec3 oak = texture2D(oakRelief, board * vec2(.90, .63)).rgb;
+    float pores = 1. - oak.g;
+    sTint = mix(vec3(.84,.74,.61), vec3(1.14,1.10,1.02), oak.r) * exp2((oak.r - .5) * 1.46);
+    sHeight = (oak.g - .5) * .0021;
+    sRough = clamp(.36 + .39 * oak.b + .10 * pores, .38, .85); sSpec = .93;
+  } else if (kind == 11) {
+    float pulp = sNoise(vec3(plane * vec2(102., 39.), 5.)), flock = sNoise(p * 11.);
+    sTint = vec3(1. + (flock - .5) * .13 + (pulp - .5) * .21 * FADE(102.));
+    sHeight = pulp * .00028 * FADE(102.); sRough = .84 + .12 * flock; sSpec = .30;
+    sCap = .12; sKnee = .85; // preserve the fibres and ink under the desk light
+  } else if (kind == 12) {
+    float orangePeel = sNoise(p * 170.), rub = sNoise(p * 4.8);
+    sRough = .31 + .17 * rub + (orangePeel - .5) * .13 * FADE(170.);
+    sHeight = orangePeel * .00016 * FADE(170.);
+    sTint = vec3(.93 + .13 * rub); sSpec = 1.;
+  } else if (kind == 13) {
+    float drag = sNoise(vec3(plane * vec2(14., 280.), 3.)), tarnish = sNoise(p * 13.);
+    sMetal = .73; sRough = .29 + tarnish * .20 + (drag - .5) * .16 * FADE(280.);
+    sTint = vec3(.93 + .14 * tarnish + (drag - .5) * .16 * FADE(280.)); sHeight = drag * .00018 * FADE(280.);
+  } else { // tinted glazing: a grazing reflection, darker when looking straight through to the unlit rooms
+    float edge = pow(1. - clamp(abs(dot(normalize(vNormal), normalize(vViewPosition))), 0., 1.), 4.);
+    float wipe = sNoise(p * vec3(9., 2., 9.));
+    sRough = .14 + .08 * wipe; sTint = mix(vec3(.36,.46,.48), vec3(.81,.91,.96), edge);
+    sSpec = 1.;
+  }
+} else if (kind == 16) {
+  totalEmissiveRadiance += vec3(.96, 1.05, .97); sRough = .33;
 } else { // clay, leather and the rest: only a very fine grain
   float fine = sNoise(p * 90.), ff = FADE(90.);
   sTint = vec3(1. + (fine - .5) * .08 * ff + (sNoise(p * 11.) - .5) * .06); sHeight = fine * .00025 * ff; sRough = .72;
@@ -77,16 +127,21 @@ const BUMP = /* glsl */ `
   float det = dot(dpx, r1) * faceDirection; normal = normalize(abs(det) * normal - sign(det) * (dFdx(sHeight) * r1 + dFdy(sHeight) * r2)); }`;
 
 /** The shared material: vertex colours, both sides, surface detail from the `surface` attribute. `bump` off (for phones) keeps the colour detail but not the light catching it. */
-export function createMatte(stoneScan: ReliefScan, bump = true) {
+export type SurfaceScans = { stone: ReliefScan; oak: ReliefScan; plaster: ReliefScan };
+
+export function createMatte(scans: SurfaceScans, bump = true) {
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: .85, metalness: 0 });
   material.onBeforeCompile = (shader) => {
-    shader.uniforms.stoneRelief = stoneScan;
+    shader.uniforms.stoneRelief = scans.stone;
+    shader.uniforms.oakRelief = scans.oak;
+    shader.uniforms.plasterRelief = scans.plaster;
     shader.vertexShader = shader.vertexShader.replace("#include <common>", "#include <common>\nattribute float surface; varying vec3 vSpot; varying float vSurface;")
       .replace("#include <begin_vertex>", "#include <begin_vertex>\nvSpot = transformed; vSurface = surface;");
     shader.fragmentShader = shader.fragmentShader.replace("#include <common>", `#include <common>\n${DETAIL}
 ${stoneProjection}`)
       .replace("#include <color_fragment>", `#include <color_fragment>\n${SURFACE}`)
       .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = sRough;")
+      .replace("#include <metalnessmap_fragment>", "#include <metalnessmap_fragment>\nmetalnessFactor = sMetal;")
       .replace("#include <lights_physical_fragment>", "#include <lights_physical_fragment>\nmaterial.specularColor *= sSpec * sSheen; material.specularF90 *= sSpec;")
       .replace("#include <lights_fragment_end>", `#include <lights_fragment_end>\n${WARM}`)
       .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>\n${bump ? BUMP : ""}`);

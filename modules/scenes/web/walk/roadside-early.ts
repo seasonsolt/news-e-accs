@@ -62,12 +62,13 @@ export function buildEarlyStops(kit: Kit) {
 
   {
     const rand = sequence(35207), scene = stop(ROADSIDE.ledger);
-    const clay = lit("#8d6448", "#c49c75", rand, .055), wet = lit("#6d4937", "#a17b59", rand, .035);
+    const clay = of(8, lit("#8d6448", "#c49c75", rand, .055)), wet = of(8, lit("#6d4937", "#a17b59", rand, .035));
     const timber = of(2, lit("#67513c", "#a78b62", rand, .08)), reed = of(2, flat("#bd9b5c", rand, .08));
     const sack = of(6, lit("#857154", "#c1ad83", rand, .10)), cord = flat("#6d573a", rand, .06);
     const turn = Math.atan2(roadX(scene.s - 7) - scene.x, 7);
     const work: THREE.BufferGeometry[] = [];
-    for (let i = 0; i < 4; i++) work.push(box(.31, .07, .83, timber).translate(-.48 + i * .32, .57, 0));
+    const tableBoards = of(15, lit("#67513c", "#a78b62", rand, .08));
+    for (let i = 0; i < 4; i++) work.push(box(.31, .07, .83, tableBoards).translate(-.48 + i * .32, .57, 0));
     for (const x of [-.46, .46]) for (const z of [-.28, .28]) work.push(limb(P(x * 1.08, .015, z * 1.1), P(x, .55, z), .055, .046, timber, { sides: 7, capped: true }));
     for (const z of [-.27, .27]) work.push(limb(P(-.50, .33, z), P(.50, .33, z), .036, .036, timber, { sides: 6, capped: true }));
 

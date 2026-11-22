@@ -18,7 +18,7 @@ import { loadRelief } from "./relief.ts";
 import { buildProps } from "./props.ts";
 import { startSound, type Sound } from "./sound.ts";
 import { buildVerge } from "./verge.ts";
-import { CANAL, CLEARINGS, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONOLITH, MONO_S, REACH_S, SOW_S, START_S, bridgeLift, chapterAt, clamp, cropCover, fbm, ground, keepDry, mix, roadsideStops, roadX, sequence, sheet, smooth, yearReading, yearsAgo } from "./land.ts";
+import { CANAL, CLEARINGS, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONOLITH, MONO_S, REACH_S, ROADSIDE, SOW_S, START_S, bridgeLift, chapterAt, clamp, cropCover, fbm, ground, keepDry, mix, roadsideStops, roadX, sequence, sheet, smooth, yearReading, yearsAgo } from "./land.ts";
 
 // The hour at points along the road: [s, zenith, horizon, fog, sun colour, sun strength, sky light, stars, sun height, fog density].
 const HOURS = ([
@@ -91,6 +91,10 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   // Transfer the critical artwork while geometry is built. Capturing failure now
   // avoids an unhandled rejection before the first-frame readiness check below.
   const orbitReady = loadOrbit(signal, own).then(texture => ({ texture }), (error: unknown) => ({ error }));
+  const scans = {
+    stone: stoneScan, oak: loadRelief("oak", anisotropy, signal, own, orbitReady),
+    plaster: loadRelief("plaster", anisotropy, signal, own, orbitReady),
+  };
   canvas.addEventListener("webglcontextlost", () => { if (!signal.aborted) onContextLost?.(); }, listen);
   canvas.inert = true; canvas.tabIndex = 0; canvas.setAttribute("aria-label", tx("可行走的三维世界：从火堆穿过麦田走到巨石")); part("viewport").append(canvas);
   let ratio = Math.min(devicePixelRatio || 1, small ? 1.25 : 1.6);
@@ -181,10 +185,10 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   })));
   scene.add(sky);
   const skyLight = new THREE.HemisphereLight(0xffffff, 0x3a3026, .3), sunLight = new THREE.DirectionalLight(0xffffff, .2);
-  const nightSoil = skyLight.groundColor.clone(), sunlitStraw = new THREE.Color("#cbb18b");
+  const nightSoil = skyLight.groundColor.clone(), sunlitStraw = new THREE.Color("#cbb18b"), flagstone = new THREE.Color("#b3aaa0");
   scene.add(skyLight, sunLight, sunLight.target);
   if (!small) { // one shadow map that follows the walker
-    sunLight.castShadow = true; sunLight.shadow.mapSize.set(2048, 2048); sunLight.shadow.bias = -.0005; sunLight.shadow.normalBias = .05; sunLight.shadow.radius = 2;
+    sunLight.castShadow = true; sunLight.shadow.mapSize.set(2048, 2048); sunLight.shadow.bias = -.0005; sunLight.shadow.normalBias = .023; sunLight.shadow.radius = 2;
     Object.assign(sunLight.shadow.camera, { left: -46, right: 46, top: 46, bottom: -46, near: 1, far: 330 }); sunLight.shadow.camera.updateProjectionMatrix();
   }
   // the sky's own light on standard materials: the dome, over ground lit by the hour, drawn into a blurred cube; redrawn when the hour has moved on
@@ -199,7 +203,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   await pause("landmarks"); if (signal.aborted) return;
 
   // ---------- things along the way ----------
-  const { fireY, showLogs, frame: tendFire, village, basketX, sowLight, blocks, fields, propsFrame } = buildProps({ scene, own, rand, small, still, out: OUT, floor, fireX, stoneX, stoneScan, wind: fieldUniforms });
+  const { fireY, showLogs, frame: tendFire, village, basketX, sowLight, blocks, fields, propsFrame } = buildProps({ scene, own, rand, small, still, out: OUT, floor, fireX, stoneX, scans, wind: fieldUniforms });
   await pause(); if (signal.aborted) return;
   const { tallGrass } = buildVerge({ scene, own, rand, small, floor, blocks }, fieldUniforms, trackScan);
   const clouds = buildClouds({ scene, own, rand, small, out: OUT }), cloudSun = new THREE.Color(), cloudSky = new THREE.Color();
@@ -219,7 +223,17 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   orbit.orbitTangent.value.y = orbit.orbitTangent.value.x * loadedOrbit.texture.image.height / loadedOrbit.texture.image.width;
 
   // A carried ember that lights the road ahead through the night country, and a handful of golden seed scattered when sowing by hand.
-  const emberLight = new THREE.PointLight(0xff8e42, 0, 15, 2); emberLight.visible = false; scene.add(emberLight);
+  // A single local light serves the carried ember, window bounce and the fluorescent fitting.
+  // Daylight enters from the opening. Its source stays fixed as the observer moves past.
+  const localLight = new THREE.PointLight(0xff8e42, 0, 12, 2); localLight.visible = false; scene.add(localLight);
+  const rooms = [
+    { stop: ROADSIDE.press, dx: -2.25, ds: -1.1, height: 2.65, tint: 0xffdcad, power: 13 },
+    { stop: ROADSIDE.loom, dx: -1.8, ds: 1.2, height: 3.65, tint: 0xe1ebf6, power: 14 },
+    { stop: ROADSIDE.terminal, dx: -.12, ds: .30, height: 2.56, tint: 0xf2faee, power: 12 },
+  ].map(({ stop: [s, offset], dx, ds, height, tint, power }) => {
+    const x = roadX(s) + offset;
+    return { s, tint, power, position: new THREE.Vector3(x + dx, floor(x, -s) + height, -s - ds) };
+  });
   const SEEDS = 48, seedAt = new Float32Array(SEEDS * 3), seedVel = new Float32Array(SEEDS * 3), seedGeometry = own(new THREE.BufferGeometry());
   seedGeometry.setAttribute("position", new THREE.BufferAttribute(seedAt, 3));
   const seedMaterial = own(new THREE.PointsMaterial({ color: "#e8c060", size: .038, transparent: true, opacity: 0, depthWrite: false }));
@@ -508,7 +522,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     skyLight.color.copy(hour.top).lerp(hour.horizon, .6); skyLight.intensity = skyPower * 1.35 * (1 + hour.stars * 2.7); // the night is drawn blue, not black
     // Straw and packed earth return warm light onto the shaded faces of the workbenches.
     const reflected = smooth(290, 355, me.s) * (1 - smooth(558, 604, me.s));
-    skyLight.groundColor.copy(nightSoil).lerp(sunlitStraw, reflected);
+    skyLight.groundColor.copy(nightSoil).lerp(sunlitStraw, reflected).lerp(flagstone, reflected * smooth(403, 430, me.s));
     skyLight.intensity *= 1 + reflected * .52;
     sunLight.color.copy(hour.sun); sunLight.intensity = power * (hour.stars > .5 ? 2. : 3.2);
     sunLight.target.position.set(me.x - Math.sin(me.yaw) * 22, ground(me.x, -me.s), -me.s - Math.cos(me.yaw) * 22);
@@ -551,10 +565,16 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     }
     sky.position.copy(camera.position);
     const carry = started && dusk === 0 ? smooth(FIRE_S + 3, FIRE_S + 14, me.s) * (1 - smooth(205, 248, me.s)) * (.72 + fed * .22) : 0;
-    emberLight.visible = carry > .01;
-    if (emberLight.visible) {
-      emberLight.position.set(me.x + Math.cos(me.yaw) * .28 - Math.sin(me.yaw) * .55, eyeY - .24, -me.s - Math.cos(me.yaw) * .55 - Math.sin(me.yaw) * .28);
-      emberLight.intensity = carry * 5.2 * fire.flicker;
+    const room = rooms.find(room => Math.abs(me.s - room.s) < 23);
+    localLight.visible = carry > .01 || Boolean(room);
+    if (room) {
+      localLight.position.copy(room.position);
+      localLight.color.setHex(room.tint);
+      localLight.intensity = room.power * (1 - smooth(13, 23, Math.abs(me.s - room.s)));
+    } else if (carry > .01) {
+      localLight.color.setHex(0xff8e42);
+      localLight.position.set(me.x + Math.cos(me.yaw) * .28 - Math.sin(me.yaw) * .55, eyeY - .24, -me.s - Math.cos(me.yaw) * .55 - Math.sin(me.yaw) * .28);
+      localLight.intensity = carry * 5.2 * fire.flicker;
     }
     updateWheat(camera);
     grass.frame(clock, camera.position, hour.density, pixel);

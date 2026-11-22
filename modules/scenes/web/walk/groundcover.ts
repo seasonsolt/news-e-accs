@@ -19,7 +19,7 @@ const HEAD = `varying vec4 vSoil; varying vec3 vSpot; uniform vec2 hearth; unifo
     return vec3(a, b, id); }
 `;
 // `relief` is a height in metres for the normal; every layer fades out before it is finer than a pixel. Colours are linear.
-const COLOR = `float relief = 0., scannedRoughness = .87;
+const COLOR = `float relief = 0., scannedRoughness = .87, paving = 0.;
   { vec2 q = vSpot.xz; float px = length(fwidth(q)), far = length(vViewPosition), packed = vSoil.x, damp = vSoil.y, till = vSoil.z, cover = vSoil.w;
     float fine = 1. - smoothstep(.004, .02, px), grain = 1. - smoothstep(.01, .05, px), fromHearth = distance(q, hearth), close = 2. - smoothstep(3., 8., far); // detail twice as strong within a few metres, where soft light flattens it
     vec3 c = diffuseColor.rgb;
@@ -76,21 +76,43 @@ const COLOR = `float relief = 0., scannedRoughness = .87;
     float campus = smoothstep(510., 525., s) * (1. - smoothstep(605., 617., s));
     if (street + campus > .001) {
       float verge = 1. - smoothstep(11., 25., abs(offset)), detail = 1. - smoothstep(.025, .18, px);
-      vec2 setts = vec2(offset * 2.75, s * 4.8);
-      setts.x += .5 * mod(floor(setts.y), 2.);
-      vec2 edge = min(fract(setts), 1. - fract(setts));
-      float arris = smoothstep(.012, .115, min(edge.x, edge.y));
-      vec3 stone = mix(vec3(.20, .174, .138), vec3(.36, .317, .246), mix(.5, soilHash(floor(setts)), detail));
-      stone *= mix(1., .60 + arris * .49, detail) * (.91 + grit.r * .15);
-      vec2 slabs = vec2(offset * .55, s * .4);
-      vec2 seam = min(fract(slabs), 1. - fract(slabs));
-      float joint = smoothstep(.003, .016, min(seam.x, seam.y));
-      vec3 concrete = mix(vec3(.25, .26, .245), vec3(.34, .35, .33), scan.r) * mix(1., .65 + joint * .35, detail);
-      vec3 asphalt = vec3(.099, .105, .108) * (.86 + .3 * grit.r);
+      // Worn setts have narrow dirt-filled joints and a broad, almost level crown. Each course
+      // has its own width and drift, so the street reads as laid stone rather than glazed tiles.
+      float row = floor(s * 4.65), drift = soilHash(vec2(row, 8.));
+      vec2 setts = vec2(offset * mix(2.45, 2.95, drift) + mod(row, 2.) * .5 + drift * .22, s * 4.65);
+      vec2 cell = floor(setts), f = fract(setts), edge = min(f, 1. - f);
+      float number = soilHash(cell + 3.1), chip = soilNoise(q * 19. + number * 7.) * .012;
+      float border = min(edge.x, edge.y) - chip;
+      float arris = smoothstep(.009, .038, border);
+      float crown = pow(max(0., sin(f.x * 3.14159) * sin(f.y * 3.14159)), .65);
+      vec3 stone = mix(vec3(.225, .213, .187), vec3(.33, .316, .277), mix(.5, number, detail));
+      stone *= mix(1., .67 + arris * .33, detail) * (.95 + grit.r * .10);
+      stone *= 1. - smoothstep(.60, .85, soilNoise(q * .24 + 36.)) * .09;
+      // Cast concrete at the campus: large unevenly weathered panels, saw cuts a few mm wide,
+      // rain staining and occasional fine shrinkage cracks instead of an identical shiny grid.
+      vec2 slabs = vec2(offset * .43, s * .34);
+      slabs.x += (soilHash(vec2(floor(slabs.y), 41.)) - .5) * .24;
+      vec2 sf = fract(slabs), seam = min(sf, 1. - sf);
+      float joint = smoothstep(.0015, .006, min(seam.x, seam.y));
+      float panel = soilHash(floor(slabs) + 7.3), weather = soilNoise(q * .29 + 51.);
+      vec3 concrete = mix(vec3(.285, .303, .291), vec3(.385, .397, .372), .25 + scan.r * .55);
+      concrete *= (.96 + panel * .065) * (1. - smoothstep(.56, .82, weather) * .15);
+      concrete *= mix(1., .72 + joint * .28, detail);
+      float crack = 0.;
+      if (detail > .01 && panel > .73) {
+        float line = abs(sf.x - (.23 + sf.y * .41 + sin(sf.y * 23. + panel * 14.) * .019));
+        crack = (1. - smoothstep(.0008, .0025, line)) * smoothstep(.06, .14, sf.y) * (1. - smoothstep(.72, .89, sf.y)) * detail;
+        concrete *= 1. - crack * .24;
+      }
+      vec3 asphalt = vec3(.108, .117, .117) * (.90 + .18 * grit.r + .08 * weather);
+      float shoulder = abs(offset) + (soilNoise(q * 2.) - .5) * .06;
+      float carriage = 1. - smoothstep(2.12, 2.20, shoulder);
       c = mix(c, stone, street * verge);
-      c = mix(c, mix(concrete, asphalt, 1. - smoothstep(2.15, 2.28, abs(offset))), campus * verge);
-      relief = mix(relief, arris * detail * .014, street * verge);
-      relief = mix(relief, joint * detail * .004, campus * verge);
+      c = mix(c, mix(concrete, asphalt, carriage), campus * verge);
+      relief = mix(relief, ((arris - 1.) * .003 + crown * .0035) * detail, street * verge);
+      relief = mix(relief, ((joint - 1.) * .002 + (weather - .5) * .0015 - crack * .001) * detail, campus * verge);
+      paving = clamp((street + campus) * verge, 0., 1.);
+      scannedRoughness = mix(scannedRoughness, .92 + grit.r * .045, paving);
     }
     diffuseColor.rgb = c * (1. - damp * .3);
     #ifdef SOIL_RIBBON
@@ -111,7 +133,7 @@ export function soil(material: THREE.MeshStandardMaterial, scan: ReliefScan, sma
     shader.vertexShader = "attribute vec4 soil; varying vec4 vSoil; varying vec3 vSpot;\n" + shader.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvSoil = soil; vSpot = (modelMatrix * vec4(transformed, 1.)).xyz;");
     shader.fragmentShader = (small ? "#define SOIL_LITE\n" : "") + (ribbon ? "#define SOIL_RIBBON\n" : "") + HEAD + shader.fragmentShader
       .replace("#include <color_fragment>", `#include <color_fragment>\n${COLOR}`)
-      .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = mix(clamp(scannedRoughness, .68, .98), .52, vSoil.y);") // matte, a little less where damp; the firelight makes no highlight
+      .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = mix(clamp(scannedRoughness, .68, .98), .52, vSoil.y * (1. - paving));") // matte, a little less where damp; the firelight makes no highlight
       .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>\n${NORMAL}`);
   };
   material.customProgramCacheKey = () => `soil-${small}-${ribbon}`;

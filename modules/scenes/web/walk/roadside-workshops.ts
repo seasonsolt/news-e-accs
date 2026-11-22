@@ -30,20 +30,26 @@ export function buildWorkshops(kit: Kit) {
   buildWorkshopBuildings(kit);
   const rand = sequence(14401804), { small, stand, blocks } = kit;
   const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
-  const wood = of(2, lit("#443225", "#8c7050", rand, .13));
-  const cutWood = of(2, lit("#6e5337", "#ad9063", rand, .1));
-  const iron = flat("#383a38", rand, .07), ink = flat("#242522", rand, .05);
-  const paper = flat("#d8ceb1", rand, .04), paperEdge = flat("#b8a986", rand, .07);
+  const wood = of(10, lit("#443225", "#8c7050", rand, .13));
+  const cutWood = of(10, lit("#6e5337", "#ad9063", rand, .1));
+  const iron = of(13, flat("#383a38", rand, .07)), ink = flat("#242522", rand, .05);
+  const paper = of(11, flat("#d8ceb1", rand, .04)), paperEdge = of(11, flat("#b8a986", rand, .07));
   const cord = flat("#9c8969", rand, .06), warp = of(6, flat("#c4b797", rand, .07));
+  const horizontal = new Map<Paint, Paint>();
+  const grain = (paint: Paint, upright: boolean) => {
+    if (paint.surface !== 10 || upright) return paint;
+    if (!horizontal.has(paint)) horizontal.set(paint, of(15, (p, n, f) => paint(p, n, f)));
+    return horizontal.get(paint)!;
+  };
   const box = (w: number, h: number, d: number, x: number, y: number, z: number, paint: Paint) =>
-    faceted(new THREE.BoxGeometry(w, h, d).translate(x, y, z), paint);
+    faceted(new THREE.BoxGeometry(w, h, d).translate(x, y, z), grain(paint, h >= Math.max(w, d)));
   const beam = (a: THREE.Vector3, b: THREE.Vector3, w: number, d: number, paint = wood) => {
     const direction = b.clone().sub(a), center = a.clone().add(b).multiplyScalar(.5);
     const turn = new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), direction.clone().normalize());
-    return faceted(new THREE.BoxGeometry(w, direction.length(), d).applyQuaternion(turn).translate(center.x, center.y, center.z), paint);
+    return faceted(new THREE.BoxGeometry(w, direction.length(), d).applyQuaternion(turn).translate(center.x, center.y, center.z), grain(paint, Math.abs(direction.y) >= Math.hypot(direction.x, direction.z)));
   };
   const axle = (radius: number, length: number, x: number, y: number, z: number, paint: Paint) =>
-    faceted(new THREE.CylinderGeometry(radius, radius, length, small ? 8 : 12).rotateZ(Math.PI / 2).translate(x, y, z), paint);
+    faceted(new THREE.CylinderGeometry(radius, radius, length, small ? 8 : 12).rotateZ(Math.PI / 2).translate(x, y, z), grain(paint, false));
   const quad = (out: number[], a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, d: THREE.Vector3) => {
     for (const p of [a, b, c, a, c, d]) out.push(p.x, p.y, p.z);
   };
@@ -51,7 +57,7 @@ export function buildWorkshops(kit: Kit) {
   /** Ink is laid on the paper's front face as grouped sorts and a small woodcut.
    * There is no texture, tiny invented label or downloaded typeface. */
   function printedSheet(width: number, height: number, variant: number) {
-    const parts = [box(width, height, .004, 0, 0, 0, paper)], marks: number[] = [];
+    const parts = [faceted(new THREE.BoxGeometry(width, height, .004, 1, 8, 1), paper)], marks: number[] = [];
     const mark = (x: number, y: number, w: number, h: number) => quad(marks, V(x, y, .0028), V(x + w, y, .0028), V(x + w, y + h, .0028), V(x, y + h, .0028));
     const rows = small ? 10 : 15, columns = small ? 10 : 15;
     const left = -width * .39, top = height * .32, stepX = width * .78 / columns, stepY = height * .67 / rows;
@@ -66,7 +72,14 @@ export function buildWorkshops(kit: Kit) {
       for (let k = 0; k < 5; k++) mark(x + k * width * .018, y, width * .008, height * (.04 + .013 * k));
     }
     parts.push(triangles(marks, ink));
-    return merged(parts);
+    // A drying sheet is not a rigid sign: its lower edge turns slightly forward.
+    // Warp the printed sorts with their sheet so no ink floats above the paper.
+    const sheet = merged(parts), positions = sheet.attributes.position!;
+    for (let i = 0; i < positions.count; i++) {
+      const lower = Math.max(0, -positions.getY(i) / height * 2);
+      positions.setZ(i, positions.getZ(i) + lower * lower * .012);
+    }
+    sheet.computeVertexNormals(); return sheet;
   }
 
   // The horizontal bed is pulled toward the reader, under a heavy timber screw.
@@ -80,6 +93,9 @@ export function buildWorkshops(kit: Kit) {
       for (const y of [1.05, 2.5]) parts.push(box(.236, .065, .274, side * .76, y, -.18, iron));
     }
     parts.push(box(1.96, .32, .36, 0, 2.75, -.18, wood));
+    // Flush wooden pegs at the loaded mortise-and-tenon joints, rather than metal bolts.
+    for (const side of [-1, 1]) for (const y of [.54, 2.75]) parts.push(faceted(
+      new THREE.CylinderGeometry(.023, .023, .012, 6).rotateX(Math.PI / 2).translate(side * .76, y, .008), cutWood));
     parts.push(box(1.75, .16, .33, 0, .54, -.18, wood));
     parts.push(box(1.43, .16, 2.15, 0, 1.02, .45, cutWood));
     for (const side of [-1, 1]) parts.push(box(.065, .07, 2.17, side * .6, 1.135, .45, iron));
@@ -130,6 +146,8 @@ export function buildWorkshops(kit: Kit) {
       parts.push(box(.11, 1.01, .13, side * .66, 2.72, -.22, wood));
     }
     for (const y of [.23, 1.04, 2.28, 3.19]) parts.push(box(2.16, .14, .16, 0, y, -.22, wood));
+    for (const side of [-1, 1]) for (const y of [.23, 2.28]) parts.push(faceted(
+      new THREE.CylinderGeometry(.018, .018, .012, 6).rotateX(Math.PI / 2).translate(side * .94, y, -.132), cutWood));
     parts.push(box(1.16, .26, .76, 0, 3.09, -.18, cutWood));
     parts.push(box(1.08, .045, .68, 0, 2.93, -.18, iron));
     parts.push(axle(.17, 1.96, 0, 1.76, -.68, warp));
@@ -150,16 +168,57 @@ export function buildWorkshops(kit: Kit) {
         parts.push(limb(V(dx, 1.25, z), V(dx, 1.86, z), .0028, .0028, iron, { sides: 3 }));
       }
     }
-    const tone = new THREE.Color(), blue = new THREE.Color("#3a5059"), gold = new THREE.Color("#bf9b60"), flax = new THREE.Color("#b5a480");
-    const pattern = of(6, (p) => {
-      const column = Math.floor((p.x + .8) * 18), row = Math.floor((p.y + .5) * 22);
-      const dx = Math.abs((column % 12 + 12) % 12 - 5.5), dy = Math.abs((row % 14 + 14) % 14 - 6.5);
-      const diamond = dx + dy * .7;
-      return tone.copy(diamond < 3 ? gold : diamond < 4.2 || column % 6 === 0 ? flax : blue).multiplyScalar(.94 + rand() * .10);
-    });
-    // The last woven span lies on the breast beam and falls toward the viewer.
-    parts.push(faceted(new THREE.BoxGeometry(1.62, .75, .012, small ? 20 : 32, small ? 16 : 24).translate(0, .83, 1.012), pattern));
-    parts.push(faceted(new THREE.BoxGeometry(1.62, .014, .35, small ? 20 : 32, 1, 5).translate(0, 1.214, .83), of(6, flat("#8e866b", rand, .06))));
+    // A contemporary two-colour Jacquard study, not a transcription of an antique.
+    // Each woven cell owns its colour vertices: the scenery's usual face-colour
+    // smoothing would otherwise wash the small repeat into interpolated patches.
+    const clothPositions: number[] = [], clothColours: number[] = [];
+    const blue = new THREE.Color("#344c55"), flax = new THREE.Color("#d3bc8b");
+    const columns = 48, rows = 28, width = 1.62, height = .75;
+    const clothPoint = (u: number, v: number) => V((u - .5) * width, .455 + v * height,
+      1.012 + .018 * Math.sin(u * Math.PI * 6) * (1 - v) + .024 * (1 - v) * (1 - v));
+    function woven(column: number, row: number) {
+      if (column < 2 || column >= columns - 2) return column % 2 === 0;
+      if (row === 1 || row === rows - 2) return true;
+      // A narrow chain of small diamonds finishes the top and bottom woven borders.
+      if (row < 5 || row >= rows - 5) {
+        const y = row < 5 ? row - 3 : row - (rows - 4);
+        return Math.abs((column + 1) % 6 - 2.5) + Math.abs(y) < 2.5;
+      }
+      const x = (column % 16) - 7.5, y = row - 5;
+      const stem = Math.sin(y * .28) * 2;
+      if (Math.abs(x - stem) < .65) return true;
+      // Alternating leaves grow out of the gently scrolling central shoot.
+      for (const node of [2, 7, 12]) {
+        const side = node === 7 ? -1 : 1, dy = y - node;
+        const leafX = Math.sin(node * .28) * 2 + side * (2.6 + dy * .65);
+        if (Math.abs(x - leafX) / 3.2 + Math.abs(dy) / 2.4 < 1) return true;
+      }
+      // Small detached lozenges make the repeat legible from the street.
+      return Math.abs(Math.abs(x) - 6) + Math.abs(y - 8) < 1.6;
+    }
+    const emitCloth = (a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, colour: THREE.Color) => {
+      for (const p of [a, b, c]) { clothPositions.push(p.x, p.y, p.z); colour.toArray(clothColours, clothColours.length); }
+    };
+    for (let row = 0; row < rows; row++) for (let column = 0; column < columns; column++) {
+      const a = clothPoint(column / columns, row / rows), b = clothPoint((column + 1) / columns, row / rows);
+      const c = clothPoint((column + 1) / columns, (row + 1) / rows), d = clothPoint(column / columns, (row + 1) / rows);
+      const colour = woven(column, row) ? flax : blue;
+      emitCloth(a, b, c, colour); emitCloth(a, c, d, colour);
+    }
+    // A quiet reverse follows the same drape with far fewer faces.
+    for (let row = 0; row < 7; row++) for (let column = 0; column < 12; column++) {
+      const a = clothPoint(column / 12, row / 7), b = clothPoint((column + 1) / 12, row / 7);
+      const c = clothPoint((column + 1) / 12, (row + 1) / 7), d = clothPoint(column / 12, (row + 1) / 7);
+      for (const point of [a, b, c, d]) point.z -= .004;
+      emitCloth(a, c, b, blue); emitCloth(a, d, c, blue);
+    }
+    const cloth = new THREE.BufferGeometry();
+    cloth.setAttribute("position", new THREE.Float32BufferAttribute(clothPositions, 3));
+    cloth.setAttribute("color", new THREE.Float32BufferAttribute(clothColours, 3));
+    cloth.setAttribute("surface", new THREE.Float32BufferAttribute(new Float32Array(clothPositions.length / 3).fill(6), 1));
+    cloth.computeVertexNormals(); parts.push(cloth);
+    // The last unpatterned span rests on the breast beam above the hanging sample.
+    parts.push(faceted(new THREE.BoxGeometry(1.62, .014, .35, 8, 1, 3).translate(0, 1.214, .83), of(6, flat("#8e866b", rand, .06))));
     parts.push(box(1.82, .09, .075, 0, 1.42, .61, wood));
     parts.push(box(.38, .065, .075, .16, 1.286, .73, cutWood));
     for (const side of [-1, 1]) parts.push(beam(V(side * .25, .09, .72), V(side * .25, .22, -.42), .14, .055, cutWood));
