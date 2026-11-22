@@ -9,7 +9,7 @@ export function buildNetworkStop({ stand, blocks, small, scene, own, floor }: Ki
   const [s, offset] = ROADSIDE.terminal, x = roadX(s) + offset, rand = sequence(19691029);
   const parts: THREE.BufferGeometry[] = [], windows: THREE.BufferGeometry[] = [], P = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
   const enamel = of(12, lit("#646b63", "#a5aea0", rand, .035)), metal = of(13, lit("#4e5552", "#939b96", rand, .035));
-  const dark = flat("#252a27", rand, .04), paper = of(11, lit("#c9c8b5", "#eeecd8", rand, .015)), ink = of(11, flat("#191d19", rand, 0));
+  const dark = flat("#252a27", rand, .04), paper = of(11, lit("#a9a38d", "#d8d2b9", rand, .02)), ink = of(11, flat("#191d19", rand, 0));
   const tube = of(16, flat("#eeeddb", rand, .01));
   const ivory = of(12, lit("#b8b59d", "#dedbc4", rand, .025)), amber = flat("#dfb267", rand, .035);
   const box = (w: number, h: number, d: number, x: number, y: number, z: number, paint: Paint) => parts.push(faceted(new THREE.BoxGeometry(w, h, d), paint).translate(x, y, z));
@@ -115,7 +115,7 @@ export function buildNetworkStop({ stand, blocks, small, scene, own, floor }: Ki
     sheetBox(.009, .012, .0005, xx, yy, zz + .001, dark);
   }
   // Monospaced L and closed O, printed large enough to read from the nearby road.
-  const t = .023, y = .39, h = .235, w = .145;
+  const t = .033, y = .39, h = .235, w = .145;
   sheetBox(t, h, .0004, -.2, y, .009, ink);
   sheetBox(w, t, .0004, -.2 + (w - t) / 2, y - (h - t) / 2, .009, ink);
   for (const xx of [.055, .055 + w - t]) sheetBox(t, h, .0004, xx, y, .009, ink);
@@ -147,7 +147,8 @@ export function buildNetworkStop({ stand, blocks, small, scene, own, floor }: Ki
   for (let i = rackStart; i < parts.length; i++) parts[i]!.translate(-rack, 0, .38).scale(.68, .88, .85).translate(rack, .01, -.38);
   // Two thick cable runs leave the terminal and visibly terminate in the cabinet.
   for (let i = 0; i < 2; i++) {
-    const path = [P(.47, 1.044, -.413 + i * .078), P(.99, .61, -.64 + i * .12), P(1.02, .14, -.5 + i * .14), P(1.39, .14, -.04 + i * .15), P(1.65, .17, .23 + i * .12), P(1.82, .43 + i * .16, .17)];
+    const path = [P(.47, 1.044, -.413 + i * .078), P(.99, .61, -.64 + i * .12), P(1.02, .14, -.5 + i * .14), P(1.39, .14, -.04 + i * .15), P(1.72, .17, .23 + i * .12), P(1.94 + i * .09, .35 + i * .12, .18), P(2.04 + i * .09, .44 + i * .12, .027)];
+    rod(P(2.04 + i * .09, .44 + i * .12, .014), P(2.04 + i * .09, .44 + i * .12, .065), .048, metal);
     parts.push(faceted(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(path), small ? 14 : 22, .027, 5, false), dark));
   }
   const feed = [P(rack, .3, -.86), P(2.8, .16, -1.5), P(2.8, .16, -3.7), P(2.25, .4, -3.84)];

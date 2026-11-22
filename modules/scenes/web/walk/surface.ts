@@ -84,7 +84,7 @@ if (kind == 1) { // stone
     float pulp = sNoise(vec3(plane * vec2(102., 39.), 5.)), flock = sNoise(p * 11.);
     sTint = vec3(1. + (flock - .5) * .13 + (pulp - .5) * .21 * FADE(102.));
     sHeight = pulp * .00028 * FADE(102.); sRough = .84 + .12 * flock; sSpec = .30;
-    sCap = .12; sKnee = .85; // preserve the fibres and ink under the desk light
+    sCap = .12; sKnee = .41; // preserve the fibres and ink under the desk light
   } else if (kind == 12) {
     float orangePeel = sNoise(p * 170.), rub = sNoise(p * 4.8);
     sRough = .31 + .17 * rub + (orangePeel - .5) * .13 * FADE(170.);
