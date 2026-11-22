@@ -129,7 +129,11 @@ html:has(.walk), body:has(.walk) { overflow: hidden; scrollbar-gutter: auto; }
 .walk.is-ended h1 { font-size: clamp(43px, 5.3vw, 86px); line-height: 1.04; }
 .walk.is-ended .walk-intro { max-width: min(41rem, 48vw); }
 .walk.is-ended .walk-actions { max-width: 35rem; gap: 6px 20px; }
+.walk.is-ended .walk-start { background: transparent; color: #f0dfc5; border: 0; padding-inline: 0; font-weight: 500; }
+.walk.is-ended .walk-start::before { display: none; }
+.walk.is-ended .walk-actions > a:first-of-type { background: #edc58c; color: #231c13; border: 1px solid #ffdfab; border-radius: var(--radius-mark); padding: 10px 16px; font-weight: 650; }
 .walk.is-ended .walk-lede { max-width: 31ch; }
+:lang(zh) .walk.is-ended .walk-lede { max-width: 21em; text-wrap: balance; }
 .walk.is-ended .walk-back { display: none; }
 
 @media (max-width: 740px), (pointer: coarse) {
@@ -147,7 +151,7 @@ html:has(.walk), body:has(.walk) { overflow: hidden; scrollbar-gutter: auto; }
 }
 @media (max-width: 740px) {
   .walk-poster { height: 67%; }
-  .walk-poster img { object-position: center 38%; }
+  .walk-poster img { object-position: 76% 52%; }
   .walk-hero::before { background: linear-gradient(0deg, #0d1821 0%, #0d1821 33%, #0d1821e0 43%, #0d18213d 62%, transparent 79%); }
   .walk-intro { align-self: end; padding-top: max(16svh, 80px); padding-bottom: clamp(28px, 5svh, 52px); }
   .walk-hero h1 { font-size: clamp(56px, 12vw, 84px); }

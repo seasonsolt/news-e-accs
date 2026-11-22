@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { FEATURES } from "@aihot/industry/features";
+import { MANIFESTO_CARD } from "@aihot/industry/manifesto";
 import { SITE } from "@aihot/site";
 import { localeFromMatches, translate, useLocale, useTranslate } from "@aihot/web/lib/i18n";
 import { localePath } from "@aihot/web/lib/locale";
@@ -14,9 +15,8 @@ import { END_S, START_S, chapterAt, yearReading } from "./land.ts";
 import styles from "./walk.css?url";
 
 const PATH = "/chronicle/walk";
-const CARD = "/media/art/walk-odyssey-og.jpg";
 const title = "从火堆到巨石";
-const description = "一百万年，一条路。夜里的火，清晨的田，下午的麦子，和麦田中央那块石头，都在同一个世界里。";
+const description = "从火塘走到麦田，再到训练 AI 的机房。《加速史》的一段可行走的寓言，讲人与小麦如何改变彼此，也讲今天的人与 AI。";
 
 export const handle: Screen = { bare: true };
 export const links = () => [{ rel: "stylesheet", href: styles }, { rel: "stylesheet", href: guideStyles }];
@@ -31,7 +31,7 @@ export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown
     title: name,
     description: summary,
     path: PATH,
-    image: CARD,
+    image: MANIFESTO_CARD,
     jsonLd: [
       {
         "@context": "https://schema.org",
@@ -40,7 +40,7 @@ export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown
         description: summary,
         url: `${base}${path}`,
         inLanguage: locale === "zh" ? "zh-CN" : "en",
-        image: `${base}${CARD}`,
+        image: `${base}${MANIFESTO_CARD}`,
         applicationCategory: "MultimediaApplication",
         operatingSystem: "Any",
         offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
@@ -126,12 +126,12 @@ function Walk({ interrupted, onContextLost }: { interrupted: boolean; onContextL
   }
 
   const [figure, unit] = yearReading(0, locale);
-  const poster = "/media/art/walk-odyssey";
+  const poster = "/media/art/home-wheat-monolith";
   const loading = !ready || stage !== null;
   const step = stage ? Object.keys(stages).indexOf(stage) + 1 : 0;
   return <main className="walk" ref={root}>
     <div className="walk-viewport" data-walk="viewport" />
-    <Link className="walk-back" to={localePath("/chronicle", locale)}><IconArrowLeft size={16} /> {tx("返回加速史")}</Link>
+    <a className="walk-back" href={localePath("/chronicle", locale)}><IconArrowLeft size={16} /> {tx("返回加速史")}</a>
     <div className="walk-hud" data-walk="hud" hidden>
       <div className="walk-position">
         <p className="walk-chapter" data-walk="chapter" aria-live="polite">{tx(chapterAt(0))}</p>
@@ -154,25 +154,24 @@ function Walk({ interrupted, onContextLost }: { interrupted: boolean; onContextL
     </div>
     <section className="walk-cover" data-walk="cover" aria-labelledby="walk-title">
       <div className="walk-hero">
-        <picture className="walk-poster walk-intro-only">
-          <source media="(max-width: 740px) and (orientation: portrait)" srcSet="/media/art/walk-odyssey-portrait.webp" />
+        <div className="walk-poster walk-intro-only">
           <img src={artUrl(poster, 1600)} srcSet={`${artUrl(poster, 800)} 800w, ${artUrl(poster, 1600)} 1600w`}
-            sizes="100vw" alt="" fetchPriority="high" width={1600} height={900} />
-        </picture>
+            sizes="(max-width: 740px) max(100vw, 100svh), 100vw" alt="" fetchPriority="high" width={1600} height={1067} />
+        </div>
         <div className="walk-intro">
-          <p className="walk-kicker walk-intro-only"><span>{tx("第一人称漫游")}</span><span><IconClock size={14} />{tx("约两分钟")}</span></p>
+          <p className="walk-kicker walk-intro-only"><span>{tx("加速史 · 第一人称漫游")}</span><span><IconClock size={14} />{tx("约两分钟")}</span></p>
           <h1 id="walk-title" data-walk="cover-title" tabIndex={-1}>
             <span>{tx("从火堆")}</span>{locale === "en" && " "}<em>{tx("到巨石")}</em>
           </h1>
-          <p className="walk-lede" data-walk="cover-text">{tx("从夜里的一堆火出发，穿过黎明时分的村落。在麦田尽头，伸手触碰那块沉默的石头。")}</p>
+          <p className="walk-lede" data-walk="cover-text">{tx("给火添柴，为来年留一把麦种。顺着田埂往前走，你会听见今天的机房。")}</p>
           <div className="walk-actions">
+            {FEATURES.eaccConcepts && <Link className="walk-exit" data-walk="manifesto" to={localePath("/manifesto#wheat", locale)} hidden>{tx("读宣言里的〈小麦〉")}</Link>}
+            <Link className="walk-exit" data-walk="exit" to={localePath("/chronicle", locale)} hidden>{tx("看今天的加速史")}</Link>
             <button type="button" className="walk-start" data-walk="start" ref={startButton}
               disabled={!ready} aria-busy={loading} aria-disabled={stage ? true : undefined} onClick={() => void enter()}>
               {tx(stage ? "正在打开世界" : error ? "重试" : "开始行走")}
             </button>
             <a className="walk-guide-jump walk-intro-only" href="#walk-guide">{tx("阅读图文路线")} <IconChevronDown size={15} /></a>
-            <Link className="walk-exit" data-walk="exit" to={localePath("/chronicle", locale)} hidden>{tx("返回加速史")}</Link>
-            {FEATURES.eaccConcepts && <Link className="walk-exit" data-walk="manifesto" to={localePath("/manifesto", locale)} hidden>{tx("读《降临派宣言》")}</Link>}
             <button type="button" className="walk-share" data-walk="share" hidden>{tx("分享这条路")}</button>
           </div>
           <div className="walk-loading" data-walk="loading" hidden={!loading}>

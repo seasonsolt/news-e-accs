@@ -14,7 +14,8 @@
 }
 .walk-guide h2,
 .walk-guide h3 { margin: 0; font-family: var(--font-display); font-weight: 400; line-height: 1.12; text-wrap: balance; }
-.walk-guide h2 { margin-bottom: clamp(22px, 3.6vw, 46px); font-size: clamp(30px, 4vw, 58px); }
+.walk-guide h2 { margin-bottom: 16px; font-size: clamp(30px, 4vw, 58px); }
+.walk-guide-intro { max-width: 65ch; margin: 0 0 clamp(22px, 3.6vw, 46px); color: #b8c2c5; font: 17px/1.8 var(--font-display); }
 .walk-guide-entry {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
@@ -25,6 +26,8 @@
   scroll-margin-top: 16px;
 }
 .walk-guide-art { display: block; width: 100%; height: auto; background: #28231b; }
+.walk-guide-figure { min-width: 0; margin: 0; }
+.walk-guide-figure figcaption { margin-top: 10px; color: #aab7bc; font: 11px/1.7 var(--font-mono); }
 .walk-guide-copy { max-width: 28rem; }
 .walk-guide-time { margin: 0 0 16px; color: #cfac76; font: 12px/1.6 var(--font-mono); letter-spacing: .065em; }
 .walk-guide h3 { font-size: clamp(30px, 4vw, 56px); }
@@ -42,10 +45,11 @@
 }
 .walk-guide-link:hover { color: #fff2da; text-decoration-color: currentColor; }
 .walk-guide-link:focus-visible { outline: 2px solid #e7c58e; outline-offset: 4px; }
+.walk-guide-reading { display: flex; flex-wrap: wrap; gap: 12px 28px; border-top: 1px solid var(--guide-rule); padding-top: 24px; }
 .walk-guide:focus-visible, .walk-guide-entry:focus-visible { outline: 1px solid #e7c58e; outline-offset: -2px; }
 @media (min-width: 701px) {
   #walk-field { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
-  #walk-field .walk-guide-art { grid-column: 2; grid-row: 1; }
+  #walk-field .walk-guide-figure { grid-column: 2; grid-row: 1; }
   #walk-field .walk-guide-copy { grid-column: 1; grid-row: 1; }
 }
 @media (max-width: 700px) {

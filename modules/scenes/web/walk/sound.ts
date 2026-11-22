@@ -107,10 +107,9 @@ export function startSound(ctx: AudioContext, muted: boolean): Sound {
   const grind = gain(0, master), stroke = gain(.5, grind); loop(rustle, filter("bandpass", 1050, 1.3, stroke)); lfo(1.2, .5, stroke.gain);
   const mill = gain(0, filter("lowpass", 1800, .5, master));
   const hum = gain(0, master); for (const [f, level] of [[100, .6], [150, .25], [200, .35], [300, .12]] as const) tone(f, gain(level, hum)); // mains hum off the wires
-  // the compute hall and radio dish: cool fan airflow and a quiet telemetry harmonic before the monolith's chord
+  // Fan airflow and mains harmonics carry a short way into the wheat beyond the hall.
   const compute = gain(0, master); loop(brown, filter("bandpass", 310, 1.4, gain(.55, compute)));
   for (const [f, level] of [[220, .18], [330.2, .12], [660.4, .06]] as const) tone(f, gain(level, compute));
-  const drone = gain(0, master); for (const [f, level] of [[55, .5], [55.35, .4], [110.2, .45], [164.9, .25], [220.6, .12]] as const) tone(f, gain(level, drone)); // the stone's low tone, beating slowly
   const tread = filter("lowpass", 2600, .6, master), treadEcho = gain(0, far); tread.connect(treadEcho);
 
   // ---------- one-shots ----------
@@ -171,16 +170,9 @@ export function startSound(ctx: AudioContext, muted: boolean): Sound {
     g.gain.value = 0; g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(.3, at + .004); g.gain.setTargetAtTime(0, at + .004, .03);
     o.connect(g).connect(cues); once(o, at, at + .3, g);
   }
-  function swell(at: number) { // the stone answers: a deep chord and a breath of low noise
-    const g = ctx.createGain(), f = ctx.createBiquadFilter(), air = ctx.createBufferSource();
-    f.type = "lowpass"; f.frequency.value = 420; g.gain.value = 0; f.connect(g).connect(master);
-    g.gain.setTargetAtTime(.16, at, .7); g.gain.setTargetAtTime(0, at + 2.4, 1.3);
-    const chord = [55, 82.4, 110.3, 164.6].map(frequency => { const o = ctx.createOscillator(); o.frequency.value = frequency; o.connect(f); o.start(at); o.stop(at + 9); return o; });
-    air.buffer = brown; air.loop = true; air.connect(f); once(air, at, at + 9, ...chord, f, g);
-  }
 
   // ---------- running ----------
-  let stride = .7, wait = 0, touchedAt = -1, feedHeat = 0, nextCrackle = 0, nextBubble = 0, nextBird = 0, nextOwl = 0, nextCreak = 0, closed = false, sleeper = 0;
+  let stride = .7, wait = 0, feedHeat = 0, nextCrackle = 0, nextBubble = 0, nextBird = 0, nextOwl = 0, nextCreak = 0, closed = false, sleeper = 0;
   function settle() { // hidden: stop the clock at once; muted: let the fade finish first
     clearTimeout(sleeper);
     if (document.hidden) void ctx.suspend();
@@ -194,8 +186,6 @@ export function startSound(ctx: AudioContext, muted: boolean): Sound {
     frame(h, dt) {
       if (closed) return;
       const now = ctx.currentTime, field = smooth(240, 275, h.s), nature = 1 - .75 * smooth(590, 636, h.s), day = 1 - h.dusk;
-      if (touchedAt >= 0 && h.dusk === 0 && now - touchedAt > .5) touchedAt = -1; // walking again from the start
-      const tail = touchedAt < 0 ? 1 : 1 - smooth(5, 8.5, now - touchedAt);
       feedHeat *= Math.exp(-dt / 2.5);
       const cave = 1 - smooth(3, 18, Math.abs(h.s - CAVE_S));
       const heat = Math.pow(1 - smooth(4, 35, h.fireGap), 2) * (.6 + .4 * h.fed / 3 + feedHeat * .5) + cave * .2 + (1 - smooth(2, 16, Math.abs(h.s - VILLAGE.yardS))) * .3;
@@ -231,7 +221,7 @@ export function startSound(ctx: AudioContext, muted: boolean): Sound {
       ease(fire.gain, heat * .5, .15); ease(roar.gain, .5 + .35 * noise(now * 1.7, 2.2), .08);
       ease(crickets.gain, Math.max(h.night * nature, h.dusk * .6) * .025, .4);
       ease(wind.gain, mix(.05, .13, field) * (.3 + .9 * gust) * nature * mix(1, .35, h.dusk), .3); ease(windBand.frequency, 280 + 520 * gust, .3);
-      // When the scene cuts to the field, let the grain be heard again under the dying chord.
+      // In the closing wide shot, the foreground wheat rustles over the distant fans.
       const fieldAir = nature * day + .42 * smooth(.56, 1, h.dusk);
       ease(wheat.gain, smooth(258, 420, h.s) * fieldAir * (.2 + .8 * Math.pow(gust, 1.5)) * .07, .22);
       ease(birds.gain, .05 * nature * day, .3);
@@ -239,18 +229,17 @@ export function startSound(ctx: AudioContext, muted: boolean): Sound {
       ease(grind.gain, smooth(VILLAGE.from - 1, VILLAGE.from + 6, h.s) * (1 - smooth(VILLAGE.to - 7, VILLAGE.to, h.s)) * .03, .3);
       ease(mill.gain, turning * .028, .3);
       ease(hum.gain, smooth(503, 515, h.s) * (1 - smooth(550, 562, h.s)) * .01 * day, .4);
-      ease(compute.gain, smooth(564, 582, h.s) * (1 - smooth(608, 622, h.s)) * .024 * day, .4);
-      ease(drone.gain, smooth(588, 634, h.s) * .065 * tail, .6);
+      ease(compute.gain, smooth(564, 582, h.s) * mix(1, .24, smooth(608, 631, h.s)) * .032, .4);
       ease(tread.frequency, mix(2600, 1250, field), .3);
       ease(treadEcho.gain, cave * .28, .2);
     },
     cue(what) {
       if (closed) return;
-      if (what === "replay") { touchedAt = -1; feedHeat = 0; return; }
+      if (what === "replay") { feedHeat = 0; return; }
       if (!muted && ctx.state !== "running") void ctx.resume();
       const now = ctx.currentTime;
-      if (what === "touch") { touchedAt = now; if (!muted) swell(now + .02); return; }
       if (muted) return;
+      if (what === "touch") { knock(now, 85); return; }
       if (what === "feed") {
         feedHeat = 1; knock(now + .02, 180); knock(now + .17, 235); crackle(now + .02, .8, .4);
         for (let i = 0; i < 10; i++) crackle(now + .2 + rand() * .9, .5 + rand() * .5);

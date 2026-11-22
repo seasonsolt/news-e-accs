@@ -192,7 +192,7 @@ export default function ChroniclePage() {
           action={WALK && (
             <Link to="/chronicle/walk" className="chronicle-walk">
               <span className="chronicle-walk-label">{tx("走进去")}<span aria-hidden="true"> →</span></span>
-              <span className="chronicle-walk-note">{tx("第一人称，从火堆走到巨石 · 约两分钟")}</span>
+              <span className="chronicle-walk-note">{tx("守火、种麦，走到今天的 AI 机房 · 约两分钟")}</span>
             </Link>
           )}
           tools={(

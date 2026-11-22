@@ -76,6 +76,11 @@ export function buildProps(setting: Setting) {
   // ---------- the stone, facing the walker, the sun behind it ----------
   buildMonolith(setting, stoneX, floor(stoneX, -MONO_S), -MONO_S);
   blocks.push([stoneX, MONO_S, Math.hypot(MONOLITH.width, MONOLITH.depth) / 2]);
+  // The figure at the edge of the wheat gives the slab the same human scale as the homepage plate.
+  const walkerX = stoneX + 6.7, walkerS = MONO_S - 3.8;
+  const walker = person(rand, { ...POSES.stand, look: [0, 2.7, 2.2] }, { cloth: "#b99b71", dress: "tunic", hat: "none", small: true });
+  stand(walker, walkerX, walkerS, Math.atan2(stoneX - walkerX, walkerS - MONO_S));
+  blocks.push([walkerX, walkerS, .36]);
 
   for (const shapes of stretches.values()) { const mesh = new THREE.Mesh(own(merged(shapes)), matte); mesh.castShadow = mesh.receiveShadow = true; scene.add(mesh); }
   return { ...camp, village, basketX, sowLight, blocks, fields };

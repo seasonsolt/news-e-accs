@@ -79,8 +79,13 @@ test("time only runs forward along the road, from a million years ago to this ye
   for (let s = 0; s < MONO_S; s += 5) assert.ok(yearsAgo(s + 5) <= yearsAgo(s), `year at ${s}`);
   assert.deepEqual(yearReading(0, "zh"), ["100", "万年前"]);
   assert.deepEqual(yearReading(0, "en"), ["1,000,000", "years ago"]);
+  assert.ok(Math.abs(yearsAgo(CAVE_S) - 40000) < 1e-6);
+  assert.deepEqual(yearReading(CAVE_S, "zh"), ["4", "万年前"]);
+  assert.deepEqual(yearReading(CAVE_S, "en"), ["40,000", "years ago"]);
   assert.deepEqual(yearReading(SOW_S, "zh"), ["1.2", "万年前"]);
-  assert.deepEqual(yearReading(MONO_S, "en"), ["2026", "CE"]);
+  const currentYear = String(new Date().getUTCFullYear());
+  assert.deepEqual(yearReading(MONO_S, "en"), [currentYear, "CE"]);
+  assert.deepEqual(yearReading(MONO_S, "zh"), [currentYear, "年"]);
   const [figure, unit] = yearReading(280, "en");
   assert.equal(unit, "BCE"); assert.match(figure, /^\d+00$/);
   assert.deepEqual([chapterAt(0), chapterAt(FIELD_S), chapterAt(MONO_S)], ["Ⅰ · 火", "Ⅱ · 田", "Ⅲ · 碑"]);

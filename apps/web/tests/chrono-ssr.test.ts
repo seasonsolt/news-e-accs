@@ -91,11 +91,15 @@ test("chronicle SSR chooses its era/year and delivers final gauges and no-JS era
 test("the chronicle invites the reader into the walk under the moment it reads out, in the reader's language, and the retired workshops' addresses lead there too", async () => {
   for (const prefix of ["/zh", ""]) {
     const document = parseHTML(await (await fetch(`${fixture.origin}${prefix}/chronicle?t=1822`)).text()).document;
-    // The site menu lists it too; the page itself has one way in, not two competing links.
+    // The site menu and the page each offer a localized way into the walk.
     const walk = [...document.querySelectorAll(`a[href="${prefix}/chronicle/walk"]`)].filter((a) => !a.closest("nav"));
     assert.equal(walk.length, 1);
-    assert.ok(walk[0]!.closest("#observatory header")?.querySelector("h1"), "it sits under the moment the deck reads out, not among the axis controls");
-    assert.match(walk[0]!.textContent!, prefix ? /走进去.*从火堆走到巨石/ : /Step inside.*from the fire to the monolith/);
+    assert.ok(walk[0]!.closest("#observatory header")?.querySelector("h1"), "the invitation follows the moment the deck reads out");
+    const invitation = walk[0]!.textContent!.replace(/\s+/g, " ").trim();
+    assert.match(invitation, prefix ? /走进去/ : /Step inside/);
+    assert.ok(invitation.includes(prefix
+      ? "守火、种麦，走到今天的 AI 机房 · 约两分钟"
+      : "Tend a fire, sow wheat and walk to an AI data center · about two minutes"));
     assert.equal(document.querySelector('[role="slider"] button, [role="slider"] a'), null);
     assert.equal(document.querySelector(".observatory-enter"), null);
     for (const retired of ["/chronicle/workshops", "/chronicle/steam", "/chronicle/difference-engine"]) {
@@ -112,7 +116,8 @@ test("the chronicle invites the reader into the walk under the moment it reads o
     assert.equal(scene.querySelector('nav[aria-label="主导航"], nav[aria-label="Main navigation"]'), null);
     assert.equal(scene.querySelector("canvas"), null);
     assert.ok(scene.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith(`${prefix}/chronicle/walk`));
-    assert.match(scene.querySelector('meta[property="og:image"]')!.getAttribute("content")!, /\/media\/art\/walk-odyssey-og\.jpg$/);
+    const card = scene.querySelector('meta[property="og:image"]')!.getAttribute("content")!;
+    assert.match(card, /\/media\/art\/manifesto-monolith-og\.jpg$/);
     assert.doesNotMatch(scene.querySelector('meta[name="robots"]')?.getAttribute("content") ?? "", /noindex/);
     const ld = [...html.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].flatMap(([, raw]) => {
       const parsed = JSON.parse(raw!) as Record<string, unknown> | Array<Record<string, unknown>>;
@@ -121,6 +126,7 @@ test("the chronicle invites the reader into the walk under the moment it reads o
     const app = ld.find((entry) => entry["@type"] === "WebApplication")!;
     assert.ok(app, `${prefix}/chronicle/walk WebApplication`);
     for (const key of ["name", "description", "url", "inLanguage", "image", "applicationCategory", "operatingSystem"]) assert.ok(typeof app[key] === "string" && app[key].length > 0, `${key}`);
+    assert.equal(app.image, card);
     const offers = app.offers as Record<string, string>, author = app.author as Record<string, string>;
     assert.equal(offers["@type"], "Offer"); assert.ok(offers.price && offers.priceCurrency);
     assert.equal(author["@type"], "Organization"); assert.ok(author.name && author.url);
@@ -140,16 +146,18 @@ test("the walk serves the illustrated route and all three chapters in each editi
     assert.ok(preparing);
     assert.ok(preparing.querySelector('progress:not([value])'));
     assert.match(preparing.querySelector('[role="status"]')!.textContent!, prefix ? /正在准备入口/ : /Preparing the controls/);
-    const poster = scene.querySelector(".walk-poster");
-    const desktop = poster?.querySelector("img");
-    const portrait = poster?.querySelector("source");
-    const art = "/media/art/walk-odyssey";
-    assert.equal(desktop?.getAttribute("src"), art + "-hd-1600.webp");
-    assert.equal(desktop?.getAttribute("srcset") ?? desktop?.getAttribute("srcSet"), art + "-hd-800.webp 800w, " + art + "-hd-1600.webp 1600w");
-    assert.equal(portrait?.getAttribute("srcset") ?? portrait?.getAttribute("srcSet"), art + "-portrait.webp");
-    for (const cut of ["-hd-800.webp", "-hd-1600.webp", "-portrait.webp", "-og.jpg"]) {
+    const poster = scene.querySelector(".walk-poster img");
+    const art = "/media/art/home-wheat-monolith";
+    assert.equal(poster?.tagName, "IMG");
+    assert.equal(scene.querySelector(".walk-poster source"), null);
+    assert.equal(poster?.getAttribute("src"), art + "-hd-1600.webp");
+    assert.equal(poster?.getAttribute("srcset") ?? poster?.getAttribute("srcSet"), art + "-hd-800.webp 800w, " + art + "-hd-1600.webp 1600w");
+    for (const cut of ["-hd-800.webp", "-hd-1600.webp"]) {
       assert.ok(existsSync(new URL(`../public${art}${cut}`, import.meta.url)), cut);
     }
+    assert.ok(existsSync(new URL("../public/media/art/manifesto-monolith-og.jpg", import.meta.url)));
+    assert.equal(scene.querySelector('[data-walk="manifesto"]')!.textContent!.trim(), prefix ? "读宣言里的〈小麦〉" : "Read “Wheat”");
+    assert.equal(scene.querySelector('[data-walk="exit"]')!.textContent!.trim(), prefix ? "看今天的加速史" : "Today in the Chronicle");
     const guide = scene.getElementById("walk-guide");
     assert.ok(guide && scene.querySelector('a[href="#walk-guide"]'));
     for (const id of ["walk-fire", "walk-field", "walk-monolith"]) {
@@ -167,21 +175,63 @@ test("the walk serves the illustrated route and all three chapters in each editi
         assert.ok(path?.startsWith("/media/art/") && existsSync(new URL(`../public${path}`, import.meta.url)), `${id}: ${path}`);
       }
     }
+    const reading = guide.querySelector(".walk-guide-reading")!;
+    assert.ok(reading.querySelector(`a[href="${prefix}/chronicle"]`));
+    assert.ok(reading.querySelector(`a[href="${prefix}/manifesto#wheat"]`));
   }
 });
 
-test("without JavaScript a reader can follow the walk guide from cover to monolith and back", async () => {
+test("walk continuation links keep their locale and order with either manifesto setting", async () => {
+  const server = await createServer({ configFile: false, resolve: { alias: { "@aihot/web/": new URL("../app/", import.meta.url).pathname } }, server: { middlewareMode: true, ws: false }, appType: "custom" });
+  const { FEATURES: features } = await server.ssrLoadModule("@aihot/industry/features") as { FEATURES: { eaccConcepts: boolean } };
+  const original = features.eaccConcepts;
+  try {
+    const { default: WalkPage } = await server.ssrLoadModule("/modules/scenes/web/walk/page.tsx") as { default: ComponentType };
+    for (const enabled of [true, false]) {
+      features.eaccConcepts = enabled;
+      for (const prefix of ["", "/zh"]) {
+        const html = renderToStaticMarkup(createElement(MemoryRouter, { initialEntries: [`${prefix}/chronicle/walk`] }, createElement(WalkPage)));
+        const scene = parseHTML(html).document;
+        const actions = [...scene.querySelectorAll(".walk-actions > [data-walk]")];
+        assert.deepEqual(actions.map(action => action.getAttribute("data-walk")), enabled
+          ? ["manifesto", "exit", "start", "share"]
+          : ["exit", "start", "share"]);
+        assert.equal(scene.querySelector('[data-walk="exit"]')!.getAttribute("href"), `${prefix}/chronicle`);
+        if (enabled) {
+          const manifesto = scene.querySelector('[data-walk="manifesto"]')!;
+          assert.equal(manifesto.getAttribute("href"), `${prefix}/manifesto#wheat`);
+        } else {
+          assert.equal(scene.querySelector(`a[href^="${prefix}/manifesto"]`), null);
+        }
+      }
+    }
+  } finally {
+    features.eaccConcepts = original;
+    await server.close();
+  }
+});
+
+test("without JavaScript a reader can follow all three walk chapters in either edition", async () => {
   const browser = await chromium.launch();
   try {
-    const tab = await browser.newPage({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
-    await tab.goto(`${fixture.origin}/zh/chronicle/walk`);
-    const route = [["[data-walk=cover]", "walk-guide"], ["#walk-fire", "walk-field"], ["#walk-field", "walk-monolith"], ["#walk-monolith", "walk-title"]];
-    for (const [from, id] of route) {
-      await tab.locator(`${from} a[href="#${id}"]`).first().click();
-      await expect(tab).toHaveURL(new RegExp(`#${id}$`));
-      await expect(tab.locator(`#${id}`)).toBeInViewport();
+    for (const prefix of ["", "/zh"]) {
+      const tab = await browser.newPage({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
+      await tab.goto(`${fixture.origin}${prefix}/chronicle/walk`);
+      const route = [["[data-walk=cover]", "walk-guide"], ["#walk-fire", "walk-field"], ["#walk-field", "walk-monolith"]];
+      for (const [from, id] of route) {
+        await tab.locator(`${from} a[href="#${id}"]`).first().click();
+        await expect(tab).toHaveURL(new RegExp(`#${id}$`));
+        await expect(tab.locator(`#${id}`)).toBeInViewport();
+      }
+      await expect(tab.locator('[data-walk="hud"]')).toBeHidden();
+      await tab.locator(`#walk-guide a[href="${prefix}/manifesto#wheat"]`).click();
+      await expect(tab).toHaveURL(`${fixture.origin}${prefix}/manifesto#wheat`);
+      await expect(tab.locator("#wheat")).toBeInViewport();
+      await tab.goBack();
+      await tab.locator(`#walk-guide a[href="${prefix}/chronicle"]`).click();
+      await expect(tab).toHaveURL(`${fixture.origin}${prefix}/chronicle`);
+      await tab.close();
     }
-    await expect(tab.locator('[data-walk="hud"]')).toBeHidden();
   } finally { await browser.close(); }
 });
 

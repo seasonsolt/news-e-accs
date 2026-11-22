@@ -158,7 +158,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     for (const key of ["power", "sky", "stars", "height", "density"] as const) hour[key] = mix(a[key], b[key], t);
   }
   const sunDir = new THREE.Vector3(), moon = new THREE.Vector3(-Math.sin(.5) * Math.cos(.3), Math.sin(.3), -Math.cos(.5) * Math.cos(.3)), nightSky = new THREE.Color("#030619"), nightHorizon = new THREE.Color("#27203c"), fieldAfterglow = new THREE.Color("#62758d");
-  const skyUniforms = { top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() }, haze: { value: hour.fog }, sun: { value: new THREE.Color() }, sunDir: { value: sunDir }, planetDirection: { value: new THREE.Vector3(small ? .35 : .55, .35, -1) }, stars: { value: 1 }, time: { value: 0 }, day: { value: 0 } };
+  const skyUniforms = { top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() }, haze: { value: hour.fog }, sun: { value: new THREE.Color() }, sunDir: { value: sunDir }, stars: { value: 1 }, time: { value: 0 }, day: { value: 0 } };
   const sky = new THREE.Mesh(own(new THREE.SphereGeometry(1200, 32, 20)), own(new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false, uniforms: skyUniforms,
     vertexShader: skyVertex,
@@ -265,7 +265,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   function sow(byHand: boolean) {
     if (sownAt !== null) return; sownAt = clock;
     if (byHand && !still) scatterSeeds();
-    speak("sown", byHand ? "种子落进土里。田，自己向前铺开。" : "在你之前，已经有人播下了种子。", 8);
+    speak("sown", byHand ? "你撒下这把麦种。到了收割的时候，人还得回来。" : "在你之前，已经有人播下了种子。", 8);
   }
   function act() {
     if (!started) return;
@@ -457,23 +457,23 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
 
     setHour(me.s);
     const sinceTouch = touched === null ? 0 : clock - touched;
-    const dusk = touched === null ? 0 : still ? 1 : smooth(.4, 4.8, sinceTouch); // touching the stone turns the afternoon into the night it came from
+    const dusk = touched === null ? 0 : still ? 1 : smooth(.4, 4.8, sinceTouch); // the light settles into evening during the cut to the field
     if (sound) {
       const dx = fireX - me.x, dz = me.s - FIRE_S, fireGap = Math.hypot(dx, dz);
       const firePan = (Math.cos(me.yaw) * dx - Math.sin(me.yaw) * dz) / Math.max(1, fireGap);
       sound.frame({ s: me.s, pace: started ? pace : 0, fed, fireGap, firePan, night: hour.stars, dusk }, dt);
     }
-    hour.top.lerp(nightSky, dusk * .94); hour.horizon.lerp(nightHorizon, dusk * .8); hour.fog.lerp(nightHorizon, dusk * .75);
+    hour.top.lerp(nightSky, dusk * .35); hour.horizon.lerp(nightHorizon, dusk * .12); hour.fog.lerp(nightHorizon, dusk * .18);
     // From the road by the dish, the low sun meets the top of the stone before the walker passes into its shadow.
-    const height = hour.height, turn = mix(-.42, .125, smooth(250, 574, me.s));
+    const height = mix(hour.height, .018, dusk), turn = mix(-.42, .125, smooth(250, 574, me.s));
     sunDir.set(Math.sin(turn) * Math.cos(height), Math.sin(height), -Math.cos(turn) * Math.cos(height)).normalize();
-    skyUniforms.top.value.copy(hour.top); skyUniforms.horizon.value.copy(hour.horizon); skyUniforms.sun.value.copy(hour.sun).multiplyScalar(1 - dusk * .35); skyUniforms.stars.value = Math.max(hour.stars, dusk); skyUniforms.time.value = still ? 0 : clock; skyUniforms.day.value = smooth(330, 410, me.s) * (1 - dusk);
+    skyUniforms.top.value.copy(hour.top); skyUniforms.horizon.value.copy(hour.horizon); skyUniforms.sun.value.copy(hour.sun).multiplyScalar(1 - dusk * .2); skyUniforms.stars.value = Math.max(hour.stars, dusk * .18); skyUniforms.time.value = still ? 0 : clock; skyUniforms.day.value = smooth(330, 410, me.s) * (1 - dusk * .5);
     fog.color.copy(hour.fog); fog.density = hour.density;
-    const power = hour.power * (1 - dusk * .7), skyPower = hour.sky * (1 - dusk * .6);
+    const power = hour.power * (1 - dusk * .35), skyPower = hour.sky * (1 - dusk * .3);
     skyLight.color.copy(hour.top).lerp(hour.horizon, .6); skyLight.intensity = skyPower * 1.35 * (1 + hour.stars * 2.7); // the night is drawn blue, not black
-    sunLight.color.copy(hour.sun); sunLight.intensity = power * (height > .03 ? 3.2 : 2.);
+    sunLight.color.copy(hour.sun); sunLight.intensity = power * (hour.stars > .5 ? 2. : 3.2);
     sunLight.target.position.set(me.x - Math.sin(me.yaw) * 22, ground(me.x, -me.s), -me.s - Math.cos(me.yaw) * 22);
-    sunLight.position.copy(sunLight.target.position).addScaledVector(height > .03 ? sunDir : moon, 160); // by night the light is the moon's, from behind
+    sunLight.position.copy(sunLight.target.position).addScaledVector(hour.stars > .5 ? moon : sunDir, 160); // the setting sun stays warm and low; the night uses a cool fill
     const [seenTop, seenHorizon, seenSun, seenDir] = skySeen, skySun = skyUniforms.sun.value;
     const moved = Math.abs(seenTop.r - hour.top.r) + Math.abs(seenTop.g - hour.top.g) + Math.abs(seenTop.b - hour.top.b) + Math.abs(seenHorizon.r - hour.horizon.r) + Math.abs(seenHorizon.g - hour.horizon.g) + Math.abs(seenHorizon.b - hour.horizon.b)
       + Math.abs(seenSun.r - skySun.r) + Math.abs(seenSun.g - skySun.g) + Math.abs(seenSun.b - skySun.b) + seenDir.distanceTo(sunDir);
@@ -482,9 +482,9 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
       below.color.copy(hour.sun).multiplyScalar(power * Math.max(0, Math.sin(height))).add(lowLight.copy(skyLight.color).multiplyScalar(skyPower * .5)).multiply(soilTone);
       const old = skyTarget; skyTarget = pmrem.fromScene(skyScene, 0, 1, 1500, { size: 128 }); scene.environment = skyTarget.texture; old?.dispose();
     }
-    scene.environmentIntensity = mix(.4, 1.3, Math.max(hour.stars, dusk)); // by day a touch beside the sun and sky lights; by night it carries the blue
+    scene.environmentIntensity = mix(.4, 1.3, hour.stars) + dusk * .1; // the sunset keeps a little reflected sky beside the warm grazing light
     fieldUniforms.time.value = clock; fieldUniforms.sky.value.copy(skyLight.color).multiplyScalar(skyPower * 1.3).lerp(fieldAfterglow, dusk * .60); fieldUniforms.sun.value.copy(hour.sun).multiplyScalar(power * .75);
-    fieldUniforms.fogColor.value.copy(hour.fog); fieldUniforms.fogDensity.value = hour.density; fieldUniforms.backlit.value = smooth(430, 600, me.s) * (1 - dusk * .5);
+    fieldUniforms.fogColor.value.copy(hour.fog); fieldUniforms.fogDensity.value = hour.density; fieldUniforms.backlit.value = smooth(430, 600, me.s) * (1 - dusk * .15);
 
     feedGlow += (1 - feedGlow) * Math.min(1, dt * 1.5);
     const fire = tendFire(clock, dt, fed, feedGlow, me.s);
@@ -533,7 +533,8 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     use.hidden = !what;
     if (touched !== null && !ended && sinceTouch > (still ? 2.7 : 7)) {
       ended = true; started = false; backLink.href = chronicleBase;
-      part("cover-title").textContent = tx("麦田尽头"); part("cover-text").textContent = tx("风吹过麦穗。你从一百万年前的火塘走到了这里。");
+      part("cover-title").textContent = tx("我们立起的碑");
+      part("cover-text").textContent = tx("AI 读过人写的程序。如今，写程序的人也会停下来，读它续上的下一行。");
       hud.hidden = true; canvas.inert = true; cover.inert = false; root.classList.add("is-ended"); sound?.setMuted(true);
       part("cover-keys").hidden = true; exitLink.hidden = false; shareButton.hidden = false; if (manifestoLink) manifestoLink.hidden = false;
       startButton.textContent = tx("再走一遍"); cover.classList.remove("is-gone"); cover.scrollTop = 0;

@@ -109,15 +109,16 @@ export function sheet(across: number, along: number, vertexHeight: (index: numbe
 
 /** Years before 2026 at a point on the road: a log scale between the hearth, the first sowing and the stone. */
 export function yearsAgo(s: number) {
-  const marks: ReadonlyArray<readonly [number, number]> = [[0, 1e6], [60, 1e6], [SOW_S, 12000], [470, 300], [600, 1]];
+  const marks: ReadonlyArray<readonly [number, number]> = [[0, 1e6], [60, 1e6], [CAVE_S, 40000], [SOW_S, 12000], [470, 300], [600, 1]];
   if (s >= 600) return 0;
   let i = 0; while (i < marks.length - 2 && s > marks[i + 1]![0]) i++;
   const [s0, y0] = marks[i]!, [s1, y1] = marks[i + 1]!;
   return Math.pow(10, mix(Math.log10(y0), Math.log10(y1), clamp((s - s0) / (s1 - s0), 0, 1)));
 }
+const presentYear = new Date().getUTCFullYear();
 /** The year as the instrument shows it: a figure and its unit, rounded more coarsely the further back it is. */
 export function yearReading(s: number, locale: "zh" | "en"): [figure: string, unit: string] {
-  const ago = yearsAgo(s), year = 2026 - ago;
+  const ago = yearsAgo(s), year = ago === 0 ? presentYear : 2026 - ago;
   if (ago >= 10000) {
     const digits = Math.pow(10, Math.floor(Math.log10(ago)) - 1), nearest = Math.round(ago / digits) * digits;
     return locale === "zh" ? [String(Number((nearest / 10000).toFixed(1))), "万年前"] : [nearest.toLocaleString("en-US"), "years ago"];
@@ -128,7 +129,13 @@ export function yearReading(s: number, locale: "zh" | "en"): [figure: string, un
 export const chapterAt = (s: number) => s < 200 ? "Ⅰ · 火" : s < 470 ? "Ⅱ · 田" : "Ⅲ · 碑";
 /** What the walk says, and where along the road it says it. */
 export const LINES: ReadonlyArray<readonly [number, string]> = [
-  [2, "约一百万年前。天黑以后，火没有熄灭。"], [112, "带着火往前走。天还没有亮。"], [158, "有人把红土按在石壁上，留下了手印和名字。"],
-  [206, "一万两千年前。有人没有吃掉最后一把种子。"], [322, "人为了麦子停下脚步，盖起屋子，守着粮仓。"], [404, "一万年里，麦子改造了人的脊背、河流和历法。"],
-  [486, "是谁驯化了谁？"], [552, "后来，人类把闪电、算式和全部记忆，喂给了沙子。"], [594, "今天。麦田中央立着一块石头。"],
+  [2, "天黑以后，还有人往火里添柴。"],
+  [112, "带着火往前走。天还没有亮。"],
+  [CAVE_S, "手早已离开石壁，后来的人还看得见掌印。"],
+  [220, "篮子里的麦粒，有人留着明年再种。"],
+  [322, "麦种被带到了新的土地。种麦的人却在田边住了下来。"],
+  [404, "人给麦田挖了水渠，也让自己的日子跟着收成走。"],
+  [486, "风推着磨盘转。有人在这里把麦粒磨成面粉。"],
+  [534, "抬头看，电线沿着田埂，一直通到机房。"],
+  [584, "风扇在响。机房里的模型，学的是人留下的文字和代码。"],
 ];
