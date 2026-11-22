@@ -8,14 +8,15 @@ as an input, preserving its native resolution and decoded RGB values.
 
 The portrait is a crop of the same image and contains no additional planet data.
 The original monolith hides part of the planet. Only that occluded area, plus a
-six-pixel safety margin, receives a smooth illumination continuation from
-adjacent visible pixels. A row gradient seeds a masked diffusion pass to match
-the surrounding illumination in both dimensions. It reconstructs no cloud detail and
-must not be described as recovered original surface. The planet remains a
-continuous alpha shape. The lower atmosphere and clipped ring ends fade out.
-All unobstructed cloud bands and bright edges retain their original RGB data.
+six-pixel safety margin, receives a smooth illumination continuation. A floating
+point, multiscale harmonic solve fixes neighboring original pixels as its
+boundary. It reconstructs no cloud detail and must not be described as recovered
+original surface. The planet remains a continuous alpha shape. The lower
+atmosphere and clipped ring ends fade out. Original cloud bands and bright edges
+outside the repair mask retain their RGB data.
 """
 
+from array import array
 import argparse
 import hashlib
 import json
@@ -25,6 +26,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter
 
 REFERENCE_SIZE = (1671, 941)
+SOURCE_SIZES = {(1671, 941), (1600, 901)}
 CROP = (334, 0, 1671, 512)
 CENTER = (1161.801, 322.330)
 RADIUS = 303.381
@@ -36,6 +38,71 @@ def smooth(low, high, value):
     return t * t * (3.0 - 2.0 * t)
 
 
+def extend_illumination(image, hidden, scale):
+    left, top, right, bottom = hidden.getbbox()
+    padding = round(16 * scale)
+    box = (max(0, left - padding), max(0, top - padding),
+           min(image.width, right + padding), min(image.height, bottom + padding))
+    fixed = image.crop(box)
+    repair_mask = hidden.crop(box)
+    previous = None
+    trace = []
+    for step in [8, 4, 2, 1]:
+        columns = math.ceil(fixed.width / step)
+        rows = math.ceil(fixed.height / step)
+        size = (columns, rows)
+        pixels = list(fixed.resize(size, Image.Resampling.NEAREST).get_flattened_data())
+        flags = list(repair_mask.resize(size, Image.Resampling.NEAREST).get_flattened_data())
+        channels = []
+        for color in range(3):
+            if previous:
+                floating = Image.frombytes("F", previous[0], array("f", previous[1][color]).tobytes())
+                values = list(floating.resize(size, Image.Resampling.BILINEAR).get_flattened_data())
+            else:
+                known = [pixel[color] for pixel, flag in zip(pixels, flags) if not flag]
+                mean = sum(known) / len(known)
+                values = [mean if flag else float(pixel[color]) for pixel, flag in zip(pixels, flags)]
+            for index, flag in enumerate(flags):
+                if not flag:
+                    values[index] = float(pixels[index][color])
+            channels.append(values)
+        active = []
+        for index, flag in enumerate(flags):
+            if not flag:
+                continue
+            y, x = divmod(index, columns)
+            active.append((index, y * columns + max(0, x - 1), y * columns + min(columns - 1, x + 1),
+                           max(0, y - 1) * columns + x, min(rows - 1, y + 1) * columns + x))
+        red, green, blue = channels
+        for iteration in range(1200):
+            error = 0.0
+            for index, left, right, up, down in active:
+                change = (.25 * (red[left] + red[right] + red[up] + red[down]) - red[index]) * 1.8
+                red[index] += change
+                error = max(error, abs(change))
+                change = (.25 * (green[left] + green[right] + green[up] + green[down]) - green[index]) * 1.8
+                green[index] += change
+                error = max(error, abs(change))
+                change = (.25 * (blue[left] + blue[right] + blue[up] + blue[down]) - blue[index]) * 1.8
+                blue[index] += change
+                error = max(error, abs(change))
+            if error < .002:
+                break
+        if error >= .002:
+            raise RuntimeError(f"Illumination solve did not converge at scale {step}")
+        trace.append({"step": step, "iterations": iteration + 1, "maximumChange": error})
+        previous = (size, channels)
+    result = image.copy()
+    output = result.load()
+    mask = hidden.load()
+    for y in range(box[1], box[3]):
+        for x in range(box[0], box[2]):
+            if mask[x, y]:
+                index = (y - box[1]) * columns + x - box[0]
+                output[x, y] = tuple(max(0, min(255, round(channel[index]))) for channel in channels)
+    return result, trace
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
@@ -43,9 +110,9 @@ def main():
     args = parser.parse_args()
     with Image.open(args.source) as original:
         image = original.convert("RGB")
+    if image.size not in SOURCE_SIZES:
+        raise ValueError("Use the full 1671x941 original or archived 1600x901 landscape")
     sx, sy = image.width / REFERENCE_SIZE[0], image.height / REFERENCE_SIZE[1]
-    if abs(sx / sy - 1) > .01:
-        raise ValueError("Use the full landscape image, not the cropped portrait")
     box = tuple(round(v * (sx if i % 2 == 0 else sy)) for i, v in enumerate(CROP))
     rgb = image.crop(box)
     width, height = rgb.size
@@ -53,35 +120,8 @@ def main():
     ImageDraw.Draw(hidden).polygon([(round(x * sx) - box[0], round(y * sy) - box[1]) for x, y in MONOLITH], fill=255)
     hidden = hidden.filter(ImageFilter.MaxFilter(13))
     hidden_pixels, rgb_pixels = hidden.load(), rgb.load()
-    repaired = rgb.copy()
+    repaired, solver = extend_illumination(rgb, hidden, sx)
     repaired_pixels = repaired.load()
-
-    def neighboring_color(left, right, y):
-        samples = [rgb_pixels[x, row] for row in range(max(0, y - 2), min(height, y + 3))
-                   for x in range(max(0, left), min(width, right + 1)) if not hidden_pixels[x, row]]
-        return tuple(sum(color[k] for color in samples) / len(samples) for k in range(3))
-
-    for y in range(height):
-        bounds = hidden.crop((0, y, width, y + 1)).getbbox()
-        if bounds is None:
-            continue
-        left, right = bounds[0], bounds[2] - 1
-        start, end = neighboring_color(left - 9, left - 2, y), neighboring_color(right + 2, right + 9, y)
-        for x in range(left, right + 1):
-            t = smooth(0, 1, (x - left + 1) / (right - left + 2))
-            repaired_pixels[x, y] = tuple(round(a * (1 - t) + b * t) for a, b in zip(start, end))
-
-    repair_box = hidden.getbbox()
-    if repair_box:
-        left, top, right, bottom = repair_box
-        repair_box = (max(0, left - 2), max(0, top - 2), min(width, right + 2), min(height, bottom + 2))
-        fixed = rgb.crop(repair_box)
-        repair_mask = hidden.crop(repair_box)
-        region = repaired.crop(repair_box)
-        for _ in range(600):
-            region = Image.composite(region.filter(ImageFilter.BoxBlur(1)), fixed, repair_mask)
-        repaired.paste(region, repair_box)
-        repaired_pixels = repaired.load()
 
     ring_background = []
     for px in range(width):
@@ -133,7 +173,8 @@ def main():
         "ringUpperInOriginal": [787.5, -.470], "ringLowerInOriginal": [741, -.409],
         "sourceReferenceSize": REFERENCE_SIZE, "originalMonolithPolygon": MONOLITH,
         "alphaTreatment": "Continuous planet alpha; lower atmosphere fades at y360–505, left ring glow at x560–820, right ring at x1380–1671.",
-        "occludedRgbTreatment": "Adjacent visible same-image pixels seed a masked illumination diffusion pass. No unseen cloud detail recovered or synthesized.",
+        "occludedRgbTreatment": "Floating-point multiscale harmonic illumination solve, with neighboring original pixels fixed. No unseen cloud detail recovered or synthesized.",
+        "solver": solver,
         "rgbPreservedOutsideRepairMask": True, "visibleDecodedPixelsLossless": True,
         "transparentRgbDiscarded": True, "bytes": args.output.stat().st_size,
     }, indent=2))
