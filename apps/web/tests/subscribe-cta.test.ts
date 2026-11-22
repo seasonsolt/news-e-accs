@@ -144,7 +144,8 @@ test("a daily leads with its news and offers the form beside its list and after 
   const englishCta = ctaOf(english.html, "daily_inline");
   assert.match(englishCta.textContent ?? "", /Tomorrow at 08:00, a briefing like this arrives in your inbox\./);
   assert.equal(englishCta.querySelector("a")?.getAttribute("href"), "/daily/2026-10-03");
-  assert.doesNotMatch(english.html, /noindex/);
+  // A dated daily is noindex (its links still followed); the latest issue above stands in search.
+  assert.match(english.html, /<meta name="robots" content="noindex, follow"\/>/);
 
   const story = await page(`/zh/items/${item.id}`);
   assert.doesNotMatch(story.html, /data-subscribe-cta/);
