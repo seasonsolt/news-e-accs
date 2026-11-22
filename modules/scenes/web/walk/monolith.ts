@@ -1,35 +1,36 @@
 import * as THREE from "three";
 import type { Kit } from "./camp.ts";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { stoneProjection, type ReliefScan } from "./relief.ts";
 
 /** Two polished cuts around a light too thin to explain the mass surrounding it. */
-export function buildMonolith({ scene, own, small }: Pick<Kit, "scene" | "own" | "small">, x: number, y: number, z: number) {
+export function buildMonolith({ scene, own, small }: Pick<Kit, "scene" | "own" | "small">, x: number, y: number, z: number, stoneScan: ReliefScan) {
   const monument = new THREE.Group();
   monument.position.set(x, y + 9.6, z); monument.rotation.y = -.14;
   scene.add(monument);
 
   const obsidian = own(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .67, metalness: .12, envMapIntensity: 1.4 }));
   obsidian.onBeforeCompile = shader => {
-    shader.vertexShader = "varying vec3 vStone;\n" + shader.vertexShader;
-    shader.vertexShader = shader.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvStone = position;");
-    shader.fragmentShader = /* glsl */ `
-      varying vec3 vStone;
-      float stoneHash(vec3 p) { p = fract(p * .1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
-      float stoneNoise(vec3 p) {
-        vec3 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); vec2 k = vec2(0., 1.);
-        return mix(mix(mix(stoneHash(i), stoneHash(i + k.yxx), f.x), mix(stoneHash(i + k.xyx), stoneHash(i + k.yyx), f.x), f.y),
-          mix(mix(stoneHash(i + k.xxy), stoneHash(i + k.yxy), f.x), mix(stoneHash(i + k.xyy), stoneHash(i + k.yyy), f.x), f.y), f.z);
-      }
-    ` + shader.fragmentShader;
+    shader.uniforms.stoneRelief = stoneScan;
+    shader.vertexShader = "varying vec3 vStone, vStoneNormal;\n" + shader.vertexShader;
+    shader.vertexShader = shader.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvStone = position; vStoneNormal = normal;");
+    shader.fragmentShader = `varying vec3 vStone, vStoneNormal;\n${stoneProjection}\n` + shader.fragmentShader;
     shader.fragmentShader = shader.fragmentShader.replace("#include <color_fragment>", /* glsl */ `
       #include <color_fragment>
-      float stonePixel = length(fwidth(vStone));
-      float stoneCoarse = stoneNoise(vStone * vec3(2.1, .24, 2.1));
-      float stoneGrain = stoneNoise(vStone * 38.) * (1. - smoothstep(.01, .045, stonePixel));
-      float stoneFlute = stoneNoise(vStone * vec3(5.5, 1.3, 5.5) + stoneCoarse * 1.7);
-      float stoneSeam = (1. - smoothstep(.012, .06 + stonePixel * 2., abs(stoneFlute - .43))) * smoothstep(.48, .65, stoneCoarse) * (1. - smoothstep(.07, .18, stonePixel));
-      float stoneBed = sin(vStone.y * 4.8 + stoneCoarse * 2. + vStone.x * .3) * .5 + .5;
-      float stoneHeight = stoneCoarse * .018 + stoneFlute * .009 + stoneGrain * .0012 - stoneSeam * .009;
-      diffuseColor.rgb *= (.72 + stoneCoarse * .52) * (.94 + stoneBed * .12) * (1. - stoneSeam * .36) * (.94 + stoneGrain * .12);
+      vec3 face = normalize(vStoneNormal);
+      // A broad fracture field under a finer cut. Both are locked to the block as the walker circles it.
+      vec3 bed = stoneSample(vStone * vec3(.17, .12, .17) + vec3(.42, .17, .08), face);
+      vec3 grain = stoneSample(vStone * .72 + vec3(.09, .61, .31), face);
+      float edge = smoothstep(.07, .52, abs(face.z)) * (1. - smoothstep(.89, .99, abs(face.z)));
+      float stoneHeight = ((bed.g - .5) * .063 + (grain.g - .5) * .014) * (1. - .7 * edge);
+      float pore = exp2((bed.r - .5) * 2.85 + (grain.r - .5) * .95);
+      diffuseColor.rgb *= mix(vec3(.94, .98, 1.06), vec3(1.08, 1.01, .9), bed.r) * pore;
+      float dust = (1. - smoothstep(-9.55, -8.65, vStone.y)) * (.24 + .32 * grain.r);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.23, .16, .092), dust);
+    `);
+    shader.fragmentShader = shader.fragmentShader.replace("#include <roughnessmap_fragment>", /* glsl */ `
+      #include <roughnessmap_fragment>
+      roughnessFactor = clamp(mix(bed.b * .75 + grain.b * .25 - .17, .35, edge) + dust * .2, .28, .93);
     `);
     shader.fragmentShader = shader.fragmentShader.replace("#include <normal_fragment_maps>", /* glsl */ `
       #include <normal_fragment_maps>
@@ -45,8 +46,15 @@ export function buildMonolith({ scene, own, small }: Pick<Kit, "scene" | "own" |
     const profile = new THREE.Shape();
     profile.moveTo(side * .17, -9.6);
     const width = side < 0 ? 4.65 : 4.4;
-    profile.lineTo(side * width, -9.6);
-    profile.lineTo(side * width, side < 0 ? 9.45 : 6.3);
+    // Keep the long sawn faces true. Missing flakes interrupt the outside arris and crown.
+    const crown = side < 0 ? 9.45 : 6.3;
+    profile.lineTo(side * (width - .17), -9.6);
+    profile.lineTo(side * width, -9.31);
+    profile.lineTo(side * width, crown - 2.05);
+    profile.lineTo(side * (width - .082), crown - 1.89);
+    profile.lineTo(side * width, crown - 1.47);
+    profile.lineTo(side * width, crown - .22);
+    profile.lineTo(side * (width - .19), crown);
     profile.lineTo(side * .17, side < 0 ? 10.2 : 7.1);
     profile.closePath();
     const geometry = own(new THREE.ExtrudeGeometry(profile, { depth: 2.04, steps: 1, bevelEnabled: true, bevelSegments: 2, bevelSize: .065, bevelThickness: .08, curveSegments: 1 }));
@@ -69,8 +77,29 @@ export function buildMonolith({ scene, own, small }: Pick<Kit, "scene" | "own" |
   core.scale.set(.43, 1.8, .6); core.position.set(0, -.15, 1.02); monument.add(core);
 
   const basalt = own(new THREE.MeshStandardMaterial({ color: "#252b30", metalness: .25, roughness: .68 }));
-  const foundation = new THREE.Mesh(own(new THREE.CylinderGeometry(5.75, 5.9, .16, small ? 48 : 96)), basalt);
-  foundation.position.y = -9.62; foundation.receiveShadow = true; monument.add(foundation);
+  const foot = own(new THREE.LatheGeometry([
+    new THREE.Vector2(0, -.18), new THREE.Vector2(5.82, -.18), new THREE.Vector2(5.93, -.09),
+    new THREE.Vector2(5.87, -.035), new THREE.Vector2(5.72, -.025), new THREE.Vector2(5.46, -.014),
+    new THREE.Vector2(5.38, .03), new THREE.Vector2(0, .03),
+  ], small ? 72 : 120));
+  const foundation = new THREE.Mesh(foot, basalt);
+  foundation.position.y = -9.6; foundation.receiveShadow = true; monument.add(foundation);
+  // Thin separation joints split the coping into individual fitted stones. All sectors draw together.
+  const coping = [], profile = [
+    new THREE.Vector2(5.35, -.018), new THREE.Vector2(5.79, -.018), new THREE.Vector2(5.79, .018),
+    new THREE.Vector2(5.75, .063), new THREE.Vector2(5.4, .063), new THREE.Vector2(5.35, .025),
+  ];
+  for (let i = 0; i < 24; i++) {
+    const wedge = new THREE.LatheGeometry(profile, small ? 3 : 6, i * Math.PI / 12, Math.PI / 12 - .005);
+    const color = new Float32Array(wedge.attributes.position!.count * 3);
+    tone.set(i % 5 === 0 ? "#737677" : "#605e59");
+    for (let j = 0; j < color.length; j += 3) tone.toArray(color, j);
+    wedge.setAttribute("color", new THREE.BufferAttribute(color, 3));
+    coping.push(wedge);
+  }
+  const rim = new THREE.Mesh(own(mergeGeometries(coping)), obsidian);
+  for (const wedge of coping) wedge.dispose();
+  rim.position.y = -9.6; rim.receiveShadow = true; monument.add(rim);
   const bronze = own(new THREE.MeshStandardMaterial({ color: "#8c7754", metalness: .75, roughness: .42 }));
   const luminous = own(new THREE.MeshStandardMaterial({ color: "#d2b589", emissive: "#b8823b", emissiveIntensity: .55, metalness: .6, roughness: .4 }));
   for (const [radius, width, material] of [[4.85, .022, bronze], [5.3, .018, luminous], [5.69, .025, bronze]] as const) {
@@ -90,6 +119,6 @@ export function buildMonolith({ scene, own, small }: Pick<Kit, "scene" | "own" |
   const pen = art.getContext("2d")!; pen.fillStyle = "rgba(214,168,92,.88)"; pen.font = "30px ui-monospace, Menlo, monospace"; pen.textAlign = "center"; pen.fillText("1 : 4 : 9  ·  TMA-0  ·  RAISED BY US", 512, 42);
   const map = own(new THREE.CanvasTexture(art)); map.colorSpace = THREE.SRGBColorSpace;
   const labelMaterial = own(new THREE.MeshBasicMaterial({ map, transparent: true, opacity: 0, depthWrite: false }));
-  const label = new THREE.Mesh(own(new THREE.PlaneGeometry(6.4, .4)), labelMaterial); label.position.set(0, -8.2, 1.11); monument.add(label);
+  const label = new THREE.Mesh(own(new THREE.PlaneGeometry(3.75, .235)), labelMaterial); label.position.set(-2.42, -8.24, 1.109); monument.add(label);
   return labelMaterial;
 }

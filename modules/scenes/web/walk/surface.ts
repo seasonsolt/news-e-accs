@@ -1,7 +1,8 @@
 import * as THREE from "three";
+import { stoneProjection, type ReliefScan } from "./relief.ts";
 
 // The one material every painted shape shares. The shapes carry their colour; this adds what they are made of (grain, mottling, cracks, furrows), computed in
-// the shader with no image files. The `surface` attribute says which: 0 plain, 1 stone, 2 bark and wood, 3 earth and thatch, 4 leaf, 5 skin, 6 cloth, 7 hair and fur. Noise is taken in the
+// the shader. Rocks share a scanned relief map with the monument. The `surface` attribute says which: 0 plain, 1 stone, 2 bark and wood, 3 earth and thatch, 4 leaf, 5 skin, 6 cloth, 7 hair and fur. Noise is taken in the
 // mesh's own space, which for the static scenery is world space and on the sails, logs and people that move keeps the grain from sliding.
 
 const DETAIL = /* glsl */ `
@@ -17,22 +18,15 @@ float px = length(fwidth(vSpot)), sHeight = 0., sRough = .8, sSpec = 1., sWarm =
 #define FADE(f) (1. - smoothstep(.25, .6, px * (f)))
 int kind = int(vSurface + .5);
 if (kind == 1) { // stone
-  float up = (vec4(normalize(vNormal), 0.) * viewMatrix).y;
-  float a = sNoise(p * .9), b = sNoise(p * 3.3 + 7.), streak = sNoise(p * vec3(4., .45, 4.) + 2.), pit = sNoise(p * 28.), grain = sNoise(p * 90. + 5.), speck = sNoise(p * 260.);
-  float fb = FADE(3.3), fp = FADE(28.), fg = FADE(90.), fs = FADE(260.);
-  float vein = sNoise(p * vec3(1.6, 4.5, 1.6) + b * .6 - 3.), crack = (1. - smoothstep(0., .015 + px * 5., abs(vein - .5))) * FADE(30.); // long cracks, mostly level like the beds
-  float hair = sNoise(p * 11. + 9.), fine = (1. - smoothstep(0., .02 + px * 16., abs(hair - .5))) * FADE(80.); // and a web of hairline ones
-  float varnish = smoothstep(.45, .8, streak) * (1. - smoothstep(.3, .75, up)), stain = smoothstep(.62, .8, a) * (1. - varnish), pits = smoothstep(.6, .82, pit) * fp;
-  float lichen = smoothstep(.3, .75, up) * smoothstep(.72, .8, sNoise(p * 2.4 + 11.) + (b - .5) * .3) * (.75 + .25 * fg);
-  sTint = vec3(mix(.84, 1.1, a) * mix(.9, 1.08, b));
-  sTint *= mix(vec3(1.), vec3(.55, .5, .46), varnish * .8); // dark varnish streaked down the steep faces
-  sTint *= mix(vec3(1.), vec3(1.2, .95, .68), stain * .5); // rust and ochre
-  sTint *= mix(vec3(1.), vec3(1.14, 1.1, 1.03), smoothstep(.55, .95, up) * .7); // dust settled on top
-  sTint *= 1. + (smoothstep(.72, .86, speck) * .5 - smoothstep(.3, .16, speck) * .45) * fs + (grain - .5) * .22 * fg; // crystal flecks and grain
-  sTint *= (1. - pits * .35) * (1. - crack * .6) * (1. - fine * .3);
-  sTint *= mix(vec3(1.), mix(vec3(1.25, 1.4, 1.1), vec3(1.7, 1.05, .45), step(.55, a)), lichen * .85); // grey-green lichen, or orange
-  sHeight = b * .012 * fb + (grain - .5) * .0008 * fg + speck * .0004 * fs - pits * .004 - crack * .006 - fine * .0015 + lichen * .0008;
-  sRough = clamp(.8 + .12 * b + .05 * pits - .04 * varnish, .75, .95); sSpec = .3;
+  vec3 stoneNormal = inverseTransformDirection(normalize(vNormal), viewMatrix);
+  vec3 scan = stoneSample(p * .46, stoneNormal);
+  float up = smoothstep(.25, .9, stoneNormal.y);
+  float weathering = sNoise(p * .63 + 17.);
+  sTint = mix(vec3(.73, .78, .84), vec3(1.13, 1.04, .94), weathering + up * .13);
+  sTint *= exp2((scan.r - .5) * 2.85);
+  sHeight = (scan.g - .5) * .116;
+  sRough = clamp(scan.b - .06 + up * .08, .58, .97);
+  sSpec = .76;
 } else if (kind == 2) { // bark: ridges running up the limb, dark furrows between them, the ridge tops worn paler
   vec3 q = p * vec3(9., 1.1, 9.); float f = mix(.5, sNoise(q) * .65 + sNoise(q * 2.3 + 3.) * .35, FADE(9.)), grain = sNoise(q * vec3(6., 3., 6.)), fg = FADE(54.);
   sTint = vec3(mix(.42, 1., smoothstep(.22, .58, f)) * (1. + smoothstep(.6, .8, f) * .2) * (.88 + .24 * sNoise(p * 1.6)) * (1. + (grain - .5) * .2 * fg));
@@ -83,12 +77,14 @@ const BUMP = /* glsl */ `
   float det = dot(dpx, r1) * faceDirection; normal = normalize(abs(det) * normal - sign(det) * (dFdx(sHeight) * r1 + dFdy(sHeight) * r2)); }`;
 
 /** The shared material: vertex colours, both sides, surface detail from the `surface` attribute. `bump` off (for phones) keeps the colour detail but not the light catching it. */
-export function createMatte(bump = true) {
+export function createMatte(stoneScan: ReliefScan, bump = true) {
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: .85, metalness: 0 });
   material.onBeforeCompile = (shader) => {
+    shader.uniforms.stoneRelief = stoneScan;
     shader.vertexShader = shader.vertexShader.replace("#include <common>", "#include <common>\nattribute float surface; varying vec3 vSpot; varying float vSurface;")
       .replace("#include <begin_vertex>", "#include <begin_vertex>\nvSpot = transformed; vSurface = surface;");
-    shader.fragmentShader = shader.fragmentShader.replace("#include <common>", `#include <common>\n${DETAIL}`)
+    shader.fragmentShader = shader.fragmentShader.replace("#include <common>", `#include <common>\n${DETAIL}
+${stoneProjection}`)
       .replace("#include <color_fragment>", `#include <color_fragment>\n${SURFACE}`)
       .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = sRough;")
       .replace("#include <lights_physical_fragment>", "#include <lights_physical_fragment>\nmaterial.specularColor *= sSpec * sSheen; material.specularF90 *= sSpec;")

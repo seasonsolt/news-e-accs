@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import type { ReliefScan } from "./relief.ts";
 import type { Kit } from "./camp.ts";
 import { CANAL, CLEARINGS, END_S, FIELD_S, MONO_S, VILLAGE, cleared, mix, noise, roadX, smooth } from "./land.ts";
 import { soil } from "./groundcover.ts";
@@ -11,7 +12,7 @@ const roadHalf = (s: number) => mix(mix(.85, 1.2, smooth(455, 485, s)), 1.25, sm
 
 interface Wind { time: { value: number }; wind: { value: number } }
 /** Everything here is built once; the flowers sway in the vertex shader with the same wind as the wheat. The tall grass is only placed here: `tallGrass` is [x, s, size] for grass.ts to grow. */
-export function buildVerge({ scene, own, rand, small, floor, blocks }: Pick<Kit, "scene" | "own" | "rand" | "small" | "floor" | "blocks">, wind: Wind) {
+export function buildVerge({ scene, own, rand, small, floor, blocks }: Pick<Kit, "scene" | "own" | "rand" | "small" | "floor" | "blocks">, wind: Wind, trackScan: ReliefScan) {
   const stoneX = roadX(MONO_S), P = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z), c = new THREE.Color(), b = new THREE.Color();
 
   // ---------- the road: a ribbon laid just over the ground, its edges fading into the soil ----------
@@ -31,7 +32,7 @@ export function buildVerge({ scene, own, rand, small, floor, blocks }: Pick<Kit,
     }
     for (let row = 0; row < rows - 1; row++) for (let k = 0; k < ACROSS; k++) { const a = row * (ACROSS + 1) + k, d = a + ACROSS + 1; index.push(a, a + 1, d + 1, a, d + 1, d); }
     const g = own(new THREE.BufferGeometry()); g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3)); g.setAttribute("color", new THREE.Float32BufferAttribute(colors, 4)); g.setAttribute("soil", new THREE.Float32BufferAttribute(soils, 4)); g.setIndex(index); g.computeVertexNormals();
-    const road = new THREE.Mesh(g, own(soil(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .95, metalness: 0, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }), small, undefined, true)));
+    const road = new THREE.Mesh(g, own(soil(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .95, metalness: 0, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }), trackScan, small, undefined, true)));
     road.receiveShadow = true; road.renderOrder = -2; scene.add(road); }
 
   // ---------- pebbles on the road, thickest on the gravel lane ----------

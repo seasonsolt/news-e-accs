@@ -11,11 +11,13 @@ import { reducedMotion } from "@aihot/web/lib/motion";
 import { buildClouds } from "./clouds.ts";
 import { skyFragment, skyVertex } from "./sky.ts";
 import { buildGrass } from "./grass.ts";
+import { buildWheat } from "./wheat.ts";
 import { buildLitter, soil } from "./groundcover.ts";
+import { loadRelief } from "./relief.ts";
 import { buildProps } from "./props.ts";
 import { startSound, type Sound } from "./sound.ts";
 import { buildVerge } from "./verge.ts";
-import { CANAL, CLEARINGS, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONO_S, REACH_S, SOW_S, START_S, VILLAGE, bridgeLift, chapterAt, clamp, cleared, fbm, ground, keepDry, mix, roadX, sequence, sheet, smooth, yearReading, yearsAgo } from "./land.ts";
+import { CANAL, CLEARINGS, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONO_S, REACH_S, SOW_S, START_S, bridgeLift, chapterAt, clamp, fbm, ground, keepDry, mix, roadX, sequence, sheet, smooth, yearReading, yearsAgo } from "./land.ts";
 
 // The hour at points along the road: [s, zenith, horizon, fog, sun colour, sun strength, sky light, stars, sun height, fog density].
 const HOURS = ([
@@ -55,7 +57,7 @@ export async function start(root: HTMLElement, options: WalkOptions): Promise<()
 
 async function build(root: HTMLElement, { tx, locale, audioContext, onContextLost, onProgress }: WalkOptions, signal: AbortSignal) {
   const part = <T extends HTMLElement = HTMLElement>(name: string) => root.querySelector<T>(`[data-walk="${name}"]`)!;
-  const small = matchMedia("(max-width: 640px), (pointer: coarse)").matches, still = reducedMotion(), density = small ? .42 : 1;
+  const small = matchMedia("(max-width: 640px), (pointer: coarse)").matches, still = reducedMotion();
   const query = new URLSearchParams(location.search), useAO = !small && query.get("ao") !== "0", useSky = !small && query.get("env") !== "0"; // ?ao=0 and ?env=0 turn off the occlusion and the sky's light, to compare
   const listen = { signal }, rand = sequence(7);
   const pause = (stage?: WalkStage) => {
@@ -82,6 +84,9 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     for (const item of owned) item.dispose();
     renderer.dispose(); renderer.forceContextLoss(); canvas.remove();
   }, { once: true });
+  const anisotropy = renderer.capabilities.getMaxAnisotropy();
+  const trackScan = loadRelief("track", anisotropy, signal, own);
+  const stoneScan = loadRelief("stone", anisotropy, signal, own);
   canvas.addEventListener("webglcontextlost", () => { if (!signal.aborted) onContextLost?.(); }, listen);
   canvas.inert = true; canvas.tabIndex = 0; canvas.setAttribute("aria-label", tx("可行走的三维世界：从火堆穿过麦田走到巨石")); part("viewport").append(canvas);
   let ratio = Math.min(devicePixelRatio || 1, small ? 1.25 : 1.6);
@@ -141,7 +146,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     land.setAttribute("color", new THREE.BufferAttribute(colors, 3)); land.setAttribute("soil", new THREE.BufferAttribute(soils, 4)); land.computeVertexNormals();
   }
   const positions = land.attributes.position!, floor = sheet(across, along, index => positions.getY(index));
-  const earth = new THREE.Mesh(land, own(soil(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .95, metalness: 0 }), small, new THREE.Vector2(fireX, -FIRE_S)))); earth.receiveShadow = true; scene.add(earth); // smooth-shaded: the drawn height is unchanged, `floor` still holds
+  const earth = new THREE.Mesh(land, own(soil(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .95, metalness: 0 }), trackScan, small, new THREE.Vector2(fireX, -FIRE_S)))); earth.receiveShadow = true; scene.add(earth); // smooth-shaded: the drawn height is unchanged, `floor` still holds
   await pause(); if (signal.aborted) return;
 
   // ---------- sky, sun and the hour ----------
@@ -173,80 +178,14 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   own({ dispose: () => skyTarget?.dispose() });
 
   await pause("fields"); if (signal.aborted) return;
-  // ---------- grass and wheat: chunked instanced fields so unseen stretches stay culled ----------
-  const STRIDE = 11, buckets: [number[], number[], number[], number[]] = [[], [], [], []], tint = new THREE.Color();
-  const young = new THREE.Color("#7c9a3e"), ripe = new THREE.Color("#d9aa45"), pale = new THREE.Color("#ecc766");
-  const blade = (x: number, s: number, height: number, width: number, head: number, sown: number) => {
-    const bucket = s < 355 ? buckets[0] : s < 478 ? buckets[1] : s < 585 ? buckets[2] : buckets[3];
-    bucket.push(x, floor(x, -s), -s, height, width, rand() * 6.283, head, tint.r, tint.g, tint.b, sown);
-  };
-  for (let s = FIELD_S; s < 478; s += (s < 380 ? .34 : .62) / density) for (let row = -34; row <= 34; row++) { // sown rows, greening then ripening; the young crop stands close in its rows
-    if (Math.abs(row) < 2 || (s > VILLAGE.from && s < VILLAGE.to && row > 8 && row < 30)) continue;
-    const ripeness = smooth(330, 470, s), x = roadX(s) + row * .92 + (rand() - .5) * .22, at = s + (rand() - .5) * .4;
-    if (cleared(x, at)) continue;
-    tint.copy(young).lerp(ripe, ripeness).multiplyScalar(.8 + rand() * .35);
-    blade(x, at, .5 + ripeness * .55 + rand() * .2, .55, smooth(300, 380, s), s);
-  }
-  for (let i = 0; i < 96000 * density; i++) { // the open field, out to the stone and past it
-    const s = 474 + rand() * 250, off = (rand() - .5) * (rand() < .62 ? 48 : 170), x = roadX(Math.min(s, MONO_S)) + off;
-    if ((Math.abs(off) < 1.25 && s < MONO_S) || Math.hypot(x - stoneX, s - MONO_S) < 9.5 || cleared(x, s)) continue;
-    tint.copy(ripe).lerp(pale, rand()).multiplyScalar(.82 + rand() * .3);
-    blade(x, s, 1.05 + rand() * .4, .8, 1, s);
-  }
-  const card = own(new THREE.PlaneGeometry(1, 1, 1, 4).translate(0, .5, 0));
-  const fieldUniforms = {
-    time: { value: 0 }, front: { value: -1e4 }, wind: { value: still ? .25 : 1 }, sky: { value: new THREE.Color() }, sun: { value: new THREE.Color() }, fogColor: { value: new THREE.Color() }, fogDensity: { value: .01 },
-    fire: { value: new THREE.Vector4(fireX, 0, -FIRE_S, 0) }, shadow: { value: new THREE.Vector4(stoneX, -MONO_S, 4.6, 70) }, backlit: { value: 0 },
-  };
-  const fieldMaterial = own(new THREE.ShaderMaterial({
-    side: THREE.DoubleSide, uniforms: fieldUniforms,
-    vertexShader: `attribute vec3 at; attribute vec4 shape; attribute vec3 tint; attribute float sown;
-      uniform float time, front, wind; varying vec2 vUv; varying vec3 vTint, vWorld; varying float vHead, vFog;
-      void main(){ float grow = sown < 0. ? 1. : smoothstep(0., 1., (front - sown) / 16.);
-        vec3 p = position; p.x *= shape.y; p.y *= shape.x * grow; float c = cos(shape.z), s = sin(shape.z); p = vec3(p.x * c, p.y, p.x * s);
-        float gust = sin(time * 1.5 + at.x * .31 + at.z * .27 + shape.z) * .6 + sin(time * .6 + at.z * .09 + at.x * .05) * .9;
-        p.xz += vec2(1., .35) * gust * .11 * uv.y * uv.y * shape.x * wind;
-        vec4 world = vec4(at + p, 1.); vWorld = world.xyz; vUv = uv; vTint = tint; vHead = shape.w;
-        vec4 mv = viewMatrix * world; vFog = -mv.z; gl_Position = projectionMatrix * mv; }`,
-    fragmentShader: `uniform vec3 sky, sun, fogColor; uniform float fogDensity, backlit; uniform vec4 fire, shadow; varying vec2 vUv; varying vec3 vTint, vWorld; varying float vHead, vFog;
-      void main(){ float a = 0., ear = 0.;
-        for (int i = 0; i < 5; i++) { float k = float(i); float x = .12 + .19 * k + (k - 2.) * .07 * vUv.y * vUv.y; float top = .8 + .05 * mod(k * 3., 5.);
-          float d = abs(vUv.x - x), base = top - .1 - .17 * vHead, t = clamp((vUv.y - base) / (top - .1 - base + .001), 0., 1.);
-          float stem = step(vUv.y, base + .02) * step(d, .011 * (1.2 - vUv.y * .5));
-          float grain = vHead * step(base, vUv.y) * step(vUv.y, top - .1) * step(d, .019 * pow(sin(t * 3.1416), .55) * (.82 + .18 * sin(t * 44.)));
-          float beard = (vUv.y - (top - .13)) / .13, awn = vHead * step(0., beard) * step(beard, 1.) * (step(d, .0035) + step(abs(d - beard * .03), .003));
-          if (vHead < .5) stem = step(vUv.y, top) * step(d, mix(.03, .013, vHead * 2.) * (1.2 - vUv.y)); // young wheat: leaves, not stalks
-          if (stem + grain + awn > 0.) { a = 1.; ear = max(ear, grain * (.7 + .5 * sin(t * 44.)) + awn * .8); } }
-        if (a < .5) discard;
-        vec3 c = vTint * mix(.42, 1.05, vUv.y) * (1. + ear * .3);
-        vec3 lit = c * (sky + sun * (.75 + backlit * vUv.y * .55));
-        float inShade = smoothstep(shadow.z + .8, shadow.z - .8, abs(vWorld.x - shadow.x)) * step(shadow.y, vWorld.z) * smoothstep(shadow.y + shadow.w, shadow.y + shadow.w - 14., vWorld.z);
-        lit *= 1. - .5 * inShade * backlit;
-        float d = distance(vWorld, fire.xyz); lit += c * vec3(1.5, .5, .12) * fire.w / (1. + d * d * .035);
-        float f = 1. - exp(-fogDensity * fogDensity * vFog * vFog); gl_FragColor = vec4(mix(lit, fogColor, f), 1.); ${OUT} }`,
-  }));
-  const fieldChunks = buckets.map((blades) => {
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity, minS = Infinity;
-    for (let o = 0; o < blades.length; o += STRIDE) {
-      const x = blades[o]!, y = blades[o + 1]!, z = blades[o + 2]!, s = blades[o + 10]!;
-      minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y + 1.6); minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z); minS = Math.min(minS, s);
-    }
-    const bladeData = new THREE.InstancedInterleavedBuffer(new Float32Array(blades), STRIDE), g = own(new THREE.InstancedBufferGeometry());
-    g.index = card.index; g.setAttribute("position", card.attributes.position!); g.setAttribute("uv", card.attributes.uv!);
-    g.setAttribute("at", new THREE.InterleavedBufferAttribute(bladeData, 3, 0)); g.setAttribute("shape", new THREE.InterleavedBufferAttribute(bladeData, 4, 3));
-    g.setAttribute("tint", new THREE.InterleavedBufferAttribute(bladeData, 3, 7)); g.setAttribute("sown", new THREE.InterleavedBufferAttribute(bladeData, 1, 10));
-    g.instanceCount = blades.length / STRIDE;
-    const center = new THREE.Vector3((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2);
-    g.boundingSphere = new THREE.Sphere(center, Math.hypot(maxX - minX, maxY - minY, maxZ - minZ) / 2 + 2.5);
-    const mesh = new THREE.Mesh(g, fieldMaterial); mesh.visible = false; scene.add(mesh);
-    return { mesh, minS };
-  });
+  // Shared light and sowing uniforms also drive the roadside plants and props.
+  const { uniforms: fieldUniforms, fieldChunks, frame: updateWheat } = buildWheat({ scene, own, rand, floor, small, still, fireX, fireS: FIRE_S, stoneX, sunDirection: sunDir, output: OUT });
   await pause("landmarks"); if (signal.aborted) return;
 
   // ---------- things along the way ----------
-  const { fireY, showLogs, frame: tendFire, village, basketX, sowLight, monolithLabel, blocks, fields } = buildProps({ scene, own, rand, small, still, out: OUT, floor, fireX, stoneX, wind: fieldUniforms });
+  const { fireY, showLogs, frame: tendFire, village, basketX, sowLight, monolithLabel, blocks, fields } = buildProps({ scene, own, rand, small, still, out: OUT, floor, fireX, stoneX, stoneScan, wind: fieldUniforms });
   await pause(); if (signal.aborted) return;
-  const { tallGrass } = buildVerge({ scene, own, rand, small, floor, blocks }, fieldUniforms);
+  const { tallGrass } = buildVerge({ scene, own, rand, small, floor, blocks }, fieldUniforms, trackScan);
   const clouds = buildClouds({ scene, own, rand, small, out: OUT }), cloudSun = new THREE.Color(), cloudSky = new THREE.Color();
 
   // ---------- wild grass and what lies on the ground ----------
@@ -541,6 +480,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
       emberLight.position.set(me.x + Math.cos(me.yaw) * .28 - Math.sin(me.yaw) * .55, eyeY - .24, -me.s - Math.cos(me.yaw) * .55 - Math.sin(me.yaw) * .28);
       emberLight.intensity = carry * 5.2 * fire.flicker;
     }
+    updateWheat(camera);
     grass.frame(clock, camera.position, hour.density, pixel);
     clouds.frame(camera.position, still ? 0 : clock, me.s, sunDir, cloudSun.copy(hour.sun).multiplyScalar(power), cloudSky.copy(skyLight.color).multiplyScalar(skyPower), dusk);
     const [figure, unit] = yearReading(me.s, locale), ago = yearsAgo(me.s), about = ago > 126, reading = `${figure}|${unit}|${chapterAt(me.s)}`;

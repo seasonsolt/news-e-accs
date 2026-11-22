@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import type { ReliefScan } from "./relief.ts";
 import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { Kit } from "./camp.ts";
 import { FIRE_S, ROAD, noise, roadX } from "./land.ts";
@@ -8,7 +9,7 @@ const ROAD_GLSL = (s: string) => `(${ROAD.a1.toFixed(1)} * sin((${s}) * ${ROAD.f
 // The bare ground up close: sandy soil in large and small patches, a fine grain, dried pans with hairline cracks, ash round the hearth, furrows where it is tilled and damp soil by water,
 // all drawn in the fragment shader; and the twigs, leaves and small stones that lie about the camp, under trees and along the road.
 
-const HEAD = `varying vec4 vSoil; varying vec3 vSpot; uniform vec2 hearth;
+const HEAD = `varying vec4 vSoil; varying vec3 vSpot; uniform vec2 hearth; uniform sampler2D trackRelief;
   float soilHash(vec2 p){ vec3 q = fract(vec3(p.xyx) * .1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
   float soilNoise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
     return mix(mix(soilHash(i), soilHash(i + vec2(1., 0.)), f.x), mix(soilHash(i + vec2(0., 1.)), soilHash(i + vec2(1., 1.)), f.x), f.y); }
@@ -18,7 +19,7 @@ const HEAD = `varying vec4 vSoil; varying vec3 vSpot; uniform vec2 hearth;
     return vec3(a, b, id); }
 `;
 // `relief` is a height in metres for the normal; every layer fades out before it is finer than a pixel. Colours are linear.
-const COLOR = `float relief = 0.;
+const COLOR = `float relief = 0., scannedRoughness = .87;
   { vec2 q = vSpot.xz; float px = length(fwidth(q)), far = length(vViewPosition), packed = vSoil.x, damp = vSoil.y, till = vSoil.z, cover = vSoil.w;
     float fine = 1. - smoothstep(.004, .02, px), grain = 1. - smoothstep(.01, .05, px), fromHearth = distance(q, hearth), close = 2. - smoothstep(3., 8., far); // detail twice as strong within a few metres, where soft light flattens it
     vec3 c = diffuseColor.rgb;
@@ -30,9 +31,15 @@ const COLOR = `float relief = 0.;
     c = mix(c, mix(vec3(.2, .155, .085), vec3(.12, .13, .065), smoothstep(150., 255., -q.y)), cover * smoothstep(25., 70., far) * .6); // far off, the grass is a tone of the ground, not single tufts
     // mottling, half a metre to two
     c *= 1. + .14 * close * (soilNoise(q * .8) * 1. + soilNoise(q * 1.9 + 5.) * .7 + soilNoise(q * 4.1) * .3 - 1.);
-    // sand: a fine grain in colour and in the light, and a rare darker or paler grain of grit
-    float sand = (soilNoise(q * 140.) - .5) * fine + (soilNoise(q * 47.) - .5) * grain * .7, speck = soilHash(floor(q * 60.));
-    c *= (1. + sand * .3 * close) * (1. + fine * (step(.975, speck) * .22 - step(speck, .02) * .28)); relief += sand * .0012 * close;
+    // Metre-scale gravel and fine grit, shared with the track overlay so the relief crosses its edge.
+    vec2 bed = q * .52;
+    vec3 pebbles = texture2D(trackRelief, bed).rgb;
+    vec3 grit = texture2D(trackRelief, mat2(.8, -.6, .6, .8) * bed * 2.7 + vec2(.23, .61)).rgb;
+    float compacted = clamp(packed * .45 + till * .36 + damp * .14, 0., .85);
+    vec3 scan = mix(pebbles, grit, compacted);
+    c *= exp2((scan.r - .5) * (2.45 - till * .4));
+    relief += (scan.g - .5) * mix(.066, .022, compacted);
+    scannedRoughness = scan.b;
     // the road: a trodden footpath, then two cart ruts with a dusty crown from the village on; dusty and damp stretches, scuffs, and small stones bedded mostly at its edges
     { float s = -q.y, off = q.x - ${ROAD_GLSL("s")}, wide = mix(mix(.85, 1.2, smoothstep(455., 485., s)), 1.25, smoothstep(545., 575., s)) * (.92 + .18 * soilNoise(vec2(s * .7, 3.)));
       float u = off / wide, onRoad = 1. - smoothstep(.75, 1.25, abs(u) + (soilNoise(q * 2.3) - .5) * .35);
@@ -43,12 +50,7 @@ const COLOR = `float relief = 0.;
         c = mix(c, vec3(dot(c, vec3(.3, .59, .11))) * vec3(1.12, 1.06, .95) + .03, onRoad * (crown * .35 + dusty * .3) * (1. - wet));
         float scuff = (soilNoise(vec2(off * 14., s * 5.)) - .5) * grain; // prints of feet and hooves, drawn out along the road
         c *= 1. + onRoad * scuff * .15; relief += onRoad * (scuff * .004 * (trod + rut + .3) - trod * .012 - rut * .03 + crown * .006);
-        #ifndef SOIL_LITE
-        float gf = (1. - smoothstep(.01, .04, px)) * onRoad;
-        if (gf > 0.) { vec3 k = soilCells(q * 9.); float at = min(1., smoothstep(.35, .95, abs(u)) + lane * .6);
-          float r = .2 + .25 * fract(k.z * 7.1), outline = r * (.8 + .4 * soilNoise(q * 40.)), stone = step(1. - .45 * at * smoothstep(.3, .7, soilNoise(q * 1.7 + 5.)), k.z) * (1. - smoothstep(outline * .75, outline, k.x)) * gf;
-          c = mix(c, c * (.75 + .5 * fract(k.z * 13.7)) * vec3(.95, .97, 1.02), stone * .8); relief += stone * .004; }
-        #endif
+
       } }
     // dried pans, about one part in eight of the open ground: paler, with hairline cracks near the eye
     float pan = smoothstep(.62, .74, soilNoise(q * .05 + 101.) * .7 + soilNoise(q * .23 + 3.) * .3) * (1. - damp) * (1. - till) * mix(1., .12, packed) * smoothstep(4.5, 7., fromHearth);
@@ -80,13 +82,14 @@ const NORMAL = `{ vec3 dx = dFdx(-vViewPosition), dy = dFdy(-vViewPosition), r1 
 `;
 
 /** Turns a standard material into bare ground. The geometry carries `soil`: [packed, damp, tilled, cover], each 0 to 1; `hearth` is the fire's (x, z), for the ash round it; `ribbon` frays the edge of a see-through road laid over the ground. */
-export function soil(material: THREE.MeshStandardMaterial, small: boolean, hearth = new THREE.Vector2(1e5, 1e5), ribbon = false) {
+export function soil(material: THREE.MeshStandardMaterial, scan: ReliefScan, small: boolean, hearth = new THREE.Vector2(1e5, 1e5), ribbon = false) {
   material.onBeforeCompile = (shader) => {
+    shader.uniforms.trackRelief = scan;
     shader.uniforms.hearth = { value: hearth };
     shader.vertexShader = "attribute vec4 soil; varying vec4 vSoil; varying vec3 vSpot;\n" + shader.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvSoil = soil; vSpot = (modelMatrix * vec4(transformed, 1.)).xyz;");
     shader.fragmentShader = (small ? "#define SOIL_LITE\n" : "") + (ribbon ? "#define SOIL_RIBBON\n" : "") + HEAD + shader.fragmentShader
       .replace("#include <color_fragment>", `#include <color_fragment>\n${COLOR}`)
-      .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = mix(.97, .82, vSoil.y);") // matte, a little less where damp; the firelight makes no highlight
+      .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = mix(clamp(scannedRoughness, .68, .98), .52, vSoil.y);") // matte, a little less where damp; the firelight makes no highlight
       .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>\n${NORMAL}`);
   };
   material.customProgramCacheKey = () => `soil-${small}-${ribbon}`;

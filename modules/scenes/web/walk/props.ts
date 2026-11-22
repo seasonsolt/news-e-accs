@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import type { ReliefScan } from "./relief.ts";
 import { buildCamp, type Kit } from "./camp.ts";
 import { buildFields } from "./fields.ts";
 import { FIRE_S, MONO_S, SOW_S, roadX } from "./land.ts";
@@ -10,12 +11,12 @@ import { buildForest, type Wind } from "./trees.ts";
 import { buildVillage } from "./village.ts";
 
 /** `wind` is the grass's wind, so the leaves move with it. */
-type Setting = Pick<Kit, "scene" | "own" | "rand" | "small" | "still" | "out" | "floor" | "fireX"> & { stoneX: number; wind?: Wind };
+type Setting = Pick<Kit, "scene" | "own" | "rand" | "small" | "still" | "out" | "floor" | "fireX"> & { stoneX: number; stoneScan: ReliefScan; wind?: Wind };
 
 /** Everything that stands on the land: the camp, rocks, trees, the seed basket, the first village and the stone. */
 export function buildProps(setting: Setting) {
   const { scene, own, rand, small, floor, fireX, stoneX } = setting;
-  const matte = own(createMatte(!small));
+  const matte = own(createMatte(setting.stoneScan, !small));
   // Scenery that never moves is gathered by stretch of road and drawn as one mesh per stretch.
   const stretches = new Map<number, THREE.BufferGeometry[]>(), blocks: Kit["blocks"] = [];
   const keep = (shape: THREE.BufferGeometry, s: number) => {
@@ -73,7 +74,7 @@ export function buildProps(setting: Setting) {
   const village = buildVillage(kit, camp.flame, forest.plant), fields = buildFields(kit, forest.plant); forest.finish();
 
   // ---------- the stone, facing the walker, the sun behind it ----------
-  const monolithLabel = buildMonolith(setting, stoneX, floor(stoneX, -MONO_S), -MONO_S);
+  const monolithLabel = buildMonolith(setting, stoneX, floor(stoneX, -MONO_S), -MONO_S, setting.stoneScan);
   blocks.push([stoneX, MONO_S, 4.8]);
 
   for (const shapes of stretches.values()) { const mesh = new THREE.Mesh(own(merged(shapes)), matte); mesh.castShadow = mesh.receiveShadow = true; scene.add(mesh); }

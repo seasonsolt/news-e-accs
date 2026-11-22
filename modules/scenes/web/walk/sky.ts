@@ -21,6 +21,20 @@ export function skyFragment(output: string) {
                      mix(hash(i + vec3(0., 1., 1.)), hash(i + vec3(1., 1., 1.)), f.x), f.y), f.z);
     }
 
+    // Height and two slopes of a triangular rock face, without a texture or finite-difference samples.
+    vec3 ridgeFacet(vec2 p) {
+      vec2 i = floor(p), f = fract(p);
+      float a = hash(vec3(i, 11.)), b = hash(vec3(i + vec2(1., 0.), 11.));
+      float c = hash(vec3(i + vec2(0., 1.), 11.)), e = hash(vec3(i + vec2(1.), 11.));
+      if (f.x + f.y < 1.) return vec3(a + (b - a) * f.x + (c - a) * f.y, b - a, c - a);
+      return vec3(e + (c - e) * (1. - f.x) + (b - e) * (1. - f.y), e - c, e - b);
+    }
+
+    vec3 ridgeNormal(vec2 bearing, vec3 facet) {
+      vec3 toward = vec3(-bearing.x, 0., -bearing.y), tangent = vec3(bearing.y, 0., -bearing.x);
+      return normalize(toward * .8 + tangent * facet.y * .9 + vec3(0., .75 + facet.z * .4, 0.));
+    }
+
     void main() {
       vec3 d = normalize(direction);
       float up = max(d.y, 0.);
@@ -94,15 +108,24 @@ export function skyFragment(output: string) {
         }
       }
       // Two remote ridgelines give the flat road a scale beyond its playable terrain.
-      vec2 bearing = normalize(d.xz);
-      float distant = .012 + .047 * noise(vec3(bearing * 5., 7.))
-        + .018 * noise(vec3(bearing * 17., 4.));
-      float nearer = .004 + .025 * noise(vec3(bearing * 8. + 9., 2.))
-        + .012 * noise(vec3(bearing * 25., 1.));
-      vec3 farRidge = mix(horizon * .68, top * 1.3, .35);
-      vec3 nearRidge = mix(horizon * .4, top * .75, .5);
-      c = mix(c, farRidge, 1. - smoothstep(distant - .001, distant + .001, d.y));
-      c = mix(c, nearRidge, 1. - smoothstep(nearer - .001, nearer + .001, d.y));
+      if (d.y < .085) {
+        vec2 bearing = normalize(d.xz);
+        float distant = .012 + .047 * noise(vec3(bearing * 5., 7.))
+          + .018 * noise(vec3(bearing * 17., 4.));
+        float nearer = .004 + .025 * noise(vec3(bearing * 8. + 9., 2.))
+          + .012 * noise(vec3(bearing * 25., 1.));
+        float angle = atan(bearing.x, bearing.y);
+        vec3 farFace = ridgeFacet(vec2(angle * 19. + distant * 12., d.y * 75. + distant * 25.));
+        vec3 nearFace = ridgeFacet(vec2(angle * 28. + nearer * 18. + 9., d.y * 115. + nearer * 30.));
+        float farLight = max(0., dot(ridgeNormal(bearing, farFace), sunDir));
+        float nearLight = max(0., dot(ridgeNormal(bearing, nearFace), sunDir));
+        // Haze keeps the distant faces close in tone. The nearer range retains more shadow in its ravines.
+        float daylight = .25 + day * .75;
+        vec3 farRidge = mix(horizon * .68, top * 1.3, .35) * (.92 + daylight * (farLight * .17 + (farFace.x - .5) * .08));
+        vec3 nearRidge = mix(horizon * .4, top * .75, .5) * (.86 + daylight * (nearLight * .28 + (nearFace.x - .5) * .14));
+        c = mix(c, farRidge, 1. - smoothstep(distant - .001, distant + .001, d.y));
+        c = mix(c, nearRidge, 1. - smoothstep(nearer - .001, nearer + .001, d.y));
+      }
       gl_FragColor = vec4(c, 1.);
       ${output}
     }`;
