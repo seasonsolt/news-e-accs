@@ -14,19 +14,32 @@ type Setting = Pick<Kit, "floor" | "blocks" | "fireX" | "small">;
 /** How thickly grass grows at a point, 0 to 1: stands and bare ground from a slow noise, thick along the road's shoulders and round stones and trees, none on the road or in the trodden camp.
  *  Past the night country only a band of stubble along the field road. */
 export function grassCover(blocks: Kit["blocks"], fireX: number) {
-  const near = new Map<string, Array<[number, number, number]>>(), key = (x: number, s: number) => `${Math.floor(x / 8)},${Math.floor(s / 8)}`;
-  for (const block of blocks) if (block[1] < 290) { const k = key(block[0], block[1]); if (!near.has(k)) near.set(k, []); near.get(k)!.push(block); }
+  // Each cell keeps its whole neighbourhood once, instead of looking up nine string keys for every candidate blade.
+  const near = new Map<number, Map<number, Kit["blocks"]>>();
+  for (const block of blocks) if (block[1] < 290) {
+    const cx = Math.floor(block[0] / 8), cs = Math.floor(block[1] / 8);
+    for (let x = cx - 1; x <= cx + 1; x++) {
+      if (!near.has(x)) near.set(x, new Map());
+      const column = near.get(x)!;
+      for (let s = cs - 1; s <= cs + 1; s++) {
+        if (!column.has(s)) column.set(s, []);
+        column.get(s)!.push(block);
+      }
+    }
+  }
   /** Returns -1 inside a stone or trunk. */
   return (x: number, s: number) => {
     const d = Math.abs(x - roadX(s)), camp = Math.hypot(x - fireX - 1.5, s - FIRE_S - 1);
     const ragged = d + (noise(x * 1.3, s * 1.3) - .5) * .8; // the grass creeps in on the road's edge unevenly
     if (s > FIELD_S) return smooth(.95, 1.4, ragged) * (1 - smooth(1.5, 2, d)) * .7;
     let foot = 0;
-    for (let i = -1; i <= 1; i++) for (let k = -1; k <= 1; k++) for (const [bx, bs, r] of near.get(key(x + i * 8, s + k * 8)) ?? []) {
+    for (const [bx, bs, r] of near.get(Math.floor(x / 8))?.get(Math.floor(s / 8)) ?? []) {
       const gap = Math.hypot(x - bx, s - bs); if (gap < r * .8) return -1; foot = Math.max(foot, 1 - smooth(r, r + 2.6, gap));
     }
+    const road = smooth(1, 1.7, ragged), trodden = smooth(5, 8.5, camp);
+    if (road === 0 || trodden === 0) return 0;
     const stand = smooth(.4, .6, fbm(x * .03 + 3, s * .03)) * (.6 + .4 * noise(x * .25, s * .25)), shoulder = smooth(1.3, 1.9, d) * (1 - smooth(2.6, 5, d));
-    return Math.max(stand, shoulder * .85, foot * .9) * smooth(1, 1.7, ragged) * smooth(5, 8.5, camp);
+    return Math.max(stand, shoulder * .85, foot * .9) * road * trodden;
   };
 }
 
@@ -141,10 +154,13 @@ export function buildGrass({ scene, own, still, ...setting }: Setting & Pick<Kit
   for (let i = 0; i < plants.count; i++) { const k = `${Math.floor(plants.root[i * 4]! / CHUNK)},${Math.floor(plants.root[i * 4 + 2]! / CHUNK)}`; if (!chunks.has(k)) chunks.set(k, []); chunks.get(k)!.push(i); }
   const patches: Array<{ mesh: THREE.Mesh; shapes: THREE.InstancedBufferGeometry[]; x: number; z: number }> = [];
   for (const [k, members] of chunks) {
-    const [cx, cz] = k.split(",").map(Number) as [number, number], x = (cx + .5) * CHUNK, z = (cz + .5) * CHUNK, ys = members.map((m) => plants.root[m * 4 + 1]!);
-    const sphere = new THREE.Sphere(new THREE.Vector3(x, (Math.min(...ys) + Math.max(...ys)) / 2 + .6, z), CHUNK * .75 + (Math.max(...ys) - Math.min(...ys)) / 2 + 1.5);
+    const [cx, cz] = k.split(",").map(Number) as [number, number], x = (cx + .5) * CHUNK, z = (cz + .5) * CHUNK;
+    let low = Infinity, high = -Infinity;
+    for (const member of members) { const y = plants.root[member * 4 + 1]!; low = Math.min(low, y); high = Math.max(high, y); }
+    const sphere = new THREE.Sphere(new THREE.Vector3(x, (low + high) / 2 + .6, z), CHUNK * .75 + (high - low) / 2 + 1.5);
     const attributes = (["root", "form", "tone"] as const).map((name) => {
-      const data = new Float32Array(members.length * 4); members.forEach((m, j) => data.set(plants[name].slice(m * 4, m * 4 + 4), j * 4));
+      const data = new Float32Array(members.length * 4), source = plants[name];
+      members.forEach((m, j) => { for (let c = 0; c < 4; c++) data[j * 4 + c] = source[m * 4 + c]!; });
       return [name, new THREE.InstancedBufferAttribute(data, 4)] as const;
     });
     const shapes = blades.map((blade) => { // the same clumps twice: fine blades for close by, plain ones for further off

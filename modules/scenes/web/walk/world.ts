@@ -9,6 +9,7 @@ import { recordEngagement } from "@aihot/web/lib/engagement";
 import { localePath } from "@aihot/web/lib/locale";
 import { reducedMotion } from "@aihot/web/lib/motion";
 import { buildClouds } from "./clouds.ts";
+import { skyFragment, skyVertex } from "./sky.ts";
 import { buildGrass } from "./grass.ts";
 import { buildLitter, soil } from "./groundcover.ts";
 import { buildProps } from "./props.ts";
@@ -18,8 +19,8 @@ import { CANAL, CLEARINGS, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONO
 
 // The hour at points along the road: [s, zenith, horizon, fog, sun colour, sun strength, sky light, stars, sun height, fog density].
 const HOURS = ([
-  [0, "#050a20", "#263f67", "#13223a", "#a9c1f2", .62, .5, 1, -.25, .0098],
-  [170, "#0a1028", "#2b3c63", "#19253d", "#a9c1f2", .58, .55, 1, -.16, .0098],
+  [0, "#030619", "#25344d", "#111d30", "#a9c1f2", .62, .5, 1, -.25, .0078],
+  [170, "#080b22", "#34354f", "#172239", "#a9c1f2", .58, .55, 1, -.16, .0078],
   [255, "#1c2a52", "#c0624a", "#4a3540", "#ff9a66", .6, .62, .3, .02, .0085],
   [340, "#3f6aa6", "#f0b98a", "#b9a08d", "#ffd2a0", .95, .7, 0, .2, .0062],
   [450, "#2f6fc9", "#a9cbe8", "#c9d8de", "#fff0cf", .9, .68, 0, .46, .0038],
@@ -108,7 +109,13 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   const across = small ? 110 : 170, along = small ? 300 : 440, fireX = roadX(FIRE_S) + 2.6, stoneX = roadX(MONO_S);
   const land = own(new THREE.PlaneGeometry(LAND.width, LAND.depth, across, along).rotateX(-Math.PI / 2).translate(0, 0, LAND.behind - LAND.depth / 2));
   {
-    const ripeSoil = new THREE.Color("#a88a4c");
+    // Parse the palette once. Each point on the sheet blends the same pigments.
+    const palette = {
+      dry: new THREE.Color("#6b5a45"), dust: new THREE.Color("#94805f"), green: new THREE.Color("#7a7f4a"),
+      road: new THREE.Color("#a08a6a"), camp: new THREE.Color("#8f7658"), tilled: new THREE.Color("#5c4630"),
+      ripe: new THREE.Color("#a88a4c"), yard: new THREE.Color("#a99272"), path: new THREE.Color("#bca783"),
+      stubble: new THREE.Color("#c4ab6c"), calendar: new THREE.Color("#b49d7b"), damp: new THREE.Color("#3f3224"),
+    };
     const p = land.attributes.position!, colors = new Float32Array(p.count * 3), soils = new Float32Array(p.count * 4), c = new THREE.Color(), b = new THREE.Color();
     const inside = (x: number, s: number, [cs, off, r]: readonly [number, number, number]) => Math.hypot(x - roadX(cs) - off, s - cs) / r; // 1 on a clearing's edge
     const toSegment = (x: number, s: number, ax: number, as: number, bx: number, bs: number) => { const dx = bx - ax, ds = bs - as, t = clamp(((x - ax) * dx + (s - as) * ds) / (dx * dx + ds * ds), 0, 1); return Math.hypot(x - ax - dx * t, s - as - ds * t); };
@@ -116,19 +123,19 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     for (let i = 0; i < p.count; i++) {
       const x = p.getX(i), z = p.getZ(i), s = -z, d = Math.abs(x - roadX(s)), n = fbm(x * .09, z * .09);
       p.setY(i, ground(x, z));
-      c.set("#6b5a45").lerp(b.set("#94805f"), n).lerp(b.set("#7a7f4a"), smooth(170, 250, s) * smooth(.35, .7, n) * .5); // dry earth, greener toward the first field
+      c.copy(palette.dry).lerp(palette.dust, n).lerp(palette.green, smooth(170, 250, s) * smooth(.35, .7, n) * .5); // dry earth, greener toward the first field
       const road = 1 - smooth(.8, 3.4, d), camp = 1 - smooth(4, 13, Math.hypot(x - fireX - 2.5, s - FIRE_S - 1));
-      c.lerp(b.set("#a08a6a"), road * .55).lerp(b.set("#8f7658"), camp); // the road and the camp are packed pale by feet
+      c.lerp(palette.road, road * .55).lerp(palette.camp, camp); // the road and the camp are packed pale by feet
       const tilled = smooth(238, 262, s) * (1 - (1 - smooth(1.2, 2.6, d)) * (s < 470 ? .55 : 0));
-      c.lerp(b.set("#5c4630").lerp(ripeSoil, smooth(400, 480, s)).multiplyScalar(.9 + n * .25), tilled); // the furrows are drawn by the ground shader
+      c.lerp(b.copy(palette.tilled).lerp(palette.ripe, smooth(400, 480, s)).multiplyScalar(.9 + n * .25), tilled); // the furrows are drawn by the ground shader
       const off = x - roadX(s); let path = 0; // the village yard is trodden pale, with paths worn paler still
       if (s > 310 && s < 356) for (const [ax, as, bx, bs] of paths) path = Math.max(path, 1 - smooth(.5, 1.5, toSegment(off, s, ax, as, bx, bs)));
       const yard = smooth(314, 319, s) * (1 - smooth(349, 354, s)) * smooth(6.5, 9.5, off) * (1 - smooth(28, 31, off)), calendar = 1 - smooth(.85, 1.1, inside(x, s, CLEARINGS.calendar));
-      c.lerp(b.set("#a99272").multiplyScalar(.92 + n * .16), yard).lerp(b.set("#bca783"), path * .85);
-      c.lerp(b.set("#c4ab6c").multiplyScalar(.9 + n * .2), 1 - smooth(.85, 1.1, inside(x, s, CLEARINGS.reaped))).lerp(b.set("#b49d7b"), calendar); // stubble where it is reaped, packed earth at the calendar
+      c.lerp(b.copy(palette.yard).multiplyScalar(.92 + n * .16), yard).lerp(palette.path, path * .85);
+      c.lerp(b.copy(palette.stubble).multiplyScalar(.9 + n * .2), 1 - smooth(.85, 1.1, inside(x, s, CLEARINGS.reaped))).lerp(palette.calendar, calendar); // stubble where it is reaped, packed earth at the calendar
       const canal = s > CANAL.from && s < CANAL.to ? Math.abs(off - CANAL.offset) : 99, channel = Math.min(...CANAL.channels.map(([a, z, end]) => toSegment(off, s, CANAL.offset, a, end, z)));
       const damp = Math.max(1 - smooth(1.2, 2.6, canal), 1 - smooth(.6, 1.8, channel), 1 - smooth(.9, 1.4, inside(x, s, CLEARINGS.pond)));
-      c.lerp(b.set("#3f3224"), damp * .8); // damp earth by the water
+      c.lerp(palette.damp, damp * .8); // damp earth by the water
       colors.set([c.r, c.g, c.b], i * 3); soils.set([Math.max(road * (1 - tilled), camp, yard * .8, path, calendar), damp, tilled, 0], i * 4); // what the ground shader makes of it: packed, damp, tilled; the grass cover is added once the grass is placed
     }
     land.setAttribute("color", new THREE.BufferAttribute(colors, 3)); land.setAttribute("soil", new THREE.BufferAttribute(soils, 4)); land.computeVertexNormals();
@@ -145,25 +152,12 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     for (const key of ["top", "horizon", "fog", "sun"] as const) hour[key].copy(a[key]).lerp(b[key], t);
     for (const key of ["power", "sky", "stars", "height", "density"] as const) hour[key] = mix(a[key], b[key], t);
   }
-  const sunDir = new THREE.Vector3(), moon = new THREE.Vector3(-Math.sin(.5) * Math.cos(.3), Math.sin(.3), -Math.cos(.5) * Math.cos(.3)), nightSky = new THREE.Color("#04050c"), nightHorizon = new THREE.Color("#1a1530");
-  const skyUniforms = { top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() }, sun: { value: new THREE.Color() }, sunDir: { value: sunDir }, moonDir: { value: moon }, stars: { value: 1 }, time: { value: 0 }, day: { value: 0 } };
+  const sunDir = new THREE.Vector3(), moon = new THREE.Vector3(-Math.sin(.5) * Math.cos(.3), Math.sin(.3), -Math.cos(.5) * Math.cos(.3)), nightSky = new THREE.Color("#030619"), nightHorizon = new THREE.Color("#27203c");
+  const skyUniforms = { top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() }, sun: { value: new THREE.Color() }, sunDir: { value: sunDir }, planetDirection: { value: new THREE.Vector3(small ? .35 : .55, .35, -1) }, stars: { value: 1 }, time: { value: 0 }, day: { value: 0 } };
   const sky = new THREE.Mesh(own(new THREE.SphereGeometry(1200, 32, 20)), own(new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false, uniforms: skyUniforms,
-    vertexShader: "varying vec3 v; void main(){ v = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }",
-    fragmentShader: `varying vec3 v; uniform vec3 top, horizon, sun, sunDir, moonDir; uniform float stars, time, day;
-      float h(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
-      float cloud(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
-        return mix(mix(mix(h(i), h(i + vec3(1., 0., 0.)), f.x), mix(h(i + vec3(0., 1., 0.)), h(i + vec3(1., 1., 0.)), f.x), f.y), mix(mix(h(i + vec3(0., 0., 1.)), h(i + vec3(1., 0., 1.)), f.x), mix(h(i + vec3(0., 1., 1.)), h(i + vec3(1., 1., 1.)), f.x), f.y), f.z); }
-      void main(){ vec3 d = normalize(v); float up = max(d.y, 0.);
-        vec3 c = mix(horizon, top, pow(up, .65)); if (d.y < 0.) c = mix(horizon, horizon * .55, min(1., -d.y * 6.));
-        float g = max(dot(d, sunDir), 0.); c += sun * (pow(g, mix(8., 64., day)) * mix(.22, .075, day) + pow(g, mix(120., 360., day)) * .6) * step(-.08, sunDir.y) + sun * smoothstep(mix(.9992, .9995, day), mix(.9996, .9998, day), g) * 6.; // by day the glow keeps close to the disc, so the blue holds beside it
-        vec3 cell = d * 300.; float s = h(floor(cell)); float twinkle = .65 + .35 * sin(time * 2. + s * 90.);
-        float river = exp(-pow(dot(d, normalize(vec3(.62, .38, .68))) * 4.5, 2.)) * (.35 + .65 * cloud(d * 7.)) * (.6 + .4 * cloud(d * 19.)), low = smoothstep(.02, .3, d.y); // the Milky Way
-        c += vec3(.34, .42, .66) * river * .2 * stars * low;
-        float limit = .9975 - river * .004; c += vec3(.9, .93, 1.) * step(limit, s) * smoothstep(.5, .12, length(fract(cell) - .5)) * (.6 + 300. * (s - limit)) * twinkle * stars * low;
-        float m = length(d - moonDir), lit = (1. - smoothstep(.03, .032, m)) * smoothstep(.029, .031, length(d - normalize(moonDir + vec3(.013, .007, 0.)))); // a thin old moon, low where the sun will rise
-        c += vec3(1., .95, .82) * (lit * 4. + (1. - smoothstep(.03, .032, m)) * .05 + .05 / (1. + m * m * 260.)) * stars;
-        gl_FragColor = vec4(c, 1.); ${OUT} }`,
+    vertexShader: skyVertex,
+    fragmentShader: skyFragment(OUT),
   })));
   scene.add(sky);
   const skyLight = new THREE.HemisphereLight(0xffffff, 0x3a3026, .3), sunLight = new THREE.DirectionalLight(0xffffff, .2);
@@ -184,7 +178,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   const young = new THREE.Color("#7c9a3e"), ripe = new THREE.Color("#d9aa45"), pale = new THREE.Color("#ecc766");
   const blade = (x: number, s: number, height: number, width: number, head: number, sown: number) => {
     const bucket = s < 355 ? buckets[0] : s < 478 ? buckets[1] : s < 585 ? buckets[2] : buckets[3];
-    bucket.push(x, ground(x, -s), -s, height, width, rand() * 6.283, head, tint.r, tint.g, tint.b, sown);
+    bucket.push(x, floor(x, -s), -s, height, width, rand() * 6.283, head, tint.r, tint.g, tint.b, sown);
   };
   for (let s = FIELD_S; s < 478; s += (s < 380 ? .34 : .62) / density) for (let row = -34; row <= 34; row++) { // sown rows, greening then ripening; the young crop stands close in its rows
     if (Math.abs(row) < 2 || (s > VILLAGE.from && s < VILLAGE.to && row > 8 && row < 30)) continue;
@@ -511,7 +505,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     // From the road by the dish, the low sun meets the top of the stone before the walker passes into its shadow.
     const height = hour.height, turn = mix(-.42, .125, smooth(250, 574, me.s));
     sunDir.set(Math.sin(turn) * Math.cos(height), Math.sin(height), -Math.cos(turn) * Math.cos(height)).normalize();
-    skyUniforms.top.value.copy(hour.top); skyUniforms.horizon.value.copy(hour.horizon); skyUniforms.sun.value.copy(hour.sun).multiplyScalar(1 - dusk * .35); skyUniforms.stars.value = Math.max(hour.stars, dusk); skyUniforms.time.value = clock; skyUniforms.day.value = smooth(330, 410, me.s) * (1 - dusk);
+    skyUniforms.top.value.copy(hour.top); skyUniforms.horizon.value.copy(hour.horizon); skyUniforms.sun.value.copy(hour.sun).multiplyScalar(1 - dusk * .35); skyUniforms.stars.value = Math.max(hour.stars, dusk); skyUniforms.time.value = still ? 0 : clock; skyUniforms.day.value = smooth(330, 410, me.s) * (1 - dusk);
     fog.color.copy(hour.fog); fog.density = hour.density;
     const power = hour.power * (1 - dusk * .7), skyPower = hour.sky * (1 - dusk * .6);
     skyLight.color.copy(hour.top).lerp(hour.horizon, .6); skyLight.intensity = skyPower * 1.6 * (1 + hour.stars * 4); // the night is drawn blue, not black

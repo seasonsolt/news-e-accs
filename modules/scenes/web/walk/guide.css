@@ -1,8 +1,8 @@
 .walk-guide {
-  --guide-rule: #554532;
+  --guide-rule: #36434b;
   width: 100%;
   color: #f0e4cd;
-  background: #171510;
+  background: #0d1821;
   text-align: left;
   user-select: text;
   -webkit-user-select: text;
@@ -28,7 +28,7 @@
 .walk-guide-copy { max-width: 28rem; }
 .walk-guide-time { margin: 0 0 16px; color: #cfac76; font: 12px/1.6 var(--font-mono); letter-spacing: .065em; }
 .walk-guide h3 { font-size: clamp(30px, 4vw, 56px); }
-.walk-guide-prose { max-width: 39ch; margin: 16px 0; font: 17px/1.8 var(--font-display); color: #d7cab5; }
+.walk-guide-prose { max-width: 39ch; margin: 16px 0; font: 17px/1.8 var(--font-display); color: #d4d6d2; }
 .walk-guide-link {
   display: inline-flex;
   align-items: center;

@@ -1,8 +1,8 @@
 /* The cover can be read like a page. The canvas stays fixed behind it during the walk. */
 html:has(.walk), body:has(.walk) { overflow: hidden; scrollbar-gutter: auto; }
 .walk {
-  --walk-ink: #faf2dd;
-  --walk-dim: #cbc3ae;
+  --walk-ink: #f5f1e6;
+  --walk-dim: #c7c7c2;
   --walk-gold: #efc37d;
   --walk-gutter: clamp(22px, 5.8vw, 108px);
   --walk-left: max(var(--walk-gutter), env(safe-area-inset-left));
@@ -24,22 +24,23 @@ html:has(.walk), body:has(.walk) { overflow: hidden; scrollbar-gutter: auto; }
 .walk-back {
   position: absolute; z-index: 5; top: var(--walk-top); left: var(--walk-left);
   display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px 0 11px;
-  border: 1px solid #f5d8a63d; background: #141516db; color: var(--walk-ink); text-decoration: none;
-  border-radius: 3px; font: 12px/1.2 var(--font-mono);
+  border: 1px solid #a6c0cf40; background: #0c1928a8; color: var(--walk-ink); text-decoration: none;
+  border-radius: var(--radius-mark); font: 12px/1.2 var(--font-mono);
 }
 .walk-back:hover { border-color: var(--walk-gold); }
 
-.walk-cover { position: absolute; inset: 0; z-index: 3; overflow: auto; overscroll-behavior: contain; background: #13120e; opacity: 1; transition: opacity .65s ease; }
+.walk-cover { position: absolute; inset: 0; z-index: 3; overflow: auto; overscroll-behavior: contain; background: #0d1821; opacity: 1; transition: opacity .65s ease; }
 .walk-cover.is-gone { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .65s ease, visibility 0s .65s; }
 .walk-hero {
   isolation: isolate; position: relative; display: grid; align-content: space-between; grid-template-rows: 1fr auto;
   min-height: 100%; min-height: 100svh; padding: calc(var(--walk-top) + 68px) var(--walk-right) var(--walk-bottom) var(--walk-left);
 }
-.walk-poster { z-index: -2; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 65% 62%; }
+.walk-poster { z-index: -2; position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+.walk-poster img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: 70% 50%; }
 .walk-hero::before {
   content: ""; z-index: -1; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(90deg, #080c10df 0%, #0e101491 31%, transparent 64%),
-    linear-gradient(0deg, #10110ff0 0%, #1315106e 14%, transparent 37%, transparent 88%, #0b0d1033 100%);
+  background: linear-gradient(90deg, #07121ccc 0%, #09152260 32%, transparent 61%),
+    linear-gradient(0deg, #08111bf2, #0a141e78 12%, transparent 31%);
 }
 .walk-intro { align-self: center; padding-block: clamp(26px, 5vh, 66px); max-width: 41rem; }
 .walk-kicker {
@@ -52,7 +53,7 @@ html:has(.walk), body:has(.walk) { overflow: hidden; scrollbar-gutter: auto; }
   letter-spacing: -.045em; text-shadow: 0 2px 30px #080d1370; scroll-margin-top: 110px;
 }
 .walk-hero h1 span, .walk-hero h1 em { display: block; }
-.walk-hero h1 em { margin-top: .06em; font-style: italic; color: #eac38a; }
+.walk-hero h1 em { margin-top: .06em; font-style: italic; color: #f3cb96; }
 :lang(zh) .walk-hero h1 { font-size: clamp(52px, 6.2vw, 100px); line-height: 1.08; letter-spacing: .045em; }
 :lang(zh) .walk-hero h1 em { font-style: normal; }
 .walk-lede { max-width: 38ch; margin: clamp(16px, 2.8vh, 30px) 0 0; font: 400 clamp(18px, 1.65vw, 24px)/1.45 var(--font-display); color: #e5decc; text-wrap: pretty; }
@@ -60,12 +61,12 @@ html:has(.walk), body:has(.walk) { overflow: hidden; scrollbar-gutter: auto; }
 .walk-actions { margin-top: clamp(16px, 3.2vh, 36px); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; }
 .walk-actions > * { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 46px; font: 500 13px/1.45 var(--font-mono); text-decoration: none; }
 .walk .walk-start {
-  padding: 12px 21px; border-radius: 3px; border: 1px solid #ffdfab; background: #edc58c; color: #231c13; font-weight: 650;
+  padding: 12px 21px; border-radius: var(--radius-mark); border: 1px solid #ffdfab; background: #edc58c; color: #231c13; font-weight: 650;
 }
 .walk-start::before { content: ""; width: 0; height: 0; border-block: 4.5px solid transparent; border-left: 7px solid currentColor; }
 .walk .walk-start:hover { background: #ffdda8; }
 .walk .walk-start[aria-busy="true"] { background: #dbc49e; cursor: progress; }
-.walk-start[aria-busy="true"]::before { width: 11px; height: 11px; border: 1px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: walk-spin .9s linear infinite; }
+.walk-start[aria-busy="true"]::before { width: 11px; height: 11px; border: 1px solid currentColor; border-right-color: transparent; border-radius: 9999px; animation: walk-spin .9s linear infinite; }
 @keyframes walk-spin { to { transform: rotate(360deg); } }
 .walk-guide-jump, .walk-exit, .walk-share { color: #f0dfc5; border: 0; background: transparent; }
 .walk-guide-jump:hover, .walk-exit:hover, .walk-share:hover { color: white; text-decoration: underline; text-underline-offset: 4px; }
@@ -75,9 +76,11 @@ html:has(.walk), body:has(.walk) { overflow: hidden; scrollbar-gutter: auto; }
 .walk-load-row { display: flex; align-items: center; gap: 12px; font: 12px/1.5 var(--font-mono); color: var(--walk-ink); }
 .walk-load-row span:first-child { flex: 1; }
 .walk-load-row span:nth-child(2) { color: var(--walk-gold); white-space: nowrap; }
-.walk-load-row button { min-height: 44px; padding: 2px 6px; text-decoration: underline; text-underline-offset: 3px; }
-.walk-loading progress { display: block; appearance: none; width: 100%; height: 3px; border: 0; background: #5c5142; color: var(--walk-gold); }
-.walk-loading progress::-webkit-progress-bar { background: #5c5142; }
+.walk-load-row button { border: 0; background: transparent; min-height: 44px; padding: 2px 6px; text-decoration: underline; text-underline-offset: 3px; }
+.walk-loading progress { display: block; appearance: none; width: 100%; height: 3px; border: 0; background: #44535d; color: var(--walk-gold); }
+.walk-loading progress::-webkit-progress-bar { background: transparent; }
+.walk-loading progress:indeterminate { background: linear-gradient(90deg, transparent 10%, #efc37d 48%, transparent 90%) -90px 0 / 90px 100% no-repeat, #44535d; animation: walk-search 1.8s ease-in-out infinite; }
+@keyframes walk-search { to { background-position: calc(100% + 90px) 0; } }
 .walk-loading progress::-webkit-progress-value { background: var(--walk-gold); }
 .walk-loading progress::-moz-progress-bar { background: var(--walk-gold); }
 .walk-error { color: #f5cf99; font: 13px/1.65 var(--font-mono); }
@@ -99,7 +102,7 @@ html:has(.walk), body:has(.walk) { overflow: hidden; scrollbar-gutter: auto; }
 .walk-chapter { margin: 0; color: #fff0d5; font: 12px/1.35 var(--font-mono); letter-spacing: .1em; }
 .walk-rail { position: relative; height: 2px; background: #d1c9b67a; }
 .walk-rail i { position: absolute; top: -1px; width: 1px; height: 4px; background: #e9d7b7; }
-.walk-rail b { position: absolute; top: -2px; left: 0; width: 6px; height: 6px; transform: translateX(-50%); border-radius: 50%; background: #ffe1a1; }
+.walk-rail b { position: absolute; top: -2px; left: 0; width: 6px; height: 6px; transform: translateX(-50%); border-radius: 9999px; background: #ffe1a1; }
 .walk-year { position: absolute; left: var(--walk-left); bottom: calc(var(--walk-bottom) + 10px); }
 .walk-year-label { display: block; font-size: 11px; color: #f1e5cf; letter-spacing: .08em; }
 .walk-year-figure { display: flex; flex-wrap: wrap; align-items: baseline; gap: 9px; font-size: 13px; }
@@ -112,7 +115,7 @@ html:has(.walk), body:has(.walk) { overflow: hidden; scrollbar-gutter: auto; }
 }
 .walk-say.is-on { opacity: 1; }
 .walk-controls { pointer-events: auto; position: absolute; right: var(--walk-right); bottom: calc(var(--walk-bottom) + 10px); display: flex; flex-wrap: wrap; align-items: center; justify-content: end; gap: 8px; }
-.walk-controls button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 13px; border: 1px solid #f6e5c66b; border-radius: 3px; background: #11151bde; font-size: 12px; }
+.walk-controls button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 13px; border: 1px solid #f6e5c66b; border-radius: var(--radius-mark); background: #11151bde; font-size: 12px; }
 .walk-controls button:hover { border-color: #edd2a0; }
 .walk-controls .walk-use, .walk-auto[aria-pressed="true"] { border-color: var(--walk-gold); background: #f1cf95; color: #211e18; }
 .walk-use kbd { padding: 0 4px; border: 1px solid currentColor; font: inherit; }
@@ -137,8 +140,9 @@ html:has(.walk), body:has(.walk) { overflow: hidden; scrollbar-gutter: auto; }
   .walk-hud:has(.walk-use:not([hidden])) .walk-say { bottom: calc(var(--walk-bottom) + 202px); }
 }
 @media (max-width: 740px) {
-  .walk-poster { height: 72%; object-position: 75% 45%; }
-  .walk-hero::before { background: linear-gradient(0deg, #10110f 0%, #10110f 28%, #10110fc2 44%, #10110f24 67%, transparent 85%); }
+  .walk-poster { height: 67%; }
+  .walk-poster img { object-position: center 38%; }
+  .walk-hero::before { background: linear-gradient(0deg, #0d1821 0%, #0d1821 33%, #0d1821e0 43%, #0d18213d 62%, transparent 79%); }
   .walk-intro { align-self: end; padding-top: max(16svh, 80px); padding-bottom: clamp(28px, 5svh, 52px); }
   .walk-hero h1 { font-size: clamp(56px, 12vw, 84px); }
   :lang(zh) .walk-hero h1 { font-size: clamp(44px, 9vw, 66px); }
@@ -165,11 +169,11 @@ html:has(.walk), body:has(.walk) { overflow: hidden; scrollbar-gutter: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   .walk-say, .walk-cover, .walk-cover.is-gone { transition: none; }
-  .walk-start[aria-busy="true"]::before { animation: none; }
+  .walk-start[aria-busy="true"]::before, .walk-loading progress:indeterminate { animation: none; background-position: center; }
 }
 html[data-motion="reduced"] :is(.walk-say, .walk-cover, .walk-cover.is-gone) { transition: none; }
-html[data-motion="reduced"] .walk-start[aria-busy="true"]::before { animation: none; }
+html[data-motion="reduced"] .walk-start[aria-busy="true"]::before, html[data-motion="reduced"] .walk-loading progress:indeterminate { animation: none; background-position: center; }
 
 @media (scripting: none) {
-  .walk-start, .walk-keys { display: none; }
+  .walk .walk-start, .walk-keys, .walk-loading { display: none; }
 }

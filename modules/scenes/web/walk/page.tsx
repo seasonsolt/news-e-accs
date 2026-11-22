@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { FEATURES } from "@aihot/industry/features";
-import { MANIFESTO_CARD } from "@aihot/industry/manifesto";
 import { SITE } from "@aihot/site";
 import { localeFromMatches, translate, useLocale, useTranslate } from "@aihot/web/lib/i18n";
 import { localePath } from "@aihot/web/lib/locale";
@@ -15,6 +14,7 @@ import { END_S, START_S, chapterAt, yearReading } from "./land.ts";
 import styles from "./walk.css?url";
 
 const PATH = "/chronicle/walk";
+const CARD = "/media/art/walk-orbit-og.jpg";
 const title = "从火堆到巨石";
 const description = "一百万年，一条路。夜里的火，清晨的田，下午的麦子，和麦田中央那块石头，都在同一个世界里。";
 
@@ -31,7 +31,7 @@ export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown
     title: name,
     description: summary,
     path: PATH,
-    image: MANIFESTO_CARD,
+    image: CARD,
     jsonLd: [
       {
         "@context": "https://schema.org",
@@ -40,7 +40,7 @@ export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown
         description: summary,
         url: `${base}${path}`,
         inLanguage: locale === "zh" ? "zh-CN" : "en",
-        image: `${base}${MANIFESTO_CARD}`,
+        image: `${base}${CARD}`,
         applicationCategory: "MultimediaApplication",
         operatingSystem: "Any",
         offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
@@ -126,7 +126,8 @@ function Walk({ interrupted, onContextLost }: { interrupted: boolean; onContextL
   }
 
   const [figure, unit] = yearReading(0, locale);
-  const poster = "/media/art/home-wheat-monolith";
+  const poster = "/media/art/walk-orbit";
+  const loading = !ready || stage !== null;
   const step = stage ? Object.keys(stages).indexOf(stage) + 1 : 0;
   return <main className="walk" ref={root}>
     <div className="walk-viewport" data-walk="viewport" />
@@ -153,9 +154,11 @@ function Walk({ interrupted, onContextLost }: { interrupted: boolean; onContextL
     </div>
     <section className="walk-cover" data-walk="cover" aria-labelledby="walk-title">
       <div className="walk-hero">
-        <img className="walk-poster walk-intro-only" src={artUrl(poster, 1600)}
-          srcSet={`${artUrl(poster, 800)} 800w, ${artUrl(poster, 1600)} 1600w, ${artUrl(poster, 3840)} 3840w`}
-          sizes="100vw" alt="" fetchPriority="high" width={1600} height={1067} />
+        <picture className="walk-poster walk-intro-only">
+          <source media="(max-width: 740px) and (orientation: portrait)" srcSet="/media/art/walk-orbit-portrait.webp" />
+          <img src={artUrl(poster, 1600)} srcSet={`${artUrl(poster, 800)} 800w, ${artUrl(poster, 1600)} 1600w`}
+            sizes="100vw" alt="" fetchPriority="high" width={1600} height={900} />
+        </picture>
         <div className="walk-intro">
           <p className="walk-kicker walk-intro-only"><span>{tx("第一人称漫游")}</span><span><IconClock size={14} />{tx("约两分钟")}</span></p>
           <h1 id="walk-title" data-walk="cover-title" tabIndex={-1}>
@@ -164,24 +167,24 @@ function Walk({ interrupted, onContextLost }: { interrupted: boolean; onContextL
           <p className="walk-lede" data-walk="cover-text">{tx("从夜里的一堆火出发，穿过黎明时分的村落。在麦田尽头，伸手触碰那块沉默的石头。")}</p>
           <div className="walk-actions">
             <button type="button" className="walk-start" data-walk="start" ref={startButton}
-              disabled={!ready} aria-busy={!ready || Boolean(stage)} aria-disabled={stage ? true : undefined} onClick={() => void enter()}>
-              {tx(!ready ? "正在准备入口" : stage ? "正在打开世界" : error ? "重试" : "开始行走")}
+              disabled={!ready} aria-busy={loading} aria-disabled={stage ? true : undefined} onClick={() => void enter()}>
+              {tx(stage ? "正在打开世界" : error ? "重试" : "开始行走")}
             </button>
             <a className="walk-guide-jump walk-intro-only" href="#walk-guide">{tx("阅读图文路线")} <IconChevronDown size={15} /></a>
             <Link className="walk-exit" data-walk="exit" to={localePath("/chronicle", locale)} hidden>{tx("返回加速史")}</Link>
             {FEATURES.eaccConcepts && <Link className="walk-exit" data-walk="manifesto" to={localePath("/manifesto", locale)} hidden>{tx("读《降临派宣言》")}</Link>}
             <button type="button" className="walk-share" data-walk="share" hidden>{tx("分享这条路")}</button>
           </div>
-          <div className="walk-loading" data-walk="loading" hidden={!stage}>
+          <div className="walk-loading" data-walk="loading" hidden={!loading}>
             <div className="walk-load-row">
-              <span role="status">{stage && tx(stages[stage])}</span>
-              <span aria-hidden="true">{String(step).padStart(2, "0")} / 05</span>
-              <button type="button" data-walk="cancel" onClick={cancel}>{tx("取消")}</button>
+              <span role="status" aria-atomic="true">{tx(stage ? stages[stage] : "正在准备入口")}</span>
+              <span hidden={!stage} aria-hidden="true">{String(step).padStart(2, "0")} / 05</span>
+              <button type="button" data-walk="cancel" hidden={!stage} onClick={cancel}>{tx("取消")}</button>
             </div>
             <progress max={5} value={step > 1 ? step - 1 : undefined} aria-label={tx("场景准备进度")} />
           </div>
           <p className="walk-error" data-walk="error" role="alert" hidden={!error}>{tx("三维场景未能打开。可以重试，或阅读下方图文路线。")}</p>
-          <p className="walk-keys walk-intro-only" data-walk="cover-keys" hidden={Boolean(stage) || error}>
+          <p className="walk-keys walk-intro-only" data-walk="cover-keys" hidden={loading || error}>
             <span className="walk-keyboard">{tx("W A S D 行走 · 拖动环视 · Shift 加快 · E 互动")}</span>
             <span className="walk-touch">{tx("拖动环视 · 按住下方按钮前行 · 或开自动前行")}</span>
           </p>

@@ -75,10 +75,19 @@ export function bridgeLift(x: number, s: number) {
   const cx = roadX(s) + CANAL.offset;
   return (1 - smooth(BRIDGE.halfS, BRIDGE.halfS + .35, Math.abs(s - BRIDGE.s))) * (1 - smooth(1.35, 1.85, Math.abs(x - cx))) * BRIDGE.deck;
 }
+// Road coordinates of permanent clearings are shared by every stalk in the field.
+const clearingDiscs = Object.values(CLEARINGS).map(([s, off, radius]) => ({ x: roadX(s) + off, s, radius }));
+const channels = CANAL.channels.map(([a, b, end]) => ({ a, b, ax: roadX(a) + CANAL.offset, bx: roadX(b) + end }));
 /** Whether a point is bare of wheat: inside a clearing, beside the canal or along one of its channels. */
-export const cleared = (x: number, s: number) =>
-  Object.values(CLEARINGS).some(([cs, off, r]) => Math.hypot(x - roadX(cs) - off, s - cs) < r) || fromCanal(x, s) < 1.5
-  || CANAL.channels.some(([a, b, end]) => toSegment(x, s, roadX(a) + CANAL.offset, a, roadX(b) + end, b) < .8);
+export function cleared(x: number, s: number) {
+  for (const disc of clearingDiscs) {
+    const ds = s - disc.s;
+    if (Math.abs(ds) < disc.radius && (x - disc.x) ** 2 + ds ** 2 < disc.radius ** 2) return true;
+  }
+  if (s < CLEARINGS.pond[0] - 1.5 || s > CANAL.to + 1.5) return false;
+  return fromCanal(x, s) < 1.5 ||
+    channels.some(({ a, b, ax, bx }) => s > a - .8 && s < b + .8 && toSegment(x, s, ax, a, bx, b) < .8);
+}
 
 /** The sheet of ground as it is drawn: `across` by `along` cells over 300 m by 800 m, reaching from 50 m behind the start to 750 m ahead. */
 export const LAND = { width: 300, depth: 800, behind: 50 };

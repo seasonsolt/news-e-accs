@@ -12,11 +12,16 @@ export interface Paint { (center: THREE.Vector3, normal: THREE.Vector3, face: nu
 /** Tags a paint with what it paints (see the list above). */
 export const of = (surface: number, paint: Paint): Paint => Object.assign(paint, { surface });
 
-const first = new THREE.Color(), second = new THREE.Color();
+const first = new THREE.Color();
 /** Runs from `low` on faces turned down to `high` on faces turned up, a little different from face to face. */
-export const lit = (low: string, high: string, rand: () => number, vary = .16): Paint =>
-  (_center, normal) => first.set(low).lerp(second.set(high), normal.y * .5 + .5).multiplyScalar(1 - vary / 2 + rand() * vary);
-export const flat = (color: string, rand: () => number, vary = .14): Paint => () => first.set(color).multiplyScalar(1 - vary / 2 + rand() * vary);
+export function lit(low: string, high: string, rand: () => number, vary = .16): Paint {
+  const bottom = new THREE.Color(low), top = new THREE.Color(high);
+  return (_center, normal) => first.copy(bottom).lerp(top, normal.y * .5 + .5).multiplyScalar(1 - vary / 2 + rand() * vary);
+}
+export function flat(color: string, rand: () => number, vary = .14): Paint {
+  const base = new THREE.Color(color);
+  return () => first.copy(base).multiplyScalar(1 - vary / 2 + rand() * vary);
+}
 
 /** Numbers the distinct points among `p`'s corners (to a tenth of a millimetre): `id` is each corner's point. Hashed, so it stays linear. */
 function weld(p: ArrayLike<number>) {
@@ -60,9 +65,9 @@ function build(source: THREE.BufferGeometry, paint: Paint, surface: number, crea
       if (o === f || d >= sharp) { nx += area[o]!; ny += area[o + 1]!; nz += area[o + 2]!; }
       if (o === f || (d >= soft && (surface || near(f, o)))) { r += tint[o]!; gr += tint[o + 1]!; b += tint[o + 2]!; n++; }
     }
-    const l = Math.hypot(nx, ny, nz);
-    normals.set(l > 0 ? [nx / l, ny / l, nz / l] : [0, 1, 0], i * 3); // only a face with no area has no normal
-    colors.set([r / n, gr / n, b / n], i * 3);
+    const l = Math.hypot(nx, ny, nz), at = i * 3;
+    normals[at] = l > 0 ? nx / l : 0; normals[at + 1] = l > 0 ? ny / l : 1; normals[at + 2] = l > 0 ? nz / l : 0; // only a face with no area has no normal
+    colors[at] = r / n; colors[at + 1] = gr / n; colors[at + 2] = b / n;
   }
   g.setAttribute("normal", new THREE.BufferAttribute(normals, 3)); g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   g.setAttribute("surface", new THREE.BufferAttribute(new Float32Array(count).fill(surface), 1));

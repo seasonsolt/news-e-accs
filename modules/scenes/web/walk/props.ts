@@ -1,9 +1,9 @@
 import * as THREE from "three";
-import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { buildCamp, type Kit } from "./camp.ts";
 import { buildFields } from "./fields.ts";
 import { FIRE_S, MONO_S, SOW_S, roadX } from "./land.ts";
 import { POSES, person } from "./people.ts";
+import { buildMonolith } from "./monolith.ts";
 import { blob, limb, lit, merged, of, rock, scree, turned, type Paint } from "./shapes.ts";
 import { createMatte } from "./surface.ts";
 import { buildForest, type Wind } from "./trees.ts";
@@ -18,7 +18,11 @@ export function buildProps(setting: Setting) {
   const matte = own(createMatte(!small));
   // Scenery that never moves is gathered by stretch of road and drawn as one mesh per stretch.
   const stretches = new Map<number, THREE.BufferGeometry[]>(), blocks: Kit["blocks"] = [];
-  const keep = (shape: THREE.BufferGeometry, s: number) => { const key = Math.floor(s / 90); stretches.set(key, [...(stretches.get(key) ?? []), shape]); };
+  const keep = (shape: THREE.BufferGeometry, s: number) => {
+    const key = Math.floor(s / 90);
+    if (!stretches.has(key)) stretches.set(key, []);
+    stretches.get(key)!.push(shape);
+  };
   const stand: Kit["stand"] = (shape, x, s, turn = 0, lift = 0) => keep(shape.rotateY(turn).translate(x, floor(x, -s) + lift, -s), s);
   const tone = new THREE.Color();
   const stone = of(1, lit("#4b433b", "#82776a", rand, .1)), sand = of(3, lit("#5e4d3a", "#9a8466", rand));
@@ -68,27 +72,9 @@ export function buildProps(setting: Setting) {
 
   const village = buildVillage(kit, camp.flame, forest.plant), fields = buildFields(kit, forest.plant); forest.finish();
 
-  // ---------- the stone: 1 : 4 : 9, facing the walker, the sun behind it ----------
-  const slab = own(new RoundedBoxGeometry(8.8, 19.8, 2.2, 2, .095));
-  const normals = slab.getAttribute("normal"), positions = slab.getAttribute("position"), colors = new Float32Array(normals.count * 3);
-  const obsidian = new THREE.Color("#080a10"), skyTint = new THREE.Color("#151b25"), cutEdge = new THREE.Color("#768997");
-  for (let i = 0; i < normals.count; i++) {
-    // A narrow polished cut catches the cool sky along the upper and left lip; the broad face stays dark.
-    const edge = 2 * Math.max(0, -normals.getX(i), normals.getY(i)) * Math.max(0, normals.getZ(i));
-    const height = (positions.getY(i) + 9.9) / 19.8;
-    tone.copy(obsidian).lerp(skyTint, height).lerp(cutEdge, edge * (.38 + height * .62)).toArray(colors, i * 3);
-  }
-  slab.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-  const monolith = new THREE.Mesh(slab, own(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .28, metalness: .24 })));
-  monolith.position.set(stoneX, floor(stoneX, -MONO_S) + 9.6, -MONO_S);
-  monolith.rotation.y = -.14; // show a sliver of thickness even on the centreline
-  monolith.castShadow = true; scene.add(monolith);
+  // ---------- the stone, facing the walker, the sun behind it ----------
+  const monolithLabel = buildMonolith(setting, stoneX, floor(stoneX, -MONO_S), -MONO_S);
   blocks.push([stoneX, MONO_S, 4.8]);
-  let monolithLabel: THREE.MeshBasicMaterial;
-  { const c = document.createElement("canvas"); c.width = 1024; c.height = 64; const g = c.getContext("2d")!; g.fillStyle = "rgba(214,168,92,.88)"; g.font = "30px ui-monospace, Menlo, monospace"; g.textAlign = "center"; g.fillText("1 : 4 : 9  ·  TMA-0  ·  RAISED BY US", 512, 42);
-    const map = own(new THREE.CanvasTexture(c)); map.colorSpace = THREE.SRGBColorSpace;
-    monolithLabel = own(new THREE.MeshBasicMaterial({ map, transparent: true, opacity: 0, depthWrite: false }));
-    const label = new THREE.Mesh(own(new THREE.PlaneGeometry(6.4, .4)), monolithLabel); label.position.set(0, -8.2, 1.11); monolith.add(label); }
 
   for (const shapes of stretches.values()) { const mesh = new THREE.Mesh(own(merged(shapes)), matte); mesh.castShadow = mesh.receiveShadow = true; scene.add(mesh); }
   return { ...camp, village, basketX, sowLight, monolithLabel, blocks, fields };

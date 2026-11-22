@@ -112,7 +112,7 @@ test("the chronicle invites the reader into the walk under the moment it reads o
     assert.equal(scene.querySelector('nav[aria-label="主导航"], nav[aria-label="Main navigation"]'), null);
     assert.equal(scene.querySelector("canvas"), null);
     assert.ok(scene.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith(`${prefix}/chronicle/walk`));
-    assert.match(scene.querySelector('meta[property="og:image"]')!.getAttribute("content")!, /\/media\/art\/manifesto-monolith-og\.jpg$/);
+    assert.match(scene.querySelector('meta[property="og:image"]')!.getAttribute("content")!, /\/media\/art\/walk-orbit-og\.jpg$/);
     assert.doesNotMatch(scene.querySelector('meta[name="robots"]')?.getAttribute("content") ?? "", /noindex/);
     const ld = [...html.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].flatMap(([, raw]) => {
       const parsed = JSON.parse(raw!) as Record<string, unknown> | Array<Record<string, unknown>>;
@@ -135,6 +135,11 @@ test("the walk serves the illustrated route and all three chapters in each editi
   for (const prefix of ["", "/zh"]) {
     const scene = parseHTML(await (await fetch(`${fixture.origin}${prefix}/chronicle/walk`)).text()).document;
     assert.ok(scene.querySelector('[data-walk="hud"][hidden]'));
+    // The server paints a loading state even if the browser has yet to receive any scripts.
+    const preparing = scene.querySelector('[data-walk="loading"]:not([hidden])');
+    assert.ok(preparing);
+    assert.ok(preparing.querySelector('progress:not([value])'));
+    assert.match(preparing.querySelector('[role="status"]')!.textContent!, prefix ? /正在准备入口/ : /Preparing the controls/);
     const guide = scene.getElementById("walk-guide");
     assert.ok(guide && scene.querySelector('a[href="#walk-guide"]'));
     for (const id of ["walk-fire", "walk-field", "walk-monolith"]) {
