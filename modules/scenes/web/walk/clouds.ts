@@ -6,7 +6,7 @@ import { smooth } from "./land.ts";
 // Three layers, back to front: cirrus streaks high up, a deck of cumulus and altocumulus seen from below, and a bank of cumulus tops along the horizon.
 // Each is lit from the sun (or by night the moon) by sampling the noise a step toward the light: thin edges facing the light shine, thick parts shade.
 
-const MOON = new THREE.Vector3(-Math.sin(.5) * Math.cos(.3), Math.sin(.3), -Math.cos(.5) * Math.cos(.3)); // where world.ts draws the moon
+const MOON = new THREE.Vector3(-Math.sin(.5) * Math.cos(.3), Math.sin(.3), -Math.cos(.5) * Math.cos(.3)); // direction of the night fill light
 
 const VERTEX = "varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }";
 const fragment = (out: string) => `uniform vec3 sunDir, moonDir, sun, sky; uniform vec2 seed; uniform float time, night, cover; varying vec3 vDir;
@@ -20,15 +20,15 @@ const fragment = (out: string) => `uniform vec3 sunDir, moonDir, sun, sky; unifo
   void main(){
     vec3 d = normalize(vDir); if (d.y < -.03) discard;
     vec3 L = normalize(mix(moonDir, sunDir, smoothstep(-.06, .04, sunDir.y))); // by night the moon lights them
-    float toward = max(dot(d, L), 0.), dim = mix(1., .35, night);
+    float toward = max(dot(d, L), 0.), dim = mix(1., .22, night);
     vec3 light = sun * dim, cool = sky * vec3(.85, .92, 1.08);
     cool = mix(cool, vec3(dot(cool, vec3(.3, .59, .11))) * vec3(.9, .95, 1.08), .7 * (1. - night)); // by day the shade in a cloud is a cool grey, never the warm brown of the low sky
     vec2 drift = vec2(1., .3) * time * .006;
 
     // cirrus: thin ice streaks, stretched along the wind
     vec2 p = d.xz / max(d.y, .02) * .35 + drift * 2.;
-    float ice = smoothstep(.52, .86, fbm(vec2(p.x * .4 + p.y * .2, p.y * 2.6 - p.x * .5))) * smoothstep(.03, .25, d.y) * (.55 - .25 * night);
-    vec4 acc = vec4(cool * .7 + light * (.8 + 2.5 * pow(toward, 6.)), ice);
+    float ice = smoothstep(.52, .86, fbm(vec2(p.x * .4 + p.y * .2, p.y * 2.6 - p.x * .5))) * smoothstep(.03, .25, d.y) * (.32 - .17 * night);
+    vec4 acc = vec4(cool * .7 + light * (.25 + 1.1 * pow(toward, 6.)), ice);
 
     // the cloud deck: cumulus and altocumulus seen from below
     p = d.xz / max(d.y, .02) * 1.3 + drift;
@@ -38,7 +38,7 @@ const fragment = (out: string) => `uniform vec3 sunDir, moonDir, sun, sky; unifo
     float ahead = smoothstep(thin, thin + .3, fbm(p + sunward) + ragged);
     float lit = clamp(1. - (ahead - dense) * 2. - dense * .55, mix(.38, .12, night), 1.); // more cloud toward the light: this side is in its shade
     float silver = (pow(toward, 8.) * .8 + pow(toward, 40.) * 1.5) * (1. - dense);
-    vec3 deck = cool * (.75 - .25 * dense) + light * (lit * .85 + silver);
+    vec3 deck = cool * (.75 - .25 * dense) + light * (lit * .5 + silver * .55);
     acc = over(vec4(deck, dense * mix(.8, .9, night) * smoothstep(.015, .14, d.y)), acc);
 
     // cumulus along the horizon: billowing tops over a base lost in the haze
@@ -48,8 +48,8 @@ const fragment = (out: string) => `uniform vec3 sunDir, moonDir, sun, sky; unifo
     float body = (1. - smoothstep(top - .01, top, d.y)) * smoothstep(-.03, .004, d.y) * step(.001, gaps);
     body *= .75 + .25 * fbm(vec2(ring.x * 40. + d.y * 30., ring.y * 40. - d.y * 60.));
     float up = clamp(d.y / max(top, .004), 0., 1.), facing = dot(ring, normalize(L.xz + 1e-4)), rim = (1. - smoothstep(0., .014, top - d.y)) * pow(max(facing, 0.), 3.);
-    vec3 bank = cool * (.5 + .35 * up) + light * ((.5 - .5 * facing) * (.35 + .65 * up) + rim * 1.6);
-    acc = over(vec4(mix(bank, cool * 1.4, .3), body * .9), acc); // far off, they take on the colour of the haze
+    vec3 bank = cool * (.55 + .2 * up) + light * ((.5 - .5 * facing) * .12 + rim * .5);
+    acc = over(vec4(mix(bank, cool * 1.4, .3), body * .32), acc); // far off, they take on the colour of the haze
 
     acc.a *= mix(1., .38, night); // by night only a thin veil, the stars showing through
     if (acc.a < .003) discard;
@@ -72,7 +72,7 @@ export function buildClouds({ scene, own, rand, out, small = false }: Pick<Kit, 
     dome.position.copy(camera);
     uniforms.sunDir.value.copy(sunDir); uniforms.sun.value.copy(sun); uniforms.sky.value.copy(sky); uniforms.time.value = clock;
     uniforms.night.value = Math.max(1 - smooth(220, 300, s), dusk * .8);
-    uniforms.cover.value = .3 + .18 * smooth(220, 340, s) - .14 * smooth(360, 420, s) * (1 - smooth(520, 600, s)) - .06 * smooth(560, 640, s); // a thin night sky, a fuller morning, more blue at midday, clearing toward evening
+    uniforms.cover.value = .24 + .13 * smooth(220, 340, s) - .12 * smooth(360, 420, s) * (1 - smooth(520, 600, s)) - .07 * smooth(560, 640, s); // a thin night sky, a fuller morning, more blue at midday, clearing toward evening
   }
   return { frame };
 }

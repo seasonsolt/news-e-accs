@@ -6,6 +6,7 @@ export interface Hearing {
   pace: number;         // 0 standing … 1 walking … ~2.3 running
   fed: number;          // 0–3 logs added to the fire
   fireGap: number;      // metres from the walker to the campfire
+  firePan: number;      // signed bearing of the hearth across the listener’s stereo field
   night: number;        // 1 full night … 0 day (the stars value)
   dusk: number;         // 0 … 1 after the monolith is touched
 }
@@ -87,7 +88,8 @@ export function startSound(ctx: AudioContext, muted: boolean): Sound {
   const cues = gain(.8, filter("lowpass", 5000, .5, master));
 
   // the campfire and the village fire: pops of burning wood over a soft low roar
-  const fire = gain(0, master), crackleIn = filter("lowpass", 3800, .5, fire), roar = gain(.5, fire); loop(brown, filter("lowpass", 420, .6, roar));
+  const hearthPan = pan(0, master);
+  const fire = gain(0, hearthPan), crackleIn = filter("lowpass", 3800, .5, fire), roar = gain(.5, fire); loop(brown, filter("lowpass", 420, .6, roar));
   // crickets: three detuned high tones, each pulsing fast inside chirps that come in runs
   const crickets = gain(0, master);
   const chirpers = ([[4410, -.55, 29], [4535, .3, 33], [4690, .7, 25]] as const).map(([f, side, pulse]) => {
@@ -225,10 +227,13 @@ export function startSound(ctx: AudioContext, muted: boolean): Sound {
       if ((wait -= dt) > 0) return; // the levels follow the walker fifteen times a second
       wait = 1 / 15;
       const gust = smooth(.28, .8, noise(now * .09, 7.3));
+      ease(hearthPan.pan, h.firePan * .78 * (1 - smooth(30, 48, h.fireGap)), .16);
       ease(fire.gain, heat * .5, .15); ease(roar.gain, .5 + .35 * noise(now * 1.7, 2.2), .08);
       ease(crickets.gain, Math.max(h.night * nature, h.dusk * .6) * .025, .4);
       ease(wind.gain, mix(.05, .13, field) * (.3 + .9 * gust) * nature * mix(1, .35, h.dusk), .3); ease(windBand.frequency, 280 + 520 * gust, .3);
-      ease(wheat.gain, smooth(258, 420, h.s) * nature * day * (.2 + .8 * Math.pow(gust, 1.5)) * .07, .15);
+      // When the scene cuts to the field, let the grain be heard again under the dying chord.
+      const fieldAir = nature * day + .42 * smooth(.56, 1, h.dusk);
+      ease(wheat.gain, smooth(258, 420, h.s) * fieldAir * (.2 + .8 * Math.pow(gust, 1.5)) * .07, .22);
       ease(birds.gain, .05 * nature * day, .3);
       ease(water.gain, flow * .06, .3);
       ease(grind.gain, smooth(VILLAGE.from - 1, VILLAGE.from + 6, h.s) * (1 - smooth(VILLAGE.to - 7, VILLAGE.to, h.s)) * .03, .3);

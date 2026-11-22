@@ -8,7 +8,7 @@ export const skyVertex = `varying vec3 direction;
 
 export function skyFragment(output: string) {
   return `varying vec3 direction;
-    uniform vec3 top, horizon, sun, sunDir, planetDirection;
+    uniform vec3 top, horizon, haze, sun, sunDir, planetDirection;
     uniform float stars, time, day;
 
     float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
@@ -38,12 +38,12 @@ export function skyFragment(output: string) {
     void main() {
       vec3 d = normalize(direction);
       float up = max(d.y, 0.);
-      vec3 c = mix(horizon, top, pow(up, .48));
+      vec3 c = mix(top, horizon, exp(-up * mix(5.5, 9., day)));
       if (d.y < 0.) c = mix(horizon, horizon * .42, min(1., -d.y * 6.));
       float g = max(dot(d, sunDir), 0.);
-      c += sun * (pow(g, mix(12., 64., day)) * mix(.13, .075, day)
-        + pow(g, mix(120., 360., day)) * .6) * step(-.08, sunDir.y);
-      c += sun * smoothstep(mix(.9992, .9995, day), mix(.9996, .9998, day), g) * 6.;
+      c += sun * (1. - stars) * (pow(g, mix(12., 64., day)) * mix(.055, .012, day)
+        + pow(g, mix(180., 520., day)) * .2) * step(-.08, sunDir.y);
+      c += sun * (1. - stars) * smoothstep(mix(.9992, .9995, day), mix(.9996, .9998, day), g) * 3.;
 
       // The soft stellar river stays behind the sharply silhouetted planet.
       float low = smoothstep(.015, .28, d.y);
@@ -68,7 +68,7 @@ export function skyFragment(output: string) {
       float discriminant = toward * toward - dot(center, center) + radius * radius;
       float hit = toward - sqrt(max(discriminant, 0.));
       bool planet = discriminant > 0. && hit > 0.;
-      float presence = mix(.12, 1., stars) * smoothstep(-.02, .08, d.y);
+      float presence = smoothstep(.05, .85, stars) * smoothstep(-.02, .08, d.y);
 
       // Atmospheric limb against the night, with a restrained copper dawn edge.
       float separation = length(cross(d, normalize(center)));
@@ -87,6 +87,9 @@ export function skyFragment(output: string) {
         surface += vec3(.18, .26, .39) * rim * (.018 + diffuse * .08);
         surface += vec3(1., .49, .18) * rim * pow(diffuse, 1.3) * 1.1;
         c = mix(c, surface, presence);
+        // Daylight fills the unlit hemisphere with the surrounding air. Only a
+        // grazing illuminated limb can emerge, rather than a translucent disc.
+        c += vec3(.1, .065, .03) * rim * pow(diffuse, 2.) * (1. - presence) * .04;
       }
 
       float denominator = dot(d, ringNormal);
@@ -110,19 +113,21 @@ export function skyFragment(output: string) {
       // Two remote ridgelines give the flat road a scale beyond its playable terrain.
       if (d.y < .085) {
         vec2 bearing = normalize(d.xz);
-        float distant = .012 + .047 * noise(vec3(bearing * 5., 7.))
-          + .018 * noise(vec3(bearing * 17., 4.));
-        float nearer = .004 + .025 * noise(vec3(bearing * 8. + 9., 2.))
-          + .012 * noise(vec3(bearing * 25., 1.));
-        float angle = atan(bearing.x, bearing.y);
-        vec3 farFace = ridgeFacet(vec2(angle * 19. + distant * 12., d.y * 75. + distant * 25.));
-        vec3 nearFace = ridgeFacet(vec2(angle * 28. + nearer * 18. + 9., d.y * 115. + nearer * 30.));
+        float distant = .012 + .055 * noise(vec3(bearing * 6., 7.))
+          + .012 * abs(noise(vec3(bearing * 38., 4.)) * 2. - 1.);
+        float nearer = .004 + .028 * noise(vec3(bearing * 9. + 9., 2.))
+          + .009 * abs(noise(vec3(bearing * 47., 1.)) * 2. - 1.);
+
+        vec3 farFace = ridgeFacet(bearing * 30. + vec2(d.y * 60., distant * 25.));
+        vec3 nearFace = ridgeFacet(bearing * 47. + vec2(d.y * 90. + 9., nearer * 30.));
         float farLight = max(0., dot(ridgeNormal(bearing, farFace), sunDir));
         float nearLight = max(0., dot(ridgeNormal(bearing, nearFace), sunDir));
         // Haze keeps the distant faces close in tone. The nearer range retains more shadow in its ravines.
         float daylight = .25 + day * .75;
-        vec3 farRidge = mix(horizon * .68, top * 1.3, .35) * (.92 + daylight * (farLight * .17 + (farFace.x - .5) * .08));
-        vec3 nearRidge = mix(horizon * .4, top * .75, .5) * (.86 + daylight * (nearLight * .28 + (nearFace.x - .5) * .14));
+        vec3 farRidge = mix(haze * .84, top * 1.1, .2) * (.92 + daylight * (farLight * .17 + (farFace.x - .5) * .08));
+        vec3 nearRidge = mix(haze * .48, top * .8, .4) * (.86 + daylight * (nearLight * .28 + (nearFace.x - .5) * .14));
+        farRidge = mix(haze * .72, farRidge, smoothstep(0., distant, max(d.y, 0.)));
+        nearRidge = mix(haze * .58, nearRidge, smoothstep(0., nearer, max(d.y, 0.)));
         c = mix(c, farRidge, 1. - smoothstep(distant - .001, distant + .001, d.y));
         c = mix(c, nearRidge, 1. - smoothstep(nearer - .001, nearer + .001, d.y));
       }

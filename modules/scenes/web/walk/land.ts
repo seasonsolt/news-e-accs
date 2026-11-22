@@ -5,7 +5,7 @@ export const START_S = 22, FIRE_S = 46, CAVE_S = 154, SOW_S = 250, FIELD_S = 258
 export const MONOLITH = { depth: 2.2, width: 8.8, height: 19.8, burial: .28, yaw: -.14 } as const;
 /** Where the first village's yard begins, where the first machine (the windmill's tower) starts to rise, where the dishes and compute halls rise, and where the stone comes within reach. */
 export const VILLAGE = { from: 316, to: 352, yardS: 334, yardOff: 16.5 } as const;
-export const VILLAGE_S = VILLAGE.from, MACHINES_S = 438, COMPUTE_S = 574, REACH_S = MONO_S - 12;
+export const VILLAGE_S = VILLAGE.from, MACHINES_S = 438, COMPUTE_S = 574, REACH_S = MONO_S - 18.5;
 
 export const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 export const mix = (a: number, b: number, t: number) => a + (b - a) * t;

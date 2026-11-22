@@ -98,7 +98,7 @@ html:has(.walk), body:has(.walk) { overflow: hidden; scrollbar-gutter: auto; }
 .walk-cover :is(#walk-guide, .walk-guide-entry) { scroll-margin-top: calc(var(--walk-top) + 46px); }
 
 .walk-hud { pointer-events: none; position: absolute; inset: 0; z-index: 2; text-shadow: 0 1px 5px #101013; background: linear-gradient(0deg, #090d13b8, transparent 19%, transparent 90%, #090d1360); }
-.walk-position { position: absolute; right: var(--walk-right); top: var(--walk-top); display: grid; gap: 7px; min-width: 108px; padding: 7px 12px 10px; background: #151719bf; text-align: right; }
+.walk-position { position: absolute; right: var(--walk-right); top: var(--walk-top); display: grid; gap: 7px; min-width: 108px; padding: 7px 12px 10px; border-top: 1px solid #eadac570; background: linear-gradient(90deg, transparent, #0a101a63); text-align: right; }
 .walk-chapter { margin: 0; color: #fff0d5; font: 12px/1.35 var(--font-mono); letter-spacing: .1em; }
 .walk-rail { position: relative; height: 2px; background: #d1c9b67a; }
 .walk-rail i { position: absolute; top: -1px; width: 1px; height: 4px; background: #e9d7b7; }
@@ -111,9 +111,11 @@ html:has(.walk), body:has(.walk) { overflow: hidden; scrollbar-gutter: auto; }
   position: absolute; left: 50%; bottom: clamp(105px, 15vh, 155px); transform: translateX(-50%);
   width: max-content; max-width: min(84vw, 710px); margin: 0; padding: 5px 12px;
   font: 400 clamp(19px, 2vw, 29px)/1.5 var(--font-display); text-align: center; text-wrap: balance;
-  background: #14161bc7; opacity: 0; transition: opacity .6s;
+  isolation: isolate; text-shadow: 0 1px 3px #05070b, 0 1px 10px #080a0e; opacity: 0; transition: opacity .6s;
 }
+.walk-say::before { content: ""; position: absolute; z-index: -1; inset: -10px -24px; background: radial-gradient(ellipse at center, #0a101ada, #0a101a9e 42%, transparent 74%); }
 .walk-say.is-on { opacity: 1; }
+.walk.is-finishing :is(.walk-position, .walk-year, .walk-go, .walk-auto) { display: none; }
 .walk-controls { pointer-events: auto; position: absolute; right: var(--walk-right); bottom: calc(var(--walk-bottom) + 10px); display: flex; flex-wrap: wrap; align-items: center; justify-content: end; gap: 8px; }
 .walk-controls button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 13px; border: 1px solid #f6e5c66b; border-radius: var(--radius-mark); background: #11151bde; font-size: 12px; }
 .walk-controls button:hover { border-color: #edd2a0; }
@@ -123,8 +125,12 @@ html:has(.walk), body:has(.walk) { overflow: hidden; scrollbar-gutter: auto; }
 .walk-controls .walk-go { display: none; touch-action: none; user-select: none; -webkit-user-select: none; }
 .walk.is-ended .walk-cover { background: transparent; }
 .walk.is-ended .walk-hero { align-content: center; grid-template-rows: 1fr; }
-.walk.is-ended .walk-hero::before { background: linear-gradient(90deg, #0a0d14ed, #10121ba1 54%, #10121b22); }
-.walk.is-ended h1 { font-size: clamp(44px, 6vw, 100px); line-height: 1.04; }
+.walk.is-ended .walk-hero::before { background: linear-gradient(90deg, #090e17ab, #10121b41 44%, transparent 66%), linear-gradient(0deg, #080d17ae, transparent 32%); }
+.walk.is-ended h1 { font-size: clamp(43px, 5.3vw, 86px); line-height: 1.04; }
+.walk.is-ended .walk-intro { max-width: min(41rem, 48vw); }
+.walk.is-ended .walk-actions { max-width: 35rem; gap: 6px 20px; }
+.walk.is-ended .walk-lede { max-width: 31ch; }
+.walk.is-ended .walk-back { display: none; }
 
 @media (max-width: 740px), (pointer: coarse) {
   .walk-keyboard { display: none; }
@@ -156,7 +162,13 @@ html:has(.walk), body:has(.walk) { overflow: hidden; scrollbar-gutter: auto; }
   .walk-index svg { display: none; }
   .walk-controls { gap: 6px; }
   .walk-controls button { padding-inline: 9px; }
-  .walk.is-ended .walk-intro { align-self: center; padding-top: 0; }
+  .walk.is-ended .walk-hero { min-height: 100%; padding-top: var(--walk-top); }
+  .walk.is-ended .walk-hero::before { background: linear-gradient(0deg, #090e17f5, #090e17bd 22%, transparent 55%); }
+  .walk.is-ended .walk-intro { align-self: end; max-width: 100%; padding: 0 0 clamp(8px, 3svh, 28px); }
+  .walk.is-ended .walk-lede { max-width: 31ch; }
+  .walk.is-ended .walk-actions { display: grid; grid-template-columns: max-content 1fr; gap: 2px 22px; margin-top: 14px; justify-items: start; }
+  .walk.is-ended .walk-actions > * { justify-content: start; }
+  .walk.is-ended .walk-start { justify-content: center; }
 }
 @media (max-height: 540px) and (min-width: 600px) {
   .walk-hero { padding-top: 64px; }

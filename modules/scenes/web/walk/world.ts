@@ -17,17 +17,17 @@ import { loadRelief } from "./relief.ts";
 import { buildProps } from "./props.ts";
 import { startSound, type Sound } from "./sound.ts";
 import { buildVerge } from "./verge.ts";
-import { CANAL, CLEARINGS, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONO_S, REACH_S, SOW_S, START_S, bridgeLift, chapterAt, clamp, fbm, ground, keepDry, mix, roadX, sequence, sheet, smooth, yearReading, yearsAgo } from "./land.ts";
+import { CANAL, CLEARINGS, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONOLITH, MONO_S, REACH_S, SOW_S, START_S, bridgeLift, chapterAt, clamp, fbm, ground, keepDry, mix, roadX, sequence, sheet, smooth, yearReading, yearsAgo } from "./land.ts";
 
 // The hour at points along the road: [s, zenith, horizon, fog, sun colour, sun strength, sky light, stars, sun height, fog density].
 const HOURS = ([
   [0, "#030619", "#25344d", "#111d30", "#a9c1f2", .62, .5, 1, -.25, .0078],
   [170, "#080b22", "#34354f", "#172239", "#a9c1f2", .58, .55, 1, -.16, .0078],
   [255, "#1c2a52", "#c0624a", "#4a3540", "#ff9a66", .6, .62, .3, .02, .0085],
-  [340, "#3f6aa6", "#f0b98a", "#b9a08d", "#ffd2a0", .95, .7, 0, .2, .0062],
-  [450, "#2f6fc9", "#a9cbe8", "#c9d8de", "#fff0cf", .9, .68, 0, .46, .0038],
-  [560, "#365983", "#f2d39a", "#d5bb94", "#ffd288", .95, .68, 0, .335, .0041],
-  [650, "#393e6b", "#efab64", "#cda077", "#ffb965", 1.05, .72, 0, .25, .0039],
+  [340, "#304e70", "#dfae83", "#8797a1", "#ffd4a0", .8, .55, 0, .2, .0054],
+  [450, "#355578", "#aebfc8", "#94a8b2", "#ffe5bf", .85, .58, 0, .46, .0038],
+  [560, "#233f58", "#d2b68a", "#7f929e", "#ffd6a1", .85, .5, 0, .335, .0041],
+  [650, "#17344e", "#df9f65", "#71838c", "#ffbd7d", .95, .48, 0, .25, .0039],
 ] as const).map(([s, top, horizon, fog, sun, power, sky, stars, height, density]) => ({ s, top: new THREE.Color(top), horizon: new THREE.Color(horizon), fog: new THREE.Color(fog), sun: new THREE.Color(sun), power, sky, stars, height, density }));
 const OUT = "\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n"; // an #include has to start its own line
 
@@ -157,8 +157,8 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     for (const key of ["top", "horizon", "fog", "sun"] as const) hour[key].copy(a[key]).lerp(b[key], t);
     for (const key of ["power", "sky", "stars", "height", "density"] as const) hour[key] = mix(a[key], b[key], t);
   }
-  const sunDir = new THREE.Vector3(), moon = new THREE.Vector3(-Math.sin(.5) * Math.cos(.3), Math.sin(.3), -Math.cos(.5) * Math.cos(.3)), nightSky = new THREE.Color("#030619"), nightHorizon = new THREE.Color("#27203c");
-  const skyUniforms = { top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() }, sun: { value: new THREE.Color() }, sunDir: { value: sunDir }, planetDirection: { value: new THREE.Vector3(small ? .35 : .55, .35, -1) }, stars: { value: 1 }, time: { value: 0 }, day: { value: 0 } };
+  const sunDir = new THREE.Vector3(), moon = new THREE.Vector3(-Math.sin(.5) * Math.cos(.3), Math.sin(.3), -Math.cos(.5) * Math.cos(.3)), nightSky = new THREE.Color("#030619"), nightHorizon = new THREE.Color("#27203c"), fieldAfterglow = new THREE.Color("#62758d");
+  const skyUniforms = { top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() }, haze: { value: hour.fog }, sun: { value: new THREE.Color() }, sunDir: { value: sunDir }, planetDirection: { value: new THREE.Vector3(small ? .35 : .55, .35, -1) }, stars: { value: 1 }, time: { value: 0 }, day: { value: 0 } };
   const sky = new THREE.Mesh(own(new THREE.SphereGeometry(1200, 32, 20)), own(new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false, uniforms: skyUniforms,
     vertexShader: skyVertex,
@@ -212,15 +212,26 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
 
   // ---------- walking ----------
   // From this bend the opening frame can hold the people, the overhang and the fire together.
-  const entryX = roadX(START_S) - 1.5;
-  const entrance = { x: entryX, s: START_S, yaw: Math.atan2(entryX - fireX, FIRE_S - START_S), pitch: -.02, bob: 0 };
+  const entryS = small ? START_S + 8 : START_S;
+  const entryX = roadX(entryS) - 1.5;
+  const entrance = { x: entryX, s: entryS, yaw: Math.atan2(entryX - fireX, FIRE_S - entryS), pitch: -.02, bob: 0 };
   const me = { ...entrance }, keys = new Set<string>();
   const jump = /^#s(\d+)$/.exec(location.hash), jumped = Boolean(jump);
-  if (jump) { me.s = Math.min(END_S, Number(jump[1])); me.x = roadX(me.s) - 1; me.yaw = 0; } // #s300 opens further along the road without counting in analytics
+  if (jump) {
+    me.s = Math.min(END_S, Number(jump[1]));
+    me.x = roadX(me.s) - 1;
+    const gap = MONO_S - me.s, arrival = MONO_S - REACH_S - .5;
+    // Deep links inside the clearing open on the arc where the stone fits in view.
+    if (gap < arrival) me.x = Math.min(me.x, stoneX - Math.sqrt(arrival * arrival - gap * gap));
+    const reveal = smooth(610, REACH_S, me.s);
+    me.yaw = reveal * Math.atan2(me.x - stoneX, gap);
+    me.pitch = reveal * arrivalPitch(Math.hypot(me.x - stoneX, gap));
+  } // #s300 opens further along the road without counting in analytics
   let clock = 0, started = false, begun = false, auto = false, drag: { pointer: number; x: number; y: number } | null = null, holdGo = false, wheelPush = 0, fed = 0, feedGlow = 1, ended = false, pace = 0;
   let sound: Sound | null = null, soundOn = true; try { soundOn = localStorage.getItem("walk-sound") !== "off"; } catch { /* storage may be blocked */ }
   let sownAt: number | null = me.s > FIELD_S ? -100 : null, touched: number | null = null, sayUntil = 0;
   const say = part("say"), use = part<HTMLButtonElement>("use"), cover = part("cover"), hud = part("hud"), startButton = part<HTMLButtonElement>("start"), autoButton = part("auto"), go = part("go"), said = new Set<string>();
+  const viewport = part("viewport");
   const exitLink = part<HTMLAnchorElement>("exit"), shareButton = part<HTMLButtonElement>("share"), manifestoLink = root.querySelector<HTMLAnchorElement>('[data-walk="manifesto"]');
   const backLink = root.querySelector<HTMLAnchorElement>(".walk-back")!, chronicleBase = localePath("/chronicle", locale);
   function speak(id: string, text: string, seconds = 7) { if (said.has(id)) return; said.add(id); say.textContent = tx(text); say.classList.add("is-on"); sayUntil = clock + seconds; }
@@ -261,7 +272,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     const what = nearby(); if (!what) return;
     if (what[0] === "feed") { sound?.cue("feed"); count("walk_act", "feed"); fed++; feedGlow = 2.2; showLogs(fed); if (fed === 3) speak("fed", "火光把夜晚推远了一点。一天，变长了。", 8); }
     else if (what[0] === "sow") { sound?.cue("sow"); count("walk_act", "sow"); sow(true); }
-    else { sound?.cue("touch"); touched = clock; clearInput(); setAuto(false); speak("touch", "石头是凉的。天，暗了下来。", 6); count("walk_finish"); }
+    else { sound?.cue("touch"); touched = clock; clearInput(); setAuto(false); root.classList.add("is-finishing"); speak("touch", "石头是凉的。", 2.2); count("walk_finish"); }
   }
   function clearInput() { keys.clear(); wheelPush = 0; holdGo = false; drag = null; }
   function setAuto(on: boolean) { auto = on; autoButton.setAttribute("aria-pressed", String(on)); }
@@ -286,7 +297,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
       }
     }
     started = true; hud.hidden = false; canvas.inert = false; cover.inert = true;
-    root.classList.remove("is-ended"); root.classList.add("is-live"); cover.classList.add("is-gone");
+    viewport.style.removeProperty("opacity"); root.classList.remove("is-ended", "is-finishing"); root.classList.add("is-live"); cover.classList.add("is-gone");
     canvas.focus({ preventScroll: true });
     last = performance.now(); schedule();
     if (!begun) { begun = true; startedAt = performance.now(); count("walk_start"); }
@@ -307,7 +318,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   canvas.addEventListener("blur", clearInput, listen);
   addEventListener("blur", clearInput, listen);
   canvas.addEventListener("pointerdown", e => {
-    if (!started || !e.isPrimary || e.button !== 0) return;
+    if (!started || touched !== null || !e.isPrimary || e.button !== 0) return;
     canvas.focus({ preventScroll: true }); sound?.wake();
     drag = { pointer: e.pointerId, x: e.clientX, y: e.clientY }; canvas.setPointerCapture(e.pointerId);
   }, listen);
@@ -351,6 +362,11 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   const soundButton = part<HTMLButtonElement>("sound"); soundButton.disabled = !audioContext; soundButton.setAttribute("aria-pressed", String(soundOn && Boolean(audioContext)));
   soundButton.addEventListener("click", () => { soundOn = !soundOn; soundButton.setAttribute("aria-pressed", String(soundOn)); sound?.setMuted(!soundOn); if (soundOn) sound?.wake(); try { localStorage.setItem("walk-sound", soundOn ? "on" : "off"); } catch { /* storage may be blocked */ } }, listen);
 
+  // Bisect the angles to the foot and crown so the full silhouette fits at the first touch prompt.
+  function arrivalPitch(distance: number) {
+    const nearFace = Math.max(1, distance - Math.hypot(MONOLITH.width, MONOLITH.depth) / 2);
+    return (Math.atan2(MONOLITH.height - MONOLITH.burial - 1.66, nearFace) - Math.atan2(1.66, nearFace)) / 2;
+  }
   function walk(dt: number) {
     let forward = 0, strafe = 0; const fast = keys.has("shift") ? 2.3 : 1;
     if (keys.has("w") || keys.has("arrowup") || holdGo) forward += 1; if (keys.has("s") || keys.has("arrowdown")) forward -= 1;
@@ -359,20 +375,22 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     forward += wheelPush * .12; wheelPush *= Math.pow(.02, dt);
     let heading = me.yaw;
     if (auto) {
-      const ahead = Math.min(me.s + 6, END_S), want = Math.atan2(me.x - roadX(ahead), Math.max(.1, ahead - me.s));
+      const ahead = Math.min(me.s + 6, END_S);
+      const trackX = roadX(ahead) - 4.4 * smooth(595, REACH_S, ahead);
+      const want = Math.atan2(me.x - trackX, Math.max(.1, ahead - me.s));
       if (!drag) {
         // Keep following the road underfoot as the stone rises into view above the horizon.
         const reveal = smooth(548, 610, me.s);
-        const stoneYaw = Math.atan2(me.x - stoneX, MONO_S - me.s);
+        const stoneYaw = Math.atan2(me.x - (stoneX - .7), MONO_S - me.s);
         const view = mix(want, stoneYaw, reveal);
-        const lift = still ? 0 : reveal * Math.atan2(6, Math.hypot(me.x - stoneX, MONO_S - me.s));
+        const lift = reveal * arrivalPitch(Math.hypot(me.x - stoneX, MONO_S - me.s));
         me.yaw += Math.atan2(Math.sin(view - me.yaw), Math.cos(view - me.yaw)) * Math.min(1, dt * 1.4);
         me.pitch += (lift - me.pitch) * Math.min(1, dt);
       }
       const nearSow = sownAt === null && Math.abs(me.s - SOW_S) < 8.5;
       // Follow the road even when the walker turns the camera to look at a landmark.
       if (!forward && !strafe) { heading = want; forward = nearSow ? .52 : .85; }
-      if (me.s >= END_S - 1.25 && Math.abs(me.x - stoneX) < 2) { forward = 0; setAuto(false); }
+      if (me.s >= REACH_S + 1.6 && nearby()?.[0] === "touch") { forward = 0; setAuto(false); }
     }
     const speed = 7.2 * fast, sin = Math.sin(heading), cos = Math.cos(heading);
     me.x += (-sin * forward + cos * strafe) * speed * dt; me.s += (cos * forward + sin * strafe) * speed * dt;
@@ -438,8 +456,13 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     if (clock > sayUntil) say.classList.remove("is-on");
 
     setHour(me.s);
-    const dusk = touched === null ? 0 : smooth(0, 5, clock - touched); // touching the stone turns the afternoon into the night it came from
-    sound?.frame({ s: me.s, pace: started ? pace : 0, fed, fireGap: Math.hypot(me.x - fireX, me.s - FIRE_S), night: hour.stars, dusk }, dt);
+    const sinceTouch = touched === null ? 0 : clock - touched;
+    const dusk = touched === null ? 0 : still ? 1 : smooth(.4, 4.8, sinceTouch); // touching the stone turns the afternoon into the night it came from
+    if (sound) {
+      const dx = fireX - me.x, dz = me.s - FIRE_S, fireGap = Math.hypot(dx, dz);
+      const firePan = (Math.cos(me.yaw) * dx - Math.sin(me.yaw) * dz) / Math.max(1, fireGap);
+      sound.frame({ s: me.s, pace: started ? pace : 0, fed, fireGap, firePan, night: hour.stars, dusk }, dt);
+    }
     hour.top.lerp(nightSky, dusk * .94); hour.horizon.lerp(nightHorizon, dusk * .8); hour.fog.lerp(nightHorizon, dusk * .75);
     // From the road by the dish, the low sun meets the top of the stone before the walker passes into its shadow.
     const height = hour.height, turn = mix(-.42, .125, smooth(250, 574, me.s));
@@ -447,8 +470,8 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     skyUniforms.top.value.copy(hour.top); skyUniforms.horizon.value.copy(hour.horizon); skyUniforms.sun.value.copy(hour.sun).multiplyScalar(1 - dusk * .35); skyUniforms.stars.value = Math.max(hour.stars, dusk); skyUniforms.time.value = still ? 0 : clock; skyUniforms.day.value = smooth(330, 410, me.s) * (1 - dusk);
     fog.color.copy(hour.fog); fog.density = hour.density;
     const power = hour.power * (1 - dusk * .7), skyPower = hour.sky * (1 - dusk * .6);
-    skyLight.color.copy(hour.top).lerp(hour.horizon, .6); skyLight.intensity = skyPower * 1.6 * (1 + hour.stars * 4); // the night is drawn blue, not black
-    sunLight.color.copy(hour.sun); sunLight.intensity = power * (height > .03 ? 3.2 : 2.6);
+    skyLight.color.copy(hour.top).lerp(hour.horizon, .6); skyLight.intensity = skyPower * 1.35 * (1 + hour.stars * 2.7); // the night is drawn blue, not black
+    sunLight.color.copy(hour.sun); sunLight.intensity = power * (height > .03 ? 3.2 : 2.);
     sunLight.target.position.set(me.x - Math.sin(me.yaw) * 22, ground(me.x, -me.s), -me.s - Math.cos(me.yaw) * 22);
     sunLight.position.copy(sunLight.target.position).addScaledVector(height > .03 ? sunDir : moon, 160); // by night the light is the moon's, from behind
     const [seenTop, seenHorizon, seenSun, seenDir] = skySeen, skySun = skyUniforms.sun.value;
@@ -460,7 +483,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
       const old = skyTarget; skyTarget = pmrem.fromScene(skyScene, 0, 1, 1500, { size: 128 }); scene.environment = skyTarget.texture; old?.dispose();
     }
     scene.environmentIntensity = mix(.4, 1.3, Math.max(hour.stars, dusk)); // by day a touch beside the sun and sky lights; by night it carries the blue
-    fieldUniforms.time.value = clock; fieldUniforms.sky.value.copy(skyLight.color).multiplyScalar(skyPower * 1.3); fieldUniforms.sun.value.copy(hour.sun).multiplyScalar(power * .75);
+    fieldUniforms.time.value = clock; fieldUniforms.sky.value.copy(skyLight.color).multiplyScalar(skyPower * 1.3).lerp(fieldAfterglow, dusk * .60); fieldUniforms.sun.value.copy(hour.sun).multiplyScalar(power * .75);
     fieldUniforms.fogColor.value.copy(hour.fog); fieldUniforms.fogDensity.value = hour.density; fieldUniforms.backlit.value = smooth(430, 600, me.s) * (1 - dusk * .5);
 
     feedGlow += (1 - feedGlow) * Math.min(1, dt * 1.5);
@@ -471,8 +494,22 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     fields.frame(clock, dt, me.s); fields.water.color.copy(hour.top).lerp(hour.horizon, .18).multiplyScalar(.55 + power * .35); fields.waterSun.copy(sunDir); // open water shows the sky overhead, darker than the sky at the horizon
 
     const eyeY = ground(me.x, -me.s) + bridgeLift(me.x, me.s) + 1.66 + (still ? 0 : Math.sin(me.bob) * .035);
-    camera.position.set(me.x, eyeY, -me.s);
-    camera.rotation.set(me.pitch + (still ? 0 : dusk * .26 * (1 - Math.abs(me.pitch))), me.yaw, 0, "YXZ"); sky.position.copy(camera.position);
+    if (touched !== null && (still || sinceTouch >= 2.05)) {
+      // Cut to the view from the wheat. The reader's position stays at the stone.
+      const portrait = camera.aspect < 1, distance = portrait ? 34 : 35;
+      const shotX = stoneX - (portrait ? .85 : 4.7), shotZ = -MONO_S + distance;
+      camera.position.set(shotX, floor(shotX, shotZ) + 1.75, shotZ);
+      const halfWidth = distance * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect;
+      camera.lookAt(stoneX + halfWidth * (portrait ? .29 : -.27), floor(stoneX, -MONO_S) + (portrait ? 5.3 : 8.8), -MONO_S);
+    } else {
+      camera.position.set(me.x, eyeY, -me.s);
+      camera.rotation.set(me.pitch, me.yaw, 0, "YXZ");
+    }
+    if (touched !== null && !still) {
+      const curtain = smooth(.8, 1.85, sinceTouch) * (1 - smooth(2.25, 3.95, sinceTouch));
+      viewport.style.opacity = String(1 - curtain);
+    }
+    sky.position.copy(camera.position);
     const carry = started && dusk === 0 ? smooth(FIRE_S + 3, FIRE_S + 14, me.s) * (1 - smooth(205, 248, me.s)) * (.72 + fed * .22) : 0;
     emberLight.visible = carry > .01;
     if (emberLight.visible) {
@@ -494,12 +531,13 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
       const label = tx(what[1]); if (useLabel.textContent !== label) useLabel.textContent = label;
     } else if (document.activeElement === use) canvas.focus({ preventScroll: true });
     use.hidden = !what;
-    if (touched !== null && !ended && clock - touched > 9) {
+    if (touched !== null && !ended && sinceTouch > (still ? 2.7 : 7)) {
       ended = true; started = false; backLink.href = chronicleBase;
-      part("cover-title").textContent = tx("这一段到此为止"); part("cover-text").textContent = tx("下一段从这块石头出发，走向推测的未来。火、田和碑会留在身后，回头还看得见。");
+      part("cover-title").textContent = tx("麦田尽头"); part("cover-text").textContent = tx("风吹过麦穗。你从一百万年前的火塘走到了这里。");
       hud.hidden = true; canvas.inert = true; cover.inert = false; root.classList.add("is-ended"); sound?.setMuted(true);
       part("cover-keys").hidden = true; exitLink.hidden = false; shareButton.hidden = false; if (manifestoLink) manifestoLink.hidden = false;
-      startButton.textContent = tx("再走一遍"); cover.classList.remove("is-gone"); cover.scrollTop = 0; startButton.focus({ preventScroll: true });
+      startButton.textContent = tx("再走一遍"); cover.classList.remove("is-gone"); cover.scrollTop = 0;
+      requestAnimationFrame(() => { if (ended && !signal.aborted) part("cover-title").focus({ preventScroll: true }); });
     }
     composer.render();
     if (started) schedule();
@@ -507,7 +545,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   signal.addEventListener("abort", () => {
     leave();
     cancelAnimationFrame(raf); observer.disconnect(); sound?.close();
-    hud.hidden = true; cover.inert = false; cover.classList.remove("is-gone"); root.classList.remove("is-live", "is-ended");
+    hud.hidden = true; cover.inert = false; cover.classList.remove("is-gone"); root.classList.remove("is-live", "is-ended", "is-finishing"); viewport.style.removeProperty("opacity");
   }, { once: true });
   resize(); frame(performance.now());
   startButton.disabled = false;

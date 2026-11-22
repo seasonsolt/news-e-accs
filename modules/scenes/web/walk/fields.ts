@@ -246,11 +246,19 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
       limb(V(0, 9.3, 1.2), V(0, 9.3, 2.55), .14, .12, wood, { sides: 6, capped: true }),
     ]), x, s, turn, -.2);
     const tower = era(list, base, MACHINES_S, 452); blocks.push([x, s, r * .48]);
-    const lattice = of(2, lit("#6b5a46", "#b7a283", rand)), arms: THREE.BufferGeometry[] = [];
+    const lattice = of(2, lit("#6b5a46", "#b7a283", rand)), canvas = of(6, lit("#9b927f", "#d1c7ad", rand, .12)), arms: THREE.BufferGeometry[] = [];
     for (let k = 0; k < 4; k++) {
       const a = k * Math.PI / 2 + .3, d = V(Math.cos(a), Math.sin(a), 0), q = V(-Math.sin(a), Math.cos(a), 0), along = (n: number, wide: number) => d.clone().multiplyScalar(n).addScaledVector(q, wide);
       arms.push(limb(V(0, 0, 0), along(6.6, 0), .11, .06, lattice, { sides: 4 }), limb(along(1.5, .85), along(6.4, .8), .04, .035, lattice, { sides: 3 }), limb(along(1.5, -.15), along(6.4, -.15), .035, .03, lattice, { sides: 3 }));
       for (let n = 0; n < 9; n++) arms.push(limb(along(1.5 + n * .61, -.15), along(1.5 + n * .61, .84), .028, .028, lattice, { sides: 3 }));
+      const cloth: number[] = [], foot = (span: number, width: number) => along(2.1 + span * 4.1, -.08 + width * .83)
+        .add(V(0, 0, .045 + Math.sin(span * Math.PI) * Math.sin(width * Math.PI) * .105));
+      for (let row = 0; row < 6; row++) for (let col = 0; col < 2; col++) {
+        const p = foot(row / 6, col / 2), q = foot((row + 1) / 6, col / 2), r = foot((row + 1) / 6, (col + 1) / 2), s = foot(row / 6, (col + 1) / 2);
+        for (const point of [p, q, r, p, r, s]) cloth.push(point.x, point.y, point.z);
+      }
+      arms.push(triangles(cloth, canvas));
+      for (const width of [0, 1]) arms.push(limb(foot(0, width), foot(1, width), .009, .009, lash, { sides: 3 }));
     }
     const hub = new THREE.Group(); hub.position.copy(world(V(0, 9.3, 2.6), x, s, turn, -.2)).y -= base; hub.rotation.y = turn; tower.add(hub);
     sails = new THREE.Mesh(own(merged(arms)), matte); sails.castShadow = true; hub.add(sails);
@@ -362,21 +370,30 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
   for (const [s, off, height] of [[481, 41, 13], [489, 43.5, 15], [494, 39, 12]] as const) plant("poplar", at(off, s), s, height, .7);
 
   // The wheat ends in two low folds of land. Their saddles leave open sky behind the slab on the approach.
-  const ridgeStone = new THREE.Color("#5b6070"), ridgeGrass = new THREE.Color("#959078"), ridges: THREE.BufferGeometry[] = [];
+  const ridgeStone = new THREE.Color("#4f555b"), ridgeGrass = new THREE.Color("#74735f"), ridges: THREE.BufferGeometry[] = [];
   for (const [distance, height, saddle] of [[752, 14, -6], [827, 29, 18]] as const) {
-    const ridge: number[] = [];
+    const ridge: number[] = [], steps = small ? 10 : 16;
     let last: THREE.Vector3[] | undefined;
-    for (let x = -300; x <= 300; x += 10) {
+    for (let x = -300; x <= 300; x += small ? 10 : 6) {
       const offset = x - roadX(MONO_S), flank = smooth(12, 100, Math.abs(offset - saddle));
-      const relief = .25 + .75 * noise(x * .015, saddle) + .12 * noise(x * .07, saddle);
-      const peak = 2 + height * flank * relief, s = distance + noise(x * .022, saddle + 1) * 18;
-      const row = [V(x, -3, -s + 42), V(x, peak * .41, -s + 23), V(x, peak, -s), V(x, -3, -s - 18)];
+      const relief = .36 + .52 * noise(x * .015, saddle) + .12 * noise(x * .07, saddle);
+      const peak = 2 + height * flank * relief, center = distance + noise(x * .022, saddle + 1) * 18, row: THREE.Vector3[] = [];
+      for (let j = 0; j <= steps; j++) {
+        const across = j / steps * 2 - 1, s = center + across * 76;
+        const shoulder = Math.pow(Math.max(0, 1 - across * across), 1.65);
+        // Branching shallow gullies run down the flank, breaking the silhouette without raising the saddle behind the slab.
+        const channel = Math.pow(noise(x * .055 + across * 1.6, saddle + across * .8), 4);
+        const spur = (noise(x * .11 + across * .7, s * .035) - .5) * height * .12 * flank;
+        const y = -3 + shoulder * (peak + 3 + spur - channel * height * .34 * flank);
+        row.push(V(x, y, -s));
+      }
       if (last) for (let k = 0; k < row.length - 1; k++) {
         for (const p of [last[k]!, row[k]!, row[k + 1]!, last[k]!, row[k + 1]!, last[k + 1]!]) ridge.push(p.x, p.y, p.z);
       }
       last = row;
     }
-    ridges.push(triangles(ridge, (center, normal) => tone.copy(ridgeStone).lerp(ridgeGrass, clamp(normal.y * .5 + noise(center.x * .028, saddle) * .25, 0, 1))));
+    ridges.push(faceted(new THREE.BufferGeometry().setAttribute("position", new THREE.Float32BufferAttribute(ridge, 3)),
+      (center, normal) => tone.copy(ridgeStone).lerp(ridgeGrass, clamp(normal.y * .4 + noise(center.x * .028, center.z * .015 + saddle) * .2, 0, 1))));
   }
 
   scene.add(new THREE.Mesh(own(merged(ridges)), matte)); // keep the village and irrigation works culled once they are behind the walker

@@ -2,7 +2,7 @@
 
 `/chronicle/walk`（中文 `/zh/chronicle/walk`，代码在 `web/walk/`）是一条可以从头走到尾的路：约一百万年前的火堆 → 黑夜里的岩画石檐 → 一万两千年前的第一把种子 → 村落 → 麦田 → 随时代升起的风车、电网、射电天线与算力机房 → 麦田中央的石头，全在同一片地形里，天色和年份读数随走过的距离变化。
 
-页面在 `module.ts` 登记，`server.ts` 把它放进站点地图；入口在加速史观测舱的读数下方（「走进去」，`apps/web/app/routes/chronicle.tsx`）、《降临派宣言》末尾（`apps/web/app/routes/manifesto.tsx`）和“更多”的创作一栏（`apps/web/app/components/shell/nav.ts`），站点没有这个模块时各处入口都不显示。`/chronicle/workshops` 和原来各工坊的地址由 `module.ts` 的 `redirects` 301 到这里。页面自己画全部界面（路由 `handle` 的 `bare`），不带站点导航；首屏直接送出按屏幕裁切的行星与巨石封面、入口准备提示和三章图记，点「开始行走」才下载 three.js、创建画布。加载栏依次显示场景下载、地形、麦田、地标和首帧光照，等待时可以取消。设备无法打开三维画面时可以重试，或沿原生锚点阅读图记。走完后的封面有「再走一遍」「返回加速史」「读《降临派宣言》」和「分享这条路」，左上角的返回在封面上也能点（行走中途返回会跳到加速史对应的年份）。页面报匿名的计数：开始、触碰巨石、第一次走过路上各处（`land.ts` 的 `MILESTONES`）、添柴等操作，以及离开时走到的最远处和大致时长，每次打开页面每项最多一次（`docs/analytics.md`，`#s300` 调试跳转不计入）；新的地名或操作要同时加进 `packages/backend/src/site/analytics.ts` 的 `WALK_*`，否则服务器会丢掉。
+页面在 `module.ts` 登记，`server.ts` 把它放进站点地图；入口在加速史观测舱的读数下方（「走进去」，`apps/web/app/routes/chronicle.tsx`）、《降临派宣言》末尾（`apps/web/app/routes/manifesto.tsx`）和“更多”的创作一栏（`apps/web/app/components/shell/nav.ts`），站点没有这个模块时各处入口都不显示。`/chronicle/workshops` 和原来各工坊的地址由 `module.ts` 的 `redirects` 301 到这里。页面自己画全部界面（路由 `handle` 的 `bare`），不带站点导航；首屏直接送出按屏幕裁切的行星与巨石封面、入口准备提示和三章图记，点「开始行走」才下载 three.js、创建画布。加载栏依次显示场景下载、地形、麦田、地标和首帧光照，等待时可以取消。设备无法打开三维画面时可以重试，或沿原生锚点阅读图记。触碑后，低鸣渐弱，麦穗的沙沙声重新浮现，视角落到田边，从远处看见整块碑。减少动态效果时直接切到静止远景。结尾有「再走一遍」「返回加速史」「读《降临派宣言》」和「分享这条路」，左上角的返回在封面上也能点（行走中途返回会跳到加速史对应的年份）。页面报匿名的计数：开始、触碰巨石、第一次走过路上各处（`land.ts` 的 `MILESTONES`）、添柴等操作，以及离开时走到的最远处和大致时长，每次打开页面每项最多一次（`docs/analytics.md`，`#s300` 调试跳转不计入）；新的地名或操作要同时加进 `packages/backend/src/site/analytics.ts` 的 `WALK_*`，否则服务器会丢掉。
 
 开发运行见仓库 `docs/deploy.md`；`npm run dev:web` 连接本地 API。
 

@@ -42,14 +42,15 @@ export function buildVillage({ scene, own, rand, small, still, floor, matte, sta
   const shaded = (turn: number): [number, number] => [.35 * Math.cos(turn) - .93 * Math.sin(turn), .35 * Math.sin(turn) + .93 * Math.cos(turn)];
 
   // ---------- walls of daub, roofs of thatch ----------
-  const COLS = small ? 22 : 56, ROWS = small ? 5 : 11;
+  const COLS = small ? 28 : 64, ROWS = small ? 7 : 13;
   /** A hand-daubed wall round a plan `r` across: out of round, battered, leaning (`lean` per metre up), flared at a foot sunk to `base`, with an opening `gap` radians
    * wide facing +z up to `high` (0 for none), and `patches` ([angle, height, width in radians, height]) where the daub has fallen away. Returns the faces unpainted. */
   function daubed(r: number, height: number, thick: number, gap: number, high: number, lean: [number, number], patches: Array<[number, number, number, number]>, base = -.12) {
     const seed = rand() * 40, top = (a: number) => height + (noise(a * 1.4 + seed, 2) - .5) * .14;
     const fallen = (a: number, y: number) => patches.reduce((most, [pa, py, w, h]) => Math.max(most, 1 - smooth(.75, 1, Math.hypot(diff(a, pa) / (w / 2), (y - py) / (h / 2)) + (noise(a * 9 + seed, y * 9) - .5) * .3)), 0);
     const at = (a: number, y: number, side: number) => { // side 0 the outer face, 1 the inner, -1 a hair proud of the outer
-      const rad = r * (1 + .035 * Math.cos(2 * a + seed) + .035 * (noise(a * 1.6 + seed, y * .7) - .5)) - y * .035 + (side === 1 ? -thick : .07 * (1 - smooth(base, .4, y)) - .035 * fallen(a, y) + (side < 0 ? .006 : 0));
+      const daub = (noise(a * r * 4.7 + seed, y * 6.3) - .5) * .035;
+      const rad = r * (1 + .035 * Math.cos(2 * a + seed) + .035 * (noise(a * 1.6 + seed, y * .7) - .5)) - y * .035 + (side === 1 ? -thick : .07 * (1 - smooth(base, .4, y)) - .035 * fallen(a, y) + daub + (side < 0 ? .006 : 0));
       return P(Math.cos(a) * rad + lean[0] * (y - base), y, Math.sin(a) * rad + lean[1] * (y - base));
     };
     const angle = (k: number) => Math.PI / 2 + gap / 2 + k * (Math.PI * 2 - gap) / COLS, outer: number[] = [], inner: number[] = [], rim: number[] = [];
@@ -74,7 +75,7 @@ export function buildVillage({ scene, own, rand, small, still, floor, matte, sta
   function plaster(w: ReturnType<typeof daubed>, r: number, mud: [string, string], gap: number, high: number, soot: number) {
     return of(3, (c) => {
       const a = Math.atan2(c.z, c.x), y = c.y, t = w.top(a), off = Math.abs(diff(a, Math.PI / 2));
-      tone.set(mud[0]).lerp(hue.set(mud[1]), noise(a * 2.5 + w.seed, y * 1.3)).multiplyScalar(1 + .1 * smooth(.68, .8, noise(a * 5 + w.seed, y * 4)));
+      tone.set(mud[0]).lerp(hue.set(mud[1]), noise(a * 2.5 + w.seed, y * 1.3)).multiplyScalar(1 + .12 * smooth(.58, .8, noise(a * r * 7 + w.seed, y * 8)));
       tone.multiplyScalar(1 + (noise(a * r * 7 + w.seed, y * .25) - .5) * .4 * smooth(.3, t, y));
       tone.lerp(hue.set("#4a392a"), (1 - smooth(-.1, .42 + .15 * noise(a * 6, 3), y)) * .75);
       if (gap) tone.lerp(hue.set("#1f1813"), soot * (1 - smooth(gap * .3, gap * 1.1, off)) * smooth(high - .1, high + .45, y) * (1 - smooth(t - .1, t, y) * .3));
@@ -87,8 +88,9 @@ export function buildVillage({ scene, own, rand, small, still, floor, matte, sta
   function thatch(r: number, height: number, rise: number, fresh: number, moss: number, sag: number, shade: [number, number]) {
     const R = r * 1.22 + .25, eave = height + .14 - rise * (1 - r / R), seed = rand() * 40, RAFTERS = small ? 6 : 9, course = T / K, parts: THREE.BufferGeometry[] = [];
     const shell = (a: number, j: number) => {
-      const t = j / T, lip = j < T ? .07 * (1 - (j % course) / course) ** 2 : 0, eaveEdge = j === 0 ? 1 : 0;
-      const rho = (R * (1 - t) + lip + eaveEdge * .05 * (noise(a * 7 + seed, 1) - .5)) * (1 + .06 * (noise(a * 2.3 + seed, t * 3) - .5));
+      const t = j / T, lip = j < T ? .105 * (1 - (j % course) / course) ** 2 : 0, eaveEdge = j === 0 ? 1 : 0;
+      const bundle = .018 * Math.sin(a * C * .5 + seed) * Math.sin(t * Math.PI);
+      const rho = (R * (1 - t) + lip + bundle + eaveEdge * .05 * (noise(a * 7 + seed, 1) - .5)) * (1 + .06 * (noise(a * 2.3 + seed, t * 3) - .5));
       return P(Math.cos(a) * rho, eave + rise * t - lip * .6 - eaveEdge * .1 * noise(a * 11 + seed, 5) - sag * Math.sin(a * RAFTERS / 2) ** 2 * Math.sin(Math.PI * Math.min(1, t * 1.3)), Math.sin(a) * rho);
     };
     const roof: number[] = [];
@@ -96,24 +98,34 @@ export function buildVillage({ scene, own, rand, small, still, floor, matte, sta
       const a0 = c / C * 6.283, a1 = (c + 1) / C * 6.283, A = shell(a0, j), B = shell(a1, j), D = shell(a0, j + 1), E = shell(a1, j + 1);
       if (j < T - 1) push(roof, A, D, E); push(roof, A, E, B);
     }
-    parts.push(faceted(geo(roof), of(3, (c, n) => {
+    const roofPaint = of(3, (c, n) => {
       const a = Math.atan2(c.z, c.x), t = clamp((c.y - eave) / rise, 0, 1), away = Math.cos(a) * shade[0] + Math.sin(a) * shade[1];
-      tone.set("#786b5a").lerp(hue.set("#b39558"), fresh * smooth(.5, .72, noise(a * 1.7 + seed, t * 2.6 + seed))); // weathered grey, patched with new straw
-      tone.multiplyScalar(.84 + .32 * noise(a * 40 + seed, t * 1.5)); // the straws laid down the slope
+      tone.set("#94856c").lerp(hue.set("#c3aa73"), fresh * smooth(.5, .72, noise(a * 1.7 + seed, t * 2.6 + seed))); // weathered straw, patched with fresh bundles
+      tone.multiplyScalar(.88 + .24 * noise(a * 40 + seed, t * 1.5)); // the straws laid down the slope
       tone.lerp(hue.set("#3c4529"), moss * smooth(-.1, .8, away) * smooth(.35, .65, noise(a * 3 + seed, t * 5)) * (1 - t * .5)); // moss where the sun does not reach
-      return tone.multiplyScalar((n.y < .45 ? .62 : 1) * (.93 + rand() * .14)); // the edge of each course in shadow
-    })));
+      return tone.multiplyScalar((.82 + .18 * smooth(.1, .65, n.y)) * (.97 + rand() * .06)); // bundle sides keep the soft colour of weathered straw
+    });
+    parts.push(faceted(geo(roof), roofPaint));
+    const bundles: number[] = [], count = small ? 28 : 64;
+    for (let row = 0; row < K; row++) for (let i = 0; i < count; i++) {
+      const a = (i + (row % 2) * .5) / count * Math.PI * 2, half = Math.PI / count * .8, low = row * course, high = (row + .97) * course;
+      const outward = P(Math.cos(a), R / rise, Math.sin(a)).normalize();
+      const left = shell(a - half, low), right = shell(a + half, low), upperLeft = shell(a - half * .8, high), upperRight = shell(a + half * .8, high);
+      const middle = shell(a, low).addScaledVector(outward, .012), upper = shell(a, high).addScaledVector(outward, .006);
+      push(bundles, left, upperLeft, upper, left, upper, middle, middle, upper, upperRight, middle, upperRight, right);
+    }
+    parts.push(faceted(geo(bundles), roofPaint));
     const ends: number[] = [], strand = (a: number, j: number, length: number) => { // straw ends hanging from the eave and from the edge of each course
       const foot = shell(a, j), dir = foot.clone().sub(shell(a, j + 1)).normalize(), side = P(-Math.sin(a), 0, Math.cos(a)).multiplyScalar(.006 + rand() * .006);
       push(ends, foot.clone().sub(side), foot.clone().add(side), foot.clone().addScaledVector(dir, length * .55).add(P(0, -length * (.45 + rand() * .4), 0)).addScaledVector(side, (rand() - .5) * 4));
     };
     for (let i = 0; i < (small ? 260 : 820); i++) strand(rand() * 6.283, 0, .12 + rand() * .2);
     for (let j = course; j < T - 1; j += course) for (let i = 0; i < (small ? 16 : 60) * (1 - j / T); i++) strand(rand() * 6.283, j, .07 + rand() * .1);
-    const apex = eave + rise, bound = (h: number) => .42 - h * .55;
+    const apex = eave + rise, bound = (h: number) => .23 - h * .36;
     for (let i = 0; i < (small ? 10 : 30); i++) { const a = rand() * 6.283, out = .04 + rand() * .06; push(ends, P(Math.cos(a) * out - .01, apex + .26, Math.sin(a) * out), P(Math.cos(a) * out + .01, apex + .26, Math.sin(a) * out), P(Math.cos(a) * (out + .1 + rand() * .1), apex + .4 + rand() * .15, Math.sin(a) * (out + .1))); }
     parts.push(triangles(ends, of(3, () => tone.set(rand() < .2 + fresh * .5 ? "#b89c62" : "#8a7c66").multiplyScalar(.75 + rand() * .35))));
     for (let k = 0; k < RAFTERS; k++) { const a = k / RAFTERS * 6.283, at = (rho: number) => P(Math.cos(a) * rho, eave + rise * (1 - rho / R) - .13, Math.sin(a) * rho); parts.push(limb(at(r - .25), at(R + .16), .045, .038, rand() < .5 ? bark : peeled, { sides: 4, capped: true })); }
-    parts.push(turned([[.42, 0], [.4, .1], [.32, .26], [.16, .4], [.02, .46]], small ? 8 : 14, of(3, lit("#5f5446", "#8d806b", rand))).translate(0, apex - .16, 0)); // the ridge: a bundle bound on with cord
+    parts.push(turned([[.22, 0], [.24, .08], [.17, .22], [.08, .36], [.02, .42]], small ? 8 : 14, of(3, lit("#70634e", "#ab9670", rand))).translate(0, apex - .16, 0)); // the ridge: a narrow bundle bound on with cord
     for (const h of [.05, .16, .27]) parts.push(faceted(new THREE.TorusGeometry(bound(h) + .012, .016, 3, small ? 8 : 14).rotateX(Math.PI / 2).translate(0, apex - .16 + h, 0), cord));
     return merged(parts);
   }
@@ -245,7 +257,7 @@ export function buildVillage({ scene, own, rand, small, still, floor, matte, sta
     stand(person(rand, pose, { extra, skin, cloth, small }).scale(size, size, size), x, s, turn, -.01); blocks.push([x, s, .42 * size]);
   }
   let grinder: THREE.Mesh, loose: THREE.Mesh, child: THREE.Mesh;
-  { const x = X(13.6, 336.6), s = 336.6, flour: number[] = []; // grinding at the quern: a saddle stone, the handstone, a bowl and a pale drift of flour
+  { const x = X(8.7, 330.6), s = 330.6, flour: number[] = []; // the quern sits beside the path into the yard, where passers-by can see the work
     for (let i = 0; i < 9; i++) { const a0 = i * .7 - .4, a1 = a0 + .7, r0 = .3 + (i % 3) * .07, r1 = .3 + ((i + 1) % 3) * .07; flour.push(0, .012, 1.12, Math.cos(a1) * r1, .006, 1.12 + Math.sin(a1) * r1 * .6, Math.cos(a0) * r0, .006, 1.12 + Math.sin(a0) * r0 * .6); }
     const turn = toward(x, s, X(0, 333), 333); // she rocks as she grinds, and the handstone goes with her hands
     grinder = alive(person(rand, POSES.kneel, { skin: "#946646", cloth: "#cfb98f", small, extra: [blob(rand, [.17, .05, .065], stone, 0, .15).translate(0, .25, .7)] }), x, s, turn); blocks.push([x, s, .42]);
