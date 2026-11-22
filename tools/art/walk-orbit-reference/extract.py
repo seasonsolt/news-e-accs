@@ -119,7 +119,7 @@ def main():
     hidden = Image.new("L", rgb.size)
     ImageDraw.Draw(hidden).polygon([(round(x * sx) - box[0], round(y * sy) - box[1]) for x, y in MONOLITH], fill=255)
     hidden = hidden.filter(ImageFilter.MaxFilter(13))
-    hidden_pixels, rgb_pixels = hidden.load(), rgb.load()
+    rgb_pixels = rgb.load()
     repaired, solver = extend_illumination(rgb, hidden, sx)
     repaired_pixels = repaired.load()
 
@@ -158,9 +158,11 @@ def main():
     rgba.save(args.output, lossless=True, quality=100, method=6, exact=False)
     with Image.open(args.output) as saved:
         decoded = saved.convert("RGBA")
-        for source, result, mask, actual in zip(rgb.get_flattened_data(), repaired.get_flattened_data(), hidden.get_flattened_data(), decoded.get_flattened_data()):
+        for source, result, mask, expected_alpha, actual in zip(rgb.get_flattened_data(), repaired.get_flattened_data(), hidden.get_flattened_data(), alpha.get_flattened_data(), decoded.get_flattened_data()):
             if not mask and source != result:
                 raise AssertionError("An RGB pixel outside the repair mask changed")
+            if actual[3] != expected_alpha:
+                raise AssertionError("An alpha value changed during encoding")
             if actual[3] and result != actual[:3]:
                 raise AssertionError("A visible RGB pixel changed during encoding")
     center = ((CENTER[0] * sx - box[0]) / width, (CENTER[1] * sy - box[1]) / height)
