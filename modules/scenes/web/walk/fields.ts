@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { Kit } from "./camp.ts";
-import { CANAL, CLEARINGS, MACHINES_S, MONO_S, clamp, fromCanal, mix, noise, roadX, smooth } from "./land.ts";
+import { BRIDGE, CANAL, CLEARINGS, MACHINES_S, MONO_S, clamp, fromCanal, mix, noise, roadX, smooth } from "./land.ts";
 import { POSES, person } from "./people.ts";
 import { blob, faceted, flat, limb, lit, merged, of, rock, triangles, turned, type Paint } from "./shapes.ts";
 import type { Plant } from "./trees.ts";
@@ -9,7 +9,7 @@ type Profile = ReadonlyArray<readonly [across: number, lift: number, onGround: b
 /** A bird of one of three kinds: 0 wheels high over the open field, 1 small and far out over the village fields at dawn, 2 a swift skimming the wheat. */
 interface Bird { kind: 0 | 1 | 2; r: number; h: number; speed: number; phase: number; beat: number; size: number }
 
-/** The fields from the first village to the stone: water led to the wheat, the harvest, the sky read for a calendar, then three centuries of machines rising out of the wheat as their years come. */
+/** The irrigation works, harvest and calendar, then the power and cooling infrastructure on the way to the stone. */
 export function buildFields({ scene, own, rand, small, still, floor, matte, stand, blocks }: Kit, plant: Plant) {
   const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z), at = (off: number, s: number) => roadX(s) + off, tone = new THREE.Color(), other = new THREE.Color();
   const straw = of(3, lit("#8d7442", "#dcbd6a", rand, .24)), wood = of(2, lit("#4a3a2c", "#8c7558", rand)), bark = of(2, lit("#45372a", "#7a6450", rand)), stone = of(1, lit("#5a534b", "#8f8577", rand, .1));
@@ -96,7 +96,7 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
   }
   for (let k = 0; k < 30; k++) { // reeds and grass on the banks, here and there
     const s = CANAL.from + 2 + rand() * (CANAL.to - CANAL.from - 4), side = rand() < .5 ? -1 : 1;
-    if (Math.abs(s - 424) < 2.5 || CANAL.channels.some(([from]) => Math.abs(s - from) < 1.5)) continue;
+    if (Math.abs(s - BRIDGE.s) < 2.5 || CANAL.channels.some(([from]) => Math.abs(s - from) < 1.5)) continue;
     clump(at(CANAL.offset + side * (.75 + rand() * .3), s), s, k % 2 ? 10 : 7, k % 2 ? .45 : 1.1 + rand() * .4, k % 2 === 0);
   }
   // the water: deeper in the middle, paler at the edges, around white so the sky can tint it
@@ -151,7 +151,7 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
   };
   swing(-.02);
   { // a plank bridge over the canal into the harvest, someone crossing it toward the road with a sheaf
-    const i = first + Math.round((424 - CANAL.from) / .9), [x, s] = stream[i]!, plank = of(2, lit("#6a5640", "#a88f6c", rand)), parts = [-.36, .36].map((z) => limb(V(-1.75, .2, z), V(1.75, .22, z), .07, .065, wood, { capped: true }));
+    const i = first + Math.round((BRIDGE.s - CANAL.from) / .9), [x, s] = stream[i]!, plank = of(2, lit("#6a5640", "#a88f6c", rand)), parts = [-.36, .36].map((z) => limb(V(-1.75, .2, z), V(1.75, .22, z), .07, .065, wood, { capped: true }));
     for (let k = 0; k < 10; k++) parts.push(faceted(new THREE.BoxGeometry(.3, .05, .95 + rand() * .1), plank).rotateY((rand() - .5) * .06).translate(-1.5 + k * .335, .3, (rand() - .5) * .06));
     stand(merged(parts), x, s, 0, level[i]! - floor(x, -s));
     stand(person(rand, POSES.carry, { cloth: linen[1], skin: skins[2], dress: "tunic", small, extra: [sheaf().rotateZ(Math.PI / 2).translate(.5, 1.84, 0)] }), x + .5, s + .1, Math.PI / 2, level[i]! + .33 - floor(x + .5, -s - .1)); blocks.push([x + .5, s + .1, .4]);
@@ -187,14 +187,14 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
     stand(person(rand, pose, { extra: tools, cloth: linen[i + 1], skin: skins[i + 1], dress: "tunic", hat: "straw", small }), x, s, ahead ? facing(x, s, x, s + 10) : facing(x, s, cutX + Math.cos(a) * 30, cutS + Math.sin(a) * 30)); blocks.push([x, s, .45]);
     for (let k = 0; k < 2; k++) { const back = r - 1 - rand() * 1.4, b = a + (rand() - .5) * .3, bx = cutX + Math.cos(b) * back, bs = cutS + Math.sin(b) * back; if (inField(bx, bs, 0)) stand(sheaf().rotateZ(Math.PI / 2).translate(.5, .09, 0), bx, bs, rand() * 6.3); } // bundles left where they fell
   }
-  for (const [across, alongs] of [[-9.3, [419.4, 421.6, 426.5, 428.8]], [-13.2, [418.5, 422, 428.5, 431.8]], [-16.6, [419.5, 423.4, 427.6]]] as const) for (const along of alongs) {
-    const s = along + (rand() - .5) * .5, x = at(across, s) + (rand() - .5) * .5;
+  for (const [across, alongs] of [[-9.3, [-5.6, -3.4, 1.5, 3.8]], [-13.2, [-6.5, -3, 3.5, 6.8]], [-16.6, [-5.5, -1.6, 2.6]]] as const) for (const along of alongs) {
+    const s = cutS + along + (rand() - .5) * .5, x = at(across, s) + (rand() - .5) * .5;
     if (!inField(x, s, .9)) continue;
     stand(stook(), x, s, rand() * 6.3); blocks.push([x, s, .45]);
   }
   { const wicker: Paint = (center) => tone.set((Math.floor(center.y * 14) + Math.floor(Math.atan2(center.z, center.x) * 5)) % 2 ? "#8a6a3c" : "#5f4827"); // a water jar and a basket by the bridge
-    stand(turned([[0, 0], [.12, 0], [.2, .12], [.22, .3], [.16, .48], [.09, .56], [.1, .62]], 9, clay), at(-7.6, 421.8), 421.8, 0, -.02);
-    stand(turned([[0, 0], [.2, 0], [.27, .12], [.3, .26], [.32, .3]], 12, wicker), at(-7.9, 426.4), 426.4, 0, -.02);
+    stand(turned([[0, 0], [.12, 0], [.2, .12], [.22, .3], [.16, .48], [.09, .56], [.1, .62]], 9, clay), at(-7.6, BRIDGE.s - 2.2), BRIDGE.s - 2.2, 0, -.02);
+    stand(turned([[0, 0], [.2, 0], [.27, .12], [.3, .26], [.32, .3]], 12, wicker), at(-7.9, BRIDGE.s + 2.4), BRIDGE.s + 2.4, 0, -.02);
   }
 
   // ---------- the calendar: a ring of heavy stones, a pole whose shadow is marked, someone reading the sky ----------
@@ -211,7 +211,7 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
     const x = x0 - 1.2, s = s0 - .7; stand(person(rand, POSES.point, { cloth: linen[3], skin: skins[1], dress: "tunic", small }), x, s, facing(x, s, x - .6, s + .8)); blocks.push([x, s, .4]);
   }
 
-  // ---------- time passing: each machine its own mesh, kept under the wheat until the walker reaches its years ----------
+  // ---------- time passing: each machine its own mesh, revealed when the walker reaches its period ----------
   const eras: Array<{ mesh: THREE.Mesh; from: number; to: number }> = [];
   /** Shapes gathered in world space, drawn as one mesh that rises from `base` as the walk goes from `from` to `to`. */
   function era(parts: THREE.BufferGeometry[], base: number, from: number, to: number) {
@@ -230,7 +230,7 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
       for (const side of [-1, 1]) for (let k = 0; k < 3; k++) { const x0 = side * (.42 + k * .1), x1 = x0 + side * .1, h = 1.32 + rand() * .15; coat.push(x0, 1.72, z, x0, h, z, x1, h + .06, z, x0, 1.72, z, x1, h + .06, z, x1, 1.72, z); }
       parts.push(triangles(coat, rag));
     }
-    const s = 500, x = at(6, s), list: THREE.BufferGeometry[] = []; put(list, merged(parts), x, s, facing(x, s, roadX(s), s)); era(list, floor(x, -s), 470, 478); blocks.push([x, s, .35]);
+    const s = 395, x = at(7, s); stand(merged(parts), x, s, facing(x, s, roadX(s), s)); blocks.push([x, s, .35]);
   }
   let sails: THREE.Mesh, rotor: THREE.Mesh;
   { const [s, off, r] = CLEARINGS.mill, x = at(off, s), turn = facing(x, s, roadX(s - 10), s - 10), mill = of(1, lit("#6f675a", "#c2b7a0", rand)), dark = flat("#14100c", rand, .1);
@@ -263,7 +263,7 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
     const hub = new THREE.Group(); hub.position.copy(world(V(0, 9.3, 2.6), x, s, turn, -.2)).y -= base; hub.rotation.y = turn; tower.add(hub);
     sails = new THREE.Mesh(own(merged(arms)), matte); sails.castShadow = true; hub.add(sails);
   }
-  { const poles = [500, 522, 544].map((s) => [at(-9, s), s] as const), arm = [-.6, -.2, .2, .6].map((x) => V(x, 5.78, 0)), insulator = flat("#cfd6cf", rand, .1), list: THREE.BufferGeometry[] = [];
+  { const poles = [511, 526, 539].map((s) => [at(-18, s), s] as const), arm = [-.6, -.2, .2, .6].map((x) => V(x, 5.78, 0)), insulator = flat("#cfd6cf", rand, .1), list: THREE.BufferGeometry[] = [];
     const turns = poles.map((_, i) => { const [ax, as] = poles[Math.max(0, i - 1)]!, [bx, bs] = poles[Math.min(poles.length - 1, i + 1)]!; return Math.atan2(bx - ax, as - bs); });
     poles.forEach(([x, s], i) => {
       put(list, merged([limb(V(0, -.3, 0), V(0, 6.1, 0), .11, .085, bark, { sides: 6, capped: true }), limb(V(-.75, 5.62, 0), V(.75, 5.62, 0), .05, .05, bark, { sides: 4, capped: true }),
@@ -277,7 +277,7 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
       const p = sagging(...ends(span, arm[k]!), .35, t), turn = rand() * 6.3;
       list.push(merged([blob(rand, [.06, .065, .11], perch, 0, .1).translate(0, .07, 0), blob(rand, [.04, .042, .045], perch, 0, .1).translate(0, .14, .07), limb(V(0, .06, -.08), V(0, .02, -.2), .03, .005, perch, { sides: 3 })]).rotateY(turn).translate(p.x, p.y, p.z));
     }
-    era(list, floor(poles[1]![0], -poles[1]![1]), 476, 490);
+    era(list, floor(poles[1]![0], -poles[1]![1]), 502, 513);
   }
   { const steel = lit("#5c6166", "#a9afb3", rand, .08), glass = flat("#7e8a86", rand, .1), wide = (y: number) => mix(3.2, .9, clamp((y + .6) / 20.6, 0, 1));
     const corner = (y: number, i: number) => V(i & 1 ? wide(y) : -wide(y), y, i & 2 ? wide(y) : -wide(y)), levels = [-.6, 3.5, 7.5, 11, 14, 17, 20], around = [0, 1, 3, 2];
@@ -298,12 +298,12 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
     const copies = spots.map((_, i) => i ? tower.clone() : tower); // copied before any is turned
     spots.forEach(([x, s], i) => put(list, copies[i]!, x, s, turns[i]!, -.2));
     for (let i = 0; i < spots.length - 1; i++) for (const hang of hangs) list.push(wire(world(hang, ...spots[i]!, turns[i]!, -.2), world(hang, ...spots[i + 1]!, turns[i + 1]!, -.2), 1.6, hang.y > 23 ? .05 : .07));
-    era(list, floor(spots[0]![0], -spots[0]![1]) - .2, 505, 522);
+    era(list, floor(spots[0]![0], -spots[0]![1]) - .2, 525, 538);
   }
   { const s = 612, x = at(-85, s), turn = facing(x, s, roadX(580), 580), white = lit("#a7aaab", "#f1f2ef", rand, .04), list: THREE.BufferGeometry[] = [], base = floor(x, -s) - .3;
     put(list, merged([faceted(new THREE.CylinderGeometry(1.05, 1.9, 36, 12, 3, true).translate(0, 17.7, 0), white), turned([[3, 0], [3, .5], [0, .5]], 12, flat("#9a9a94", rand, .08)).translate(0, -.3, 0),
       faceted(new THREE.BoxGeometry(2.2, 2.3, 5.5), white).translate(0, 36.6, -.8)]), x, s, turn, -.3);
-    const mast = era(list, base, 548, 566);
+    const mast = era(list, base, 555, 572);
     const blades: THREE.BufferGeometry[] = [turned([[.95, 0], [.9, .7], [.55, 1.4], [0, 1.85]], 10, white).rotateX(Math.PI / 2).translate(0, 0, -.4)];
     const stations = [[1, 1], [3, 1.6], [6, 1.3], [10, .9], [14, .6], [17, .25]] as const;
     for (let k = 0; k < 3; k++) {
@@ -325,7 +325,7 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
       turned([[2.7, 0], [2.6, .5], [1.8, .7], [1.35, 6.2], [1.6, 6.8], [0, 6.8]], small ? 10 : 16, concrete),
       faceted(new THREE.BoxGeometry(2.3, 1.5, 2.0), strut).translate(0, 7.45, 0),
     ]), x, s, turn, -.2);
-    const mount = era(pier, base, 512, 532); blocks.push([x, s, 2.9]);
+    const mount = era(pier, base, 537, 548); blocks.push([x, s, 2.9]);
     dishHead = new THREE.Group(); dishHead.position.copy(world(V(0, 8.2, 0), x, s, turn, -.2)).y -= base; dishHead.rotation.y = turn; mount.add(dishHead);
     const profile: Array<[number, number]> = Array.from({ length: 8 }, (_, i) => { const r = i / 7 * 6.8; return [r, r * r / 17]; });
     const reflector: THREE.BufferGeometry[] = [
@@ -343,7 +343,7 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
     }
     const bowl = new THREE.Mesh(own(merged(reflector).rotateX(.96)), matte); bowl.castShadow = bowl.receiveShadow = true; dishHead.add(bowl);
   }
-  { // a low dark compute hall in the wheat: slate walls, cooling louvers, dry-cooler shrouds and a narrow telemetry slit
+  { // A service yard leads off the paved road to the compute hall's coolers.
     const [s, off] = CLEARINGS.compute, x = at(off, s), turn = facing(x, s, roadX(578), 578), base = floor(x, -s) - .25;
     const pad = of(1, lit("#605e58", "#949088", rand, .06)), slate = lit("#171b22", "#2b323d", rand, .05), trim = flat("#101318", rand, .04), alloy = lit("#4c535b", "#8a929a", rand, .06);
     const hall: THREE.BufferGeometry[] = [
@@ -351,14 +351,22 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
       faceted(new THREE.BoxGeometry(12.8, 5.4, 7.0), slate).translate(0, 3.0, 0),
       faceted(new THREE.BoxGeometry(13.4, .32, 7.5), trim).translate(0, 5.82, 0),
       faceted(new THREE.BoxGeometry(10.2, .22, .18), trim).translate(0, 3.9, 3.52), // recessed telemetry channel
+      faceted(new THREE.BoxGeometry(8.8, .24, 7), pad).translate(4.1, .13, 5.1),
+      faceted(new THREE.BoxGeometry(1.45, 2.52, .12), alloy).translate(.9, 1.57, 3.56),
+      faceted(new THREE.BoxGeometry(.27, .055, .08), trim).translate(1.32, 1.54, 3.66),
+      faceted(new THREE.BoxGeometry(1.95, .09, 1.2), alloy).translate(.9, 3.15, 3.99),
     ];
+    for (const u of [2.5, 3.1]) {
+      hall.push(limb(V(u, .35, 6.15), V(u, 1.6, 6.15), .12, .12, alloy, { sides: 8 }),
+        limb(V(u, 1.6, 6.15), V(u, 1.6, 3.52), .12, .12, alloy, { sides: 8 }));
+    }
     for (let i = -5; i <= 5; i++) if (Math.abs(i) > 1) hall.push(faceted(new THREE.BoxGeometry(.12, 3.8, .28), trim).translate(i * 1.0, 2.45, 3.56)); // cooling intake louvers
     for (let i = -1; i <= 1; i++) { // three dry-cooler fan stacks on the side pad
       hall.push(faceted(new THREE.BoxGeometry(1.6, 1.6, 1.6), alloy).translate(7.4, 1.1, i * 2.0));
       hall.push(turned([[.66, 0], [.66, .32], [.58, .36], [0, .28]], small ? 8 : 12, trim).translate(7.4, 1.9, i * 2.0));
     }
     const list: THREE.BufferGeometry[] = []; put(list, merged(hall), x, s, turn, -.25);
-    const building = era(list, base, 538, 558); blocks.push([x, s, 7.5]);
+    const building = era(list, base, 563, 578); blocks.push([x, s, 7.5]);
     telemetry = own(new THREE.MeshBasicMaterial({ color: new THREE.Color("#dfa855"), side: THREE.DoubleSide }));
     const strip = new THREE.Mesh(own(merged([-4.1, -2.6, -1.2, .4, 2.0, 3.6].map((u, i) => new THREE.PlaneGeometry(i % 2 ? .6 : 1.05, .07).translate(u, 0, 0)))), telemetry);
     const slit = world(V(0, 3.9, 3.63), x, s, turn, -.25); strip.position.set(slit.x, slit.y - base, slit.z); strip.rotation.y = turn; building.add(strip);
@@ -366,7 +374,7 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
 
   // ---------- life: trees along the field margins, poplars by the mill, lone trees out in the open field ----------
   for (let i = 0; i < (small ? 8 : 14); i++) { const s = 270 + rand() * 200; plant("fig", at((rand() < .5 ? -1 : 1) * (37 + rand() * 12), s), s, 6 + rand() * 3, .45); }
-  for (const [s, off, height] of [[528, -20, 8.5], [563, 27, 9.5], [596, -38, 8]] as const) plant("fig", at(off, s), s, height, .6);
+  for (const [s, off, height] of [[528, -20, 8.5], [544, -9, 6], [568, -9, 7], [573, 10, 7.5], [563, 27, 9.5], [596, -38, 8]] as const) plant("fig", at(off, s), s, height, .6);
   for (const [s, off, height] of [[481, 41, 13], [489, 43.5, 15], [494, 39, 12]] as const) plant("poplar", at(off, s), s, height, .7);
 
   // The wheat ends in two low folds of land. Their saddles leave open sky behind the slab on the approach.

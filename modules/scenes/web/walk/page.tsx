@@ -164,7 +164,7 @@ function Walk({ interrupted, onContextLost }: { interrupted: boolean; onContextL
           <h1 id="walk-title" data-walk="cover-title" tabIndex={-1}>
             <span>{tx("从火堆")}</span>{locale === "en" && " "}<em>{tx("到巨石")}</em>
           </h1>
-          <p className="walk-lede" data-walk="cover-text">{tx("给火添柴，为来年留一把麦种。顺着田埂往前走，你会听见今天的机房。")}</p>
+          <p className="walk-lede" data-walk="cover-text">{tx("给火添柴，为来年留一把麦种。走过粮仓和工房，听见今天机房里的风扇。")}</p>
           <div className="walk-actions">
             {FEATURES.eaccConcepts && <Link className="walk-exit" data-walk="manifesto" to={localePath("/manifesto#wheat", locale)} hidden>{tx("读宣言里的〈小麦〉")}</Link>}
             <Link className="walk-exit" data-walk="exit" to={localePath("/chronicle", locale)} hidden>{tx("看今天的加速史")}</Link>

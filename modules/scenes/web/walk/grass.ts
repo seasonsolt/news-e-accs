@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { Kit } from "./camp.ts";
-import { END_S, FIELD_S, FIRE_S, fbm, noise, roadX, sequence, smooth } from "./land.ts";
+import { END_S, FIELD_S, FIRE_S, cropCover, fbm, noise, roadX, sequence, smooth } from "./land.ts";
 
 // Savanna grass in the night country, s -25 to 275, and the tall grass on the field verges.
 // A clump is up to 64 thin blades bent in the vertex shader, under a sparse stubble; the material stays a standard one, so the sun, moon and fire, their shadows, the sky's light and the fog all reach it.
@@ -31,7 +31,7 @@ export function grassCover(blocks: Kit["blocks"], fireX: number) {
   return (x: number, s: number) => {
     const d = Math.abs(x - roadX(s)), camp = Math.hypot(x - fireX - 1.5, s - FIRE_S - 1);
     const ragged = d + (noise(x * 1.3, s * 1.3) - .5) * .8; // the grass creeps in on the road's edge unevenly
-    if (s > FIELD_S) return smooth(.95, 1.4, ragged) * (1 - smooth(1.5, 2, d)) * .7;
+    if (s > FIELD_S) return cropCover(x - roadX(s), s) * smooth(.95, 1.4, ragged) * (1 - smooth(1.5, 2, d)) * .7;
     let foot = 0;
     for (const [bx, bs, r] of near.get(Math.floor(x / 8))?.get(Math.floor(s / 8)) ?? []) {
       const gap = Math.hypot(x - bx, s - bs); if (gap < r * .8) return -1; foot = Math.max(foot, 1 - smooth(r, r + 2.6, gap));

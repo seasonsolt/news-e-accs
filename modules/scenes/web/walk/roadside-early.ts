@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { Kit } from "./camp.ts";
+import { buildEarlyLandscapes } from "./early-landscapes.ts";
 import { ROADSIDE, roadX, sequence } from "./land.ts";
 import { person, type Pose } from "./people.ts";
 import { blob, faceted, flat, limb, lit, merged, of, smoothed, triangles, turned, type Paint } from "./shapes.ts";
@@ -11,6 +12,7 @@ const ring = (radius: number, tube: number, paint: Paint) => smoothed(new THREE.
 /** Two small acts of carrying knowledge: a journey out of camp, then grain counted in clay. All pieces join the existing static material batch. */
 export function buildEarlyStops(kit: Kit) {
   const { floor, stand, blocks, small } = kit;
+  buildEarlyLandscapes(kit);
   // Local placements still sample the ground separately: feet and sacks follow the road's uneven verge.
   function stop(at: readonly [number, number, number]) {
     const [s, offset] = at, x = roadX(s) + offset, base = floor(x, -s), parts: THREE.BufferGeometry[] = [];

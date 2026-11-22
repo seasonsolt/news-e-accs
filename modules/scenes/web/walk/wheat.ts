@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { FIELD_S, MONOLITH, MONO_S, VILLAGE, cleared, roadX, smooth } from "./land.ts";
+import { FIELD_S, MONOLITH, MONO_S, VILLAGE, cleared, cropCover, roadX, smooth } from "./land.ts";
 
 type Disposable = { dispose(): void };
 type Settings = {
@@ -181,16 +181,16 @@ export function buildWheat({ scene, own, rand, floor, small, still, fireX, fireS
     if (!chunks.has(key)) chunks.set(key, []);
     chunks.get(key)!.push(x, floor(x, -s), -s, height, .85 + rand() * .4, rand() * 6.283, head, tint.r, tint.g, tint.b, s);
   };
-  for (let s = FIELD_S; s < 478; s += (s < 380 ? .34 : .62) / density) for (let row = -34; row <= 34; row++) {
+  for (let s = FIELD_S; s < 414; s += (s < 380 ? .34 : .52) / density) for (let row = -34; row <= 34; row++) {
     if (Math.abs(row) < 2 || (s > VILLAGE.from && s < VILLAGE.to && row > 8 && row < 30)) continue;
-    const ripeness = smooth(330, 470, s), x = roadX(s) + row * .92 + (rand() - .5) * .22, at = s + (rand() - .5) * .4;
-    if (cleared(x, at)) continue;
+    const ripeness = smooth(316, 397, s), x = roadX(s) + row * .92 + (rand() - .5) * .22, at = s + (rand() - .5) * .4;
+    if (rand() >= cropCover(row * .92, at) || cleared(x, at)) continue;
     tint.copy(young).lerp(ripe, ripeness).multiplyScalar(.83 + rand() * .25);
     add(x, at, .5 + ripeness * .55 + rand() * .2, smooth(300, 380, s));
   }
-  for (let i = 0; i < 96000 * density; i++) {
-    const s = 474 + rand() * 250, off = (rand() - .5) * (rand() < .62 ? 48 : 170), x = roadX(Math.min(s, MONO_S)) + off;
-    if ((Math.abs(off) < 1.25 && s < MONO_S) || Math.hypot(x - stoneX, s - MONO_S) < 9.5 || cleared(x, s)) continue;
+  for (let i = 0; i < 44000 * density; i++) {
+    const s = 612 + rand() * 112, off = (rand() - .5) * (rand() < .62 ? 48 : 170), x = roadX(Math.min(s, MONO_S)) + off;
+    if (rand() >= cropCover(off, s) || (Math.abs(off) < 1.25 && s < MONO_S) || Math.hypot(x - stoneX, s - MONO_S) < 9.5 || cleared(x, s)) continue;
     tint.copy(ripe).lerp(pale, rand() * .7).multiplyScalar(.82 + rand() * .25);
     add(x, s, 1.02 + rand() * .36, 1);
   }

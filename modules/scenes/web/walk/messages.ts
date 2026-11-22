@@ -13,7 +13,7 @@ const lines: Record<string, string> = {
   "纸从压板下揭起来。同一行字，又多了一个读者。": "A sheet lifts from the press. The same line of type can reach another reader.",
   "风推着磨盘转。有人在这里把麦粒磨成面粉。": "Wind turns the millstones. Here the grain is ground into flour.",
   "换一串孔卡，织出的花纹就变了。": "Change the chain of punched cards and a different pattern appears in the cloth.",
-  "抬头看，电线沿着田埂，一直通到机房。": "Look up. Power lines run along the field to the data center.",
+  "街边的电线上停着几只鸟。沿着这排电杆走，就到了实验室。": "A few birds perch on the wires above the street. The line of poles leads to a laboratory.",
   "有人想从远处登录。线路中断前，另一台计算机收到了 LO。": "Someone tries to log in from afar. Before the connection drops, the other computer receives LO.",
   "风扇在响。机房里的模型，学的是人留下的文字和代码。": "Listen to the fans. Inside, models learn from words and code that people wrote.",
 };
@@ -24,7 +24,7 @@ export const messages = { en: {
   ...guideEnglish,
   "从火堆": "From Fire", "到巨石": "to Monolith",
   "加速史 · 第一人称漫游": "Chronicle · A first-person walk", "约两分钟": "About 2 min",
-  "给火添柴，为来年留一把麦种。顺着田埂往前走，你会听见今天的机房。": "Tend the fire. Save wheat for next year. Follow the field path until you hear the fans of a data center.",
+  "给火添柴，为来年留一把麦种。走过粮仓和工房，听见今天机房里的风扇。": "Tend the fire. Save wheat for next year. Walk past the granary and the workshops until you hear the fans of a data center.",
   "阅读图文路线": "Read the field notes", "沿途三幕": "Three chapters along the road",
   "火堆": "Hearth", "麦田": "Wheat field", "巨石": "Monolith", "今天": "Today",
   "约一百万年前": "A million years ago", "约一万两千年前": "12,000 years ago",

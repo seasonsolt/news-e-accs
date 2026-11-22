@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { ReliefScan } from "./relief.ts";
 import { buildCamp, type Kit } from "./camp.ts";
 import { buildFields } from "./fields.ts";
-import { FIRE_S, MONOLITH, MONO_S, SOW_S, roadX } from "./land.ts";
+import { FIRE_S, MONOLITH, MONO_S, SOW_S, ROADSIDE, roadX, smooth } from "./land.ts";
 import { POSES, person } from "./people.ts";
 import { buildMonolith } from "./monolith.ts";
 import { buildEarlyStops } from "./roadside-early.ts";
@@ -33,8 +33,30 @@ export function buildProps(setting: Setting) {
 
   const kit: Kit = { ...setting, matte, stand, blocks }, camp = buildCamp(kit);
   buildEarlyStops(kit);
-  buildWorkshops(kit);
-  buildNetworkStop(kit);
+  // Later silhouettes must not leak into the prehistoric horizon. Separate only these few batches;
+  // stippled coverage keeps solid surfaces and their proportions, with no transparent sorting or scaling.
+  const eras = [
+    { from: ROADSIDE.press[0] - 40, to: ROADSIDE.press[0] - 16 },
+    { from: ROADSIDE.loom[0] - 36, to: ROADSIDE.loom[0] - 14 },
+    { from: ROADSIDE.terminal[0] - 35, to: ROADSIDE.terminal[0] - 13 },
+    { from: MONO_S - 74, to: MONO_S - 46 },
+  ].map(range => ({ ...range, coverage: { value: 0 }, parts: [] as THREE.BufferGeometry[], meshes: [] as THREE.Mesh[] }));
+  function veil(material: THREE.MeshStandardMaterial, coverage: { value: number }) {
+    const before = material.onBeforeCompile, key = material.customProgramCacheKey();
+    material.onBeforeCompile = (shader, renderer) => {
+      before.call(material, shader, renderer);
+      shader.uniforms.eraCoverage = coverage;
+      shader.fragmentShader = shader.fragmentShader.replace("#include <common>", "#include <common>\nuniform float eraCoverage;")
+        .replace("#include <clipping_planes_fragment>", `#include <clipping_planes_fragment>
+          if (eraCoverage < 1. && fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(.06711056, .00583715)))) >= eraCoverage) discard;`);
+    };
+    material.customProgramCacheKey = () => `${key}-era-coverage`;
+  }
+  const timedStand = (index: number): Kit["stand"] => (shape, x, s, turn = 0, lift = 0) => {
+    eras[index]!.parts.push(shape.rotateY(turn).translate(x, floor(x, -s) + lift, -s));
+  };
+  buildWorkshops({ ...kit, stand: (shape, x, s, turn, lift) => timedStand(s < ROADSIDE.loom[0] - 10 ? 0 : 1)(shape, x, s, turn, lift) });
+  buildNetworkStop({ ...kit, stand: timedStand(2) });
 
   // ---------- loose stone ----------
   const clear = (x: number, s: number, room: number) => blocks.every(([bx, bs, r]) => Math.hypot(x - bx, s - bs) > r + room) && Math.hypot(x - fireX, s - FIRE_S) > 2.6 + room;
@@ -80,14 +102,27 @@ export function buildProps(setting: Setting) {
   const village = buildVillage(kit, camp.flame, forest.plant), fields = buildFields(kit, forest.plant); forest.finish();
 
   // ---------- the stone, facing the walker, the sun behind it ----------
-  buildMonolith(setting, stoneX, floor(stoneX, -MONO_S), -MONO_S);
+  const monolith = buildMonolith(setting, stoneX, floor(stoneX, -MONO_S), -MONO_S);
+  veil(monolith.material, eras[3]!.coverage); monolith.visible = false; eras[3]!.meshes.push(monolith);
   blocks.push([stoneX, MONO_S, Math.hypot(MONOLITH.width, MONOLITH.depth) / 2]);
   // The figure at the edge of the wheat gives the slab the same human scale as the homepage plate.
   const walkerX = stoneX + 6.7, walkerS = MONO_S - 3.8;
   const walker = person(rand, { ...POSES.stand, look: [0, 2.7, 2.2] }, { cloth: "#b99b71", dress: "tunic", hat: "none", small: true });
-  stand(walker, walkerX, walkerS, Math.atan2(stoneX - walkerX, walkerS - MONO_S));
+  timedStand(3)(walker, walkerX, walkerS, Math.atan2(stoneX - walkerX, walkerS - MONO_S));
   blocks.push([walkerX, walkerS, .36]);
 
   for (const shapes of stretches.values()) { const mesh = new THREE.Mesh(own(merged(shapes)), matte); mesh.castShadow = mesh.receiveShadow = true; scene.add(mesh); }
-  return { ...camp, village, basketX, sowLight, blocks, fields };
+  for (const era of eras) {
+    const material = own(matte.clone()); material.onBeforeCompile = matte.onBeforeCompile; material.customProgramCacheKey = matte.customProgramCacheKey;
+    veil(material, era.coverage);
+    const mesh = new THREE.Mesh(own(merged(era.parts)), material); mesh.visible = false; mesh.receiveShadow = true;
+    scene.add(mesh); era.meshes.push(mesh);
+  }
+  function propsFrame(s: number) {
+    for (const era of eras) {
+      const k = smooth(era.from, era.to, s); era.coverage.value = k;
+      for (const mesh of era.meshes) { mesh.visible = k > 0; mesh.castShadow = k >= .99; }
+    }
+  }
+  return { ...camp, village, basketX, sowLight, blocks, fields, propsFrame };
 }

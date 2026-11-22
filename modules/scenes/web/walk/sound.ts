@@ -1,5 +1,5 @@
 // The walk's sound, made the way its world is made: noise, oscillators and filters shaped by where the walker stands. No recordings.
-import { CAVE_S, VILLAGE, mix, noise, smooth } from "./land.ts";
+import { CANAL, CLEARINGS, CAVE_S, cropCover, VILLAGE, mix, noise, smooth } from "./land.ts";
 
 export interface Hearing {
   s: number;            // distance walked
@@ -189,8 +189,8 @@ export function startSound(ctx: AudioContext, muted: boolean): Sound {
       feedHeat *= Math.exp(-dt / 2.5);
       const cave = 1 - smooth(3, 18, Math.abs(h.s - CAVE_S));
       const heat = Math.pow(1 - smooth(4, 35, h.fireGap), 2) * (.6 + .4 * h.fed / 3 + feedHeat * .5) + cave * .2 + (1 - smooth(2, 16, Math.abs(h.s - VILLAGE.yardS))) * .3;
-      const flow = Math.max(smooth(358, 368, h.s) * (1 - smooth(440, 452, h.s)) * .45, 1 - smooth(2, 16, Math.abs(h.s - 361)));
-      const birdsNow = smooth(236, 262, h.s) * mix(1, .3, smooth(300, 470, h.s)) * nature * day, turning = smooth(462, 474, h.s) * (1 - smooth(498, 510, h.s)) * day;
+      const flow = Math.max(smooth(CLEARINGS.pond[0], CANAL.from, h.s) * (1 - smooth(CANAL.to, CANAL.to + 8, h.s)) * .45, 1 - smooth(2, 16, Math.abs(h.s - CLEARINGS.pond[0])));
+      const birdsNow = smooth(236, 262, h.s) * mix(1, .3, smooth(300, 470, h.s)) * nature * day, turning = (1 - smooth(6, 23, Math.abs(h.s - CLEARINGS.mill[0]))) * day;
 
       if (h.pace > .05) { stride += dt * 2.1 * Math.sqrt(h.pace); if (stride >= 1) { stride -= 1; left = !left; if (!muted) step(now, h.pace, field); } }
       else stride = .7; // the first step comes soon after setting off
@@ -223,7 +223,7 @@ export function startSound(ctx: AudioContext, muted: boolean): Sound {
       ease(wind.gain, mix(.05, .13, field) * (.3 + .9 * gust) * nature * mix(1, .35, h.dusk), .3); ease(windBand.frequency, 280 + 520 * gust, .3);
       // In the closing wide shot, the foreground wheat rustles over the distant fans.
       const fieldAir = nature * day + .42 * smooth(.56, 1, h.dusk);
-      ease(wheat.gain, smooth(258, 420, h.s) * fieldAir * (.2 + .8 * Math.pow(gust, 1.5)) * .07, .22);
+      ease(wheat.gain, cropCover(-8, h.s) * fieldAir * (.2 + .8 * Math.pow(gust, 1.5)) * .07, .22);
       ease(birds.gain, .05 * nature * day, .3);
       ease(water.gain, flow * .06, .3);
       ease(grind.gain, smooth(VILLAGE.from - 1, VILLAGE.from + 6, h.s) * (1 - smooth(VILLAGE.to - 7, VILLAGE.to, h.s)) * .03, .3);

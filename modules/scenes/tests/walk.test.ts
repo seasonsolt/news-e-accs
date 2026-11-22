@@ -7,7 +7,7 @@ import { closeDb } from "@aihot/backend/db";
 import { installModules } from "@aihot/backend/modules";
 import { loadDiscoveryEntries } from "@aihot/backend/publication/sitemap";
 import { normalizeSiteEvent, WALK_ACTS, WALK_PLACES, WALK_TIMES } from "@aihot/backend/site/analytics";
-import { BRIDGE, CANAL, CAVE_S, CLEARINGS, COMPUTE_S, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONO_S, ROADSIDE, SOW_S, STOP_YEARS, bridgeLift, chapterAt, cleared, ground, keepDry, roadX, sheet, yearReading, yearsAgo } from "../web/walk/land.ts";
+import { BRIDGE, CANAL, CAVE_S, CLEARINGS, COMPUTE_S, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONO_S, ROADSIDE, SOW_S, STOP_YEARS, bridgeLift, chapterAt, cleared, cropCover, ground, keepDry, roadX, sheet, yearReading, yearsAgo } from "../web/walk/land.ts";
 import { messages as walk } from "../web/walk/messages.ts";
 import { buildMonolith } from "../web/walk/monolith.ts";
 import scenes from "../server.ts";
@@ -25,7 +25,7 @@ test("the road runs in order from the hearth to the stone and stays walkable", (
     assert.ok(Math.abs(roadX(s)) + 48 < 150, `road at ${s}`);
     if (s <= END_S) assert.deepEqual(keepDry(roadX(s), s), [roadX(s), s], `road stays dry at ${s}`);
   }
-  // Pond and canal push walkers back onto the bank, except across the plank bridge at s = 424; clearings stay bare of wheat.
+  // Pond and canal push walkers back onto the bank, except across the plank bridge; clearings stay bare of wheat.
   const [pondS, pondOff] = CLEARINGS.pond, pondCenter = roadX(pondS) + pondOff;
   const [outX, outS] = keepDry(pondCenter + .2, pondS);
   assert.ok(Math.hypot(outX - pondCenter, outS - pondS) >= 4.34, "cannot stand in the pond");
@@ -36,6 +36,15 @@ test("the road runs in order from the hearth to the stone and stays walkable", (
   assert.ok(bridgeLift(bridgeMid, BRIDGE.s) > .25 && bridgeLift(roadX(BRIDGE.s), BRIDGE.s) === 0);
   assert.equal(keepDry(bridgeMid, BRIDGE.s + BRIDGE.halfS + .15)[1], BRIDGE.s + BRIDGE.halfS, "cannot step off the side of the plank bridge into the canal");
   for (const [cs, off] of Object.values(CLEARINGS)) assert.equal(cleared(roadX(cs) + off, cs), true);
+});
+
+test("wheat belongs to the sown plots, the irrigated harvest and the final field", () => {
+  for (const s of [130, 352, 439, 490, 551, 604]) {
+    for (let offset = -100; offset <= 100; offset += 5) assert.equal(cropCover(offset, s), 0, `wheat at ${s}, ${offset}`);
+  }
+  for (const s of [275, 390, MONO_S]) assert.ok(cropCover(-8, s) > .9);
+  assert.equal(cropCover(40, 275), 0);
+  assert.equal(cropCover(-40, 390), 0);
 });
 
 test("scenery samples the same two triangles drawn for each terrain cell", () => {

@@ -18,7 +18,7 @@ import { loadRelief } from "./relief.ts";
 import { buildProps } from "./props.ts";
 import { startSound, type Sound } from "./sound.ts";
 import { buildVerge } from "./verge.ts";
-import { CANAL, CLEARINGS, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONOLITH, MONO_S, REACH_S, SOW_S, START_S, bridgeLift, chapterAt, clamp, fbm, ground, keepDry, mix, roadsideStops, roadX, sequence, sheet, smooth, yearReading, yearsAgo } from "./land.ts";
+import { CANAL, CLEARINGS, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONOLITH, MONO_S, REACH_S, SOW_S, START_S, bridgeLift, chapterAt, clamp, cropCover, fbm, ground, keepDry, mix, roadsideStops, roadX, sequence, sheet, smooth, yearReading, yearsAgo } from "./land.ts";
 
 // The hour at points along the road: [s, zenith, horizon, fog, sun colour, sun strength, sky light, stars, sun height, fog density].
 const HOURS = ([
@@ -134,10 +134,14 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
       const x = p.getX(i), z = p.getZ(i), s = -z, d = Math.abs(x - roadX(s)), n = fbm(x * .09, z * .09);
       p.setY(i, ground(x, z));
       c.copy(palette.dry).lerp(palette.dust, n).lerp(palette.green, smooth(170, 250, s) * smooth(.35, .7, n) * .5); // dry earth, greener toward the first field
+      const lowland = smooth(330, 345, s) * (1 - smooth(359, 372, s));
+      c.lerp(b.set("#ae8965").multiplyScalar(.82 + n * .32), lowland);
+      const upland = smooth(402, 420, s) * (1 - smooth(611, 624, s));
+      c.lerp(b.set("#697467").multiplyScalar(.65 + n * .6), upland);
       const road = 1 - smooth(.8, 3.4, d), camp = 1 - smooth(4, 13, Math.hypot(x - fireX - 2.5, s - FIRE_S - 1));
       c.lerp(palette.road, road * .55).lerp(palette.camp, camp); // the road and the camp are packed pale by feet
-      const tilled = smooth(238, 262, s) * (1 - (1 - smooth(1.2, 2.6, d)) * (s < 470 ? .55 : 0));
-      c.lerp(b.copy(palette.tilled).lerp(palette.ripe, smooth(400, 480, s)).multiplyScalar(.9 + n * .25), tilled); // the furrows are drawn by the ground shader
+      const tilled = cropCover(x - roadX(s), s) * (1 - (1 - smooth(1.2, 2.6, d)) * (s < 470 ? .55 : 0));
+      c.lerp(b.copy(palette.tilled).lerp(palette.ripe, smooth(310, 400, s)).multiplyScalar(.9 + n * .25), tilled); // the furrows are drawn by the ground shader
       const off = x - roadX(s); let path = 0; // the village yard is trodden pale, with paths worn paler still
       if (s > 310 && s < 356) for (const [ax, as, bx, bs] of paths) path = Math.max(path, 1 - smooth(.5, 1.5, toSegment(off, s, ax, as, bx, bs)));
       // Feet wear a short approach from the road to each workbench.
@@ -195,7 +199,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   await pause("landmarks"); if (signal.aborted) return;
 
   // ---------- things along the way ----------
-  const { fireY, showLogs, frame: tendFire, village, basketX, sowLight, blocks, fields } = buildProps({ scene, own, rand, small, still, out: OUT, floor, fireX, stoneX, stoneScan, wind: fieldUniforms });
+  const { fireY, showLogs, frame: tendFire, village, basketX, sowLight, blocks, fields, propsFrame } = buildProps({ scene, own, rand, small, still, out: OUT, floor, fireX, stoneX, stoneScan, wind: fieldUniforms });
   await pause(); if (signal.aborted) return;
   const { tallGrass } = buildVerge({ scene, own, rand, small, floor, blocks }, fieldUniforms, trackScan);
   const clouds = buildClouds({ scene, own, rand, small, out: OUT }), cloudSun = new THREE.Color(), cloudSky = new THREE.Color();
@@ -465,7 +469,9 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     }
     if (sownAt === null && me.s > FIELD_S + 12) sow(false);
     if (sownAt !== null) {
-      const front = SOW_S + (clock - sownAt) * 34; fieldUniforms.front.value = front;
+      // The last field reappears beyond the campus, growing into view as the road leaves the data hall.
+      const front = Math.min(SOW_S + (clock - sownAt) * 34, mix(605, 760, smooth(558, 601, me.s)));
+      fieldUniforms.front.value = front;
       for (const chunk of fieldChunks) chunk.mesh.visible = front > chunk.minS - 4;
     }
     if (seedT >= 0) {
@@ -524,6 +530,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     fieldUniforms.fire.value.set(fireX, fireY + .8, -FIRE_S, fire.glow * .5);
     village.villageLight.intensity = 14 * fire.flicker; village.frame(clock, me.s);
     sowLight.visible = Math.abs(me.s - SOW_S) < 85 && me.s < 335; if (sowLight.visible) sowLight.intensity = 5.5 * (.9 + .1 * fire.flicker);
+    propsFrame(me.s);
     fields.frame(clock, dt, me.s); fields.water.color.copy(hour.top).lerp(hour.horizon, .18).multiplyScalar(.55 + power * .35); fields.waterSun.copy(sunDir); // open water shows the sky overhead, darker than the sky at the horizon
 
     const eyeY = ground(me.x, -me.s) + bridgeLift(me.x, me.s) + 1.66 + (still ? 0 : Math.sin(me.bob) * .035);

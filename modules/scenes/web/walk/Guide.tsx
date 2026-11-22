@@ -8,7 +8,7 @@ import { STOP_YEARS } from "./land.ts";
 const chapters = [
   {
     id: "walk-fire", time: "夜里 · 从约一百万年前出发", title: "守着火的人",
-    text: "你给火塘添一根柴。往夜里走，大人背着行囊，孩子沿脚印跟上。再往前，石檐下留着一只赭红的掌印。",
+    text: "你给火塘添一根柴。大人背着行囊穿过干涸的河谷，孩子踩着他们的脚印。再往前，石檐下留着一只赭红的掌印。",
     moments: [[STOP_YEARS.migration, "约六万年前 · 走出非洲"]],
     image: [artUrl("/media/art/epochs/taming-fire", 800), artUrl("/media/art/epochs/taming-fire", 1600)],
     alt: "岩画风格的图像里，人们围坐在火堆旁，野牛和赭红手印环绕四周。",
@@ -17,7 +17,7 @@ const chapters = [
   },
   {
     id: "walk-field", time: "清晨 · 从约一万两千年前走来", title: "留下的一把种子",
-    text: "麦种把人留在田边。村口的粮食一袋袋入仓，记账的人用芦苇笔把数目压进湿泥。走过水渠，印刷机旁晾着一张张印有相同文字的纸。",
+    text: "麦种把人留在田边。在苏美尔的泥砖粮仓前，记账人用芦苇笔把收成压进湿泥。再往前，美因茨街边的印坊里，同一行铅字在一张又一张纸上留下印迹。",
     moments: [[STOP_YEARS.ledger, "约公元前 3200 年 · 泥板与粮账"], [STOP_YEARS.press, "约 1440 年 · 古腾堡印刷机"]],
     image: [artUrl("/media/art/epochs/agricultural-revolution", 800), artUrl("/media/art/epochs/agricultural-revolution", 1600)],
     alt: "彩陶风格的图像里，人们在田里播种，山羊经过正在垒砌的房屋。",
@@ -26,7 +26,7 @@ const chapters = [
   },
   {
     id: "walk-monolith", time: "午后 · 走到今天", title: "麦田里的巨石",
-    text: "织工把花纹编进一串孔卡。再往前，一台终端把两个字母送到另一台计算机。今天的机房读着人留下的文字与代码。穿过麦田便是《2001：太空漫游》里的黑碑，这一次是人自己立起的。",
+    text: "里昂的高窗下，织工把花纹编进一串孔卡。在洛杉矶的校园实验室里，电传机敲出的两个字母到了另一台计算机。走过今天的机房，麦田又出现在眼前。《2001：太空漫游》里的黑碑，这一次由人自己立起。",
     moments: [[STOP_YEARS.loom, "约 1804 年 · 雅卡尔提花机"], [STOP_YEARS.terminal, "1969 年 · ARPANET 首条消息"]],
     image: ["/media/art/manifesto-monolith-800.webp", "/media/art/manifesto-monolith-1600.webp"],
     alt: "日落的麦田中，一块光滑无字的黑色长方体独自竖立。",

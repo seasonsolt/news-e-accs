@@ -22,17 +22,29 @@ export function sequence(seed: number) { return () => { seed = (Math.imul(seed, 
 /** Shared road curve coefficients (also read by groundcover.ts so shader ruts never drift from the road). */
 export const ROAD = { a1: 13, f1: .0115, a2: 5, f2: .031, p2: 1.3 } as const;
 export const roadX = (s: number) => ROAD.a1 * Math.sin(s * ROAD.f1) + ROAD.a2 * Math.sin(s * ROAD.f2 + ROAD.p2);
+/** The first small plots, the irrigated harvest, and the field that opens beyond the machine hall. */
+export function cropCover(off: number, s: number) {
+  if (s >= 612) return smooth(612, 624, s - Math.min(6, Math.abs(off) * .06));
+  if (s < FIELD_S || s >= 414 || (s >= 335 && s <= 365)) return 0;
+  const limit = s < 335 ? 19 + 5 * Math.sin(s * .09) : 29;
+  const side = s < 335 ? mix(1, smooth(4, 13, off), smooth(282, 311, s) * (off > 0 ? 1 : 0)) : 1;
+  const along = s < 335 ? smooth(256, 266, s) * (1 - smooth(319, 335, s)) : smooth(365, 374, s) * (1 - smooth(405, 414, s));
+  return along * side * (1 - smooth(limit - 4, limit, Math.abs(off)));
+}
 /** Ground height. The road itself stays gentle; ridges rise beside it in the night country, and the last field lies almost flat around the stone. */
 export function ground(x: number, z: number) {
   const s = -z, d = Math.abs(x - roadX(s)), wild = 1 - smooth(150, 240, s), field = smooth(380, 480, s);
   const roll = (fbm(x * .018 + 9, z * .018) - .5) * 9 * smooth(5, 42, d) * (1 - field * .72);
   const ridge = Math.pow(fbm(x * .035, z * .035 + 4), 2) * 34 * smooth(20, 70, d) * wild;
   const near = (noise(x * .21, z * .21) - .5) * .5 * (1 - field * .6);
-  return (roll + ridge + near) * mix(.12, 1, smooth(8, 46, Math.hypot(x - roadX(MONO_S), s - MONO_S)));
+  const settlement = Math.max(smooth(335, 343, s) * (1 - smooth(361, 366, s)), smooth(407, 420, s) * (1 - smooth(607, 615, s)));
+  const river = Math.abs(x - roadX(s) + 14 - 2.4 * Math.sin((s - 126) * .078));
+  const bed = smooth(102, 115, s) * (1 - smooth(148, 159, s)) * (1 - smooth(4.5, 9, river));
+  return (roll + ridge + near) * (1 - .93 * settlement * (1 - smooth(22, 43, d))) * mix(.12, 1, smooth(8, 46, Math.hypot(x - roadX(MONO_S), s - MONO_S))) - bed * 1.15;
 }
 
 /** Where the wheat gives way to something else: [s, offset from the road, radius]. The pond's radius takes in its bank and the shaduf. */
-export const CLEARINGS = { pond: [361, -9.5, 6.4], reaped: [425, -13.5, 8.5], calendar: [452, 10, 5.5], mill: [486, 34, 6], dish: [584, 15.5, 7.5], compute: [604, -17, 9.5] } as const;
+export const CLEARINGS = { pond: [370, -9.5, 6.4], reaped: [397, -13.5, 8.5], calendar: [382, 13, 5.5], mill: [465, 38, 6], dish: [584, 15.5, 7.5], compute: [604, -17, 9.5] } as const;
 /** Small scenes close enough to inspect on foot: [distance along the road, offset, bare ground radius]. */
 export const ROADSIDE = {
   migration: [132, -4.1, 3.3], ledger: [352, 4.6, 3.1], press: [439, 5.1, 4.2],
@@ -42,9 +54,9 @@ export const roadsideStops = Object.values(ROADSIDE);
 // The Chronicle uses astronomical years. Dates with day precision retain their fraction in a timeline link.
 export const STOP_YEARS = { migration: -58050, ledger: -3199, press: 1440, loom: 1804, terminal: 1969.8247 } as const;
 /** The canal: it leaves the pond, runs beside the road on the left from `from` to `to`, and lets channels into the wheat: [s where one leaves, s where it ends, offset where it ends]. */
-export const CANAL = { from: 368, to: 444, offset: -5.2, channels: [[381, 385, -19], [402, 406.5, -23], [439, 443, -21]] } as const;
+export const CANAL = { from: 378, to: 410, offset: -5.2, channels: [[383, 386, -19], [403, 407, -21]] } as const;
 /** The plank bridge across the canal into the harvest clearing. */
-export const BRIDGE = { s: 424, halfS: .62, bank: 1.18, deck: .32 } as const;
+export const BRIDGE = { s: 396, halfS: .62, bank: 1.18, deck: .32 } as const;
 /** The places the walk's anonymous counts name, in order along the road (docs/analytics.md); the server accepts only these names. */
 export const MILESTONES = [["fire", FIRE_S], ["cave", CAVE_S], ["sow", SOW_S], ["village", VILLAGE_S], ["fields", CANAL.from], ["machines", MACHINES_S], ["compute", COMPUTE_S], ["stone", REACH_S]] as const;
 const toSegment = (x: number, s: number, ax: number, as: number, bx: number, bs: number) => {
@@ -56,7 +68,7 @@ export function fromCanal(x: number, s: number) {
   const [ps, off] = CLEARINGS.pond, outlet = toSegment(x, s, roadX(ps) + off, ps, roadX(CANAL.from) + CANAL.offset, CANAL.from);
   return s >= CANAL.from && s <= CANAL.to ? Math.min(outlet, Math.abs(x - roadX(s) - CANAL.offset)) : outlet;
 }
-/** Keeps a walker on dry ground: out of the pond and the canal, while letting them cross the plank bridge at s = 424. */
+/** Keeps a walker on dry ground: out of the pond and the canal, while letting them cross the plank bridge. */
 export function keepDry(x: number, s: number): [x: number, s: number] {
   const [ps, off] = CLEARINGS.pond, px = roadX(ps) + off, pondR = 4.35, pd = Math.hypot(x - px, s - ps);
   if (pd < pondR) {
@@ -155,7 +167,7 @@ export const LINES: ReadonlyArray<readonly [number, string]> = [
   [ROADSIDE.press[0] - 12, "纸从压板下揭起来。同一行字，又多了一个读者。"],
   [457, "风推着磨盘转。有人在这里把麦粒磨成面粉。"],
   [ROADSIDE.loom[0] - 12, "换一串孔卡，织出的花纹就变了。"],
-  [510, "抬头看，电线沿着田埂，一直通到机房。"],
+  [510, "街边的电线上停着几只鸟。沿着这排电杆走，就到了实验室。"],
   [ROADSIDE.terminal[0] - 12, "有人想从远处登录。线路中断前，另一台计算机收到了 LO。"],
   [584, "风扇在响。机房里的模型，学的是人留下的文字和代码。"],
 ];

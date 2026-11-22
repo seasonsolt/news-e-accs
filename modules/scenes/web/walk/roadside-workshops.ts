@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { Kit } from "./camp.ts";
+import { buildWorkshopBuildings } from "./workshop-buildings.ts";
 import { ROADSIDE, roadX, sequence } from "./land.ts";
 import { faceted, flat, limb, lit, merged, of, triangles, type Paint } from "./shapes.ts";
 
@@ -26,6 +27,7 @@ function punchedCard(index: number, small: boolean, paper: Paint) {
 /** The press and the programmable loom share the road's timber, flax and iron.
  * Each workshop joins the existing static scenery batch rather than adding draws. */
 export function buildWorkshops(kit: Kit) {
+  buildWorkshopBuildings(kit);
   const rand = sequence(14401804), { small, stand, blocks } = kit;
   const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
   const wood = of(2, lit("#443225", "#8c7050", rand, .13));

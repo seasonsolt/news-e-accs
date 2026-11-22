@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { ReliefScan } from "./relief.ts";
 import type { Kit } from "./camp.ts";
-import { CANAL, CLEARINGS, END_S, FIELD_S, MONO_S, VILLAGE, cleared, mix, noise, roadX, smooth } from "./land.ts";
+import { CANAL, CLEARINGS, END_S, FIELD_S, MONO_S, VILLAGE, cleared, cropCover, mix, noise, roadX, smooth } from "./land.ts";
 import { soil } from "./groundcover.ts";
 import { blob, flat, limb, merged, rock, triangles } from "./shapes.ts";
 
@@ -26,7 +26,8 @@ export function buildVerge({ scene, own, rand, small, floor, blocks }: Pick<Kit,
         c.copy(worn).multiplyScalar(.9 + scuff * .18); // one worn path, scuffed at its edges
         b.copy(c).lerp(rut, 1 - smooth(.08, .22, Math.abs(edge - .5))).lerp(grass, (1 - smooth(.07, .2, edge)) * smooth(.3, .62, noise(x * .9, s * .55))); // two ruts and a patchy strip of dry grass between them
         c.lerp(b, track); b.copy(gravel).multiplyScalar(.86 + noise(x * 5.1, s * 4.7) * .26); c.lerp(b, lane);
-        const fade = (1 - smooth(mix(.5, .7, track), 1, edge + (scuff - .5) * .35)) * smooth(from, from + 6, s) * (1 - smooth(to - 8, to, s));
+        const unpaved = (1 - smooth(410, 419, s)) + smooth(606, 621, s);
+        const fade = unpaved * (1 - smooth(mix(.5, .7, track), 1, edge + (scuff - .5) * .35)) * smooth(from, from + 6, s) * (1 - smooth(to - 8, to, s));
         positions.push(x, floor(x, -s) + .03, -s); colors.push(c.r, c.g, c.b, fade); soils.push(1 - lane * .4, 0, 0, 0); // packed earth, its grit and cracks matching the ground beside it
       }
     }
@@ -37,12 +38,14 @@ export function buildVerge({ scene, own, rand, small, floor, blocks }: Pick<Kit,
 
   // ---------- pebbles on the road, thickest on the gravel lane ----------
   { const pebbles = new THREE.InstancedMesh(own(rock(rand, 0, flat("#ffffff", rand, .2))), own(new THREE.MeshLambertMaterial({ vertexColors: true })), small ? 160 : 380), pose = new THREE.Object3D(), tint = new THREE.Color();
+    let count = 0;
     for (let i = 0; i < pebbles.count; i++) {
       const s = rand() < .45 ? 548 + rand() * (END_S - 548) : FIELD_S + rand() * (END_S - FIELD_S), x = roadX(s) + (rand() - .5) * 2 * roadHalf(s) * .9, size = .025 + rand() * rand() * .09;
-      pose.position.set(x, floor(x, -s) + .01, -s); pose.rotation.set(0, rand() * 6.3, 0); pose.scale.set(size * (1 + rand() * .6), size * .6, size); pose.updateMatrix(); pebbles.setMatrixAt(i, pose.matrix);
-      pebbles.setColorAt(i, tint.set(rand() < .5 ? "#8d8478" : "#b3a68e").multiplyScalar(.8 + rand() * .3));
+      if (s > 411 && s < 614) continue;
+      pose.position.set(x, floor(x, -s) + .01, -s); pose.rotation.set(0, rand() * 6.3, 0); pose.scale.set(size * (1 + rand() * .6), size * .6, size); pose.updateMatrix(); pebbles.setMatrixAt(count, pose.matrix);
+      pebbles.setColorAt(count++, tint.set(rand() < .5 ? "#8d8478" : "#b3a68e").multiplyScalar(.8 + rand() * .3));
     }
-    pebbles.receiveShadow = true; pebbles.computeBoundingSphere(); scene.add(pebbles); own(pebbles); }
+    pebbles.count = count; pebbles.receiveShadow = true; pebbles.computeBoundingSphere(); scene.add(pebbles); own(pebbles); }
 
   // ---------- wildflowers and tall grass ----------
   /** A flower on a thin green stem: `petals` flat petals around a heart, about two thirds of a unit tall. */
@@ -62,7 +65,7 @@ export function buildVerge({ scene, own, rand, small, floor, blocks }: Pick<Kit,
     { shape: null, size: [.65, 1.05] }, // tall grass, grown by grass.ts
   ];
   const spots: Array<Array<[number, number, number]>> = kinds.map(() => []), budget = small ? 2500 : 6000;
-  const free = (x: number, s: number) => s > 262 && Math.hypot(x - stoneX, s - MONO_S) > 25 && Math.abs(x - roadX(s)) > roadHalf(s) + .1 && !(s > VILLAGE.from && s < VILLAGE.to && x - roadX(s) > 7 && x - roadX(s) < 31)
+  const free = (x: number, s: number) => s > 262 && cropCover(x - roadX(s), s) > .08 && Math.hypot(x - stoneX, s - MONO_S) > 25 && Math.abs(x - roadX(s)) > roadHalf(s) + .1 && !(s > VILLAGE.from && s < VILLAGE.to && x - roadX(s) > 7 && x - roadX(s) < 31)
     && !Object.values(CLEARINGS).some(([cs, off, r]) => Math.hypot(x - roadX(cs) - off, s - cs) < r + .5) && blocks.every(([bx, bs, r]) => Math.hypot(x - bx, s - bs) > r + .2);
   let placed = 0;
   for (let drift = 0; drift < 4000 && placed < budget; drift++) { // drifts: one kind mostly, grown around a spot by the road, a little way into the wheat, or on a canal bank

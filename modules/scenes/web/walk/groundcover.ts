@@ -70,6 +70,28 @@ const COLOR = `float relief = 0., scannedRoughness = .87;
     if (fromHearth < 5.) { float ash = 1. - smoothstep(1.2, 4.2, fromHearth + (soilNoise(q * 1.3) - .5) * .9);
       c = mix(c, vec3(.13, .125, .118) * (.75 + .5 * soilNoise(q * 6.)), ash * .6);
       vec3 k = soilCells(q * 16.); c = mix(c, vec3(.015), step(.88, k.z) * (1. - smoothstep(.12, .3, k.x)) * (1. - smoothstep(.6, 3.2, fromHearth)) * grain * .9); }
+    // The path becomes a sett-paved street, then the paving and service lane of the campus.
+    float s = -q.y, offset = q.x - ${ROAD_GLSL("s")};
+    float street = smoothstep(409., 422., s) * (1. - smoothstep(510., 525., s));
+    float campus = smoothstep(510., 525., s) * (1. - smoothstep(605., 617., s));
+    if (street + campus > .001) {
+      float verge = 1. - smoothstep(11., 25., abs(offset)), detail = 1. - smoothstep(.025, .18, px);
+      vec2 setts = vec2(offset * 2.75, s * 4.8);
+      setts.x += .5 * mod(floor(setts.y), 2.);
+      vec2 edge = min(fract(setts), 1. - fract(setts));
+      float arris = smoothstep(.012, .115, min(edge.x, edge.y));
+      vec3 stone = mix(vec3(.20, .174, .138), vec3(.36, .317, .246), mix(.5, soilHash(floor(setts)), detail));
+      stone *= mix(1., .60 + arris * .49, detail) * (.91 + grit.r * .15);
+      vec2 slabs = vec2(offset * .55, s * .4);
+      vec2 seam = min(fract(slabs), 1. - fract(slabs));
+      float joint = smoothstep(.003, .016, min(seam.x, seam.y));
+      vec3 concrete = mix(vec3(.25, .26, .245), vec3(.34, .35, .33), scan.r) * mix(1., .65 + joint * .35, detail);
+      vec3 asphalt = vec3(.099, .105, .108) * (.86 + .3 * grit.r);
+      c = mix(c, stone, street * verge);
+      c = mix(c, mix(concrete, asphalt, 1. - smoothstep(2.15, 2.28, abs(offset))), campus * verge);
+      relief = mix(relief, arris * detail * .014, street * verge);
+      relief = mix(relief, joint * detail * .004, campus * verge);
+    }
     diffuseColor.rgb = c * (1. - damp * .3);
     #ifdef SOIL_RIBBON
     diffuseColor.a = smoothstep(.15, .6, diffuseColor.a + (soilNoise(q * 2.3) * .7 + soilNoise(q * 9.) * .3 - .5) * .7); // a ragged edge, the grass creeping in
