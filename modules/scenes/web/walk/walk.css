@@ -151,7 +151,7 @@ html:has(.walk), body:has(.walk) { overflow: hidden; scrollbar-gutter: auto; }
 }
 @media (max-width: 740px) {
   .walk-poster { height: 67%; }
-  .walk-poster img { object-position: 76% 52%; }
+  .walk-poster img { object-position: center 38%; }
   .walk-hero::before { background: linear-gradient(0deg, #0d1821 0%, #0d1821 33%, #0d1821e0 43%, #0d18213d 62%, transparent 79%); }
   .walk-intro { align-self: end; padding-top: max(16svh, 80px); padding-bottom: clamp(28px, 5svh, 52px); }
   .walk-hero h1 { font-size: clamp(56px, 12vw, 84px); }

@@ -117,7 +117,7 @@ test("the chronicle invites the reader into the walk under the moment it reads o
     assert.equal(scene.querySelector("canvas"), null);
     assert.ok(scene.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith(`${prefix}/chronicle/walk`));
     const card = scene.querySelector('meta[property="og:image"]')!.getAttribute("content")!;
-    assert.match(card, /\/media\/art\/manifesto-monolith-og\.jpg$/);
+    assert.match(card, /\/media\/art\/walk-odyssey-og\.jpg$/);
     assert.doesNotMatch(scene.querySelector('meta[name="robots"]')?.getAttribute("content") ?? "", /noindex/);
     const ld = [...html.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].flatMap(([, raw]) => {
       const parsed = JSON.parse(raw!) as Record<string, unknown> | Array<Record<string, unknown>>;
@@ -147,15 +147,15 @@ test("the walk serves the illustrated route and all three chapters in each editi
     assert.ok(preparing.querySelector('progress:not([value])'));
     assert.match(preparing.querySelector('[role="status"]')!.textContent!, prefix ? /正在准备入口/ : /Preparing the controls/);
     const poster = scene.querySelector(".walk-poster img");
-    const art = "/media/art/home-wheat-monolith";
+    const portrait = scene.querySelector(".walk-poster source");
+    const art = "/media/art/walk-odyssey";
     assert.equal(poster?.tagName, "IMG");
-    assert.equal(scene.querySelector(".walk-poster source"), null);
     assert.equal(poster?.getAttribute("src"), art + "-hd-1600.webp");
     assert.equal(poster?.getAttribute("srcset") ?? poster?.getAttribute("srcSet"), art + "-hd-800.webp 800w, " + art + "-hd-1600.webp 1600w");
-    for (const cut of ["-hd-800.webp", "-hd-1600.webp"]) {
+    assert.equal(portrait?.getAttribute("srcset") ?? portrait?.getAttribute("srcSet"), art + "-portrait.webp");
+    for (const cut of ["-hd-800.webp", "-hd-1600.webp", "-portrait.webp", "-og.jpg"]) {
       assert.ok(existsSync(new URL(`../public${art}${cut}`, import.meta.url)), cut);
     }
-    assert.ok(existsSync(new URL("../public/media/art/manifesto-monolith-og.jpg", import.meta.url)));
     assert.equal(scene.querySelector('[data-walk="manifesto"]')!.textContent!.trim(), prefix ? "读宣言里的〈小麦〉" : "Read “Wheat”");
     assert.equal(scene.querySelector('[data-walk="exit"]')!.textContent!.trim(), prefix ? "看今天的加速史" : "Today in the Chronicle");
     const guide = scene.getElementById("walk-guide");

@@ -10,6 +10,7 @@ import { localePath } from "@aihot/web/lib/locale";
 import { reducedMotion } from "@aihot/web/lib/motion";
 import { buildClouds } from "./clouds.ts";
 import { skyFragment, skyVertex } from "./sky.ts";
+import { loadOrbit, orbitUniforms } from "./orbit.ts";
 import { buildGrass } from "./grass.ts";
 import { buildWheat } from "./wheat.ts";
 import { buildLitter, soil } from "./groundcover.ts";
@@ -21,8 +22,8 @@ import { CANAL, CLEARINGS, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONO
 
 // The hour at points along the road: [s, zenith, horizon, fog, sun colour, sun strength, sky light, stars, sun height, fog density].
 const HOURS = ([
-  [0, "#030619", "#25344d", "#111d30", "#a9c1f2", .62, .5, 1, -.25, .0078],
-  [170, "#080b22", "#34354f", "#172239", "#a9c1f2", .58, .55, 1, -.16, .0078],
+  [0, "#112336", "#34495c", "#142537", "#a9c1f2", .62, .5, 1, -.25, .0078],
+  [170, "#0c1c31", "#3b4357", "#1d2a3c", "#a9c1f2", .58, .55, 1, -.16, .0078],
   [255, "#1c2a52", "#c0624a", "#4a3540", "#ff9a66", .6, .62, .3, .02, .0085],
   [340, "#304e70", "#dfae83", "#8797a1", "#ffd4a0", .8, .55, 0, .2, .0054],
   [450, "#355578", "#aebfc8", "#94a8b2", "#ffe5bf", .85, .58, 0, .46, .0038],
@@ -87,6 +88,9 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   const anisotropy = renderer.capabilities.getMaxAnisotropy();
   const trackScan = loadRelief("track", anisotropy, signal, own);
   const stoneScan = loadRelief("stone", anisotropy, signal, own);
+  // Transfer the critical artwork while geometry is built. Capturing failure now
+  // avoids an unhandled rejection before the first-frame readiness check below.
+  const orbitReady = loadOrbit(signal, own).then(texture => ({ texture }), (error: unknown) => ({ error }));
   canvas.addEventListener("webglcontextlost", () => { if (!signal.aborted) onContextLost?.(); }, listen);
   canvas.inert = true; canvas.tabIndex = 0; canvas.setAttribute("aria-label", tx("可行走的三维世界：从火堆穿过麦田走到巨石")); part("viewport").append(canvas);
   let ratio = Math.min(devicePixelRatio || 1, small ? 1.25 : 1.6);
@@ -158,7 +162,8 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     for (const key of ["power", "sky", "stars", "height", "density"] as const) hour[key] = mix(a[key], b[key], t);
   }
   const sunDir = new THREE.Vector3(), moon = new THREE.Vector3(-Math.sin(.5) * Math.cos(.3), Math.sin(.3), -Math.cos(.5) * Math.cos(.3)), nightSky = new THREE.Color("#030619"), nightHorizon = new THREE.Color("#27203c"), fieldAfterglow = new THREE.Color("#62758d");
-  const skyUniforms = { top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() }, haze: { value: hour.fog }, sun: { value: new THREE.Color() }, sunDir: { value: sunDir }, stars: { value: 1 }, time: { value: 0 }, day: { value: 0 } };
+  const orbit = orbitUniforms(renderer.toneMappingExposure);
+  const skyUniforms = { ...orbit, top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() }, haze: { value: hour.fog }, sun: { value: new THREE.Color() }, sunDir: { value: sunDir }, stars: { value: 1 }, time: { value: 0 }, day: { value: 0 } };
   const sky = new THREE.Mesh(own(new THREE.SphereGeometry(1200, 32, 20)), own(new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false, uniforms: skyUniforms,
     vertexShader: skyVertex,
@@ -196,6 +201,11 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     soils.needsUpdate = true; }
   buildLitter({ scene, own, rand, small, floor, blocks, fireX });
   await pause("light"); if (signal.aborted) return;
+  const loadedOrbit = await orbitReady;
+  if (signal.aborted) return;
+  if ("error" in loadedOrbit) throw loadedOrbit.error;
+  orbit.orbitMap.value = loadedOrbit.texture;
+  orbit.orbitTangent.value.y = orbit.orbitTangent.value.x * loadedOrbit.texture.image.height / loadedOrbit.texture.image.width;
 
   // A carried ember that lights the road ahead through the night country, and a handful of golden seed scattered when sowing by hand.
   const emberLight = new THREE.PointLight(0xff8e42, 0, 15, 2); emberLight.visible = false; scene.add(emberLight);
@@ -211,10 +221,11 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   });
 
   // ---------- walking ----------
-  // From this bend the opening frame can hold the people, the overhang and the fire together.
+  // Frame the lit limb above the shelter. In portrait the hearth sits left of it.
   const entryS = small ? START_S + 8 : START_S;
   const entryX = roadX(entryS) - 1.5;
-  const entrance = { x: entryX, s: entryS, yaw: Math.atan2(entryX - fireX, FIRE_S - entryS), pitch: -.02, bob: 0 };
+  const fireBearing = Math.atan2(entryX - fireX, FIRE_S - entryS);
+  const entrance = { x: entryX, s: entryS, yaw: fireBearing - (matchMedia("(orientation: portrait)").matches ? .18 : 0), pitch: .055, bob: 0 };
   const me = { ...entrance }, keys = new Set<string>();
   const jump = /^#s(\d+)$/.exec(location.hash), jumped = Boolean(jump);
   if (jump) {
@@ -468,6 +479,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     const height = mix(hour.height, .018, dusk), turn = mix(-.42, .125, smooth(250, 574, me.s));
     sunDir.set(Math.sin(turn) * Math.cos(height), Math.sin(height), -Math.cos(turn) * Math.cos(height)).normalize();
     skyUniforms.top.value.copy(hour.top); skyUniforms.horizon.value.copy(hour.horizon); skyUniforms.sun.value.copy(hour.sun).multiplyScalar(1 - dusk * .2); skyUniforms.stars.value = Math.max(hour.stars, dusk * .18); skyUniforms.time.value = still ? 0 : clock; skyUniforms.day.value = smooth(330, 410, me.s) * (1 - dusk * .5);
+    orbit.orbitVisibility.value = Math.max(1 - smooth(170, 320, me.s), .74 * smooth(.32, 1, dusk));
     fog.color.copy(hour.fog); fog.density = hour.density;
     const power = hour.power * (1 - dusk * .35), skyPower = hour.sky * (1 - dusk * .3);
     skyLight.color.copy(hour.top).lerp(hour.horizon, .6); skyLight.intensity = skyPower * 1.35 * (1 + hour.stars * 2.7); // the night is drawn blue, not black

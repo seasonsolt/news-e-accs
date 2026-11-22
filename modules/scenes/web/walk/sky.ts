@@ -1,3 +1,5 @@
+import { orbitShader } from "./orbit.ts";
+
 // The sky follows the light of the journey, from the Milky Way to a warm sunset.
 export const skyVertex = `varying vec3 direction;
   void main() {
@@ -9,6 +11,7 @@ export function skyFragment(output: string) {
   return `varying vec3 direction;
     uniform vec3 top, horizon, haze, sun, sunDir;
     uniform float stars, time, day;
+    ${orbitShader}
 
     float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
     float noise(vec3 p) {
@@ -55,6 +58,8 @@ export function skyFragment(output: string) {
       float twinkle = .88 + .12 * sin(time * .35 + seed * 90.);
       c += mix(vec3(.65, .8, 1.), vec3(1., .83, .61), seed)
         * step(limit, seed) * point * (.65 + 250. * (seed - limit)) * twinkle * stars * low;
+
+      c = orbitalArtwork(c, d);
 
       // Two remote ridgelines give the flat road a scale beyond its playable terrain.
       if (d.y < .085) {

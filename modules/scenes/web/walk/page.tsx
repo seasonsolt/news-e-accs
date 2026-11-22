@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { FEATURES } from "@aihot/industry/features";
-import { MANIFESTO_CARD } from "@aihot/industry/manifesto";
 import { SITE } from "@aihot/site";
 import { localeFromMatches, translate, useLocale, useTranslate } from "@aihot/web/lib/i18n";
 import { localePath } from "@aihot/web/lib/locale";
@@ -15,6 +14,7 @@ import { END_S, START_S, chapterAt, yearReading } from "./land.ts";
 import styles from "./walk.css?url";
 
 const PATH = "/chronicle/walk";
+const CARD = "/media/art/walk-odyssey-og.jpg";
 const title = "从火堆到巨石";
 const description = "从火塘走到麦田，再到训练 AI 的机房。《加速史》的一段可行走的寓言，讲人与小麦如何改变彼此，也讲今天的人与 AI。";
 
@@ -31,7 +31,7 @@ export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown
     title: name,
     description: summary,
     path: PATH,
-    image: MANIFESTO_CARD,
+    image: CARD,
     jsonLd: [
       {
         "@context": "https://schema.org",
@@ -40,7 +40,7 @@ export function meta({ matches }: { matches?: Array<{ id: string; data?: unknown
         description: summary,
         url: `${base}${path}`,
         inLanguage: locale === "zh" ? "zh-CN" : "en",
-        image: `${base}${MANIFESTO_CARD}`,
+        image: `${base}${CARD}`,
         applicationCategory: "MultimediaApplication",
         operatingSystem: "Any",
         offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
@@ -126,7 +126,7 @@ function Walk({ interrupted, onContextLost }: { interrupted: boolean; onContextL
   }
 
   const [figure, unit] = yearReading(0, locale);
-  const poster = "/media/art/home-wheat-monolith";
+  const poster = "/media/art/walk-odyssey";
   const loading = !ready || stage !== null;
   const step = stage ? Object.keys(stages).indexOf(stage) + 1 : 0;
   return <main className="walk" ref={root}>
@@ -154,10 +154,11 @@ function Walk({ interrupted, onContextLost }: { interrupted: boolean; onContextL
     </div>
     <section className="walk-cover" data-walk="cover" aria-labelledby="walk-title">
       <div className="walk-hero">
-        <div className="walk-poster walk-intro-only">
+        <picture className="walk-poster walk-intro-only">
+          <source media="(max-width: 740px) and (orientation: portrait)" srcSet="/media/art/walk-odyssey-portrait.webp" />
           <img src={artUrl(poster, 1600)} srcSet={`${artUrl(poster, 800)} 800w, ${artUrl(poster, 1600)} 1600w`}
-            sizes="(max-width: 740px) max(100vw, 100svh), 100vw" alt="" fetchPriority="high" width={1600} height={1067} />
-        </div>
+            sizes="100vw" alt="" fetchPriority="high" width={1600} height={901} />
+        </picture>
         <div className="walk-intro">
           <p className="walk-kicker walk-intro-only"><span>{tx("加速史 · 第一人称漫游")}</span><span><IconClock size={14} />{tx("约两分钟")}</span></p>
           <h1 id="walk-title" data-walk="cover-title" tabIndex={-1}>
