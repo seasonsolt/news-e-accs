@@ -1,0 +1,55 @@
+.walk-guide {
+  --guide-rule: #554532;
+  width: 100%;
+  color: #f0e4cd;
+  background: #171510;
+  text-align: left;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.walk-guide-inner {
+  width: min(90%, 1160px);
+  margin-inline: auto;
+  padding-block: clamp(48px, 7vw, 92px) max(56px, env(safe-area-inset-bottom));
+}
+.walk-guide h2,
+.walk-guide h3 { margin: 0; font-family: var(--font-display); font-weight: 400; line-height: 1.12; text-wrap: balance; }
+.walk-guide h2 { margin-bottom: clamp(22px, 3.6vw, 46px); font-size: clamp(30px, 4vw, 58px); }
+.walk-guide-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(28px, 6vw, 84px);
+  padding-block: clamp(28px, 4.5vw, 62px);
+  border-top: 1px solid var(--guide-rule);
+  scroll-margin-top: 16px;
+}
+.walk-guide-art { display: block; width: 100%; height: auto; background: #28231b; }
+.walk-guide-copy { max-width: 28rem; }
+.walk-guide-time { margin: 0 0 16px; color: #cfac76; font: 12px/1.6 var(--font-mono); letter-spacing: .065em; }
+.walk-guide h3 { font-size: clamp(30px, 4vw, 56px); }
+.walk-guide-prose { max-width: 39ch; margin: 16px 0; font: 17px/1.8 var(--font-display); color: #d7cab5; }
+.walk-guide-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .8em;
+  min-height: 44px;
+  color: #e7c58e;
+  font: 13px/1.5 var(--font-mono);
+  text-decoration: underline;
+  text-decoration-color: #8f7653;
+  text-underline-offset: .4em;
+}
+.walk-guide-link:hover { color: #fff2da; text-decoration-color: currentColor; }
+.walk-guide-link:focus-visible { outline: 2px solid #e7c58e; outline-offset: 4px; }
+.walk-guide:focus-visible, .walk-guide-entry:focus-visible { outline: 1px solid #e7c58e; outline-offset: -2px; }
+@media (min-width: 701px) {
+  #walk-field { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+  #walk-field .walk-guide-art { grid-column: 2; grid-row: 1; }
+  #walk-field .walk-guide-copy { grid-column: 1; grid-row: 1; }
+}
+@media (max-width: 700px) {
+  .walk-guide-entry { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .walk-guide-time { margin-bottom: 8px; }
+  .walk-guide-prose { margin-block: 12px 4px; }
+}

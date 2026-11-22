@@ -2,11 +2,12 @@ import "../../../tests/setup.ts";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test, { after } from "node:test";
+import { Mesh, MeshBasicMaterial, PlaneGeometry, Raycaster, Vector3 } from "three";
 import { closeDb } from "@aihot/backend/db";
 import { installModules } from "@aihot/backend/modules";
 import { loadDiscoveryEntries } from "@aihot/backend/publication/sitemap";
 import { normalizeSiteEvent, WALK_ACTS, WALK_PLACES, WALK_TIMES } from "@aihot/backend/site/analytics";
-import { BRIDGE, CANAL, CAVE_S, CLEARINGS, COMPUTE_S, END_S, FIELD_S, FIRE_S, LINES, MILESTONES, MONO_S, SOW_S, bridgeLift, chapterAt, cleared, ground, keepDry, roadX, yearReading, yearsAgo } from "../web/walk/land.ts";
+import { BRIDGE, CANAL, CAVE_S, CLEARINGS, COMPUTE_S, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONO_S, SOW_S, bridgeLift, chapterAt, cleared, ground, keepDry, roadX, sheet, yearReading, yearsAgo } from "../web/walk/land.ts";
 import { messages as walk } from "../web/walk/messages.ts";
 import scenes from "../server.ts";
 
@@ -34,6 +35,20 @@ test("the road runs in order from the hearth to the stone and stays walkable", (
   assert.ok(bridgeLift(bridgeMid, BRIDGE.s) > .25 && bridgeLift(roadX(BRIDGE.s), BRIDGE.s) === 0);
   assert.equal(keepDry(bridgeMid, BRIDGE.s + BRIDGE.halfS + .15)[1], BRIDGE.s + BRIDGE.halfS, "cannot step off the side of the plank bridge into the canal");
   for (const [cs, off] of Object.values(CLEARINGS)) assert.equal(cleared(roadX(cs) + off, cs), true);
+});
+
+test("scenery samples the same two triangles drawn for each terrain cell", () => {
+  const across = 15, along = 32;
+  const plane = new PlaneGeometry(LAND.width, LAND.depth, across, along).rotateX(-Math.PI / 2).translate(0, 0, LAND.behind - LAND.depth / 2);
+  const positions = plane.getAttribute("position");
+  for (let i = 0; i < positions.count; i++) positions.setY(i, ground(positions.getX(i), positions.getZ(i)));
+  const mesh = new Mesh(plane, new MeshBasicMaterial()), down = new Vector3(0, -1, 0);
+  const floor = sheet(across, along, index => positions.getY(index));
+  for (const [x, z] of [[-149, -749], [-132, -728], [4, -29], [37, -381], [149, 49]] as const) {
+    const hit = new Raycaster(new Vector3(x, 100, z), down).intersectObject(mesh)[0];
+    assert.ok(hit && Math.abs(floor(x, z) - hit.point.y) < 1e-6, `terrain at ${x}, ${z}`);
+  }
+  plane.dispose(); mesh.material.dispose();
 });
 
 test("time only runs forward along the road, from a million years ago to this year", () => {

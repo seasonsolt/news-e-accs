@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { buildCamp, type Kit } from "./camp.ts";
 import { buildFields } from "./fields.ts";
 import { FIRE_S, MONO_S, SOW_S, roadX } from "./land.ts";
@@ -68,8 +69,20 @@ export function buildProps(setting: Setting) {
   const village = buildVillage(kit, camp.flame, forest.plant), fields = buildFields(kit, forest.plant); forest.finish();
 
   // ---------- the stone: 1 : 4 : 9, facing the walker, the sun behind it ----------
-  const monolith = new THREE.Mesh(own(new THREE.BoxGeometry(8.8, 19.8, 2.2)), own(new THREE.MeshStandardMaterial({ color: "#050608", roughness: .22, metalness: .2 })));
-  monolith.position.set(stoneX, floor(stoneX, -MONO_S) + 9.6, -MONO_S); monolith.castShadow = true; scene.add(monolith);
+  const slab = own(new RoundedBoxGeometry(8.8, 19.8, 2.2, 2, .095));
+  const normals = slab.getAttribute("normal"), positions = slab.getAttribute("position"), colors = new Float32Array(normals.count * 3);
+  const obsidian = new THREE.Color("#080a10"), skyTint = new THREE.Color("#151b25"), cutEdge = new THREE.Color("#768997");
+  for (let i = 0; i < normals.count; i++) {
+    // A narrow polished cut catches the cool sky along the upper and left lip; the broad face stays dark.
+    const edge = 2 * Math.max(0, -normals.getX(i), normals.getY(i)) * Math.max(0, normals.getZ(i));
+    const height = (positions.getY(i) + 9.9) / 19.8;
+    tone.copy(obsidian).lerp(skyTint, height).lerp(cutEdge, edge * (.38 + height * .62)).toArray(colors, i * 3);
+  }
+  slab.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  const monolith = new THREE.Mesh(slab, own(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .28, metalness: .24 })));
+  monolith.position.set(stoneX, floor(stoneX, -MONO_S) + 9.6, -MONO_S);
+  monolith.rotation.y = -.14; // show a sliver of thickness even on the centreline
+  monolith.castShadow = true; scene.add(monolith);
   blocks.push([stoneX, MONO_S, 4.8]);
   let monolithLabel: THREE.MeshBasicMaterial;
   { const c = document.createElement("canvas"); c.width = 1024; c.height = 64; const g = c.getContext("2d")!; g.fillStyle = "rgba(214,168,92,.88)"; g.font = "30px ui-monospace, Menlo, monospace"; g.textAlign = "center"; g.fillText("1 : 4 : 9  ·  TMA-0  ·  RAISED BY US", 512, 42);

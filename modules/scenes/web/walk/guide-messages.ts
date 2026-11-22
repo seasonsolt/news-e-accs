@@ -1,0 +1,18 @@
+export const guideEnglish = {
+  "沿途图记": "Field notes",
+  "夜里 · 约一百万年前": "Night · About a million years ago",
+  "守着火的人": "The firekeepers",
+  "火塘边坐着几个人。走近添一根柴，火光亮起来，黑暗里的眼睛退远了。沿路走到石檐下，岩壁上还留着赭红色的手印。": "A few people sit around the hearth. Add a log and the flames flare. The eyes at the edge of the firelight draw back. Farther along the road, red ochre handprints mark a rock shelter.",
+  "岩画里的人围坐在火堆旁，野牛和红色手印环绕四周。": "A rock painting of people gathered around a fire, with wild cattle and red handprints around them.",
+  "下一站，田野": "Continue to the field",
+  "清晨 · 约一万两千年前": "Dawn · About 12,000 years ago",
+  "留下的一把种子": "A handful of seed",
+  "天亮时，路边有人守着一篮种子。在篮边撒下一把，麦苗便沿小路长开。再往前是村落，农人压下长杆，从水渠里提水。": "At dawn, a sower waits beside a basket. Scatter a handful of seed and wheat springs up along the path. Ahead, past the village, a farmer works a long pole to draw water from the canal.",
+  "赭色壁画上，人们在田里播种，山羊经过正在垒砌的房屋。": "An ochre mural shows people sowing a field and goats passing houses under construction.",
+  "下一站，巨石": "Continue to the monolith",
+  "午后 · 今天": "Afternoon · Today",
+  "麦田里的巨石": "The stone in the wheat",
+  "越过木桥，风车、电塔和射电天线相继出现在麦田里。低矮的机房后面，一块黑石高过麦穗。走过去，伸手碰它，天色便暗下来。": "Across the footbridge, a windmill, power pylons and a radio dish rise out of the wheat. Beyond the low data hall, a black stone towers over the grain. Walk up and touch it. The sky goes dark.",
+  "暮色中，一个人站在金黄的麦田里，仰望一块黑色方碑。": "At dusk, a lone figure stands in golden wheat, looking up at a black monolith.",
+  "回到起点": "Back to the start",
+};

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { before, after, test } from "node:test";
 import { createElement, type ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -128,6 +129,100 @@ test("the chronicle invites the reader into the walk under the moment it reads o
     const manifesto = parseHTML(await (await fetch(`${fixture.origin}${prefix}/manifesto`)).text()).document;
     assert.ok(manifesto.querySelector(`.manifesto-more a[href="${prefix}/chronicle/walk"]`), `${prefix}/manifesto links to the walk`);
   }
+});
+
+test("the walk serves the illustrated route and all three chapters in each edition", async () => {
+  for (const prefix of ["", "/zh"]) {
+    const scene = parseHTML(await (await fetch(`${fixture.origin}${prefix}/chronicle/walk`)).text()).document;
+    assert.ok(scene.querySelector('[data-walk="hud"][hidden]'));
+    const guide = scene.getElementById("walk-guide");
+    assert.ok(guide && scene.querySelector('a[href="#walk-guide"]'));
+    for (const id of ["walk-fire", "walk-field", "walk-monolith"]) {
+      const chapter: HTMLElement | null = guide.querySelector(`#${id}`);
+      assert.ok(chapter && scene.querySelector(`a[href="#${id}"]`), id);
+      const plate: HTMLImageElement | null = chapter.querySelector("img");
+      assert.ok(plate && plate.getAttribute("alt")?.trim(), id);
+      const copy = chapter.textContent + " " + plate.getAttribute("alt");
+      if (prefix) assert.match(copy, /[㐀-鿿]/u);
+      else assert.doesNotMatch(copy, /[㐀-鿿]/u);
+      const sizes: string = plate.getAttribute("srcset") ?? plate.getAttribute("srcSet") ?? "";
+      assert.match(sizes, /800w/);
+      assert.match(sizes, /1600w/);
+      for (const path of [plate.getAttribute("src"), ...sizes.split(",").map(part => part.trim().split(/\s+/)[0])]) {
+        assert.ok(path?.startsWith("/media/art/") && existsSync(new URL(`../public${path}`, import.meta.url)), `${id}: ${path}`);
+      }
+    }
+  }
+});
+
+test("without JavaScript a reader can follow the walk guide from cover to monolith and back", async () => {
+  const browser = await chromium.launch();
+  try {
+    const tab = await browser.newPage({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
+    await tab.goto(`${fixture.origin}/zh/chronicle/walk`);
+    const route = [["[data-walk=cover]", "walk-guide"], ["#walk-fire", "walk-field"], ["#walk-field", "walk-monolith"], ["#walk-monolith", "walk-title"]];
+    for (const [from, id] of route) {
+      await tab.locator(`${from} a[href="#${id}"]`).first().click();
+      await expect(tab).toHaveURL(new RegExp(`#${id}$`));
+      await expect(tab.locator(`#${id}`)).toBeInViewport();
+    }
+    await expect(tab.locator('[data-walk="hud"]')).toBeHidden();
+  } finally { await browser.close(); }
+});
+
+test("a walk loads on request, can cancel a pending download, and offers a retry and guide when WebGL fails", async () => {
+  const browser = await chromium.launch({ args: ["--disable-webgl"] });
+  try {
+    for (const prefix of ["", "/zh"]) {
+      const tab = await browser.newPage(), sceneScripts: string[] = [], events: string[] = [];
+      tab.on("request", req => {
+        if (/\/assets\/(?:world|three)-[^/]+\.js$/.test(new URL(req.url()).pathname)) sceneScripts.push(req.url());
+      });
+      await tab.route("**/api/site/events", async route => {
+        events.push(route.request().postDataJSON().event);
+        await route.fulfill({ status: 204 });
+      });
+      await tab.goto(`${fixture.origin}${prefix}/chronicle/walk`);
+      const launch = tab.locator('[data-walk="start"]'), alert = tab.locator('[data-walk="error"]');
+      await expect(launch).toBeVisible();
+      assert.deepEqual(sceneScripts, []);
+
+      // Hold the scene on the wire while the reader cancels. Then let the original import complete.
+      const download = Promise.withResolvers<void>();
+      await tab.route("**/assets/world-*.js", async route => {
+        await download.promise;
+        await route.continue();
+      });
+      const request = tab.waitForRequest("**/assets/world-*.js");
+      await launch.click();
+      const moduleUrl = (await request).url();
+      const loading = tab.locator('[data-walk="loading"]');
+      try {
+        await expect(loading).toBeVisible();
+        await expect(loading.getByRole("progressbar")).toBeVisible();
+        await expect(loading.getByRole("progressbar")).toHaveAttribute("max", "5");
+        await expect(loading.getByRole("status")).toContainText(prefix ? /[㐀-鿿]/u : /[A-Za-z]/);
+        await tab.locator('[data-walk="cancel"]').click();
+        await expect(loading).toBeHidden();
+        await expect(launch).toBeVisible();
+      } finally { download.resolve(); }
+      await tab.evaluate(async url => { await import(url); }, moduleUrl);
+      await expect(alert).toBeHidden();
+      await expect(tab.locator('[data-walk="hud"]')).toBeHidden();
+      assert.ok(!events.includes("walk_start"));
+
+      await launch.click();
+      await expect(alert).toBeVisible();
+      await expect(alert).toContainText(prefix ? /[㐀-鿿]/u : /[A-Za-z]/);
+      await expect(launch).toHaveAccessibleName(prefix ? /重试/ : /try again/i);
+      await expect(launch).toBeEnabled();
+      await expect(tab.locator('[data-walk="hud"]')).toBeHidden();
+      assert.ok(!events.includes("walk_start"));
+      await tab.locator('a[href="#walk-guide"]').first().click();
+      await expect(tab.locator("#walk-guide")).toBeInViewport();
+      await tab.close();
+    }
+  } finally { await browser.close(); }
 });
 
 test("civilization comparison notes localize large counts and preserve Chinese output", async () => {

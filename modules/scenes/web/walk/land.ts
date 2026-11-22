@@ -1,7 +1,7 @@
 // The shape of the walk, without three.js: where the road runs, how the ground rises, and what year each step stands for.
 // `s` is the distance walked along the road; the world runs toward -z, so a point on the road is (roadX(s), -s).
 
-export const FIRE_S = 46, CAVE_S = 154, SOW_S = 250, FIELD_S = 258, MONO_S = 640, END_S = 635.5;
+export const START_S = 22, FIRE_S = 46, CAVE_S = 154, SOW_S = 250, FIELD_S = 258, MONO_S = 640, END_S = 635.5;
 /** Where the first village's yard begins, where the first machine (the windmill's tower) starts to rise, where the dishes and compute halls rise, and where the stone comes within reach. */
 export const VILLAGE = { from: 316, to: 352, yardS: 334, yardOff: 16.5 } as const;
 export const VILLAGE_S = VILLAGE.from, MACHINES_S = 438, COMPUTE_S = 574, REACH_S = MONO_S - 12;
@@ -83,12 +83,17 @@ export const cleared = (x: number, s: number) =>
 /** The sheet of ground as it is drawn: `across` by `along` cells over 300 m by 800 m, reaching from 50 m behind the start to 750 m ahead. */
 export const LAND = { width: 300, depth: 800, behind: 50 };
 /** Height of the drawn ground, which is flat within each triangle of the sheet; things stand on this, not on the smooth `ground`. */
-export function sheet(across: number, along: number) {
+export function sheet(across: number, along: number, vertexHeight: (index: number) => number) {
   const dx = LAND.width / across, dz = LAND.depth / along, x0 = -LAND.width / 2, z0 = LAND.behind - LAND.depth;
   return (x: number, z: number) => {
     const ix = clamp(Math.floor((x - x0) / dx), 0, across - 1), iz = clamp(Math.floor((z - z0) / dz), 0, along - 1), u = (x - x0) / dx - ix, v = (z - z0) / dz - iz;
-    const h = (i: number, k: number) => ground(x0 + (ix + i) * dx, z0 + (iz + k) * dz);
-    return u + v <= 1 ? h(0, 0) + u * (h(1, 0) - h(0, 0)) + v * (h(0, 1) - h(0, 0)) : h(1, 1) + (1 - u) * (h(0, 1) - h(1, 1)) + (1 - v) * (h(1, 0) - h(1, 1));
+    const first = iz * (across + 1) + ix, right = vertexHeight(first + 1), below = vertexHeight(first + across + 1);
+    if (u + v <= 1) {
+      const h = vertexHeight(first);
+      return h + u * (right - h) + v * (below - h);
+    }
+    const h = vertexHeight(first + across + 2);
+    return h + (1 - u) * (below - h) + (1 - v) * (right - h);
   };
 }
 

@@ -361,6 +361,25 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
   for (const [s, off, height] of [[528, -20, 8.5], [563, 27, 9.5], [596, -38, 8]] as const) plant("fig", at(off, s), s, height, .6);
   for (const [s, off, height] of [[481, 41, 13], [489, 43.5, 15], [494, 39, 12]] as const) plant("poplar", at(off, s), s, height, .7);
 
+  // The wheat ends in two low folds of land. Their saddles leave open sky behind the slab on the approach.
+  const ridgeStone = new THREE.Color("#5b6070"), ridgeGrass = new THREE.Color("#959078"), ridges: THREE.BufferGeometry[] = [];
+  for (const [distance, height, saddle] of [[752, 14, -6], [827, 29, 18]] as const) {
+    const ridge: number[] = [];
+    let last: THREE.Vector3[] | undefined;
+    for (let x = -300; x <= 300; x += 10) {
+      const offset = x - roadX(MONO_S), flank = smooth(12, 100, Math.abs(offset - saddle));
+      const relief = .25 + .75 * noise(x * .015, saddle) + .12 * noise(x * .07, saddle);
+      const peak = 2 + height * flank * relief, s = distance + noise(x * .022, saddle + 1) * 18;
+      const row = [V(x, -3, -s + 42), V(x, peak * .41, -s + 23), V(x, peak, -s), V(x, -3, -s - 18)];
+      if (last) for (let k = 0; k < row.length - 1; k++) {
+        for (const p of [last[k]!, row[k]!, row[k + 1]!, last[k]!, row[k + 1]!, last[k + 1]!]) ridge.push(p.x, p.y, p.z);
+      }
+      last = row;
+    }
+    ridges.push(triangles(ridge, (center, normal) => tone.copy(ridgeStone).lerp(ridgeGrass, clamp(normal.y * .5 + noise(center.x * .028, saddle) * .25, 0, 1))));
+  }
+
+  scene.add(new THREE.Mesh(own(merged(ridges)), matte)); // keep the village and irrigation works culled once they are behind the walker
   placed.push(triangles(stems, of(3, lit("#5f6b34", "#b4b56a", rand, .25))));
   const fixed = new THREE.Mesh(own(merged(placed)), matte); fixed.castShadow = fixed.receiveShadow = true; scene.add(fixed);
 

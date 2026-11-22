@@ -33,23 +33,56 @@ export function buildCamp({ scene, own, rand, small, still, out, floor, matte, s
   blocks.push([fireX, FIRE_S, 1.55]);
 
   // ---------- people ----------
-  const person = (pose: Pose, extra: THREE.BufferGeometry[] = []) => own(figure(rand, pose, { extra, skin: "#6a4631", small })); // darker than the day people, as the firelight shows them
+  const person = (pose: Pose, extra: THREE.BufferGeometry[] = [], child = false) => own(figure(rand, pose, { extra, skin: "#795640", small, child })); // darker than the day people, as the firelight shows them
   const people: THREE.Mesh[] = [];
   function seat(shape: THREE.BufferGeometry, dx: number, ds: number, size = 1, toward: [number, number] = [0, 0]) {
     const x = fireX + dx, s = FIRE_S + ds, body = new THREE.Mesh(shape, matte);
     body.position.set(x, floor(x, -s) - .01, -s); body.scale.setScalar(size); body.rotation.y = Math.atan2(fireX + toward[0] - x, -(FIRE_S + toward[1]) + s);
     body.castShadow = body.receiveShadow = true; scene.add(body); people.push(body); blocks.push([x, s, .45 * size]);
   }
-  seat(person(POSES.warm), 1.25, 2.35); seat(person(POSES.warm), .25, 2.65, .62);
-  seat(person(POSES.tend, [limb(V(POSES.tend.hands[1]).add(new THREE.Vector3(0, .02, -.25)), new THREE.Vector3(.12, .2, 1.75), .016, .011, dead, { sides: 4 })]), 2.5, .5);
+  // Leave a gap around the flame from the path: the child and adult share one side and the fire tender the other.
+  seat(person(POSES.warm), -.96, 2.28, 1.04, [.1, -.2]);
+  seat(person(POSES.warm, [], true), -1.72, 1.88, .69, [-.35, -.05]);
+  seat(person(POSES.tend, [limb(V(POSES.tend.hands[1]).add(new THREE.Vector3(0, .02, -.25)), new THREE.Vector3(.12, .2, 1.75), .016, .011, dead, { sides: 4 })]), 2.15, 1.15);
   // the one on watch stands between the fire and the dark the walker comes out of
-  seat(person(POSES.watch, [limb(new THREE.Vector3(.3, 0, .34), new THREE.Vector3(.3, 2.05, .3), .017, .013, dead, { sides: 4 }), blob(rand, [.028, .1, .012], flat("#3b3835", rand), 0, .1).translate(.3, 2.12, .3)]), 1.7, -4.8, 1, [-3, -30]);
+  seat(person(POSES.watch, [limb(new THREE.Vector3(.3, 0, .34), new THREE.Vector3(.3, 2.05, .3), .017, .013, dead, { sides: 4 }), blob(rand, [.028, .1, .012], flat("#3b3835", rand), 0, .1).translate(.3, 2.12, .3)]), 2.74, -3.45, 1.05, [-4, -12]);
 
   // ---------- the shelter rocks, the windbreak and what lies around the fire ----------
   const strata = of(1, (center, normal) => stone(center, normal, 0).multiplyScalar(1 + .1 * Math.sin(center.y * 9 + center.x * 2)));
   for (const [dx, ds, sx, sy, sz, turn] of [[7.6, 3.4, 3.7, 3.3, 3.1, .4], [6.6, -5.2, 2.7, 2.5, 2.5, 2.1], [11.6, -1.6, 5, 4.5, 4.3, 4.4], [9.8, 8.6, 2.2, 1.6, 2.4, 1.2]] as const) {
-    stand(rock(rand, 2, strata).scale(sx, sy, sz), fireX + dx, FIRE_S + ds, turn, -sy * .15); stand(scree(rand, Math.max(sx, sz) * 2.2, stone, of(3, lit("#5e4d3a", "#9a8466", rand)), Math.atan2(-ds, dx)), fireX + dx, FIRE_S + ds); blocks.push([fireX + dx, FIRE_S + ds, Math.max(sx, sz) * .82]);
+    const detail = small && sx < 3 ? 1 : 2;
+    stand(rock(rand, detail, strata).scale(sx, sy, sz), fireX + dx, FIRE_S + ds, turn, -sy * .15); stand(scree(rand, Math.max(sx, sz) * 2.2, stone, of(3, lit("#5e4d3a", "#9a8466", rand)), Math.atan2(-ds, dx)), fireX + dx, FIRE_S + ds); blocks.push([fireX + dx, FIRE_S + ds, Math.max(sx, sz) * .82]);
   }
+  // A shelf of sandstone reaches out from the right-hand outcrop. Its thin lip silhouettes the fire circle;
+  // the heavy end beds into two boulders and leaves the approach and sightline to the people open.
+  const shelf: number[] = [];
+  const sections = [
+    [-5.3, 2.82, .26, .17, .25], [-4.5, 2.92, .92, .32, .02], [-3.1, 3.12, 1.65, .48, -.16],
+    [-1.7, 3.37, 2.04, .61, -.28], [.05, 3.55, 2.28, .86, -.54], [1.5, 3.35, 2.14, .94, -.74], [2.8, 2.75, 1.35, .7, -.85],
+  ] as const;
+  const crossSection = [
+    [.68, .22], [1, -.08], [.91, -.52], [.57, -.69], [.44, -.95], [-.45, -1], [-.95, -.58], [-1, .02], [-.42, .4],
+  ] as const;
+  const rims = sections.map(([x, y, width, depth, bend]) => crossSection.map(([edge, bed]) =>
+    new THREE.Vector3(x + .12 * Math.sin(x * 1.5 + edge * 2), y + depth * bed + edge * .11, bend + width * edge)));
+  function facet(a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3) {
+    shelf.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
+  }
+  for (let i = 1; i < rims.length; i++) {
+    const near = rims[i - 1]!, far = rims[i]!;
+    for (let k = 0; k < near.length; k++) {
+      const next = (k + 1) % near.length;
+      facet(near[k]!, far[next]!, far[k]!); facet(near[k]!, near[next]!, far[next]!);
+    }
+  }
+  const tip = rims[0]!, root = rims[rims.length - 1]!;
+  for (let i = 1; i < tip.length - 1; i++) {
+    facet(tip[0]!, tip[i + 1]!, tip[i]!); facet(root[0]!, root[i]!, root[i + 1]!);
+  }
+  const sandTop = new THREE.Color("#a19683"), sandFace = new THREE.Color("#82654d"), soot = new THREE.Color("#4e3930"), bedTint = new THREE.Color();
+  const shelfPaint = of(1, (p, n) => bedTint.copy(sandFace).lerp(n.y > 0 ? sandTop : soot, Math.abs(n.y))
+    .multiplyScalar(.96 + .14 * Math.sin(p.y * 17 - p.x * 1.7 + p.z)));
+  stand(triangles(shelf, shelfPaint), fireX + 5.74, FIRE_S + 4.25);
   { const parts: THREE.BufferGeometry[] = [], thatch: number[] = [], ribs = 9, rows = 5, wide = 1.9, tall = 1.55; // the shelter: bent poles covered with grass, open toward the fire
     const rib = (i: number, t: number) => { const around = i / (ribs - 1) * Math.PI, up = t * 1.36; return new THREE.Vector3(Math.cos(around) * wide * Math.cos(up), tall * Math.sin(up) - .08, -Math.sin(around) * wide * 1.15 * Math.cos(up) + t * .5); };
     const knot = Array.from({ length: ribs }, (_, i) => Array.from({ length: rows + 1 }, (_, row) => rib(i, row / rows).add(new THREE.Vector3((rand() - .5) * .1, (rand() - .5) * .06, (rand() - .5) * .1))));
@@ -85,39 +118,52 @@ export function buildCamp({ scene, own, rand, small, still, out, floor, matte, s
     const log = new THREE.Mesh(own(limb(foot, head, .085 + rand() * .03, .065, i < 2 ? charred : bark, { sides: 6, capped: true })), matte); log.receiveShadow = true; hearth.add(log); logs.push(log);
   }
   const showLogs = (fed: number) => logs.forEach((log, i) => { log.visible = i < 2 + fed * 2; });
-  const coalGlow = own(new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, .5, .08) })), coals: THREE.BufferGeometry[] = [];
-  for (let i = 0; i < 16; i++) { const a = rand() * 6.3, r = Math.sqrt(rand()) * .62; coals.push(rock(rand, 0, flat("#ffffff", rand, .7)).scale(.1 + rand() * .07, .07, .1 + rand() * .07).translate(Math.cos(a) * r, .02, Math.sin(a) * r)); }
-  coalGlow.vertexColors = true; hearth.add(new THREE.Mesh(own(merged(coals)), coalGlow));
+  const coalGlow = own(new THREE.MeshBasicMaterial({ vertexColors: true })), coals: THREE.BufferGeometry[] = [];
+  const ash = new THREE.Color("#342c2a"), ember = new THREE.Color("#ff9950"), coalTint = new THREE.Color();
+  for (let i = 0; i < 16; i++) {
+    const a = rand() * 6.3, r = Math.sqrt(rand()) * .62;
+    // Broken crust shields the top of each coal. The open seams below it glow hottest toward the centre.
+    const crust = (p: THREE.Vector3, n: THREE.Vector3) => {
+      const heat = (.35 + .65 * Math.abs(Math.sin(p.x * 6 + p.z * 4 + i))) * (1 - r * .7) * (1 - Math.max(0, n.y) * .65);
+      return coalTint.copy(ash).lerp(ember, heat);
+    };
+    coals.push(rock(rand, 0, crust).scale(.1 + rand() * .07, .07, .1 + rand() * .07).translate(Math.cos(a) * r, .02, Math.sin(a) * r));
+  }
+  hearth.add(new THREE.Mesh(own(merged(coals)), coalGlow));
 
-  const flameShape = own(merged([0, 1, 2].map((i) => new THREE.PlaneGeometry(1.5, 2.2).translate(0, 1.1, 0).rotateY(i * Math.PI / 3)))), flameUniforms: Array<{ time: { value: number } }> = [];
-  /** A fire drawn in four flat colours, its edge cut by drifting noise. */
+  const flameShape = own(merged([0, 1, 2].map((i) => new THREE.PlaneGeometry(1.55, 2.1).translate(0, 1.05, 0).rotateY(i * Math.PI / 3))));
+  const flameTime = { value: 0 };
   function flame() {
-    const uniforms = { time: { value: 0 }, seed: { value: rand() * 9 } }; flameUniforms.push(uniforms);
     return new THREE.Mesh(flameShape, own(new THREE.ShaderMaterial({
-      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, uniforms,
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, forceSinglePass: true,
+      uniforms: { time: flameTime, seed: { value: rand() * 9 } },
       vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }",
       fragmentShader: `uniform float time, seed; varying vec2 vUv;
         float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-        float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h(i), h(i + vec2(1., 0.)), f.x), mix(h(i + vec2(0., 1.)), h(i + vec2(1., 1.)), f.x), f.y); }
-        float fbm(vec2 p){ return n(p) * .5 + n(p * 2.03) * .3 + n(p * 4.1) * .2; }
-        void main(){ float t = time * 1.9 + seed, x = vUv.x - .5;
-          x += (fbm(vec2(vUv.x * 3.2 + seed, vUv.y * 2.4 - t)) - .5) * .34 * vUv.y;
-          float width = mix(.46, .02, pow(vUv.y, .7)), body = smoothstep(width, width * .2, abs(x));
-          float lick = smoothstep(.2, .7, fbm(vec2(vUv.x * 5. - seed, vUv.y * 3.4 - t * 1.6)) + (1. - vUv.y) * .8 - .32);
-          float heat = body * lick * smoothstep(0., .06, vUv.y) * (1.25 - vUv.y);
-          vec3 c = mix(vec3(1.5, .2, .03), vec3(2.3, .75, .1), smoothstep(.3, .34, heat)); c = mix(c, vec3(2.8, 1.6, .4), smoothstep(.55, .6, heat)); c = mix(c, vec3(3., 2.6, 1.7), smoothstep(.85, .9, heat));
-          gl_FragColor = vec4(c * .8, smoothstep(.1, .15, heat) * .75); ${out} }`,
+        float grain(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f);
+          return mix(mix(h(i),h(i+vec2(1.,0.)),f.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.)),f.x),f.y); }
+        void main(){
+          float y = vUv.y, t = time * .74 + seed;
+          float eddy = grain(vec2(vUv.x*4.+seed, y*4.-t));
+          float x = vUv.x-.5 - y*y*(.13+.23*sin(t*.8+y*3.)) - y*(eddy-.5)*.36;
+          float mantle = 1.-smoothstep(.03, .38*pow(1.-y,.78)+.035, abs(x));
+          float side = 1.-smoothstep(.014, .12*(1.-y)+.02, abs(x+.14+.045*sin(t+y*7.)));
+          float heat = max(mantle*(1.-smoothstep(.54+.24*eddy,.99,y)), side*(1.-smoothstep(.22,.68+.13*eddy,y)));
+          float density = smoothstep(.04,.78,heat) * smoothstep(.0,.07,y);
+          vec3 c = mix(vec3(1.2,.13,.012), vec3(2.4,.68,.08), smoothstep(.16,.68,heat));
+          c = mix(c, vec3(2.8,1.85,.85), smoothstep(.54,.98,heat*(1.-y*.82)));
+          gl_FragColor = vec4(c, density*.56); ${out} }`,
     })));
   }
-  const flames = [flame(), flame(), flame()]; flames[1]!.rotation.y = .5; flames[2]!.rotation.y = 1; hearth.add(...flames);
-  const halo = new THREE.Sprite(own(new THREE.SpriteMaterial({ map: soft(own, "rgba(255,190,110,.9)", "rgba(255,130,50,.3)"), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: .28 }))); halo.position.y = 1; hearth.add(halo);
-  const puffMap = soft(own, "rgba(255,255,255,.9)", "rgba(255,255,255,.4)"), smoke = Array.from({ length: small ? 4 : 7 }, () => { const puff = new THREE.Sprite(own(new THREE.SpriteMaterial({ map: puffMap, color: "#5a4a44", depthWrite: false, transparent: true, opacity: 0 }))); hearth.add(puff); return puff; });
+  const fireFlame = flame(); hearth.add(fireFlame);
+  const halo = new THREE.Sprite(own(new THREE.SpriteMaterial({ map: soft(own, "rgba(255,176,88,.72)", "rgba(237,103,40,.2)"), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: .3 }))); halo.position.y = .64; hearth.add(halo);
+  const puffMap = soft(own, "rgba(255,255,255,.9)", "rgba(255,255,255,.4)"), smoke = Array.from({ length: still ? 0 : small ? 2 : 4 }, () => { const puff = new THREE.Sprite(own(new THREE.SpriteMaterial({ map: puffMap, color: "#665851", depthWrite: false, transparent: true, opacity: 0 }))); hearth.add(puff); return puff; });
   const fireLight = new THREE.PointLight(0xff8a3c, 1, 90, 2); fireLight.position.set(fireX, fireY + .75, -FIRE_S); scene.add(fireLight);
   if (!small) { fireLight.castShadow = true; fireLight.shadow.mapSize.set(2048, 2048); fireLight.shadow.radius = 3; fireLight.shadow.camera.near = .2; fireLight.shadow.camera.far = 60; fireLight.shadow.bias = -.004; fireLight.shadow.normalBias = .04; }
-  const SPARKS = small ? 40 : 90, sparkAt = new Float32Array(SPARKS * 3), sparkLife = Array.from({ length: SPARKS }, () => rand());
+  const SPARKS = still ? 0 : small ? 8 : 18, sparkAt = new Float32Array(SPARKS * 3), sparkLife = Array.from({ length: SPARKS }, () => rand());
   const sparkGeometry = own(new THREE.BufferGeometry()), sparkMaterial = own(new THREE.PointsMaterial({ color: new THREE.Color(3, 1.5, .5), size: .035, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   sparkGeometry.setAttribute("position", new THREE.BufferAttribute(sparkAt, 3));
-  const sparks = new THREE.Points(sparkGeometry, sparkMaterial); sparks.frustumCulled = false; hearth.add(sparks);
+  const sparks = new THREE.Points(sparkGeometry, sparkMaterial); sparks.frustumCulled = false; sparks.visible = SPARKS > 0; hearth.add(sparks);
 
   // ---------- eyes at the edge of the light ----------
   const watchers: number[] = [];
@@ -183,23 +229,27 @@ export function buildCamp({ scene, own, rand, small, still, out, floor, matte, s
 
   /** One frame of the fire and everyone near it. Returns how brightly the fire burns, for whatever else it lights. */
   function frame(clock: number, dt: number, fed: number, feedGlow: number, walkerS: number = FIRE_S) {
-    const flicker = still ? .9 : .82 + .18 * Math.sin(clock * 11) * Math.sin(clock * 6.3) + .06 * Math.sin(clock * 23), level = [.5, .95, 1.5, 2.1][fed]! * feedGlow;
+    const flicker = still ? .95 : .94 + .045 * Math.sin(clock * 3.2) + .025 * Math.sin(clock * 6.3);
+    const level = [.64, .98, 1.34, 1.68][fed]! * Math.min(1.3, feedGlow);
     const nearCave = Math.abs(walkerS - CAVE_S) < 95; caveLight.visible = nearCave; if (nearCave) caveLight.intensity = 13 * (.88 + .12 * flicker);
     const nearCamp = Math.abs(walkerS - FIRE_S) < 115;
     fireLight.visible = hearth.visible = nearCamp; eyes.visible = nearCamp && fed < 3;
+    // The village hearth uses the same shader and keeps burning after this camp is out of view.
+    flameTime.value = still ? 0 : clock;
     if (!nearCamp) return { glow: 0, flicker };
-    fireLight.intensity = level * 190 * flicker; if (!still) fireLight.position.x = fireX + Math.sin(clock * 7.3) * .04;
-    halo.scale.setScalar((5 + fed * 2.5) * flicker * Math.min(1.3, feedGlow)); coalGlow.color.setRGB(2.8, .62, .1).multiplyScalar((.55 + fed * .2) * (.8 + .2 * Math.sin(clock * 3.1)));
-    for (const uniforms of flameUniforms) uniforms.time.value = clock;
-    flames.forEach((f, i) => { const k = [1, .7, .45][i]! * (.8 + fed * .32) * (.92 + .08 * Math.sin(clock * 9 + i)) * Math.min(1.25, feedGlow); f.scale.set(k, k * 1.15, k); });
+    fireLight.intensity = level * 165 * flicker;
+    const size = (1 + fed * .19) * Math.min(1.13, feedGlow);
+    fireFlame.scale.set(size, size * (1 + (flicker - .94) * .22), size);
+    halo.scale.set(4.8 * size, 3.5 * size, 1);
+    coalGlow.color.setScalar((1.8 + fed * .3) * flicker);
     for (let i = 0; i < SPARKS; i++) {
       sparkLife[i] = (sparkLife[i]! + dt * (.2 + (i % 7) * .035)) % 1; const t = sparkLife[i]!, a = i * 2.4;
       sparkAt[i * 3] = Math.cos(a + t * 3) * (.12 + t * .7) + t * t * .9; sparkAt[i * 3 + 1] = .5 + t * (2.6 + fed * 1.1 + (i % 5) * .4); sparkAt[i * 3 + 2] = Math.sin(a + t * 2) * (.12 + t * .7);
     }
-    sparkGeometry.attributes.position!.needsUpdate = true; sparkMaterial.opacity = .4 + fed * .2;
+    sparkGeometry.attributes.position!.needsUpdate = true; sparkMaterial.opacity = .42 + fed * .11;
     smoke.forEach((puff, i) => { const t = (clock * .07 + i / smoke.length) % 1; puff.position.set(t * t * 2.6 + Math.sin(i * 2.4 + t * 4) * .3, 1.6 + t * 9, Math.cos(i * 1.7 + t * 3) * .3); puff.scale.setScalar(.9 + t * 4.2); puff.material.opacity = Math.sin(t * Math.PI) * .16; });
-    if (!still) people.forEach((body, i) => { body.rotation.z = Math.sin(clock * .7 + i * 1.9) * .012; body.scale.y = body.scale.x * (1 + Math.sin(clock * 1.5 + i * 2.3) * .008); });
-    eyeMaterial.opacity = Math.max(0, 1 - fed * .34) * (Math.sin(clock * .4) > -.92 ? .9 : 0); // the more wood on the fire, the fewer eyes; now and then they blink
+    if (!still) people.forEach((body, i) => { body.rotation.z = Math.sin(clock * .55 + i * 1.9) * .004; body.scale.y = body.scale.x * (1 + Math.sin(clock * 1.15 + i * 2.3) * .003); });
+    eyeMaterial.opacity = Math.max(0, 1 - fed * .34) * .68;
     return { glow: level * flicker, flicker };
   }
   return { fireY, showLogs, flame, frame };

@@ -21,10 +21,9 @@ const LOUD = .5;
 /** An owl far off: [start, length, pitch] of each hoot. */
 const HOOTS = [[0, .42, 1], [.78, .15, 1.05], [1.0, .15, 1.05], [1.26, .6, .98]] as const;
 
-/** Starts the walk's sound. Call from the click that starts the walk (browsers only allow audio after a gesture). */
-export function startSound(muted: boolean): Sound {
-  if (typeof AudioContext === "undefined") return { frame() {}, cue() {}, wake() {}, setMuted() {}, close() {} };
-  const ctx = new AudioContext(), rate = ctx.sampleRate, rand = Math.random, held: AudioNode[] = [], sources: AudioScheduledSourceNode[] = [];
+/** Build the sound in the context unlocked by the original start gesture. */
+export function startSound(ctx: AudioContext, muted: boolean): Sound {
+  const rate = ctx.sampleRate, rand = Math.random, held: AudioNode[] = [], sources: AudioScheduledSourceNode[] = [];
   const keep = <T extends AudioNode>(node: T) => { held.push(node); return node; };
   const ease = (param: AudioParam, value: number, tau: number) => param.setTargetAtTime(value, ctx.currentTime, tau);
   const gain = (value: number, to: AudioNode) => { const node = keep(ctx.createGain()); node.gain.value = value; node.connect(to); return node; };
@@ -268,7 +267,7 @@ export function startSound(muted: boolean): Sound {
       closed = true; clearTimeout(sleeper); document.removeEventListener("visibilitychange", settle);
       for (const source of sources) source.stop();
       for (const node of held) node.disconnect();
-      void ctx.close();
+      if (ctx.state !== "closed") void ctx.close();
     },
   };
 }
