@@ -112,7 +112,7 @@ test("the chronicle invites the reader into the walk under the moment it reads o
     assert.equal(scene.querySelector('nav[aria-label="主导航"], nav[aria-label="Main navigation"]'), null);
     assert.equal(scene.querySelector("canvas"), null);
     assert.ok(scene.querySelector('link[rel="canonical"]')!.getAttribute("href")!.endsWith(`${prefix}/chronicle/walk`));
-    assert.match(scene.querySelector('meta[property="og:image"]')!.getAttribute("content")!, /\/media\/art\/walk-orbit-og\.jpg$/);
+    assert.match(scene.querySelector('meta[property="og:image"]')!.getAttribute("content")!, /\/media\/art\/walk-odyssey-og\.jpg$/);
     assert.doesNotMatch(scene.querySelector('meta[name="robots"]')?.getAttribute("content") ?? "", /noindex/);
     const ld = [...html.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].flatMap(([, raw]) => {
       const parsed = JSON.parse(raw!) as Record<string, unknown> | Array<Record<string, unknown>>;
@@ -140,6 +140,16 @@ test("the walk serves the illustrated route and all three chapters in each editi
     assert.ok(preparing);
     assert.ok(preparing.querySelector('progress:not([value])'));
     assert.match(preparing.querySelector('[role="status"]')!.textContent!, prefix ? /正在准备入口/ : /Preparing the controls/);
+    const poster = scene.querySelector(".walk-poster");
+    const desktop = poster?.querySelector("img");
+    const portrait = poster?.querySelector("source");
+    const art = "/media/art/walk-odyssey";
+    assert.equal(desktop?.getAttribute("src"), art + "-hd-1600.webp");
+    assert.equal(desktop?.getAttribute("srcset") ?? desktop?.getAttribute("srcSet"), art + "-hd-800.webp 800w, " + art + "-hd-1600.webp 1600w");
+    assert.equal(portrait?.getAttribute("srcset") ?? portrait?.getAttribute("srcSet"), art + "-portrait.webp");
+    for (const cut of ["-hd-800.webp", "-hd-1600.webp", "-portrait.webp", "-og.jpg"]) {
+      assert.ok(existsSync(new URL(`../public${art}${cut}`, import.meta.url)), cut);
+    }
     const guide = scene.getElementById("walk-guide");
     assert.ok(guide && scene.querySelector('a[href="#walk-guide"]'));
     for (const id of ["walk-fire", "walk-field", "walk-monolith"]) {

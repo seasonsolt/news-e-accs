@@ -183,7 +183,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   await pause("landmarks"); if (signal.aborted) return;
 
   // ---------- things along the way ----------
-  const { fireY, showLogs, frame: tendFire, village, basketX, sowLight, monolithLabel, blocks, fields } = buildProps({ scene, own, rand, small, still, out: OUT, floor, fireX, stoneX, stoneScan, wind: fieldUniforms });
+  const { fireY, showLogs, frame: tendFire, village, basketX, sowLight, blocks, fields } = buildProps({ scene, own, rand, small, still, out: OUT, floor, fireX, stoneX, stoneScan, wind: fieldUniforms });
   await pause(); if (signal.aborted) return;
   const { tallGrass } = buildVerge({ scene, own, rand, small, floor, blocks }, fieldUniforms, trackScan);
   const clouds = buildClouds({ scene, own, rand, small, out: OUT }), cloudSun = new THREE.Color(), cloudSky = new THREE.Color();
@@ -468,7 +468,6 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     fieldUniforms.fire.value.set(fireX, fireY + .8, -FIRE_S, fire.glow * .5);
     village.villageLight.intensity = 14 * fire.flicker; village.frame(clock, me.s);
     sowLight.visible = Math.abs(me.s - SOW_S) < 85 && me.s < 335; if (sowLight.visible) sowLight.intensity = 5.5 * (.9 + .1 * fire.flicker);
-    monolithLabel.opacity = smooth(575, 616, me.s) * .88;
     fields.frame(clock, dt, me.s); fields.water.color.copy(hour.top).lerp(hour.horizon, .18).multiplyScalar(.55 + power * .35); fields.waterSun.copy(sunDir); // open water shows the sky overhead, darker than the sky at the horizon
 
     const eyeY = ground(me.x, -me.s) + bridgeLift(me.x, me.s) + 1.66 + (still ? 0 : Math.sin(me.bob) * .035);

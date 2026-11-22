@@ -2,13 +2,14 @@ import "../../../tests/setup.ts";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test, { after } from "node:test";
-import { Mesh, MeshBasicMaterial, PlaneGeometry, Raycaster, Vector3 } from "three";
+import { BoxGeometry, Mesh, MeshBasicMaterial, PlaneGeometry, Raycaster, Scene, Vector3 } from "three";
 import { closeDb } from "@aihot/backend/db";
 import { installModules } from "@aihot/backend/modules";
 import { loadDiscoveryEntries } from "@aihot/backend/publication/sitemap";
 import { normalizeSiteEvent, WALK_ACTS, WALK_PLACES, WALK_TIMES } from "@aihot/backend/site/analytics";
 import { BRIDGE, CANAL, CAVE_S, CLEARINGS, COMPUTE_S, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONO_S, SOW_S, bridgeLift, chapterAt, cleared, ground, keepDry, roadX, sheet, yearReading, yearsAgo } from "../web/walk/land.ts";
 import { messages as walk } from "../web/walk/messages.ts";
+import { buildMonolith } from "../web/walk/monolith.ts";
 import scenes from "../server.ts";
 
 installModules([scenes]);
@@ -49,6 +50,29 @@ test("scenery samples the same two triangles drawn for each terrain cell", () =>
     assert.ok(hit && Math.abs(floor(x, z) - hit.point.y) < 1e-6, `terrain at ${x}, ${z}`);
   }
   plane.dispose(); mesh.material.dispose();
+});
+
+test("the monolith is one unmarked matte black cuboid with 1:4:9 proportions", () => {
+  const scene = new Scene(), owned: Array<{ dispose(): void }> = [];
+  const monolith = buildMonolith({ scene, own: item => { owned.push(item); return item; } }, 3, 2, -MONO_S);
+  try {
+    assert.deepEqual(scene.children, [monolith]);
+    assert.equal(monolith.children.length, 0);
+    assert.ok(monolith.geometry instanceof BoxGeometry);
+    monolith.geometry.computeBoundingBox();
+    const size = monolith.geometry.boundingBox!.getSize(new Vector3());
+    assert.ok(Math.abs(size.x / size.z - 4) < 1e-6);
+    assert.ok(Math.abs(size.y / size.z - 9) < 1e-6);
+    assert.ok(monolith.position.y - size.y / 2 < 2, "the base extends into the soil");
+    assert.equal(monolith.material.emissive.getHex(), 0);
+    assert.ok(Math.max(monolith.material.color.r, monolith.material.color.g, monolith.material.color.b) < .01);
+    assert.ok(monolith.material.roughness >= .8);
+    for (const value of Object.values(monolith.material)) assert.ok(!(value && typeof value === "object" && "isTexture" in value));
+    assert.equal(monolith.castShadow, true);
+    assert.equal(monolith.receiveShadow, true);
+  } finally {
+    for (const item of owned) item.dispose();
+  }
 });
 
 test("time only runs forward along the road, from a million years ago to this year", () => {

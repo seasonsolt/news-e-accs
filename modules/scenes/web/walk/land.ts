@@ -2,6 +2,7 @@
 // `s` is the distance walked along the road; the world runs toward -z, so a point on the road is (roadX(s), -s).
 
 export const START_S = 22, FIRE_S = 46, CAVE_S = 154, SOW_S = 250, FIELD_S = 258, MONO_S = 640, END_S = 635.5;
+export const MONOLITH = { depth: 2.2, width: 8.8, height: 19.8, burial: .28, yaw: -.14 } as const;
 /** Where the first village's yard begins, where the first machine (the windmill's tower) starts to rise, where the dishes and compute halls rise, and where the stone comes within reach. */
 export const VILLAGE = { from: 316, to: 352, yardS: 334, yardOff: 16.5 } as const;
 export const VILLAGE_S = VILLAGE.from, MACHINES_S = 438, COMPUTE_S = 574, REACH_S = MONO_S - 12;
@@ -129,5 +130,5 @@ export const chapterAt = (s: number) => s < 200 ? "Ⅰ · 火" : s < 470 ? "Ⅱ 
 export const LINES: ReadonlyArray<readonly [number, string]> = [
   [2, "约一百万年前。天黑以后，火没有熄灭。"], [112, "带着火往前走。天还没有亮。"], [158, "有人把红土按在石壁上，留下了手印和名字。"],
   [206, "一万两千年前。有人没有吃掉最后一把种子。"], [322, "人为了麦子停下脚步，盖起屋子，守着粮仓。"], [404, "一万年里，麦子改造了人的脊背、河流和历法。"],
-  [486, "是谁驯化了谁？"], [552, "后来，人类把闪电、算式和全部记忆，喂给了沙子。"], [594, "今天。麦田中央立着一块石头。"], [618, "1 : 4 : 9 · TMA-0 · RAISED BY US"],
+  [486, "是谁驯化了谁？"], [552, "后来，人类把闪电、算式和全部记忆，喂给了沙子。"], [594, "今天。麦田中央立着一块石头。"],
 ];

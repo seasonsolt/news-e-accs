@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { FIELD_S, MONO_S, VILLAGE, cleared, roadX, smooth } from "./land.ts";
+import { FIELD_S, MONOLITH, MONO_S, VILLAGE, cleared, roadX, smooth } from "./land.ts";
 
 type Disposable = { dispose(): void };
 type Settings = {
@@ -125,7 +125,7 @@ function plantGeometry(detail: number) {
 export function buildWheat({ scene, own, rand, floor, small, still, fireX, fireS, stoneX, sunDirection, output }: Settings) {
   const uniforms = {
     time: { value: 0 }, front: { value: -1e4 }, wind: { value: still ? 0 : 1 }, sky: { value: new THREE.Color() }, sun: { value: new THREE.Color() }, fogColor: { value: new THREE.Color() }, fogDensity: { value: .01 },
-    fire: { value: new THREE.Vector4(fireX, 0, -fireS, 0) }, shadow: { value: new THREE.Vector4(stoneX, -MONO_S, 4.6, 70) }, backlit: { value: 0 }, sunDirection: { value: sunDirection },
+    fire: { value: new THREE.Vector4(fireX, 0, -fireS, 0) }, shadow: { value: new THREE.Vector4(stoneX, -MONO_S, (MONOLITH.width * Math.cos(MONOLITH.yaw) + MONOLITH.depth * Math.abs(Math.sin(MONOLITH.yaw))) / 2, 70) }, backlit: { value: 0 }, sunDirection: { value: sunDirection },
   };
   const material = own(new THREE.ShaderMaterial({
     side: THREE.DoubleSide, uniforms,

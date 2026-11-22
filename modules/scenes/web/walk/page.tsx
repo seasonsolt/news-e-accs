@@ -14,7 +14,7 @@ import { END_S, START_S, chapterAt, yearReading } from "./land.ts";
 import styles from "./walk.css?url";
 
 const PATH = "/chronicle/walk";
-const CARD = "/media/art/walk-orbit-og.jpg";
+const CARD = "/media/art/walk-odyssey-og.jpg";
 const title = "从火堆到巨石";
 const description = "一百万年，一条路。夜里的火，清晨的田，下午的麦子，和麦田中央那块石头，都在同一个世界里。";
 
@@ -126,7 +126,7 @@ function Walk({ interrupted, onContextLost }: { interrupted: boolean; onContextL
   }
 
   const [figure, unit] = yearReading(0, locale);
-  const poster = "/media/art/walk-orbit";
+  const poster = "/media/art/walk-odyssey";
   const loading = !ready || stage !== null;
   const step = stage ? Object.keys(stages).indexOf(stage) + 1 : 0;
   return <main className="walk" ref={root}>
@@ -155,7 +155,7 @@ function Walk({ interrupted, onContextLost }: { interrupted: boolean; onContextL
     <section className="walk-cover" data-walk="cover" aria-labelledby="walk-title">
       <div className="walk-hero">
         <picture className="walk-poster walk-intro-only">
-          <source media="(max-width: 740px) and (orientation: portrait)" srcSet="/media/art/walk-orbit-portrait.webp" />
+          <source media="(max-width: 740px) and (orientation: portrait)" srcSet="/media/art/walk-odyssey-portrait.webp" />
           <img src={artUrl(poster, 1600)} srcSet={`${artUrl(poster, 800)} 800w, ${artUrl(poster, 1600)} 1600w`}
             sizes="100vw" alt="" fetchPriority="high" width={1600} height={900} />
         </picture>

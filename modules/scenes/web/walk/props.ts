@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { ReliefScan } from "./relief.ts";
 import { buildCamp, type Kit } from "./camp.ts";
 import { buildFields } from "./fields.ts";
-import { FIRE_S, MONO_S, SOW_S, roadX } from "./land.ts";
+import { FIRE_S, MONOLITH, MONO_S, SOW_S, roadX } from "./land.ts";
 import { POSES, person } from "./people.ts";
 import { buildMonolith } from "./monolith.ts";
 import { blob, limb, lit, merged, of, rock, scree, turned, type Paint } from "./shapes.ts";
@@ -74,9 +74,9 @@ export function buildProps(setting: Setting) {
   const village = buildVillage(kit, camp.flame, forest.plant), fields = buildFields(kit, forest.plant); forest.finish();
 
   // ---------- the stone, facing the walker, the sun behind it ----------
-  const monolithLabel = buildMonolith(setting, stoneX, floor(stoneX, -MONO_S), -MONO_S, setting.stoneScan);
-  blocks.push([stoneX, MONO_S, 4.8]);
+  buildMonolith(setting, stoneX, floor(stoneX, -MONO_S), -MONO_S);
+  blocks.push([stoneX, MONO_S, Math.hypot(MONOLITH.width, MONOLITH.depth) / 2]);
 
   for (const shapes of stretches.values()) { const mesh = new THREE.Mesh(own(merged(shapes)), matte); mesh.castShadow = mesh.receiveShadow = true; scene.add(mesh); }
-  return { ...camp, village, basketX, sowLight, monolithLabel, blocks, fields };
+  return { ...camp, village, basketX, sowLight, blocks, fields };
 }
