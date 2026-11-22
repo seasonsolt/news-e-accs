@@ -28,7 +28,7 @@ const fragment = (out: string) => `uniform vec3 sunDir, moonDir, sun, sky; unifo
     // cirrus: thin ice streaks, stretched along the wind
     vec2 p = d.xz / max(d.y, .02) * .35 + drift * 2.;
     float ice = smoothstep(.52, .86, fbm(vec2(p.x * .4 + p.y * .2, p.y * 2.6 - p.x * .5))) * smoothstep(.03, .25, d.y) * (.32 - .17 * night);
-    vec4 acc = vec4(cool * .7 + light * (.25 + 1.1 * pow(toward, 6.)), ice);
+    vec4 acc = vec4(cool * .7 + light * (.25 + 1.2 * pow(toward, 6.)), ice);
 
     // the cloud deck: cumulus and altocumulus seen from below
     p = d.xz / max(d.y, .02) * 1.3 + drift;
@@ -37,19 +37,23 @@ const fragment = (out: string) => `uniform vec3 sunDir, moonDir, sun, sky; unifo
     vec2 sunward = normalize(L.xz + 1e-4) * .1;
     float ahead = smoothstep(thin, thin + .3, fbm(p + sunward) + ragged);
     float lit = clamp(1. - (ahead - dense) * 2. - dense * .55, mix(.38, .12, night), 1.); // more cloud toward the light: this side is in its shade
-    float silver = (pow(toward, 8.) * .8 + pow(toward, 40.) * 1.5) * (1. - dense);
-    vec3 deck = cool * (.75 - .25 * dense) + light * (lit * .5 + silver * .55);
+    float silver = (pow(toward, 7.) * .95 + pow(toward, 36.) * 1.7) * (1. - dense);
+    vec3 deck = cool * (.75 - .25 * dense) + light * (lit * .5 + silver * .58);
     acc = over(vec4(deck, dense * mix(.8, .9, night) * smoothstep(.015, .14, d.y)), acc);
 
     // cumulus along the horizon: billowing tops over a base lost in the haze
-    vec2 ring = normalize(d.xz);
-    float gaps = smoothstep(.38, .62, noise(ring * 2.3 + seed * .1 + time * .0015)), bumps = abs(fbm(ring * 26. + vec2(time * .01, 0.)) - .5) * 2. - .35; // billows: round crests, sharp clefts
-    float top = (.012 + .085 * pow(fbm(ring * 3.1 + seed * .2), 2.) * 2.) * gaps + .018 * bumps * gaps;
-    float body = (1. - smoothstep(top - .01, top, d.y)) * smoothstep(-.03, .004, d.y) * step(.001, gaps);
-    body *= .75 + .25 * fbm(vec2(ring.x * 40. + d.y * 30., ring.y * 40. - d.y * 60.));
-    float up = clamp(d.y / max(top, .004), 0., 1.), facing = dot(ring, normalize(L.xz + 1e-4)), rim = (1. - smoothstep(0., .014, top - d.y)) * pow(max(facing, 0.), 3.);
-    vec3 bank = cool * (.55 + .2 * up) + light * ((.5 - .5 * facing) * .12 + rim * .5);
-    acc = over(vec4(mix(bank, cool * 1.4, .3), body * .32), acc); // far off, they take on the colour of the haze
+    if (d.y < .19) {
+      vec2 ring = normalize(d.xz);
+      float gaps = smoothstep(.38, .62, noise(ring * 2.3 + seed * .1 + time * .0015)), bumps = abs(fbm(ring * 26. + vec2(time * .01, 0.)) - .5) * 2. - .35; // billows: round crests, sharp clefts
+      float top = (.012 + .085 * pow(fbm(ring * 3.1 + seed * .2), 2.) * 2.) * gaps + .018 * bumps * gaps;
+      if (d.y < top) {
+        float body = (1. - smoothstep(top - .01, top, d.y)) * smoothstep(-.03, .004, d.y) * step(.001, gaps);
+        body *= .75 + .25 * fbm(vec2(ring.x * 40. + d.y * 30., ring.y * 40. - d.y * 60.));
+        float up = clamp(d.y / max(top, .004), 0., 1.), facing = dot(ring, normalize(L.xz + 1e-4)), rim = (1. - smoothstep(0., .014, top - d.y)) * pow(max(facing, 0.), 3.);
+        vec3 bank = cool * (.55 + .2 * up) + light * ((.5 - .5 * facing) * .12 + rim * .62);
+        acc = over(vec4(mix(bank, cool * 1.4, .3), body * .32), acc); // far off, they take on the colour of the haze
+      }
+    }
 
     acc.a *= mix(1., .38, night); // by night only a thin veil, the stars showing through
     if (acc.a < .003) discard;
@@ -62,7 +66,7 @@ export function buildClouds({ scene, own, rand, out, small = false }: Pick<Kit, 
     seed: { value: new THREE.Vector2(rand() * 90, rand() * 90) }, time: { value: 0 }, night: { value: 1 }, cover: { value: .4 },
   };
   const dome = new THREE.Mesh(own(new THREE.SphereGeometry(1000, 48, 24)), own(new THREE.ShaderMaterial({
-    side: THREE.BackSide, transparent: true, depthWrite: false, fog: false, uniforms, defines: { OCTAVES: small ? 3 : 5 },
+    side: THREE.BackSide, transparent: true, depthWrite: false, fog: false, uniforms, defines: { OCTAVES: small ? 3 : 4 },
     vertexShader: VERTEX, fragmentShader: fragment(out),
   })));
   dome.frustumCulled = false; scene.add(dome);

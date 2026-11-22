@@ -316,7 +316,8 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
     const hub = new THREE.Group(); hub.position.copy(world(V(0, 36.6, 2.3), x, s, turn, -.3)).y -= base; hub.rotation.y = turn; mast.add(hub);
     rotor = new THREE.Mesh(own(merged(blades)), matte); rotor.castShadow = true; hub.add(rotor);
   }
-  let dishHead: THREE.Group, telemetry: THREE.MeshBasicMaterial;
+  let dishHead: THREE.Group, telemetry: THREE.MeshBasicMaterial, telemetryCool: THREE.MeshBasicMaterial;
+  const fanRotors: THREE.Group[] = [];
   { // a parabolic radio telescope listening to the sky (late 20th century)
     const [s, off] = CLEARINGS.dish, x = at(off, s), turn = facing(x, s, roadX(545), 545) - .25, base = floor(x, -s) - .2;
     const concrete = of(9, lit("#77746d", "#b5b0a6", rand, .08)), dishWhite = of(12, lit("#9da3a8", "#e8ecee", rand, .04)), strut = of(13, lit("#5d6369", "#9aa1a7", rand, .06));
@@ -345,12 +346,15 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
   }
   { // A service yard leads off the paved road to the compute hall's coolers.
     const [s, off] = CLEARINGS.compute, x = at(off, s), turn = facing(x, s, roadX(578), 578), base = floor(x, -s) - .25;
-    const pad = of(9, lit("#605e58", "#949088", rand, .06)), slate = of(12, lit("#171b22", "#2b323d", rand, .05)), trim = of(12, flat("#101318", rand, .04)), alloy = of(13, lit("#4c535b", "#8a929a", rand, .06));
+    const pad = of(9, lit("#605e58", "#949088", rand, .06)), slate = of(12, lit("#1c232e", "#34404f", rand, .05)), trim = of(12, flat("#11161d", rand, .04)), alloy = of(13, lit("#5e6772", "#9da6b0", rand, .06));
+    const ceramic = of(12, flat("#c7c9ce", rand, .05));
     const hall: THREE.BufferGeometry[] = [
-      faceted(new THREE.BoxGeometry(14.2, .45, 8.6), pad).translate(0, .1, 0),
+      faceted(new THREE.BoxGeometry(14.8, .48, 9.0), pad).translate(0, .1, 0),
       faceted(new THREE.BoxGeometry(12.8, 5.4, 7.0), slate).translate(0, 3.0, 0),
-      faceted(new THREE.BoxGeometry(13.4, .32, 7.5), trim).translate(0, 5.82, 0),
-      faceted(new THREE.BoxGeometry(10.2, .22, .18), trim).translate(0, 3.9, 3.52), // recessed telemetry channel
+      faceted(new THREE.BoxGeometry(13.2, .38, 7.3), trim).translate(0, 5.55, 0),
+      faceted(new THREE.BoxGeometry(13.6, .28, 7.7), slate).translate(0, 5.88, 0),
+      faceted(new THREE.BoxGeometry(10.6, .20, .20), trim).translate(0, 3.88, 3.52), // lower warm telemetry channel
+      faceted(new THREE.BoxGeometry(10.6, .16, .20), trim).translate(0, 4.22, 3.52), // upper cool compute telemetry channel
       faceted(new THREE.BoxGeometry(8.8, .24, 7), pad).translate(4.1, .13, 5.1),
       faceted(new THREE.BoxGeometry(1.45, 2.52, .12), alloy).translate(.9, 1.57, 3.56),
       faceted(new THREE.BoxGeometry(.27, .055, .08), trim).translate(1.32, 1.54, 3.66),
@@ -360,16 +364,35 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
       hall.push(limb(V(u, .35, 6.15), V(u, 1.6, 6.15), .12, .12, alloy, { sides: 8 }),
         limb(V(u, 1.6, 6.15), V(u, 1.6, 3.52), .12, .12, alloy, { sides: 8 }));
     }
-    for (let i = -5; i <= 5; i++) if (Math.abs(i) > 1) hall.push(faceted(new THREE.BoxGeometry(.12, 3.8, .28), trim).translate(i * 1.0, 2.45, 3.56)); // cooling intake louvers
+    for (const u of [5.4, 6.1]) { // high-voltage ceramic standoff insulators beside the substation pad
+      hall.push(turned([[.11, 0], [.09, .18], [.14, .22], [.08, .36], [.14, .4], [.06, .58], [0, .62]], 8, ceramic).translate(u, .25, 6.45));
+    }
+    for (let i = -5; i <= 5; i++) if (Math.abs(i) > 1) hall.push(faceted(new THREE.BoxGeometry(.14, 4.1, .32), trim).translate(i * 1.0, 2.6, 3.56)); // brutalist structural pilasters & intake louvers
     for (let i = -1; i <= 1; i++) { // three dry-cooler fan stacks on the side pad
       hall.push(faceted(new THREE.BoxGeometry(1.6, 1.6, 1.6), alloy).translate(7.4, 1.1, i * 2.0));
       hall.push(turned([[.66, 0], [.66, .32], [.58, .36], [0, .28]], small ? 8 : 12, trim).translate(7.4, 1.9, i * 2.0));
     }
     const list: THREE.BufferGeometry[] = []; put(list, merged(hall), x, s, turn, -.25);
     const building = era(list, base, 563, 578); blocks.push([x, s, 7.5]);
-    telemetry = own(new THREE.MeshBasicMaterial({ color: new THREE.Color("#dfa855"), side: THREE.DoubleSide }));
-    const strip = new THREE.Mesh(own(merged([-4.1, -2.6, -1.2, .4, 2.0, 3.6].map((u, i) => new THREE.PlaneGeometry(i % 2 ? .6 : 1.05, .07).translate(u, 0, 0)))), telemetry);
-    const slit = world(V(0, 3.9, 3.63), x, s, turn, -.25); strip.position.set(slit.x, slit.y - base, slit.z); strip.rotation.y = turn; building.add(strip);
+    const bladeGeom = own(merged([
+      faceted(new THREE.BoxGeometry(.96, .03, .12), alloy).rotateY(.28),
+      faceted(new THREE.BoxGeometry(.12, .03, .96), alloy).rotateY(.28),
+    ]));
+    for (let i = -1; i <= 1; i++) {
+      const fan = new THREE.Group(), atFan = world(V(7.4, 2.05, i * 2.0), x, s, turn, -.25);
+      fan.position.set(atFan.x, atFan.y - base, atFan.z);
+      fan.add(new THREE.Mesh(bladeGeom, matte));
+      building.add(fan);
+      fanRotors.push(fan);
+    }
+    telemetry = own(new THREE.MeshBasicMaterial({ color: new THREE.Color("#e8a84e"), side: THREE.DoubleSide }));
+    telemetryCool = own(new THREE.MeshBasicMaterial({ color: new THREE.Color("#7cc8f0"), side: THREE.DoubleSide }));
+    const warmStrip = new THREE.Mesh(own(merged([-4.1, -2.6, -1.2, .4, 2.0, 3.6].map((u, i) => new THREE.PlaneGeometry(i % 2 ? .6 : 1.05, .07).translate(u, 0, 0)))), telemetry);
+    const coolStrip = new THREE.Mesh(own(merged([-3.7, -1.9, .1, 1.6, 3.2].map((u, i) => new THREE.PlaneGeometry(i % 2 ? .42 : .85, .05).translate(u, 0, 0)))), telemetryCool);
+    const warmSlit = world(V(0, 3.88, 3.64), x, s, turn, -.25), coolSlit = world(V(0, 4.22, 3.64), x, s, turn, -.25);
+    warmStrip.position.set(warmSlit.x, warmSlit.y - base, warmSlit.z); warmStrip.rotation.y = turn;
+    coolStrip.position.set(coolSlit.x, coolSlit.y - base, coolSlit.z); coolStrip.rotation.y = turn;
+    building.add(warmStrip, coolStrip);
   }
 
   // ---------- life: trees along the field margins, poplars by the mill, lone trees out in the open field ----------
@@ -452,8 +475,10 @@ export function buildFields({ scene, own, rand, small, still, floor, matte, stan
     const nearCanal = s > 315 && s < 495; shine.visible = nearCanal;
     if (still) return;
     sails.rotation.z = -clock * .45; rotor.rotation.z = -clock * .8; swing(.12 - .14 * Math.cos(clock * 1.047)); // the pot dips every six seconds
+    const spin = -clock * 5.2; for (let i = 0; i < fanRotors.length; i++) fanRotors[i]!.rotation.y = spin + i * 1.1;
     dishHead.rotation.y = dishBaseTurn + Math.sin(clock * .09) * .22;
-    const pulse = .72 + .28 * Math.sin(clock * 2.1) * Math.cos(clock * .7); telemetry.color.setRGB(.92 * pulse, .68 * pulse, .34 * pulse);
+    const pulse = .72 + .28 * Math.sin(clock * 2.1) * Math.cos(clock * .7); telemetry.color.setRGB(.94 * pulse, .68 * pulse, .34 * pulse);
+    const coolPulse = .70 + .30 * Math.cos(clock * 1.6 + 1.1); telemetryCool.color.setRGB(.46 * coolPulse, .78 * coolPulse, .95 * coolPulse);
     fly(clock); if (nearCanal) glide(clock); if (Math.abs(s - pondS) < 90) ripple(clock); waterTime.value = clock;
   }
   return { water, waterSun, frame };
@@ -481,7 +506,8 @@ function openWater(own: Kit["own"]) {
         vec3 sky = mix(near, overhead, smoothstep(.02, .5, R.y));
         float level = dot(overhead, vec3(.33)) * 2.2 + .02, fresnel = .03 + .97 * pow(1. - clamp(dot(N, V), 0., 1.), 5.);
         vec3 murk = mix(vec3(.16, .14, .09), vec3(.07, .08, .05), deep) * level; // mud showing through the shallows, dark green-brown in the deep
-        vec3 c = mix(murk, sky, fresnel) + vec3(1., .92, .78) * pow(max(dot(R, sunDir), 0.), 400.) * 5. * step(0., sunDir.y);
+        float glint = pow(max(dot(R, sunDir), 0.), 320.) * 6. + pow(max(dot(R, sunDir), 0.), 42.) * .38;
+        vec3 c = mix(murk, sky, fresnel) + vec3(1., .92, .76) * glint * step(0., sunDir.y);
         diffuseColor = vec4(min(c, vec3(4.)), mix(.6, .96, smoothstep(0., .35, deep)));`);
   };
   return { water, waterSun, waterTime };

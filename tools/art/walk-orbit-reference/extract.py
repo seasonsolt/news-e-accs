@@ -26,7 +26,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter
 
 REFERENCE_SIZE = (1671, 941)
-SOURCE_SIZES = {(1671, 941), (1600, 901)}
+SOURCE_SIZES = {(1671, 941), (1600, 901), (3840, 2162), (6400, 3604)}
 CROP = (334, 0, 1671, 512)
 CENTER = (1161.801, 322.330)
 RADIUS = 303.381
@@ -107,6 +107,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", type=Path)
     parser.add_argument("--output", type=Path, default=Path(__file__).resolve().parents[3] / "apps/web/public/media/walk/orbit-cover.webp")
+    parser.add_argument("--max-width", type=int, default=0)
+    parser.add_argument("--lossless", action="store_true")
+    parser.add_argument("--quality", type=int, default=92)
     args = parser.parse_args()
     with Image.open(args.source) as original:
         image = original.convert("RGB")
@@ -154,20 +157,27 @@ def main():
         for px in range(width):
             if alpha_pixels[px, py]:
                 rgba_pixels[px, py] = (*repaired_pixels[px, py], alpha_pixels[px, py])
+    for source, result, mask in zip(rgb.get_flattened_data(), repaired.get_flattened_data(), hidden.get_flattened_data()):
+        if not mask and source != result:
+            raise AssertionError("An RGB pixel outside the repair mask changed")
+    if args.max_width > 0 and rgba.width > args.max_width:
+        target_height = max(1, round(rgba.height * args.max_width / rgba.width))
+        rgba = rgba.resize((args.max_width, target_height), Image.Resampling.LANCZOS)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    rgba.save(args.output, lossless=True, quality=100, method=6, exact=False)
+    rgba.save(args.output, lossless=args.lossless, quality=args.quality, method=6, exact=False)
     with Image.open(args.output) as saved:
         decoded = saved.convert("RGBA")
-        for source, result, mask, expected_alpha, actual in zip(rgb.get_flattened_data(), repaired.get_flattened_data(), hidden.get_flattened_data(), alpha.get_flattened_data(), decoded.get_flattened_data()):
-            if not mask and source != result:
-                raise AssertionError("An RGB pixel outside the repair mask changed")
-            if actual[3] != expected_alpha:
-                raise AssertionError("An alpha value changed during encoding")
-            if actual[3] and result != actual[:3]:
-                raise AssertionError("A visible RGB pixel changed during encoding")
+        if decoded.size != rgba.size:
+            raise AssertionError("Output dimensions changed during encoding")
+        if args.lossless:
+            for expected, actual in zip(rgba.get_flattened_data(), decoded.get_flattened_data()):
+                if actual[3] != expected[3]:
+                    raise AssertionError("An alpha value changed during encoding")
+                if actual[3] and expected[:3] != actual[:3]:
+                    raise AssertionError("A visible RGB pixel changed during encoding")
     center = ((CENTER[0] * sx - box[0]) / width, (CENTER[1] * sy - box[1]) / height)
     print(json.dumps({
-        "asset": str(args.output), "size": [width, height], "sourceSize": image.size,
+        "asset": str(args.output), "size": [rgba.width, rgba.height], "sourceSize": image.size,
         "sourceSha256": hashlib.sha256(args.source.read_bytes()).hexdigest(),
         "crop": list(box), "planetCenterUVTopLeft": center,
         "planetCenterUVBottomLeft": [center[0], 1 - center[1]],
@@ -177,7 +187,7 @@ def main():
         "alphaTreatment": "Continuous planet alpha; lower atmosphere fades at y360–505, left ring glow at x560–820, right ring at x1380–1671.",
         "occludedRgbTreatment": "Floating-point multiscale harmonic illumination solve, with neighboring original pixels fixed. No unseen cloud detail recovered or synthesized.",
         "solver": solver,
-        "rgbPreservedOutsideRepairMask": True, "visibleDecodedPixelsLossless": True,
+        "rgbPreservedOutsideRepairMask": True, "visibleDecodedPixelsLossless": bool(args.lossless),
         "transparentRgbDiscarded": True, "bytes": args.output.stat().st_size,
     }, indent=2))
 

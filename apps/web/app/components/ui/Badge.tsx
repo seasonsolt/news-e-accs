@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 type Tone = "selected" | "accent" | "amber" | "hot" | "ok" | "neutral";
 
 const TONES: Record<Tone, string> = {
-  selected: "bg-amber-soft text-amber-ink",
+  selected: "bg-ok-soft text-ok-ink",
   accent: "bg-accent-soft text-accent",
   amber: "bg-amber-soft text-amber-ink",
   hot: "bg-hot-soft text-hot",

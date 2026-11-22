@@ -5,9 +5,9 @@ import { END_S, FIELD_S, FIRE_S, cropCover, fbm, noise, roadX, sequence, smooth 
 // Savanna grass in the night country, s -25 to 275, and the tall grass on the field verges.
 // A clump is up to 64 thin blades bent in the vertex shader, under a sparse stubble; the material stays a standard one, so the sun, moon and fire, their shadows, the sky's light and the fog all reach it.
 
-const BLADES = 64, CHUNK = 16, CLOSE = 14; // chunks nearer than CLOSE draw blades of three quads and a tip, the rest one quad and a tip
-const NEAR = { rows: [0, .35, .65, .88], indices: 21 }, FAR = { rows: [0, .5], indices: 9 };
-const LOD = { wide: [24, 95, 170], small: [10, 45, 110] } as const; // every blade up to the first distance, an eighth of them at the second, none past the third or the fog
+const BLADES = 40, CHUNK = 16, CLOSE = 11; // chunks nearer than CLOSE draw blades of two quads and a tip, the rest one quad and a tip
+const NEAR = { rows: [0, .42, .78], indices: 15 }, FAR = { rows: [0, .5], indices: 9 };
+const LOD = { wide: [16, 68, 125], small: [9, 40, 95] } as const; // every blade up to the first distance, an eighth of them at the second, none past the third or the fog
 const GOLD = new THREE.Color("#9a8350"), GREY = new THREE.Color("#72765e"), DEAD = new THREE.Color("#665341"), OLIVE = new THREE.Color("#66733c"); // dry grass is about as dark as the wheat, not much paler than the soil
 
 type Setting = Pick<Kit, "floor" | "blocks" | "fireX" | "small">;
@@ -118,7 +118,7 @@ export function buildGrass({ scene, own, still, ...setting }: Setting & Pick<Kit
         float tw = twist * 1.2 + t * twist * 1.5, cw = cos(tw), sw = sin(tw);
         vec3 across = vec3(-lean.y * cw - lean.x * sw, 0., -lean.y * sw + lean.x * cw);
         across = normalize(across - tangent * dot(across, tangent));
-        float w0 = (.0022 + .003 * fract(seed.y * 5.3 + root.w)) * (.8 + form.x * .5) * clamp(inversesqrt(max(keep / max(form.z, .01), .02)), 1., 2.8); // far blades widen as they thin out
+        float w0 = (.0026 + .0035 * fract(seed.y * 5.3 + root.w)) * (.8 + form.x * .5) * clamp(inversesqrt(max(keep / max(form.z, .01), .02)), 1., 2.8); // far blades widen as they thin out
         float w = head > .5 ? (t > .7 ? .008 + .004 * n0 : w0 * .45) : w0 * (1. - t * t * .8);
         w = max(w, (dist + 1.) * pixel * .7 * (1. - t * .6)); // never much under a pixel, so blades do not shimmer
         vec3 face = normalize(cross(across, tangent));
@@ -171,11 +171,12 @@ export function buildGrass({ scene, own, still, ...setting }: Setting & Pick<Kit
     const mesh = new THREE.Mesh(shapes[0], material); mesh.receiveShadow = true; mesh.matrixAutoUpdate = false; scene.add(mesh); patches.push({ mesh, shapes, x, z });
   }
 
-  /** Sets the wind's clock and how much of each chunk to draw from where the eye is; nothing past the fog. `pixel` is the height of a pixel one metre from the eye. */
-  function frame(clock: number, eye: THREE.Vector3, fogDensity: number, pixel: number) {
+  /** Sets the wind's clock and how much of each chunk to draw from where the eye is; nothing past the fog or far behind the camera. `pixel` is the height of a pixel one metre from the eye. */
+  function frame(clock: number, eye: THREE.Vector3, fogDensity: number, pixel: number, fwdX = 0, fwdZ = -1) {
     uniforms.time.value = still ? 0 : clock; uniforms.pixel.value = pixel;
     const gone = Math.min(end, 2.1 / fogDensity); uniforms.lod.value.z = gone;
     for (const { mesh, shapes, x, z } of patches) {
+      if ((x - eye.x) * fwdX + (z - eye.z) * fwdZ < -CHUNK * .95) { mesh.visible = false; continue; }
       const d = Math.hypot(Math.max(0, Math.abs(eye.x - x) - CHUNK / 2), Math.max(0, Math.abs(eye.z - z) - CHUNK / 2)), keep = (1 - .88 * smooth(full, thin, d)) * (1 - smooth(gone * .75, gone, d));
       const close = d < CLOSE, shape = shapes[close ? 0 : 1]!; mesh.geometry = shape; mesh.visible = keep > 0;
       shape.setDrawRange(0, Math.min(BLADES, Math.ceil(keep * BLADES) + 1) * (close ? NEAR : FAR).indices);

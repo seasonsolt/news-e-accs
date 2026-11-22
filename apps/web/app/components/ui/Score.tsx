@@ -7,7 +7,7 @@ import { Text, useTranslate } from "../../lib/i18n";
  */
 const TIERS = [
   { min: 85, className: "bg-hot/10 text-hot ring-hot/25" },
-  { min: 70, className: "bg-accent-soft text-accent ring-accent/20" },
+  { min: 70, className: "bg-accent-soft text-accent-ink ring-accent/25" },
   { min: 0, className: "text-ink-4 ring-line-soft" },
 ];
 

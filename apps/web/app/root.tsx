@@ -84,7 +84,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {documentRelease && <meta name="aihot-release" content={documentRelease} />}
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4ecdc" />
-        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#15110d" />
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0c1017" />
         <meta name="apple-mobile-web-app-title" content={SITE.name} />
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: MOTION_BOOT_SCRIPT }} />

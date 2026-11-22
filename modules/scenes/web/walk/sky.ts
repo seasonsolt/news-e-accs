@@ -43,8 +43,13 @@ export function skyFragment(output: string) {
       vec3 c = mix(top, horizon, exp(-up * mix(5.5, 9., day)));
       if (d.y < 0.) c = mix(horizon, horizon * .42, min(1., -d.y * 6.));
       float g = max(dot(d, sunDir), 0.);
-      c += sun * (1. - stars) * (pow(g, mix(12., 64., day)) * mix(.055, .012, day)
-        + pow(g, mix(180., 520., day)) * .2) * step(-.08, sunDir.y);
+      float sunHorizon = exp(-up * 4.5) * smoothstep(-.16, .25, sunDir.y);
+      c += sun * (1. - stars * .65) * (pow(g, 3.2) * mix(.18, .05, day) * sunHorizon
+        + pow(g, mix(12., 64., day)) * mix(.055, .012, day)
+        + pow(g, mix(180., 520., day)) * .22) * step(-.1, sunDir.y);
+      // Anti-solar Belt of Venus dusk and dawn glow near the opposite horizon.
+      float anti = pow(max(-dot(d, sunDir), 0.), 2.2) * exp(-abs(up - .055) * 19.);
+      c += vec3(.22, .12, .18) * anti * (1. - day * .65) * (1. - stars * .72);
       c += sun * (1. - stars) * smoothstep(mix(.9992, .9995, day), mix(.9996, .9998, day), g) * 3.;
 
       // Dust softens a stellar river across the night sky.

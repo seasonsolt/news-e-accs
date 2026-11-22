@@ -25,11 +25,11 @@ const heading = (b: Branch, i = b.points.length - 1) => b.points[Math.min(i + 1,
 // What each kind of plant is made of. `girth` is the trunk's radius per metre of height (per metre of spread for bushes); `cards` the leaf cards at `ref` size and full detail, each `cluster` leaves across;
 // `depth` how much a card deep in the crown is darkened (bushes little, so they still catch the moon).
 const SPECIES = {
-  acacia: { bark: ["#2b231d", "#6b5a49", "#86735e"], leaf: ["#3a4720", "#7f8b40"], girth: .042, twig: .006, ref: 6.6, cards: 10000, cluster: 1, length: .27, width: .24, outward: .45, depth: 1,
+  acacia: { bark: ["#2b231d", "#6b5a49", "#86735e"], leaf: ["#3a4720", "#7f8b40"], girth: .042, twig: .006, ref: 6.6, cards: 4800, cluster: 1.38, length: .27, width: .24, outward: .45, depth: 1,
     shader: { KIND: 0, FLUTTER: 2.6, FLAP: .02, SHIMMER: .1, BACK: 1.05, THROUGH: .8 }, sway: .08 },
-  fig: { bark: ["#39342d", "#8a8273", "#7d715f"], leaf: ["#203d17", "#5d8a2f"], girth: .04, twig: .01, ref: 7, cards: 4400, cluster: 1.5, length: .24, width: .17, outward: .6, depth: 1,
+  fig: { bark: ["#39342d", "#8a8273", "#7d715f"], leaf: ["#203d17", "#5d8a2f"], girth: .04, twig: .01, ref: 7, cards: 2900, cluster: 1.72, length: .24, width: .17, outward: .6, depth: 1,
     shader: { KIND: 1, FLUTTER: 2.2, FLAP: .025, SHIMMER: .15, BACK: 1.08, THROUGH: .6 }, sway: .06 },
-  poplar: { bark: ["#57594d", "#aaad9c", "#9c9f8c"], leaf: ["#4d6e2c", "#a3b655"], girth: .025, twig: .008, ref: 13, cards: 6000, cluster: 2.3, length: .16, width: .11, outward: .45, depth: .9,
+  poplar: { bark: ["#57594d", "#aaad9c", "#9c9f8c"], leaf: ["#4d6e2c", "#a3b655"], girth: .025, twig: .008, ref: 13, cards: 3500, cluster: 2.55, length: .16, width: .11, outward: .45, depth: .9,
     shader: { KIND: 2, FLUTTER: 8.5, FLAP: .03, SHIMMER: .55, BACK: 1.3, THROUGH: .7 }, sway: .2 },
   bush: { bark: ["#3a342c", "#6e665a", "#857b6c"], leaf: ["#3f4a2e", "#8a9168"], girth: .03, twig: .004, ref: .8, cards: 460, cluster: 1.6, length: .13, width: .095, outward: .55, depth: .45,
     shader: { KIND: 3, FLUTTER: 4, FLAP: .012, SHIMMER: .1, BACK: 1.05, THROUGH: .5 }, sway: .03 },

@@ -13,7 +13,7 @@ float sNoise(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f)
 
 // Each kind multiplies the painted colour by a tint and leaves a height (in metres) for the bump, a roughness and how much specular it keeps. An octave fades out once a pixel covers about a third of its wavelength, so nothing shimmers far off.
 const SURFACE = /* glsl */ `
-float px = length(fwidth(vSpot)), sHeight = 0., sRough = .8, sMetal = 0., sSpec = 1., sWarm = 0., sCap = 0., sKnee = 0.; vec3 sTint = vec3(1.), sSheen = vec3(1.), p = vSpot;
+float px = length(fwidth(vSpot)), sHeight = 0., sRough = .8, sMetal = 0., sSpec = 1., sWarm = 0., sCap = 0., sKnee = 0., sVelvet = 0.; vec3 sTint = vec3(1.), sSheen = vec3(1.), p = vSpot;
 #define FADE(f) (1. - smoothstep(.25, .6, px * (f)))
 int kind = int(vSurface + .5);
 if (kind == 1) { // stone
@@ -22,7 +22,7 @@ if (kind == 1) { // stone
   float up = smoothstep(.25, .9, stoneNormal.y);
   float weathering = sNoise(p * .63 + 17.);
   sTint = mix(vec3(.73, .78, .84), vec3(1.13, 1.04, .94), weathering + up * .13);
-  sTint *= exp2((scan.r - .5) * 2.85);
+  sTint *= exp2((scan.r - .5) * 2.85) * (.82 + .36 * clamp(scan.g, 0., 1.));
   sHeight = (scan.g - .5) * .116;
   sRough = clamp(scan.b - .06 + up * .08, .58, .97);
   sSpec = .76;
@@ -40,8 +40,8 @@ if (kind == 1) { // stone
 } else if (kind == 5) { // skin: soft blotches, pores, a little sheen
   float blot = sNoise(p * 14.), mottle = sNoise(p * 60.), pore = smoothstep(.62, .86, sNoise(p * 420.)), fm = FADE(60.), fp = FADE(420.);
   sTint = mix(vec3(1.), vec3(1.05, .96, .94), smoothstep(.45, .85, blot)) * (1. + (mottle - .5) * .07 * fm) * (1. - pore * .07 * fp);
-  sHeight = mottle * .00025 * fm - pore * .00012 * fp; sRough = .66 + .1 * blot + .06 * pore * fp; sSpec = .3; sWarm = 1.; sCap = .3; sKnee = .6;
-} else if (kind == 6) { // cloth: homespun yarn, uneven along its length, in a plain weave
+  sHeight = mottle * .00025 * fm - pore * .00012 * fp; sRough = .62 + .1 * blot + .06 * pore * fp; sSpec = .32; sWarm = 1.; sCap = .3; sKnee = .6;
+} else if (kind == 6) { // cloth: homespun yarn, uneven along its length, in a plain weave + woollen rim scatter
   // The alternating over-under crossing appears only close enough to resolve individual yarns.
   vec2 yarn = vec2(p.x + p.z, p.y + .13 * p.z);
   float slub = sNoise(vec3(yarn * vec2(52., 5.), 2.)), nap = sNoise(vec3(yarn * vec2(9., 103.), 6.));
@@ -50,7 +50,7 @@ if (kind == 1) { // stone
   float weave = mix(threads.x, threads.y, mod(floor(crossing.x) + floor(crossing.y), 2.)) - .5;
   sTint = vec3((.91 + .18 * sNoise(p * 3.)) * (1. + (slub - .5) * .29 * FADE(52.) + weave * .24 * FADE(290.)));
   sHeight = .00065 * slub * FADE(52.) + .00042 * weave * FADE(290.);
-  sRough = .85 + .10 * nap; sSpec = .52;
+  sRough = .84 + .10 * nap; sSpec = .52; sVelvet = .28;
 } else if (kind == 7) { // hair and fur: locks hanging down, darker between them, a weak sheen in the hair's own colour broken along the strands
   float lock = sNoise(p * vec3(60., 7., 60.)), strand = sNoise(p * vec3(520., 30., 520.)), fl = FADE(60.), fs = FADE(520.);
   sTint = vec3((.74 + .44 * mix(.5, lock, fl)) * (1. + (strand - .5) * .32 * fs));
@@ -70,14 +70,14 @@ if (kind == 1) { // stone
     // Earth keeps deep finger and straw marks. Limewash fills the hollows and
     // takes more light on the crowns left by the float.
     sTint = mix(vec3(.85,.81,.71), vec3(1.10,1.06,1.02), mottling);
-    sTint *= exp2(tooth * (clay ? 1.05 : .65) + pit * (clay ? .26 : .12));
+    sTint *= exp2(tooth * (clay ? 1.05 : .65) + pit * (clay ? .26 : .12)) * (clay ? (.84 + .28 * clamp(layer.g, 0., 1.)) : (.9 + .16 * clamp(layer.g, 0., 1.)));
     sHeight = pit * (clay ? .011 : .004) + (mottling - .5) * .002;
     sRough = clamp(layer.b - (clay ? .02 : .12), .66, .99); sSpec = clay ? .55 : .8;
   } else if (kind == 10 || kind == 15) {
     vec2 board = kind == 15 ? plane.yx : plane;
     vec3 oak = texture2D(oakRelief, board * vec2(.90, .63)).rgb;
     float pores = 1. - oak.g;
-    sTint = mix(vec3(.84,.74,.61), vec3(1.14,1.10,1.02), oak.r) * exp2((oak.r - .5) * 1.46);
+    sTint = mix(vec3(.84,.74,.61), vec3(1.14,1.10,1.02), oak.r) * exp2((oak.r - .5) * 1.46) * (.88 + .22 * clamp(oak.g, 0., 1.));
     sHeight = (oak.g - .5) * .0021;
     sRough = clamp(.36 + .39 * oak.b + .10 * pores, .38, .85); sSpec = .93;
   } else if (kind == 11) {
@@ -87,12 +87,12 @@ if (kind == 1) { // stone
     sCap = .12; sKnee = .41; // preserve the fibres and ink under the desk light
   } else if (kind == 12) {
     float orangePeel = sNoise(p * 170.), rub = sNoise(p * 4.8);
-    sRough = .31 + .17 * rub + (orangePeel - .5) * .13 * FADE(170.);
+    sRough = .26 + .16 * rub + (orangePeel - .5) * .12 * FADE(170.);
     sHeight = orangePeel * .00016 * FADE(170.);
     sTint = vec3(.93 + .13 * rub); sSpec = 1.;
   } else if (kind == 13) {
     float drag = sNoise(vec3(plane * vec2(14., 280.), 3.)), tarnish = sNoise(p * 13.);
-    sMetal = .73; sRough = .29 + tarnish * .20 + (drag - .5) * .16 * FADE(280.);
+    sMetal = .78; sRough = .25 + tarnish * .18 + (drag - .5) * .14 * FADE(280.);
     sTint = vec3(.93 + .14 * tarnish + (drag - .5) * .16 * FADE(280.)); sHeight = drag * .00018 * FADE(280.);
   } else { // tinted glazing: a grazing reflection, darker when looking straight through to the unlit rooms
     float edge = pow(1. - clamp(abs(dot(normalize(vNormal), normalize(vViewPosition))), 0., 1.), 4.);
@@ -116,6 +116,8 @@ diffuseColor.rgb *= sTint;`;
 const WARM = /* glsl */ `
 if (sCap > 0.) { vec3 lit = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse;
   reflectedLight.directSpecular = min(reflectedLight.directSpecular, sCap * lit); reflectedLight.indirectSpecular = min(reflectedLight.indirectSpecular, sCap * lit); }
+if (sVelvet > 0.) { float rim = pow(1. - abs(dot(normal, normalize(vViewPosition))), 3.);
+  reflectedLight.indirectDiffuse += sVelvet * rim * (reflectedLight.directDiffuse * .35 + reflectedLight.indirectDiffuse * .65); }
 if (sWarm > 0.) { float edge = 1. - abs(dot(normal, normalize(vViewPosition))); reflectedLight.directDiffuse *= clamp(1. + sWarm * (vec3(.1, -.02, -.08) + vec3(.16, -.02, -.22) * edge * edge), 0., 1.3); }
 if (sKnee > 0.) { vec3 sum = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular; float top = max(sum.r, max(sum.g, sum.b));
   if (top > sKnee) { float f = (sKnee + (top - sKnee) / (1. + (top - sKnee) / sKnee)) / top;

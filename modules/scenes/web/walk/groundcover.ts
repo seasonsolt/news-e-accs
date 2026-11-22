@@ -112,7 +112,9 @@ const COLOR = `float relief = 0., scannedRoughness = .87, paving = 0.;
       relief = mix(relief, ((arris - 1.) * .003 + crown * .0035) * detail, street * verge);
       relief = mix(relief, ((joint - 1.) * .002 + (weather - .5) * .0015 - crack * .001) * detail, campus * verge);
       paving = clamp((street + campus) * verge, 0., 1.);
-      scannedRoughness = mix(scannedRoughness, .92 + grit.r * .045, paving);
+      float streetGloss = street * verge * smoothstep(.2, .85, crown) * .16;
+      float rainSheen = campus * verge * smoothstep(.56, .82, weather) * .22;
+      scannedRoughness = mix(scannedRoughness, clamp(.91 + grit.r * .05 - streetGloss - rainSheen, .66, .97), paving);
     }
     diffuseColor.rgb = c * (1. - damp * .3);
     #ifdef SOIL_RIBBON

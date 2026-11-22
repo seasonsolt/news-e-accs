@@ -9,7 +9,7 @@ interface Setting {
 /** A single unmarked black slab, with the 1:4:9 proportions of the monolith in 2001. */
 export function buildMonolith({ scene, own }: Setting, x: number, y: number, z: number) {
   const geometry = own(new THREE.BoxGeometry(MONOLITH.width, MONOLITH.height, MONOLITH.depth));
-  const material = own(new THREE.MeshStandardMaterial({ color: "#050506", roughness: .84, metalness: 0, envMapIntensity: .45 }));
+  const material = own(new THREE.MeshStandardMaterial({ color: "#030305", roughness: .82, metalness: .04, envMapIntensity: .68 }));
   const monolith = new THREE.Mesh(geometry, material);
   monolith.position.set(x, y + MONOLITH.height / 2 - MONOLITH.burial, z);
   monolith.rotation.y = MONOLITH.yaw;

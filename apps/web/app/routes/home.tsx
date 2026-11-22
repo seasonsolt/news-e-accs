@@ -126,14 +126,14 @@ function LatestEssays({ essays }: { essays: EssayCard[] }) {
   return (
     <section className="mt-6 lg:mt-8" aria-labelledby="home-essays-title">
       <div className="flex items-baseline justify-between gap-4">
-        <h2 id="home-essays-title" className="font-mono text-[12px] uppercase tracking-[0.14em] text-[color:var(--brass)]">{tx("最新长文")}</h2>
+        <h2 id="home-essays-title" className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-3">{tx("最新长文")}</h2>
         <Link to="/essays" prefetch="intent" className="home-browse">{tx("全部长文")} →</Link>
       </div>
       <ul className={`mt-2 grid gap-3 ${essays.length > 1 ? "lg:grid-cols-3" : ""}`}>
         {essays.map((e, i) => (
           // Phones show the newest only, so the picks stay near the top.
           <li key={e.slug} className={i > 0 ? "max-lg:hidden" : undefined}>
-            <Link to={`/essays/${e.slug}`} prefetch="intent" className="group flex items-start gap-4 rounded-card border border-line p-3 transition-colors hover:border-line-strong">
+            <Link to={`/essays/${e.slug}`} prefetch="intent" className="group flex items-start gap-4 rounded-card border border-line bg-surface/75 p-3 transition-colors hover:border-line-strong hover:bg-surface-2">
               <img src={e.cover.src} width={e.cover.width} height={e.cover.height} alt={e.cover.alt} loading="lazy" decoding="async" className="aspect-[4/3] w-[96px] shrink-0 rounded-control bg-bg-muted object-cover" />
               <span className="flex min-w-0 flex-col gap-1">
                 <span className="line-clamp-2 text-[16.5px] font-semibold leading-snug text-ink group-hover:text-accent">{e.title}</span>

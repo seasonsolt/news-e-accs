@@ -5,7 +5,7 @@ import { SITE } from "@aihot/site";
 import { localeFromMatches, translate, useLocale, useTranslate } from "@aihot/web/lib/i18n";
 import { localePath } from "@aihot/web/lib/locale";
 import { breadcrumbLd, pageMeta, siteUrl } from "@aihot/web/lib/seo";
-import { artUrl } from "@aihot/web/features/chrono/art";
+import { artSrcSet, artUrl } from "@aihot/web/features/chrono/art";
 import { IconArrowLeft, IconArrowRight, IconChevronDown, IconClock } from "@aihot/web/components/icons";
 import { WalkGuide } from "./Guide.tsx";
 import guideStyles from "./guide.css?url";
@@ -156,8 +156,8 @@ function Walk({ interrupted, onContextLost }: { interrupted: boolean; onContextL
       <div className="walk-hero">
         <picture className="walk-poster walk-intro-only">
           <source media="(max-width: 740px) and (orientation: portrait)" srcSet="/media/art/walk-odyssey-portrait.webp" />
-          <img src={artUrl(poster, 1600)} srcSet={`${artUrl(poster, 800)} 800w, ${artUrl(poster, 1600)} 1600w`}
-            sizes="100vw" alt="" fetchPriority="high" width={1600} height={901} />
+          <img src={artUrl(poster, 1600)} srcSet={artSrcSet(poster)}
+            sizes="max(100vw, calc(100svh * 1.776))" alt="" fetchPriority="high" width={3840} height={2162} />
         </picture>
         <div className="walk-intro">
           <p className="walk-kicker walk-intro-only"><span>{tx("加速史 · 第一人称漫游")}</span><span><IconClock size={14} />{tx("约两分钟")}</span></p>

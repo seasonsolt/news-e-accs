@@ -3,6 +3,7 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
 import { shareOrCopy } from "@aihot/web/features/item/share";
 import { recordEngagement } from "@aihot/web/lib/engagement";
@@ -22,13 +23,13 @@ import { CANAL, CLEARINGS, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONO
 
 // The hour at points along the road: [s, zenith, horizon, fog, sun colour, sun strength, sky light, stars, sun height, fog density].
 const HOURS = ([
-  [0, "#112336", "#34495c", "#142537", "#a9c1f2", .62, .5, 1, -.25, .0078],
-  [170, "#0c1c31", "#3b4357", "#1d2a3c", "#a9c1f2", .58, .55, 1, -.16, .0078],
-  [255, "#1c2a52", "#c0624a", "#4a3540", "#ff9a66", .6, .62, .3, .02, .0085],
-  [340, "#304e70", "#dfae83", "#8797a1", "#ffd4a0", .8, .55, 0, .2, .0054],
-  [450, "#355578", "#aebfc8", "#94a8b2", "#ffe5bf", .85, .58, 0, .46, .0038],
-  [560, "#233f58", "#d2b68a", "#7f929e", "#ffd6a1", .85, .5, 0, .335, .0041],
-  [650, "#17344e", "#df9f65", "#71838c", "#ffbd7d", .95, .48, 0, .25, .0039],
+  [0, "#0b1628", "#293b52", "#0f1d2e", "#9db8ec", .64, .5, 1, -.25, .0076],
+  [170, "#0a172b", "#343c54", "#172438", "#a6c0f4", .6, .55, 1, -.16, .0076],
+  [255, "#18274d", "#c46248", "#48323e", "#ff9960", .62, .62, .3, .02, .0083],
+  [340, "#2d4d70", "#e3b182", "#8797a2", "#ffd59e", .82, .56, 0, .2, .0053],
+  [450, "#325478", "#afc1cb", "#92a7b3", "#ffe7c2", .86, .58, 0, .46, .0038],
+  [560, "#1f3954", "#d6b27f", "#768997", "#ffcf94", .86, .5, 0, .335, .004],
+  [650, "#122740", "#e69a5c", "#6c7884", "#ffb872", .96, .48, 0, .25, .0038],
 ] as const).map(([s, top, horizon, fog, sun, power, sky, stars, height, density]) => ({ s, top: new THREE.Color(top), horizon: new THREE.Color(horizon), fog: new THREE.Color(fog), sun: new THREE.Color(sun), power, sky, stars, height, density }));
 const OUT = "\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n"; // an #include has to start its own line
 
@@ -59,7 +60,7 @@ export async function start(root: HTMLElement, options: WalkOptions): Promise<()
 async function build(root: HTMLElement, { tx, locale, audioContext, onContextLost, onProgress }: WalkOptions, signal: AbortSignal) {
   const part = <T extends HTMLElement = HTMLElement>(name: string) => root.querySelector<T>(`[data-walk="${name}"]`)!;
   const small = matchMedia("(max-width: 640px), (pointer: coarse)").matches, still = reducedMotion();
-  const query = new URLSearchParams(location.search), useAO = !small && query.get("ao") !== "0", useSky = !small && query.get("env") !== "0"; // ?ao=0 and ?env=0 turn off the occlusion and the sky's light, to compare
+  const query = new URLSearchParams(location.search), useAO = !small && query.get("ao") === "1", useSky = !small && query.get("env") !== "0"; // ?ao=1 enables screen-space AO; ?env=0 turns off sky IBL
   const listen = { signal }, rand = sequence(7);
   const pause = (stage?: WalkStage) => {
     if (stage) onProgress?.(stage);
@@ -78,7 +79,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   const owned: Array<{ dispose(): void }> = [];
   const own = <T extends { dispose(): void }>(item: T) => { owned.push(item); return item; };
 
-  const renderer = new THREE.WebGLRenderer({ antialias: !small, powerPreference: "high-performance" });
+  const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
   const canvas = renderer.domElement;
   signal.addEventListener("abort", () => {
@@ -97,10 +98,10 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   };
   canvas.addEventListener("webglcontextlost", () => { if (!signal.aborted) onContextLost?.(); }, listen);
   canvas.inert = true; canvas.tabIndex = 0; canvas.setAttribute("aria-label", tx("可行走的三维世界：从火堆穿过麦田走到巨石")); part("viewport").append(canvas);
-  let ratio = Math.min(devicePixelRatio || 1, small ? 1.25 : 1.6);
+  let ratio = Math.min(devicePixelRatio || 1, small ? 1.15 : 1.5);
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(62, 1, .1, 1600), fog = new THREE.FogExp2(0x0b0d12, .012);
   scene.fog = fog;
-  const composer = own(new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: small ? 0 : 4 })));
+  const composer = own(new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: small ? 0 : 2 })));
   composer.addPass(new RenderPass(scene, camera));
   const aoSkip: THREE.Object3D[] = [];
   if (useAO) { // contact shadows at half resolution, over the opaque lit scenery only
@@ -114,7 +115,26 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     };
     composer.addPass(ao);
   }
-  composer.addPass(own(new UnrealBloomPass(new THREE.Vector2(1, 1), .34, .6, 1))); composer.addPass(own(new OutputPass()));
+  composer.addPass(own(new UnrealBloomPass(new THREE.Vector2(1, 1), .26, .68, .92))); composer.addPass(own(new OutputPass()));
+  const gradeUniforms = { tDiffuse: { value: null }, uTime: { value: 0 }, uGrain: { value: still ? 0 : .014 } };
+  const gradePass = own(new ShaderPass({
+    uniforms: gradeUniforms,
+    vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }",
+    fragmentShader: `uniform sampler2D tDiffuse; uniform float uTime, uGrain; varying vec2 vUv;
+      float hash(vec2 p){ vec3 q = fract(vec3(p.xyx) * .1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+      void main(){
+        vec4 s = texture2D(tDiffuse, vUv);
+        vec2 centered = vUv - .5;
+        float vig = 1. - smoothstep(.34, .92, dot(centered, centered) * 2.15) * .16;
+        // Subtle 70mm film contrast: cool shadow undertone with warm highlights preserved cleanly.
+        vec3 col = s.rgb * vig;
+        float luma = dot(col, vec3(.299, .587, .114));
+        col += mix(vec3(-.006, -.002, .009) * smoothstep(.015, .18, luma), vec3(.007, .003, -.004), smoothstep(.22, .78, luma));
+        float g = (hash(vUv * 980. + fract(uTime * 17.3) * 113.) - .5) * uGrain;
+        gl_FragColor = vec4(clamp(col + g, 0., 1.), s.a);
+      }`,
+  }));
+  composer.addPass(gradePass);
   if (!small) { renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap; }
 
   // ---------- the land ----------
@@ -175,7 +195,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     for (const key of ["top", "horizon", "fog", "sun"] as const) hour[key].copy(a[key]).lerp(b[key], t);
     for (const key of ["power", "sky", "stars", "height", "density"] as const) hour[key] = mix(a[key], b[key], t);
   }
-  const sunDir = new THREE.Vector3(), moon = new THREE.Vector3(-Math.sin(.5) * Math.cos(.3), Math.sin(.3), -Math.cos(.5) * Math.cos(.3)), nightSky = new THREE.Color("#030619"), nightHorizon = new THREE.Color("#27203c"), fieldAfterglow = new THREE.Color("#62758d");
+  const sunDir = new THREE.Vector3(), moon = new THREE.Vector3(-Math.sin(.5) * Math.cos(.3), Math.sin(.3), -Math.cos(.5) * Math.cos(.3)), nightSky = new THREE.Color("#030616"), nightHorizon = new THREE.Color("#251f3c"), fieldAfterglow = new THREE.Color("#566a85");
   const orbit = orbitUniforms(renderer.toneMappingExposure);
   const skyUniforms = { ...orbit, top: { value: new THREE.Color() }, horizon: { value: new THREE.Color() }, haze: { value: hour.fog }, sun: { value: new THREE.Color() }, sunDir: { value: sunDir }, stars: { value: 1 }, time: { value: 0 }, day: { value: 0 } };
   const sky = new THREE.Mesh(own(new THREE.SphereGeometry(1200, 32, 20)), own(new THREE.ShaderMaterial({
@@ -194,7 +214,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   // the sky's own light on standard materials: the dome, over ground lit by the hour, drawn into a blurred cube; redrawn when the hour has moved on
   const pmrem = useSky ? own(new THREE.PMREMGenerator(renderer)) : null, skyScene = new THREE.Scene(), below = own(new THREE.MeshBasicMaterial({ color: 0 })), soilTone = new THREE.Color("#6b5a45"), lowLight = new THREE.Color();
   skyScene.add(new THREE.Mesh(sky.geometry, sky.material), new THREE.Mesh(own(new THREE.CircleGeometry(1100, 24).rotateX(-Math.PI / 2).translate(0, -30, 0)), below));
-  const skySeen = [new THREE.Color(), new THREE.Color(), new THREE.Color(), new THREE.Vector3()] as const; let skyTarget: THREE.WebGLRenderTarget | null = null, skyAt = -1;
+  const skySeen = [new THREE.Color(), new THREE.Color(), new THREE.Color(), new THREE.Vector3()] as const, camDir = new THREE.Vector3(); let skyTarget: THREE.WebGLRenderTarget | null = null, skyAt = -1;
   own({ dispose: () => skyTarget?.dispose() });
 
   await pause("fields"); if (signal.aborted) return;
@@ -221,6 +241,46 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   if ("error" in loadedOrbit) throw loadedOrbit.error;
   orbit.orbitMap.value = loadedOrbit.texture;
   orbit.orbitTangent.value.y = orbit.orbitTangent.value.x * loadedOrbit.texture.image.height / loadedOrbit.texture.image.width;
+
+  // Chapter-morphing atmospheric motes: embers at the camp, sunlit chaff in the fields, rising dusk sparks near the monolith.
+  const MOTE_COUNT = small ? 110 : 220;
+  const motePos = new Float32Array(MOTE_COUNT * 3), moteSeed = new Float32Array(MOTE_COUNT * 3);
+  for (let i = 0; i < MOTE_COUNT; i++) {
+    motePos[i * 3] = (rand() - .5) * 28; motePos[i * 3 + 1] = rand() * 11; motePos[i * 3 + 2] = (rand() - .5) * 28;
+    moteSeed[i * 3] = rand(); moteSeed[i * 3 + 1] = rand(); moteSeed[i * 3 + 2] = rand();
+  }
+  const moteGeo = own(new THREE.BufferGeometry());
+  moteGeo.setAttribute("position", new THREE.BufferAttribute(motePos, 3));
+  moteGeo.setAttribute("aSeed", new THREE.BufferAttribute(moteSeed, 3));
+  const moteUniforms = { uTime: { value: 0 }, uCenter: { value: new THREE.Vector3() }, uS: { value: 0 }, uDusk: { value: 0 }, uScale: { value: 1 } };
+  const motes = new THREE.Points(moteGeo, own(new THREE.ShaderMaterial({
+    uniforms: moteUniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    vertexShader: `attribute vec3 aSeed; uniform float uTime, uS, uDusk, uScale; uniform vec3 uCenter; varying float vAlpha; varying vec3 vTint;
+      void main(){
+        float liftSpeed = mix(.42, .68, smoothstep(520., 610., uS)) * (.45 + aSeed.x * .9);
+        float driftX = sin(uTime * (.35 + aSeed.y * .4) + aSeed.z * 6.283) * 1.4;
+        vec3 span = vec3(28., 11., 28.);
+        vec3 rel = mod(position + vec3(driftX + uTime * .35 * smoothstep(230., 360., uS), uTime * liftSpeed, sin(uTime * .25 + aSeed.x * 6.283)) - uCenter, span) - span * .5;
+        vec3 world = uCenter + rel;
+        world.y = max(world.y, uCenter.y - 1.3);
+        vec4 mv = viewMatrix * vec4(world, 1.);
+        float night = 1. - smoothstep(200., 290., uS), dusk = smoothstep(535., 605., uS);
+        vTint = mix(vec3(.92, .80, .48), vec3(1.0, .58, .22), max(night, dusk * .85));
+        vTint = mix(vTint, vec3(1.0, .74, .34), dusk * (1. - night * .5));
+        float distFade = (1. - smoothstep(9., 14.5, length(rel))) * smoothstep(1.2, 2.8, length(rel));
+        vAlpha = distFade * mix(.28, .66, max(night, dusk + uDusk * .3)) * (.55 + .45 * sin(uTime * (1.4 + aSeed.y * 2.) + aSeed.z * 12.));
+        gl_PointSize = clamp((3.2 + aSeed.y * 2.4) * uScale * (9. / max(1., -mv.z)), 1.5, 7.);
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: `varying float vAlpha; varying vec3 vTint;
+      void main(){
+        vec2 c = gl_PointCoord - .5;
+        float r = smoothstep(.5, .04, length(c));
+        if (r < .01 || vAlpha < .01) discard;
+        gl_FragColor = vec4(vTint * (1.1 + r * .6), r * vAlpha);
+      }`,
+  })));
+  motes.frustumCulled = false; scene.add(motes); aoSkip.push(motes);
 
   // A carried ember that lights the road ahead through the night country, and a handful of golden seed scattered when sowing by hand.
   // A single local light serves the carried ember, window bounce and the fluorescent fitting.
@@ -263,7 +323,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     me.yaw = reveal * Math.atan2(me.x - stoneX, gap);
     me.pitch = reveal * arrivalPitch(Math.hypot(me.x - stoneX, gap));
   } // #s300 opens further along the road without counting in analytics
-  let clock = 0, started = false, begun = false, auto = false, drag: { pointer: number; x: number; y: number } | null = null, holdGo = false, wheelPush = 0, fed = 0, feedGlow = 1, ended = false, pace = 0;
+  let clock = 0, started = false, begun = false, auto = false, drag: { pointer: number; x: number; y: number } | null = null, holdGo = false, wheelPush = 0, fed = 0, feedGlow = 1, ended = false, pace = 0, velForward = 0, velStrafe = 0;
   let sound: Sound | null = null, soundOn = true; try { soundOn = localStorage.getItem("walk-sound") !== "off"; } catch { /* storage may be blocked */ }
   let sownAt: number | null = me.s > FIELD_S ? -100 : null, touched: number | null = null, sayUntil = 0;
   const say = part("say"), use = part<HTMLButtonElement>("use"), cover = part("cover"), hud = part("hud"), startButton = part<HTMLButtonElement>("start"), autoButton = part("auto"), go = part("go"), said = new Set<string>();
@@ -310,7 +370,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     else if (what[0] === "sow") { sound?.cue("sow"); count("walk_act", "sow"); sow(true); }
     else { sound?.cue("touch"); touched = clock; clearInput(); setAuto(false); root.classList.add("is-finishing"); speak("touch", "石头是凉的。", 2.2); count("walk_finish"); }
   }
-  function clearInput() { keys.clear(); wheelPush = 0; holdGo = false; drag = null; }
+  function clearInput() { keys.clear(); wheelPush = 0; holdGo = false; drag = null; velForward = 0; velStrafe = 0; }
   function setAuto(on: boolean) { auto = on; autoButton.setAttribute("aria-pressed", String(on)); }
   let shown = "";
   function begin() {
@@ -439,7 +499,10 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
       if (me.s >= REACH_S + 1.6 && nearby()?.[0] === "touch") { forward = 0; setAuto(false); }
     }
     const speed = 7.2 * fast, sin = Math.sin(heading), cos = Math.cos(heading);
-    me.x += (-sin * forward + cos * strafe) * speed * dt; me.s += (cos * forward + sin * strafe) * speed * dt;
+    const blend = still ? 1 : 1 - Math.exp(-16 * dt);
+    velForward += (forward - velForward) * blend;
+    velStrafe += (strafe - velStrafe) * blend;
+    me.x += (-sin * velForward + cos * velStrafe) * speed * dt; me.s += (cos * velForward + sin * velStrafe) * speed * dt;
     me.s = clamp(me.s, -12, END_S); me.x = clamp(me.x, roadX(me.s) - 48, roadX(me.s) + 48);
     for (let pass = 0; pass < 2; pass++) {
       for (let i = 0; i < blocks.length; i++) {
@@ -449,8 +512,9 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
       }
       [me.x, me.s] = keepDry(me.x, me.s);
     }
-    if (forward || strafe) me.bob += dt * speed * 1.25;
-    pace = Math.min(1, Math.hypot(forward, strafe)) * fast;
+    const moveMag = Math.hypot(velForward, velStrafe);
+    if (moveMag > .04) me.bob += dt * speed * 1.25 * Math.min(1, moveMag);
+    pace = Math.min(1, moveMag) * fast;
   }
 
   // ---------- frame ----------
@@ -461,6 +525,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   function resize() {
     const w = Math.max(1, root.clientWidth), h = Math.max(1, root.clientHeight);
     renderer.setPixelRatio(ratio); renderer.setSize(w, h, false); composer.setPixelRatio(ratio); composer.setSize(w, h);
+    moteUniforms.uScale.value = ratio;
     camera.aspect = w / h; camera.fov = w < h ? 74 : 62; camera.updateProjectionMatrix();
     pixel = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) / (h * ratio);
     if (begun) schedule();
@@ -530,10 +595,10 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     const [seenTop, seenHorizon, seenSun, seenDir] = skySeen, skySun = skyUniforms.sun.value;
     const moved = Math.abs(seenTop.r - hour.top.r) + Math.abs(seenTop.g - hour.top.g) + Math.abs(seenTop.b - hour.top.b) + Math.abs(seenHorizon.r - hour.horizon.r) + Math.abs(seenHorizon.g - hour.horizon.g) + Math.abs(seenHorizon.b - hour.horizon.b)
       + Math.abs(seenSun.r - skySun.r) + Math.abs(seenSun.g - skySun.g) + Math.abs(seenSun.b - skySun.b) + seenDir.distanceTo(sunDir);
-    if (pmrem && clock - skyAt > .5 && moved > .015) { // at most twice a second, and only once the sky has visibly changed
+    if (pmrem && (skyAt < 0 || (clock - skyAt > (dusk > 0 ? .45 : 1.8) && moved > (dusk > 0 ? .02 : .045)))) {
       skyAt = clock; seenTop.copy(hour.top); seenHorizon.copy(hour.horizon); seenSun.copy(skySun); seenDir.copy(sunDir);
       below.color.copy(hour.sun).multiplyScalar(power * Math.max(0, Math.sin(height))).add(lowLight.copy(skyLight.color).multiplyScalar(skyPower * .5)).multiply(soilTone);
-      const old = skyTarget; skyTarget = pmrem.fromScene(skyScene, 0, 1, 1500, { size: 128 }); scene.environment = skyTarget.texture; old?.dispose();
+      const old = skyTarget; skyTarget = pmrem.fromScene(skyScene, 0, 1, 1500, { size: 64 }); scene.environment = skyTarget.texture; old?.dispose();
     }
     scene.environmentIntensity = mix(.4, 1.3, hour.stars) + dusk * .1; // the sunset keeps a little reflected sky beside the warm grazing light
     fieldUniforms.time.value = clock; fieldUniforms.sky.value.copy(skyLight.color).multiplyScalar(skyPower * 1.3).lerp(fieldAfterglow, dusk * .60); fieldUniforms.sun.value.copy(hour.sun).multiplyScalar(power * .75);
@@ -576,9 +641,13 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
       localLight.position.set(me.x + Math.cos(me.yaw) * .28 - Math.sin(me.yaw) * .55, eyeY - .24, -me.s - Math.cos(me.yaw) * .55 - Math.sin(me.yaw) * .28);
       localLight.intensity = carry * 5.2 * fire.flicker;
     }
+    camera.getWorldDirection(camDir);
+    const fwdLen = Math.hypot(camDir.x, camDir.z) || 1;
     updateWheat(camera);
-    grass.frame(clock, camera.position, hour.density, pixel);
+    grass.frame(clock, camera.position, hour.density, pixel, camDir.x / fwdLen, camDir.z / fwdLen);
     clouds.frame(camera.position, still ? 0 : clock, me.s, sunDir, cloudSun.copy(hour.sun).multiplyScalar(power), cloudSky.copy(skyLight.color).multiplyScalar(skyPower), dusk);
+    gradeUniforms.uTime.value = still ? 0 : clock;
+    moteUniforms.uTime.value = still ? 0 : clock; moteUniforms.uCenter.value.copy(camera.position); moteUniforms.uS.value = me.s; moteUniforms.uDusk.value = dusk;
     const [figure, unit] = yearReading(me.s, locale), ago = yearsAgo(me.s), about = ago > 126, reading = `${figure}|${unit}|${chapterAt(me.s)}`;
     if (reading !== shown) {
       shown = reading; yearFigure.textContent = figure; yearUnit.textContent = unit; yearLabel.textContent = tx(about ? "此刻走到 · 约" : "此刻走到");
@@ -608,6 +677,13 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     cancelAnimationFrame(raf); observer.disconnect(); sound?.close();
     hud.hidden = true; cover.inert = false; cover.classList.remove("is-gone"); root.classList.remove("is-live", "is-ended", "is-finishing"); viewport.style.removeProperty("opacity");
   }, { once: true });
+  // Pre-compile all scene shaders during the initial load so wheat and later eras never hitch mid-walk.
+  {
+    const hidden: THREE.Object3D[] = [];
+    scene.traverse((o) => { if (!o.visible) { o.visible = true; hidden.push(o); } });
+    renderer.compile(scene, camera);
+    for (const o of hidden) o.visible = false;
+  }
   resize(); frame(performance.now());
   startButton.disabled = false;
   begin();

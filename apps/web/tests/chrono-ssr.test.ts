@@ -151,9 +151,9 @@ test("the walk serves the illustrated route and all three chapters in each editi
     const art = "/media/art/walk-odyssey";
     assert.equal(poster?.tagName, "IMG");
     assert.equal(poster?.getAttribute("src"), art + "-hd-1600.webp");
-    assert.equal(poster?.getAttribute("srcset") ?? poster?.getAttribute("srcSet"), art + "-hd-800.webp 800w, " + art + "-hd-1600.webp 1600w");
+    assert.equal(poster?.getAttribute("srcset") ?? poster?.getAttribute("srcSet"), art + "-hd-800.webp 800w, " + art + "-hd-1600.webp 1600w, " + art + "-3840.webp 3840w");
     assert.equal(portrait?.getAttribute("srcset") ?? portrait?.getAttribute("srcSet"), art + "-portrait.webp");
-    for (const cut of ["-hd-800.webp", "-hd-1600.webp", "-portrait.webp", "-og.jpg"]) {
+    for (const cut of ["-hd-800.webp", "-hd-1600.webp", "-3840.webp", "-portrait.webp", "-og.jpg"]) {
       assert.ok(existsSync(new URL(`../public${art}${cut}`, import.meta.url)), cut);
     }
     assert.equal(scene.querySelector('[data-walk="manifesto"]')!.textContent!.trim(), prefix ? "读宣言里的〈小麦〉" : "Read “Wheat”");
@@ -171,6 +171,7 @@ test("the walk serves the illustrated route and all three chapters in each editi
       const sizes: string = plate.getAttribute("srcset") ?? plate.getAttribute("srcSet") ?? "";
       assert.match(sizes, /800w/);
       assert.match(sizes, /1600w/);
+      assert.match(sizes, /3840w/);
       for (const path of [plate.getAttribute("src"), ...sizes.split(",").map(part => part.trim().split(/\s+/)[0])]) {
         assert.ok(path?.startsWith("/media/art/") && existsSync(new URL(`../public${path}`, import.meta.url)), `${id}: ${path}`);
       }

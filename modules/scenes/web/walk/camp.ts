@@ -177,7 +177,7 @@ export function buildCamp({ scene, own, rand, small, still, out, floor, matte, s
   const halo = new THREE.Sprite(own(new THREE.SpriteMaterial({ map: soft(own, "rgba(255,176,88,.72)", "rgba(237,103,40,.2)"), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: .3 }))); halo.position.y = .64; hearth.add(halo);
   const puffMap = soft(own, "rgba(255,255,255,.9)", "rgba(255,255,255,.4)"), smoke = Array.from({ length: still ? 0 : small ? 2 : 4 }, () => { const puff = new THREE.Sprite(own(new THREE.SpriteMaterial({ map: puffMap, color: "#665851", depthWrite: false, transparent: true, opacity: 0 }))); hearth.add(puff); return puff; });
   const fireLight = new THREE.PointLight(0xffa269, 1, 62, 2); fireLight.position.set(fireX, fireY + .75, -FIRE_S); scene.add(fireLight);
-  if (!small) { fireLight.castShadow = true; fireLight.shadow.mapSize.set(2048, 2048); fireLight.shadow.radius = 3; fireLight.shadow.intensity = .82; fireLight.shadow.camera.near = .2; fireLight.shadow.camera.far = 60; fireLight.shadow.bias = -.004; fireLight.shadow.normalBias = .04; }
+  if (!small) { fireLight.castShadow = true; fireLight.shadow.mapSize.set(512, 512); fireLight.shadow.radius = 4; fireLight.shadow.intensity = .82; fireLight.shadow.camera.near = .2; fireLight.shadow.camera.far = 60; fireLight.shadow.bias = -.004; fireLight.shadow.normalBias = .04; }
   const SPARKS = still ? 0 : small ? 8 : 18, sparkAt = new Float32Array(SPARKS * 3), sparkLife = Array.from({ length: SPARKS }, () => rand());
   const sparkGeometry = own(new THREE.BufferGeometry()), sparkMaterial = own(new THREE.PointsMaterial({ color: new THREE.Color(3, 1.5, .5), size: .035, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   sparkGeometry.setAttribute("position", new THREE.BufferAttribute(sparkAt, 3));
@@ -206,14 +206,19 @@ export function buildCamp({ scene, own, rand, small, still, out, floor, matte, s
     stand(rock(rand, 1, strata).scale(1.8, 1.5, 1.7), caveX + 1.4, CAVE_S + 2.4, caveTurn - .5, -.2);
     stand(scree(rand, 5.4, stone, of(3, lit("#5e4d3a", "#9a8466", rand)), caveTurn), caveX, CAVE_S);
     blocks.push([caveX, CAVE_S, 2.5], [caveX - 2.3, CAVE_S + 1.8, 2.1], [caveX + 1.4, CAVE_S + 2.4, 1.5]);
-    // Pigment blown and brushed onto the sheltered rock face: three ochre hand stencils, two leaping ibex, and a row of tally marks.
-    const art = document.createElement("canvas"); art.width = 512; art.height = 320; const g = art.getContext("2d")!;
+    // Pigment blown and brushed onto the sheltered rock face: three ochre hand stencils, leaping ibex, mineral speckle, and tally marks.
+    const art = document.createElement("canvas"); art.width = 1024; art.height = 640; const g = art.getContext("2d")!;
+    g.scale(2, 2);
+    // Faint mineralwash behind the composition so pigment embeds naturally into the limestone strata.
+    const wash = g.createRadialGradient(256, 155, 24, 256, 155, 240);
+    wash.addColorStop(0, "rgba(138, 68, 38, .12)"); wash.addColorStop(1, "rgba(40, 26, 18, 0)");
+    g.fillStyle = wash; g.fillRect(0, 0, 512, 320);
     const hand = (cx: number, cy: number, tilt: number, scale: number) => {
       g.save(); g.translate(cx, cy); g.rotate(tilt); g.scale(scale, scale);
       const spray = g.createRadialGradient(0, -6, 12, 0, -6, 56);
-      spray.addColorStop(0, "rgba(172, 62, 32, .72)"); spray.addColorStop(.58, "rgba(154, 52, 26, .42)"); spray.addColorStop(1, "rgba(154, 52, 26, 0)");
+      spray.addColorStop(0, "rgba(176, 66, 34, .78)"); spray.addColorStop(.52, "rgba(154, 52, 26, .46)"); spray.addColorStop(1, "rgba(154, 52, 26, 0)");
       g.fillStyle = spray; g.beginPath(); g.arc(0, -6, 56, 0, Math.PI * 2); g.fill();
-      g.globalCompositeOperation = "destination-out"; g.fillStyle = "rgba(0,0,0,.86)";
+      g.globalCompositeOperation = "destination-out"; g.fillStyle = "rgba(0,0,0,.88)";
       g.beginPath(); g.ellipse(0, 8, 13, 16, 0, 0, Math.PI * 2); g.fill();
       for (const [a, len, w, ox, oy] of [[-.68, 24, 3.5, -11, 2], [-.32, 32, 3.6, -7, -6], [-.04, 35, 3.7, -1, -8], [.24, 31, 3.5, 6, -6], [.54, 24, 3.2, 11, -2]] as const) {
         g.save(); g.translate(ox, oy); g.rotate(a); g.beginPath(); g.roundRect(-w, -len, w * 2, len + 4, w); g.fill(); g.restore();
@@ -228,10 +233,14 @@ export function buildCamp({ scene, own, rand, small, still, out, floor, matte, s
       g.lineWidth = 3; g.beginPath(); g.moveTo(-24, 5); g.lineTo(-42, 26); g.moveTo(-18, 6); g.lineTo(-28, 28); g.moveTo(20, 0); g.lineTo(36, 22); g.moveTo(25, -1); g.lineTo(46, 16); g.stroke();
       g.restore();
     };
-    beast(336, 152, 1.05, "rgba(164, 56, 28, .78)"); beast(418, 198, .78, "rgba(38, 28, 22, .72)");
-    g.fillStyle = "rgba(214, 192, 152, .58)"; for (let i = 0; i < 7; i++) { g.beginPath(); g.arc(285 + i * 14, 248 + (i % 2) * 2, 2.6, 0, Math.PI * 2); g.fill(); }
-    const map = own(new THREE.CanvasTexture(art)); map.colorSpace = THREE.SRGBColorSpace;
-    const panel = new THREE.Mesh(own(new THREE.PlaneGeometry(2.9, 1.8)), own(new THREE.MeshStandardMaterial({ map, transparent: true, roughness: .95, metalness: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 })));
+    beast(336, 152, 1.05, "rgba(168, 58, 28, .82)"); beast(418, 198, .78, "rgba(38, 28, 22, .76)"); beast(278, 194, .48, "rgba(146, 72, 38, .55)");
+    g.fillStyle = "rgba(218, 196, 156, .62)"; for (let i = 0; i < 7; i++) { g.beginPath(); g.arc(285 + i * 14, 248 + (i % 2) * 2, 2.6, 0, Math.PI * 2); g.fill(); }
+    for (let i = 0; i < 110; i++) { // fine mineral grain and charcoal dust
+      g.fillStyle = i % 3 === 0 ? "rgba(36, 24, 18, .16)" : "rgba(176, 74, 38, .12)";
+      g.fillRect(42 + rand() * 430, 56 + rand() * 212, 1 + rand() * 1.6, 1 + rand() * 1.6);
+    }
+    const map = own(new THREE.CanvasTexture(art)); map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 4;
+    const panel = new THREE.Mesh(own(new THREE.PlaneGeometry(2.9, 1.8)), own(new THREE.MeshStandardMaterial({ map, transparent: true, roughness: .92, metalness: 0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 })));
     const offset = new THREE.Vector3(0, 1.52, .72).applyAxisAngle(new THREE.Vector3(0, 1, 0), caveTurn);
     panel.position.set(caveX + offset.x, floor(caveX, -CAVE_S) + offset.y, -CAVE_S + offset.z); panel.rotation.set(-.08, caveTurn, 0, "YXZ"); scene.add(panel);
     // A small ring of stones, dying embers and an ochre grinding bowl at the foot of the wall.
@@ -252,6 +261,7 @@ export function buildCamp({ scene, own, rand, small, still, out, floor, matte, s
     const nearCave = Math.abs(walkerS - CAVE_S) < 95; caveLight.visible = nearCave; if (nearCave) caveLight.intensity = 13 * (.88 + .12 * flicker);
     const nearCamp = Math.abs(walkerS - FIRE_S) < 115;
     fireLight.visible = hearth.visible = nearCamp; eyes.visible = nearCamp && fed < 3;
+    fireLight.castShadow = !small && Math.abs(walkerS - FIRE_S) < 42;
     // The village hearth uses the same shader and keeps burning after this camp is out of view.
     flameTime.value = still ? 0 : clock;
     if (!nearCamp) return { glow: 0, flicker };
