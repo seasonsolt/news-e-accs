@@ -32,6 +32,9 @@
 .walk-guide-time { margin: 0 0 16px; color: #cfac76; font: 12px/1.6 var(--font-mono); letter-spacing: .065em; }
 .walk-guide h3 { font-size: clamp(30px, 4vw, 56px); }
 .walk-guide-prose { max-width: 39ch; margin: 16px 0; font: 17px/1.8 var(--font-display); color: #d4d6d2; }
+.walk-guide-moments { margin: 14px 0 8px; padding: 0; list-style: none; }
+.walk-guide-moments a { display: inline-block; padding: 5px 0; color: #c1cbd0; font: 12px/1.55 var(--font-mono); text-decoration: underline; text-decoration-color: #65737c; text-underline-offset: .3em; }
+.walk-guide-moments a:hover, .walk-guide-moments a:focus-visible { color: #fff2da; }
 .walk-guide-link {
   display: inline-flex;
   align-items: center;

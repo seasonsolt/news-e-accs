@@ -4,13 +4,17 @@ import { LINES } from "./land.ts";
 // Chinese copy is the key; `en` is the English edition. The road's own lines are listed in land.ts.
 const lines: Record<string, string> = {
   "天黑以后，还有人往火里添柴。": "After dark, someone stays to feed the fire.",
-  "带着火往前走。天还没有亮。": "Carry the fire forward. It is not yet dawn.",
+  "有人背起行囊。孩子踩着前人的脚印，走出火光。": "Someone shoulders a bundle. A child follows the footprints out of the firelight.",
   "手早已离开石壁，后来的人还看得见掌印。": "The hand is long gone. The next person still sees its print.",
   "篮子里的麦粒，有人留着明年再种。": "Someone saved the wheat in that basket for next year’s sowing.",
   "麦种被带到了新的土地。种麦的人却在田边住了下来。": "People carried wheat to new ground, then settled beside the fields.",
+  "收进仓的谷物有多少？芦苇笔在湿泥上留下了账。": "How much grain came in? A reed pressed into wet clay keeps the tally.",
   "人给麦田挖了水渠，也让自己的日子跟着收成走。": "People dug channels for the wheat and planned their year around its harvest.",
+  "纸从压板下揭起来。同一行字，又多了一个读者。": "A sheet lifts from the press. The same line of type can reach another reader.",
   "风推着磨盘转。有人在这里把麦粒磨成面粉。": "Wind turns the millstones. Here the grain is ground into flour.",
+  "换一串孔卡，织出的花纹就变了。": "Change the chain of punched cards and a different pattern appears in the cloth.",
   "抬头看，电线沿着田埂，一直通到机房。": "Look up. Power lines run along the field to the data center.",
+  "有人想从远处登录。线路中断前，另一台计算机收到了 LO。": "Someone tries to log in from afar. Before the connection drops, the other computer receives LO.",
   "风扇在响。机房里的模型，学的是人留下的文字和代码。": "Listen to the fans. Inside, models learn from words and code that people wrote.",
 };
 for (const [, line] of LINES) if (/[㐀-鿿]/.test(line) && !lines[line]) throw new Error(`No English edition for the line: ${line}`);

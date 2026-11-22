@@ -5,6 +5,9 @@ import { buildFields } from "./fields.ts";
 import { FIRE_S, MONOLITH, MONO_S, SOW_S, roadX } from "./land.ts";
 import { POSES, person } from "./people.ts";
 import { buildMonolith } from "./monolith.ts";
+import { buildEarlyStops } from "./roadside-early.ts";
+import { buildWorkshops } from "./roadside-workshops.ts";
+import { buildNetworkStop } from "./roadside-network.ts";
 import { blob, limb, lit, merged, of, rock, scree, turned, type Paint } from "./shapes.ts";
 import { createMatte } from "./surface.ts";
 import { buildForest, type Wind } from "./trees.ts";
@@ -29,6 +32,9 @@ export function buildProps(setting: Setting) {
   const stone = of(1, lit("#4b433b", "#82776a", rand, .1)), sand = of(3, lit("#5e4d3a", "#9a8466", rand));
 
   const kit: Kit = { ...setting, matte, stand, blocks }, camp = buildCamp(kit);
+  buildEarlyStops(kit);
+  buildWorkshops(kit);
+  buildNetworkStop(kit);
 
   // ---------- loose stone ----------
   const clear = (x: number, s: number, room: number) => blocks.every(([bx, bs, r]) => Math.hypot(x - bx, s - bs) > r + room) && Math.hypot(x - fireX, s - FIRE_S) > 2.6 + room;

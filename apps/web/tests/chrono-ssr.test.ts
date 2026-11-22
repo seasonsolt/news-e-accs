@@ -176,6 +176,8 @@ test("the walk serves the illustrated route and all three chapters in each editi
       }
     }
     const reading = guide.querySelector(".walk-guide-reading")!;
+    assert.deepEqual([...guide.querySelectorAll(".walk-guide-moments a")].map(a => a.getAttribute("href")),
+      [-58050, -3199, 1440, 1804, 1969.8247].map(t => `${prefix}/chronicle?t=${t}`));
     assert.ok(reading.querySelector(`a[href="${prefix}/chronicle"]`));
     assert.ok(reading.querySelector(`a[href="${prefix}/manifesto#wheat"]`));
   }

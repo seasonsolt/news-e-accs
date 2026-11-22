@@ -7,7 +7,7 @@ import { closeDb } from "@aihot/backend/db";
 import { installModules } from "@aihot/backend/modules";
 import { loadDiscoveryEntries } from "@aihot/backend/publication/sitemap";
 import { normalizeSiteEvent, WALK_ACTS, WALK_PLACES, WALK_TIMES } from "@aihot/backend/site/analytics";
-import { BRIDGE, CANAL, CAVE_S, CLEARINGS, COMPUTE_S, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONO_S, SOW_S, bridgeLift, chapterAt, cleared, ground, keepDry, roadX, sheet, yearReading, yearsAgo } from "../web/walk/land.ts";
+import { BRIDGE, CANAL, CAVE_S, CLEARINGS, COMPUTE_S, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONO_S, ROADSIDE, SOW_S, STOP_YEARS, bridgeLift, chapterAt, cleared, ground, keepDry, roadX, sheet, yearReading, yearsAgo } from "../web/walk/land.ts";
 import { messages as walk } from "../web/walk/messages.ts";
 import { buildMonolith } from "../web/walk/monolith.ts";
 import scenes from "../server.ts";
@@ -89,6 +89,20 @@ test("time only runs forward along the road, from a million years ago to this ye
   const [figure, unit] = yearReading(280, "en");
   assert.equal(unit, "BCE"); assert.match(figure, /^\d+00$/);
   assert.deepEqual([chapterAt(0), chapterAt(FIELD_S), chapterAt(MONO_S)], ["Ⅰ · 火", "Ⅱ · 田", "Ⅲ · 碑"]);
+});
+
+test("the clock holds the Chronicle date while each roadside scene is in view", () => {
+  const { milestones } = JSON.parse(readFileSync(new URL("../../../industry/chronicle/milestones.json", import.meta.url), "utf8")) as { milestones: Array<{ id: string; t: number }> };
+  const scenes = [
+    ["migration", "out-of-africa", "60,000"], ["ledger", "cuneiform", "3200"],
+    ["press", "gutenberg-press", "1440"], ["loom", "jacquard-loom", "1804"], ["terminal", "arpanet-first-message", "1969"],
+  ] as const;
+  for (const [stop, id, reading] of scenes) {
+    const [s, off] = ROADSIDE[stop];
+    assert.equal(STOP_YEARS[stop], milestones.find(m => m.id === id)?.t, id);
+    for (const at of [s - 12, s - 5, s]) assert.equal(yearReading(at, "en")[0], reading, id);
+    assert.ok(cleared(roadX(s) + off, s), id);
+  }
 });
 
 test("everything the walk says has an English edition", () => {

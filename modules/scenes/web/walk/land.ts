@@ -33,6 +33,14 @@ export function ground(x: number, z: number) {
 
 /** Where the wheat gives way to something else: [s, offset from the road, radius]. The pond's radius takes in its bank and the shaduf. */
 export const CLEARINGS = { pond: [361, -9.5, 6.4], reaped: [425, -13.5, 8.5], calendar: [452, 10, 5.5], mill: [486, 34, 6], dish: [584, 15.5, 7.5], compute: [604, -17, 9.5] } as const;
+/** Small scenes close enough to inspect on foot: [distance along the road, offset, bare ground radius]. */
+export const ROADSIDE = {
+  migration: [132, -4.1, 3.3], ledger: [352, 4.6, 3.1], press: [439, 5.1, 4.2],
+  loom: [490, -4.9, 3.8], terminal: [551, 4.3, 3.1],
+} as const;
+export const roadsideStops = Object.values(ROADSIDE);
+// The Chronicle uses astronomical years. Dates with day precision retain their fraction in a timeline link.
+export const STOP_YEARS = { migration: -58050, ledger: -3199, press: 1440, loom: 1804, terminal: 1969.8247 } as const;
 /** The canal: it leaves the pond, runs beside the road on the left from `from` to `to`, and lets channels into the wheat: [s where one leaves, s where it ends, offset where it ends]. */
 export const CANAL = { from: 368, to: 444, offset: -5.2, channels: [[381, 385, -19], [402, 406.5, -23], [439, 443, -21]] } as const;
 /** The plank bridge across the canal into the harvest clearing. */
@@ -77,7 +85,7 @@ export function bridgeLift(x: number, s: number) {
   return (1 - smooth(BRIDGE.halfS, BRIDGE.halfS + .35, Math.abs(s - BRIDGE.s))) * (1 - smooth(1.35, 1.85, Math.abs(x - cx))) * BRIDGE.deck;
 }
 // Road coordinates of permanent clearings are shared by every stalk in the field.
-const clearingDiscs = Object.values(CLEARINGS).map(([s, off, radius]) => ({ x: roadX(s) + off, s, radius }));
+const clearingDiscs = [...Object.values(CLEARINGS), ...roadsideStops].map(([s, off, radius]) => ({ x: roadX(s) + off, s, radius }));
 const channels = CANAL.channels.map(([a, b, end]) => ({ a, b, ax: roadX(a) + CANAL.offset, bx: roadX(b) + end }));
 /** Whether a point is bare of wheat: inside a clearing, beside the canal or along one of its channels. */
 export function cleared(x: number, s: number) {
@@ -107,9 +115,17 @@ export function sheet(across: number, along: number, vertexHeight: (index: numbe
   };
 }
 
-/** Years before 2026 at a point on the road: a log scale between the hearth, the first sowing and the stone. */
+// Keep the date steady while the walker approaches each small scene, then resume the logarithmic clock.
+function stopDates(stop: keyof typeof ROADSIDE): Array<[number, number]> {
+  const s = ROADSIDE[stop][0], age = 2026 - Math.floor(STOP_YEARS[stop]);
+  return [[s - 12, age], [s + 1, age]];
+}
+const marks: ReadonlyArray<readonly [number, number]> = [
+  [0, 1e6], [60, 1e6], ...stopDates("migration"), [CAVE_S, 40000], [SOW_S, 12000],
+  ...stopDates("ledger"), ...stopDates("press"), [470, 300], ...stopDates("loom"), ...stopDates("terminal"), [600, 1],
+];
+/** Years before 2026 at a point on the road. */
 export function yearsAgo(s: number) {
-  const marks: ReadonlyArray<readonly [number, number]> = [[0, 1e6], [60, 1e6], [CAVE_S, 40000], [SOW_S, 12000], [470, 300], [600, 1]];
   if (s >= 600) return 0;
   let i = 0; while (i < marks.length - 2 && s > marks[i + 1]![0]) i++;
   const [s0, y0] = marks[i]!, [s1, y1] = marks[i + 1]!;
@@ -124,18 +140,22 @@ export function yearReading(s: number, locale: "zh" | "en"): [figure: string, un
     return locale === "zh" ? [String(Number((nearest / 10000).toFixed(1))), "万年前"] : [nearest.toLocaleString("en-US"), "years ago"];
   }
   if (year < 0) { const n = String(Math.round(-year / 100) * 100); return locale === "zh" ? [`前 ${n}`, "年"] : [n, "BCE"]; }
-  return [String(year < 1900 ? Math.round(year / 10) * 10 : Math.round(year)), locale === "zh" ? "年" : "CE"];
+  return [String(year < 1800 ? Math.round(year / 10) * 10 : Math.round(year)), locale === "zh" ? "年" : "CE"];
 }
 export const chapterAt = (s: number) => s < 200 ? "Ⅰ · 火" : s < 470 ? "Ⅱ · 田" : "Ⅲ · 碑";
 /** What the walk says, and where along the road it says it. */
 export const LINES: ReadonlyArray<readonly [number, string]> = [
   [2, "天黑以后，还有人往火里添柴。"],
-  [112, "带着火往前走。天还没有亮。"],
+  [ROADSIDE.migration[0] - 12, "有人背起行囊。孩子踩着前人的脚印，走出火光。"],
   [CAVE_S, "手早已离开石壁，后来的人还看得见掌印。"],
   [220, "篮子里的麦粒，有人留着明年再种。"],
-  [322, "麦种被带到了新的土地。种麦的人却在田边住了下来。"],
-  [404, "人给麦田挖了水渠，也让自己的日子跟着收成走。"],
-  [486, "风推着磨盘转。有人在这里把麦粒磨成面粉。"],
-  [534, "抬头看，电线沿着田埂，一直通到机房。"],
+  [310, "麦种被带到了新的土地。种麦的人却在田边住了下来。"],
+  [ROADSIDE.ledger[0] - 12, "收进仓的谷物有多少？芦苇笔在湿泥上留下了账。"],
+  [386, "人给麦田挖了水渠，也让自己的日子跟着收成走。"],
+  [ROADSIDE.press[0] - 12, "纸从压板下揭起来。同一行字，又多了一个读者。"],
+  [457, "风推着磨盘转。有人在这里把麦粒磨成面粉。"],
+  [ROADSIDE.loom[0] - 12, "换一串孔卡，织出的花纹就变了。"],
+  [510, "抬头看，电线沿着田埂，一直通到机房。"],
+  [ROADSIDE.terminal[0] - 12, "有人想从远处登录。线路中断前，另一台计算机收到了 LO。"],
   [584, "风扇在响。机房里的模型，学的是人留下的文字和代码。"],
 ];

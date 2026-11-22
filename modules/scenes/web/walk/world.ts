@@ -18,7 +18,7 @@ import { loadRelief } from "./relief.ts";
 import { buildProps } from "./props.ts";
 import { startSound, type Sound } from "./sound.ts";
 import { buildVerge } from "./verge.ts";
-import { CANAL, CLEARINGS, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONOLITH, MONO_S, REACH_S, SOW_S, START_S, bridgeLift, chapterAt, clamp, fbm, ground, keepDry, mix, roadX, sequence, sheet, smooth, yearReading, yearsAgo } from "./land.ts";
+import { CANAL, CLEARINGS, END_S, FIELD_S, FIRE_S, LAND, LINES, MILESTONES, MONOLITH, MONO_S, REACH_S, SOW_S, START_S, bridgeLift, chapterAt, clamp, fbm, ground, keepDry, mix, roadsideStops, roadX, sequence, sheet, smooth, yearReading, yearsAgo } from "./land.ts";
 
 // The hour at points along the road: [s, zenith, horizon, fog, sun colour, sun strength, sky light, stars, sun height, fog density].
 const HOURS = ([
@@ -129,6 +129,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     const inside = (x: number, s: number, [cs, off, r]: readonly [number, number, number]) => Math.hypot(x - roadX(cs) - off, s - cs) / r; // 1 on a clearing's edge
     const toSegment = (x: number, s: number, ax: number, as: number, bx: number, bs: number) => { const dx = bx - ax, ds = bs - as, t = clamp(((x - ax) * dx + (s - as) * ds) / (dx * dx + ds * ds), 0, 1); return Math.hypot(x - ax - dx * t, s - as - ds * t); };
     const paths = [[1.5, 327, 16.5, 334], [16.5, 334, 11.5, 322.6], [16.5, 334, 17.6, 330.6], [16.5, 334, 10.9, 340.7], [16.5, 334, 21.9, 344.2], [16.5, 334, 10.6, 333.6]] as const; // in the village, from the road and from the fire to each door: [offset, s] to [offset, s]
+    const workyards = roadsideStops.filter(([s]) => s > FIELD_S);
     for (let i = 0; i < p.count; i++) {
       const x = p.getX(i), z = p.getZ(i), s = -z, d = Math.abs(x - roadX(s)), n = fbm(x * .09, z * .09);
       p.setY(i, ground(x, z));
@@ -139,6 +140,11 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
       c.lerp(b.copy(palette.tilled).lerp(palette.ripe, smooth(400, 480, s)).multiplyScalar(.9 + n * .25), tilled); // the furrows are drawn by the ground shader
       const off = x - roadX(s); let path = 0; // the village yard is trodden pale, with paths worn paler still
       if (s > 310 && s < 356) for (const [ax, as, bx, bs] of paths) path = Math.max(path, 1 - smooth(.5, 1.5, toSegment(off, s, ax, as, bx, bs)));
+      // Feet wear a short approach from the road to each workbench.
+      for (const [at, side, r] of workyards) if (Math.abs(at - s) < r + 2) {
+        const worn = toSegment(off, s, side * .2, at - 2, side, at);
+        path = Math.max(path, 1 - smooth(r * .45, r, worn));
+      }
       const yard = smooth(314, 319, s) * (1 - smooth(349, 354, s)) * smooth(6.5, 9.5, off) * (1 - smooth(28, 31, off)), calendar = 1 - smooth(.85, 1.1, inside(x, s, CLEARINGS.calendar));
       c.lerp(b.copy(palette.yard).multiplyScalar(.92 + n * .16), yard).lerp(palette.path, path * .85);
       c.lerp(b.copy(palette.stubble).multiplyScalar(.9 + n * .2), 1 - smooth(.85, 1.1, inside(x, s, CLEARINGS.reaped))).lerp(palette.calendar, calendar); // stubble where it is reaped, packed earth at the calendar
@@ -171,6 +177,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   })));
   scene.add(sky);
   const skyLight = new THREE.HemisphereLight(0xffffff, 0x3a3026, .3), sunLight = new THREE.DirectionalLight(0xffffff, .2);
+  const nightSoil = skyLight.groundColor.clone(), sunlitStraw = new THREE.Color("#cbb18b");
   scene.add(skyLight, sunLight, sunLight.target);
   if (!small) { // one shadow map that follows the walker
     sunLight.castShadow = true; sunLight.shadow.mapSize.set(2048, 2048); sunLight.shadow.bias = -.0005; sunLight.shadow.normalBias = .05; sunLight.shadow.radius = 2;
@@ -389,18 +396,28 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
       const ahead = Math.min(me.s + 6, END_S);
       const trackX = roadX(ahead) - 4.4 * smooth(595, REACH_S, ahead);
       const want = Math.atan2(me.x - trackX, Math.max(.1, ahead - me.s));
+      // Look across the verge on approach while the walker's feet continue along the road.
+      const stop = roadsideStops.find(([s]) => s - me.s > -3 && s - me.s < 27);
+      const gap = stop ? stop[0] - me.s : 0;
+      const attention = stop ? smooth(-3, 3, gap) * (1 - smooth(14, 27, gap)) : 0;
       if (!drag) {
         // Keep following the road underfoot as the stone rises into view above the horizon.
         const reveal = smooth(548, 610, me.s);
         const stoneYaw = Math.atan2(me.x - (stoneX - .7), MONO_S - me.s);
-        const view = mix(want, stoneYaw, reveal);
-        const lift = reveal * arrivalPitch(Math.hypot(me.x - stoneX, MONO_S - me.s));
+        let view = mix(want, stoneYaw, reveal);
+        let lift = reveal * arrivalPitch(Math.hypot(me.x - stoneX, MONO_S - me.s));
+        if (stop && !still) {
+          const targetX = roadX(stop[0]) + stop[1];
+          view = mix(view, Math.atan2(me.x - targetX, Math.max(3.5, gap)), attention);
+          const targetY = floor(targetX, -stop[0]) + 1.1 - floor(me.x, -me.s) - 1.66;
+          lift = mix(lift, Math.atan2(targetY, Math.max(4, Math.hypot(gap, targetX - me.x))), attention);
+        }
         me.yaw += Math.atan2(Math.sin(view - me.yaw), Math.cos(view - me.yaw)) * Math.min(1, dt * 1.4);
         me.pitch += (lift - me.pitch) * Math.min(1, dt);
       }
       const nearSow = sownAt === null && Math.abs(me.s - SOW_S) < 8.5;
       // Follow the road even when the walker turns the camera to look at a landmark.
-      if (!forward && !strafe) { heading = want; forward = nearSow ? .52 : .85; }
+      if (!forward && !strafe) { heading = want; forward = nearSow ? .52 : mix(.85, .48, attention); }
       if (me.s >= REACH_S + 1.6 && nearby()?.[0] === "touch") { forward = 0; setAuto(false); }
     }
     const speed = 7.2 * fast, sin = Math.sin(heading), cos = Math.cos(heading);
@@ -483,6 +500,10 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     fog.color.copy(hour.fog); fog.density = hour.density;
     const power = hour.power * (1 - dusk * .35), skyPower = hour.sky * (1 - dusk * .3);
     skyLight.color.copy(hour.top).lerp(hour.horizon, .6); skyLight.intensity = skyPower * 1.35 * (1 + hour.stars * 2.7); // the night is drawn blue, not black
+    // Straw and packed earth return warm light onto the shaded faces of the workbenches.
+    const reflected = smooth(290, 355, me.s) * (1 - smooth(558, 604, me.s));
+    skyLight.groundColor.copy(nightSoil).lerp(sunlitStraw, reflected);
+    skyLight.intensity *= 1 + reflected * .52;
     sunLight.color.copy(hour.sun); sunLight.intensity = power * (hour.stars > .5 ? 2. : 3.2);
     sunLight.target.position.set(me.x - Math.sin(me.yaw) * 22, ground(me.x, -me.s), -me.s - Math.cos(me.yaw) * 22);
     sunLight.position.copy(sunLight.target.position).addScaledVector(hour.stars > .5 ? moon : sunDir, 160); // the setting sun stays warm and low; the night uses a cool fill
