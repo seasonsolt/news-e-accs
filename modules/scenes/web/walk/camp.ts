@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { CAVE_S, FIRE_S, noise, roadX } from "./land.ts";
+import { CAVE_S, FIRE_S, noise, roadX, smooth } from "./land.ts";
 import { POSES, person as figure, type Point, type Pose } from "./people.ts";
 import { campShelter, cutLog } from "./camp-models.ts";
 import { blob, faceted, flat, limb, lit, merged, of, rock, scorch, scree, triangles } from "./shapes.ts";
@@ -125,7 +125,10 @@ export function buildCamp({ scene, own, rand, small, still, out, floor, matte, s
     const a = i * 1.05 + .3, foot = new THREE.Vector3(Math.cos(a) * .74, .03, Math.sin(a) * .74), head = new THREE.Vector3(-Math.cos(a) * .12, .74 + rand() * .22, -Math.sin(a) * .12);
     const log = new THREE.Mesh(own(cutLog(foot, head, .085 + rand() * .03, .065, i < 2 ? charred : bark, i < 2)), matte); log.receiveShadow = true; hearth.add(log); logs.push(log);
   }
-  const showLogs = (fed: number) => logs.forEach((log, i) => { log.visible = i < 2 + fed * 2; });
+  const showLogs = (fed: number) => {
+    logs.forEach((log, i) => { log.visible = i < 2 + fed * 2; });
+    fireLight.shadow.needsUpdate = true;
+  };
   const coalGlow = own(new THREE.MeshBasicMaterial({ vertexColors: true })), coals: THREE.BufferGeometry[] = [];
   const ash = new THREE.Color("#342c2a"), ember = new THREE.Color("#ff9950"), coalTint = new THREE.Color();
   for (let i = 0; i < 16; i++) {
@@ -177,7 +180,8 @@ export function buildCamp({ scene, own, rand, small, still, out, floor, matte, s
   const halo = new THREE.Sprite(own(new THREE.SpriteMaterial({ map: soft(own, "rgba(255,176,88,.72)", "rgba(237,103,40,.2)"), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: .3 }))); halo.position.y = .64; hearth.add(halo);
   const puffMap = soft(own, "rgba(255,255,255,.9)", "rgba(255,255,255,.4)"), smoke = Array.from({ length: still ? 0 : small ? 2 : 4 }, () => { const puff = new THREE.Sprite(own(new THREE.SpriteMaterial({ map: puffMap, color: "#665851", depthWrite: false, transparent: true, opacity: 0 }))); hearth.add(puff); return puff; });
   const fireLight = new THREE.PointLight(0xffa269, 1, 62, 2); fireLight.position.set(fireX, fireY + .75, -FIRE_S); scene.add(fireLight);
-  if (!small) { fireLight.castShadow = true; fireLight.shadow.mapSize.set(512, 512); fireLight.shadow.radius = 4; fireLight.shadow.intensity = .82; fireLight.shadow.camera.near = .2; fireLight.shadow.camera.far = 60; fireLight.shadow.bias = -.004; fireLight.shadow.normalBias = .04; }
+  if (!small) { own(fireLight.shadow); fireLight.castShadow = true; fireLight.shadow.mapSize.set(512, 512); fireLight.shadow.radius = 4; fireLight.shadow.intensity = .82; fireLight.shadow.camera.near = .2; fireLight.shadow.camera.far = 60; fireLight.shadow.bias = -.004; fireLight.shadow.normalBias = .04; fireLight.shadow.autoUpdate = false; }
+  let lastFireShadow = -Infinity;
   const SPARKS = still ? 0 : small ? 8 : 18, sparkAt = new Float32Array(SPARKS * 3), sparkLife = Array.from({ length: SPARKS }, () => rand());
   const sparkGeometry = own(new THREE.BufferGeometry()), sparkMaterial = own(new THREE.PointsMaterial({ color: new THREE.Color(3, 1.5, .5), size: .035, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
   sparkGeometry.setAttribute("position", new THREE.BufferAttribute(sparkAt, 3));
@@ -258,14 +262,21 @@ export function buildCamp({ scene, own, rand, small, still, out, floor, matte, s
   function frame(clock: number, dt: number, fed: number, feedGlow: number, walkerS: number = FIRE_S) {
     const flicker = still ? .95 : .94 + .045 * Math.sin(clock * 3.2) + .025 * Math.sin(clock * 6.3);
     const level = [.64, .98, 1.34, 1.68][fed]! * Math.min(1.3, feedGlow);
-    const nearCave = Math.abs(walkerS - CAVE_S) < 95; caveLight.visible = nearCave; if (nearCave) caveLight.intensity = 13 * (.88 + .12 * flicker);
-    const nearCamp = Math.abs(walkerS - FIRE_S) < 115;
-    fireLight.visible = hearth.visible = nearCamp; eyes.visible = nearCamp && fed < 3;
-    fireLight.castShadow = !small && Math.abs(walkerS - FIRE_S) < 42;
+    // Keeping the light topology fixed avoids linking scene shaders again between stops.
+    caveLight.intensity = Math.abs(walkerS - CAVE_S) < 95 ? 13 * (.88 + .12 * flicker) : 0;
+    const fireGap = Math.abs(walkerS - FIRE_S), nearCamp = fireGap < 115;
+    hearth.visible = nearCamp; eyes.visible = nearCamp && fed < 3;
+    fireLight.intensity = nearCamp ? level * 102 * flicker : 0;
+    if (!small) {
+      fireLight.shadow.intensity = .82 * (1 - smooth(36, 42, fireGap));
+      if (fireGap < 42 && clock - lastFireShadow >= .12) {
+        fireLight.shadow.needsUpdate = true;
+        lastFireShadow = clock;
+      }
+    }
     // The village hearth uses the same shader and keeps burning after this camp is out of view.
     flameTime.value = still ? 0 : clock;
     if (!nearCamp) return { glow: 0, flicker };
-    fireLight.intensity = level * 102 * flicker;
     const size = (1 + fed * .19) * Math.min(1.13, feedGlow);
     fireFlame.scale.set(size, size * (1 + (flicker - .94) * .22), size);
     halo.scale.set(4.8 * size, 3.5 * size, 1);

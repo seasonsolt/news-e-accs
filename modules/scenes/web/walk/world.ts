@@ -3,7 +3,6 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
-import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { GTAOPass } from "three/examples/jsm/postprocessing/GTAOPass.js";
 import { shareOrCopy } from "@aihot/web/features/item/share";
 import { recordEngagement } from "@aihot/web/lib/engagement";
@@ -16,6 +15,7 @@ import { buildGrass } from "./grass.ts";
 import { buildWheat } from "./wheat.ts";
 import { buildLitter, soil } from "./groundcover.ts";
 import { loadRelief } from "./relief.ts";
+import { buildEnvironment } from "./environment.ts";
 import { buildProps } from "./props.ts";
 import { startSound, type Sound } from "./sound.ts";
 import { buildVerge } from "./verge.ts";
@@ -115,26 +115,23 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     };
     composer.addPass(ao);
   }
-  composer.addPass(own(new UnrealBloomPass(new THREE.Vector2(1, 1), .26, .68, .92))); composer.addPass(own(new OutputPass()));
-  const gradeUniforms = { tDiffuse: { value: null }, uTime: { value: 0 }, uGrain: { value: still ? 0 : .014 } };
-  const gradePass = own(new ShaderPass({
-    uniforms: gradeUniforms,
-    vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }",
-    fragmentShader: `uniform sampler2D tDiffuse; uniform float uTime, uGrain; varying vec2 vUv;
-      float hash(vec2 p){ vec3 q = fract(vec3(p.xyx) * .1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
-      void main(){
-        vec4 s = texture2D(tDiffuse, vUv);
-        vec2 centered = vUv - .5;
-        float vig = 1. - smoothstep(.34, .92, dot(centered, centered) * 2.15) * .16;
-        // Subtle 70mm film contrast: cool shadow undertone with warm highlights preserved cleanly.
-        vec3 col = s.rgb * vig;
-        float luma = dot(col, vec3(.299, .587, .114));
-        col += mix(vec3(-.006, -.002, .009) * smoothstep(.015, .18, luma), vec3(.007, .003, -.004), smoothstep(.22, .78, luma));
-        float g = (hash(vUv * 980. + fract(uTime * 17.3) * 113.) - .5) * uGrain;
-        gl_FragColor = vec4(clamp(col + g, 0., 1.), s.a);
-      }`,
-  }));
-  composer.addPass(gradePass);
+  composer.addPass(own(new UnrealBloomPass(new THREE.Vector2(1, 1), .26, .68, .92)));
+  const output = own(new OutputPass()), gradeTime = { value: 0 };
+  Object.assign(output.uniforms, { gradeTime, grain: { value: still ? 0 : .014 } });
+  // Grade the display-space colour after tone mapping in the same fullscreen pass.
+  output.material.fragmentShader = output.material.fragmentShader.replace("void main()", `
+    uniform float gradeTime, grain;
+    float gradeHash(vec2 p) { vec3 q = fract(vec3(p.xyx) * .1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+    void main()`).replace(/}\s*$/, `
+      vec2 centered = vUv - .5;
+      float vig = 1. - smoothstep(.34, .92, dot(centered, centered) * 2.15) * .16;
+      vec3 col = gl_FragColor.rgb * vig;
+      float luma = dot(col, vec3(.299, .587, .114));
+      col += mix(vec3(-.006, -.002, .009) * smoothstep(.015, .18, luma), vec3(.007, .003, -.004), smoothstep(.22, .78, luma));
+      float g = (gradeHash(vUv * 980. + fract(gradeTime * 17.3) * 113.) - .5) * grain;
+      gl_FragColor.rgb = clamp(col + g, 0., 1.);
+    }`);
+  composer.addPass(output);
   if (!small) { renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap; }
 
   // ---------- the land ----------
@@ -208,14 +205,15 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   const nightSoil = skyLight.groundColor.clone(), sunlitStraw = new THREE.Color("#cbb18b"), flagstone = new THREE.Color("#b3aaa0");
   scene.add(skyLight, sunLight, sunLight.target);
   if (!small) { // one shadow map that follows the walker
+    own(sunLight.shadow);
     sunLight.castShadow = true; sunLight.shadow.mapSize.set(2048, 2048); sunLight.shadow.bias = -.0005; sunLight.shadow.normalBias = .023; sunLight.shadow.radius = 2;
     Object.assign(sunLight.shadow.camera, { left: -46, right: 46, top: 46, bottom: -46, near: 1, far: 330 }); sunLight.shadow.camera.updateProjectionMatrix();
   }
-  // the sky's own light on standard materials: the dome, over ground lit by the hour, drawn into a blurred cube; redrawn when the hour has moved on
-  const pmrem = useSky ? own(new THREE.PMREMGenerator(renderer)) : null, skyScene = new THREE.Scene(), below = own(new THREE.MeshBasicMaterial({ color: 0 })), soilTone = new THREE.Color("#6b5a45"), lowLight = new THREE.Color();
-  skyScene.add(new THREE.Mesh(sky.geometry, sky.material), new THREE.Mesh(own(new THREE.CircleGeometry(1100, 24).rotateX(-Math.PI / 2).translate(0, -30, 0)), below));
-  const skySeen = [new THREE.Color(), new THREE.Color(), new THREE.Color(), new THREE.Vector3()] as const, camDir = new THREE.Vector3(); let skyTarget: THREE.WebGLRenderTarget | null = null, skyAt = -1;
-  own({ dispose: () => skyTarget?.dispose() });
+  const camDir = new THREE.Vector3();
+  function sunBearing(at: number, elevation: number, direction: THREE.Vector3) {
+    const turn = mix(-.42, .125, smooth(250, 574, at));
+    return direction.set(Math.sin(turn) * Math.cos(elevation), Math.sin(elevation), -Math.cos(turn) * Math.cos(elevation));
+  }
 
   await pause("fields"); if (signal.aborted) return;
   // Shared light and sowing uniforms also drive the roadside plants and props.
@@ -241,6 +239,23 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   if ("error" in loadedOrbit) throw loadedOrbit.error;
   orbit.orbitMap.value = loadedOrbit.texture;
   orbit.orbitTangent.value.y = orbit.orbitTangent.value.x * loadedOrbit.texture.image.height / loadedOrbit.texture.image.width;
+
+  const environment = useSky ? await buildEnvironment({
+    renderer, signal, pause,
+    anchors: [
+      ...[HOURS[0], HOURS[2], HOURS[3], HOURS[4], HOURS[6]].map(anchor => ({
+        ...anchor, sunDir: sunBearing(anchor.s, anchor.height, new THREE.Vector3()),
+      })),
+      {
+        ...HOURS[6], ending: true,
+        top: HOURS[6].top.clone().lerp(nightSky, .35), horizon: HOURS[6].horizon.clone().lerp(nightHorizon, .12),
+        sun: HOURS[6].sun.clone().multiplyScalar(.8), sunDir: sunBearing(MONO_S, .018, new THREE.Vector3()),
+        power: HOURS[6].power * .65, sky: HOURS[6].sky * .7, stars: .18,
+      },
+    ],
+  }) : undefined;
+  if (signal.aborted) return;
+  if (environment) scene.environment = own(environment).texture;
 
   // Chapter-morphing atmospheric motes: embers at the camp, sunlit chaff in the fields, rising dusk sparks near the monolith.
   const MOTE_COUNT = small ? 110 : 220;
@@ -285,7 +300,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   // A carried ember that lights the road ahead through the night country, and a handful of golden seed scattered when sowing by hand.
   // A single local light serves the carried ember, window bounce and the fluorescent fitting.
   // Daylight enters from the opening. Its source stays fixed as the observer moves past.
-  const localLight = new THREE.PointLight(0xff8e42, 0, 12, 2); localLight.visible = false; scene.add(localLight);
+  const localLight = new THREE.PointLight(0xff8e42, 0, 12, 2); scene.add(localLight);
   const rooms = [
     { stop: ROADSIDE.press, dx: -2.25, ds: -1.1, height: 2.65, tint: 0xffdcad, power: 13 },
     { stop: ROADSIDE.loom, dx: -1.8, ds: 1.2, height: 3.65, tint: 0xe1ebf6, power: 14 },
@@ -521,17 +536,22 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
   const yearFigure = part("year"), yearUnit = part("unit"), yearLabel = part("year-label"), chapter = part("chapter"), dot = part("dot"), useLabel = part("use-label");
   let last = performance.now(), slow = 0, raf = 0;
   function schedule() { if (!raf && !document.hidden) raf = requestAnimationFrame(frame); }
+  let drawnWidth = 0, drawnHeight = 0, drawnRatio = 1;
   let pixel = .001; // the height of one pixel one metre from the eye
   function resize() {
     const w = Math.max(1, root.clientWidth), h = Math.max(1, root.clientHeight);
-    renderer.setPixelRatio(ratio); renderer.setSize(w, h, false); composer.setPixelRatio(ratio); composer.setSize(w, h);
+    if (w === drawnWidth && h === drawnHeight && ratio === drawnRatio) return;
+    renderer.setDrawingBufferSize(w, h, ratio);
+    if (ratio !== drawnRatio) composer.setPixelRatio(ratio);
+    if (w !== drawnWidth || h !== drawnHeight) composer.setSize(w, h);
+    drawnWidth = w; drawnHeight = h; drawnRatio = ratio;
     moteUniforms.uScale.value = ratio;
     camera.aspect = w / h; camera.fov = w < h ? 74 : 62; camera.updateProjectionMatrix();
     pixel = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) / (h * ratio);
     if (begun) schedule();
   }
   const observer = new ResizeObserver(resize); observer.observe(root);
-  function frame(now: number) {
+  function frame(now: number, draw = true) {
     raf = 0;
     if (document.hidden) return;
     const elapsed = clamp((now - last) / 1000, 0, .5), dt = Math.min(.05, elapsed); last = now; clock += elapsed;
@@ -540,8 +560,8 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
       if (slow > 2) { ratio = Math.max(.75, ratio - .25); slow = 0; resize(); }
     }
     if (started) {
-      // Keep collisions at short strides while time and travel keep pace on slower GPUs.
-      if (touched === null) for (let t = elapsed; t > 0; t -= .05) walk(Math.min(.05, t));
+      // Discard excess time after a stall rather than jumping past interactions.
+      if (touched === null) for (let t = Math.min(.10, elapsed); t > 0; t -= .05) walk(Math.min(.05, t));
       else pace = 0;
       for (const [at, text] of LINES) if (me.s >= at && me.s < at + 36) speak(`line-${at}`, text);
       while (passed < MILESTONES.length && me.s >= MILESTONES[passed]![1]) count("walk_reach", MILESTONES[passed++]![0]);
@@ -578,8 +598,8 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     }
     hour.top.lerp(nightSky, dusk * .35); hour.horizon.lerp(nightHorizon, dusk * .12); hour.fog.lerp(nightHorizon, dusk * .18);
     // From the road by the dish, the low sun meets the top of the stone before the walker passes into its shadow.
-    const height = mix(hour.height, .018, dusk), turn = mix(-.42, .125, smooth(250, 574, me.s));
-    sunDir.set(Math.sin(turn) * Math.cos(height), Math.sin(height), -Math.cos(turn) * Math.cos(height)).normalize();
+    const height = mix(hour.height, .018, dusk);
+    sunBearing(me.s, height, sunDir);
     skyUniforms.top.value.copy(hour.top); skyUniforms.horizon.value.copy(hour.horizon); skyUniforms.sun.value.copy(hour.sun).multiplyScalar(1 - dusk * .2); skyUniforms.stars.value = Math.max(hour.stars, dusk * .18); skyUniforms.time.value = still ? 0 : clock; skyUniforms.day.value = smooth(330, 410, me.s) * (1 - dusk * .5);
     orbit.orbitVisibility.value = Math.max(1 - smooth(170, 320, me.s), .74 * smooth(.32, 1, dusk));
     fog.color.copy(hour.fog); fog.density = hour.density;
@@ -592,14 +612,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     sunLight.color.copy(hour.sun); sunLight.intensity = power * (hour.stars > .5 ? 2. : 3.2);
     sunLight.target.position.set(me.x - Math.sin(me.yaw) * 22, ground(me.x, -me.s), -me.s - Math.cos(me.yaw) * 22);
     sunLight.position.copy(sunLight.target.position).addScaledVector(hour.stars > .5 ? moon : sunDir, 160); // the setting sun stays warm and low; the night uses a cool fill
-    const [seenTop, seenHorizon, seenSun, seenDir] = skySeen, skySun = skyUniforms.sun.value;
-    const moved = Math.abs(seenTop.r - hour.top.r) + Math.abs(seenTop.g - hour.top.g) + Math.abs(seenTop.b - hour.top.b) + Math.abs(seenHorizon.r - hour.horizon.r) + Math.abs(seenHorizon.g - hour.horizon.g) + Math.abs(seenHorizon.b - hour.horizon.b)
-      + Math.abs(seenSun.r - skySun.r) + Math.abs(seenSun.g - skySun.g) + Math.abs(seenSun.b - skySun.b) + seenDir.distanceTo(sunDir);
-    if (pmrem && (skyAt < 0 || (clock - skyAt > (dusk > 0 ? .45 : 1.8) && moved > (dusk > 0 ? .02 : .045)))) {
-      skyAt = clock; seenTop.copy(hour.top); seenHorizon.copy(hour.horizon); seenSun.copy(skySun); seenDir.copy(sunDir);
-      below.color.copy(hour.sun).multiplyScalar(power * Math.max(0, Math.sin(height))).add(lowLight.copy(skyLight.color).multiplyScalar(skyPower * .5)).multiply(soilTone);
-      const old = skyTarget; skyTarget = pmrem.fromScene(skyScene, 0, 1, 1500, { size: 64 }); scene.environment = skyTarget.texture; old?.dispose();
-    }
+    environment?.update(me.s, dusk);
     scene.environmentIntensity = mix(.4, 1.3, hour.stars) + dusk * .1; // the sunset keeps a little reflected sky beside the warm grazing light
     fieldUniforms.time.value = clock; fieldUniforms.sky.value.copy(skyLight.color).multiplyScalar(skyPower * 1.3).lerp(fieldAfterglow, dusk * .60); fieldUniforms.sun.value.copy(hour.sun).multiplyScalar(power * .75);
     fieldUniforms.fogColor.value.copy(hour.fog); fieldUniforms.fogDensity.value = hour.density; fieldUniforms.backlit.value = smooth(430, 600, me.s) * (1 - dusk * .15);
@@ -608,7 +621,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     const fire = tendFire(clock, dt, fed, feedGlow, me.s);
     fieldUniforms.fire.value.set(fireX, fireY + .8, -FIRE_S, fire.glow * .5);
     village.villageLight.intensity = 14 * fire.flicker; village.frame(clock, me.s);
-    sowLight.visible = Math.abs(me.s - SOW_S) < 85 && me.s < 335; if (sowLight.visible) sowLight.intensity = 5.5 * (.9 + .1 * fire.flicker);
+    sowLight.intensity = Math.abs(me.s - SOW_S) < 85 && me.s < 335 ? 5.5 * (.9 + .1 * fire.flicker) : 0;
     propsFrame(me.s);
     fields.frame(clock, dt, me.s); fields.water.color.copy(hour.top).lerp(hour.horizon, .18).multiplyScalar(.55 + power * .35); fields.waterSun.copy(sunDir); // open water shows the sky overhead, darker than the sky at the horizon
 
@@ -631,7 +644,6 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     sky.position.copy(camera.position);
     const carry = started && dusk === 0 ? smooth(FIRE_S + 3, FIRE_S + 14, me.s) * (1 - smooth(205, 248, me.s)) * (.72 + fed * .22) : 0;
     const room = rooms.find(room => Math.abs(me.s - room.s) < 23);
-    localLight.visible = carry > .01 || Boolean(room);
     if (room) {
       localLight.position.copy(room.position);
       localLight.color.setHex(room.tint);
@@ -640,13 +652,13 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
       localLight.color.setHex(0xff8e42);
       localLight.position.set(me.x + Math.cos(me.yaw) * .28 - Math.sin(me.yaw) * .55, eyeY - .24, -me.s - Math.cos(me.yaw) * .55 - Math.sin(me.yaw) * .28);
       localLight.intensity = carry * 5.2 * fire.flicker;
-    }
+    } else localLight.intensity = 0;
     camera.getWorldDirection(camDir);
     const fwdLen = Math.hypot(camDir.x, camDir.z) || 1;
     updateWheat(camera);
     grass.frame(clock, camera.position, hour.density, pixel, camDir.x / fwdLen, camDir.z / fwdLen);
     clouds.frame(camera.position, still ? 0 : clock, me.s, sunDir, cloudSun.copy(hour.sun).multiplyScalar(power), cloudSky.copy(skyLight.color).multiplyScalar(skyPower), dusk);
-    gradeUniforms.uTime.value = still ? 0 : clock;
+    gradeTime.value = still ? 0 : clock;
     moteUniforms.uTime.value = still ? 0 : clock; moteUniforms.uCenter.value.copy(camera.position); moteUniforms.uS.value = me.s; moteUniforms.uDusk.value = dusk;
     const [figure, unit] = yearReading(me.s, locale), ago = yearsAgo(me.s), about = ago > 126, reading = `${figure}|${unit}|${chapterAt(me.s)}`;
     if (reading !== shown) {
@@ -669,7 +681,7 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
       startButton.textContent = tx("再走一遍"); cover.classList.remove("is-gone"); cover.scrollTop = 0;
       requestAnimationFrame(() => { if (ended && !signal.aborted) part("cover-title").focus({ preventScroll: true }); });
     }
-    composer.render();
+    if (draw) composer.render();
     if (started) schedule();
   }
   signal.addEventListener("abort", () => {
@@ -677,14 +689,25 @@ async function build(root: HTMLElement, { tx, locale, audioContext, onContextLos
     cancelAnimationFrame(raf); observer.disconnect(); sound?.close();
     hud.hidden = true; cover.inert = false; cover.classList.remove("is-gone"); root.classList.remove("is-live", "is-ended", "is-finishing"); viewport.style.removeProperty("opacity");
   }, { once: true });
-  // Pre-compile all scene shaders during the initial load so wheat and later eras never hitch mid-walk.
-  {
-    const hidden: THREE.Object3D[] = [];
-    scene.traverse((o) => { if (!o.visible) { o.visible = true; hidden.push(o); } });
+  resize();
+  frame(performance.now(), false);
+  // Compile with the same lights, environment and linear render target as the
+  // walk. Three visits even the meshes that are still hidden in later eras.
+  renderer.setRenderTarget(composer.readBuffer);
+  try {
     renderer.compile(scene, camera);
-    for (const o of hidden) o.visible = false;
+  } finally {
+    renderer.setRenderTarget(null);
   }
-  resize(); frame(performance.now());
+  const parallel = renderer.extensions.get("KHR_parallel_shader_compile") as KHR_parallel_shader_compile | null;
+  const context = renderer.getContext();
+  // Poll from the loading loop so cancel or a lost context also stops the wait.
+  if (parallel) {
+    while (!signal.aborted && !context.isContextLost() && renderer.info.programs?.some(({ program }) =>
+      !context.getProgramParameter(program, parallel.COMPLETION_STATUS_KHR))) await pause();
+  }
+  if (signal.aborted || context.isContextLost()) return;
+  frame(performance.now());
   startButton.disabled = false;
   begin();
 }

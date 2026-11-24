@@ -332,7 +332,8 @@ export function buildVillage({ scene, own, rand, small, still, floor, matte, sta
   /** One frame of the village: thin smoke rising, the woman at the quern, the loose goat, the child. When the page asks for stillness, everything holds where it is at the start. Allocates nothing. */
   function frame(clock: number, walkerS: number = VILLAGE.yardS) {
     const near = Math.abs(walkerS - VILLAGE.yardS) < 110;
-    villageLight.visible = villageFlame.visible = near;
+    villageFlame.visible = near;
+    if (!near) villageLight.intensity = 0;
     for (const puff of puffs) puff.visible = near;
     if (!near) return;
     if (still) clock = 0;

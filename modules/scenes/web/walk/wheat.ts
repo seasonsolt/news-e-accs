@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { FIELD_S, MONOLITH, MONO_S, VILLAGE, cleared, cropCover, roadX, smooth } from "./land.ts";
+import { FIELD_S, MONOLITH, MONO_S, VILLAGE, cleared, cropCover, roadX, sequence, smooth } from "./land.ts";
 
 type Disposable = { dispose(): void };
 type Settings = {
@@ -175,7 +175,7 @@ export function buildWheat({ scene, own, rand, floor, small, still, fireX, fireS
         gl_FragColor = vec4(mix(lit, fogColor, fog), 1.); ${output}
       }`,
   }));
-  const stride = 11, chunkSize = 20, chunks = new Map<string, number[]>(), tint = new THREE.Color();
+  const stride = 11, chunkSize = small ? 12 : 16, chunks = new Map<string, number[]>(), tint = new THREE.Color();
   const young = new THREE.Color("#778b3d"), ripe = new THREE.Color("#b9954d"), pale = new THREE.Color("#dac384"), density = small ? .42 : 1;
   const add = (x: number, s: number, height: number, head: number) => {
     const key = `${Math.floor(x / chunkSize)},${Math.floor(s / chunkSize)}`;
@@ -203,6 +203,13 @@ export function buildWheat({ scene, own, rand, floor, small, still, fireX, fireS
       minZ = Math.min(minZ, plants[i + 2]!); maxZ = Math.max(maxZ, plants[i + 2]!); minS = Math.min(minS, plants[i + 10]!);
     }
     const center = new THREE.Vector3((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2);
+    // A spatially mixed prefix lets instanceCount thin a whole patch, rather than removing one
+    // end of a planted row. This independent shuffle never changes any plant or the world RNG.
+    const order = sequence((Math.floor(center.x / chunkSize) * 73856093 ^ Math.floor(center.z / chunkSize) * 19349663) >>> 0);
+    for (let i = plants.length / stride - 1; i > 0; i--) {
+      const j = Math.floor(order() * (i + 1));
+      for (let k = 0; k < stride; k++) { const hold = plants[i * stride + k]!; plants[i * stride + k] = plants[j * stride + k]!; plants[j * stride + k] = hold; }
+    }
     const data = new THREE.InstancedInterleavedBuffer(new Float32Array(plants), stride), lod = new THREE.LOD();
     lod.position.copy(center); lod.visible = false; lod.autoUpdate = false;
     const sphere = new THREE.Sphere(new THREE.Vector3(), Math.hypot(maxX - minX, maxY - minY, maxZ - minZ) / 2 + 2.5);
@@ -220,13 +227,29 @@ export function buildWheat({ scene, own, rand, floor, small, still, fireX, fireS
     }
     lod.addLevel(new THREE.Object3D(), small ? 80 : 132, .12);
     scene.add(lod); lod.updateMatrixWorld(true);
-    return { mesh: lod, minS };
+    return { mesh: lod, minS, count: plants.length / stride };
   });
   // The AO pass temporarily hides these shader meshes. Updating LOD here keeps
   // the renderer from making them visible again during its override-material pass.
   const frame = (camera: THREE.Camera) => {
     camera.updateMatrixWorld();
-    for (const { mesh } of fieldChunks) if (mesh.visible) mesh.update(camera);
+    const eye = camera.position;
+    for (const { mesh, count } of fieldChunks) if (mesh.visible) {
+      mesh.update(camera);
+      const distance = eye.distanceTo(mesh.position), level = mesh.getCurrentLevel();
+      if (level > 2) continue;
+      const geometry = (mesh.levels[level]!.object as THREE.Mesh<THREE.InstancedBufferGeometry>).geometry;
+      // Keep every nearby ear. Beyond that, each distant patch has a bounded vertex workload;
+      // the gradual change is in submitted instances, so removed plants cost no vertex shader work.
+      if (level === 0) geometry.instanceCount = count;
+      else {
+        const start = small ? 16 : 24, middle = small ? 24 : 38, end = small ? 60 : 100;
+        const middleCount = Math.min(count, small ? 120 : 180), farCount = Math.min(count, small ? 48 : 80);
+        const first = count + (middleCount - count) * smooth(start, middle, distance);
+        // One continuous density curve across both distant LODs avoids a density jump at a switch.
+        geometry.instanceCount = Math.ceil(first + (farCount - first) * smooth(middle, end, distance));
+      }
+    }
   };
   return { uniforms, fieldChunks, frame };
 }
